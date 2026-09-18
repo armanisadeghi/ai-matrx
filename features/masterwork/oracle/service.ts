@@ -1,5 +1,7 @@
 import { supabase } from "@/utils/supabase/client";
+import { nameFromSentence } from "@/lib/text/nameFromSentence";
 import { requireUserId, getUserId } from "@/utils/auth/getUserId";
+import { operationFailed } from "@/utils/errors";
 import { getRulebook, saveRules } from "../service";
 import { nextRuleId } from "../ruleIds";
 import type { Rulebook, RulebookRule } from "../types";
@@ -21,13 +23,17 @@ import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
  */
 
 /** Word-boundary cap for the derived rule name (matches the platform rule). */
-const NAME_MAX_CHARS = 60;
 /** A rule statement is a rule, not an article — cap what one message can land. */
 const STATEMENT_MAX_CHARS = 4000;
 const CAS_RETRIES = 3;
 
-/** First meaningful line of the message, markdown markers stripped, truncated
- * at a word boundary. The Expert can rename during review like any draft. */
+/**
+ * First meaningful line of the message, markdown markers stripped, then named
+ * by the ONE rule (`lib/text/nameFromSentence.ts`) — so a rule saved out of a
+ * long paragraph carries an ellipsis instead of stopping mid-thought, exactly
+ * like a Rulebook name and a Vision Interview title. The Expert can rename
+ * during review like any draft.
+ */
 export function deriveRuleNameFromContent(content: string): string {
   const firstLine =
     content
@@ -41,11 +47,9 @@ export function deriveRuleNameFromContent(content: string): string {
           .trim(),
       )
       .find((line) => line.length > 0) ?? "";
-  if (!firstLine) return "Saved from a conversation";
-  if (firstLine.length <= NAME_MAX_CHARS) return firstLine;
-  const cut = firstLine.slice(0, NAME_MAX_CHARS);
-  const lastSpace = cut.lastIndexOf(" ");
-  return (lastSpace > NAME_MAX_CHARS / 2 ? cut.slice(0, lastSpace) : cut).trim();
+  return nameFromSentence(firstLine, {
+    fallback: "Saved from a conversation",
+  });
 }
 
 /** The picker's projection — just enough to choose a Rulebook. */
@@ -77,7 +81,7 @@ export async function listMyRulebooks(): Promise<OracleRulebookOption[]> {
   const { data, error } = await q
     .order("updated_at", { ascending: false })
     .limit(50);
-  if (error) throw error;
+  if (error) throw operationFailed("list your Rulebooks", error);
   return (data ?? []).map((row) => ({
     id: String(row.id),
     name: String(row.name),
@@ -223,8 +227,7 @@ export async function appendDraftRuleFromMessage(opts: {
 
     try {
       const saved = await saveRules({
-        rulebookId: opts.rulebookId,
-        expectedVersion: rulebook.version,
+        base: rulebook,
         rules: [...rulebook.rules, rule],
         ...(sections ? { sections } : {}),
       });

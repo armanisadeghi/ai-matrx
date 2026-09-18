@@ -44,7 +44,33 @@ export type CanvasContentType =
   // Live Cloud Browser surface hosted in the canvas pane. `data` is a pointer
   // `{ initialProfileId?, runId? }`; the body holds live run/screenshot/handoff
   // state (never serializable) — NON_PERSISTABLE, like the editor surfaces.
-  | "cloud_browser";
+  | "cloud_browser"
+  // A CLOUD DOCUMENT (`workbench.udt_documents`) hosted in the canvas pane.
+  // `data` is a pointer `{ documentId }`; the body mounts the canonical
+  // `DocumentEditor` — the very component `/documents/[id]` mounts — so the
+  // canvas hosts the document rather than being a second editor for it.
+  //
+  // This type is the DOOR the 2026-09-14 production defect was missing: the
+  // `document` tool created a row, the agent announced "Created and opened as
+  // a document artifact", and nothing could open because the canvas had no
+  // type that could host a `udt_document`.
+  | "udt_document"
+  // Live SANDBOX surface hosted in the canvas pane — Terminal / Files /
+  // Activity for the box bound to a conversation. `data` is a pointer
+  // `{ sandboxRowId, fallbackName? }`; the body holds a live pty and a live
+  // file tree, so there is nothing serializable — NON_PERSISTABLE, like the
+  // Cloud Browser. It shares the canvas region with the browser, documents
+  // and artifacts and NEVER owns it (the champions — Claude Code, Codex,
+  // Cursor — all show the terminal on demand in one shared side region).
+  | "sandbox"
+  // A TOPICAL MAP hosted in the canvas pane (Lane G, R12). `data` is a pointer
+  // `{ mapId, screen, siteId }`; the body mounts the canonical
+  // `TopicalMapWorkspaceBody` in `host="canvas"` — the same component the
+  // page route and the floating window render — which reads the live map from
+  // the store and the `seo.*` functions. The map's truth is its rows, so a
+  // `canvas_items` copy would be a stale second map: NON_PERSISTABLE, like
+  // `working_document`, never an artifact type.
+  | "topical_map";
 
 /**
  * Canvas content types that hold live, non-serializable runtime state —
@@ -63,6 +89,19 @@ export const NON_PERSISTABLE_CANVAS_TYPES: ReadonlySet<string> = new Set([
   // Live Cloud Browser: holds run/screenshot/controller/handoff state — a
   // canvas_items row would freeze a dead pointer with no live session.
   "cloud_browser",
+  // Live sandbox: a pty and a file tree against a running box. A canvas_items
+  // row would freeze a pointer to a box that is gone by the time it is read.
+  "sandbox",
+  // A cloud document owns its OWN append-only snapshot history
+  // (`udt_document_snapshots`) and saves itself as the user types. A
+  // `canvas_items` row would freeze a stale copy beside the live one, so the
+  // pane is a pointer and only a pointer. Unlike the other live surfaces it
+  // still HAS a real source — see `canvasSource.ts`.
+  "udt_document",
+  // A topical map pane is a pointer to live rows the workspace body reads; the
+  // rows are the truth and a frozen copy would drift on the next accepted
+  // proposal (see the type's comment above).
+  "topical_map",
 ]);
 
 export function isPersistableCanvasType(type: string): boolean {
@@ -270,6 +309,54 @@ export const canvasSlice = createSlice({
       state.isOpen = true;
     },
 
+    /**
+     * MAKE AVAILABLE WITHOUT TAKING THE REGION.
+     *
+     * Adds an item to the canvas the way `openCanvas` does, but never sets
+     * `isOpen` and never steals `currentItemId` from content the user is
+     * already looking at. The item appears in the canvas switcher (and the
+     * chat's Canvas button grows its dot), so the user can go to it — while
+     * nothing at all changes on screen.
+     *
+     * This is what "the agent started working in the sandbox while you were
+     * reading a document" must do: offer, never hijack. The dedupe key is the
+     * same `sourceMessageId` identity `openCanvas` uses, so offering twice
+     * (a re-render, a second tool call) can never stack two panes.
+     *
+     * `currentItemId` IS set when nothing is current, because the canvas
+     * shell only mounts once something is current — without it the offered
+     * item would be unreachable by ⌘\ or the Canvas button, which is the
+     * dead-end this reducer exists to avoid.
+     */
+    offerCanvasItem: (state, action: PayloadAction<CanvasContent>) => {
+      const sourceMessageId = action.payload.metadata?.sourceMessageId;
+      const sourceTaskId = action.payload.metadata?.sourceTaskId;
+
+      const existing = sourceTaskId
+        ? state.items.find((item) => item.sourceTaskId === sourceTaskId)
+        : sourceMessageId
+          ? state.items.find(
+              (item) =>
+                item.sourceMessageId === sourceMessageId && !item.sourceTaskId,
+            )
+          : undefined;
+
+      if (existing) {
+        existing.content = action.payload;
+        return;
+      }
+
+      const newItem: CanvasItem = {
+        id: `canvas-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
+        content: action.payload,
+        timestamp: Date.now(),
+        sourceMessageId,
+        sourceTaskId,
+      };
+      state.items.push(newItem);
+      if (!state.currentItemId) state.currentItemId = newItem.id;
+    },
+
     // Close canvas but keep history
     closeCanvas: (state) => {
       state.isOpen = false;
@@ -475,6 +562,7 @@ export const canvasSlice = createSlice({
 // Actions
 export const {
   openCanvas,
+  offerCanvasItem,
   openArtifactInCanvas,
   closeCanvas,
   toggleCanvas,
@@ -503,6 +591,15 @@ export const selectCanvasItems = (state: WithCanvas) =>
   state.canvas?.items ?? [];
 export const selectCurrentItemId = (state: WithCanvas) =>
   state.canvas?.currentItemId ?? null;
+/**
+ * Is a canvas surface actually on screen for this route?
+ *
+ * ONE surface answers, on every route alike: the global `CanvasSideSheet`
+ * front door raises this flag on mount and lowers it on unmount. There is no
+ * second presentation and therefore no second source of availability — a
+ * per-route canvas column used to raise its own count here, and that parallel
+ * layer is exactly what the owner rejected on 2026-09-16.
+ */
 export const selectCanvasIsAvailable = (state: WithCanvas) =>
   state.canvas?.isAvailable ?? false;
 

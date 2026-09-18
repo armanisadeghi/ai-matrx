@@ -104,12 +104,19 @@ export async function pushToWorkbook(
   name: string,
   columns: ExportColumn[],
   rows: ExportRow[],
+  organizationId?: string,
 ): Promise<PushResult> {
   try {
+    if (!organizationId)
+      return {
+        ok: false,
+        error: "Select an organization before creating a workbook.",
+      };
     const created = await createWorkbook({
       name,
       description: "Created from a PDF extraction dataset",
       source: "created",
+      organizationId,
     });
     if (isServiceFailure(created)) return { ok: false, error: created.error };
 

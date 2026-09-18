@@ -30,6 +30,7 @@ import {
   listScopeTypeItems,
 } from "@/features/scope-system/redux/contextItemsSlice";
 import { slugifyKey } from "@/features/scopes/utils/slugify";
+import { pluralize } from "@/features/scopes/utils/pluralize";
 
 type ContextItemDraft = { id: string; display_name: string };
 
@@ -45,13 +46,6 @@ const newItemRow = (): ContextItemDraft => ({
   id: Math.random().toString(36).slice(2),
   display_name: "",
 });
-
-function pluralize(s: string): string {
-  if (!s) return "";
-  if (/[sxz]$|[cs]h$/i.test(s)) return s + "es";
-  if (/[^aeiou]y$/i.test(s)) return s.slice(0, -1) + "ies";
-  return s + "s";
-}
 
 export function AddScopeModal({
   open,

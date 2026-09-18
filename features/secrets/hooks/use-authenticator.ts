@@ -46,7 +46,17 @@ export function useAuthenticator() {
     const sequence = ++refreshSequence.current;
     if (!orgBootstrapResolved || !organizationId) {
       setEntries([]);
-      setError(null);
+      // 🚨 AN EMPTY LIST IS A STATEMENT, AND IT WAS A FALSE ONE. Once boot has
+      // settled with no organization selected, this cleared the error and
+      // stopped loading — so the authenticator list rendered as "you have no
+      // authenticator codes", calmly, to a person who has several. Law 4: a
+      // screen is absent or honest. Before boot settles nothing is known yet,
+      // so it keeps loading.
+      setError(
+        orgBootstrapResolved
+          ? "No organization is selected, so your authenticator codes cannot be read — choose one from the organization picker in the header and this fills in."
+          : null,
+      );
       setLoading(!orgBootstrapResolved);
       return;
     }

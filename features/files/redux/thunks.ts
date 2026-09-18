@@ -27,6 +27,11 @@ import { filesDb, FILE_VERSIONS_TABLE_COLUMNS } from "@/features/files/filesDb";
 import { pgErrorToError } from "@ai-matrx/data";
 
 import * as Files from "@/features/files/api/files";
+import {
+  claimUpload,
+  uploadDedupKey,
+  type UploadClaim,
+} from "@/features/files/upload/uploadDedupGuard";
 import * as Folders from "@/features/files/api/folders";
 import * as Permissions from "@/features/files/api/permissions";
 import * as Versions from "@/features/files/api/versions";
@@ -70,7 +75,10 @@ import {
 } from "./request-ledger";
 import { toast } from "@/lib/toast";
 import { buildTreeState } from "./tree-utils";
-import { isHiddenFromUserTree } from "@/features/files/utils/folder-conventions";
+import {
+  isUserVisibleFilePath,
+  isUserVisibleFolderPath,
+} from "@/features/files/utils/user-visible";
 import {
   hasMatchingFileTreeSession,
   runFileTreeSessionOperation,
@@ -348,7 +356,9 @@ export const loadUserFileTree = createAsyncThunk<
       const folders: PartialCloudFolderWithId[] = [];
       for (const row of rows) {
         if (row.kind === "file") {
-          if (isHiddenFromUserTree(row.file_path)) continue;
+          // No client-side visibility filter: `get_user_file_tree` already
+          // applied `files.is_user_visible_path`. A second rule here is the
+          // D16 disagreement this cutover deleted.
           files.push({
             id: row.id,
             ownerId: row.owner_id,
@@ -367,7 +377,6 @@ export const loadUserFileTree = createAsyncThunk<
             deletedAt: row.deleted_at,
           });
         } else {
-          if (isHiddenFromUserTree(row.folder_path)) continue;
           folders.push({
             id: row.id,
             ownerId: row.owner_id,
@@ -385,11 +394,12 @@ export const loadUserFileTree = createAsyncThunk<
       dispatch(upsertFiles(files));
       dispatch(upsertFolders(folders));
 
-      // Drop side-product rows that were hydrated before the hide predicate
-      // existed (FastFire captures, system paths that slipped via realtime).
+      // Drop rows the DATABASE's predicate rejects that slipped into the
+      // store through realtime before the mirror was applied. FastFire rows
+      // are user-visible now and are deliberately NOT purged.
       const prior = getState().cloudFiles;
       for (const [id, rec] of Object.entries(prior.filesById)) {
-        if (rec && isHiddenFromUserTree(rec.filePath)) {
+        if (rec && !isUserVisibleFilePath(rec.filePath)) {
           dispatch(removeFile({ id }));
         }
       }
@@ -397,7 +407,7 @@ export const loadUserFileTree = createAsyncThunk<
         if (
           rec &&
           rec.source.kind === "real" &&
-          isHiddenFromUserTree(rec.folderPath)
+          !isUserVisibleFolderPath(rec.folderPath)
         ) {
           dispatch(removeFolder({ id }));
         }
@@ -1091,12 +1101,44 @@ export const uploadFiles = createAsyncThunk<
       const next = queue.shift();
       if (!next) return;
       const { file, index } = next;
+      const overrideName = overrides[index];
+      const forcedCopy = forceNewCopySet.has(index);
+
+      // Dedup guard (VERIFICATION.md §12, 2026-09-18): a caller-level retry
+      // after a transient failure (dev-server connection reset, etc.) can
+      // re-dispatch `uploadFiles` for a file whose FIRST attempt already
+      // landed — the client has no proof it didn't, and the backend's own
+      // `X-Idempotency-Key` only replays a 412, never a success (see
+      // `features/files/upload/uploadDedupGuard.ts` for the full trace).
+      // Only the plain path participates: an explicit "Overwrite" override
+      // or "force new copy" means the caller WANTS a fresh write.
+      const dedupKey =
+        !overrideName && !forcedCopy
+          ? uploadDedupKey(prefix, file.name, file.size)
+          : null;
+      let dedupClaim: UploadClaim | null = null;
+      if (dedupKey) {
+        const claim = claimUpload(dedupKey);
+        if (claim.shared) {
+          try {
+            const outcome = await claim.promise;
+            // Reuse the earlier attempt's outcome — no bytes sent again.
+            uploaded.push(outcome.fileId);
+            continue;
+          } catch {
+            // The earlier attempt genuinely failed, and the guard already
+            // cleared its slot — fall through and upload for real below.
+          }
+        } else {
+          dedupClaim = claim;
+        }
+      }
+
       const requestId = newRequestId();
       // Override (from duplicate dialog "Overwrite") wins. Otherwise
       // the auto " (1)" rename runs. We track the display name
       // separately from the original file.name so progress + telemetry
       // continue to use what the user dragged in.
-      const overrideName = overrides[index];
       const targetName =
         typeof overrideName === "string" && overrideName
           ? overrideName
@@ -1199,6 +1241,9 @@ export const uploadFiles = createAsyncThunk<
           }),
         );
         uploaded.push(data.file_id);
+        dedupClaim?.settle(
+          Promise.resolve({ fileId: data.file_id, filePath: data.file_path }),
+        );
       } catch (err) {
         const message = extractErrorMessage(err);
         dispatch(
@@ -1209,6 +1254,7 @@ export const uploadFiles = createAsyncThunk<
           }),
         );
         failed.push({ name: file.name, error: message });
+        dedupClaim?.settle(Promise.reject(err));
       } finally {
         releaseRequest(requestId);
       }
@@ -1597,7 +1643,7 @@ export const loadTrash = createAsyncThunk<void, { userId: string }, ThunkApi>(
     for (const row of rows) {
       if (!row.deleted_at) continue;
       if (row.kind === "file") {
-        if (isHiddenFromUserTree(row.file_path)) continue;
+        // Already filtered by the RPC's predicate — see above.
         files.push({
           id: row.id,
           ownerId: row.owner_id,
@@ -1613,7 +1659,6 @@ export const loadTrash = createAsyncThunk<void, { userId: string }, ThunkApi>(
           deletedAt: row.deleted_at,
         });
       } else {
-        if (isHiddenFromUserTree(row.folder_path)) continue;
         folders.push({
           id: row.id,
           ownerId: row.owner_id,

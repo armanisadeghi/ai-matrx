@@ -1,37 +1,61 @@
-// Updated app/(auth-pages)/sign-out/page.tsx
+// /sign-out — the confirmation page the mobile menu links to. (auth-pages)
+// renders outside the app's Providers, so the identity is read here on the
+// server and handed to the client button, which runs the one sign-out flow
+// (device-scoped; a super admin is warned twice by name) —
+// features/shell/auth/useSignOut.ts.
 
-import { signOutAction } from "@/actions/auth.actions";
-import { AuthMessageType } from "@/components/form-message";
-import { SubmitButton } from "@/components/submit-button";
-import AuthPageContainer from "@/components/auth/auth-page-container";
 import Link from "next/link";
+import { AuthMessageType } from "@/components/form-message";
+import AuthPageContainer from "@/components/auth/auth-page-container";
+import { SignOutConfirmButton } from "@/features/shell/auth/SignOutConfirmButton";
+import { loginHref } from "@/utils/auth/auth-destination";
+import { createClient } from "@/utils/supabase/server";
+import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 
 interface SignOutProps {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export default async function SignOut({
-    searchParams,
-}: SignOutProps) {
+export default async function SignOut({ searchParams }: SignOutProps) {
     const awaitedSearchParams = await searchParams;
-
-    const redirectTo = (awaitedSearchParams.redirectTo as string) || '/dashboard';
     const error = awaitedSearchParams.error as string;
     const success = awaitedSearchParams.success as string;
 
     let message: AuthMessageType | undefined;
-    
     if (success) {
-        message = {
-            type: "success",
-            message: success
-        };
+        message = { type: "success", message: success };
     } else if (error) {
-        message = {
-            type: "error",
-            message: error
-        };
+        message = { type: "error", message: error };
     }
+
+    const supabase = await createClient();
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+        return (
+            <AuthPageContainer
+                title="Sign Out"
+                subtitle="You are not signed in on this device."
+                message={message}
+            >
+                <div className="text-center">
+                    <Link href={loginHref()} className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500">
+                        Go to sign in
+                    </Link>
+                </div>
+            </AuthPageContainer>
+        );
+    }
+
+    const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+    const name =
+        (typeof meta.name === "string" && meta.name) ||
+        (typeof meta.full_name === "string" && meta.full_name) ||
+        (user.email ? user.email.split("@")[0] : null) ||
+        "User";
+    const isSuperAdmin = await checkIsSuperAdmin(supabase, user.id);
 
     return (
         <AuthPageContainer
@@ -41,13 +65,9 @@ export default async function SignOut({
         >
             <div className="space-y-6">
                 <p className="text-center text-gray-600 dark:text-gray-400">
-                    You're about to sign out of your account. You can always sign back in anytime.
+                    You are signed in as {user.email ?? name} on this device. Signing out ends this device&apos;s session only. You can always sign back in anytime.
                 </p>
-                <form action={signOutAction} className="space-y-4">
-                    <SubmitButton pendingText="Signing Out..." className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors duration-200">
-                        Sign Out
-                    </SubmitButton>
-                </form>
+                <SignOutConfirmButton identity={{ isSuperAdmin, name, email: user.email ?? null }} />
                 <div className="text-center">
                     <Link href="/dashboard" className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500" tabIndex={-1}>
                         Cancel and return to dashboard

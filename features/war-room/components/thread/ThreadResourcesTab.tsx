@@ -27,7 +27,7 @@ import {
   FileVideo,
   Loader2,
 } from "lucide-react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { folderForWarRoomThread } from "@/features/files/utils/folder-conventions";
@@ -44,6 +44,7 @@ import {
   type ResourceRowContext,
 } from "@/features/war-room/components/resources/WarRoomResourcesList";
 import { attachEntityToThread } from "@/features/war-room/redux/thunks";
+import { selectThreadEffectiveContext } from "@/features/war-room/redux/selectors";
 import { useThreadResourcesAdapter } from "@/features/war-room/hooks/useThreadResourcesAdapter";
 import { cn } from "@/lib/utils";
 
@@ -62,6 +63,11 @@ export function ThreadResourcesTab({
   compact?: boolean;
 }) {
   const dispatch = useAppDispatch();
+  // The thread/room context is the named container authority. Capture it in
+  // the toolbar action; never consult the global selected organization.
+  const organizationId = useAppSelector(
+    (state) => selectThreadEffectiveContext(threadId)(state).organizationId,
+  );
   const adapter = useThreadResourcesAdapter(threadId);
   const [newFileOpen, setNewFileOpen] = useState(false);
 
@@ -88,6 +94,7 @@ export function ThreadResourcesTab({
   return (
     <AssociationCaptureToolbar
       attach={captureAttach}
+      organizationId={organizationId}
       uploadFolderPath={folderForWarRoomThread(threadId)}
       uploadLocationLabel="your Files (War Room folder)"
       filePicker={{

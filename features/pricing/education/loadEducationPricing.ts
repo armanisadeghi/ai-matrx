@@ -27,7 +27,10 @@ export interface PremiumPlan {
   currency: string;
   /** Billing interval ("month" | "year" | …). */
   interval: string;
-  /** True when this is the seeded placeholder, not a real signed-off price. */
+  /**
+   * True when the page cannot PROVE this price is final, which — until a
+   * signed-off price is seeded — is always. See `loadEducationPricing`.
+   */
   isTest: boolean;
 }
 
@@ -58,17 +61,38 @@ export async function loadEducationPricing(): Promise<EducationPricing> {
 
   // --- Premium: active product + its active recurring price -----------------
   let premium: PremiumPlan | null = null;
-  const { data: product } = await supabase
+  // DD-230 (2026-09-14): this loader runs on a PUBLIC route, so for a
+  // signed-out visitor `createClient()` carries no cookie and the read runs as
+  // `anon` — which holds a COLUMN grant on billing.product, not a table grant.
+  // `metadata` is one of the five columns it may NOT read (DD-186: identity,
+  // bookkeeping and metadata leave regardless), so asking for it returned
+  // **42501 for the whole row** and this loader — which ignored `error` —
+  // silently set `premium = null` and the page rendered "Coming soon" over a
+  // live, active product. Measured on production that morning: five
+  // `product?select=id,name,description,metadata` 401s with no JWT in 24 h.
+  const { data: product, error: productError } = await supabase
     .schema("billing")
     .from("product")
-    .select("id, name, description, metadata")
+    .select("id, name, description, tier, active")
     .eq("active", true)
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
 
+  // Nothing fails silently: "Coming soon" is a claim about the catalogue, and a
+  // refused query cannot support it.
+  if (productError) {
+    throw new Error(
+      `The public pricing page could not read billing.product: ` +
+        `${productError.message}` +
+        (productError.code ? ` (${productError.code})` : "") +
+        `. The signed-out column bound for this table is declared in ` +
+        `lib/security/public-exposure.ts#ANON_COLUMN_SURFACE.`,
+    );
+  }
+
   if (product) {
-    const { data: price } = await supabase
+    const { data: price, error: priceError } = await supabase
       .schema("billing")
       .from("price")
       .select("id, unit_amount, currency, interval, active")
@@ -78,8 +102,17 @@ export async function loadEducationPricing(): Promise<EducationPricing> {
       .limit(1)
       .maybeSingle();
 
+    if (priceError) {
+      throw new Error(
+        `The public pricing page could not read billing.price: ` +
+          `${priceError.message}` +
+          (priceError.code ? ` (${priceError.code})` : "") +
+          `. The signed-out column bound for this table is declared in ` +
+          `lib/security/public-exposure.ts#ANON_COLUMN_SURFACE.`,
+      );
+    }
+
     if (price && price.unit_amount != null) {
-      const meta = (product.metadata ?? {}) as Record<string, unknown>;
       premium = {
         priceId: price.id,
         productName: product.name,
@@ -87,7 +120,15 @@ export async function loadEducationPricing(): Promise<EducationPricing> {
         amountCents: price.unit_amount,
         currency: price.currency ?? "usd",
         interval: price.interval ?? "month",
-        isTest: meta.matrx_test === true,
+        // FAIL-SAFE, not a guess. The flag that used to answer this lived in
+        // `billing.product.metadata.matrx_test`, which a signed-out reader may
+        // not read and must not — so the page cannot prove a price is final and
+        // therefore never claims one is. It always renders the "introductory
+        // test pricing — final pricing coming soon" caveat beside the number.
+        // When a signed-off price ships, the honest way to drop the caveat is a
+        // column `anon` may read (a `billing.price.is_final`), not a metadata
+        // grant. Until then the caveat is the truthful state.
+        isTest: true,
       };
     }
   }

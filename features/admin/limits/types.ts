@@ -50,7 +50,8 @@ export interface PlanLimit {
 }
 
 export interface Plan {
-  id: string;
+  /** `billing.plan.plan_key` — the slug `plan_limit.plan_id` and `plan_limit_set` use (DD-173). */
+  plan_key: string;
   name: string;
   audience: string;
   rank: number;

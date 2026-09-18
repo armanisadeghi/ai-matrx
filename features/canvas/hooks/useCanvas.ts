@@ -3,6 +3,11 @@
 import { useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
+  reportCanvasOpenDrop,
+  titleForDrop,
+} from "@/features/canvas/openRequest";
+import { useCanvasOpenGuard } from "./useCanvasOpenGuard";
+import {
   openCanvas,
   closeCanvas,
   clearCanvas,
@@ -34,16 +39,36 @@ import {
  */
 export function useCanvas() {
   const dispatch = useAppDispatch();
+  const { ensureCanvasReachable } = useCanvasOpenGuard();
   // Selectors use optional chaining internally so they return safe defaults
   // when the canvas slice is missing from the store
   const isOpen = useAppSelector(selectCanvasIsOpen);
   const content = useAppSelector(selectCanvasContent);
 
+  /**
+   * Open content in the canvas. Returns whether the canvas actually took it —
+   * a request it cannot honour is ANNOUNCED (`reportCanvasOpenDrop`), never
+   * dropped on the floor. Before this, `open({ type: undefined })` on a route
+   * with no canvas surface was a completely invisible no-op.
+   */
   const open = useCallback(
-    (canvasContent: CanvasContent) => {
+    (canvasContent: CanvasContent): boolean => {
+      const requested = titleForDrop(canvasContent?.metadata?.title);
+      if (!canvasContent?.type) {
+        return reportCanvasOpenDrop({ reason: "no-content", requested });
+      }
+      if (canvasContent.data == null) {
+        return reportCanvasOpenDrop({
+          reason: "no-content",
+          requested,
+          detail: `type ${canvasContent.type} arrived with no data`,
+        });
+      }
+      if (!ensureCanvasReachable(requested)) return false;
       dispatch(openCanvas(canvasContent));
+      return true;
     },
-    [dispatch],
+    [dispatch, ensureCanvasReachable],
   );
 
   const close = useCallback(() => {
@@ -72,3 +97,4 @@ export function useCanvas() {
 }
 
 export { useOpenArtifactInCanvas } from "./useOpenArtifactInCanvas";
+export { useCanvasOpenGuard } from "./useCanvasOpenGuard";

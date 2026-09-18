@@ -113,8 +113,12 @@ function consumeNonce(presented: string, hostname: string): boolean {
  * can leave you as somebody else is worse than no dev-login: it makes every
  * screenshot taken after it untrustworthy, and nothing on the page says why.
  *
- * Callers should still assert who they are (decode `/api/session-token`) — but the
- * route no longer requires that vigilance to be correct.
+ * Callers should still assert who they are — with `/api/whoami`, NEVER by
+ * decoding `/api/session-token`. This line used to say the latter, and that is
+ * how a live admin JWT reached an agent transcript on 2026-09-17: the correct
+ * habit had only a credential-shaped door to knock on. `/api/whoami` returns
+ * the user id and email and nothing else. The route no longer requires that
+ * vigilance to be correct either way.
  */
 export async function GET(request: NextRequest) {
   if (process.env.NODE_ENV === "production") {
@@ -225,7 +229,7 @@ export async function GET(request: NextRequest) {
     console.warn(
       `[dev-login] evicting a stale session for ${user.email ?? user.id} — signing in as ${email}`,
     );
-    await supabase.auth.signOut();
+    await supabase.auth.signOut({ scope: "local" });
   }
 
   const { error } = await supabase.auth.signInWithPassword({ email, password });

@@ -68,11 +68,16 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { unwrapRows } from "../lib/integrity/unwrap";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
+  EXPECTED_FUNCTION_BIRTH_SCHEMAS,
+  FUNCTION_BIRTH_GUARD_QUERY,
+  FUNCTION_BIRTH_SCHEMAS_QUERY,
   PUBLIC_EXPOSURE_QUERY,
   UNPROTECTED_RELATION_QUERY,
   classifyExposures,
   classifyUnprotected,
+  type FunctionBirthFinding,
   type LiveExposure,
   type UnprotectedRelation,
 } from "../lib/security/public-exposure";
@@ -108,6 +113,10 @@ const EXPECTED: ReadonlyArray<{ name: string; why: string }> = [
   {
     name: "enforce_definer_client_grants",
     why: "removes undeclared client EXECUTE grants from SECURITY DEFINER functions at creation time",
+  },
+  {
+    name: "close_new_functions_to_anon",
+    why: "DD-202 — closes every new SECURITY INVOKER function in a PostgREST-exposed schema to PUBLIC and anon at creation, because PostgreSQL's hard-wired default makes one callable by a signed-out visitor from the moment it exists and no ALTER DEFAULT PRIVILEGES can take that back",
   },
 ];
 
@@ -186,7 +195,29 @@ const QUERY = `
  * shape is `in (select iam.unnest_uuids(<call>))`, which this deliberately does
  * NOT match (the `unnest(` form below requires the bare `unnest(` spelling).
  */
-const PLANNER_TRAP_QUERY = `
+//
+// 🚨 IT IS READ ONE SCHEMA AT A TIME, AND IT SAYS SO WHEN IT CANNOT FINISH ONE.
+// `pg_policies` renders EVERY policy expression through `pg_get_expr` the moment
+// anything reads `qual`/`with_check`, so the cost of this arm grows with every
+// policy on the database — 5,017 of them on 2026-09-14, and `iam.apply_rls`
+// writes more on every canonicalisation. Whole-database, that render took ~1.5 s
+// on an idle connection and ~41 s under a peer lane's load (V-96, 2026-09-14), and
+// this check reads through `execute_admin_query`, whose statement timeout it
+// cannot raise. The arm therefore CRASHED the whole gate, intermittently, with a
+// bare `canceling statement due to statement timeout` — a red gate for every lane,
+// for a reason that had nothing to do with what it measures. Split per schema the
+// worst chunk is 706 policies (~0.2 s), the predicate is byte-identical, and a
+// chunk that still fails is reported UNMEASURED BY NAME rather than taking the
+// process down: never a crash, and never a silence that reads as a pass.
+const PLANNER_TRAP_SCHEMAS_QUERY = `
+  select distinct n.nspname as schemaname
+    from pg_catalog.pg_policy p
+    join pg_catalog.pg_class c on c.oid = p.polrelid
+    join pg_catalog.pg_namespace n on n.oid = c.relnamespace
+   order by 1
+`;
+
+const plannerTrapQueryFor = (schema: string) => `
   select p.schemaname || '.' || p.tablename as relation,
          p.policyname,
          case
@@ -195,8 +226,9 @@ const PLANNER_TRAP_QUERY = `
            else '= ANY (<stable fn>) — scalararraysel pre-evaluates the array'
          end as form
   from pg_catalog.pg_policies p
-  where coalesce(p.qual,'') || coalesce(p.with_check,'') like '%unnest(iam.accessible%'
-     or lower(coalesce(p.qual,'') || coalesce(p.with_check,'')) like '%any (iam.accessible%'
+  where p.schemaname = '${schema.replace(/'/g, "''")}'
+    and (coalesce(p.qual,'') || coalesce(p.with_check,'') like '%unnest(iam.accessible%'
+      or lower(coalesce(p.qual,'') || coalesce(p.with_check,'')) like '%any (iam.accessible%')
   order by 1, 2
 `;
 
@@ -210,17 +242,30 @@ interface PlannerTrapRow {
  * Reports policies that would make the planner execute the access walk.
  * Returns the number of offending policies (0 = clean).
  */
-function reportPlannerTraps(rows: PlannerTrapRow[]): number {
+function reportPlannerTraps(rows: PlannerTrapRow[], unmeasured: string[] = []): number {
   console.log("");
   console.log(
     `${C.bold}RLS planner traps${C.reset} ${C.dim}(no policy may hand the access walk to the planner)${C.reset}`,
   );
-  if (!rows.length) {
+  if (unmeasured.length) {
+    for (const u of unmeasured) {
+      console.log(`  ${TAG.fail}${C.red}UNMEASURED${C.reset} schema ${C.bold}${u}${C.reset}`);
+    }
+    console.log(
+      `${TAG.fail}${unmeasured.length} schema(s) could not be read, so this arm did NOT measure them —` +
+        ` an unread schema is never a clean one. The per-schema read is normally ~0.2 s; a timeout here` +
+        ` means the database was under load or the policy count in that schema has grown far past the` +
+        ` rest. Re-run when the database is quieter, and if it persists, narrow the render further` +
+        ` (pg_policies calls pg_get_expr on every policy it returns).`,
+    );
+  }
+  if (!rows.length && !unmeasured.length) {
     console.log(
       `${TAG.ok}No policy pre-evaluates iam.accessible_entity_ids at plan time.`,
     );
     return 0;
   }
+  if (!rows.length) return 0;
   for (const r of rows) {
     console.log(`  ${TAG.fail}${r.relation} ${C.dim}(${r.policyname})${C.reset} — ${r.form}`);
   }
@@ -579,18 +624,38 @@ async function main(): Promise<number> {
     );
   }
 
-  let trapRows: PlannerTrapRow[];
+  const trapRows: PlannerTrapRow[] = [];
+  const trapUnmeasured: string[] = [];
+  let trapSchemas: string[];
   try {
     const { data, error } = await supabase.rpc("execute_admin_query", {
-      query: PLANNER_TRAP_QUERY,
+      query: PLANNER_TRAP_SCHEMAS_QUERY,
     });
     if (error) throw new Error(error.message);
-    trapRows = unwrapRows(data) as unknown as PlannerTrapRow[];
+    trapSchemas = (unwrapRows(data) as unknown as { schemaname: string }[]).map(
+      (r) => r.schemaname,
+    );
   } catch (err) {
-    console.error(`${TAG.fail}Planner-trap check: query failed — ${String(err)}`);
+    console.error(
+      `${TAG.fail}Planner-trap check: could not even list the schemas holding policies — ${String(err)}.` +
+        ` That read touches no policy expression at all, so the connection itself is the problem.`,
+    );
     return 2;
   }
-  const traps = reportPlannerTraps(trapRows);
+  for (const schema of trapSchemas) {
+    try {
+      const { data, error } = await supabase.rpc("execute_admin_query", {
+        query: plannerTrapQueryFor(schema),
+      });
+      if (error) throw new Error(error.message);
+      trapRows.push(...(unwrapRows(data) as unknown as PlannerTrapRow[]));
+    } catch (err) {
+      // 🚨 NEVER a crash and never a silence: this schema is named as UNMEASURED
+      // and the arm fails on it below.
+      trapUnmeasured.push(`${schema} — ${String(err)}`);
+    }
+  }
+  const traps = reportPlannerTraps(trapRows, trapUnmeasured);
 
   try {
     const { data, error } = await supabase.rpc("execute_admin_query", {
@@ -631,12 +696,79 @@ async function main(): Promise<number> {
     return 2;
   }
 
+  // ── SIXTH DETECTOR — DD-202, the function birth door ──────────────────────
+  // The event trigger above is asserted by EXPECTED. These are the two facts
+  // that must hold beside it: no default privilege still promises `anon` a
+  // function EXECUTE, the pre-existing snapshot still refuses new rows, and the
+  // schema list the live guard governs still matches this repo's.
+  let birthFindings = 0;
+  try {
+    const { data, error } = await supabase.rpc("execute_admin_query", {
+      query: FUNCTION_BIRTH_GUARD_QUERY,
+    });
+    if (error) throw new Error(error.message);
+    const findings = unwrapRows(data) as unknown as FunctionBirthFinding[];
+
+    const { data: schemaData, error: schemaError } = await supabase.rpc(
+      "execute_admin_query",
+      { query: FUNCTION_BIRTH_SCHEMAS_QUERY },
+    );
+    if (schemaError) throw new Error(schemaError.message);
+    const live = (unwrapRows(schemaData) as unknown as { schema: string }[]).map(
+      (r) => r.schema,
+    );
+    const want = new Set(EXPECTED_FUNCTION_BIRTH_SCHEMAS);
+    const have = new Set(live);
+    const onlyLive = [...have].filter((s) => !want.has(s)).sort();
+    const onlyRepo = [...want].filter((s) => !have.has(s)).sort();
+
+    console.log("");
+    console.log(
+      `${C.bold}Function birth door${C.reset} ${C.dim}(DD-202 — a new function is closed to anon at birth)${C.reset}`,
+    );
+    for (const f of findings) {
+      birthFindings += 1;
+      console.log(`  ${TAG.fail}${f.kind} ${C.dim}${f.detail}${C.reset}`);
+    }
+    if (onlyLive.length || onlyRepo.length) {
+      birthFindings += 1;
+      console.log(
+        `  ${TAG.fail}schema_list_drift ${C.dim}platform.anon_function_birth_schemas() and POSTGREST_EXPOSED_SCHEMAS disagree` +
+          `${onlyLive.length ? ` — only in the DB: ${onlyLive.join(", ")}` : ""}` +
+          `${onlyRepo.length ? ` — only in this repo: ${onlyRepo.join(", ")}` : ""}${C.reset}`,
+      );
+    }
+    if (birthFindings === 0) {
+      console.log(
+        `  ${TAG.ok}No function default privilege grants anon or PUBLIC EXECUTE; the birth snapshot is closed; ${live.length} governed schemas match this repo's list.`,
+      );
+    } else {
+      console.log(
+        `  ${C.dim}       A new function is born executable by PUBLIC — and PUBLIC reaches anon — so the${C.reset}`,
+      );
+      console.log(
+        `  ${C.dim}       event trigger \`close_new_functions_to_anon\` is the only thing closing it.${C.reset}`,
+      );
+      console.log(
+        `  ${C.dim}       Repair with migrations/dd202_a_function_is_closed_to_anon_at_birth.sql.${C.reset}`,
+      );
+    }
+  } catch (err) {
+    console.error(`${TAG.fail}Function birth door: query failed — ${String(err)}`);
+    return 2;
+  }
+
   if (!missing.length && !disabled.length && !definerTriggers.length) {
     console.log("");
     console.log(
       `${TAG.ok}All ${EXPECTED.length} platform event triggers are bound, enabled and SECURITY INVOKER.`,
     );
-    return (traps > 0 || undeclaredExposures > 0 || unprotected > 0) && strict
+    if (trapUnmeasured.length) return 2;
+    return (traps > 0 ||
+      undeclaredExposures > 0 ||
+      unprotected > 0 ||
+      birthFindings > 0) &&
+      strict
       ? 1
       : 0;
   }
@@ -661,9 +793,9 @@ async function main(): Promise<number> {
 }
 
 main().then(
-  (code) => process.exit(code),
+  (code) => exitAfterDrain(code),
   (err) => {
     console.error(`${TAG.fail}DB guards: unexpected error — ${String(err)}`);
-    process.exit(2);
+    exitAfterDrain(2);
   },
 );

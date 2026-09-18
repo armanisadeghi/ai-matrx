@@ -23,6 +23,7 @@ export const defaultUserPreferences: UserPreferences = {
     includeThinkingInAutoPrompts: "none",
     submitOnEnter: true,
     autoClearResponsesInEditMode: true,
+    restoreUnsentDrafts: true,
   },
   voice: {
     voice: "",
@@ -113,7 +114,8 @@ export const defaultUserPreferences: UserPreferences = {
     lastSandboxTemplate: "bare",
     monacoEnvironmentsEnabled: true,
     activeAgentSandboxBySurface: {},
-    chatSandboxPanelOpen: "auto",
+    sandboxCanvasAutoOpen: true,
+    toolResultCanvasAutoOpen: true,
   },
   // Matches the in-slice defaults at
   // lib/redux/preferences/userPreferencesSlice.ts:535 — keep them in sync.
@@ -240,5 +242,9 @@ export const defaultUserPreferences: UserPreferences = {
     // null = not quiet. Keep in sync with userPreferencesSlice.ts.
     quietUntil: null,
     presentationCycle: null,
+  },
+  connectors: {
+    // Keyed by provider id; absent = never dismissed.
+    promptDismissedAt: {},
   },
 };

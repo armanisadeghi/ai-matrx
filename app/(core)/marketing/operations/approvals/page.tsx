@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { LoadingSurface } from "@/features/marketing/components/shared/MarketingUi";
-import { ApprovalsConsole } from "@/features/marketing/seo/value-system/suggestions/ApprovalsConsole";
+import { ApprovalsConsole } from "@/features/marketing/seo/value-system/approvals/ApprovalsConsole";
 
 /**
  * Approvals — every pending AI proposal for the signed-in reviewer's scope,

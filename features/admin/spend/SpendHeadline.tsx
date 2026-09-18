@@ -13,7 +13,10 @@
 
 "use client";
 
-import { deltaPercent, formatDelta, usd, count } from "./format";
+import type { ReactNode } from "react";
+
+import { deltaPercent, formatDelta, usd } from "./format";
+import { formatCount } from "@ai-matrx/kit/format";
 
 export interface SpendHeadlineProps {
   today: number;
@@ -29,6 +32,8 @@ export interface SpendHeadlineProps {
   timezone: string;
   /** `compact` is the popover's density; `full` is the dashboard's. */
   density?: "compact" | "full";
+  /** Compact page-owned controls that belong with the headline, not in a row. */
+  headlineActions?: ReactNode;
 }
 
 interface TileProps {
@@ -37,6 +42,7 @@ interface TileProps {
   hint?: string;
   tone?: "normal" | "alarm";
   size?: "hero" | "normal";
+  actions?: ReactNode;
 }
 
 function Tile({
@@ -45,25 +51,31 @@ function Tile({
   hint,
   tone = "normal",
   size = "normal",
+  actions,
 }: TileProps) {
   const alarm = tone === "alarm";
   return (
     <div
       className={[
-        "flex min-w-0 flex-col justify-between rounded-md border px-3 py-2",
+        "relative flex h-full min-w-0 flex-col justify-between rounded-md border px-3 py-2",
         alarm
           ? "border-destructive/50 bg-destructive/10"
           : "border-border bg-card",
       ].join(" ")}
     >
-      <div
-        className={[
-          "truncate text-[11px] font-medium uppercase tracking-wide",
-          alarm ? "text-destructive" : "text-muted-foreground",
-        ].join(" ")}
-      >
-        {label}
+      <div className={actions ? "min-w-0 pr-14" : "min-w-0"}>
+        <div
+          className={[
+            "truncate text-[11px] font-medium uppercase tracking-wide",
+            alarm ? "text-destructive" : "text-muted-foreground",
+          ].join(" ")}
+        >
+          {label}
+        </div>
       </div>
+      {actions ? (
+        <div className="absolute right-2 top-1.5">{actions}</div>
+      ) : null}
       <div
         className={[
           "truncate font-semibold tabular-nums",
@@ -73,16 +85,15 @@ function Tile({
       >
         {value}
       </div>
-      {hint ? (
-        <div
-          className={[
-            "truncate text-[11px]",
-            alarm ? "text-destructive/80" : "text-muted-foreground",
-          ].join(" ")}
-        >
-          {hint}
-        </div>
-      ) : null}
+      <div
+        className={[
+          "min-h-4 truncate text-[11px]",
+          alarm ? "text-destructive/80" : "text-muted-foreground",
+        ].join(" ")}
+        aria-hidden={hint ? undefined : true}
+      >
+        {hint ?? "\u00a0"}
+      </div>
     </div>
   );
 }
@@ -97,6 +108,7 @@ export function SpendHeadline({
   monthProjection,
   scareThresholdUsd,
   density = "full",
+  headlineActions,
 }: SpendHeadlineProps) {
   const alarm = today > scareThresholdUsd;
   const delta = deltaPercent(today, yesterday);
@@ -108,14 +120,14 @@ export function SpendHeadline({
           "grid gap-2",
           density === "compact"
             ? "grid-cols-2 sm:grid-cols-3"
-            : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5",
+            : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6",
         ].join(" ")}
       >
         <div
           className={
             density === "compact"
               ? "col-span-2 sm:col-span-3"
-              : "col-span-2 sm:col-span-3 lg:col-span-2"
+              : "col-span-2 h-full sm:col-span-3 lg:col-span-2"
           }
         >
           <Tile
@@ -123,14 +135,15 @@ export function SpendHeadline({
             value={usd(today)}
             size="hero"
             tone={alarm ? "alarm" : "normal"}
+            actions={headlineActions}
             hint={
               alarm
                 ? `Past the ${usd(scareThresholdUsd)} alarm line${
-                    todayRuns === undefined ? "" : ` · ${count(todayRuns)} runs`
+                    todayRuns === undefined ? "" : ` · ${formatCount(todayRuns)} runs`
                   }`
                 : todayRuns === undefined
                   ? undefined
-                  : `${count(todayRuns)} runs`
+                  : `${formatCount(todayRuns)} runs`
             }
           />
         </div>
@@ -139,9 +152,17 @@ export function SpendHeadline({
           value={usd(yesterday)}
           hint={formatDelta(delta)}
         />
-        <Tile label="Last 7 days" value={usd(last7d)} />
+        <Tile
+          label="Last 7 days"
+          value={usd(last7d)}
+          hint={`${usd(last7d / 7)} daily average`}
+        />
         {density === "full" && last30d !== undefined ? (
-          <Tile label="Last 30 days" value={usd(last30d)} />
+          <Tile
+            label="Last 30 days"
+            value={usd(last30d)}
+            hint={`${usd(last30d / 30)} daily average`}
+          />
         ) : null}
         <Tile
           label="This month"

@@ -34,7 +34,6 @@ import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { toEpochMs } from "@/utils/datetime";
 import {
   isExcludedFromRecents,
-  isHiddenFromUserTree,
 } from "@/features/files/utils/folder-conventions";
 import type { CloudFilesSection } from "./section";
 import type { FilterChipKey } from "./FilterChips";
@@ -182,7 +181,6 @@ export function buildRows({
     if (file.deletedAt && section !== "trash") return false;
     if (!file.deletedAt && section === "trash") return false;
 
-    if (isHiddenFromUserTree(file.filePath)) return false;
 
     // Recents shows what the user worked on — never system/AI-generated output
     // (scraper captures, variants, Image Studio generations, temp staging).
@@ -250,7 +248,6 @@ export function buildRows({
   const filterFolders = (folder: CloudFolderRecord): boolean => {
     if (folder.deletedAt && section !== "trash") return false;
     if (!folder.deletedAt && section === "trash") return false;
-    if (isHiddenFromUserTree(folder.folderPath)) return false;
     if (filter === "recents" && isExcludedFromRecents(folder.folderPath))
       return false;
     if (section === "photos") return false; // photos view never shows folders

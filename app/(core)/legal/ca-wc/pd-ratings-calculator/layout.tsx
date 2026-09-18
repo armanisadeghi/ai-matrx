@@ -5,7 +5,7 @@ export const metadata = createRouteMetadata("/legal", {
   title: "CA Workers' Comp",
   description:
     "Permanent disability ratings calculator for California WC claims.",
-  letter: "Lp",
+  letter: "PDR",
 });
 
 export default function PdRatingsLayout({

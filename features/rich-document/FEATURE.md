@@ -123,7 +123,8 @@ These are load-bearing. Violating any of them produces silent bugs that survive 
    without it, and never "fix" a firing by silencing the capture — the producer
    emitting the broken delimiter is the bug.
 10. **Raw-source `instanceKey` includes a content hash.** Two raw RichDocuments on the same page (e.g. multiple PromptToasts) need distinct overlay `instanceId`s. The hash is FNV-1a, 8 hex chars — collision-tolerable, deterministic, fast.
-11. **Right-click preserves `MENU_STRUCTURE`.** RichDocument delegates to context-menu v3, but converts its remaining registry actions through `buildMenuTree`; Edit/Creator/Admin/App stay named submenus inside the **Document** section instead of flattening into an anonymous surface section. Context-menu v3's own Compare verbs are excluded from the bridge so no duplicate Compare group appears. Nested triggers stop at the innermost eligible menu, so a preview inside an editor keeps its RichDocument actions. `MatrxSplit` enables the menu whenever `actionsSource` opts its preview into RichDocument.
+11. **A DECLARED SPECIMEN CARRIES NO ACTIONS.** `specimen` (boolean, or `{label, notice}`) declares that the content is generated work meant to look right and be wrong — the Bad Example probe's fake certificate, a wrong explanation, a decoy option. It is stronger than `actionsVariant="none"`, which only silences RichDocument's OWN surface: `specimen` also blocks the right-click menu and, through `SpecimenProvider` (`components/mardown-display/specimen/SpecimenContext.tsx`), reaches the actions buried INSIDE the content — the table renderers' Export / Send to Workbook / Send to Google Sheet / Save as data / Edit / Window all disappear, and the specimen banner says why. Never inferred, always declared by the caller. Guard: `components/mardown-display/specimen/__tests__/specimenCarriesNoActions.test.tsx`.
+12. **Right-click preserves `MENU_STRUCTURE`.** RichDocument delegates to context-menu v3, but converts its remaining registry actions through `buildMenuTree`; Edit/Creator/Admin/App stay named submenus inside the **Document** section instead of flattening into an anonymous surface section. Context-menu v3's own Compare verbs are excluded from the bridge so no duplicate Compare group appears. Nested triggers stop at the innermost eligible menu, so a preview inside an editor keeps its RichDocument actions. `MatrxSplit` enables the menu whenever `actionsSource` opts its preview into RichDocument.
 
 ---
 
@@ -194,6 +195,8 @@ assertions in addition to the Content IR route matrix.
 ## Change log
 
 Newest first.
+
+- `2026-09-16` — claude: **Specimen mode — a declared "this is not real work" state.** The Bad Example probe drew live Workbook / Google Sheet / Export / Edit controls on a document it had just labelled deliberately false, so an Expert could file the AI's fake certificate of destruction as a real record (feedback `729b59bd`). `RichDocument` gained a `specimen` prop; the shared table renderers (`StreamingTableRenderer`, `MarkdownTable`) read the new context and render no toolbar and no double-click edit inside one. Censused: Teach-back's wrong explanation and the Triad's options render as plain text through no renderer, so they have nothing to suppress.
 
 - `2026-09-11` — Added the bounded nested-rendering census and strict seeded container/child regression matrix, including real renderer-facing streaming adapters rather than synthesized blocks. Shared result-list/table prose bypasses are covered by DOM guards. Static splitting and the Redux accumulator share the generic XML boundary tracker and linear tag reader; literal fragments split by tools cannot independently promote nested kinds. Same-line continuation uses an iterative queue to avoid stack overflow.
 

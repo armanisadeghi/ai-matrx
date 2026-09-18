@@ -49,7 +49,12 @@ A keyboard-first surface must be able to say "press V and start talking into thi
 - **The panel** is `features/window-panels/windows/listen/ListenSummaryWindow.tsx` (overlay `listenSummaryWindow`) — streaming summary, audio transport, and an in-place settings pane.
 - **Stream-to-stream speech** (speaking before the summary finishes) is `voicePlaybackBus` `includeActive` + `useAutoVoiceResponse`.
 - **No agent UUID appears in code.** The default agent is mandate-backed: `ambient.spoken_summary` in `mandate.definition`, holder "Listening Summary", carried by the `spoken_summary` surface role on `matrx-user/assistant-message`. That is what makes Listen work for every user on every surface with no personal binding.
-- **Tests:** `pnpm jest features/audio features/context-menu-v3/model`. Manual: `pnpm preview:start` (port 3001), then the nonce handshake — `openssl rand -hex 16 > .dev-login-nonce`, `/api/dev-login?nonce=<that value>&next=/chat` — then right-click any assistant reply → Listen.
+- **Tests:** `pnpm jest features/audio features/context-menu-v3/model`. Manual: `pnpm preview:start` (it prints YOUR session hostname — open that, never `localhost:3001`), then `pnpm dev-login /chat` and open the URL it prints, then right-click any assistant reply → Listen. (The old `openssl rand -hex 16 > .dev-login-nonce` recipe is dead — the nonce file is per session hostname now and no host reads a hand-written one; corrected 2026-09-14.)
+- **The three surface-design calls, decided 2026-09-14 (agents' calls, not Arman's — a question about how our own surface should look is the platform builder's job).**
+  - **Menu label and placement — KEPT.** The word is **"Listen"**, and the submenu leads the labeled list of the context menu. Champion matched: **Notion / Linear** context menus, which put universal micro-actions in a compact icon strip and then order the labeled list by intent. Copy/Speak/Cut/Paste/Find/Undo/Redo already occupy that icon strip here, so Listen leading the labeled rows displaces nothing that earned the slot, and it is exactly the "default part of our context menu … one slot" Arman's vision asked for. "Listen" (not "Read aloud") because it is already this feature's own word everywhere — panel title, "Listening voice", "Listening & Speech"; coining a competing name would fragment the vocabulary.
+  - **The two child labels — CHANGED.** The only difference between them is *when audio starts*, and "Summarize for listening" never said so; both rows read as the same action. Champion matched: **Apple Podcasts / Books**, which name the *outcome* ("Play" vs "Add to Queue"), never the ingredient. The no-autoplay row is now **"Summarize without playing"**; "Summarize & listen" is unchanged because it already states both halves. Renamed in all three surfaces that carry it — desktop menu model, `MobileMenuContent`, and the action-bar registry.
+  - **Panel look and feel — KEPT, one a11y defect fixed.** The transport is already the champion shape: **Apple Podcasts / Books** — one large primary circle that morphs (Play → Pause → Replay), a secondary Stop that exists only while audio is live, a truncating two-line now-playing block, and a motion indicator gated on actual speech. Every state has an honest footer string, including failure. The defect: the primary control announced **"Listen"** to screen readers while displaying the replay icon — the one state where the footer already says "listen again". It now announces **"Listen again"** in that state (`transportLabel`).
+  - **The collapsed "Thought process" rows — ALREADY SETTLED IN CODE, and they stay hidden.** They are suppressed deterministically, not by luck: `run-headless-agent-json.ts` sets `hideReasoning: opts.showReasoning !== true`, the Listen run never passes `showReasoning`, and `LiveRunDisplay` threads its `conversationId` into both `MarkdownStream` renders so `BlockRenderer` can actually read the flag (the 2026-08-11 bug that broke exactly this is fixed). No knob: nobody wants the model's private scratch work inside an audio player, so this is one right answer, not an opinion.
 - **Open work:** [`docs/handoffs/listening-and-speech.md`](../../docs/handoffs/listening-and-speech.md). VISION MISSING — Arman's verbatim words are quoted in that handoff, no vision doc exists.
 
 ---
@@ -252,7 +257,60 @@ The canonical "what mic/speaker is selected and is the mic permission granted" s
 - **Input device → mic singleton:** `setInput` calls the package's `setPreferredInputDeviceId` (applied as an `{ideal}` constraint on the next acquire — graceful if the device is gone).
 - **Output device → speaker (`setSinkId`):** `features/audio/audioOutputSink.ts` is the output half. `<audio>`/`<video>` route via `HTMLMediaElement.setSinkId` through `InlineMediaRef` (using `useOutputSinkRef`, re-applied on device change). Web Audio playback routes through `features/audio/sinkAwarePlayer.ts` (`SinkAwarePlayer` — creates its own sink-aware `AudioContext`, re-routes mid-utterance on device change). The old global `AudioContext` constructor monkeypatch (`installAudioContextSinkRouting`) is **deleted** — never reintroduce it; new Web Audio playback goes through `SinkAwarePlayer`. **All `setSinkId` is feature-detected; Safari has neither API and no-ops** (the speaker picker is hidden behind `outputSelectionSupported`, with a "choose output in macOS/iOS settings" note).
 - **UI:** the **Devices tab** of the unified `audioControlWindow` (`AudioControlWindow`, titled **"Media"** — Playback / Recording / Camera / Devices tabs; the Camera tab belongs to `features/media-capture`) = `MediaDevicesPanel` (formerly `AudioDevicesPanel`; mic + speaker + camera pickers, independent mic/camera permission rows + Grant buttons, live "Test mic" meter, "Test speaker" tone, opt-in "Test camera" preview via a camera lease with a live resolution/fps readout — never auto-starts). Opened from the avatar-menu **Media** entry (`SETTINGS_ITEMS`); the `useOpenAudioDevices` opener targets the Devices tab via overlay `data`. The reusable `components/audio/MicDeviceMenu.tsx` caret sits next to the mic in `ProInput` / `ProTextarea`.
+- **The WebKit audio session category has one owner per direction.** `unlock.ts` declares `"playback"` for OUTPUT (silent-switch fix); the package's mic manager switches to `"play-and-record"` right before its own capture and restores the declared category when the microphone stops (`@ai-matrx/browser-audio` ≥ 0.4.0). Under `"playback"` WebKit refuses every `getUserMedia({audio})` with "AudioSession category is not compatible with audio capture" — the 2026-09-17 `/chat` voice-input failure. A host-performed combined camera + mic prompt (`camera-stream-manager.ts`) calls `prepareAudioSessionForCapture()` first; `getErrorSolution` classifies the refusal as `AUDIO_SESSION_INCOMPATIBLE` via `isAudioSessionCaptureRefusal`, never `UNKNOWN_ERROR`. Never declare the category from a recording surface.
 - **A user declining mic permission is not a system error.** Classify `NotAllowedError` / legacy `PermissionDeniedError` with `isMicrophonePermissionDenial()` from `utils/microphone-diagnostics.ts`; show the repair path inline and reserve `console.error` for unexpected capture failures.
+
+## AUDIO LIMITS ARE KNOBS, AND THE TWO LANES ARE SEPARATE (2026-09-17)
+
+🚨 **No audio ceiling lives in code.** `features/audio/constants.ts` used to carry
+`MAX_FILE_SIZE_BYTES: 100 MB` and `MAX_DURATION_SECONDS: 3600`, so an expert with a 9-hour
+audiobook was refused at the door — while `aidream/aidream/services/audio/file_transcription.py`
+had for months been splitting arbitrarily long audio into provider-sized windows (`plan_chunks`)
+and reassembling it with shifted timestamps. A client literal was guarding a capability the
+server already had.
+
+- **`features/audio/limits.ts` is THE resolution point.** Every ceiling, threshold, cadence and
+  rate is a `platform.feature_knob` row under the feature **`media.transcription`**, seeded by
+  `migrations/audio_transcription_limits_knobs.sql` and resolved through the settings ladder
+  (`platform.knob_resolve` via `lib/scoped-config/sessionKnob`). Admin: **Users & Access →
+  Limits & Knobs**. Organization: **Organization settings → Configuration**. All thirteen keys
+  are `organization`-overridable and none is user-overridable (a person raising their own
+  ceiling spends the organization's money); `estimate_confirm_min_duration_seconds` is
+  `lower_only` — an org may demand MORE confirmation, never less.
+- **TWO LANES, never one number.** `uploadLimits()` reads `upload_max_duration_seconds` (24 h)
+  and `upload_max_file_size_bytes` (5 GB) — a file we hand the server, which chunks it, so the
+  ceiling only catches an obviously wrong file. `recordingLimits()` reads
+  `recording_max_duration_seconds` (4 h), `recording_max_file_size_bytes` (512 MB) and
+  `recording_warn_duration_seconds` — a LIVE browser capture held in tab memory, a genuinely
+  smaller practical ceiling.
+- **There is NO code fallback ceiling.** A knob that cannot be resolved returns
+  `{ resolved: false, reason }`; the surface SAYS so (RecordingInterface shows an amber notice
+  and reports "no limit applied") rather than quietly applying a number nobody set.
+- **A refusal names the limit and the remedy.** `overSizeMessage` / `overDurationMessage` print
+  the actual size or `h:mm:ss`, the lane it belongs to, and where it is raised. "File too large"
+  is banned.
+- **What is NOT a knob, and why** (documented in `constants.ts` itself): Vercel's 4.5 MB
+  request-body limit and the 4 MB chunk size derived from it (a hard platform limit), the
+  measured ~16 KB/s webm/opus bitrate used to project a recording's size, the 1 KB
+  silence floor, and the retryable HTTP status list.
+- **Guard:** `features/audio/__tests__/audio-limits-are-knobs.test.ts` — fails if `constants.ts`
+  reintroduces a bare duration/size cap, if a retired cap is still exported, if a knob key is
+  missing from the seed migration, or if the resolver grows a numeric default. Proven
+  failing-then-passing; the exact red output is in its docstring.
+
+## THE EXPENSIVE-CLICK GATE ON TRANSCRIPTION (2026-09-17)
+
+Transcription bills by the hour of audio, so a long file that starts transcribing the moment it
+finishes uploading is a silent spend. `features/audio/transcriptionSpendGate.ts` is the ONE gate:
+`probeAudioDurationSeconds(blob)` measures it with the browser's own decoder, and
+`confirmTranscriptionSpend` shows **length (h:mm:ss), estimated cost, estimated time** and waits
+for an answer whenever the audio is at least `estimate_confirm_min_duration_seconds` long
+(default 10 min). There is no server-side transcription cost endpoint — `/audio/transcribe*`
+quotes nothing — so the figure is `duration × estimated_cost_per_audio_hour_usd` (0.12, set
+deliberately above what Groq charges) and is labelled an estimate everywhere. An unmeasurable
+file and an unreadable threshold both CONFIRM; guessing downward is how a long file gets
+transcribed without approval. Consumers: `CreateTranscriptModal` (upload lane and recording
+lane) and `transcript-studio`'s `AudioImportDialog` (file and URL lanes).
 
 ## Test coverage (honest)
 
@@ -260,6 +318,9 @@ Unit tests cover `sinkAwarePlayer`, `captureLock`, the speech API boundary, and 
 
 ## Change log
 
+- `2026-09-17` — **Audio ceilings became knobs; transcription stopped spending silently.** The 100 MB / 60-minute literals in `features/audio/constants.ts` are gone: thirteen `platform.feature_knob` rows under `media.transcription` (`migrations/audio_transcription_limits_knobs.sql`, applied and verified live) now carry the upload lane (24 h / 5 GB), the separate browser-recording lane (4 h / 512 MB / warn at 3 h 40 m), the dictation cadence and chunk timeout, the retry policy, and the two estimate rates — all read through the new `features/audio/limits.ts`, all organization-overridable, none user-overridable. Added `features/audio/transcriptionSpendGate.ts`: length + estimated cost + estimated time, confirmed before transcription runs on anything over ten minutes, wired into both `CreateTranscriptModal` lanes and `transcript-studio`'s `AudioImportDialog`. Refusals now name the actual limit and the remedy. Guard: `features/audio/__tests__/audio-limits-are-knobs.test.ts`, proven failing then passing.
+
+- `2026-09-17` — **iPhone voice input refused under the TTS playback category — fixed at the mic owner.** The Error Inspector captured "Voice input failed — AudioSession category is not compatible with audio capture." on `/chat`: `unlock.ts` declares `navigator.audioSession.type = "playback"` on the first gesture (2026-08-30 silent-switch fix) and WebKit refuses every `getUserMedia({audio})` under it; `getErrorSolution` then filed it as `UNKNOWN_ERROR` with the raw WebKit sentence. Fix in the package that owns the microphone (`@ai-matrx/browser-audio` 0.4.0): the mic manager switches to `"play-and-record"` right before its own capture and restores the host's category when the mic stops. Here: `camera-stream-manager.ts` calls `prepareAudioSessionForCapture()` before its combined camera + mic prompt (the one audio capture the singleton does not perform), and `getErrorSolution` names the refusal `AUDIO_SESSION_INCOMPATIBLE` with a remedy. Guards: package `mic-stream.test.ts` § audio session category sequencing; `microphone-diagnostics.test.ts`.
 - `2026-09-12` — **Dictation can be started from outside the field.** `useMicField` now exposes `startDictation()` / `stopDictation()` as the one verb set (the mic button's `handleVoiceClick` is written in terms of them), and `ProTextarea` forwards them plus `isDictating()` on its DOM node as `ProTextareaElement` expandos. A programmatic start on a voice-disabled, disabled, mic-less, recorder-less or still-finalizing box returns a named reason with a sentence AND raises it as a toast + `onTranscriptionError` — never a silent no-op. Zero change for every existing consumer (same props, same ref shape, same recorder). First consumer: the Question Desk's **V** key. Guard: `components/official/ProTextarea.dictation-handle.test.tsx` (proven failing before the change).
 
 - `2026-09-08` — **Listening & Speech gets a handoff; audio docs re-verified against reality.** The Listen/read-aloud feature had shipped with no owning doc and no handoff — it existed only as change-log entries in four unrelated FEATURE.md files. Work order + Arman's verbatim vision now live at [`docs/handoffs/listening-and-speech.md`](../../docs/handoffs/listening-and-speech.md) (registered on the cross-repo orphan list). Two drifts repaired: the `tts-audio-system` skill (its directory map omitted `service/`, `playback/`, `session/`, `unlock.ts` — the entire modern system — and two "Known Deferred Issues" asserted gaps the queue/lock architecture had already closed), and `features/window-panels/FEATURE.md`'s 2026-08-27 entry, which still claimed the Listen settings pane writes `userPreferences.voice.*`. Live state confirmed: mandate `ambient.spoken_summary` survived the `agent.mandate` → `mandate.definition` move (holder model) with its holder agent intact; `listening` namespace holds 1 system row + 33 user rows + **0 org rows** — the org rung resolves but has no editor, which is the handoff's headline leftover.

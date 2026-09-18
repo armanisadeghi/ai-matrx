@@ -197,7 +197,30 @@ function validateTransition(previous, next) {
     previous.browser.attemptId &&
     next.browser.attemptId !== previous.browser.attemptId
   ) {
+    const beforeRemoval =
+      previous.profileRemoval === "not_started" &&
+      previous.fixtureRemoval === "not_started" &&
+      !previous.complete &&
+      next.profileRemoval === "not_started" &&
+      next.fixtureRemoval === "not_started" &&
+      !next.complete;
+    const preservesLogoutFacts =
+      previous.logout.state === next.logout.state &&
+      previous.logout.proof === next.logout.proof &&
+      previous.logout.retryUsed === next.logout.retryUsed;
+    const isQuiescenceRecovery =
+      beforeRemoval &&
+      previous.browser.state === "open" &&
+      next.browser.state === "open" &&
+      preservesLogoutFacts;
+    const isClosedNotStartedRetry =
+      beforeRemoval &&
+      previous.browser.state === "closed" &&
+      previous.logout.state === "not_started" &&
+      next.browser.state === "open" &&
+      preservesLogoutFacts;
     const isBoundedPresentRetry =
+      beforeRemoval &&
       previous.browser.state === "closed" &&
       previous.logout.state === "attempted" &&
       previous.logout.retryUsed === false &&
@@ -206,7 +229,10 @@ function validateTransition(previous, next) {
       next.browser.state === "open" &&
       next.logout.state === "attempted" &&
       next.logout.retryUsed === true;
-    assert(isBoundedPresentRetry, "recovery_receipt_attempt_replace");
+    assert(
+      isQuiescenceRecovery || isClosedNotStartedRetry || isBoundedPresentRetry,
+      "recovery_receipt_attempt_replace",
+    );
   }
   return next;
 }
@@ -350,8 +376,10 @@ async function runRecoveryStateMachine(ops) {
       state,
       state.logout.state === "proven" && state.browser.state === "closed",
     );
-    if (state.browser.state === "open")
-      throw Error("recovery_open_attempt_unproven");
+    if (state.browser.state === "open") {
+      await start();
+      await close();
+    }
     if (state.logout.state === "attempted") {
       const outcome = await ops.reconcile(state);
       if (outcome === "absent")

@@ -47,6 +47,7 @@ export interface McpServerDraft {
 }
 
 interface Props {
+  organizationId: string | null;
   existingSlugs: Set<string>;
   /** Page-owned authored fields (see `McpServerDraft`). */
   draft: McpServerDraft;
@@ -108,6 +109,7 @@ export const MCP_SERVER_CATEGORY_VALUES: ProvisionMcpServerInput["category"][] =
 type Step = "identity" | "transport" | "review";
 
 export function AddMcpServerDialog({
+  organizationId,
   existingSlugs,
   draft,
   onDraftChange,
@@ -148,9 +150,14 @@ export function AddMcpServerDialog({
     (transport === "stdio" || endpointUrl.trim() !== "") && authStrategy !== undefined;
 
   const onProvision = async () => {
+    if (!organizationId) {
+      toast.error("Choose an organization before provisioning an MCP server.");
+      return;
+    }
     setBusy(true);
     try {
       const r = await provisionMcpServer({
+        organizationId,
         slug,
         name,
         vendor,

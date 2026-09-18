@@ -58,7 +58,11 @@ import { SettingsCallout } from "@/components/official/settings/layout/SettingsC
 import { SettingsSection } from "@/components/official/settings/layout/SettingsSection";
 import { KnobOverrideRow } from "@/lib/scoped-config/KnobOverrideRow";
 import { resolveKnobLadder, rungName, type KnobLadder } from "@/lib/scoped-config/ladder";
-import type { KnobRungOverrideRow } from "@/lib/scoped-config/service";
+import {
+  fetchKnobWriteDoor,
+  type KnobRungOverrideRow,
+  type KnobWriteDoor,
+} from "@/lib/scoped-config/service";
 import type { KnobScopeKindName, ScopedKnob } from "@/lib/scoped-config/types";
 import { extractErrorMessage } from "@/utils/errors";
 import {
@@ -78,6 +82,35 @@ function nounWord(kind: SubOrgScopeKind): string {
 function plural(kind: SubOrgScopeKind): string {
   const word = nounWord(kind);
   return word.endsWith("s") ? word : `${word}s`;
+}
+
+/**
+ * "a table" / "an employer profile". DD-203 is what made this visible: until HR
+ * mounted this panel every rung on screen began with a consonant, so the
+ * hard-coded "a" was invisibly wrong and became "a employer profile" on the
+ * first HR key.
+ */
+function article(word: string): string {
+  return /^[aeiou]/i.test(word) ? "an" : "a";
+}
+
+function withArticle(word: string): string {
+  return `${article(word)} ${word}`;
+}
+
+/**
+ * The rungs of one panel as a SINGULAR list a sentence can use — "employer
+ * profile, pay group or location".
+ *
+ * The previous spelling was `heading.replace(/s$/, "")`, which un-pluralises the
+ * LAST word of a joined plural heading and leaves the rest: with HR's three
+ * rungs "employer profiles, pay groups, locations" became "employer profiles,
+ * pay groups, location". One rung reads the same as before.
+ */
+function singularList(kinds: readonly SubOrgScopeKind[]): string {
+  const words = kinds.map((kind) => nounWord(kind));
+  if (words.length <= 1) return words[0] ?? "";
+  return `${words.slice(0, -1).join(", ")} or ${words[words.length - 1]}`;
 }
 
 /**
@@ -194,7 +227,7 @@ function ScopeRowPicker({
       <PopoverTrigger asChild>
         <Button type="button" variant="outline" size="sm" className="h-7 text-xs">
           <Plus className="mr-1 h-3.5 w-3.5" />
-          {`Add override for a ${nounWord(kind)}…`}
+          {`Add override for ${withArticle(nounWord(kind))}…`}
           <ChevronDown className="ml-1 h-3 w-3 opacity-60" />
         </Button>
       </PopoverTrigger>
@@ -334,6 +367,16 @@ export function KnobRungOverrides({
   const [drafts, setDrafts] = useState<Draft[]>([]);
   const [labels, setLabels] = useState<Record<string, ScopeRow[]>>({});
   const [labelErrors, setLabelErrors] = useState<Record<string, string>>({});
+  // 🚨 DD-221 — the door THIS key declares, and whether this caller may use it.
+  // Asked, never inferred: `canManageOrganization` is the ORG door's gate, and
+  // on an `hr.` key it is the wrong question in both directions — it hid the add
+  // control from a real HR admin and offered it to an org admin with no HR
+  // standing, whose write left no HR audit row (measured live 2026-09-14).
+  const [door, setDoor] = useState<
+    | { status: "loading" }
+    | { status: "ready"; door: KnobWriteDoor }
+    | { status: "error"; message: string }
+  >({ status: "loading" });
 
   // Labels for the rows that ALREADY hold a value: a person must never be shown
   // a uuid. Read once per rung, when the panel mounts.
@@ -350,7 +393,7 @@ export function KnobRungOverrides({
       });
   };
 
-  const kinds = pickableRungsFor(knob.overridable_by);
+  const kinds = pickableRungsFor(knob.overridable_by, knob.full_key);
 
   // 🚨 F5 (V-57). The list is read when this panel MOUNTS, not when it is
   // opened. The header's whole job while collapsed is to say whether anything
@@ -363,6 +406,12 @@ export function KnobRungOverrides({
     if (kinds.length === 0 || !organizationId) return;
     loadRungOverrides(knob);
     for (const kind of kinds) ensureLabels(kind);
+    setDoor({ status: "loading" });
+    void fetchKnobWriteDoor({ fullKey: knob.full_key, organizationId })
+      .then((answer) => setDoor({ status: "ready", door: answer }))
+      .catch((err: unknown) =>
+        setDoor({ status: "error", message: extractErrorMessage(err) }),
+      );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [knob.full_key, organizationId]);
 
@@ -396,6 +445,7 @@ export function KnobRungOverrides({
       ladder={ladderForScopeRow(knob, kind, scopeId, override, {
         isOrgAdmin: canManageOrganization,
       })}
+      writeDoor={door.status === "ready" ? door.door : undefined}
       blastRadius={scopeBlastRadius(kind, label, organizationName)}
       stateOnly={stateOnly ?? undefined}
       hideKey
@@ -409,7 +459,14 @@ export function KnobRungOverrides({
   );
 
   // 🚨 F1: a key nothing reads gets no NEW exceptions, at any rung.
-  const canAdd = canManageOrganization && !stateOnly;
+  // 🚨 DD-221: and the authority that decides is the DECLARED DOOR's, not this
+  // screen's. While the door is still being read there is no add control —
+  // absent is honest, a control that might be refused is not.
+  const canAdd = door.status === "ready" && door.door.mayWrite === true && !stateOnly;
+  const authoritySentence =
+    door.status === "ready" && door.door.mayWrite === false
+      ? door.door.authorityDetail
+      : null;
   const count = state?.status === "ready" ? rows.length : null;
 
   return (
@@ -422,9 +479,19 @@ export function KnobRungOverrides({
         stateOnly
           ? `${stateOnly.reason} Until it has one, no ${heading} can be given their own value either.`
           : state?.status === "ready"
-            ? rows.length === 0
-              ? `No ${heading} set their own value for this setting yet.`
-              : `${rows.length} ${rows.length === 1 ? "exception" : "exceptions"} to the value above.`
+            ? [
+                rows.length === 0
+                  ? `No ${heading} set their own value for this setting yet.`
+                  : `${rows.length} ${rows.length === 1 ? "exception" : "exceptions"} to the value above.`,
+                // 🚨 DD-221 — when the declared door refuses THIS caller, the
+                // missing add control is explained wherever the panel stands,
+                // not only in the empty state. A person looking at three
+                // standing exceptions and no way to add a fourth is owed the
+                // reason as much as a person looking at none.
+                authoritySentence,
+              ]
+                .filter(Boolean)
+                .join(" ")
             : undefined
       }
       emphasis="subtle"
@@ -466,7 +533,10 @@ export function KnobRungOverrides({
         onRetry={() => reloadRungOverrides(knob)}
         canAdd={canAdd}
         stateOnlyReason={stateOnly?.reason ?? null}
+        authoritySentence={authoritySentence}
+        doorError={door.status === "error" ? door.message : null}
         heading={heading}
+        singular={singularList(kinds)}
         empty={rows.length === 0 && drafts.length === 0}
       >
         {rows.map((row) => {
@@ -524,7 +594,10 @@ function ExceptionsBody({
   onRetry,
   canAdd,
   stateOnlyReason,
+  authoritySentence,
+  doorError,
   heading,
+  singular,
   empty,
   children,
 }: {
@@ -533,10 +606,29 @@ function ExceptionsBody({
   onRetry: () => void;
   canAdd: boolean;
   stateOnlyReason: string | null;
+  /** DD-221 — the declared door's own refusal sentence, when it refuses. */
+  authoritySentence: string | null;
+  /** DD-221 — the door declaration itself could not be read. */
+  doorError: string | null;
   heading: string;
+  /** The panel's rungs in the singular — "employer profile, pay group or location". */
+  singular: string;
   empty: boolean;
   children: React.ReactNode;
 }) {
+  if (doorError) {
+    // Law 4: which door writes this key is not something to guess at. Say the
+    // door's own sentence and draw no control.
+    return (
+      <SettingsCallout tone="error" title="Who may set an exception could not be read">
+        <p>{doorError}</p>
+        <p className="mt-2">
+          Until it can be, no exception is offered here — the screen will not guess which door
+          writes this setting.
+        </p>
+      </SettingsCallout>
+    );
+  }
   if (status === "error") {
     return (
       <SettingsCallout tone="error" title="The exceptions could not be read">
@@ -561,10 +653,12 @@ function ExceptionsBody({
     return (
       <p className="px-4 py-2 text-xs text-muted-foreground">
         {stateOnlyReason
-          ? `${stateOnlyReason} Nothing reads this setting yet, so there is nothing for a ${heading.replace(/s$/, "")} to differ from.`
+          ? `${stateOnlyReason} Nothing reads this setting yet, so there is nothing for ${withArticle(singular)} to differ from.`
           : canAdd
-            ? `Nothing overrides the value above. Add one for a specific ${heading.replace(/s$/, "")} when it needs to differ.`
-            : `Nothing overrides the value above. An owner or admin sets exceptions by ${heading}.`}
+            ? `Nothing overrides the value above. Add one for a specific ${singular} when it needs to differ.`
+            : authoritySentence
+              ? `Nothing overrides the value above. ${authoritySentence}`
+              : `Nothing overrides the value above. Exceptions by ${heading} are still loading.`}
       </p>
     );
   }

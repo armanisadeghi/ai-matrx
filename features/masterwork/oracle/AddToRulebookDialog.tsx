@@ -20,6 +20,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import {
@@ -126,7 +130,7 @@ export function AddToRulebookDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="matrx-touch-targets sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <BookOpen className="h-4 w-4 text-primary" aria-hidden />
@@ -194,15 +198,23 @@ export function AddToRulebookDialog({
           <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Cancel
           </Button>
-          <Button
+          {/* A DISABLED PRIMARY ACTION SAYS WHY (`teach-recent-practitioner` W2, 2026-09-15). */}
+          <GatedActionButton
             onClick={() => void handleSave()}
-            disabled={!selectedId || isSaving || !content.trim()}
+            disabled={isSaving}
+            reason={firstBlockingReason([
+              { when: !selectedId, reason: "Pick a Rulebook to add it to" },
+              {
+                when: !content.trim(),
+                reason: "Nothing to save — the message was empty",
+              },
+            ])}
           >
             {isSaving ? (
               <Loader2 className="mr-1 h-4 w-4 animate-spin" aria-hidden />
             ) : null}
             Save as draft rule
-          </Button>
+          </GatedActionButton>
         </DialogFooter>
       </DialogContent>
     </Dialog>

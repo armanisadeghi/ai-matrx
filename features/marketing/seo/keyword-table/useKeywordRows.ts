@@ -4,11 +4,8 @@
  * THE KEYWORD TABLE — the ONE data access system (P28).
  *
  * Every surface that lists keywords reads through this hook. Not "usually" —
- * every one. The topic tree's queues used to run their own RPCs
- * (`gsc_topic_unassigned_keywords`, `gsc_topic_proposed_keywords`), and that
- * second door is exactly why those lists had no sortable clicks, no dimension
- * columns and no filters: a list built on a narrower query can only ever offer
- * a narrower table.
+ * every one. A list built on a narrower query can only ever offer a narrower
+ * table.
  *
  * The reads, all scoped to the page on screen (THE SCOPE RULE — never the
  * site):
@@ -16,10 +13,10 @@
  *     side. Sorting a 5,823-row list inside the browser is a lie, because the
  *     browser holds fifty of them.
  *   • `gsc_keyword_value_for` — class, score and level.
- *   • `gsc_keyword_topics_for` — which service each keyword maps to, who ruled
- *     it and how sure they were.
+ *   • `gsc_keyword_offerings_for` — which of this site's offerings each keyword
+ *     maps to, who placed it and how sure they were.
  *   • `gsc_keyword_stamps_for` — the dimension columns the user added.
- *   • `facet_dimension_catalog` + the site's topic tree — the filter options.
+ *   • `facet_dimension_catalog` + the site's offerings — the filter options.
  *
  * SoR: common-docs/systems/marketing/seo/seo-keywords/keyword-system-decisions.md (P26 + P28)
  */
@@ -44,9 +41,10 @@ import {
 import { getValueVocabulary } from "@/features/marketing/seo/value-system/data";
 import { buildBandMeta, type BandMeta } from "@/features/marketing/seo/value-system/lib";
 import {
-  getKeywordServices,
+  getKeywordOfferings,
   getKeywordStamps,
-  type KeywordServicePlacement,
+  KEYWORD_OFFERINGS_KEY,
+  type KeywordOfferingPlacement,
   type KeywordStamp,
 } from "@/features/marketing/seo/keyword-workbench/data";
 import {
@@ -56,7 +54,11 @@ import {
 import { listBusinessLocations } from "@/features/marketing/data/service";
 import type { BusinessLocation } from "@/features/marketing/types";
 import type { KeywordLocationRow } from "@/features/marketing/seo/value-system/locations/types";
-import { useSiteServices } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteServices";
+import {
+  SITE_OFFERINGS_KEY,
+  useSiteOfferings,
+  type SiteOfferings,
+} from "@/features/marketing/seo/keyword-workbench/hooks/useSiteOfferings";
 
 /**
  * Sort ids the RPC can honor. Anything else sorts the rows ON SCREEN, and the
@@ -68,10 +70,16 @@ export const SERVER_SORTABLE = new Set<string>([
   "impressions",
   "ctr",
   "position",
-  // THE SERVICE COLUMN sorts on the server or it lies: the browser holds one
-  // page, and "sort by service" over 5,823 keywords must mean all of them.
+  // THE OFFERING COLUMN (id `topic`, see `OFFERING_COLUMN_ID`) sorts on the
+  // server or it lies: "sort by offering" over 5,823 keywords must mean all of them.
   "topic",
 ]);
+
+/** A table column id → the sort key the RPC understands. */
+export function toServerSort(sort: string): GscSortKey {
+  if (sort === "topic") return "offering";
+  return SERVER_SORTABLE.has(sort) ? (sort as GscSortKey) : "clicks";
+}
 
 export interface UseKeywordRowsInput {
   siteId: string;
@@ -103,33 +111,30 @@ export interface KeywordRowsResult {
   /** Everything a cell needs, keyed by the row's keyword id. */
   stampFor: (row: GscBreakdownRow, slug: string) => KeywordStamp | undefined;
   valueFor: (row: GscBreakdownRow) => GscKeywordValueRow | undefined;
-  serviceFor: (row: GscBreakdownRow) => KeywordServicePlacement | undefined;
+  offeringFor: (row: GscBreakdownRow) => KeywordOfferingPlacement | undefined;
   /**
    * C10 — WHICH business location this keyword belongs to, and how that was
    * decided. `undefined` means the server had no answer, which is never the
-   * same as "no location": a keyword that names no place at all and a local
-   * search nothing could place are different facts, and the Location column
-   * separates them rather than printing one dash for both.
+   * same as "no location".
    */
   locationFor: (row: GscBreakdownRow) => KeywordLocationRow | undefined;
   /** True once the attribution read has resolved, so the cell can wait rather than lie. */
   locationsReady: boolean;
   /**
    * The brand's business locations — the Location column's filter options.
-   * EMPTY IS A REAL ANSWER, and the column says "no locations recorded yet"
-   * with the door to add one rather than rendering a filter with nothing in it.
+   * EMPTY IS A REAL ANSWER.
    */
   brandLocations: BusinessLocation[];
   /** The site's dimension catalog — the Columns chooser and filter options. */
   dimensionCatalog: FacetDimension[];
   dimensionCatalogLoading: boolean;
   classDimension: FacetDimension | undefined;
-  /** The site's topic tree, for the Service column and its filter. */
-  services: ReturnType<typeof useSiteServices>;
+  /** This site's offerings, for the Offering column and its filter. */
+  offerings: SiteOfferings;
   /**
    * The site's OWN value-band ladder. Bands are site-authored
-   * (`seo.site_vocabulary`) — All Green calls its top band "Core revenue" —
-   * so the Level column's filter options are read, never hardcoded.
+   * (`seo.site_vocabulary`), so the Level column's filter options are read,
+   * never hardcoded.
    */
   bands: BandMeta[];
   /** Re-read everything a write can change, everywhere it is shown. */
@@ -154,7 +159,7 @@ export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
   const breakdown = useGscBreakdown(siteId, periods, filters, {
     dimension: "query",
     search,
-    sort: SERVER_SORTABLE.has(sort) ? (sort as GscSortKey) : "clicks",
+    sort: toServerSort(sort),
     sortDir,
     page,
     pageSize,
@@ -179,14 +184,14 @@ export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
     staleTime: 60_000,
   });
 
-  const services = useSiteServices(
+  const offerings = useSiteOfferings(
     siteId,
     periods.current.start,
     periods.current.end,
   );
   const placements = useQuery({
-    queryKey: ["marketing", "seo", "keyword-services", siteId, keywordIds],
-    queryFn: ({ signal }) => getKeywordServices(siteId, keywordIds, signal),
+    queryKey: [...KEYWORD_OFFERINGS_KEY, siteId, keywordIds],
+    queryFn: ({ signal }) => getKeywordOfferings(siteId, keywordIds, signal),
     enabled: keywordIds.length > 0,
     staleTime: 60_000,
   });
@@ -208,9 +213,7 @@ export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
 
   /**
    * C10 — the attribution for the keywords ON SCREEN. Scoped to the page, like
-   * every other side read here: `gsc_keyword_locations` refuses more than
-   * 5,000 ids precisely so nobody asks it for a whole site and then renders
-   * fifty rows from the answer.
+   * every other side read here.
    */
   const locations = useQuery({
     queryKey: keywordLocationsQueryKey(siteId, keywordIds, true),
@@ -220,11 +223,7 @@ export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
     staleTime: 60_000,
   });
 
-  /**
-   * The brand's locations — the Location column's filter options, read from
-   * the ONE business-location list (`listBusinessLocations`). This module does
-   * not open a second door onto `web.business_location`.
-   */
+  /** The brand's locations — read from the ONE business-location list. */
   const brandLocations = useQuery({
     queryKey: ["marketing", "brand", "locations", brandId],
     queryFn: ({ signal }) => listBusinessLocations(brandId as string, signal),
@@ -249,17 +248,16 @@ export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
       queryKey: ["marketing", "seo", "dimension-catalog", siteId],
     });
     await queryClient.invalidateQueries({
-      queryKey: ["marketing", "seo", "keyword-services", siteId],
+      queryKey: [...KEYWORD_OFFERINGS_KEY, siteId],
     });
-    // C10 — binding an area to a location, or adding a location at all,
-    // re-decides which branch every local keyword belongs to.
+    // C10 — binding an area to a location re-decides every local keyword.
     await queryClient.invalidateQueries({
       queryKey: ["seo", "locations", "keyword", siteId],
     });
     // A placement changes which keywords are unplaced, which proposals are
-    // still waiting, and what the tree counts — never leave that stale.
+    // still waiting, and what the offerings count — never leave that stale.
     await queryClient.invalidateQueries({ queryKey: ["marketing", "gsc", "breakdown"] });
-    await queryClient.invalidateQueries({ queryKey: ["seo", "topics"] });
+    await queryClient.invalidateQueries({ queryKey: SITE_OFFERINGS_KEY });
   };
 
   return {
@@ -278,7 +276,7 @@ export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
       row.keyword_id ? stamps.data?.get(row.keyword_id)?.get(slug) : undefined,
     valueFor: (row) =>
       row.keyword_id ? values.data?.get(row.keyword_id) : undefined,
-    serviceFor: (row) =>
+    offeringFor: (row) =>
       row.keyword_id ? placements.data?.get(row.keyword_id) : undefined,
     locationFor: (row) =>
       row.keyword_id ? locations.data?.get(row.keyword_id) : undefined,
@@ -287,7 +285,7 @@ export function useKeywordRows(input: UseKeywordRowsInput): KeywordRowsResult {
     dimensionCatalog,
     dimensionCatalogLoading: catalog.isLoading,
     classDimension: dimensionCatalog.find((d) => d.slug === "traffic_class"),
-    services,
+    offerings,
     bands: buildBandMeta(vocabulary.data ?? []),
     refreshMeaning,
   };

@@ -2,7 +2,8 @@ import {
   GOOGLE_OAUTH_REDIRECT_TTL_MS,
   buildGoogleOAuthRedirectPending,
   assertGoogleOAuthRedirectInitiator,
-  consumeGoogleOAuthRedirectPending,
+  clearGoogleOAuthRedirectPending,
+  readGoogleOAuthRedirectPending,
   returnPathWithGoogleOAuthResult,
   storeGoogleOAuthRedirectPending,
 } from "./oauthRedirect";
@@ -48,11 +49,37 @@ describe("Google OAuth redirect state", () => {
     storeGoogleOAuthRedirectPending(storage, pending);
 
     expect(
-      consumeGoogleOAuthRedirectPending(storage, "state-1", ORIGIN, 2_000),
+      readGoogleOAuthRedirectPending(storage, "state-1", ORIGIN, 2_000),
     ).toEqual(pending);
+    clearGoogleOAuthRedirectPending(storage, "state-1");
     expect(
-      consumeGoogleOAuthRedirectPending(storage, "state-1", ORIGIN, 2_000),
+      readGoogleOAuthRedirectPending(storage, "state-1", ORIGIN, 2_000),
     ).toBeNull();
+  });
+
+  it("preserves the capability and exact target through redirect pending state", () => {
+    const storage = new MemoryStorage();
+    const pending = buildGoogleOAuthRedirectPending(
+      "state-capability",
+      {
+        initiatingUserId: "user-1",
+        owner: { type: "user" },
+        organizationContextId: "org-1",
+        connectionPurpose: "google_capability",
+        targetConnectionId: "connection-contacts",
+        capabilityKey: "contacts",
+      },
+      ORIGIN,
+    );
+    storeGoogleOAuthRedirectPending(storage, pending);
+
+    expect(
+      readGoogleOAuthRedirectPending(storage, "state-capability", ORIGIN),
+    ).toMatchObject({
+      connectionPurpose: "google_capability",
+      targetConnectionId: "connection-contacts",
+      capabilityKey: "contacts",
+    });
   });
 
   it("rejects expired, mismatched, and cross-origin continuations", () => {
@@ -70,7 +97,7 @@ describe("Google OAuth redirect state", () => {
     );
     storeGoogleOAuthRedirectPending(storage, pending);
     expect(
-      consumeGoogleOAuthRedirectPending(
+      readGoogleOAuthRedirectPending(
         storage,
         "state-2",
         ORIGIN,
@@ -101,10 +128,12 @@ describe("Google OAuth redirect state", () => {
       },
       ORIGIN,
     );
-    expect(() => assertGoogleOAuthRedirectInitiator(pending, "admin-user")).toThrow(
-      "session changed",
-    );
-    expect(() => assertGoogleOAuthRedirectInitiator(pending, "reviewer-user")).not.toThrow();
+    expect(() =>
+      assertGoogleOAuthRedirectInitiator(pending, "admin-user"),
+    ).toThrow("session changed");
+    expect(() =>
+      assertGoogleOAuthRedirectInitiator(pending, "reviewer-user"),
+    ).not.toThrow();
   });
 
   it("adds a bounded callback result without changing the return origin", () => {

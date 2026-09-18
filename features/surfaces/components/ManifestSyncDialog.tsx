@@ -27,7 +27,7 @@ interface Props {
 
 export function ManifestSyncDialog({ onClose, onSynced }: Props) {
   const [deleteStale, setDeleteStale] = useState(true);
-  const [createMissingSurfaces, setCreateMissingSurfaces] = useState(false);
+  const [createMissingSurfaces, setCreateMissingSurfaces] = useState(true);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<SyncResult | null>(null);
   const [error, setError] = useState<string | null>(null);

@@ -1,5 +1,15 @@
 {
   "env": {
     "CLAUDE_CODE_SUBAGENT_MODEL": "opus"
-  }
+  },
+  "permissions": {
+    "allow": [
+      "Bash(git add *)", "Bash(git commit *)", "Bash(git push *)", "Bash(git fetch *)", "Read", "Edit", "Write", "Glob", "Grep",
+      "WebFetch", "WebSearch", "NotebookEdit", "Task",
+      "mcp__Claude_Code_Remote__*", "mcp__Claude_Docs__*",
+      "mcp__Supabase__*", "mcp__Vercel__*",
+      "mcp__github__*", "mcp__AI_Dream__*"
+    ]
+  },
+  "enableAllProjectMcpServers": true
 }

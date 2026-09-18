@@ -22,11 +22,12 @@ import { InlineMediaRef } from "@ai-matrx/media/react";
 import { podcastMediaRef } from "@/features/podcasts/generator/media";
 import { PodcastAudioPlayer } from "@/features/podcasts/components/player/PodcastAudioPlayer";
 import { splitMarkdownForEmbed } from "@/features/podcasts/blogLayout";
-import type { PcArticle, PcEpisodeWithShow } from "@/features/podcasts/types";
+import type { PcArticle, PcEpisodeWithShow, PcArticleDisplayRow} from "@/features/podcasts/types";
 
 interface PodcastBlogPageProps {
   episode: PcEpisodeWithShow;
-  article: PcArticle;
+  /** A signed-out reader's row has no identity columns (DD-230). */
+  article: PcArticleDisplayRow;
 }
 
 export function PodcastBlogPage({ episode, article }: PodcastBlogPageProps) {

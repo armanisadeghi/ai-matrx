@@ -13,7 +13,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "@/lib/toast";
-import { Building2, User } from "lucide-react";
+import { Building2, Send, User } from "lucide-react";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -26,6 +26,9 @@ import { cn } from "@/lib/utils";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { CRM_RECORD_SURFACE_NAME } from "@/features/surfaces/manifests/crm-record.manifest";
+import { useOpenGmailComposeWindow } from "@/features/overlays/openers/gmailComposeWindow";
+import { selectActiveProjectId } from "@/features/scopes/redux/selectors/active-context";
+import { useAppSelector } from "@/lib/redux/hooks";
 import { useCategories } from "@/features/scopes/hooks/useCategories";
 import { useAssociations } from "@/features/scopes/hooks/useAssociations";
 import { CATEGORY_DIMENSIONS } from "@/features/scopes/categoryDimensions";
@@ -41,6 +44,7 @@ import { ContactPointsCard } from "./ContactPointsCard";
 import { AddressesCard } from "./AddressesCard";
 import { EmploymentCard } from "./EmploymentCard";
 import { PartyEmployeeCard } from "@/features/hr/entry-points/PartyEmployeeCard";
+import { PersonUpcomingCard } from "@/features/google-workspace/calendar/PersonUpcomingCard";
 import { InteractionTimeline } from "./InteractionTimeline";
 import { PartyNotes } from "./PartyNotes";
 import { OutreachContactCandidatesCard } from "./OutreachContactCandidatesCard";
@@ -89,6 +93,12 @@ export function PartyRecordPage({ partyId }: Props) {
     dimension: CATEGORY_DIMENSIONS.partyRole,
   });
   const { edges: partyEdges } = useAssociations({ type: "party", id: partyId });
+  const openGmailCompose = useOpenGmailComposeWindow();
+  // The project the person is working in, so the sent message is ASSOCIATED with
+  // it. Until F-20 no opener passed one, so the project edge `associations.ts`
+  // writes was unreachable from every surface (VERIFY-B1-B2-R2 A5/D7). The
+  // compose panel names the project before the send — never a silent link.
+  const activeProjectId = useAppSelector(selectActiveProjectId);
 
   const party = detail?.party ?? null;
   const isPerson = party?.party_kind === "person";
@@ -176,14 +186,41 @@ export function PartyRecordPage({ partyId }: Props) {
         }
         right={
           party ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => void onDelete()}
-              className="hidden h-7 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive sm:inline-flex"
-            >
-              Delete
-            </Button>
+            <>
+              {/* 🚨 EMAILING A PERSON IS A FIRST-CLASS ACTION ON THE RECORD.
+                  Until 2026-09-17 the only door to the Gmail compose window was
+                  hidden behind the "Email" chip of the log-a-past-activity strip
+                  further down the page, so arriving on a Person showed no way to
+                  write to them (VERIFY-B1-B2 A1). It opens the window over the
+                  record; the record stays readable behind it. */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() =>
+                  openGmailCompose({
+                    partyId: party.id,
+                    organizationId: party.organization_id,
+                    partyLabel: party.display_name,
+                    projectId: activeProjectId ?? null,
+                    onSent: () => {
+                      void refresh();
+                    },
+                  })
+                }
+                className="h-7 px-2 text-xs"
+              >
+                <Send className="mr-1 h-3.5 w-3.5" />
+                Send email
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void onDelete()}
+                className="hidden h-7 px-2 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive sm:inline-flex"
+              >
+                Delete
+              </Button>
+            </>
           ) : undefined
         }
       />
@@ -320,6 +357,11 @@ export function PartyRecordPage({ partyId }: Props) {
                   partyId={party.id}
                   partyName={party.display_name}
                 />
+                {/* "Upcoming with this person" (PLAN §4.6): the ONE agenda
+                    component, filtered to this record's own email addresses.
+                    Renders NOTHING when it has none — absent, not a card that
+                    announces an absence. */}
+                <PersonUpcomingCard partyId={party.id} partyName={party.display_name} />
                 <InteractionTimeline
                   partyId={party.id}
                   orgId={party.organization_id}
@@ -328,6 +370,7 @@ export function PartyRecordPage({ partyId }: Props) {
                   getApplicationScope={getScope}
                   writeSurfaceName={CRM_RECORD_SURFACE_NAME}
                   copyParent={copyParent}
+                  partyLabel={party.display_name}
                 />
                 <PartyNotes
                   partyId={party.id}

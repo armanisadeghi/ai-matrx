@@ -25,6 +25,8 @@ import { supabase } from "@/utils/supabase/client";
 
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
 
+import { rewriteFormulaReferences } from "./formulas";
+
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { parseTableMetadata } from "./types";
 import { operationFailed } from "@/utils/errors";
@@ -135,6 +137,12 @@ export type UserTableListItem = {
   is_public?: boolean;
   created_at?: string;
   updated_at?: string;
+  /**
+   * Newest of the dataset's, its rows' and its columns' stamps. The list comes
+   * back ordered by this, newest first — a dataset's own `updated_at` does not
+   * move when a cell or a column changes.
+   */
+  last_activity_at?: string;
 };
 
 /**
@@ -483,6 +491,198 @@ export async function setFieldFormat(
     return { success: false, error: envelope?.error ?? "Failed to save format" };
   }
   return { success: true, data: { field_id: envelope.field_id ?? args.fieldId } };
+}
+
+// ─── rename a column (display name) ──────────────────────────────────────────
+
+/** The slice of a field row `renameColumn` needs. */
+export type RenameColumnField = {
+  id: string;
+  field_name: string;
+  display_name: string;
+  metadata?: unknown;
+};
+
+/**
+ * After a column's header changed from `from` to `to`, rewrite `{from}` →
+ * `{to}` in every OTHER formula column and save it. The ONE place this
+ * happens — the header's inline rename and Table Settings both call it, so a
+ * rename can never turn a working formula into #ERROR on one path only.
+ * `fields[].metadata.format` must be the format as it NOW stands (Table
+ * Settings passes its unsaved format edits merged in).
+ */
+export async function rewriteFormulasForRename(args: {
+  tableId: string;
+  fields: readonly RenameColumnField[];
+  renamedFieldId: string;
+  from: string;
+  to: string;
+}): Promise<{ formulasUpdated: string[]; formulasFailed: string[] }> {
+  const formulasUpdated: string[] = [];
+  const formulasFailed: string[] = [];
+  for (const other of args.fields) {
+    if (other.id === args.renamedFieldId) continue;
+    const format = (other.metadata as { format?: FieldFormatConfig } | null | undefined)?.format;
+    if (!format || format.id !== "formula") continue;
+    const expression = format.options?.formula?.expression ?? "";
+    const rewritten = rewriteFormulaReferences(expression, args.from, args.to);
+    if (rewritten === expression) continue;
+    const result = await setFieldFormat({
+      tableId: args.tableId,
+      fieldId: other.id,
+      format: {
+        ...format,
+        options: {
+          ...(format.options ?? {}),
+          formula: { ...(format.options?.formula ?? { expression }), expression: rewritten },
+        },
+      },
+    });
+    (result.success ? formulasUpdated : formulasFailed).push(other.display_name);
+  }
+  return { formulasUpdated, formulasFailed };
+}
+
+/**
+ * Rename ONE column's header (its `display_name`; the machine `field_name`
+ * never changes, so stored rows, filters, colors and saved views are
+ * untouched) and keep every FORMULA that referred to the old header working
+ * by rewriting `{Old name}` → `{New name}` in it.
+ *
+ * Same write path Table Settings uses (`update_user_table_config` for the
+ * name, `udt_set_field_format` for a formula's expression) — no new door. The
+ * name is written first; a formula that then fails to update is REPORTED in
+ * `formulasFailed` (it would show #ERROR naming the old header) rather than
+ * rolled into a generic failure, because the rename itself did happen.
+ */
+export async function renameColumn(args: {
+  tableId: string;
+  field: RenameColumnField;
+  newName: string;
+  /** Every column of the table, so dependent formulas can be found. */
+  fields: readonly RenameColumnField[];
+}): Promise<
+  ServiceResult<{ formulasUpdated: string[]; formulasFailed: string[] }>
+> {
+  const newName = args.newName.trim();
+  if (!newName) return { success: false, error: "A column needs a name." };
+  if (newName === args.field.display_name) {
+    return { success: true, data: { formulasUpdated: [], formulasFailed: [] } };
+  }
+  const clash = args.fields.find(
+    (f) =>
+      f.id !== args.field.id &&
+      (f.display_name.trim().toLowerCase() === newName.toLowerCase() ||
+        f.field_name.toLowerCase() === newName.toLowerCase()),
+  );
+  if (clash) {
+    return {
+      success: false,
+      error: `Another column is already called "${clash.display_name}". Column names must be different so formulas and agents can tell them apart.`,
+    };
+  }
+
+  const { data, error } = await supabase.rpc("update_user_table_config", {
+    p_table_id: args.tableId,
+    p_field_updates: [{ id: args.field.id, display_name: newName }] as never,
+  });
+  if (error) return { success: false, error: error.message };
+  const envelope = data as unknown as { success?: boolean; error?: string } | null;
+  if (!envelope || envelope.success !== true) {
+    return { success: false, error: envelope?.error ?? "Failed to rename the column" };
+  }
+
+  const { formulasUpdated, formulasFailed } = await rewriteFormulasForRename({
+    tableId: args.tableId,
+    fields: args.fields,
+    renamedFieldId: args.field.id,
+    from: args.field.display_name,
+    to: newName,
+  });
+  return { success: true, data: { formulasUpdated, formulasFailed } };
+}
+
+// ─── udt_set_table_style ─────────────────────────────────────────────────────
+
+export type SetTableStyleArgs = {
+  tableId: string;
+  /** One of the `stylePath.*` builders in `table-style.ts`. */
+  path: readonly string[];
+  /** `null` deletes the key. */
+  value: unknown;
+};
+
+/**
+ * Write ONE path of the table's color style (`metadata.style`). Surgical by
+ * design — see `table-style.ts` and the migration `udt_table_style_and_example_tables`.
+ */
+export async function setTableStyle(
+  args: SetTableStyleArgs,
+): Promise<ServiceResult<{ style: unknown }>> {
+  const { data, error } = await supabase.rpc("udt_set_table_style", {
+    p_table_id: args.tableId,
+    p_path: [...args.path],
+    p_value: (args.value ?? null) as never,
+  });
+  if (error) return { success: false, error: error.message };
+  const envelope = data as unknown as {
+    success?: boolean;
+    error?: string;
+    style?: unknown;
+  } | null;
+  if (!envelope || envelope.success !== true) {
+    return { success: false, error: envelope?.error ?? "Failed to save colors" };
+  }
+  return { success: true, data: { style: envelope.style } };
+}
+
+// ─── update_user_table_config (field_order only) ─────────────────────────────
+
+/**
+ * Renumber columns — the second half of "insert column left / right". The new
+ * column is created AT the target order by `add_column_to_user_table`; this
+ * shifts every column that already held that order or a later one by +1, so
+ * two columns never share a slot. `update_user_table_config` is the existing
+ * column-editing RPC (Table Settings uses it); only `field_order` is sent.
+ */
+export async function renumberFields(args: {
+  tableId: string;
+  updates: { id: string; field_order: number }[];
+}): Promise<ServiceResult<{ updated: number }>> {
+  if (args.updates.length === 0) return { success: true, data: { updated: 0 } };
+  const { data, error } = await supabase.rpc("update_user_table_config", {
+    p_table_id: args.tableId,
+    p_field_updates: args.updates as never,
+  });
+  if (error) return { success: false, error: error.message };
+  const envelope = data as unknown as { success?: boolean; error?: string } | null;
+  if (!envelope || envelope.success !== true) {
+    return { success: false, error: envelope?.error ?? "Failed to reorder columns" };
+  }
+  return { success: true, data: { updated: args.updates.length } };
+}
+
+// ─── udt_list_example_tables ─────────────────────────────────────────────────
+
+/**
+ * The platform's EXAMPLE tables — datasets owned by the Matrx System org,
+ * readable by every signed-in user (RLS decides; the RPC is SECURITY
+ * INVOKER). Distinct from `listUserTables`, which stays "my own tables".
+ */
+export async function listExampleTables(): Promise<
+  ServiceResult<UserTableListItem[]>
+> {
+  const { data, error } = await supabase.rpc("udt_list_example_tables");
+  if (error) return { success: false, error: error.message };
+  if (!isRecord(data) || data.success !== true) {
+    return { success: false, error: "Invalid response from udt_list_example_tables" };
+  }
+  return {
+    success: true,
+    data: Array.isArray(data.tables)
+      ? (data.tables as unknown as UserTableListItem[])
+      : [],
+  };
 }
 
 // ─── update_user_table_metadata ──────────────────────────────────────────────

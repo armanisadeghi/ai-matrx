@@ -9,6 +9,8 @@ description: "Recipe for creating or changing a floating window panel. Use when 
 
 Every floating window is a `WindowPanel` shell rendered by ONE hand-maintained controller, `features/overlays/OverlayController.tsx`. **No registry renders windows** — `windowRegistry.ts` is deleted; any doc that says "add a registry entry to render a window" is stale. Persistence is a **local-first, tab-scoped workspace** (localStorage mirror + IndexedDB, `features/window-panels/persistence/`, coordinated by `WindowPersistenceManager`); nothing window-related is stored server-side (the `window_sessions` table was dropped 2026-08-12). Slots / drag / tray internals → `window-panels` skill. Openers / controller / catalogue rules → `overlay-system` skill.
 
+If this window is an agent-aware surface, invoke `surface-authoring` and its overlay-surface reference for the manifest, scoped registration receipt, and nested runtime provider. A window resident never inherits ambient surface values; an outside helper may receive an approved task-appropriate snapshot under its documented integration contract.
+
 **Key files:**
 
 | File | When you touch it |

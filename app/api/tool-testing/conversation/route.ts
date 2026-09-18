@@ -20,7 +20,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import { requireEnv } from "@/utils/supabase/env";
 
 // API keys: ONLY sb_publishable_* / sb_secret_*. Legacy JWT keys are DEPRECATED
@@ -65,9 +64,24 @@ export async function POST(request: NextRequest) {
 
     const userId = user.id;
 
-    // chat.conversation is a root entity (organization_id NOT NULL, no inherit
-    // trigger) — resolve the session's personal org rather than inserting null.
-    const organizationId = await ensureOrgIdServer(authClient, null);
+    // 🚨 THE TEST CONVERSATION IS FILED IN THE ORGANIZATION THE CALLER IS
+    // ACTING IN. It used to resolve the session's PERSONAL organization, so a
+    // tool test run inside a team's workspace left its conversation in a
+    // private one. The caller states the organization on `X-Organization-Id`;
+    // the insert runs on their own RLS-scoped client, so a header naming an
+    // organization they are not in fails the policy.
+    // common-docs/policies/context-is-carried-never-rebuilt.md rule 4.
+    const organizationId = request.headers.get("X-Organization-Id")?.trim() ?? "";
+    if (organizationId.length === 0) {
+      return NextResponse.json(
+        {
+          message:
+            "No organization was named for this test conversation, so nothing was created. Choose the organization you are working in and try again.",
+          code: "organization_context_required",
+        },
+        { status: 400 },
+      );
+    }
 
     const { data: conversation, error: convError } = await authClient
       .schema("chat")

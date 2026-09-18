@@ -11,7 +11,7 @@ import "@ai-matrx/meet/tokens.css";
 import "@ai-matrx/agents/catalog/styles.css";
 import "./globals.css";
 // Tap-button geometry (the .matrx-tap-* system) ships in the package.
-import "@ai-matrx/tap-target/styles.css";
+import "@ai-matrx/design-system/tap-target.css";
 // Design-system CSS ships in the package too (C26): default token values first,
 // then the structural rules its components require (.matrx-scroll-fade,
 // .matrx-mobile-sheet, .matrx-glass-thin-border, .pb-safe, .shadow-input).

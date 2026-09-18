@@ -285,7 +285,7 @@ Two WebKit behaviors made all mobile audio silent, with no error:
 `listenSummaryWindow`). Two entry points, both in one "Listen" context-menu
 submenu and in the assistant action bar's ⋯ menu:
 
-- **Summarize for listening** — summary streams in as text; user presses Play.
+- **Summarize without playing** — summary streams in as text; user presses Play.
 - **Summarize & listen** — stream-to-stream: the summary is spoken as it is
   written, via the app-root speaker (`voicePlaybackBus` request with
   `includeActive: true`).

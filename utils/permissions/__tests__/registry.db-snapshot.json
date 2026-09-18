@@ -726,6 +726,17 @@
     "is_active": true
   },
   {
+    "resource_type": "interview_decision_interview",
+    "table_name": "decision_interview",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Decision Interview",
+    "url_path_template": "/administration/question-desk/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "interview_session",
     "table_name": "session",
     "id_column": "id",
@@ -821,6 +832,17 @@
     "is_public_column": null,
     "display_label": "Plan Page",
     "url_path_template": "/marketing/content-plan/nodes/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "processed_document",
+    "table_name": "processed_documents",
+    "id_column": "id",
+    "owner_column": "owner_id",
+    "is_public_column": null,
+    "display_label": "Processed document",
+    "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true
   },
@@ -1012,6 +1034,17 @@
     "is_active": true
   },
   {
+    "resource_type": "seo_topical_map",
+    "table_name": "topical_map",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Topical map",
+    "url_path_template": "/marketing/topical-maps/{id}",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
     "resource_type": "shared_canvas_item",
     "table_name": "shared_canvas_items",
     "id_column": "id",
@@ -1130,6 +1163,17 @@
     "display_label": "Analysis Preferences",
     "url_path_template": "",
     "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
+    "resource_type": "user_feedback",
+    "table_name": "user_feedback",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Feedback item",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
     "is_active": true
   },
   {
@@ -1260,6 +1304,17 @@
     "owner_column": "created_by",
     "is_public_column": null,
     "display_label": "Workflow Plan",
+    "url_path_template": "",
+    "rls_uses_has_permission": true,
+    "is_active": true
+  },
+  {
+    "resource_type": "workflow_recovery_audit",
+    "table_name": "recovery_audit",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Workflow recovery audit",
     "url_path_template": "",
     "rls_uses_has_permission": true,
     "is_active": true

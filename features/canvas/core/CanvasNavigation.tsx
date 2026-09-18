@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { CanvasItem } from "@/features/canvas/redux/canvasSlice";
+import { titleToString } from "./CanvasBody";
 import { NewDiagramMenuItems } from "@/components/mermaid/workbench/NewDiagramMenu";
 import {
   Tooltip,
@@ -19,6 +20,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { isLiveSourcePaneType } from "@/features/canvas/liveSourceReachability";
 
 interface CanvasNavigationProps {
   items: CanvasItem[];
@@ -27,6 +29,7 @@ interface CanvasNavigationProps {
   onRemove: (itemId: string) => void;
   onClearAll?: () => void;
 }
+
 
 /**
  * CanvasNavigation - Navigation controls for canvas history
@@ -47,7 +50,7 @@ export function CanvasNavigation({
 }: CanvasNavigationProps) {
   
   if (items.length === 0) return null;
-  
+
   const currentIndex = items.findIndex(item => item.id === currentItemId);
   const hasPrevious = currentIndex > 0;
   const hasNext = currentIndex < items.length - 1;
@@ -67,7 +70,7 @@ export function CanvasNavigation({
   const getItemLabel = (item: CanvasItem, index: number): string => {
     const title = item.content.metadata?.title;
     const type = item.content.type;
-    return title ? String(title) : `${type} ${index + 1}`;
+    return titleToString(title) || `${type} ${index + 1}`;
   };
   
   const getItemSubtitle = (item: CanvasItem): string => {
@@ -77,7 +80,15 @@ export function CanvasNavigation({
   
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex items-center gap-0.5 bg-muted/60 rounded-lg p-0.5">
+      {/* `shrink-0`: the title beside it is `flex-1` and truncates, so without
+          this the switcher is the control that gets squeezed out of a narrow
+          docked column — the one control the user needs to reach the other
+          item. `data-canvas-switcher` is the handle guards and live checks
+          look for. */}
+      <div
+        data-canvas-switcher="true"
+        className="flex shrink-0 items-center gap-0.5 bg-muted/60 rounded-lg p-0.5"
+      >
         {/* Previous Button */}
         <Tooltip>
           <TooltipTrigger asChild>
@@ -86,6 +97,7 @@ export function CanvasNavigation({
               size="sm"
               onClick={handlePrevious}
               disabled={!hasPrevious}
+              aria-label="Previous canvas"
               className="h-6 w-6 sm:h-7 sm:w-7 p-0"
             >
               <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -104,6 +116,7 @@ export function CanvasNavigation({
                 <Button
                   variant="ghost"
                   size="sm"
+                  aria-label="View all canvas items"
                   className="h-6 sm:h-7 px-1.5 sm:px-2 gap-1"
                 >
                   <List className="w-3 h-3 sm:w-3.5 sm:h-3.5 hidden sm:block" />
@@ -142,17 +155,27 @@ export function CanvasNavigation({
                     </div>
                   </div>
                   
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRemove(item.id);
-                    }}
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400"
-                  >
-                    <X className="w-3 h-3" />
-                  </Button>
+                  {/* A live pane (the Sandbox, the Cloud Browser) is a DOOR
+                      to something still running, not a stored copy — its
+                      surface re-offers it for as long as the box or the
+                      browser exists, so a Remove here would visibly lose its
+                      own fight. Absent, never dead (law 4); the pane header's
+                      "Put away canvas" is the honest way to dismiss one, and
+                      that choice is remembered. */}
+                  {!isLiveSourcePaneType(item.content?.type) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemove(item.id);
+                      }}
+                      aria-label={`Remove ${getItemLabel(item, index)}`}
+                      className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 hover:bg-red-100 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400"
+                    >
+                      <X className="w-3 h-3" />
+                    </Button>
+                  )}
                 </DropdownMenuItem>
               ))}
             </div>
@@ -183,6 +206,7 @@ export function CanvasNavigation({
               size="sm"
               onClick={handleNext}
               disabled={!hasNext}
+              aria-label="Next canvas"
               className="h-6 w-6 sm:h-7 sm:w-7 p-0"
             >
               <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
@@ -196,4 +220,3 @@ export function CanvasNavigation({
     </TooltipProvider>
   );
 }
-

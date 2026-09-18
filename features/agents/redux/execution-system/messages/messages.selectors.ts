@@ -163,6 +163,16 @@ export const selectHasMessages =
     (state.messages.byConversationId[conversationId]?.orderedIds?.length ?? 0) >
     0;
 
+/**
+ * Why this transcript is empty when it is empty for a BAD reason — the read
+ * failed, so an empty room would be a lie. `null` on every healthy path,
+ * including a genuinely empty conversation.
+ */
+export const selectMessagesHydrationFailure =
+  (conversationId: string) =>
+  (state: RootState): string | null =>
+    state.messages.byConversationId[conversationId]?.hydrationFailure ?? null;
+
 // ---------------------------------------------------------------------------
 // Narrow field selectors
 //

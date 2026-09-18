@@ -6,8 +6,10 @@
 // podcast.chapter_marker agent (DB-managed mandate, floating — rebind from
 // /administration/mandates) segments the episode script into 3–12 ordered
 // chapters and emits them as the `media_chapters` content-IR kind; the parsed
-// list is saved under pc_episodes.metadata.chapters via
-// podcastService.saveEpisodeChapters.
+// list is saved to the pc_episodes.chapters COLUMN via
+// podcastService.saveEpisodeChapters (DD-234 — it went into
+// metadata.chapters until 2026-09-14, where a signed-out listener could never
+// read it and /podcast/<slug>/chapters.json 404'd for all of them).
 //
 // 🚨 THE FLOATING LAW (features/window-panels/FEATURE.md). This run STREAMS
 // into the floating LiveRunWindow — it never shows a spinner and never puts a
@@ -28,6 +30,7 @@ import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
 import type { LiveRunWindowHandle } from "@/features/overlays/openers/liveRunWindow";
 import { podcastService } from "@/features/podcasts/service";
+import { chapterTimingAdjustmentNotice } from "@/features/podcasts/chapter-timing";
 import { parseChapters } from "@/features/podcasts/types";
 import type { PcEpisode, PcEpisodeChapter } from "@/features/podcasts/types";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
@@ -49,8 +52,9 @@ export interface UseEpisodeChapters {
   chapters: PcEpisodeChapter[] | null;
   busy: boolean;
   error: string | null;
-  /** Run the chapter agent against the episode script and save the result. */
-  generate: () => Promise<void>;
+  /** Run the chapter agent against the episode script and save the result.
+   * Resolves true only after the new canonical list is persisted. */
+  generate: () => Promise<boolean>;
 }
 
 export function useEpisodeChapters(
@@ -81,7 +85,7 @@ export function useEpisodeChapters(
   const generate = useCallback(async () => {
     if (!episode || !episode.script?.trim()) {
       toast.error("This episode has no script to segment.");
-      return;
+      return false;
     }
     setBusy(true);
     setError(null);
@@ -106,9 +110,9 @@ export function useEpisodeChapters(
         onConversationCreated: (conversationId) => {
           windowRef.current?.update({ conversationId, pending: false });
         },
-        // parseChapters is the SAME reader the persistence side uses
-        // (mapPcEpisodeRow), so what the window streamed and what reloads
-        // off the episode row can never disagree.
+        // parseChapters is the reader for the raw agent result. The live window
+        // may show that raw list, while the shared save boundary can visibly
+        // adjust it to the actual audio duration before persistence.
         coerce: (value) => {
           const parsed = parseChapters(value);
           if (!parsed) {
@@ -120,8 +124,17 @@ export function useEpisodeChapters(
         },
       });
       const saved = await podcastService.saveEpisodeChapters(episode.id, list);
-      setGenerated({ episodeId: episode.id, chapters: saved.chapters ?? list });
-      toast.success(`Generated ${list.length} chapters.`);
+      const persisted = saved.chapters ?? list;
+      setGenerated({ episodeId: episode.id, chapters: persisted });
+      const adjustment = chapterTimingAdjustmentNotice(
+        list,
+        persisted,
+        saved.audioMetadataDurationSeconds,
+      );
+      toast.success(
+        adjustment ?? `Generated ${persisted.length} chapters.`,
+      );
+      return true;
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       setError(message);
@@ -129,6 +142,7 @@ export function useEpisodeChapters(
       // The window deliberately STAYS OPEN on failure: it holds the partial
       // stream and the error, which is the only place the user can see what
       // actually went wrong.
+      return false;
     } finally {
       setBusy(false);
     }

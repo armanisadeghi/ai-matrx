@@ -208,7 +208,7 @@ export function StudioRunView({ runId }: { runId: string }) {
       background_working: backgroundWorking,
       audio_available: !!state.audioUrl,
       official_video_available: !!state.officialVideoUrl,
-      backend_run_id: detail?.run_id ?? undefined,
+      backend_run_id: run.agentRunId ?? undefined,
       liveness: detail?.liveness,
       podcast_type: state.podcastType ?? undefined,
       run_source: detail?.source
@@ -476,7 +476,7 @@ export function StudioRunView({ runId }: { runId: string }) {
           Always available so nothing about a run is ever hidden. */}
         <div className="mt-6">
           <RunTruthInspector
-            agentRunId={detail?.run_id ?? null}
+            agentRunId={run.agentRunId}
             studioRunId={runId}
             episodeId={state.episodeId}
           />

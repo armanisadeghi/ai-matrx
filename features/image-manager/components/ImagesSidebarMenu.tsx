@@ -15,11 +15,16 @@ import {
   IMAGES_ROUTES,
   type ImagesGroup,
 } from "./imagesRoutes";
+import { resolveActiveRouteMode } from "@/features/shell/components/header/route-mode-match";
 
 interface ImagesSidebarMenuProps {
   expanded: boolean;
 }
 const GROUP_ORDER: ImagesGroup[] = ["manager", "studio"];
+const IMAGE_ROUTE_MODES = IMAGES_ROUTES.map((route) => ({
+  ...route,
+  href: route.path,
+}));
 
 function GroupHeading({
   label,
@@ -40,6 +45,7 @@ export default function ImagesSidebarMenu({
   expanded,
 }: ImagesSidebarMenuProps) {
   const pathname = usePathname();
+  const activeRoute = resolveActiveRouteMode(IMAGE_ROUTE_MODES, pathname);
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-0.5">
       <Link
@@ -70,7 +76,7 @@ export default function ImagesSidebarMenu({
             />
             {routes.map((route) => {
               const Icon = route.Icon;
-              const isActive = pathname === route.path;
+              const isActive = activeRoute?.path === route.path;
               return (
                 <Link
                   key={route.path}

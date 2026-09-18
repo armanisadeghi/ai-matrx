@@ -12,7 +12,7 @@ export async function generateMetadata({
     titlePrefix: "Review",
     title: agent.name,
     description: `Continuous review for ${agent.name} — proposals from its real conversations.`,
-    letter: "AG",
+    letter: "AH",
   });
 }
 

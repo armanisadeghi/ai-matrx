@@ -91,6 +91,7 @@ type RunSelectRow = Pick<
   AgentRunRow,
   | "id"
   | "status"
+  | "error"
   | "request"
   | "result"
   | "episode_id"
@@ -119,7 +120,7 @@ type AssetSelectRow = Pick<
 
 // The column contract of each read, as PostgREST receives it.
 const RUN_COLUMNS =
-  "select=id,status,request,result,episode_id,last_heartbeat_at,created_at,updated_at,agent_run_stage(stage_key,status,output,error,started_at,finished_at)";
+  "select=id,status,error,request,result,episode_id,last_heartbeat_at,created_at,updated_at,agent_run_stage(stage_key,status,output,error,started_at,finished_at)";
 const ASSET_COLUMNS =
   "select=asset_kind,slot,url,prompt,model_alias,is_manual,status,superseded_by";
 
@@ -159,6 +160,7 @@ describe("fetchPodcastRunDetail", () => {
   const failedRun = {
     id: RUN_ID,
     status: "failed",
+    error: { message: "tts provider timed out" },
     request: {
       input_data: "How cities plan for heat waves",
       input_data_type: "text",
@@ -275,6 +277,7 @@ describe("fetchPodcastRunDetail", () => {
       created_at: "2026-07-18T00:00:00.000Z",
       updated_at: "2026-07-18T00:03:00.000Z",
       last_activity_at: "2026-07-18T00:04:00.000Z",
+      error: "tts provider timed out",
       description: "How planners keep streets livable",
       script: null,
       audio_url: null,
@@ -370,6 +373,10 @@ function runRow(
   return {
     id,
     status: "completed",
+    // `agent_run.error` is a selected, non-nullable-key column: a run with no
+    // failure carries SQL NULL, never an absent key. Omitting it made every
+    // row in this suite a shape PostgREST cannot return.
+    error: null,
     request: { input_data: "A topic" },
     result: null,
     episode_id: null,

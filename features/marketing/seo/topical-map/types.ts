@@ -1,0 +1,1022 @@
+import type { Database, Json } from "@/types/database.types";
+
+export type TopicalMap = Database["seo"]["Tables"]["topical_map"]["Row"];
+export type TopicalMapInsert = Database["seo"]["Tables"]["topical_map"]["Insert"];
+export type TopicalMapUpdate = Database["seo"]["Tables"]["topical_map"]["Update"];
+export type MapTopic = Database["seo"]["Tables"]["map_topic"]["Row"];
+export type MapTopicInsert = Database["seo"]["Tables"]["map_topic"]["Insert"];
+export type MapTopicUpdate = Database["seo"]["Tables"]["map_topic"]["Update"];
+export type MapFacet = Database["seo"]["Tables"]["map_facet"]["Row"];
+export type MapFacetInsert = Database["seo"]["Tables"]["map_facet"]["Insert"];
+export type MapFacetUpdate = Database["seo"]["Tables"]["map_facet"]["Update"];
+export type MapFacetValue = Database["seo"]["Tables"]["map_facet_value"]["Row"];
+export type MapFacetValueInsert = Database["seo"]["Tables"]["map_facet_value"]["Insert"];
+export type MapFacetValueUpdate = Database["seo"]["Tables"]["map_facet_value"]["Update"];
+export type MapTopicStats = Database["seo"]["Views"]["v_map_topic_stats"]["Row"];
+
+/**
+ * Where a topical-map list lands. The registry declares `default_list_scope =
+ * 'organization'` for seo_topical_map / seo_map_facet / seo_map_facet_value, so
+ * every list names its organization; a brand narrows further where the table
+ * carries `brand_id`.
+ */
+export interface TopicalMapListScope {
+  organizationId: string;
+  brandId?: string | null;
+}
+
+export interface MapFacetListScope {
+  organizationId: string;
+}
+
+export interface MapTopicTreeNode {
+  slug: string;
+  name: string;
+  description?: string | null;
+  sort_order?: number;
+  status?: string;
+  /**
+   * Absent or null keeps the parent implied by nesting (or, at the top level,
+   * the topic's current parent) — it never moves a topic to the root.
+   */
+  parent_slug?: string | null;
+  children?: MapTopicTreeNode[];
+}
+
+/**
+ * Shape returned by seo.upsert_map_topics — each list holds topic slugs.
+ *
+ * There is no `errors` key. The function is all-or-nothing: it raises SQLSTATE
+ * 22023 carrying the whole error list instead of returning a partial success.
+ */
+export interface MapTopicsUpsertResult {
+  created: string[];
+  updated: string[];
+  unchanged: string[];
+}
+
+/**
+ * An entity reference as the topical-map functions return it (`seo._tm_ref`,
+ * round 17). Two variants, and nothing else:
+ *
+ * - resolved: the row, through `platform.resolve_entity_ref`'s whitelist.
+ *   `jsonb_strip_nulls`ed, so every optional key is simply absent when the
+ *   underlying row has no value for it.
+ * - hidden: a row the caller cannot open — forbidden, missing and unregistered
+ *   are deliberately the same answer — is `{type, hidden: true}`. It carries no
+ *   id, so the caller learns that something is there and never which row.
+ */
+export interface EntityRefHidden {
+  type: string;
+  hidden: true;
+}
+
+export interface EntityRefResolved {
+  type: string;
+  id: string;
+  /** name / title / label / phrase / url / slug / key, first non-null wins. */
+  label?: string;
+  slug?: string;
+  url?: string;
+  status?: string;
+  country_code?: string;
+  region_code?: string;
+  region?: string;
+  city?: string;
+}
+
+export type EntityRef = EntityRefResolved | EntityRefHidden;
+
+/**
+ * Search traffic `seo._tm_item` hangs on a `web_page` pointer (round 19, D5):
+ * clicks and impressions summed from Search Console over the last
+ * `performance_window_days` (the `seo.topical_map.performance_window_days`
+ * knob, default 28, clamped 1..365 and resolved per organization/brand/site/user).
+ *
+ * Deduplicated to the freshest observation per (page, provider, date) and
+ * summed across providers — the question is whether anyone arrives from search
+ * at all, not how one provider is doing. A page with no observations reports
+ * `0`, which is a real zero, not a missing reading.
+ */
+export interface PagePerformance {
+  clicks: number;
+  impressions: number;
+  performance_window_days: number;
+}
+
+/**
+ * A `web_page` pointer carrying its traffic. Only a page the caller can
+ * actually OPEN gets the numbers: a forbidden / missing / unregistered ref
+ * comes back as the plain {@link EntityRefHidden}, byte-identical to before
+ * round 19. Narrow with {@link isWebPageItem} before reading `clicks`.
+ */
+export interface WebPageItem extends EntityRefResolved, PagePerformance {
+  type: "web_page";
+}
+
+/** One rendered pointer from `seo._tm_item`: a page carries traffic, nothing else does. */
+export type MapItemRef = WebPageItem | EntityRefResolved;
+
+/** Narrows a {@link MapItemRef} to the `web_page` variant that carries traffic. */
+export function isWebPageItem(item: MapItemRef): item is WebPageItem {
+  return item.type === "web_page" && "clicks" in item;
+}
+
+/** Narrows an {@link EntityRef} to the variant that actually carries row data. */
+export function isResolvedEntityRef(ref: EntityRef | null | undefined): ref is EntityRefResolved {
+  return !!ref && !("hidden" in ref);
+}
+
+/**
+ * What still hangs off a topic, from seo._tm_attachments. Nulls are stripped,
+ * so a kind with nothing attached is absent rather than 0, and `{}` means the
+ * topic is free to retire.
+ */
+export interface MapTopicAttachments {
+  pages?: number;
+  planned?: number;
+  keywords?: number;
+  facets?: number;
+  other?: number;
+}
+
+export interface MapOutlineOptions {
+  focusSlug?: string | null;
+  siteId?: string | null;
+  overrides?: Json;
+}
+
+export interface MapGraphNodeData {
+  slug: string;
+  name: string;
+  description: string | null;
+  status: string;
+  depth: number;
+  sort_order: number;
+  parent_id: string | null;
+  page_count: number;
+  planned_count: number;
+  keyword_count: number;
+  facets: Record<string, string>;
+  auto_layout: boolean;
+}
+
+/** A topic (seo.map_topic id). `position` is the stored layout or {x:0,y:0}. */
+export interface MapGraphTopicNode {
+  id: string;
+  type: "topic";
+  position: { x: number; y: number };
+  data: MapGraphNodeData;
+}
+
+/** A facet value (seo.map_facet_value id). Emitted only when grouping; no position. */
+export interface MapGraphFacetValueNode {
+  id: string;
+  type: "facet_value";
+  data: {
+    slug: string;
+    name: string;
+    facet: string;
+    parent_id: string | null;
+    /** `seo.map_facet_value_ref` — null when the value names no entity. */
+    ref: EntityRef | null;
+  };
+}
+
+/** The synthetic bucket for topics with no value for the grouped facet. Its id is not a uuid. */
+export interface MapGraphAllFacetValueNode {
+  id: "all";
+  type: "facet_value";
+  data: {
+    slug: "all";
+    name: "All";
+    facet: string;
+  };
+}
+
+export type MapGraphNode =
+  | MapGraphTopicNode
+  | MapGraphFacetValueNode
+  | MapGraphAllFacetValueNode;
+
+/** Parent topic → child topic. id is `${parentId}-${childId}`. */
+export interface MapGraphTreeEdge {
+  id: string;
+  source: string;
+  target: string;
+  type: "tree";
+}
+
+/** Facet value (or "all") → topic. `inherited` is true when the value comes from an ancestor. */
+export interface MapGraphFacetEdge {
+  id: string;
+  source: string;
+  target: string;
+  type: "facet";
+  inherited: boolean;
+}
+
+export type MapGraphEdge = MapGraphTreeEdge | MapGraphFacetEdge;
+
+export interface MapGraphResult {
+  map_id: string;
+  group_by: string | null;
+  site_id: string | null;
+  nodes: MapGraphNode[];
+  edges: MapGraphEdge[];
+}
+
+export interface MapMutationResult {
+  [key: string]: Json;
+}
+
+export interface PageMapTopicsInput {
+  slug: string;
+  confidence: number;
+  reason: string;
+}
+
+/** Allowed values of seo.set_page_map_topics p_source (the function raises 22023 otherwise). */
+export type PageMapTopicsSource = "mapper" | "human" | "agent";
+
+export interface CreateMapFacetValueInput {
+  slug: string;
+  name?: string;
+  parent_slug?: string | null;
+  ref_type?: string | null;
+  ref_id?: string | null;
+}
+
+export interface MapFacetTopicValue {
+  value_slug: string;
+  value_name: string;
+  inherited: boolean;
+  /**
+   * `seo.map_facet_value_ref` — null when the value names no entity,
+   * `{type, hidden: true}` when it names a row this caller cannot open.
+   */
+  ref: EntityRef | null;
+}
+
+export type MapTopicFacetsResult = Record<string, MapFacetTopicValue>;
+
+/** Result of seo.merge_map_topics. */
+export interface MapMergeResult {
+  ok: true;
+  into: string;
+  retired: string[];
+  associations_moved: number;
+  associations_dropped_as_duplicate: number;
+  planned_pages_moved: number;
+  keywords_moved: number;
+  children_reparented: number;
+  /**
+   * Rows another organization filed under the merged topics. They are neither
+   * moved nor dropped — only counted, so the caller can say so out loud.
+   */
+  foreign_org_attachments: number;
+}
+
+/** One topic in the `seo.map_tree` payload. Every key past slug/name is opt-in via `include`. */
+export interface MapTreeNode {
+  slug: string;
+  name: string;
+  /** `include: ["description"]`. */
+  description?: string | null;
+  /** `include: ["status"]`, and always present when the status is not `active`. */
+  status?: string;
+  /** `include: ["counts"]` — all three arrive together. */
+  pages?: number;
+  planned?: number;
+  keywords?: number;
+  /** `include: ["path"]` — root-first slugs ending with this topic. */
+  path?: string[];
+  /** `include: ["facets"]` — facet key → value slug, inherited values included. */
+  facets?: Record<string, string>;
+  /**
+   * `include: ["associations"]` for everything, or any association kind
+   * (`pages`, `facets`, `keywords`, `planned`, or a raw entity token) to narrow.
+   * Same rows as `seo.map_topic_associations`: what the caller cannot open is
+   * counted in a hidden entry, never listed.
+   */
+  associations?: MapTopicAssociation[];
+  /** Present when the topic has children and `depth` has not run out. */
+  children?: MapTreeNode[];
+  /** Present INSTEAD of `children` when `depth` stopped the walk here. */
+  children_count?: number;
+}
+
+/** `seo.map_tree` called with a `rootSlug`: one subtree. */
+export interface MapTreeRootedResult {
+  map_id: string;
+  root: string;
+  topic: MapTreeNode;
+}
+
+/** `seo.map_tree` called without a `rootSlug`: every root topic. */
+export interface MapTreeWholeResult {
+  map_id: string;
+  root: null;
+  topics: MapTreeNode[];
+  total_topics: number;
+}
+
+export type MapTreeResult = MapTreeRootedResult | MapTreeWholeResult;
+
+/** Narrows {@link MapTreeResult} by the `root` discriminant. */
+export function isRootedMapTree(result: MapTreeResult): result is MapTreeRootedResult {
+  return result.root !== null;
+}
+
+export type MapTopicAssociationDirection = "in" | "out";
+
+/** One edge off a topic whose other end the caller can open. */
+export interface MapTopicAssociationResolved {
+  /** The topic slug the edge was read from. */
+  topic: string;
+  /** `jsonb_strip_nulls`ed: `role` and `payload` are absent when null. */
+  association: {
+    /** The other end's entity token (`web_page`, `seo_map_facet_value`, `plan_node`, `seo_keyword`, …). */
+    kind: string;
+    role?: string;
+    direction: MapTopicAssociationDirection;
+    payload?: Json;
+  };
+  /**
+   * The other end, resolved. A facet value (`kind: "seo_map_facet_value"`)
+   * also carries `facet` (its facet key) and `ref` (whatever entity the value
+   * points at: null when it names none, hidden when the caller cannot open it).
+   */
+  item: MapItemRef & { facet?: string; ref?: EntityRef | null };
+}
+
+/**
+ * Every edge of one (kind, direction) whose other end the caller cannot open —
+ * forbidden, missing, unregistered, or a keyword edge naming a site the caller
+ * cannot view. Those edges are never listed (no id, no role, no payload); they
+ * are counted here, once per (kind, direction), so a screen can say that
+ * something is there without saying what.
+ */
+export interface MapTopicAssociationHidden {
+  topic: string;
+  association: {
+    kind: string;
+    direction: MapTopicAssociationDirection;
+  };
+  item: {
+    /** Always equal to `association.kind`. */
+    type: string;
+    /** How many edges were withheld; at least 1. */
+    hidden: number;
+  };
+}
+
+/**
+ * One row of seo.map_topic_associations. Resolved rows come first (ordered by
+ * kind, direction, age), then at most one hidden-count row per (kind,
+ * direction). Narrow with {@link isHiddenMapTopicAssociation}.
+ */
+export type MapTopicAssociation = MapTopicAssociationResolved | MapTopicAssociationHidden;
+
+export function isHiddenMapTopicAssociation(row: MapTopicAssociation): row is MapTopicAssociationHidden {
+  return "hidden" in row.item;
+}
+
+/** One entry in `seo.search_map_topics`. */
+export interface MapTopicSearchHit {
+  slug: string;
+  name: string;
+  status: string;
+  /** Root-first slugs ending with this topic. */
+  path: string[];
+}
+
+export interface MapDiagnosticsCrowdedTopic {
+  slug: string;
+  pages: number;
+}
+
+export interface MapDiagnosticsPageRef {
+  page_id: string;
+  url: string;
+}
+
+export interface MapDiagnosticsOverloadedPage extends MapDiagnosticsPageRef {
+  /** How many topics this page claims to cover (only pages with 3 or more appear). */
+  topics: number;
+}
+
+export interface MapDiagnosticsRetiredTopic {
+  slug: string;
+  attachments: MapTopicAttachments;
+}
+
+/** Result of seo.map_diagnostics. Every sample list is capped by `limit`. */
+export interface MapDiagnosticsResult {
+  topics_total: number;
+  /** Topics with no pages, no planned pages and no keywords. */
+  topics_empty: number;
+  topics_empty_sample: string[];
+  topics_crowded: MapDiagnosticsCrowdedTopic[];
+  topics_proposed: string[];
+  pages_on_many_topics: MapDiagnosticsOverloadedPage[];
+  /**
+   * Pages with no `covers` edge into a LIVE topic OF THIS MAP. 0 when no site
+   * is in scope — the count only means something per site.
+   *
+   * 🚨 ROUND 22 CHANGED THE MEANING, not the signature. Before
+   * `seo_topical_map_22_a_page_never_vanishes` the `NOT EXISTS` behind this
+   * matched ANY `seo_map_topic` edge, at any status and OF ANY MAP — so a page
+   * whose only coverage had been rejected, or belonged to a different map, read
+   * as "on a topic" and the one number built to find unmapped pages kept saying
+   * zero. It now sees live topics of this map only, so rejected and retired
+   * coverage counts as no coverage and this number can rise when somebody
+   * rejects a proposal. That is the truth arriving, never a regression.
+   */
+  pages_on_no_topic: number;
+  pages_on_no_topic_sample: MapDiagnosticsPageRef[];
+  /** Retired topics that still carry attachments. */
+  retired_with_attachments: MapDiagnosticsRetiredTopic[];
+  /** seo.topical_map ids of the sites using this map. */
+  sites_using_map: string[];
+}
+
+/**
+ * One edit in seo.patch_map_topics. An ABSENT key leaves that field alone.
+ * `name`, `status`, `sort_order` and `new_slug` are omit-or-value: a JSON null
+ * for any of them is a per-edit error (`"name cannot be null"`, …), so they are
+ * typed optional, never `| null`. Only `description` (clears it) and
+ * `parent_slug` (moves the topic to the root) take null on purpose.
+ */
+export interface MapTopicPatch {
+  /** Which topic to edit. Required. */
+  slug: string;
+  name?: string;
+  /** null clears the description. */
+  description?: string | null;
+  status?: MapTopicStatus;
+  sort_order?: number;
+  /** Rename: must match `^[a-z0-9]+(-[a-z0-9]+)*$`. */
+  new_slug?: string;
+  /** null moves the topic to the root. */
+  parent_slug?: string | null;
+}
+
+/**
+ * Round 19 added `rejected`: a refused proposal keeps its row and every reader
+ * hides it (`seo._tm_topics`, and by slug `map_topic_associations` /
+ * `map_topic_facets`, where it reads as the SAME P0002 an invented slug gets).
+ * Only a `proposed` topic may take it — an active topic is retired instead.
+ * {@link MapTopicsRejectResult} and `seo.list_map_history` are its two doors.
+ */
+export type MapTopicStatus = "proposed" | "active" | "retired" | "rejected";
+
+/** One rejected edit. `slug` is whatever the caller sent, so it can be null. */
+export interface MapTopicPatchError {
+  slug: string | null;
+  message: string;
+}
+
+/**
+ * Result of seo.patch_map_topics. Unlike upsert, this one is per-edit: a bad
+ * edit lands in `errors` and the rest still apply.
+ */
+export interface MapTopicsPatchResult {
+  updated: string[];
+  unchanged: string[];
+  errors: MapTopicPatchError[];
+}
+
+/**
+ * What to do with a topic that is being removed while attachments still hang
+ * off it. `merge_into:<slug>` moves them onto that topic — and since round 22
+ * that target must be a LIVE topic: a retired or rejected slug raises the same
+ * `P0002` an invented one does.
+ */
+export type MapTopicRemovalPolicy =
+  | "error"
+  | "retire"
+  | "parent"
+  | `merge_into:${string}`;
+
+/** One line of the removal report from seo._tm_remove_topics. */
+export interface MapTopicRemoval {
+  slug: string;
+  /**
+   * `retired` (nothing was attached), `retired_with_attachments`,
+   * `attachments_moved_to_parent`, or `attachments_merged_into_<slug>`.
+   */
+  action: string;
+  attachments: MapTopicAttachments;
+}
+
+/** Result of seo.replace_map_section: the upsert's own report plus what left. */
+export interface MapSectionReplaceResult extends MapTopicsUpsertResult {
+  /** Slugs that lived elsewhere in the map and were moved into this section. */
+  moved_in: string[];
+  /** Topics that vanished from the section, and what happened to each. */
+  removed: MapTopicRemoval[];
+}
+
+/** Result of seo.retire_map_topics. */
+export interface MapTopicsRetireResult {
+  ok: true;
+  removed: MapTopicRemoval[];
+}
+
+/**
+ * One page in seo.set_pages_map_topics. The page is named by `page_id` or by
+ * `url` (id wins when both are given) and must be a live page OF the call's
+ * site — foreign, invented and off-site pages are one per-item 42501.
+ *
+ * `topics` is required: `[]` clears this source's coverage on purpose, and an
+ * item without a topics array comes back as a per-item 22023 failure row
+ * rather than clearing anything.
+ */
+export type SetPagesMapTopicsItem =
+  | { page_id: string; url?: string; topics: PageMapTopicsInput[] }
+  | { page_id?: undefined; url: string; topics: PageMapTopicsInput[] };
+
+/** One page that was mapped. Carries seo.set_page_map_topics' own report. */
+export interface SetPagesMapTopicsSuccess {
+  ok: true;
+  page_id: string;
+  /** Echoed from the item; null when the page was named by id. */
+  url: string | null;
+  map_id: string;
+  covers: number;
+  /** How many coverage rows from the same `source` were replaced. */
+  replaced: number;
+  /**
+   * Slugs this call could not cover. 🚨 ROUND 22: a RETIRED or REJECTED slug
+   * lands here too, in the same shape and the same bytes as an invented one —
+   * a dead topic is never a coverage destination, and nothing distinguishes
+   * the two cases on the wire.
+   */
+  unknown_slugs: string[];
+}
+
+/** One page that could not be mapped. The batch keeps going. */
+export interface SetPagesMapTopicsFailure {
+  ok: false;
+  page_id: string | null;
+  url: string | null;
+  /** SQLERRM from the failed page — a message, never a code. */
+  error: string;
+}
+
+export type SetPagesMapTopicsRow = SetPagesMapTopicsSuccess | SetPagesMapTopicsFailure;
+
+/** Result of seo.set_pages_map_topics. `ok` is true only when nothing failed. */
+export interface SetPagesMapTopicsResult {
+  ok: boolean;
+  mapped: number;
+  failed: number;
+  results: SetPagesMapTopicsRow[];
+}
+
+/** The functions seo.map_dry_run will rehearse. Anything else raises 22023. */
+export type MapDryRunFunction =
+  | "upsert_map_topics"
+  | "replace_map_section"
+  | "patch_map_topics"
+  | "move_map_topic"
+  | "merge_map_topics"
+  | "split_map_topic"
+  | "retire_map_topics"
+  | "set_map_topic_facet"
+  | "reject_map_topics"
+  | "set_page_map_topics"
+  | "set_pages_map_topics"
+  | "set_page_intents"
+  | "create_map_facet_values"
+  | "set_site_map"
+  | "set_page_map_facet";
+
+/**
+ * Result of seo.map_dry_run. `would_return` is exactly what the rehearsed
+ * function returned before the rollback, so narrow it to that function's own
+ * result type at the call site.
+ */
+export interface MapDryRunResult {
+  dry_run: true;
+  function: MapDryRunFunction;
+  would_return: Json;
+}
+
+// ───────────────────────────────────────────────────────────────────────────
+// ROUND 19 — page intents, topic gaps, rejection, and what left the map.
+// ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * What to do with a topic that is being REJECTED while attachments still hang
+ * off it. Deliberately not {@link MapTopicRemovalPolicy}: retire's vocabulary
+ * says `retire`, rejection's says `reject` (keep them and reject anyway), and
+ * `seo.reject_map_topics` raises 22023 on anything outside this list.
+ * `merge_into:<slug>` moves them onto that topic, which may not itself be in
+ * the batch — and since round 22 must be a LIVE topic: a retired or rejected
+ * slug raises the same `P0002` an invented one does.
+ */
+export type MapTopicRejectionPolicy =
+  | "error"
+  | "reject"
+  | "parent"
+  | `merge_into:${string}`;
+
+/** One line of the rejection report from `seo._tm_reject_topics`. */
+export interface MapTopicRejection {
+  slug: string;
+  /**
+   * `rejected` (nothing was attached), `rejected_with_attachments`,
+   * `attachments_moved_to_parent`, or `attachments_merged_into_<slug>`.
+   */
+  action: string;
+  attachments: MapTopicAttachments;
+}
+
+/** Result of `seo.reject_map_topics`. */
+export interface MapTopicsRejectResult {
+  ok: true;
+  rejected: MapTopicRejection[];
+}
+
+/**
+ * One topic that left the map, from `seo.list_map_history`. `jsonb_strip_nulls`ed,
+ * so every optional key is simply absent rather than null.
+ */
+export interface MapHistoryEntry {
+  slug: string;
+  name: string;
+  status: MapTopicStatus;
+  description?: string;
+  /** Absent when the topic sits at the root. */
+  parent_slug?: string;
+  version?: number;
+  /** Absent — rather than `{}` — when nothing still hangs off the topic. */
+  attachments?: MapTopicAttachments;
+  /**
+   * When the topic reached its CURRENT status, read from `history.row_versions`;
+   * falls back to the topic's own `updated_at` when no snapshot carries it.
+   */
+  changed_at: string;
+  /**
+   * The actor, as a BARE uuid. `platform.entity_types` has no token for a user,
+   * so there is no entity ref to resolve here — the client's own user surface
+   * renders the name. Absent when no snapshot recorded an actor.
+   */
+  changed_by?: string;
+  /** The actor's tier on that snapshot, when one was recorded. */
+  changed_by_tier?: string;
+}
+
+/** Result of `seo.list_map_history`. `total` counts the whole filtered set, not the page. */
+export interface MapHistoryResult {
+  total: number;
+  limit: number;
+  offset: number;
+  items: MapHistoryEntry[];
+}
+
+/** Where a page is going. The vocabulary of `map_page_intent` v1. */
+export type PageIntentDisposition =
+  | "keep"
+  | "move"
+  | "merge"
+  | "redirect"
+  | "rewrite"
+  | "delete";
+
+/** How far along the decision is. Defaults to `proposed` when an item omits it. */
+export type PageIntentState = "proposed" | "accepted" | "done";
+
+/** Who decided. `seo.set_page_intents` takes this once for the whole batch. */
+export type PageIntentSource = "mapper" | "human" | "agent";
+
+/**
+ * The stored payload of a page's one `intent` edge — `platform.edge_payload_kind`
+ * `map_page_intent` v1, whose cross-rules live in the JSON schema itself and
+ * therefore hold for a direct insert by a server lane as much as for the RPC:
+ *
+ * - `merge` and `redirect` need EXACTLY ONE of `into_page_id` / `into_node_id`
+ *   (`oneOf`: neither is refused, both are refused);
+ * - `keep`, `move`, `rewrite` and `delete` forbid BOTH.
+ *
+ * `into_node_id` names a `plan.node` — a planned page — so an intent can point
+ * at a page that does not exist yet. `note` is cut at 300 characters by the
+ * writer. `jsonb_strip_nulls` means an absent key, never a null one.
+ */
+interface PageIntentPayloadBase {
+  state: PageIntentState;
+  source: PageIntentSource;
+  note?: string;
+}
+
+export type PageIntentPayload =
+  | (PageIntentPayloadBase & {
+      disposition: "merge" | "redirect";
+      into_page_id: string;
+      into_node_id?: never;
+    })
+  | (PageIntentPayloadBase & {
+      disposition: "merge" | "redirect";
+      into_node_id: string;
+      into_page_id?: never;
+    })
+  | (PageIntentPayloadBase & {
+      disposition: "keep" | "move" | "rewrite" | "delete";
+      into_page_id?: never;
+      into_node_id?: never;
+    });
+
+/**
+ * Which page an intent is about. Named by `page_id` or by `url` (id wins when
+ * both are given) and it must be a live page OF the call's site — foreign,
+ * invented and off-site pages are one per-item 42501, so the results array is
+ * no existence oracle for any id or URL in the database.
+ */
+type PageIntentTarget =
+  | { page_id: string; url?: string }
+  | { page_id?: undefined; url: string };
+
+/**
+ * The decision itself, with the destination rule of `map_page_intent` v1 and
+ * the writer's topic rule on top:
+ *
+ * - `move`, `merge` and `redirect` MOVE the page, so `topic_slug` names where
+ *   it is going and is required (22023 without it);
+ * - `keep`, `rewrite` and `delete` derive the topic from the page's own
+ *   highest-confidence `covers` edge when `topic_slug` is omitted — and raise
+ *   22023 when the page covers no topic in this map, so there is nothing to
+ *   derive it from.
+ *
+ * A `topic_slug` must name a live topic of the site's map; a retired or
+ * rejected one raises P0002.
+ */
+type PageIntentDecision =
+  | { disposition: "merge" | "redirect"; topic_slug: string; into_page_id: string; into_node_id?: never }
+  | { disposition: "merge" | "redirect"; topic_slug: string; into_node_id: string; into_page_id?: never }
+  | { disposition: "move"; topic_slug: string; into_page_id?: never; into_node_id?: never }
+  | { disposition: "keep" | "rewrite" | "delete"; topic_slug?: string; into_page_id?: never; into_node_id?: never };
+
+/** One item of `seo.set_page_intents`. `source` is the call's, never the item's. */
+export type SetPageIntentsItem = PageIntentTarget &
+  PageIntentDecision & {
+    /** Defaults to `proposed` when omitted. */
+    state?: PageIntentState;
+    /** Cut at 300 characters by the writer. */
+    note?: string;
+  };
+
+/** One page whose intent was written. `url` is echoed; absent when the page was named by id. */
+export interface SetPageIntentsSuccess {
+  ok: true;
+  page_id: string;
+  url?: string;
+}
+
+/**
+ * One page that could not be given an intent. The batch keeps going.
+ * `page_id` and `url` are echoed from the item, so both can be absent.
+ */
+export interface SetPageIntentsFailure {
+  ok: false;
+  page_id?: string;
+  url?: string;
+  /** SQLERRM from the failed item — a message, never a code. */
+  error: string;
+}
+
+export type SetPageIntentsRow = SetPageIntentsSuccess | SetPageIntentsFailure;
+
+/** Result of `seo.set_page_intents`. `ok` is true only when `failed` is 0. */
+export interface SetPageIntentsResult {
+  ok: boolean;
+  /** The map the site uses — the call raises P0002 when it uses none. */
+  map_id: string;
+  set: number;
+  failed: number;
+  results: SetPageIntentsRow[];
+}
+
+/**
+ * The page as the bulk screen renders it: the pointer plus its traffic over
+ * `performance_window_days`. Built directly by `seo.list_page_intents` in ONE
+ * set-based aggregate over the window's pages — this screen opens on
+ * 4,000-page sites — so it is the {@link WebPageItem} shape without going
+ * through `seo._tm_item`. `label`, `url` and `site_id` are stripped when null.
+ */
+export interface PageIntentPageRef extends PagePerformance {
+  type: "web_page";
+  id: string;
+  label?: string;
+  url?: string;
+  site_id?: string;
+}
+
+/** One `covers` edge: where the page sits TODAY. */
+export interface PageIntentCurrentTopic {
+  slug: string;
+  name: string;
+  confidence?: number;
+  source?: string;
+}
+
+/** The page's one intent, rendered. `jsonb_strip_nulls`ed. */
+export interface PageIntentRecord {
+  /**
+   * Where the page SHOULD live (keep/move/rewrite/merge/redirect) or sits
+   * today (delete).
+   *
+   * 🚨 OPTIONAL SINCE ROUND 22 (`seo_topical_map_22_a_page_never_vanishes`),
+   * and a missing key is a REAL, EXPECTED state — not a malformed row. The
+   * intent SURVIVES its topic being hidden, because it is a decision somebody
+   * made and it is still true; but the server renders `topic` only while that
+   * topic is live (`status IN ('proposed','active')`), so a screen can never
+   * offer a destination that is gone. A rejected or retired topic is not a
+   * destination anywhere: `set_page_intents`, `set_page_map_topics` (the slug
+   * comes back in `unknown_slugs`), `move_map_topic`, `merge_map_topics` and
+   * every `merge_into:<slug>` policy answer the same `P0002` an invented slug
+   * gets.
+   *
+   * So a reader must narrow before use. The state it means —
+   * `intent_topic_hidden` — is produced by `pageTopicState` in
+   * `./redux/selectors`, and the screen says the destination left the map
+   * rather than printing a blank cell.
+   */
+  topic?: { slug: string; name: string };
+  disposition: PageIntentDisposition;
+  state: PageIntentState;
+  source: PageIntentSource;
+  note?: string;
+  /**
+   * The destination of a `merge` or `redirect`, resolved through `seo._tm_ref`
+   * — a `web_page` or a `plan_node`, or `{type, hidden: true}` when the caller
+   * cannot open it. Absent for every other disposition.
+   */
+  into?: EntityRef;
+  updated_at: string;
+}
+
+/**
+ * One row of `seo.list_page_intents`: a page that has an intent, a coverage
+ * edge, or both. `intent` is present and NULL when the page has none — this
+ * result is not `jsonb_strip_nulls`ed at the row level, so the key never
+ * vanishes.
+ */
+export interface PageIntentItem {
+  page: PageIntentPageRef;
+  /**
+   * The page's LIVE coverage. `[]` is a real, expected state — "on no topic" —
+   * and never a sign the read failed.
+   *
+   * 🚨 ROUND 22. A page is ALWAYS LISTABLE. Candidacy for this list reads
+   * topics of this map at ANY status, so a page whose only topic was rejected
+   * or retired is still here; `current_topics` reads LIVE topics only, so it
+   * comes back empty. Before the migration the two came from one CTE that
+   * excluded rejected topics, so rejecting a proposal silently deleted its
+   * pages from the list entirely.
+   */
+  current_topics: PageIntentCurrentTopic[];
+  intent: PageIntentRecord | null;
+}
+
+/**
+ * Result of `seo.list_page_intents`. ONE INTENT PER PAGE is the contract;
+ * `duplicate_intents` counts edges this read had to collapse (newest wins) if
+ * duplicates ever appear through another path, so a screen can say so out loud
+ * instead of silently showing one of them. It is 0 on a healthy map.
+ */
+export interface PageIntentsResult {
+  total: number;
+  limit: number;
+  offset: number;
+  performance_window_days: number;
+  duplicate_intents: number;
+  items: PageIntentItem[];
+}
+
+/** One topic that should have a page and has none. */
+export interface MapTopicGap {
+  slug: string;
+  name: string;
+  status: MapTopicStatus;
+  depth: number;
+  keyword_count: number;
+}
+
+/**
+ * Result of `seo.list_topic_gaps`. `total` is the whole answer — this read is
+ * not paged.
+ */
+export interface MapTopicGapsResult {
+  total: number;
+  items: MapTopicGap[];
+}
+
+/** What `listPageIntents` may narrow by. Every filter is optional. */
+export interface PageIntentsListOptions {
+  /**
+   * One access-checked site. Omitted (or null), the page set is every site
+   * related to this map THAT THE CALLER MAY VIEW — never "all sites".
+   */
+  siteId?: string | null;
+  /**
+   * A live topic of this map. It matches a page related to that topic EITHER
+   * WAY — by its intent or by its coverage. P0002 when the slug is unknown,
+   * retired or rejected.
+   */
+  topicSlug?: string | null;
+  disposition?: PageIntentDisposition | null;
+  state?: PageIntentState | null;
+  /** Clamped to 1..1000 by the function; 200 when omitted. */
+  limit?: number;
+  /** Clamped to >= 0; 0 when omitted. */
+  offset?: number;
+}
+
+/** What `listMapHistory` may narrow by. */
+export interface MapHistoryListOptions {
+  /**
+   * Which statuses to list. Any of `proposed`, `active`, `retired`,
+   * `rejected`; anything else raises 22023. Omitted means what LEFT the map:
+   * `["rejected", "retired"]`.
+   */
+  status?: MapTopicStatus[];
+  /** Clamped to 1..1000 by the function; 200 when omitted. */
+  limit?: number;
+  /** Clamped to >= 0; 0 when omitted. */
+  offset?: number;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// The page-mapping ledger (CONTRACTS §8 readers)
+//
+// These four read the SITE's mapping ledger, `seo.page_mapping_queue` — what
+// the "map the pages" run enrolled, what it settled, and what it could not
+// place. They are site-scoped, never map-scoped: a ledger row belongs to a
+// site, and the map is only what the site currently uses.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * One row of `seo.page_mapping_status` — the ledger for one site, rolled up.
+ * The function is `RETURNS TABLE`, so PostgREST answers with an ARRAY of
+ * exactly one row; the wrapper hands back that row (see `pageMappingStatus`).
+ *
+ * Every `*_mapped` figure is the DONE slice of the figure beside it, so
+ * "43% of this site's clicks are on the map" is a division a screen can do
+ * without a second call. `next_url` is the pending page with the most clicks —
+ * what the next press will start on — and `last_error` is the newest failure
+ * still standing, not a count.
+ */
+export type PageMappingStatus =
+  Database["seo"]["Functions"]["page_mapping_status"]["Returns"][number];
+
+/**
+ * One topic the mapper says this map is MISSING: pages it could not place that
+ * all named the same subject. THE BAR is two pages asking, or one page we have
+ * actually crawled — a suggestion resting on a single uncrawled URL is held
+ * back instead (see {@link PageMappingWantedTopicHeldBack}), never dropped.
+ */
+export type PageMappingWantedTopic =
+  Database["seo"]["Functions"]["page_mapping_wanted_topics"]["Returns"][number];
+
+/**
+ * A wanted topic that did NOT clear the bar, with `held_back_because` — the
+ * sentence saying what would promote it. Listed, never hidden: a suggestion
+ * the system is sitting on is a decision a person is entitled to see.
+ */
+export type PageMappingWantedTopicHeldBack =
+  Database["seo"]["Functions"]["page_mapping_wanted_topics_held_back"]["Returns"][number];
+
+/**
+ * One active page of a site that sits on NO live topic of the map.
+ *
+ * The function `jsonb_strip_nulls` each item, so every field below except
+ * `page_id`, `url` and `clicks` can be ABSENT rather than null — a page that
+ * was never enrolled has no `queue_status` at all. `rendition_of` names the
+ * canonical page this one is a second address of (amp / paginated / parameter
+ * variant); a rendition is not a gap, it is a duplicate address.
+ */
+export interface PageWithoutTopic {
+  page_id: string;
+  url: string;
+  clicks: number;
+  queue_status?: string;
+  mapping_source?: string;
+  last_error?: string;
+  rendition_of?: string;
+}
+
+/**
+ * Result of `seo.list_pages_without_topic`. Paged: `total` counts every bare
+ * page, `items` carries one page of them (the function clamps `limit` to
+ * 1..1000, defaulting to 200, and `offset` to >= 0).
+ */
+export interface PagesWithoutTopicResult {
+  site_id: string;
+  map_id: string;
+  total: number;
+  limit: number;
+  offset: number;
+  items: PageWithoutTopic[];
+}

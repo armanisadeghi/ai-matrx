@@ -17,13 +17,22 @@ OUT="$ROOT/scripts/hr/hr-door-snapshot.json"
 
 URL="${HR_DOOR_SNAPSHOT_DATABASE_URL:-${DATABASE_URL:-${SUPABASE_DB_URL:-}}}"
 
-if [[ -z "$URL" ]] || ! command -v psql >/dev/null 2>&1; then
+# psql is resolved, never assumed to be on PATH: Homebrew's libpq is keg-only and
+# deliberately unlinked, so `command -v psql` is empty on a machine that has three
+# working binaries on disk. THE ONE RESOLVER is scripts/lib/psql-path.ts — read its
+# header for the ladder and why a shell profile is not the fix. (ATTACK-9 finding 5.)
+PSQL_BIN="$(cd "$ROOT" && pnpm -s exec tsx scripts/lib/psql-path.ts --print 2>/dev/null || true)"
+
+if [[ -z "$URL" ]] || [[ -z "$PSQL_BIN" ]]; then
   cat >&2 <<EOF
 [INFO] No direct Postgres connection available here.
 
   The frontend reaches the database through PostgREST only, and PostgREST cannot
   read pg_proc — so this refresh needs either psql with a connection string, or
   an agent session with the Supabase MCP.
+
+  URL set:  $([[ -n "$URL" ]] && echo yes || echo "no  — set DATABASE_URL")
+  psql:     ${PSQL_BIN:-"not found — run \`pnpm check:psql\` for the remedy"}
 
   With psql:
     DATABASE_URL=... pnpm hr:door-snapshot
@@ -39,7 +48,7 @@ EOF
   exit 3
 fi
 
-psql "$URL" --no-psqlrc --tuples-only --no-align --quiet -f "$SQL" \
+"$PSQL_BIN" "$URL" --no-psqlrc --tuples-only --no-align --quiet -f "$SQL" \
   | python3 -m json.tool --sort-keys > "$OUT.tmp"
 
 mv "$OUT.tmp" "$OUT"

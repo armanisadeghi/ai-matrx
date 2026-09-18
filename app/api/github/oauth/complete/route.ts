@@ -4,6 +4,7 @@ import { escapeHtml } from "@ai-matrx/kit/html-escape";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const connected = request.nextUrl.searchParams.get("github") === "connected";
+  const refreshNotice = request.nextUrl.searchParams.get("github_notice") === "refresh";
   const error =
     request.nextUrl.searchParams.get("github_error") ??
     "GitHub connection failed.";
@@ -12,24 +13,32 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   );
   const message = connected
     ? { type: "github_oauth_complete" }
+    : refreshNotice
+      ? null
     : { type: "github_oauth_error", error };
-  const serializedMessage = JSON.stringify(message).replaceAll("<", "\\u003c");
+  const serializedMessage = message
+    ? JSON.stringify(message).replaceAll("<", "\\u003c")
+    : null;
 
   const html = `<!doctype html>
 <html><head><meta charset="utf-8"><title>GitHub connection</title></head>
 <body style="font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100dvh;margin:0;background:#111;color:#eee">
 <main style="text-align:center;max-width:400px;padding:2rem">
-  <p style="font-size:1.25rem;${connected ? "" : "color:#f87171"}">${
-    connected ? "✓ GitHub connected" : "Connection failed"
+  <p style="font-size:1.25rem;${!connected && !refreshNotice ? "color:#f87171" : ""}">${
+    connected ? "✓ GitHub connected" : refreshNotice ? "Return to AI Matrx" : "Connection failed"
   }</p>
   <p style="color:#999">${
-    connected ? "This window will close automatically." : escapeHtml(error)
+    connected
+      ? "This window will close automatically."
+      : refreshNotice
+        ? "If you changed repository access in GitHub, refresh your GitHub connection in AI Matrx to load it."
+        : escapeHtml(error)
   }</p>
   <a href="${escapeHtml(returnUrl)}" style="color:#93c5fd">Return to AI Matrx</a>
 </main>
 <script>
 try {
-  if (window.opener) window.opener.postMessage(${serializedMessage}, window.location.origin);
+  if (window.opener && ${serializedMessage}) window.opener.postMessage(${serializedMessage}, window.location.origin);
 } catch (_) {}
 ${connected ? "setTimeout(function () { window.close(); }, 800);" : ""}
 </script></body></html>`;

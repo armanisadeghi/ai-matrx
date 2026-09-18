@@ -20,6 +20,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const INDEX_FILE = "docs/reuse-first.md";
 const SECTION_MARKER = "## Primitives Index";
@@ -31,7 +32,7 @@ const indexPath = join(repoRoot, INDEX_FILE);
 
 if (!existsSync(indexPath)) {
   console.error(`check-reuse-index: ${INDEX_FILE} not found`);
-  process.exit(2);
+  exitAfterDrain(2);
 }
 
 const content = readFileSync(indexPath, "utf8");
@@ -40,7 +41,7 @@ if (sectionStart === -1) {
   console.error(
     `check-reuse-index: "${SECTION_MARKER}" section not found in ${INDEX_FILE}`,
   );
-  process.exit(2);
+  exitAfterDrain(2);
 }
 const section = content.slice(sectionStart);
 
@@ -71,7 +72,7 @@ if (missing.length === 0) {
   console.log(
     `check-reuse-index: OK — ${checked} paths in the Primitives Index all exist.`,
   );
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 const line = "═".repeat(72);
@@ -84,4 +85,4 @@ console.error(
   "  Fix the row (file moved/renamed) or delete it. Agents trust this index.",
 );
 console.error(`${line}\x1b[0m`);
-process.exit(strict ? 1 : 0);
+exitAfterDrain(strict ? 1 : 0);

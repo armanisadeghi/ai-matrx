@@ -4,6 +4,7 @@
 // canonical-table clients both import these — one shape, no drift.
 
 import { z } from "zod";
+import { GuestAccessSchema } from "./lib/guestAccess";
 
 /** The FULL user roster row (auth facts + profile + admin level). */
 export interface AdminUserRow {
@@ -136,6 +137,9 @@ export const AdminUserAcquisitionRowSchema = z.object({
   traffic_kind: z.enum(["browser", "bot", "local_test", "unknown"]),
   client_description: z.string(),
   last_sign_in_at: z.string().nullable(),
+  /** The guest registry row aidream resolves this identity's browser through; null when none exists. */
+  guest_access: GuestAccessSchema.nullable(),
+  guest_fingerprint_hint: z.string().nullable(),
 });
 
 export type AdminUserAcquisitionRow = z.infer<

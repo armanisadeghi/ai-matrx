@@ -20,6 +20,7 @@ const row: SiteListRow = {
   gsc_impressions_prev_28d: 40000,
   gsc_latest_date: "2026-08-29",
   gsc_position_28d: 4.2,
+  gsc_cur_days: 28,
   gsc_prev_days: 28,
   gsc_sync: {},
   gsc_synced_at: "2026-08-29T00:00:00Z",
@@ -107,5 +108,49 @@ describe("site list presentation", () => {
     expect(html).toContain("Canonical site actions");
     expect(html).toContain("min-h-11");
     expect(html).toContain("/marketing/brand-1/websites/site-1");
+  });
+
+  /*
+    THE DELTA IS JUDGED ON BOTH WINDOWS (round-3 verdict B-N1). These are the
+    live coverage numbers of five managed sites on 2026-09-17: 8 of 28 current
+    days against 23 of 28 previous ones. The table used to print −54.3% here,
+    because the only rule it asked was `gsc_prev_days >= 21`.
+  */
+  const underCollected: SiteListRow = {
+    ...row,
+    gsc_clicks_28d: 117,
+    gsc_clicks_prev_28d: 256,
+    gsc_impressions_28d: 4000,
+    gsc_impressions_prev_28d: 12000,
+    gsc_cur_days: 8,
+    gsc_prev_days: 23,
+  };
+
+  function cellHtml(id: string, subject: SiteListRow): string {
+    const spec = SITE_LIST_COLUMNS.find((entry) => entry.id === id);
+    if (!spec?.column.cell) throw new Error(`No cell renderer for ${id}`);
+    return renderToStaticMarkup(<>{spec.column.cell(subject, 0)}</>);
+  }
+
+  it("prints no percentage, and says why, when the two windows were not collected alike", () => {
+    const html = cellHtml("gsc_clicks_28d", underCollected);
+    expect(html).not.toContain("54.3%");
+    expect(html).toContain("no comparison");
+    expect(html).toContain("8 of 28");
+    expect(html).toContain("23 of 28");
+  });
+
+  it("still prints the percentage when both windows are complete", () => {
+    const html = cellHtml("gsc_clicks_28d", row);
+    expect(html).toContain("20.0%");
+    expect(html).not.toContain("no comparison");
+  });
+
+  it("carries the same refusal onto the phone card", () => {
+    const html = renderToStaticMarkup(
+      renderSiteListMobileCard(underCollected, 0, controls),
+    );
+    expect(html).toContain("no comparison");
+    expect(html).not.toContain("54.3%");
   });
 });

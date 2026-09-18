@@ -47,6 +47,40 @@ const CodePreviewCanvas = dynamic(
     ),
   { ssr: false },
 );
+// The live SANDBOX pane — Terminal / Files / Activity for the box bound to a
+// conversation. Heavy (a pty client + a file tree), so it stays out of the
+// canvas base chunk until a sandbox pane actually opens. CanvasPane supplies
+// the frame and the "Sandbox" header; this body renders bare.
+const SandboxCanvasBody = dynamic(
+  () =>
+    import(
+      "@/features/agents/components/chat/sandbox-insight/SandboxCanvasBody"
+    ).then((m) => ({ default: m.SandboxCanvasBody })),
+  { ssr: false },
+);
+// A CLOUD DOCUMENT hosted in the canvas pane. The body mounts the canonical
+// `DocumentEditor` (Univer) — heavy and window-dependent, so it stays out of
+// the canvas base chunk until a document pane actually opens. CanvasPane
+// supplies the frame and the document's title; this body renders bare.
+const DocumentCanvasBody = dynamic(
+  () =>
+    import("@/features/data-tables/components/DocumentCanvasBody").then((m) => ({
+      default: m.DocumentCanvasBody,
+    })),
+  { ssr: false },
+);
+// A TOPICAL MAP hosted in the canvas pane. The body mounts the canonical
+// `TopicalMapWorkspaceBody` (the page route's and the window's component) in
+// `host="canvas"` with a screen switcher; heavy (the map slice, six views, the
+// graph's own lazy edge), so it stays out of the canvas base chunk until a map
+// pane actually opens. CanvasPane supplies the frame and the title.
+const TopicalMapCanvasBody = dynamic(
+  () =>
+    import("@/features/marketing/seo/topical-map/canvas/TopicalMapCanvasBody").then((m) => ({
+      default: m.TopicalMapCanvasBody,
+    })),
+  { ssr: false },
+);
 const CodeEditErrorCanvas = dynamic(
   () =>
     import("@/features/canvas/custom-components/CodeEditErrorCanvas").then(
@@ -298,6 +332,9 @@ export function getDefaultTitle(type: string): string {
     working_document: "Documents",
     scratchpad: "Documents",
     cloud_browser: "Cloud Browser",
+    sandbox: "Sandbox",
+    udt_document: "Document",
+    topical_map: "Topical map",
   };
   return titles[type] || "Canvas View";
 }
@@ -417,6 +454,58 @@ function renderContent(content: CanvasContent): React.ReactNode {
               : undefined
           }
           runId={typeof data?.runId === "string" ? data.runId : undefined}
+          conversationId={content.metadata?.conversationId}
+          className="h-full"
+        />
+      );
+
+    case "sandbox":
+      // `data` is a pointer { sandboxRowId, fallbackName? } and the metadata
+      // carries the chat binding. The body holds the live pty / file tree and
+      // reads the conversation's sandbox tool calls; the pane draws the frame
+      // and the title. Never persisted — see NON_PERSISTABLE_CANVAS_TYPES.
+      return (
+        <SandboxCanvasBody
+          sandboxRowId={
+            typeof data?.sandboxRowId === "string" ? data.sandboxRowId : ""
+          }
+          fallbackName={
+            typeof data?.fallbackName === "string"
+              ? data.fallbackName
+              : undefined
+          }
+          conversationId={content.metadata?.conversationId}
+          className="h-full"
+        />
+      );
+
+    case "udt_document":
+      // `data` is a pointer { documentId }. The row is the truth and the
+      // editor persists itself (udt_document_snapshots), so nothing about the
+      // document is ever carried in the canvas envelope — see
+      // NON_PERSISTABLE_CANVAS_TYPES.
+      return (
+        <DocumentCanvasBody
+          documentId={
+            typeof data?.documentId === "string" ? data.documentId : ""
+          }
+          fallbackTitle={
+            typeof content.metadata?.title === "string"
+              ? content.metadata.title
+              : undefined
+          }
+          className="h-full"
+        />
+      );
+
+    case "topical_map":
+      // `data` is a pointer { mapId, screen, siteId }. The rows are the truth
+      // and the body reads them live — see NON_PERSISTABLE_CANVAS_TYPES.
+      return (
+        <TopicalMapCanvasBody
+          mapId={typeof data?.mapId === "string" ? data.mapId : ""}
+          initialScreen={typeof data?.screen === "string" ? data.screen : "outline"}
+          siteId={typeof data?.siteId === "string" ? data.siteId : null}
           conversationId={content.metadata?.conversationId}
           className="h-full"
         />

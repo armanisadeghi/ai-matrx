@@ -38,9 +38,22 @@ function parseLevel(raw: unknown): AccessDeniedContext["level"] {
  * transient (a dropped connection, a timeout) and showing them a denial screen
  * would be its own lie.
  */
+/**
+ * What the CALLER'S OWN failed read was.
+ *
+ *  - `fault` — a transport or query failure (a timeout, a malformed request).
+ *    It says nothing about access, so a level claim is believable and a retry
+ *    can work.
+ *  - `access-question` — the read returned NOTHING, or a policy refused it.
+ *    That is itself an authorization answer, and it outranks any level the
+ *    resolver claims: see the header of this function.
+ */
+export type AccessReadOutcome = "fault" | "access-question";
+
 export function deriveStatus(
   payload: Record<string, unknown>,
   disclosure: AccessDisclosure,
+  read: AccessReadOutcome,
 ): AccessGateStatus {
   // An unregistered token is a bug in the CALLING surface, not evidence about
   // the user's record. Reporting it as "missing" would tell someone their data
@@ -51,8 +64,24 @@ export function deriveStatus(
   // Facts about the RECORD, before any question about the caller.
   if (payload.exists === false) return "missing";
   if (payload.deleted === true) return "deleted";
-  // Facts about the CALLER.
-  if (parseLevel(payload.level) !== "none") return "ok";
+  // Facts about the CALLER — and only where the caller's own read left room
+  // for them.
+  //
+  // 🚨 A LEVEL CLAIM IS NOT EVIDENCE AGAINST A READ THAT CAME BACK EMPTY
+  // (V-XT-2/N2, 2026-09-15). `access_denied_context` promotes any platform
+  // admin to `level: 'admin'` because the `platform_admin_all` RLS policy
+  // normally lets them read the row. When the surface's own read returned
+  // nothing anyway, those two answers disagree — and the screen used to
+  // resolve the disagreement in favour of the claim, telling a person "You do
+  // have access to it — something went wrong on our side. Try again." about a
+  // conversation the server had refused them with `404
+  // conversation_not_found`, on a retry that could never succeed.
+  //
+  // So `ok` — "you can open this, the failure was transient" — is reachable
+  // only from a read that actually FAILED transiently. A read that simply
+  // returned nothing is an access answer, and the record is reported as what
+  // the caller actually got: closed.
+  if (read === "fault" && parseLevel(payload.level) !== "none") return "ok";
   if (payload.exists === true) return "denied";
   return "error";
 }

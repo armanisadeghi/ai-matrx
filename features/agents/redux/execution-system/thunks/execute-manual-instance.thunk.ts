@@ -1,4 +1,7 @@
-import { executionRejectionMeta, type ExecutionRejectionMeta } from "@/lib/diagnostics/executionRejectionMeta";
+import {
+  executionRejectionMeta,
+  type ExecutionRejectionMeta,
+} from "@/lib/diagnostics/executionRejectionMeta";
 /**
  * Execute Manual Instance Thunk
  *
@@ -96,10 +99,11 @@ import {
   setInstanceStatus,
 } from "../conversations/conversations.slice";
 import {
+  selectHostVariableNames,
   selectRuntimeVariableResourcePolicies,
   selectVariablesForRequest,
 } from "../instance-variable-values/instance-variable-values.selectors";
-import { setUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
+import { restoreVariableValues } from "../instance-variable-values/instance-variable-values.slice";
 import { isFirstTurn } from "@/features/agents/ui-first-tools/redux/build-ambient-context";
 import {
   selectContextPayload,
@@ -123,6 +127,8 @@ import {
 import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
 import {
   selectProjectId,
+  selectActiveScopeTypeIds,
+  selectScopeSelectionsContext,
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
 import { requireExecutionOrganizationId } from "../utils/required-organization";
@@ -491,6 +497,20 @@ export async function assembleManualRequest(
   if (project_id) request.project_id = project_id;
   if (task_id) request.task_id = task_id;
 
+  // Active scope selections — same as assembleRequest. The Builder omits every
+  // scope-BOUND variable from `variables` (selectVariablesForRequest: the server
+  // fills it authoritatively from the active scope), so without scope_ids here a
+  // bound variable had nothing to resolve from and the model received a raw
+  // `{{name}}` placeholder (2026-09-18). The manual route stamps no tags; the
+  // server only reads these ids for this turn's bindings and context block.
+  const scope_ids = Object.values(
+    selectScopeSelectionsContext(state) ?? {},
+  ).filter((id): id is string => !!id);
+  if (scope_ids.length > 0) request.scope_ids = scope_ids;
+  const active_scope_type_ids = selectActiveScopeTypeIds(state) ?? [];
+  if (active_scope_type_ids.length > 0)
+    request.active_scope_type_ids = active_scope_type_ids;
+
   if (selectIsBlockMode(state)) request.block_mode = true;
   if (selectIsSnapshot(state)) request.snapshot = true;
 
@@ -584,7 +604,10 @@ export const executeManualInstance = createAsyncThunk<
   ) => {
     const requestId = generateRequestId();
     const rejectWithValue = (value: unknown, originalErrorName?: string) =>
-      reject(value, executionRejectionMeta(requestId, conversationId, originalErrorName));
+      reject(
+        value,
+        executionRejectionMeta(requestId, conversationId, originalErrorName),
+      );
     let recoveryId: string | null = null;
 
     try {
@@ -614,11 +637,15 @@ export const executeManualInstance = createAsyncThunk<
       const hasFirstTurnVariables = Boolean(
         firstTurnVariables && Object.keys(firstTurnVariables).length > 0,
       );
+      // Replays what is being sent; never claims it. See the same stamp in
+      // `execute-instance.thunk.ts` — `setUserVariableValues` released the
+      // launcher's authorship and put the host's values back in her bubble.
       if (hasFirstTurnVariables && firstTurnVariables) {
         dispatch(
-          setUserVariableValues({
+          restoreVariableValues({
             conversationId,
             values: firstTurnVariables,
+            hostValueNames: selectHostVariableNames(conversationId)(state),
           }),
         );
       }

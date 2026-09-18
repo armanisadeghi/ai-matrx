@@ -4,17 +4,17 @@
  * PLACE MANY KEYWORDS ON AN OFFERING — the bulk half of the Offering column.
  *
  * Three gestures reach it, exactly like `AssignPanel`: the checked rows,
- * everything matching the filters, and (for the reason box) a single row that
- * wants to say why. All three end in the ONE placement write,
- * `seo.gsc_set_keyword_topic`.
+ * everything matching the filters, and a single row that wants to say why. All
+ * three end in the ONE placement write, `seo.gsc_set_keyword_offering`, on THIS
+ * site's own placements.
  *
  * P24 — the reason rides along and is stored ON the placement
- * (`seo.keyword_topic.notes`), because "these are all ITAD buyers asking about
- * hard drives" is the training material an AI later learns the pattern from.
+ * (`seo.site_keyword_offering.notes`), because "these are all ITAD buyers asking
+ * about hard drives" is the training material an AI later learns the pattern
+ * from.
  *
  * The target headline (including the honest sentence when the server capped the
- * sweep) is `AssignTargetHeadline`, shared with the stamp panel — one place
- * where the count is described, so the two can never say it differently.
+ * sweep) is `AssignTargetHeadline`, shared with the stamp panel.
  */
 
 import { useState } from "react";
@@ -23,71 +23,75 @@ import { Eraser, Loader2, Network } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
-import { setKeywordService, type SetServiceResult } from "../data";
-import type { SiteServices } from "../hooks/useSiteServices";
+import { ProTextarea } from "@/components/official/ProTextarea";
+import {
+  KEYWORD_OFFERINGS_KEY,
+  setKeywordOffering,
+  type SetOfferingResult,
+} from "../data";
+import {
+  requireOfferingOrganization,
+  SITE_OFFERINGS_KEY,
+  type SiteOfferings,
+} from "../hooks/useSiteOfferings";
 import { AssignTargetHeadline, type AssignTarget } from "./AssignPanel";
 import { OfferingPicker, OFFERING_UNPLACED } from "./OfferingPicker";
-import { ProTextarea } from "@/components/official/ProTextarea";
 
 export function OfferingAssignPanel({
   siteId,
-  services,
+  offerings,
   target,
   onDone,
   onCancel,
 }: {
   siteId: string;
-  services: SiteServices;
+  offerings: SiteOfferings;
   target: AssignTarget;
   onDone: (
-    result: SetServiceResult[],
-    placed: { topicId: string | null; name: string },
+    result: SetOfferingResult[],
+    placed: { offeringId: string | null; name: string },
   ) => void;
   onCancel?: () => void;
 }) {
   const queryClient = useQueryClient();
-  const [topicId, setTopicId] = useState<string | null>(null);
+  const [offeringId, setOfferingId] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   // A new target is a new decision — never carry a reason written about other
-  // keywords onto these. Reset during render, not in an effect (an effect lets
-  // the stale reason paint for one frame).
+  // keywords onto these. Reset during render, not in an effect.
   const [targetSeen, setTargetSeen] = useState(target);
   if (targetSeen !== target) {
     setTargetSeen(target);
-    setTopicId(null);
+    setOfferingId(null);
     setNotes("");
   }
 
   const write = useMutation({
     mutationFn: (input: { clear: boolean }) => {
-      if (!input.clear && !topicId) throw new Error("Pick an offering first.");
-      return setKeywordService({
+      if (!input.clear && !offeringId) throw new Error("Pick an offering first.");
+      return setKeywordOffering({
+        organizationId: requireOfferingOrganization(offerings),
         siteId,
         keywordIds: target.keywordIds,
-        topicId: input.clear ? null : topicId,
+        offeringId: input.clear ? null : offeringId,
         notes: notes.trim() || null,
       });
     },
     onSuccess: async (result, input) => {
-      await queryClient.invalidateQueries({
-        queryKey: ["marketing", "seo", "keyword-services", siteId],
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ["marketing", "gsc", "keyword-value-for", siteId],
-      });
-      // The tree screen counts these placements; it must not go stale behind us.
-      await queryClient.invalidateQueries({ queryKey: ["seo", "topics"] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: [...KEYWORD_OFFERINGS_KEY, siteId] }),
+        queryClient.invalidateQueries({ queryKey: ["marketing", "gsc", "keyword-value-for", siteId] }),
+        // The offerings' keyword counts must not go stale behind us.
+        queryClient.invalidateQueries({ queryKey: SITE_OFFERINGS_KEY }),
+      ]);
       onDone(result, {
-        topicId: input.clear ? null : topicId,
+        offeringId: input.clear ? null : offeringId,
         name: input.clear
           ? "no offering"
-          : (services.byId.get(topicId ?? "")?.name ?? "that offering"),
+          : (offerings.byId.get(offeringId ?? "")?.name ?? "that offering"),
       });
     },
     onError: (error: unknown) => {
-      toast.error(
-        error instanceof Error ? error.message : "Could not place those.",
-      );
+      toast.error(error instanceof Error ? error.message : "Could not place those.");
     },
   });
 
@@ -103,20 +107,15 @@ export function OfferingAssignPanel({
 
       <OfferingPicker
         siteId={siteId}
-        services={services}
-        value={topicId}
-        onSelect={(next) =>
-          setTopicId(next === OFFERING_UNPLACED ? null : next)
-        }
+        offerings={offerings}
+        value={offeringId}
+        onSelect={(next) => setOfferingId(next === OFFERING_UNPLACED ? null : next)}
         size="md"
         ariaLabel="Offering"
       />
 
       <div className="space-y-1">
-        <label
-          htmlFor="offering-reason"
-          className="text-xs font-medium text-foreground"
-        >
+        <label htmlFor="offering-reason" className="text-xs font-medium text-foreground">
           Why?{" "}
           <span className="text-muted-foreground">
             — optional, but this is what teaches the system
@@ -154,20 +153,18 @@ export function OfferingAssignPanel({
           className="h-7 gap-1 text-xs"
           disabled={write.isPending}
           onClick={() => write.mutate({ clear: true })}
-          title="Take these keywords off the tree entirely"
+          title="Take these keywords off every offering"
         >
           <Eraser className="h-3.5 w-3.5" />
-          Take off the tree
+          Take off every offering
         </Button>
         <Button
           size="sm"
           className="h-7 gap-1 text-xs"
-          disabled={!topicId || write.isPending}
+          disabled={!offeringId || write.isPending}
           onClick={() => write.mutate({ clear: false })}
         >
-          {write.isPending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
-          ) : null}
+          {write.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
           Place {count.toLocaleString()}
         </Button>
       </div>

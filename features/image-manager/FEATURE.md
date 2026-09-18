@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-30`
+**Last updated:** `2026-09-15`
 
 ---
 
@@ -211,6 +211,13 @@ The Image Manager Hub plan landed across Phases 1–7 (May 2026). Pending owner-
 
 ## Change log
 
+- `2026-09-15` — codex: the Images Large Route sidebar now resolves the single most-specific route owner before applying the shared blue selected treatment, so overlapping paths such as Studio and Studio Light cannot both appear active.
+
+- `2026-09-15` — codex: **My Cloud has a bounded, honest terminal-load test
+  scenario.** `/images/my-cloud?data=error` renders only a labeled simulated
+  library failure (no media or provider request); its visible Try again clears
+  the scenario and starts the normal authenticated cloud-tree load without a
+  reload or session change.
 - `2026-09-13` — codex: **The Images hub now clears global fixed controls at its
   terminal scroll position.** The landing surface's single scroll owner reserves
   bottom space so its final Library card can move fully above alarms and page

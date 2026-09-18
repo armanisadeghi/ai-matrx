@@ -4,8 +4,24 @@
  * browser was successfully created. Observed in production 2026-08-23.
  */
 
+import { configureStore } from "@reduxjs/toolkit";
+
 import { postJson } from "@/lib/python-client";
+import appContextReducer, {
+  setOrganization,
+  setOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
+import { setStoreSingleton } from "@/lib/redux/store-singleton";
 import { listProfiles, loadSnapshot, loadSnapshotForRun } from "./service";
+
+/**
+ * A REAL store with the REAL appContext reducer, published through the REAL
+ * singleton the service's organization admission reads. `startRun` refuses
+ * without an admitted organization and stamps the POST with it, so a mocked
+ * admission would hide exactly the thing the server gate cares about.
+ */
+const store = configureStore({ reducer: { appContext: appContextReducer } });
+setStoreSingleton(store);
 
 jest.mock("@/lib/python-client", () => ({
   getJson: jest.fn(),
@@ -16,7 +32,9 @@ const profileRow = {
   id: "prof-1",
   owner_type: "user",
   owner_user_id: "user-1",
-  organization_id: "org-1",
+  // A real UUID: `requireOrganizationContext` refuses anything else, exactly as
+  // it does in the browser.
+  organization_id: "3f4b1a2c-9d8e-4c7a-b6f5-1e2d3c4b5a60",
   org_access_mode: "all_members",
   display_name: "My Cloud Browser",
   is_default: true,
@@ -109,6 +127,10 @@ describe("run admission", () => {
     jest.clearAllMocks();
     mockMaybeSingleRun = null;
     mockGetResourceAccess.mockResolvedValue({ level: "admin" });
+    // The person has chosen an organization and boot has answered — the only
+    // state in which the fleet accepts a start at all.
+    store.dispatch(setOrganization({ id: profileRow.organization_id }));
+    store.dispatch(setOrgBootstrapResolved(true));
   });
 
   it("drops super-admin-readable profiles with no canonical access", async () => {
@@ -154,6 +176,9 @@ describe("run admission", () => {
         profile_id: profileRow.id,
         activation_key: expect.any(String),
       }),
+      // The shared attempt carries the ADMITTED organization; the server's gate
+      // refuses a start without it.
+      { organizationId: profileRow.organization_id },
     );
   });
 
@@ -163,7 +188,11 @@ describe("run admission", () => {
     const snapshot = await loadSnapshot(profileRow.id, runRow.id);
 
     expect(snapshot.activeProfileId).toBe(profileRow.id);
-    expect(snapshot.run).toBeNull();
+    // The named run comes back in its terminal state rather than being hidden:
+    // the queued-start poll is the only thing that can show the person their
+    // start failed (a8bc8929f4, FEATURE.md 2026-09-17). What must never happen
+    // is a replacement browser being started to fill the empty slot.
+    expect(snapshot.run).toMatchObject({ id: runRow.id, state: "failed" });
     expect(postJson).not.toHaveBeenCalled();
   });
 });

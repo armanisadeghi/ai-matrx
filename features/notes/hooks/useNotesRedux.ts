@@ -51,6 +51,10 @@ export function useNotesRedux() {
   const activeNoteId = useAppSelector(selectActiveNoteId);
   const openTabs = useAppSelector(selectOpenTabs);
   const listStatus = useAppSelector(selectNotesListStatus);
+  // Two scalar reads, not the composite `selectUser` (which joins the profile
+  // slice this hook never uses and re-renders on every profile change).
+  const userId = useAppSelector((state) => state.userAuth?.id ?? null);
+  const authReady = useAppSelector((state) => state.userAuth?.authReady ?? false);
 
   const isLoading = listStatus === "loading" || listStatus === "idle";
   const error =
@@ -83,16 +87,17 @@ export function useNotesRedux() {
   }
 
   // Fetch notes list on first use (if not already loaded)
-  const fetchedRef = useRef(false);
+  const fetchedUserIdRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!fetchedRef.current && listStatus === "idle") {
-      fetchedRef.current = true;
-      console.log(
-        "[Track Quick Notes] 5, useNotesRedux.ts — dispatch fetchNotesList (listStatus idle)",
-      );
-      dispatch(fetchNotesList());
-    }
-  }, [dispatch, listStatus]);
+    if (!authReady || !userId || listStatus !== "idle") return;
+    if (fetchedUserIdRef.current === userId) return;
+    if (fetchedUserIdRef.current !== null) dispatch(resetNotesState());
+    fetchedUserIdRef.current = userId;
+    console.log(
+      "[Track Quick Notes] 5, useNotesRedux.ts — dispatch fetchNotesList (listStatus idle)",
+    );
+    dispatch(fetchNotesList());
+  }, [authReady, dispatch, listStatus, userId]);
 
   useEffect(() => {
     if (listStatus === "loaded") {

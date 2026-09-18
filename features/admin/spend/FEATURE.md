@@ -26,7 +26,7 @@ the role it plays, and never silently added:
 | ------------ | -------------------------------------------------------------------- | ------------------------------------------------------------- |
 | `primary`    | The headline. One table.                                             | `runtime.global_execution`                                    |
 | `overlap`    | Real spend, the SAME money through another lens. Shown, never added. | `chat.user_request` (the same executions counted per request) |
-| `additive`   | Genuinely separate spend.                                            | `ops.proof_run`, `batch.cost_event`                           |
+| `additive`   | Genuinely separate spend.                                            | `ops.proof_run`, `rag.ingest_run`                             |
 | `gap`        | A ledger that EXISTS and records nothing (or nothing but zeros).     | `docproc.derive_runs`, `communication.sms_messages`           |
 | `unmeasured` | Money we know we spend with no row anywhere.                         | Resend email, TTS/STT, SerpAPI/DataForSEO/Brave, hosting      |
 
@@ -42,6 +42,17 @@ Consequences that are not negotiable:
   "Model not recorded (no API-call row)"), never the bare word "Unattributed".
 - **Print orders are revenue, not spend**, and sit in their own folded tile with
   our Lulu cost beside them so the margin is visible. They are not in the headline.
+- **Batch API work is inside the headline, exactly once.** Every completed, priced
+  `batch.work_item` is one `runtime.global_execution` row (`link_kind
+  batch_work_item` — the explorer's Source dimension), so `batch.work_item` and
+  `batch.cost_event` are never added on top. Guard: aidream
+  `tests/test_batch_spend_ledger_live.py` (calls `admin_spend_breakdown` as the
+  super admin and reconciles it against `batch.work_item.actual_cost_usd`).
+- **"Saved by batching" is `batch.savings_summary`** — the explorer's window, the
+  actual tokens at the live catalog rate minus the bill, with discount, spend by
+  lane and a breakdown by consumer and model. It follows the `organization`
+  filter and names any other active filter as not applied. Never the
+  pre-submission estimate. Contract: `features/batch-savings/FEATURE.md`.
 
 ## Where the money is attributed (the thing the first version got wrong)
 
@@ -124,9 +135,9 @@ Reading order on the page: headline → explorer → the folded honesty tail.
 | Filter chips          | `explorer/FilterChips.tsx`                | The drill-down breadcrumb + the coverage line.                                                                                                                                                                                                                                              |
 | Totals                | `explorer/TotalsStrip.tsx`                | window total, manual vs automated (with shares), requests, tokens (with cache hit rate), "explained by a request".                                                                                                                                                                          |
 | Timeline              | `explorer/SeriesBars.tsx`                 | stacked bars per hour (≤ 4 days) or per day, manual under automated, legend always present, peak direct-labelled, hover title on every bar, click a day to drill. Colours are the theme's `chart-2` / `chart-1` tokens (validated with the dataviz palette script, light: all checks pass). |
-| Dig here              | `explorer/DigHerePanel.tsx`               | seven signal cards ordered by money — see below.                                                                                                                                                                                                                                            |
-| 80/20                 | `explorer/ParetoPanel.tsx`                | per dimension: the fewest rows reaching 80% of the window, then ONE "everything else" row (`paretoCut`).                                                                                                                                                                                    |
-| Every dimension       | `explorer/DimensionTables.tsx`            | one `MatrxDataTable` per dimension, same columns everywhere (cost, share bar, manual, automated, requests, per request, tokens in/cached/out, last activity).                                                                                                                               |
+| Dig here              | `explorer/DigHerePanel.tsx`               | seven signals ordered by money in a canonical compact table; an opened signal uses the full available width for its own canonical detail table — see below.                                                                                                                                 |
+| 80/20                 | `explorer/ParetoPanel.tsx`                | per dimension: at least 3 and at most 6 rows, stopping after 80%, then ONE fixed-bottom "everything else" row (`paretoCut`); every card names the full window total.                                                                                                                        |
+| Every dimension       | `explorer/DimensionTables.tsx`            | one titled `MatrxDataTable` per dimension, same columns everywhere (cost, share bar, manual, automated, requests, per request, tokens in/cached/out, last activity); its no-wrap dimension rail scrolls horizontally with edge fades.                                                       |
 | Costliest requests    | `explorer/TopRequestsTable.tsx`           | 40 rows with every dimension, one per request (its ledger rows summed); a request opens its conversation.                                                                                                                                                                                   |
 | Names, hrefs, wording | `explorer/labels.ts`                      | plain-English dimension names, per-dimension "empty" wording, where each identity opens.                                                                                                                                                                                                    |
 
@@ -150,8 +161,7 @@ person → `/administration/users?focus=<id>`, agent →
 | Unpriced calls                    | —                             | `chat.request.cost IS NULL`: the ledger under-counts by an unknown amount                                         |
 
 A signal that found nothing says "none" — it never disappears (the unpriced
-line included). Cards over 25% of
-the window turn destructive-toned.
+line included). Signal costs over 25% of the window turn destructive-toned.
 
 ## Gating
 
@@ -275,9 +285,9 @@ Registered in `features/admin/constants/admin-categories.ts` +
   with no sign-in read "No sign-in (server-side run)".
 - **Invoice-billed costs are a knob, not a gap.** Hosting and plan-billed
   services (Resend) can never be ledger rows; `platform.spend.fixed_monthly_usd`
-  holds the monthly figure and the headline shows it per day, never added in.
-  Zero or a missing row reads compactly as `Fixed: not set`; a configured value
-  shows monthly and per-day amounts without adding prose to the dashboard.
+  holds the monthly figure and the headline's compact scope tooltip names it,
+  never added in. Zero or a missing row reads as not set inside that tooltip;
+  it does not consume a dashboard row.
 - `admin_spend_overview` measured 3.95s once on the dev server (2026-09-12)
   while every per-ledger aggregate it runs measures under 100ms in isolation
   (`chat.tool_call` 86ms is the largest; a 48h sum over the whole ledger is
@@ -286,6 +296,40 @@ Registered in `features/admin/constants/admin-categories.ts` +
   statements with `auto_explain` rather than guessing.
 
 ## Change Log
+
+- **2026-09-14 (surface contract wired)** — The dashboard is now the
+  `matrx-admin/billing-spend` surface, with its route mapping, registered
+  manifest, canonical `Billing Spend` label, and a live
+  `SurfaceRuntimeProvider`. Its scope names the overview's loading/error
+  honesty, fixed-cost and alarm-knob state, headline fields plus their natural
+  composite, daily series, cost-ledger/gap/print-order reference data, and the
+  two folded-tail states. The browser-mounted explorer and batch-savings panel
+  publish their own live slices through scope contributions: URL window and
+  filters, knob/read status, breakdown/totals/dimensions/signals/requests, and
+  batch summary/status/open state. The surface is deliberately read-only: no
+  role, fixed AI job, write target, bespoke agent UI, or custom context menu was
+  added. The DB mirror is synced and the live route is browser-proven; readiness
+  stays `partial` until the complete independent S1–S18 surface certification.
+
+- **2026-09-14 (batch is first-class)** — Batch spend lands on
+  `runtime.global_execution` (aidream 0679: 32 items, $0.0323 backfilled), so the
+  headline and explorer include it once. The registry's `batch.work_item` became
+  an overlap lens and a measured `batch.global_execution` row names where batch
+  money lives (`migrations/batch_spend_one_ledger_registry_and_kg_savings.sql`).
+  The explorer leads with `BatchSavingsPanel` ("Saved by batching").
+- **2026-09-13 (dashboard-density contract)** — Removed both standalone
+  Updated/Refresh rows and the redundant selected-window sentence. The one
+  icon-only refresh lives inside the headline, where its tooltip names the
+  last update; lower-bound, timezone and fixed-cost context moved to the
+  adjacent scope tooltip. All six full-page KPIs stay on one desktop row and
+  carry the same label/value/detail structure. The peak label has clearance,
+  stronger weight and rounded dollars. Dig Here's summary and opened detail
+  are canonical compact `MatrxDataTable` instances, not a nested hand-built
+  table. Dimension and request tables put their names in the shared title row;
+  numeric Cost filters are explicit. The Pareto rule is now min 3/max 6 with a
+  fixed-bottom remainder and visible total. Dimension tabs never wrap and use
+  a horizontally scrolling faded rail. The page uses the canonical
+  `scroll-page-end-space` runway.
 
 - **2026-09-12 (hydration boundary)** — The explorer now mounts only after
   hydration because its initial window and IANA zone come from the browser.
@@ -369,6 +413,14 @@ Registered in `features/admin/constants/admin-categories.ts` +
   outer admin shell structurally non-scrollable; `ClientAdminLayout` is now the
   sole page scroller regardless of alarm height, while tables retain horizontal
   overflow only. Browser-verified on the real spend data at localhost.
+- **2026-09-14 (compact-card Alchemy)** — Added the canonical Alchemy menu to
+  every 80% concentration card. Each source mirrors exactly what the card
+  renders: dimension, displayed rows, shares, costs, full window total, and the
+  aggregated Everything else row. Every card payload also carries the selected
+  window, active filters, and the same six leading KPI strings rendered by the
+  shared totals formatter, so a section copy retains its page context. The
+  standard tables continue to use their built-in Alchemy menus; no parallel
+  copy control was added to them.
 - **2026-09-12 (evening, round 2)** — Independent review (Opus, adversarial):
   every money number reconciled to the ledger exactly, filters exact, gating
   and injection probes refused. Fixed from its findings: per-request

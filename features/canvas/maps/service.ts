@@ -13,6 +13,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { operationFailed } from "@/utils/errors";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { buildSearchOr } from "@/utils/supabase-search";
 import {
@@ -170,7 +171,13 @@ export async function createMap(
   return {
     id: data?.id ?? null,
     isDuplicate,
-    error: error ? operationFailed("create this map", error).message : null,
+    // A missing organization is a refusal with a remedy, not a generic
+    // failure. Law: common-docs/policies/context-is-carried-never-rebuilt.md.
+    error: error
+      ? isOrganizationRequiredError(error)
+        ? "Select an organization before creating a map \u2014 every record is filed under one organization. Pick yours from the avatar menu."
+        : operationFailed("create this map", error).message
+      : null,
   };
 }
 

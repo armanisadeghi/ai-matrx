@@ -22,12 +22,22 @@
 //
 // The host injects IDENTITY and app chrome (C22) and nothing else:
 //
-//   identity — the Supabase browser singleton, the signed-in user and their
-//              display name, the active org, aidream's base URL (the same
-//              `resolveBaseUrl` every `callApi` request uses), and the
-//              access-token source
-//   chrome   — a router so an accepted call lands on `/meet/<room>`, and a
-//              diagnostic sink that screams with a remedy
+//   identity — the Supabase browser singleton, the active org, aidream's base
+//              URL (the same `resolveBaseUrl` every `callApi` request uses),
+//              and the access-token source
+//   chrome   — a display name and avatar, a router so an accepted call lands on
+//              `/meet/<room>`, and a diagnostic sink that screams with a remedy
+//
+// 🚨 THIS HOST DOES NOT SAY WHO THE USER IS, AND AS OF `@ai-matrx/meet` 0.6.0
+// there is no prop for it (DD-240). It used to pass Redux's `selectUserId`, and
+// that copy is written when the app boots and never rewritten when the
+// domain-wide auth cookie rotates to another account — so a tab left open went
+// on asking `communication.meet_pending_call_invites` for an identity it could
+// no longer prove it was, and the database refused it at 403 with "the acting
+// user … is not the authenticated user" (two rows on production 2026-09-14,
+// tabs 8.8 h and 32.9 h old). The package now reads the acting user from the
+// session of the very client that mints the JWT on every request, so the two
+// cannot disagree. `displayName` and `avatarUrl` stay: they are chrome.
 //
 // 🚨 THIS APP INJECTS NO AI IDENTITY AT ALL, and as of `@ai-matrx/meet` 0.3.0
 // there is no prop for one. Which agent takes notes, answers a question, or
@@ -39,8 +49,8 @@
 // with no Holder now produces the server's own refusal on the meeting screen,
 // which is more honest than a control that silently never appeared.
 //
-// 🚨 A SIGNED-OUT VISITOR GETS NO ENGINE. The provider stays inert until userId
-// and organizationId are both real. The GUEST meeting path does not come
+// 🚨 A SIGNED-OUT VISITOR GETS NO ENGINE. The provider stays inert until the
+// session names somebody and organizationId is real. The GUEST meeting path does not come
 // through here at all — `/meet/[slug]` mounts its own scoped provider with
 // `guestName` and no session (D6/D12), which is the only lane in the app that
 // legitimately has a Meet runtime without a user.
@@ -59,7 +69,6 @@ import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   selectActiveUserAvatarUrl,
   selectDisplayName,
-  selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { meetBaseUrl } from "@/features/meet/lib/meetBaseUrl";
@@ -71,7 +80,6 @@ export interface MeetHostProps {
 
 export function MeetHost({ children }: MeetHostProps) {
   const store = useAppStore();
-  const userId = useAppSelector(selectUserId);
   const displayName = useAppSelector(selectDisplayName);
   const avatarUrl = useAppSelector(selectActiveUserAvatarUrl);
   const organizationId = useAppSelector(selectActiveOrganizationId);
@@ -108,7 +116,6 @@ export function MeetHost({ children }: MeetHostProps) {
     <MeetProvider
       client={supabase}
       baseUrl={meetBaseUrl(store.getState())}
-      userId={userId}
       organizationId={organizationId}
       displayName={displayName}
       avatarUrl={avatarUrl}

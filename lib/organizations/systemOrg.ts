@@ -69,6 +69,18 @@ async function resolveByKey(
 }
 
 /**
+ * Synchronous peek at the memoized system organization id, or null when nothing
+ * has resolved it yet in this process. Mirrors `peekPersonalOrgId` in
+ * personalOrg.ts, and is primed by `resolveSystemOrgId` above — there is no
+ * second source and no hardcoded UUID. For the synchronous callers that can
+ * only ASK "is this row the platform's own?" (a pure classifier inside a
+ * render, for instance); anything that can await calls the resolver.
+ */
+export function peekSystemOrgId(): string | null {
+  return cachedIds.get("system") ?? null;
+}
+
+/**
  * The global system organization id. Cached for the process; makes at most one
  * read of `iam.system_orgs`. Throws loudly if the system org is missing (a real
  * platform defect) rather than letting a null org slip into a builtin write.

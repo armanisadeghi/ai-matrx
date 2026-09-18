@@ -378,13 +378,20 @@ describe("ENCORE — the fourth archive-blind read, closed explicitly", () => {
   // anywhere. It is asserted here.
   const text = source("encore/service.ts");
 
-  it("releasedBase() EXCLUDES archived Masterworks", () => {
+  // 2026-09-16: `releasedBase()` became `builtBase()` when the release gate
+  // moved off the Expert's own shelf (cold-walk #6 — release governs OTHER
+  // people's shelves). `builtBase()` is the base every Encore read is built
+  // from, including the release-gated one, so it is where both halves of this
+  // law now live. The law itself is unchanged.
+  it("builtBase() EXCLUDES archived Masterworks", () => {
     // Not luck, and not the caller's job: the shelf reader itself refuses
     // them. Delete this line and an archived-then-released Masterwork appears
     // on the Operator's shelf as something to run.
     expect(text).toMatch(
-      /function releasedBase\(\)[\s\S]{0,900}?\.eq\("is_archived", false\)/,
+      /function builtBase\(\)[\s\S]{0,900}?\.eq\("is_archived", false\)/,
     );
+    // And the release-gated read is built FROM it, so no shelf can skip it.
+    expect(text).toMatch(/function releasedBase\(\)[\s\S]{0,200}?builtBase\(\)/);
   });
 
   it("declares WHY it excludes instead of revealing — the guard reads this", () => {
@@ -392,7 +399,7 @@ describe("ENCORE — the fourth archive-blind read, closed explicitly", () => {
     // applies: exempt-and-exclude, with a reason the static guard accepts
     // (12+ characters after the marker).
     expect(text).toMatch(
-      /function releasedBase\(\)\s*\{[\s\S]{0,200}?archived-items-law-exempt:\s*.{12,}/,
+      /function builtBase\(\)\s*\{[\s\S]{0,200}?archived-items-law-exempt:\s*.{12,}/,
     );
   });
 

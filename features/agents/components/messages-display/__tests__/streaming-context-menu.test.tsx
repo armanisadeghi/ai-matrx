@@ -12,14 +12,19 @@ jest.mock("@/lib/redux/hooks", () => ({
     if (selector === "phase") return mockPhase;
     if (selector === "limit") return null;
     if (selector === "request") return null;
+    if (selector === "hydrationFailure") return null;
     return [];
   },
+  // The transcript dispatches a retry from its honest read-failed state; this
+  // suite only exercises the context menu, so the dispatch is a no-op here.
+  useAppDispatch: () => () => undefined,
 }));
 
 jest.mock(
   "@/features/agents/redux/execution-system/messages/messages.selectors",
   () => ({
     selectConversationMessages: () => "messages",
+    selectMessagesHydrationFailure: () => "hydrationFailure",
     selectVisibleMessageGroupLimit: () => "limit",
   }),
 );

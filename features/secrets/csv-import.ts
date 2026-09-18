@@ -59,13 +59,19 @@ function utf8ByteLength(value: string): number {
   return unescape(encodeURIComponent(value)).length;
 }
 
+function csvParserInput(text: string): string {
+  // Papa emits an extra empty record for the final record terminator. Remove
+  // exactly that terminator; interior/explicit blank rows retain their numbers.
+  return text.replace(/^\uFEFF/, "").replace(/(?:\r\n|\r|\n)$/, "");
+}
+
 export function parseCsvText(
   text: string,
   limits: CsvImportLimits,
 ): CsvImportPreview {
   if (utf8ByteLength(text) > limits.maxFileBytes)
     throw new Error("The file exceeds this organization’s import size limit.");
-  const parsed = Papa.parse<string[]>(text.replace(/^\uFEFF/, ""), {
+  const parsed = Papa.parse<string[]>(csvParserInput(text), {
     delimiter: ",",
     skipEmptyLines: false,
   });
@@ -147,7 +153,7 @@ export function parseCsvFile(
       throw new Error("The CSV must be valid UTF-8.");
     }
     return new Promise<CsvImportPreview>((resolve, reject) =>
-      Papa.parse<string[]>(text.replace(/^\uFEFF/, ""), {
+      Papa.parse<string[]>(csvParserInput(text), {
         worker: true,
         delimiter: ",",
         skipEmptyLines: false,

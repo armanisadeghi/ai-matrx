@@ -39,7 +39,7 @@ import { applySurfaceWrite } from "@/features/surfaces/runtime/surface-writeback
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { resolveAgentName } from "@/features/surfaces/hooks/useAgentNames";
 import { requestInlineApproval } from "@/features/agents/ui-first-tools/redux/request-approval";
-import type { ApprovalChange } from "@/features/agents/ui-first-tools/ui/approval-types";
+import { buildSurfaceWriteApprovalChange } from "./surface-write-approval-change";
 import { upsertToolLifecycle } from "../active-requests/active-requests.slice";
 import { setInstanceStatus } from "../conversations/conversations.slice";
 
@@ -49,16 +49,6 @@ export interface DispatchSurfaceWritePayload {
   callId: string;
   toolName: string;
   args: Record<string, unknown>;
-}
-
-function formatProposedValue(value: unknown): string {
-  if (typeof value === "string") return value;
-  if (value == null) return "";
-  try {
-    return JSON.stringify(value, null, 2);
-  } catch {
-    return String(value);
-  }
 }
 
 export const dispatchSurfaceWrite = createAsyncThunk<
@@ -137,27 +127,12 @@ export const dispatchSurfaceWrite = createAsyncThunk<
         origin: "agent",
         actorLabel,
         requestApproval: async (proposal) => {
-          const who = proposal.actorLabel?.trim() || "The agent";
-          const timing =
-            proposal.target.mode === "entity"
-              ? "This saves immediately if approved."
-              : proposal.target.mode === "draft"
-                ? "Approval only stages it in the editor; you still review and save."
-                : "Approval changes the current interface state.";
-          const change: ApprovalChange = {
-            verb: proposal.target.name.startsWith("append") ? "append" : "update",
-            entity: "proposed change",
-            title: proposal.target.label,
-            description: `${who} proposed this change. ${proposal.target.description} ${timing}`,
-            actor: proposal.actorLabel?.trim() || undefined,
-            fields: [
-              {
-                label: "Proposed value",
-                after: formatProposedValue(proposal.value),
-                block: true,
-              },
-            ],
-          };
+          // THE CARD IS BUILT BY THE SHARED PRIMITIVE, never inline here: a
+          // structured value travels as DATA and is rendered by the kind
+          // pipeline, so the Expert sees the same rule card the Rulebook
+          // draws instead of the payload. Read
+          // `surface-write-approval-change.ts` for the defect this closed.
+          const change = buildSurfaceWriteApprovalChange(proposal);
           const decision = await requestInlineApproval({
             conversationId,
             callId,

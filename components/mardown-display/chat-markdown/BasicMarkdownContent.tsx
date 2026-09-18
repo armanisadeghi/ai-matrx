@@ -36,6 +36,7 @@ import {
   TableRenderPathDiagnostic,
   type TableRenderDiagnosticContext,
 } from "@/components/mardown-display/blocks/table/TableRenderPathDiagnostic";
+import { MarkdownTableScrollArea } from "@/components/mardown-display/tables/MarkdownTableScrollArea";
 
 const INLINE_VARIABLE_RE = /\{\{([a-zA-Z_][a-zA-Z0-9_.]*)\}\}/g;
 
@@ -886,11 +887,11 @@ export const BasicMarkdownContent: React.FC<BasicMarkdownContentProps> = ({
         ),
         table: ({ node, children, ...props }) => (
           <div>
-            <div className="my-3 overflow-x-auto rounded-md border border-border">
+            <MarkdownTableScrollArea className="my-3 rounded-md border border-border">
               <table className="w-full text-sm border-collapse" {...props}>
                 {children}
               </table>
-            </div>
+            </MarkdownTableScrollArea>
             {/* HTML tables (parsed by rehypeSafeRawHtml) are correctly rendered
                 here and were never promotion candidates — skip the diagnostic
                 so it only flags genuinely un-promoted markdown pipe tables. */}

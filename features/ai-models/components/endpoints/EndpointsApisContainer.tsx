@@ -427,27 +427,25 @@ function RowActions<T extends EndpointApiRow>({
   const [pendingDelete, setPendingDelete] = useState(false);
   return (
     <>
-      <div onClick={(event) => event.stopPropagation()}>
-        <TrashTapButton
-          variant="solid"
-          bgColor="bg-destructive/10"
-          iconColor="text-destructive"
-          hoverBgColor="hover:bg-destructive/20"
-          activeBgColor="active:bg-destructive/25"
-          ariaLabel={
-            row.is_system
-              ? "System rows cannot be deleted"
-              : `Delete ${deleteNoun}`
-          }
-          tooltip={
-            row.is_system
-              ? "System rows cannot be deleted"
-              : `Delete ${deleteNoun}`
-          }
-          disabled={row.is_system}
-          onClick={() => setPendingDelete(true)}
-        />
-      </div>
+      <TrashTapButton
+        variant="solid"
+        bgColor="bg-destructive/10"
+        iconColor="text-destructive"
+        hoverBgColor="hover:bg-destructive/20"
+        activeBgColor="active:bg-destructive/25"
+        ariaLabel={
+          row.is_system
+            ? "System rows cannot be deleted"
+            : `Delete ${deleteNoun}`
+        }
+        tooltip={
+          row.is_system
+            ? "System rows cannot be deleted"
+            : `Delete ${deleteNoun}`
+        }
+        disabled={row.is_system}
+        onClick={() => setPendingDelete(true)}
+      />
       <AlertDialog open={pendingDelete} onOpenChange={setPendingDelete}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -506,7 +504,7 @@ function EndpointApiTable<T extends EndpointApiRow>({
   mobileDetails: (row: T) => React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col h-full min-h-0 px-3 pt-2">
+    <div className="flex h-full min-h-0 flex-col">
       {(actionError || (loadError && rows.length > 0)) && (
         <div role="alert" className="flex items-start gap-2 border-b border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300">
           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -520,7 +518,7 @@ function EndpointApiTable<T extends EndpointApiRow>({
         getRowId={(row) => row.id}
         isLoading={loading && rows.length === 0}
         isFetching={loading && rows.length > 0}
-        pageSize={25}
+        pageSize={50}
         pageSizeOptions={[10, 25, 50, 100]}
         defaultSort={null}
         reorderableColumns
@@ -751,6 +749,9 @@ export default function EndpointsApisContainer() {
       };
       let saved: AiEndpoint;
       if (endpointIsNew) {
+        // org-fallback-deliberate: an endpoint is a row of the platform's AI
+        //   catalog, identical for every organization; the surface lives in the
+        //   admin-gated (admin) route group
         const organization_id = await resolveSystemOrgId();
         saved = await aiModelService.createEndpoint({
           ...payload,
@@ -814,6 +815,9 @@ export default function EndpointsApisContainer() {
       };
       let saved: AiApi;
       if (apiIsNew) {
+        // org-fallback-deliberate: an API record is a row of the platform's AI
+        //   catalog, identical for every organization; the surface lives in the
+        //   admin-gated (admin) route group
         const organization_id = await resolveSystemOrgId();
         saved = await aiModelService.createApi({ ...payload, organization_id });
       } else if (selectedApi) {

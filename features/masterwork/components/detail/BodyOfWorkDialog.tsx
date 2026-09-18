@@ -1,10 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, FileUp, Link2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { AgentCredit } from "../AgentCredit";
 import {
   Dialog,
@@ -17,7 +21,6 @@ import {
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import LoadingSpinner from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/utils/supabase/client";
 import type { paths } from "@/types/python-generated/api-types";
@@ -27,6 +30,7 @@ import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { describeMissingIngestParts } from "./IngestSourceDialog";
+import { DurableRunAgain } from "@/lib/durable-run/DurableRunAgain";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
 import {
@@ -34,6 +38,9 @@ import {
   DurableRunStopped,
 } from "@/lib/durable-run/DurableRunStop";
 import { MASTERWORK_UPLOAD_ACCEPT } from "../../sourceTypes";
+import {
+  durableRunDialogOnOpenChange,
+} from "@/lib/durable-run/durableRunDialogClose";
 
 /**
  * "Everything you've published" — the `body_of_work` Distillation Approach.
@@ -120,6 +127,21 @@ const BODY_OF_WORK_DESCRIPTION =
   "follow are worked out from the whole body of work. Everything lands as " +
   "drafts for you to approve; nothing goes live without you.";
 
+import { createSittingStore, type SittingBase } from "../../sitting/sitting";
+import { useDialogSitting } from "../../sitting/useDialogSitting";
+import { SittingResumed } from "../../sitting/SittingResumed";
+import { RunStages } from "../RunStages";
+
+interface BodyOfWorkSitting extends SittingBase {
+  urlsText: string;
+  sourceNote: string;
+}
+
+const bodyOfWorkSittings = createSittingStore<BodyOfWorkSitting>({
+  keyPrefix: "matrx.masterwork.body-of-work.v1:",
+  isUsable: (sitting) => (sitting.urlsText ?? "").trim().length > 0 || (sitting.sourceNote ?? "").trim().length > 0,
+});
+
 export function BodyOfWorkDialog({
   open,
   onOpenChange,
@@ -139,15 +161,48 @@ export function BodyOfWorkDialog({
   const [files, setFiles] = useState<File[]>([]);
   const [urlsText, setUrlsText] = useState("");
   const [sourceNote, setSourceNote] = useState("");
+  // A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17: every
+  // capture dialog on the Rulebook page lost typed work on a reload, silently).
+  const sitting = useDialogSitting<BodyOfWorkSitting>({
+    store: bodyOfWorkSittings,
+    scopeId: rulebook.id,
+    active: open,
+    snapshot: { urlsText, sourceNote },
+    isWorthKeeping: (s) => (s.urlsText ?? "").trim().length > 0 || (s.sourceNote ?? "").trim().length > 0,
+    apply: (kept) => {
+      setUrlsText(kept.urlsText ?? "");
+      setSourceNote(kept.sourceNote ?? "");
+    },
+    clearScreen: () => {
+      setUrlsText("");
+      setSourceNote("");
+    },
+  });
+
   const [uploading, setUploading] = useState(false);
+  /** When the upload began — see `IngestSourceDialog`; the run row does not
+   *  exist yet, so only this lane can give the clock an origin. */
+  const [uploadStartedAt, setUploadStartedAt] = useState<number | null>(null);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [board, setBoard] = useState<CorpusPieceRow[]>([]);
+
+  // 🚨 THE PROMISE IS MEASURED FROM THIS PILE, NOT FROM THE LANE'S MEDIAN.
+  // Three links and forty are not the same wait, and a screen that says they
+  // are is the defect acquisition-frontier §7.3 recorded.
+  const corpusSize = useMemo(
+    () => ({
+      items: files.length + parseUrls(urlsText).length,
+      bytes: files.reduce((total, file) => total + file.size, 0),
+    }),
+    [files, urlsText],
+  );
 
   const run = useMasterworkRun<CorpusSummary>({
     surface: "corpus",
     rulebookId: rulebook.id,
     path: INGEST_CORPUS_PATH,
     parseResult: parseCorpusSummary,
+    size: corpusSize,
   });
   const running = run.running || uploading;
 
@@ -210,25 +265,32 @@ export function BodyOfWorkDialog({
   // Clearing it the moment the run is no longer running lets the NEXT live run
   // reopen in its turn, while the `open` guard still keeps it from re-firing on
   // the run that is already on screen.
+  // 🚨 IT ASKS `run.surfacing`, NEVER `run.running` (cold walk 7, finding 3,
+  // 2026-09-17). `running` is also true for `"rejoining"` — the state a
+  // RESTORED receipt sits in — and the "I closed this" half used to be a
+  // per-MOUNT ref, so a completed sitting the Expert had closed reopened
+  // itself on later, unrelated visits to the Rulebook page, on top of real
+  // controls, once claiming a finished run was "still going… reconnecting".
+  // `surfacing` is false for a run whose receipt records the dismissal, and
+  // the receipt outlives the mount exactly as the run does.
   const reopenedRef = useRef(false);
   useEffect(() => {
-    if (!run.running) {
+    if (!run.surfacing) {
       reopenedRef.current = false;
       return;
     }
     if (reopenedRef.current || open) return;
     reopenedRef.current = true;
     onOpenChange(true);
-  }, [open, run.running, onOpenChange]);
+  }, [open, run.surfacing, onOpenChange]);
 
   const pieceCount = files.length + parseUrls(urlsText).length;
 
   const launch = async () => {
     const urls = parseUrls(urlsText);
-    if (files.length === 0 && urls.length === 0) {
-      toast.error("Add at least one file or paste at least one link first.");
-      return;
-    }
+    // Gated on the button; nothing attached cannot reach here. Nothing
+    // attached YET is a PROMPT, not an alarm (class sweep, 2026-09-16).
+    if (files.length === 0 && urls.length === 0) return;
     if (files.length + urls.length > MAX_PIECES) {
       toast.error(
         `That's more than ${MAX_PIECES} pieces — split your body of work into batches. Every batch lands on this same Rulebook.`,
@@ -241,6 +303,7 @@ export function BodyOfWorkDialog({
     const fileIds: string[] = [];
     if (files.length > 0) {
       setUploading(true);
+    setUploadStartedAt(Date.now());
       try {
         for (const [index, file] of files.entries()) {
           setUploadProgress(
@@ -261,10 +324,12 @@ export function BodyOfWorkDialog({
           err instanceof Error ? err.message : "Could not upload a file";
         run.fail(message);
         setUploading(false);
+    setUploadStartedAt(null);
         setUploadProgress(null);
         return;
       }
       setUploading(false);
+    setUploadStartedAt(null);
       setUploadProgress(null);
     }
 
@@ -284,7 +349,18 @@ export function BodyOfWorkDialog({
   const reset = () => {
     run.reset();
     setUploading(false);
+    setUploadStartedAt(null);
     setUploadProgress(null);
+  };
+
+  /**
+   * Back to this lane's own first step for the NEXT batch — see
+   * `DurableRunAgain` and cold walk 6, finding 7.
+   */
+  const again = () => {
+    reset();
+    setFiles([]);
+    setUrlsText("");
   };
 
   const summary = run.result;
@@ -324,6 +400,16 @@ export function BodyOfWorkDialog({
 
   const content = (
     <>
+      {/* THE NOTICE BELONGS TO THE LANE, NOT TO THE DIALOG CHROME. This
+          surface renders as a dialog AND as its own page; putting the notice
+          under <DialogHeader> meant the page half restored work in silence. */}
+      {sitting.resumed ? (
+        <SittingResumed
+          what="the links you had listed, and what you called them"
+          onDiscard={sitting.discard}
+          onAcknowledge={sitting.acknowledge}
+        />
+      ) : null}
         {/* A failure STAYS on screen with its reason and a way out. It used to
             be a toast that removed itself, over a dialog that then showed the
             empty form again (census D4). */}
@@ -379,28 +465,28 @@ export function BodyOfWorkDialog({
                   Try the failed pieces again
                 </Button>
               ) : null}
+              {/* 🚨 NO DEAD ENDS (cold walk 6, finding 7): every other
+                  control here LEAVES, and the likeliest next thing a person
+                  wants is another one. */}
+              <DurableRunAgain
+                label="Add more of your work"
+                onAgain={again}
+              />
             </div>
           </div>
         ) : running || run.stages.length > 0 ? (
           <div className="space-y-2">
-            <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/40 p-3">
-              {(uploadProgress
-                ? [uploadProgress, ...run.stages]
-                : run.stages
-              ).map((line, i) => (
-                <p key={i} className="text-xs text-muted-foreground">
-                  {line}
-                </p>
-              ))}
-            </div>
-            {running ? (
-              <div className="flex items-start gap-2">
-                <LoadingSpinner size="sm" />
-                <p className="text-xs text-muted-foreground">
-                  {run.waitMessage ?? "Uploading your files…"}
-                </p>
-              </div>
-            ) : null}
+            <RunStages
+              run={{
+                ...run,
+                running,
+                stages: uploadProgress
+                  ? [uploadProgress, ...run.stages]
+                  : run.stages,
+                startedAt: run.startedAt ?? uploadStartedAt,
+              }}
+              waitingMessage="Uploading your files…"
+            />
             {run.running ? (
               <DurableRunInterruption interruption={run.interruption} />
             ) : null}
@@ -552,13 +638,22 @@ export function BodyOfWorkDialog({
                 onOpenChange(false);
               }}
             />
-            <Button onClick={() => void launch()} disabled={running}>
+            <GatedActionButton
+              onClick={() => void launch()}
+              disabled={running}
+              reason={firstBlockingReason([
+                {
+                  when: pieceCount === 0,
+                  reason: "Add a file or paste a link first",
+                },
+              ])}
+            >
               {running
                 ? "Distilling…"
                 : pieceCount > 0
                   ? `Distill my body of work (${pieceCount} ${pieceCount === 1 ? "piece" : "pieces"})`
                   : "Distill my body of work"}
-            </Button>
+            </GatedActionButton>
           </DialogFooter>
         ) : null}
     </>
@@ -578,13 +673,24 @@ export function BodyOfWorkDialog({
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (running) return;
-        if (!next) reset();
-        onOpenChange(next);
-      }}
+      // THE CLOSE ALWAYS CLOSES. This used to be `if (running) return;`,
+      // which made the X, Escape and an outside click all inert while a run
+      // was running OR rejoining — i.e. exactly when a user whose live view
+      // had been lost was trying to get out. The run is server-owned; closing
+      // never stopped it, so the guard bought nothing and cost the exit.
+      onOpenChange={durableRunDialogOnOpenChange({
+        running,
+        reset,
+        onOpenChange: (next) => {
+          // The Expert walked away from this run — recorded on the RECEIPT,
+        // so a later visit does not drag the same sitting back on screen.
+        if (!next) run.dismiss();
+          onOpenChange(next);
+        },
+        runLabel: "Reading your published work",
+      })}
     >
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="matrx-touch-targets sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Everything you&apos;ve published
@@ -604,6 +710,7 @@ export function BodyOfWorkDialog({
           </DialogTitle>
           <DialogDescription>{BODY_OF_WORK_DESCRIPTION}</DialogDescription>
         </DialogHeader>
+
         {content}
       </DialogContent>
     </Dialog>

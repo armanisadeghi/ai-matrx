@@ -74,20 +74,54 @@ function runWhen(run: MasterworkRun): string {
 const RUN_STATUS_STYLES: Record<string, string> = {
   completed: "bg-primary",
   failed: "bg-destructive",
+  errored: "bg-destructive",
+  abandoned: "bg-destructive",
   cancelled: "bg-muted-foreground",
 };
 
-/** Exported for the W36 guard: the row IS the door to a finished run. */
+/**
+ * WHAT THE PERSON READING IT WOULD SAY. The engine's own words — `completed`,
+ * `errored`, `abandoned` — are for us; this row is read by an Operator who
+ * never chose them. `capitalize` on a raw status printed "Errored" and
+ * "Abandoned" at people (Encore already carried this map for its own copy of
+ * the row; it lives here now so both doors say the same thing).
+ */
+const RUN_STATUS_LABELS: Record<string, string> = {
+  completed: "Finished",
+  failed: "Didn't finish",
+  errored: "Didn't finish",
+  abandoned: "Didn't finish",
+  cancelled: "Stopped",
+  running: "Working",
+  pending: "Starting",
+};
+
+/**
+ * Exported for the W36 guard: the row IS the door to a finished run.
+ *
+ * It is also THE run row — the Encore run page mounts this same component for
+ * an Operator's own history rather than printing a second, poorer line of its
+ * own (jobs-bar-2026-09-16, item 18). Anything a host needs to hang off a row
+ * (Encore's "That's mine" sign-off) arrives through `trailing`.
+ */
 export function MasterworkRunRow({
   run,
   onFeedback,
+  trailing,
 }: {
   run: MasterworkRun;
   onFeedback?: (run: MasterworkRun) => void;
+  /**
+   * A host's own control for this run, right of the door. It STACKS below
+   * `sm`: Encore's sign-off is ~230px wide and, on one flex row at 390px, it
+   * squeezed the run's own line to a single character per line
+   * (jobs-bar-2026-09-16, item 13). The row must never go back to that.
+   */
+  trailing?: React.ReactNode;
 }) {
   const duration = runDuration(run);
   return (
-    <div className="group flex items-start gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted/50">
+    <div className="group flex flex-col items-start gap-1 rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 sm:flex-row sm:items-start">
       {/* THE DOOR IS IN THIS APP (wall W36). This row used to open
           workflows.aimatrx.com in a new tab — the workflow author's Studio, not
           the place the reader was standing — so a parent who closed the tab
@@ -95,7 +129,7 @@ export function MasterworkRunRow({
           {id}` rebuilds the finished run, showcase and all, right here. */}
       <Link
         href={runHref(run.id)}
-        className="flex min-w-0 flex-1 flex-col gap-0.5 hover:text-foreground"
+        className="flex w-full min-w-0 flex-col gap-0.5 hover:text-foreground sm:w-auto sm:flex-1"
       >
         <span className="flex min-w-0 items-center gap-2">
           <span
@@ -104,7 +138,7 @@ export function MasterworkRunRow({
               RUN_STATUS_STYLES[run.status] ?? "bg-muted-foreground/50",
             )}
           />
-          <span className="capitalize">{run.status}</span>
+          <span>{RUN_STATUS_LABELS[run.status] ?? run.status}</span>
           <span>· {runWhen(run)}</span>
           {duration ? <span>· {duration}</span> : null}
           {run.cost_usd !== null ? (
@@ -115,7 +149,10 @@ export function MasterworkRunRow({
                 : run.cost_usd.toFixed(2)}
             </span>
           ) : null}
-          <SquareArrowOutUpRight className="ml-auto h-3 w-3 shrink-0 opacity-0 transition-opacity group-hover:opacity-100" />
+          {/* Always there on touch, hover-revealed on desktop — a hover-only
+              door is no door at all on a phone (jobs-bar-2026-09-16, item
+              14, fixed on the Encore copy of this row and missed here). */}
+          <SquareArrowOutUpRight className="ml-auto h-3 w-3 shrink-0 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100" />
         </span>
         {/* WHAT THIS RUN ACTUALLY SAID — the first line of the deliverable for
             a finished run, the run's own honest error for a failed one. A row
@@ -141,6 +178,7 @@ export function MasterworkRunRow({
           <MessageCircleQuestion className="h-3.5 w-3.5" />
         </button>
       ) : null}
+      {trailing}
     </div>
   );
 }

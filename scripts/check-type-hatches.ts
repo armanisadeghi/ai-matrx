@@ -27,6 +27,7 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const BASELINE_PATH = join(ROOT, "scripts", "type-escape-baseline.json");
@@ -332,7 +333,7 @@ function main(): void {
     console.log(
       `       how ~1,200 hatches landed unfrozen and the ratchet stopped ratcheting (D136).`,
     );
-    if (strict) process.exit(1);
+    if (strict) exitAfterDrain(1);
   } else {
     console.log(
       `${C.green}✓ No growth. (Grind a category to 0 → graduate it to an ESLint error.)${C.reset}`,

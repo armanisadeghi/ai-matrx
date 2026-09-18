@@ -17,11 +17,22 @@ import {
   mapPcEpisodeWithShowRow,
   mapPcShowRow,
 } from "./types";
+import {
+  durationSecondsForStorage,
+  normalizeChapterTiming,
+  resolveAudioMetadataDuration,
+} from "./chapter-timing";
 
 /** The `pc_shows.metadata` key holding the show's generated topic-idea bank. */
 export const TOPIC_IDEA_BANK_KEY = "topic_ideas";
 /** How many past batches a show keeps. */
 const TOPIC_IDEA_BANK_CAP = 20;
+
+/** Chapter-save response keeps the exact measured media duration out of the
+ * integer database column while making user-facing disclosure truthful. */
+export type SavedEpisodeChapters = PcEpisode & {
+  audioMetadataDurationSeconds: number;
+};
 
 /** One banked batch, exactly as the generator produced it. */
 export interface TopicIdeaBatch {
@@ -217,14 +228,20 @@ export const podcastService = {
     return mapPcShowRow(data);
   },
 
-  async fetchEpisodeById(id: string): Promise<PcEpisodeWithShow | null> {
+  async fetchEpisodeById(
+    id: string,
+    options?: { throwOnError?: boolean },
+  ): Promise<PcEpisodeWithShow | null> {
     const { data, error } = await supabase
       .schema("podcast").from("pc_episodes")
       .select("*, show:pc_shows(id, slug, title, image_url)")
       .is("deleted_at", null)
       .eq("id", id)
       .single();
-    if (error) return null;
+    if (error) {
+      if (options?.throwOnError && error.code !== "PGRST116") throw error;
+      return null;
+    }
     return mapPcEpisodeWithShowRow(data);
   },
 
@@ -269,33 +286,50 @@ export const podcastService = {
     return mapPcEpisodeRow(data);
   },
 
-  /** Persist auto-generated chapter markers under metadata.chapters (not a
-   *  column — read-merge-write so unrelated metadata keys survive). */
+  /**
+   * Persist auto-generated chapter markers to the `chapters` COLUMN.
+   *
+   * DD-234 (2026-09-14). This used to read-merge-write `metadata.chapters`, and
+   * that had two costs. (1) `metadata` is withheld from a signed-out reader by
+   * DD-186, so the public `/podcast/<slug>/chapters.json` route answered 404
+   * "No chapters for this episode" to EVERY listener without an account, and
+   * feed.xml advertised no `<podcast:chapters>` element for any episode.
+   * Chapters are podcast content and are public exactly when the episode is.
+   * (2) A jsonb column is ONE field forever (db-rules §4, the conflict-domain
+   * rule). `metadata` on this table also carries `raw_script_backup` and
+   * `script_canonicalized_at` — measured on a live row 2026-09-14, and no code
+   * in any repo writes either key today, so they came from a one-off
+   * canonicalisation pass. The race was therefore latent rather than live, and
+   * the schema-review question is the one that decides it: could two writers
+   * move these independently? Yes → separate columns.
+   *
+   * The whole list is replaced in one write — the only shape this has ever had.
+   * No read-merge-write, so nothing else on the row can be lost to it.
+   */
   async saveEpisodeChapters(
     id: string,
     chapters: PcEpisodeChapter[],
-  ): Promise<PcEpisode> {
-    const { data: current, error: readError } = await supabase
-      .schema("podcast").from("pc_episodes")
-      .select("metadata")
-      .eq("id", id)
-      .single();
-    if (readError) throw readError;
-    const base =
-      current?.metadata &&
-      typeof current.metadata === "object" &&
-      !Array.isArray(current.metadata)
-        ? current.metadata
-        : {};
+  ): Promise<SavedEpisodeChapters> {
+    const episode = await this.fetchEpisodeById(id, { throwOnError: true });
+    if (!episode) {
+      throw new Error("Episode not found; chapter markers were not saved.");
+    }
+    // Stored duration may be absent or stale. Playback metadata is the source
+    // of truth, and saving it here makes the next agent duration_hint accurate.
+    const durationSeconds = await resolveAudioMetadataDuration(episode.audio_url);
+    const playableChapters = normalizeChapterTiming(chapters, durationSeconds);
+    const storedDurationSeconds = durationSecondsForStorage(durationSeconds);
     const { data, error } = await supabase
       .schema("podcast").from("pc_episodes")
-      // CONVERGE: C-7 — caller-supplied metadata written with no reserved-key guard; metadata is system-only — declared 2026-09-10, Data Doctrine §3.2. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-060
-      .update({ metadata: { ...base, chapters } })
+      .update({ chapters: playableChapters, duration_seconds: storedDurationSeconds })
       .eq("id", id)
       .select()
       .single();
     if (error) throw error;
-    return mapPcEpisodeRow(data);
+    return {
+      ...mapPcEpisodeRow(data),
+      audioMetadataDurationSeconds: durationSeconds,
+    };
   },
 
   async removeEpisode(id: string): Promise<void> {

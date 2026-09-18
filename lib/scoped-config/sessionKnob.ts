@@ -9,7 +9,10 @@
 // (`appContext.organization_id`, `userAuth.id`), the read is the ONE
 // ladder-resolved read (`platform.knob_resolve`, org → user → device, nearest
 // wins), and the answer is cached + invalidated there. Two shapes:
-//   `useSessionKnob(fullKey)`   — React: re-renders when the value lands or changes
+// A knob is addressed by the register's own `{ feature, key }` pair, or by the
+// dotted convenience form of it — `effectiveKnobs.ts::knobAddress` is the one
+// place a ref becomes the pair the RPC sends (V13-2).
+//   `useSessionKnob(ref)`       — React: re-renders when the value lands or changes
 //   `getSessionKnob(fullKey)`   — framework-free: the cached answer (warming the
 //                                 cache when cold); `undefined` = not answered yet
 //   `resolveSessionKnob(fullKey)` — framework-free, awaited: the answer
@@ -23,6 +26,7 @@ import {
   ensureEffectiveKnob,
   peekEffectiveKnob,
   useEffectiveKnob,
+  type KnobRef,
 } from "./effectiveKnobs";
 
 type PrincipalState = {
@@ -41,7 +45,7 @@ export function sessionKnobPrincipals(): { organizationId: string | null; userId
 }
 
 /** Cached effective value (warming the cache when cold); `undefined` until answered. */
-export function getSessionKnob(fullKey: string): unknown {
+export function getSessionKnob(fullKey: KnobRef): unknown {
   const { organizationId, userId } = sessionKnobPrincipals();
   if (!organizationId) return undefined;
   const hit = peekEffectiveKnob(organizationId, userId, fullKey);
@@ -54,14 +58,14 @@ export function getSessionKnob(fullKey: string): unknown {
 }
 
 /** The effective value, awaited. `undefined` only when no organization is active. */
-export async function resolveSessionKnob(fullKey: string): Promise<unknown> {
+export async function resolveSessionKnob(fullKey: KnobRef): Promise<unknown> {
   const { organizationId, userId } = sessionKnobPrincipals();
   if (!organizationId) return undefined;
   return ensureEffectiveKnob(organizationId, userId, fullKey);
 }
 
 /** React face: the effective value for this session, `undefined` until resolved. */
-export function useSessionKnob(fullKey: string): unknown {
+export function useSessionKnob(fullKey: KnobRef): unknown {
   const organizationId = useAppSelector((s) => s.appContext?.organization_id ?? null);
   const userId = useAppSelector((s) => s.userAuth?.id ?? null);
   return useEffectiveKnob(organizationId, userId, fullKey);

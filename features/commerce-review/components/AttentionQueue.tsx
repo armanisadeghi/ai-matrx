@@ -14,15 +14,25 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
 
 import type { AttentionItem, RecallVerdict } from "../types";
 import { listAttentionQueue, recordRecallVerdict } from "../service";
 
 export function AttentionQueue() {
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE — this read the
+  // personal-org fallback, so an unselected picker silently reviewed the
+  // PERSONAL workspace's rows (and wrote verdicts against them).
+  const organizationId = useAppSelector(selectOrganizationId);
+  // "No org yet" is not "no org": until the bootstrap resolves, loading is the
+  // truth and the picker must not flash over a screen that is about to fill.
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
   const [items, setItems] = useState<AttentionItem[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -67,10 +77,10 @@ export function AttentionQueue() {
     }
   };
 
-  if (!organizationId)
-    return (
-      <p className="p-6 text-sm text-muted-foreground">Pick an organization first.</p>
-    );
+  if (!organizationId && orgBootstrapResolved)
+    // The canonical honest state — it carries the picker, so this is a remedy
+    // and not a dead end.
+    return <OrganizationRequiredNotice title="The attention queue needs an organization" />;
   if (loadError)
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3">

@@ -5,6 +5,9 @@ import { MATRX_LOCAL_DOWNLOAD_PATH } from "@/features/matrx-local-download/relea
 const FOOTER_LINKS = [
   { href: MATRX_LOCAL_DOWNLOAD_PATH, label: "Download" },
   { href: "/how-it-works", label: "How It Works" },
+  { href: "/why-ai-matrx", label: "Why AI Matrx" },
+  { href: "/how-we-prove-it", label: "How We Prove It" },
+  { href: "/the-landscape", label: "The Landscape" },
   { href: "/privacy-policy", label: "Privacy Policy" },
   { href: "/terms-of-service", label: "Terms of Service" },
   { href: "/contact", label: "Contact" },

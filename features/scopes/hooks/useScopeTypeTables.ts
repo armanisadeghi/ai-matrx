@@ -40,12 +40,21 @@ export function useScopeTypeTables(
   // One fetch per distinct id-set; the tree is stable after boot, so this
   // effectively runs once (and again only if the tree gains/loses rows).
   const fetchedKey = useRef<string | null>(null);
-  const key = `${[...scopeTypeIds].sort().join(",")}|${[...scopeIds]
-    .sort()
-    .join(",")}`;
+  // Depend on the requested IDs, not arrays recreated by the caller on render.
+  const key = JSON.stringify([
+    [...new Set(scopeTypeIds)].sort(),
+    [...new Set(scopeIds)].sort(),
+  ]);
 
   useEffect(() => {
-    if (scopeTypeIds.length === 0) return;
+    const [typeIds, rowIds] = JSON.parse(key) as [string[], string[]];
+    if (typeIds.length === 0) {
+      setItemsByType({});
+      setValuesByScope({});
+      setError(null);
+      setStatus("idle");
+      return;
+    }
     if (fetchedKey.current === key) return;
     fetchedKey.current = key;
 
@@ -53,8 +62,8 @@ export function useScopeTypeTables(
     setStatus("loading");
     void (async () => {
       const [itemsRes, valuesRes] = await Promise.all([
-        scopesService.listContextItemsForTypes(scopeTypeIds),
-        scopesService.listContextValuesForScopes(scopeIds),
+        scopesService.listContextItemsForTypes(typeIds),
+        scopesService.listContextValuesForScopes(rowIds),
       ]);
       if (cancelled) return;
 
@@ -100,7 +109,7 @@ export function useScopeTypeTables(
       cancelled = true;
       if (fetchedKey.current === key) fetchedKey.current = null;
     };
-  }, [key, scopeTypeIds, scopeIds]);
+  }, [key]);
 
   return { itemsByType, valuesByScope, status, error };
 }

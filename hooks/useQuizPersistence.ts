@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import type { QuizState } from "@/components/mardown-display/blocks/quiz/quiz-types";
 import type { Json } from "@/types/database.types";
 import {
@@ -43,6 +45,11 @@ export function useQuizPersistence(
   const [loadedSession, setLoadedSession] = useState<QuizSession | null>(null);
   const [hasCheckedDuplicate, setHasCheckedDuplicate] = useState(false);
 
+  // The organization a saved quiz session is filed in — a Server Action
+  // carries no `X-Organization-Id` header, so the selection travels as an
+  // argument; the action refuses when it is empty.
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
+
   const lastSaveAttempt = useRef<number>(0);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const previousStateRef = useRef<string | null>(null); // Track actual state changes
@@ -75,6 +82,7 @@ export function useQuizPersistence(
           // Create new session (duplicate check already done at initialization)
           const result = await createQuizSession(
             state,
+            selectedOrganizationId ?? "",
             title,
             category,
             contentHash,
@@ -97,7 +105,7 @@ export function useQuizPersistence(
         setIsSaving(false);
       }
     },
-    [sessionId, title, category, contentHash, metadata],
+    [sessionId, title, category, contentHash, metadata, selectedOrganizationId],
   );
 
   /**
@@ -187,8 +195,26 @@ export function useQuizPersistence(
    */
   useEffect(() => {
     const checkForDuplicate = async () => {
-      // Only check once, and only if no session ID provided
-      if (hasCheckedDuplicate || initialSessionId || !contentHash) {
+      // Only check once, and only if no session ID provided. The lookup is
+      // scoped to the selected organization, so it waits for one to be known
+      // instead of spending its single attempt on a refusal.
+      if (
+        hasCheckedDuplicate ||
+        initialSessionId ||
+        !contentHash ||
+        !selectedOrganizationId
+      ) {
+        return;
+      }
+      // Never over the person's own work: if they have already started
+      // answering before the organization became known (a late hydration or
+      // a picker choice), the earlier session is not resumed — resuming would
+      // replace the answers on screen. A session of their own gets created on
+      // the next save instead.
+      const hasStartedAnswering =
+        Object.keys(quizState.progress.answers).length > 0 || quizState.results !== null;
+      if (hasStartedAnswering) {
+        setHasCheckedDuplicate(true);
         return;
       }
 
@@ -196,7 +222,10 @@ export function useQuizPersistence(
       // Don't set isLoading - this is a background operation
 
       try {
-        const result = await findExistingQuizByHash(contentHash);
+        const result = await findExistingQuizByHash(
+          contentHash,
+          selectedOrganizationId ?? "",
+        );
         if (result.success && result.data) {
           // Found existing session - load it in background
           setLoadedSession(result.data);
@@ -209,7 +238,14 @@ export function useQuizPersistence(
     };
 
     checkForDuplicate();
-  }, [contentHash, initialSessionId, hasCheckedDuplicate]);
+  }, [
+    contentHash,
+    initialSessionId,
+    hasCheckedDuplicate,
+    selectedOrganizationId,
+    quizState.progress.answers,
+    quizState.results,
+  ]);
 
   /**
    * Load initial session if provided (only for explicit sessionId, not duplicates)

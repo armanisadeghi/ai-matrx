@@ -10,7 +10,7 @@
 
 :root {
   --shell-header-h: 2.75rem;
-  --shell-header-fade-h: 2.5rem;
+  --shell-header-fade-h: 1rem;
   --shell-header-clearance: calc(var(--shell-header-h) + var(--shell-header-fade-h));
   /* Marketing CTA banner: right inset so its action button clears the
      fixed header user avatar. Scoped to AuthedWorkspaceCTA — NOT applied
@@ -28,6 +28,17 @@
      owner consumes it so a fixed operational notice cannot cover final page
      actions or the shared toast viewport. */
   --shell-fixed-alert-clearance: 0px;
+  /* How much of the bottom-LEFT corner the shell's own floating chrome covers,
+     measured and published by that chrome while it is on screen (today: the
+     admin Error Inspector badge). Page content parked in that corner — a key
+     legend, a status line, a footer control — reserves it so the shell never
+     sits on top of a page's last line. 0 when nothing is floating there.
+     Unlike the schedule alarm's runway this IS measured, and safely: the badge
+     is fixed-position and sized by its own contents (a pill, or a dot), so
+     nothing it publishes can feed back into its own size. A guessed padding
+     was tried first and was wrong at the next viewport (verifier finding 6,
+     2026-09-12; still overlapping at 1440x900 in V2 finding 7, 2026-09-14). */
+  --shell-fixed-corner-clearance: 0px;
   /* Panel sidebar background — matches bg-textured (zinc-100 + subtle grid) */
   --shell-panel-bg: rgb(244 244 245);
   --shell-panel-bg-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='2' height='2' viewBox='0 0 2 2'%3E%3Cpath fill='%23999' fill-opacity='0.07' d='M1 1h0.5v0.5H1V1z'%3E%3C/path%3E%3C/svg%3E");
@@ -1021,37 +1032,74 @@ button.shell-nav-flyout-item {
   flex: 1;
 }
 
-/* Settings is a route-owned navigation workspace. Its rail stays readable
-   while this family is active without changing the user's saved global-nav
-   collapsed preference; the normal width returns on exit. */
+/* Settings is a full navigation surface on desktop. Its route gate forces the
+   complete sidebar presentation without changing the saved checkbox value, so
+   leaving Settings restores the user's usual expanded/collapsed preference. */
 @media (min-width: 1024px) {
-  .shell-root[data-settings-route]:has(#shell-sidebar-toggle) {
+  .shell-root[data-settings-route],
+  .shell-root[data-settings-route]:has(#shell-sidebar-toggle:checked) {
     grid-template-columns: 15rem 1fr;
   }
 
-  .shell-root[data-settings-route]:has(#shell-sidebar-toggle) .shell-sidebar {
+  .shell-root[data-settings-route] .shell-sidebar,
+  .shell-root[data-settings-route]:has(#shell-sidebar-toggle:checked) .shell-sidebar {
     width: 15rem;
     background: var(--shell-sidebar-bg-expanded);
     border-right-color: var(--shell-sidebar-border-expanded);
   }
 
-  .shell-root[data-settings-route] .settings-route-menu .shell-nav-item {
-    justify-content: flex-start;
-    min-height: 1.9rem;
-    padding-top: 0.25rem;
-    padding-bottom: 0.25rem;
-    font-size: 0.8125rem;
+  .shell-root[data-settings-route]:not(:has(#shell-sidebar-toggle:checked))
+    .shell-nav-item {
+    gap: 0.75rem;
   }
 
-  .shell-root[data-settings-route] .settings-route-menu .shell-nav-icon,
-  .shell-root[data-settings-route] .settings-route-menu .shell-nav-icon > svg {
-    width: 0.875rem;
-    height: 0.875rem;
+  .shell-root[data-settings-route]:has(#shell-sidebar-toggle:checked)
+    :is(.shell-nav-label, .shell-sidebar-switch-label),
+  .shell-root[data-settings-route]:not(:has(#shell-sidebar-toggle:checked))
+    :is(.shell-nav-label, .shell-sidebar-switch-label) {
+    width: auto;
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  .shell-root[data-settings-route]:not(:has(#shell-sidebar-toggle:checked))
+    .shell-sidebar-switch {
+    justify-content: flex-start;
+  }
+
+  .shell-root[data-settings-route]:not(:has(#shell-sidebar-toggle:checked))
+    .shell-sidebar-brand-logo {
+    width: auto;
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
   }
 
   .shell-root[data-settings-route] .shell-sidebar-footer {
     display: none;
   }
+}
+
+.shell-sidebar-settings-home {
+  display: none;
+  min-width: 0;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--shell-nav-text);
+  text-decoration: none;
+}
+
+.shell-root[data-settings-route] .shell-sidebar-settings-home {
+  display: flex;
+}
+
+.shell-root[data-settings-route] .shell-sidebar-brand-toggle-control {
+  display: none;
+}
+
+.shell-sidebar-brand-toggle-static {
+  cursor: default;
 }
 
 .settings-route-menu {
@@ -1061,7 +1109,7 @@ button.shell-nav-flyout-item {
   flex-direction: column;
   gap: 0.125rem;
   overflow-y: auto;
-  padding: 0.25rem;
+  padding: 0.25rem 0;
 }
 
 .settings-route-menu .shell-active-pill {
@@ -1363,26 +1411,50 @@ button.shell-nav-flyout-item {
    z-index:-1 keeps it inside .shell-header's stacking context (created by
    position:sticky + z-index:40) but BELOW the header's own in-flow children —
    without it, an absolutely-positioned pseudo paints ABOVE non-positioned
-   siblings and would wash out the very buttons it exists to protect. */
+   siblings and would wash out the very buttons it exists to protect.
+
+   🚨 THE HEADER'S OWN BAND IS OPAQUE; ONLY THE TAIL FADES (2026-09-17).
+   The first stop used to be `/ 0.92`, and 8% of a near-black sentence on a
+   near-white page is not a wash — it is readable text. Measured live at 390px
+   on `/masterwork/<id>`, light AND dark: the route's own line "Working systems
+   built from your approved rules." ran straight through the header, across the
+   back chevron and THROUGH the word "Rulebook" — two strings of text on the
+   same pixels. `(core)` pulls content up under a 40–44px header with no
+   clearance, so there is no width at which 92% is enough; the phone is just
+   where the header is shortest and the collision is guaranteed.
+
+   The stops are LENGTHS, not percentages, so the opaque band is exactly the
+   header's own padded box (safe area + `--shell-header-h`) at every breakpoint
+   — a percentage silently re-cut the band when `--shell-header-h` drops to
+   2.5rem under the mobile breakpoint. Everything the original comment wanted is
+   intact: the dissolve still happens, it still paints in the PAGE'S OWN
+   background colour (invisible on a flat route), and it still ends at zero. */
 .shell-header::before {
   content: "";
   position: absolute;
   inset: 0;
-  /* Long fade tail past the header's edge. A short tail reads as a hard band
-     across hero art — the extra stops below approximate an ease-out so the
-     scrim dissolves instead of ending. */
+  /* Short fade tail past the header's edge. The intermediate stops preserve
+     the soft dissolve while keeping page content clear just below the bar. */
   bottom: calc(-1 * var(--shell-header-fade-h));
   z-index: -1;
   pointer-events: none;
+  --shell-header-scrim-solid: calc(
+    var(--shell-safe-area-top) + var(--shell-header-h)
+  );
   background: linear-gradient(
     to bottom,
-    hsl(var(--background) / 0.92) 0%,
-    hsl(var(--background) / 0.86) 22%,
-    hsl(var(--background) / 0.7) 40%,
-    hsl(var(--background) / 0.48) 56%,
-    hsl(var(--background) / 0.27) 71%,
-    hsl(var(--background) / 0.12) 85%,
-    hsl(var(--background) / 0) 100%
+    hsl(var(--background)) 0,
+    hsl(var(--background)) var(--shell-header-scrim-solid),
+    hsl(var(--background) / 0.62)
+      calc(
+        var(--shell-header-scrim-solid) + var(--shell-header-fade-h) * 0.3
+      ),
+    hsl(var(--background) / 0.28)
+      calc(
+        var(--shell-header-scrim-solid) + var(--shell-header-fade-h) * 0.62
+      ),
+    hsl(var(--background) / 0)
+      calc(var(--shell-header-scrim-solid) + var(--shell-header-fade-h))
   );
 }
 
@@ -1468,6 +1540,15 @@ button.shell-nav-flyout-item {
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
+  /* Same class as the header's fix above: a grid item defaults to
+     min-width:auto, so a route whose content is wider than the viewport (a
+     2,800px admin table inside its own overflow-auto box) STRETCHED THE MAIN
+     TRACK to the content's width instead of letting the table scroll. The
+     shell clips at the viewport, so every column past it was unreachable —
+     measured 2026-09-14 on /administration/mandates at 1024px and 1440px:
+     the grid's second track computed to 2845px. The shell's width is the
+     viewport's, never its content's. */
+  min-width: 0;
   background: transparent;
   /* Pull main up so it occupies the full viewport including the header row.
      The header is transparent — content scrolls behind it.
@@ -1477,16 +1558,62 @@ button.shell-nav-flyout-item {
   scroll-padding-bottom: var(--shell-fixed-alert-clearance);
 }
 
+/* A full-page route may own vertical scrolling instead of .shell-main. Keep
+   document-sticky content flush with the header's actual edge. Reserving the
+   translucent fade tail here leaves a visible strip of scrolling content
+   between the shell header and a sticky table header. */
+.shell-root:not([data-pathname^="/administration"]) .shell-main,
+.shell-root:not([data-pathname^="/administration"])
+  .shell-main > :is(.overflow-y-auto, .overflow-auto) {
+  scroll-padding-top: var(--shell-header-h);
+}
+
+/* The shell fade is translucent by design. When a document-sticky table is on
+   the page, that tail would either wash out the pinned column labels or expose
+   scrolling rows in a gap above them. Drop the outside tail automatically for
+   these pages; the full header band stays opaque and the table meets its edge. */
+.shell-root:not([data-pathname^="/administration"]):has(
+    .shell-main [data-matrx-table-sticky-header="true"].relative
+  ) {
+  --shell-header-fade-h: 0rem;
+  --shell-header-clearance: var(--shell-header-h);
+}
+
 /* Padding on an overflow owner is absorbed by border-box sizing when a route
    child is min-height:100%, so it does not reliably create scroll range. A
    real final flow item does: even full-viewport route children can scroll
    completely above the fixed alarm instead of leaving their last control
    underneath it. */
-:root[data-schedule-alarm] .shell-main::after {
+:root[data-admin-attention] .shell-main::after {
   content: "";
   display: block;
   height: var(--shell-fixed-alert-clearance);
   pointer-events: none;
+}
+
+/* …BUT NEVER ON A ROUTE BODY THAT IS ITSELF THE VIEWPORT.
+   A full-height app surface (`h-full overflow-hidden` directly under the
+   scroll owner — the chat room, the studio, any surface that clips its own
+   content and owns its internal scrollers) has no scroll of its own, so this
+   runway is not clearance: it is pure SLACK. The shell scroll owner gains
+   72px (compact) to 14rem (expanded) of range, and one wheel tick over the
+   thread slides the WHOLE surface up under the floating shell header —
+   composer, and with it the docked canvas column's title bar and content
+   switcher.
+
+   Seen live on production 2026-09-14 (www.aimatrx.com, 1280x720, the schedule
+   alarm showing): the canvas Preview/Source pills measured y = +53.5 at rest
+   and y = -18.5 after the shell scrolled its 72px of slack — off the top of
+   the screen, with the canvas switcher the "offer, don't hijack" design
+   depends on. `window.scrollTo(0,0)` does nothing about it, because the
+   scroll owner is `.shell-main`, not the window.
+
+   A surface that clips at the viewport can never have content hidden under a
+   fixed notice in the first place — its own inner scrollers carry
+   `.scroll-page-end-space` for that. So this rule takes nothing away. */
+:root[data-admin-attention]
+  .shell-main:has(> .h-full.overflow-hidden)::after {
+  content: none;
 }
 
 /* Global fixed notices are route-independent. Their singleton publishes only
@@ -1494,16 +1621,16 @@ button.shell-nav-flyout-item {
    intentionally not a measured height, so no observer can feed layout back
    into the fixed card. The compact pill clears one touch target; an expanded
    alarm clears its action row on phones and its card on desktop. */
-:root[data-schedule-alarm="compact"] {
+:root[data-admin-attention="compact"] {
   --shell-fixed-alert-clearance: max(4.5rem, env(safe-area-inset-bottom, 0px));
 }
 
-:root[data-schedule-alarm="expanded"] {
+:root[data-admin-attention="expanded"] {
   --shell-fixed-alert-clearance: max(14rem, 36dvh, env(safe-area-inset-bottom, 0px));
 }
 
 @media (min-width: 640px) {
-  :root[data-schedule-alarm="expanded"] {
+  :root[data-admin-attention="expanded"] {
     --shell-fixed-alert-clearance: max(10rem, 24dvh, env(safe-area-inset-bottom, 0px));
   }
 }
@@ -1531,6 +1658,8 @@ button.shell-nav-flyout-item {
    leaf owns the actual scroll. Give exactly ONE of them the runway: the leaf
    when present, otherwise the route boundary itself. This keeps new education
    tools covered by the shared layout without a per-page padding sweep. */
+.education-scroll-boundary:has(> .overflow-y-auto),
+.education-scroll-boundary:has(> .overflow-auto),
 .education-scroll-boundary:has(.scroll-page-end-space) {
   padding-block-end: 0;
   scroll-padding-bottom: 0;
@@ -1548,12 +1677,30 @@ button.shell-nav-flyout-item {
 /* Admin tree compatibility — the `/administration/*` pages predate this shell
    and were authored for the old ResponsiveLayout: a 2.5rem (`h-10`) header with
    content BELOW it (`<main className="pt-10">`), and ~30 pages hardcode
-   `h-[calc(100dvh-2.5rem)]`. Two scoped rules reproduce that exactly so the
-   whole admin tree drops in with zero per-page edits:
-     1. Pin the header to 2.5rem (its legacy height) so those calc() heights fit.
+   `h-[calc(100dvh-2.5rem)]`. Two rules reproduce that exactly so the whole admin
+   tree drops in with zero per-page edits:
+     1. Pin the header to 2.5rem (its legacy height) so those calc() heights fit
+        — on <body>, for the reason the next comment gives.
      2. Cancel `.shell-main`'s negative pull so content sits under the header
         instead of scrolling behind it. */
-.shell-root[data-pathname^="/administration"] {
+/* 🚨 THE ADMIN HEADER'S HEIGHT IS DECLARED ONCE, ON <body>, AND NOT ON
+   `.shell-root`. `--shell-header-h` is the ONE token for the app shell header's
+   height (2.75rem at :root above; `--header-height` in globals.css is the
+   pre-shell ResponsiveLayout token and is NOT this). Chrome that clears the
+   header is not always inside `.shell-root`: `MatrxDynamicPanelHost` portals
+   every docked panel into `#glass-layer`, a direct child of <body>
+   (app/layout.tsx), so a value declared on `.shell-root` cannot reach it by
+   inheritance and the panel would keep :root's 2.75rem under a 2.5rem admin
+   header. Declaring it on <body> instead reaches BOTH the shell subtree and the
+   portal layer from ONE place, so the two can never drift apart — a second rule
+   repeating `2.5rem` for the portal is exactly the drift this avoids.
+   `body:has()` is already load-bearing in this sheet (section 11's mobile-dock
+   runway). Consumer: `SidePanelSurface`, which reserves
+   `var(--shell-header-h, 0px)` on the fixed panel container — it reserved the
+   legacy 2.5rem token there and drew 4px over the (core) shell header's org
+   switcher, search and avatar (D3, then again at 4px: Bugbot, frontend PR 228,
+   commit 4cbd9e45). */
+body:has(.shell-root[data-pathname^="/administration"]) {
   --shell-header-h: 2.5rem;
 }
 .shell-root[data-pathname^="/administration"] .shell-main {
@@ -1563,7 +1710,14 @@ button.shell-nav-flyout-item {
      chrome (for example the global schedule alarm) changes the available
      height. Tables only expose horizontal overflow; they must never appear to
      trap page scrolling because the shell is moving behind the page scroller. */
-  overflow-y: hidden;
+  /* `hidden` still creates a programmatically scrollable box. `clip` on both
+     axes makes ClientAdminLayout the only scroll owner. */
+  overflow: clip;
+  padding-bottom: 0;
+  scroll-padding-bottom: 0;
+}
+:root[data-admin-attention] .shell-root[data-pathname^="/administration"] .shell-main::after {
+  display: none;
 }
 
 /* Ultra-thin auto-hiding scrollbar (global for shell) */
@@ -1638,6 +1792,13 @@ button.shell-nav-flyout-item {
   .shell-main {
     padding-bottom: var(--shell-fixed-alert-clearance);
     scroll-padding-bottom: var(--shell-fixed-alert-clearance);
+  }
+
+  /* The attention dock's real ::after runway already supplies this clearance.
+     Keep scroll padding for focus navigation, but do not duplicate the flow
+     reserve on natural pages. Dock routes retain their separate reserve below. */
+  :root[data-admin-attention] body:not(:has(.shell-show-dock)) .shell-main {
+    padding-bottom: 0;
   }
 
   body:has(.shell-show-dock) .shell-main {
@@ -1950,8 +2111,14 @@ body:has(.shell-root[data-pathname^="/transcripts/scribe"]) .shell-dock {
 }
 
 .shell-mobile-nav-item[data-active="true"] {
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: var(--shell-pill-bg);
+  border: 1px solid var(--shell-pill-border);
+  color: var(--shell-pill-text);
+  font-weight: 600;
+}
+
+.shell-mobile-nav-item[data-active="true"] .shell-nav-icon {
+  color: var(--shell-pill-text);
 }
 
 .shell-mobile-nav-group {

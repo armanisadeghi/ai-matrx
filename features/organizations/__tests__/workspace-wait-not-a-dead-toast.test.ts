@@ -54,10 +54,35 @@ jest.mock("@/lib/api/organization-admission", () => ({
     }),
 }));
 
+/**
+ * How long the action waits is the `organizations.workspace action_wait_ms`
+ * knob, read from `platform.feature_knob` through the browser Supabase client
+ * (limits-are-knobs-agents-set-them). That read is NETWORK — the one
+ * dependency of this primitive that is not its own logic — so it is the
+ * double, with a known value the timing assertion below is written against.
+ * The waiting itself, the settling and the sentence stay real.
+ */
+const KNOB_ACTION_WAIT_MS = 4_000;
+const knobInt = jest.fn(async (feature: string, key: string) => {
+  if (feature === "organizations.workspace" && key === "action_wait_ms") {
+    return KNOB_ACTION_WAIT_MS;
+  }
+  throw new Error(`unexpected knob read: ${feature}.${key}`);
+});
+jest.mock("@/lib/knobs/featureKnobs", () => ({
+  knobInt: (feature: string, key: string) => knobInt(feature, key),
+}));
+
+/** Let every pending microtask (the knob read included) run. */
+async function flushMicrotasks(): Promise<void> {
+  for (let i = 0; i < 20; i += 1) await Promise.resolve();
+}
+
 describe("awaitEffectiveOrganizationId", () => {
   beforeEach(() => {
     organizationId = null;
     admissionResolve = null;
+    knobInt.mockClear();
   });
 
   it("uses a workspace that arrives AFTER the press, instead of refusing", async () => {
@@ -65,7 +90,8 @@ describe("awaitEffectiveOrganizationId", () => {
     const pending = awaitEffectiveOrganizationId();
     // The bootstrap lands a moment after the person pressed the button —
     // precisely the race that produced W39.
-    await Promise.resolve();
+    await flushMicrotasks();
+    expect(admissionResolve).not.toBeNull(); // it is actually waiting
     organizationId = "6f0e3a2c-0000-4000-8000-000000000001";
     admissionResolve?.();
     await expect(pending).resolves.toEqual({
@@ -78,8 +104,18 @@ describe("awaitEffectiveOrganizationId", () => {
     jest.useFakeTimers();
     const { awaitEffectiveOrganizationId } = await import("../awaitWorkspace");
     const pending = awaitEffectiveOrganizationId();
-    await Promise.resolve();
-    jest.advanceTimersByTime(10_000);
+    await flushMicrotasks();
+    // Still waiting one tick short of the knob's cap — the wait is the knob's,
+    // not a constant somebody re-hardcoded.
+    jest.advanceTimersByTime(KNOB_ACTION_WAIT_MS - 1);
+    await flushMicrotasks();
+    let settledEarly = false;
+    void pending.then(() => {
+      settledEarly = true;
+    });
+    await flushMicrotasks();
+    expect(settledEarly).toBe(false);
+    jest.advanceTimersByTime(1);
     const result = await pending;
     jest.useRealTimers();
     expect(result.status).toBe("unavailable");

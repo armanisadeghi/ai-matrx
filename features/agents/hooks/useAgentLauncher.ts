@@ -25,6 +25,7 @@
  */
 
 import { useCallback, useEffect, useRef } from "react";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import {
   destroyInstanceIfAllowed,
@@ -106,7 +107,7 @@ interface ImperativeMethods {
    * to prevent — reach for this instead.
    */
   launchMandate: (
-    mandateKey: string,
+    mandateKey: AnyMandateKey,
     options?: ManagedAgentOptions,
   ) => Promise<LaunchResult>;
 
@@ -234,7 +235,7 @@ export function useAgentLauncher(
 
   const launchMandate = useCallback(
     async (
-      mandateKey: string,
+      mandateKey: AnyMandateKey,
       opts?: ManagedAgentOptions,
     ): Promise<LaunchResult> => {
       // `mandateKey` is mutually exclusive with agentId/shortcutId in the thunk,

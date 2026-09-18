@@ -11,6 +11,18 @@
  * provider builds, with the same atomic get-or-create and the same explicit-org
  * rule. There is no second copy of the messaging data contract in this repo:
  * `communication.dm_*` table and RPC names live in the package and nowhere else.
+ *
+ * 🚨 NOBODY TELLS THIS FUNCTION WHO IS SENDING (DD-241). It used to take a
+ * `currentUserId`, and every caller got that string the same way — Redux's
+ * `selectUserId`, a copy written once at boot that nothing rewrites when the
+ * domain-wide auth cookie rotates to another account. That copy was not merely
+ * a read argument here: `@ai-matrx/messaging` put it on the wire as
+ * `p_user1_id`, `sender_id` and `created_by`, so after a sign-out/sign-in in
+ * the same tab the send was either refused at 403 or landed as the wrong
+ * person. Since `@ai-matrx/messaging` 0.12.0 the package reads the acting user
+ * from the session of the client it is given — the same session that mints the
+ * JWT on the very request — so the argument is GONE, not merely unused. An
+ * argument nobody can supply safely is a door, not a convenience.
  */
 
 import { createMessagingRepository } from "@ai-matrx/messaging/react";
@@ -35,15 +47,12 @@ function asActionPayload(action: MessageActionData): Readonly<Record<string, unk
   return action.payload;
 }
 
-async function repositoryFor(currentUserId: string) {
+async function repository() {
   const client = createClient();
   const organizationId = await ensureOrgId(undefined);
   return createMessagingRepository({
     client,
-    identity: {
-      userId: asUserId(currentUserId),
-      organizationId: asOrganizationId(organizationId),
-    },
+    organizationId: asOrganizationId(organizationId),
     resolveSession: async () => {
       const { data } = await client.auth.getSession();
       return data.session !== null;
@@ -58,15 +67,13 @@ async function repositoryFor(currentUserId: string) {
  * a read-then-insert does.
  */
 export async function findOrCreateDirectConversation(
-  currentUserId: string,
   recipientId: string,
 ): Promise<string> {
-  const repository = await repositoryFor(currentUserId);
-  return repository.getOrCreateDirectConversation(asUserId(recipientId));
+  const repo = await repository();
+  return repo.getOrCreateDirectConversation(asUserId(recipientId));
 }
 
 export interface SendDirectActionMessageArgs {
-  currentUserId: string;
   recipientId: string;
   content: string;
   actionData?: MessageActionData;
@@ -78,7 +85,6 @@ export interface SendDirectActionMessageArgs {
  * per-recipient error rather than reporting a send that never happened.
  */
 export async function sendDirectActionMessage({
-  currentUserId,
   recipientId,
   content,
   actionData,
@@ -86,11 +92,11 @@ export async function sendDirectActionMessage({
   conversationId: string;
   messageId: string;
 }> {
-  const repository = await repositoryFor(currentUserId);
-  const conversationId = await repository.getOrCreateDirectConversation(
+  const repo = await repository();
+  const conversationId = await repo.getOrCreateDirectConversation(
     asUserId(recipientId),
   );
-  const message = await repository.insertMessage(
+  const message = await repo.insertMessage(
     {
       conversationId: asConversationId(conversationId),
       content,

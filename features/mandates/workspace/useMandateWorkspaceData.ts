@@ -53,8 +53,12 @@ export interface WorkspaceAgentInfo {
   name: string;
   agentType: string | null;
   isArchived: boolean;
-  /** The master's latest version number (drift comparisons). */
-  latestVersion: number | null;
+  /**
+   * `agent.definition.version` — an optimistic-concurrency COUNTER, not a
+   * version (R36 / Amendment 3b). Never printed as "latest"; the newest
+   * snapshot's `version_number` is (D10). No reader today.
+   */
+  liveCounter: number | null;
 }
 
 export interface WorkspaceVersionInfo {
@@ -247,7 +251,7 @@ export function useMandateWorkspaceData(
             name: row.name,
             agentType: row.agent_type,
             isArchived: row.is_archived === true,
-            latestVersion: row.version ?? null,
+            liveCounter: row.version ?? null,
           };
         }
       }

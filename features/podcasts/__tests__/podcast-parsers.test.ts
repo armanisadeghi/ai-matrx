@@ -11,7 +11,7 @@ import {
   chapterStartSeconds,
   readChapterList,
 } from "@/features/content-ir/kinds/media-chapters";
-import { parseChapters } from "@/features/podcasts/types";
+import { parseChapters, parseChaptersColumn } from "@/features/podcasts/types";
 import {
   buildChaptersJson,
   chaptersJsonUrl,
@@ -95,12 +95,27 @@ describe("readChapterList (the ONE chapter reader)", () => {
   });
 });
 
-describe("parseChapters (persistence wrapper over readChapterList)", () => {
+describe("parseChapters (envelope wrapper over readChapterList)", () => {
   it("unwraps { chapters } and null-collapses empty results", () => {
     expect(parseChapters({ chapters: CHAPTERS_FIXTURE })).toHaveLength(2);
     expect(parseChapters({ chapters: [] })).toBeNull();
     expect(parseChapters("not-an-object")).toBeNull();
     expect(parseChapters(CHAPTERS_FIXTURE)).toBeNull(); // bare array: no wrapper key
+  });
+});
+
+describe("parseChaptersColumn (the pc_episodes.chapters COLUMN reader, DD-234)", () => {
+  it("reads the BARE array the column holds, and rejects the old envelope", () => {
+    expect(parseChaptersColumn(CHAPTERS_FIXTURE)).toHaveLength(2);
+    // The two readers are NOT interchangeable, and that is the point: the
+    // column holds the list itself, `metadata` held `{ chapters: [...] }`.
+    expect(parseChaptersColumn({ chapters: CHAPTERS_FIXTURE })).toBeNull();
+  });
+
+  it("null-collapses absence so a route can tell 'never generated' from 'empty'", () => {
+    expect(parseChaptersColumn(null)).toBeNull();
+    expect(parseChaptersColumn([])).toBeNull();
+    expect(parseChaptersColumn("not-an-array")).toBeNull();
   });
 });
 

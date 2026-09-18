@@ -42,6 +42,11 @@ import {
 import { Skeleton } from "@ai-matrx/design-system";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import {
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { SshAccessPanel } from "@/components/sandbox/ssh-access-panel";
 import { SandboxDiagnosticsPanel } from "@/features/code/views/sandboxes/SandboxDiagnosticsPanel";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
@@ -53,6 +58,9 @@ import {
   sandboxInstanceSummary,
 } from "@/lib/sandbox/format";
 import { useTimeRemaining } from "@/hooks/sandbox/use-time-remaining";
+import { requestSandboxExtension } from "@/lib/sandbox/extension-response";
+import { useSandboxLifecycleSubmission } from "@/lib/sandbox/useSandboxLifecycleSubmission";
+import { useSandboxLifecycleTerminalInvalidation } from "@/lib/sandbox/useSandboxLifecycleTerminalInvalidation";
 import {
   STATUS_BADGE_VARIANT,
   STATUS_LABELS,
@@ -78,6 +86,10 @@ export default function SandboxDetailPage() {
   const router = useRouter();
   const id = params.id as string;
   const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
+  const organizationId = useAppSelector(selectOrganizationId);
+  const { submit: submitLifecycle } = useSandboxLifecycleSubmission();
 
   const [instance, setInstance] = useState<SandboxInstance | null>(null);
   const [loading, setLoading] = useState(true);
@@ -88,10 +100,15 @@ export default function SandboxDetailPage() {
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [forceStopOpen, setForceStopOpen] = useState(false);
+  const [lifecycleBusy, setLifecycleBusy] = useState<"stop" | "delete" | "extend" | null>(null);
   const [renaming, setRenaming] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [nameSaving, setNameSaving] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
+  const lifecycleReadGeneration = useRef(0);
+  const lifecycleScope = useRef({ id, userId, organizationId });
+  lifecycleScope.current = { id, userId, organizationId };
   const remaining = useTimeRemaining(instance?.expires_at, "second");
   const [cwd, setCwd] = useState(DEFAULT_CWD);
   // Staged-vs-typed affordance for the surface write targets. An agent-staged
@@ -113,8 +130,23 @@ export default function SandboxDetailPage() {
 
   const terminalRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const extensionGeneration = useRef(0);
+  const extensionIdentity = useRef("");
+  const pendingExtension = useRef<number | null>(null);
+  const currentExtensionIdentity = `${authReady}:${userId ?? ""}:${organizationId ?? ""}:${id}`;
+
+  useEffect(() => {
+    extensionIdentity.current = currentExtensionIdentity;
+    extensionGeneration.current += 1;
+    setLifecycleBusy((busy) => (busy === "extend" ? null : busy));
+    return () => {
+      extensionGeneration.current += 1;
+    };
+  }, [currentExtensionIdentity]);
 
   const fetchInstance = useCallback(async () => {
+    const generation = ++lifecycleReadGeneration.current;
+    const scope = { id, userId, organizationId };
     try {
       const resp = await fetch(`/api/sandbox/${id}`);
       if (!resp.ok) {
@@ -122,21 +154,29 @@ export default function SandboxDetailPage() {
         // ALSO what a denied read and a soft-deleted row look like. Leave the
         // reason to <AccessGate>; recording a sentence here would be a guess.
         if (resp.status === 404) {
-          setInstance(null);
-          setError(null);
-          return;
+          const current = generation === lifecycleReadGeneration.current && lifecycleScope.current.id === scope.id && lifecycleScope.current.userId === scope.userId && lifecycleScope.current.organizationId === scope.organizationId;
+          if (current) { setInstance(null); setError(null); }
+          return current ? null : undefined;
         }
         throw new Error("Failed to fetch sandbox");
       }
       const data = await resp.json();
-      setInstance(data.instance);
-      setError(null);
+      const current = generation === lifecycleReadGeneration.current && lifecycleScope.current.id === scope.id && lifecycleScope.current.userId === scope.userId && lifecycleScope.current.organizationId === scope.organizationId;
+      if (current) { setInstance(data.instance); setError(null); }
+      return current ? data.instance as SandboxInstance : undefined;
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      if (generation === lifecycleReadGeneration.current) setError(err instanceof Error ? err.message : "Unknown error");
+      return undefined;
     } finally {
-      setLoading(false);
+      if (generation === lifecycleReadGeneration.current) setLoading(false);
     }
-  }, [id]);
+  }, [id, organizationId, userId]);
+
+  useSandboxLifecycleTerminalInvalidation(async (receipt) => {
+    if (receipt.row_id !== id) return;
+    const current = await fetchInstance();
+    if (receipt.kind === "delete" && current === null) router.push("/sandbox");
+  }, () => lifecycleScope.current.id === id && lifecycleScope.current.userId === userId && lifecycleScope.current.organizationId === organizationId);
 
   useEffect(() => {
     fetchInstance();
@@ -297,38 +337,40 @@ export default function SandboxDetailPage() {
     }
   };
 
-  const handleStop = async () => {
-    try {
-      const resp = await fetch(`/api/sandbox/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "stop" }),
-      });
-      if (resp.ok) {
-        const data = await resp.json();
-        setInstance(data.instance);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to stop");
-    }
+  const handleStop = async (graceful = true) => {
+    if (!instance || lifecycleBusy) return;
+    const result = await submitLifecycle({ rowId: id, sandboxId: instance.sandbox_id, kind: "stop", graceful });
+    if (!result.admitted) setError(result.reason === "already_pending" ? "A sandbox operation is already pending for this target." : "Sandbox lifecycle is still connecting to your account.");
   };
 
   const handleExtend = async (seconds: number) => {
+    const requestGeneration = extensionGeneration.current;
+    const requestIdentity = extensionIdentity.current;
+    if (pendingExtension.current === requestGeneration) return;
+    pendingExtension.current = requestGeneration;
+    const isCurrent = () =>
+      extensionGeneration.current === requestGeneration &&
+      extensionIdentity.current === requestIdentity;
+
+    if (isCurrent()) {
+      setError(null);
+      setLifecycleBusy("extend");
+    }
     try {
-      // Hit the dedicated /extend route so the orchestrator's authoritative
-      // TTL is bumped and mirrored back. The legacy PUT ?action=extend path
-      // was DB-only and silently drifted from the live container.
-      const resp = await fetch(`/api/sandbox/${id}/extend`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ttl_seconds: seconds }),
-      });
-      if (resp.ok) {
-        const data = await resp.json();
-        setInstance(data.instance);
+      const result = await requestSandboxExtension(id, seconds);
+      if (!isCurrent()) return;
+      if (result.kind === "success") {
+        setInstance(result.instance);
+        return;
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to extend");
+      setError(result.message);
+    } finally {
+      if (pendingExtension.current === requestGeneration) {
+        pendingExtension.current = null;
+      }
+      if (isCurrent()) {
+        setLifecycleBusy((busy) => (busy === "extend" ? null : busy));
+      }
     }
   };
 
@@ -362,14 +404,9 @@ export default function SandboxDetailPage() {
   };
 
   const handleDelete = async () => {
-    try {
-      const resp = await fetch(`/api/sandbox/${id}`, { method: "DELETE" });
-      if (resp.ok || resp.status === 204) {
-        router.push("/sandbox");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete");
-    }
+    if (!instance || lifecycleBusy) return;
+    const result = await submitLifecycle({ rowId: id, sandboxId: instance.sandbox_id, kind: "delete" });
+    if (!result.admitted) setError(result.reason === "already_pending" ? "A sandbox operation is already pending for this target." : "Sandbox lifecycle is still connecting to your account.");
   };
 
   if (loading) {
@@ -437,11 +474,13 @@ export default function SandboxDetailPage() {
             label: "+1h",
             icon: Clock,
             onPress: () => handleExtend(3600),
+            disabled: lifecycleBusy !== null,
           },
           {
-            label: "Stop",
+            label: lifecycleBusy === "stop" ? "Stopping…" : "Stop",
             icon: Square,
             onPress: () => void handleStop(),
+            disabled: lifecycleBusy !== null,
           },
         ]
       : []),
@@ -455,10 +494,11 @@ export default function SandboxDetailPage() {
       },
     },
     {
-      label: "Delete",
+      label: lifecycleBusy === "delete" ? "Deleting…" : "Delete",
       icon: Trash2,
       onPress: () => setDeleteOpen(true),
       destructive: true,
+      disabled: lifecycleBusy !== null,
     },
   ];
 
@@ -1049,19 +1089,7 @@ export default function SandboxDetailPage() {
                         size="sm"
                         className="gap-1.5 border-rose-300 text-rose-700 hover:bg-rose-50 dark:border-rose-800 dark:text-rose-400 dark:hover:bg-rose-950/30"
                         disabled={!!adminActionLoading}
-                        onClick={async () => {
-                          setAdminActionLoading("stop");
-                          try {
-                            await fetch(`/api/sandbox/${id}`, {
-                              method: "PUT",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ action: "stop" }),
-                            });
-                            await fetchInstance();
-                          } finally {
-                            setAdminActionLoading(null);
-                          }
-                        }}
+                        onClick={() => setForceStopOpen(true)}
                       >
                         {adminActionLoading === "stop" ? (
                           <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -1146,27 +1174,10 @@ export default function SandboxDetailPage() {
                         variant="outline"
                         size="sm"
                         className="gap-1.5"
-                        disabled={!!adminActionLoading}
-                        onClick={async () => {
-                          setAdminActionLoading("extend");
-                          try {
-                            // Use the dedicated /extend route — the legacy
-                            // PUT ?action=extend was DB-only AND we were
-                            // sending `seconds` instead of `ttl_seconds`,
-                            // so the orchestrator never saw the bump and the
-                            // mirrored expires_at silently drifted.
-                            await fetch(`/api/sandbox/${id}/extend`, {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({ ttl_seconds: 3600 }),
-                            });
-                            await fetchInstance();
-                          } finally {
-                            setAdminActionLoading(null);
-                          }
-                        }}
+                        disabled={!!adminActionLoading || lifecycleBusy !== null}
+                        onClick={() => void handleExtend(3600)}
                       >
-                        {adminActionLoading === "extend" ? (
+                        {lifecycleBusy === "extend" ? (
                           <RefreshCw className="w-3.5 h-3.5 animate-spin" />
                         ) : (
                           <Clock className="w-3.5 h-3.5" />
@@ -1234,10 +1245,19 @@ export default function SandboxDetailPage() {
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
+            <Button variant="destructive" disabled={lifecycleBusy !== null} onClick={() => {
+              setDeleteOpen(false);
+              void handleDelete();
+            }}>
               Delete Sandbox
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={forceStopOpen} onOpenChange={setForceStopOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Force stop sandbox?</DialogTitle><DialogDescription>This immediately terminates the running sandbox instead of requesting a graceful stop.</DialogDescription></DialogHeader>
+          <DialogFooter><Button variant="outline" onClick={() => setForceStopOpen(false)}>Cancel</Button><Button variant="destructive" onClick={() => { setForceStopOpen(false); void handleStop(false); }}>Force Stop</Button></DialogFooter>
         </DialogContent>
       </Dialog>
       </div>

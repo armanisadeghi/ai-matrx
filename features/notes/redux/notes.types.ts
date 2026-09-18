@@ -4,6 +4,7 @@
 
 import type { ReviewSession } from "@ai-matrx/diff";
 import type { Note } from "../types";
+import type { PermissionLevel } from "@/utils/permissions/levels";
 
 // ── Undoable fields ─────────────────────────────────────────────────────────
 
@@ -255,15 +256,12 @@ export const TAB_AUTO_MOVE_IDLE_MS = 1500;
 
 // ── Shared-with-me metadata ──────────────────────────────────────────────────
 
-// CONVERGE: one access vocabulary, everywhere — a private per-feature copy of the level union is
-// a second vocabulary — declared 2026-09-10, AI Matrx Data Doctrine R18 (recorded in
-// common-docs/systems/platform/access/DECISIONS.md, 2026-09-10). Observed here: notes declares its
-// own `SharedNotePermissionLevel`, a duplicate of `PermissionLevel` in
-// utils/permissions/types.ts:29 — so `commenter` would have to be added in two places. Collapse to
-// the shared type. Reconcile when you next change this for another reason. Do NOT escalate.
-// Register: /projects/data-doctrine-adoption/REGISTER.md#DD-050
-/** Effective grant level from `iam.permissions` (viewer < editor < admin). */
-export type SharedNotePermissionLevel = "viewer" | "editor" | "admin";
+// One access vocabulary, everywhere (AI Matrx Data Doctrine R18, 2026-09-10, recorded in
+// common-docs/systems/platform/access/DECISIONS.md). This was a private copy of the level union;
+// it is now an alias of the ONE ladder in utils/permissions/levels.ts, so a new level lands here
+// without an edit. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-050
+/** Effective grant level from `iam.permissions` (viewer < commenter < editor < admin). */
+export type SharedNotePermissionLevel = PermissionLevel;
 
 export interface SharedNoteMeta {
   permissionLevel: SharedNotePermissionLevel;
@@ -375,6 +373,22 @@ export interface NotesSliceState {
 
   // ── Realtime ───────────────────────────────────────────────
   realtimeConnected: boolean;
+  /**
+   * THE HONEST SYNC STATE (audit N-05, connection half). `realtimeConnected`
+   * alone cannot tell a screen whether the package's backoff is still working
+   * (say so, quietly) or has given up (say so, loudly, with a way out), so a
+   * boolean could only ever produce a banner that lies in one direction. The
+   * status comes from `@ai-matrx/realtime`'s `onStatusChange`; `idle` is the
+   * pre-subscription state and must never draw a banner.
+   */
+  realtimeStatus: NotesRealtimeStatus;
+  /**
+   * Consecutive failed connect attempts as the package counts them, read from
+   * its diagnostics snapshot. The package does NOT push this (its status
+   * callback is edge-triggered and stays on "reconnecting" for the whole
+   * ladder), so the middleware polls for it while the channel is down.
+   */
+  realtimeFailedAttempts: number;
   // ── Presence ───────────────────────────────────────────────
   /** Live editor attribution per note, derived from realtime `updated_by`
    *  (the DB `_stamp_actor` trigger stamps it — no presence channel needed).
@@ -387,6 +401,19 @@ export interface NotesSliceState {
   noteScopeAssignments: NoteScopeAssignment[];
   noteScopesLoaded: boolean;
 }
+
+/**
+ * The notes channel's connection state, as the realtime package reports it,
+ * plus `idle` for "this client has never opened the channel" (logged out, or
+ * before the first list load). `connecting` means a first join is failing;
+ * `reconnecting` means a join that once succeeded is failing.
+ */
+export type NotesRealtimeStatus =
+  | "idle"
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "disconnected";
 
 export interface NoteEditorPresence {
   userId: string;
@@ -444,19 +471,25 @@ export function cloneAcknowledgedNote(note: Note): Note {
   };
 }
 
+/**
+ * Every column of a `workbench.notes` row as the client models it. ONE list:
+ * the edit-base check, the realtime payload projection and the completeness
+ * test all read it, so a column added to the row is added here once.
+ */
+export const NOTE_ROW_KEYS = [
+  "id", "organization_id", "version", "content", "label", "folder_name",
+  "folder_id", "tags", "metadata", "visibility", "position", "project_id",
+  "task_id", "created_at", "created_by", "updated_at", "updated_by",
+  "deleted_at", "content_hash", "file_path", "last_device_id", "sync_version",
+] as const satisfies readonly (keyof Note)[];
+
 /** Only an actual complete server row may become an edit base. */
 export function acknowledgedSnapshotFromFullRead(
   note: Partial<Note>,
   status: NoteFetchStatus,
 ): Note | null {
   if (status !== "full") return null;
-  const required: (keyof Note)[] = [
-    "id", "organization_id", "version", "content", "label", "folder_name",
-    "folder_id", "tags", "metadata", "visibility", "position", "project_id",
-    "task_id", "created_at", "created_by", "updated_at", "updated_by",
-    "deleted_at", "content_hash", "file_path", "last_device_id", "sync_version",
-  ];
-  if (required.some((key) => !(key in note))) return null;
+  if (NOTE_ROW_KEYS.some((key) => !(key in note))) return null;
   return cloneAcknowledgedNote(note as Note);
 }
 
@@ -535,6 +568,9 @@ export function createBlankNoteRecordFromPartial(
     id: partial.id,
     label: partial.label ?? "New Note",
     content: partial.content ?? null,
+    // The server-maintained preview a list row carries (audit N-24); a full
+    // read carries it too. Never written by a client.
+    content_preview: partial.content_preview ?? null,
     folder_name: partial.folder_name ?? null,
     folder_id: partial.folder_id ?? null,
     tags: partial.tags ?? null,

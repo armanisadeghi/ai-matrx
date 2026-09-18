@@ -15,6 +15,7 @@
 import NavItem from "./NavItem";
 import NavFlyoutGroup from "./NavFlyoutGroup";
 import FavoritesNavGroup from "./FavoritesNavGroup";
+import Link from "next/link";
 import AdminSidebarSection from "./admin-menu/AdminSidebarSection";
 import RouteMenuSlot from "./RouteMenuSlot";
 import RouteHeaderSlot from "./RouteHeaderSlot";
@@ -25,13 +26,14 @@ import {
   primaryNavItems,
   settingsItem,
 } from "../../constants/nav-data";
+import { SETTINGS_BASE } from "@/features/settings/route-shell/routing";
 
 interface SidebarProps {
   pathname: string;
   isAuthenticated: boolean;
 }
 
-export default function Sidebar({ pathname, isAuthenticated }: SidebarProps) {
+export default function Sidebar({ isAuthenticated }: SidebarProps) {
   const visibleItems = navItemsForViewer(primaryNavItems, isAuthenticated);
   return (
     <aside className="shell-sidebar">
@@ -44,9 +46,23 @@ export default function Sidebar({ pathname, isAuthenticated }: SidebarProps) {
 
         {/* Default: collapse toggle — hidden when route header is active */}
         <div className="shell-sidebar-brand-default">
+          {/* Both controls remain mounted so the client-updated route gate can
+              switch them without replacing the shell or touching the saved
+              sidebar preference. */}
+          <Link
+            href={SETTINGS_BASE}
+            className="shell-sidebar-settings-home shell-tactile"
+            aria-current="page"
+            title="Settings"
+          >
+            <span className="shell-sidebar-brand-toggle shell-sidebar-brand-toggle-static">
+              <ShellIcon name="PanelLeft" size={18} strokeWidth={1.75} />
+            </span>
+            <span className="shell-sidebar-brand-logo">Settings</span>
+          </Link>
           <label
             htmlFor="shell-sidebar-toggle"
-            className="shell-sidebar-brand-toggle shell-tactile"
+            className="shell-sidebar-brand-toggle shell-sidebar-brand-toggle-control shell-tactile"
             aria-label="Toggle sidebar"
           >
             <ShellIcon name="PanelLeft" size={18} strokeWidth={1.75} />

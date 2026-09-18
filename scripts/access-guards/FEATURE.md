@@ -22,8 +22,7 @@ Advisory only — nothing runs it at commit time; a human or agent runs it.
 
 2. **ACTIVE-ORG ACCESS** — access decisions must key on the user, never the
    currently-selected organization. Heuristic (a): an active-org selector
-   (`selectEffectiveOrganizationId`, `selectActiveOrganizationId`,
-   `selectOrganizationId`, `selectHasExplicitOrganization`,
+   (`selectActiveOrganizationId`, `selectOrganizationId`, `selectHasExplicitOrganization`,
    `selectActiveOrganizationName` — from `lib/redux/slices/appContextSlice.ts`
    and `features/scopes/redux/selectors/active-context.ts`) referenced inside
    `utils/permissions/**`, `utils/auth/**`, or any file whose basename matches

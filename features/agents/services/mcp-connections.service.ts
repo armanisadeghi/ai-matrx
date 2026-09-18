@@ -20,7 +20,7 @@ import {
   requireOrganizationContext,
 } from "@/lib/api/organization-context";
 import type { components } from "@/types/python-generated/api-types";
-import type { McpAvailability } from "@/features/connectors/connection-state";
+import type { AttachableAvailability } from "@/features/connectors/attachable-resources";
 
 function backendBase(): string {
   return AIDREAM_PRODUCTION_URL;
@@ -124,16 +124,23 @@ export type ManualAuthMethod =
  * vault, and GitHub's bearer comes from the first-party GitHub App
  * connection rather than any MCP OAuth grant. A surface renders the
  * catalog-derived state until this answers, then this wins.
+ *
+ * The same payload carries `attachable` — the resource kinds this server lets
+ * a person CHOOSE from (repositories, Drive files, sheets) rather than merely
+ * connect to. A pure MCP server sends an empty list. The generated contract
+ * does not declare that field yet, so the return type is widened here; swap it
+ * back to `components["schemas"]["McpAvailability"]` once `pnpm sync-types`
+ * carries it.
  */
 export function fetchMcpAvailability(
   organizationId: string,
   slugs?: string[],
-): Promise<McpAvailability[]> {
+): Promise<AttachableAvailability[]> {
   const query =
     slugs && slugs.length > 0
       ? `?slugs=${encodeURIComponent(slugs.join(","))}`
       : "";
-  return mcpFetch<McpAvailability[]>(
+  return mcpFetch<AttachableAvailability[]>(
     `/availability${query}`,
     undefined,
     organizationId,

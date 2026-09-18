@@ -278,6 +278,23 @@ export const selectRunStartedAt = (runId: string) =>
   );
 
 /** The ts of the last status transition — the run's end once it is terminal. */
+/**
+ * Has the server actually told us this run's status yet?
+ *
+ * 🚨 Read this BEFORE narrating anything about the run (cold walk 7, finding
+ * 5). `selectRunStatus` answers `"pending"` for a run that has merely been
+ * attached, because `status` is non-nullable and every new run is born
+ * pending — so a surface that trusts it alone announces "GETTING READY" over a
+ * run that finished twenty minutes ago, for as long as the read takes. While
+ * this is false a surface says what IT is doing ("Opening this run"), never
+ * what the run is doing.
+ */
+export const selectRunStatusKnown = (runId: string) =>
+  createSelector(
+    [selectByRunId],
+    (byRunId): boolean => byRunId[runId]?.statusKnown === true,
+  );
+
 export const selectRunStatusTs = (runId: string) =>
   createSelector(
     [selectByRunId],

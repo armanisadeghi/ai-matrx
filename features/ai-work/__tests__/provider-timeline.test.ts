@@ -16,6 +16,11 @@ function msg(
     created_at: createdAt,
     display: { text: `text ${id}`, activityCount: 0 },
     contentValid: true,
+    origin: "provider_mirror",
+    agentId: null,
+    agentName: null,
+    // Native to this conversation, which is what the timeline tests are about.
+    carriedFrom: null,
   };
 }
 

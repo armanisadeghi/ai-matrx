@@ -70,7 +70,7 @@ export function MemberControlsForm({ orgId, member, onSaved }: Props) {
             id="tier-override"
             value={tierOverride}
             onChange={(e) => setTierOverride(e.target.value)}
-            placeholder="account_tiers id (optional)"
+            placeholder="account_tiers tier_key (optional)"
           />
           <p className="text-xs text-muted-foreground">Overrides the user&apos;s default storage tier.</p>
         </div>

@@ -60,6 +60,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
+import { armScratchSignals, registeredScratchPlan, teardownScratch } from "./lib/scratch-teardown";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -74,14 +76,17 @@ const C = { b: "\x1b[1m", d: "\x1b[2m", r: "\x1b[31m", g: "\x1b[32m", y: "\x1b[3
  * their unwalled staff arm. Both are already named residue on `check:staff-door` and in DD-137b.
  *  - `access_request` — `audit_class='machinery'`: it owns inputs the access resolver consumes, and
  *    db-rules §6d forbids generic RLS on machinery;
- *  - `wbx_guidance`, `wbx_demo` — both refuse with `42883 operator does not exist: text = uuid`, the
- *    same type mismatch in the same `extend` pair. DD-137b's residue list names only `wbx_guidance`
- *    because `check:staff-door`'s population is private/confidential tokens and `wbx_demo` is classed
- *    `organization` — which is precisely the blind spot DD-165 exists to cover, and this guard found
- *    its twin on the first run. Neither holds a `visibility='personal'` row today (0 and 0, measured
- *    2026-09-12); the REGISTRY/column defect is the thing to fix, not the policy.
+ *  - `wbx_guidance` — refuses with `42883 operator does not exist: text = uuid`: its `id` is TEXT
+ *    and the generated entity lane compares `id` to a uuid. It holds no `visibility='personal'`
+ *    row today (0, measured 2026-09-12); the REGISTRY/column defect is the thing to fix, not the
+ *    policy.
+ *
+ * `wbx_demo` WAS THE THIRD AND IS GONE FROM THIS SET (2026-09-14). It was the same 42883 in the
+ * same `extend` pair, and DD-173 B-103 removed the cause: its TEXT id is now `demo_key`, it carries
+ * a canonical uuid `id`, and `iam.apply_rls` generated it at 0 base / 0 policy FAIL. `wbx_guidance`
+ * is the same fix waiting for a lane — this entry is the record that it is a fix, not a tolerance.
  */
-const RESIDUE_TOKENS: ReadonlySet<string> = new Set(["access_request", "wbx_guidance", "wbx_demo"]);
+const RESIDUE_TOKENS: ReadonlySet<string> = new Set(["access_request", "wbx_guidance"]);
 
 /**
  * THE DD-175 RESIDUE, BY NAME AND WITH ITS REASON — never a count, never a tolerance.
@@ -431,6 +436,15 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
   // And the same two states built FOR REAL, so the SQL that feeds the detector is proven too.
   const schema = `zz_row_visibility_selftest_${Date.now().toString(36)}`;
   const token = `${schema}_token`;
+  const scratch = registeredScratchPlan({
+    owner: "check:row-visibility --self-test", run: (sql) => door(env, sql), schema, tokens: [token],
+    extraRows: [{
+      what: `platform.entity_relationships rows for ${token}`,
+      deleteSql: `delete from platform.entity_relationships where child_type = '${token}'`,
+      countSql: `select count(*)::int as n from platform.entity_relationships where child_type = '${token}'`,
+    }],
+  });
+  const disarm = armScratchSignals(scratch);
   try {
     await door(env, `create schema ${schema}`);
     await door(env, `create table ${schema}.probe (id uuid primary key default gen_random_uuid(),
@@ -496,15 +510,9 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
       console.log(`  ${C.g}✓${C.x} GREEN — the live query stops flagging it the moment the arm is walled`);
     }
   } finally {
-    // The teardown is not optional: a leftover registered token would break every other guard.
-    try { await door(env, `delete from platform.entity_relationships where child_type = '${token}'`); } catch { /* reported below */ }
-    try { await door(env, `delete from platform.entity_types where token = '${token}'`); } catch { /* reported below */ }
-    try { await door(env, `drop schema if exists ${schema} cascade`); } catch { /* reported below */ }
-    const left = await door(env, `select (select count(*) from platform.entity_types where token = '${token}')
-                                       + (select count(*) from platform.entity_relationships where child_type = '${token}') as n`);
-    if (Number((left[0] as { n?: number })?.n ?? 0) !== 0) {
-      console.log(`  ${C.r}✗${C.x} the self-test left its scratch token behind — remove '${token}' by hand`); bad++;
-    }
+    // Never silent (DC-027 #8): every step attempted, every object probed, leftovers named with the remedy.
+    disarm();
+    if (!(await teardownScratch(scratch)).ok) bad++;
   }
 
   console.log(bad === 0
@@ -610,7 +618,7 @@ async function main(): Promise<number> {
   return STRICT ? 1 : 0;
 }
 
-main().then((code) => process.exit(code)).catch((e) => {
+main().then((code) => exitAfterDrain(code)).catch((e) => {
   console.error(`${C.r}✗${C.x} check:row-visibility crashed: ${String(e)}`);
-  process.exit(1);
+  exitAfterDrain(1);
 });

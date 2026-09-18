@@ -42,7 +42,15 @@ interface UsageStatusRpc {
     rate_limit_downloads_per_min: number | null;
     features: Record<string, unknown> | null;
   };
+  /**
+   * Either a real `files.user_storage_usage` row (which carries `user_id` and
+   * `updated_at`) or the zero object the RPC synthesizes when no row exists.
+   * The presence of `user_id` is the ONLY difference, and it is what tells the
+   * meter whether the number was measured or invented.
+   */
   usage: {
+    user_id?: string | null;
+    updated_at?: string | null;
     bytes_used: number;
     files_count: number;
     daily_upload_count: number;
@@ -93,6 +101,8 @@ export async function getUsageStatusDirect(
     rate_limit_uploads_per_min: limits.rate_limit_uploads_per_min,
     rate_limit_downloads_per_min: limits.rate_limit_downloads_per_min,
     features: limits.features ?? {},
+    ledger_measured: Boolean(usage.user_id),
+    ledger_measured_at: usage.updated_at ?? null,
   };
 }
 

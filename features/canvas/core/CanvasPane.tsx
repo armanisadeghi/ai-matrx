@@ -56,12 +56,16 @@ import {
 import { toast } from "@/lib/toast";
 import { TapTargetButton } from "@ai-matrx/tap-target";
 import { CanvasBody, getDefaultTitle, titleToString } from "./CanvasBody";
+import { CanvasSourceView } from "./CanvasSourceView";
+import { canvasTypeHasSource } from "./canvasSource";
 import { CanvasNavigation } from "./CanvasNavigation";
+import { shouldShowCanvasSwitcher } from "./canvasSwitcher";
 import { CanvasPaneUserMenu } from "./CanvasPaneHeaderChrome";
 import { CanvasPanePutAwayToggle } from "./CanvasHeaderToggle";
 import { syncCanvasItemToCloud } from "@/features/canvas/materialization/syncCanvasItemToCloud";
 import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artifactId";
 import { CanvasArtifactDebugPanel } from "@/features/canvas/components/CanvasArtifactDebugPanel";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 // CanvasShareSheet pulls in markdown utilities and image picker — keep it
 // lazy so the canvas itself stays small on first paint.
@@ -90,6 +94,11 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
   const allItems = useAppSelector(selectCanvasItems);
   const currentItemId = useAppSelector(selectCurrentItemId);
   const isSplit = useAppSelector(selectCanvasIsSplit);
+  const isMobile = useIsMobile();
+  // Redux retains a desktop split so it can return when the viewport grows,
+  // but CanvasPanes renders one pane on a phone. Header controls must follow
+  // the pane the person can see, not hidden split state.
+  const isVisibleSplit = isSplit && !isMobile;
 
   const isAdmin = useAppSelector(selectIsAdmin);
   const [viewMode, setViewMode] = useState<ViewMode>("preview");
@@ -134,7 +143,7 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
     if (paneRole === "bottom") {
       // Close just the bottom pane = collapse the split.
       dispatch(unsplitCanvas());
-    } else if (paneRole === "top" && isSplit) {
+    } else if (paneRole === "top" && isVisibleSplit) {
       // Top pane in split mode → "close pane" = drop top, promote bottom.
       if (secondaryItem) {
         dispatch(setCurrentItem(secondaryItem.id));
@@ -203,8 +212,12 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
   // Header layout: title (left) | view toggle (center) | actions (right).
   // Navigation chip only shows in the single/top pane to avoid two competing
   // history pickers when split.
-  const showNavigation =
-    paneRole !== "bottom" && allItems.length > 1 && !isSplit;
+  // THE SWITCHER RULE lives in `canvasSwitcher.ts` so a guard can assert it.
+  const showNavigation = shouldShowCanvasSwitcher({
+    paneRole,
+    itemCount: allItems.length,
+    isSplit: isVisibleSplit,
+  });
 
   // Primary pane header (single or top in split): put-away + avatar live here
   // beside preview/source and the other actions — not a separate shell row.
@@ -295,7 +308,7 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
           {/* Split / Unsplit — only shown in single-pane mode (split) or on
               the top pane in split mode (offer unsplit). The bottom pane
               never owns split state; its X already collapses the split. */}
-          {paneRole === "single" && allItems.length > 1 && (
+          {paneRole === "single" && allItems.length > 1 && !isMobile && (
             <TapTargetButton
               icon={<Layers className="h-4 w-4" />}
               ariaLabel="Split canvas"
@@ -424,11 +437,7 @@ export function CanvasPane({ paneRole }: CanvasPaneProps) {
         {viewMode === "preview" ? (
           <CanvasBody content={content} />
         ) : (
-          <div className="h-full p-2">
-            <pre className="h-full overflow-auto rounded-lg border border-border bg-muted/40 p-3 text-xs text-foreground scrollbar-thin">
-              {JSON.stringify(content, null, 2)}
-            </pre>
-          </div>
+          <CanvasSourceView content={content} />
         )}
       </div>
 
@@ -477,16 +486,15 @@ const ViewToggleButton: React.FC<ViewToggleButtonProps> = ({
 );
 
 /**
- * Types where the JSON "source" view is meaningful. Image / iframe / html
- * are passthrough surfaces — toggling them to a JSON view is noise.
+ * Does this type get the Preview/Source switcher at all?
+ *
+ * ONE answer, in `canvasSource.ts`: a type is offered `Source` only when it HAS
+ * a source of its own (document markdown, artifact code, a structured
+ * artifact's markdown export). Live panes — sandbox, cloud browser, the
+ * document workspace, the ephemeral code editors — hold a running session, not
+ * a document, and used to print the redux envelope to the user when this
+ * function said "default: true".
  */
 function hasViewToggle(type: string): boolean {
-  switch (type) {
-    case "image":
-    case "iframe":
-    case "html":
-      return false;
-    default:
-      return true;
-  }
+  return canvasTypeHasSource(type);
 }

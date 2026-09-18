@@ -113,4 +113,16 @@ describe("AdminRouteSidebarMenu", () => {
     render();
     expect(host.querySelectorAll(".shell-active-pill")).toHaveLength(1);
   });
+
+  it("does not style Launchpad as selected away from its route", () => {
+    pathnameMock = "/administration/ai/ai-models";
+    render();
+
+    const launchpad = host.querySelector<HTMLAnchorElement>(
+      'a[href="/administration/launchpad"]',
+    );
+    expect(launchpad).not.toBeNull();
+    expect(launchpad?.className).not.toMatch(/(?:sky|primary)/);
+    expect(launchpad?.getAttribute("aria-current")).toBeNull();
+  });
 });

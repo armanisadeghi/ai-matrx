@@ -14,10 +14,12 @@
  * or — when the note never reached the database — recover it as a new note.
  */
 
-import { useCallback, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { LifeBuoy, Trash2 } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { isDraftAlreadySaved } from "./NoteDraftRecoveryBanner";
 import {
   addInstanceTab,
   setInstanceActiveTab,
@@ -55,13 +57,74 @@ export function NotesDraftRecoveryList({
     () => -1,
   );
   const drafts = draftsVersion < 0 ? [] : listNoteDrafts(userId ?? null);
+  /** Draft keys the server check has cleared as genuinely unsaved. */
+  const [orphaned, setOrphaned] = useState<Record<string, true>>({});
 
   const drop = useCallback((entityId: string) => {
     discardNoteDraft(entityId);
   }, []);
 
-  const pending = drafts.filter((d) => !(openTabs ?? []).includes(d.entityId));
+  const notOpen = drafts.filter((d) => !(openTabs ?? []).includes(d.entityId));
+
+  // THE SAME BAR AS THE BANNER: a draft whose text the server already holds
+  // (the note, or a version saved around or after the capture) is not
+  // unsaved work — it is dropped silently, never announced. A draft with no
+  // server row at all is unsaved by definition and needs no read.
+  const unjudgedKeys = notOpen
+    .filter((d) => !orphaned[`${d.key}:${d.capturedAt}`] && Boolean(notesMap[d.entityId]))
+    .map((d) => `${d.key}:${d.capturedAt}`)
+    .join("\n");
+  // The judge reads the latest drafts and records through a ref so it re-runs
+  // only when the SET of unjudged drafts changes — never per render.
+  const latestRef = useRef({ notOpen, notesMap, orphaned });
+  useEffect(() => {
+    latestRef.current = { notOpen, notesMap, orphaned };
+  }, [notOpen, notesMap, orphaned]);
+  useEffect(() => {
+    if (!unjudgedKeys) return;
+    let cancelled = false;
+    const latest = latestRef.current;
+    const notesMap = latest.notesMap;
+    const candidates = latest.notOpen.filter(
+      (d) => !latest.orphaned[`${d.key}:${d.capturedAt}`] && Boolean(notesMap[d.entityId]),
+    );
+    void Promise.all(
+      candidates.map(async (draft) => {
+        const record = notesMap[draft.entityId];
+        const current = record?._fetchStatus === "full" ? (record.content ?? "") : null;
+        const saved = await isDraftAlreadySaved(draft, current);
+        return { draft, saved };
+      }),
+    ).then((results) => {
+      if (cancelled) return;
+      const cleared: Record<string, true> = {};
+      for (const { draft, saved } of results) {
+        if (saved) discardNoteDraft(draft.entityId);
+        else cleared[`${draft.key}:${draft.capturedAt}`] = true;
+      }
+      if (Object.keys(cleared).length > 0) setOrphaned((prev) => ({ ...prev, ...cleared }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [unjudgedKeys]);
+
+  const pending = notOpen.filter(
+    (d) => !notesMap[d.entityId] || orphaned[`${d.key}:${d.capturedAt}`],
+  );
   if (pending.length === 0) return null;
+
+  const handleDiscard = async (draft: LocalDraft) => {
+    const ok = await confirm({
+      title: "Discard the recovered text?",
+      description: notesMap[draft.entityId]
+        ? "This text is not in the note and not in its version history. Discarding it deletes it for good."
+        : "This note never reached the server. Discarding this copy deletes it for good.",
+      confirmLabel: "Discard",
+      variant: "destructive",
+    });
+    if (ok) drop(draft.entityId);
+  };
 
   const handleOpen = (draft: LocalDraft) => {
     dispatch(markTabInteraction({ instanceId }));
@@ -104,8 +167,8 @@ export function NotesDraftRecoveryList({
         <LifeBuoy className="h-4 w-4 shrink-0 text-primary" />
         <span className="text-xs font-medium text-foreground">
           {pending.length === 1
-            ? "1 unsaved note was recovered from this browser"
-            : `${pending.length} unsaved notes were recovered from this browser`}
+            ? "Unsaved text found for 1 note"
+            : `Unsaved text found for ${pending.length} notes`}
         </span>
       </div>
       <ul className="space-y-1">
@@ -145,7 +208,7 @@ export function NotesDraftRecoveryList({
               )}
               <button
                 type="button"
-                onClick={() => drop(draft.entityId)}
+                onClick={() => void handleDiscard(draft)}
                 title="Discard this recovered copy"
                 className="shrink-0 rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground cursor-pointer"
               >

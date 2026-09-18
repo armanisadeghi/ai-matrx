@@ -27,7 +27,7 @@ import {
 import type { NoteVersion } from "@/features/text-diff/types";
 import type { Note } from "@/features/notes/types";
 import { selectNoteById } from "@/features/notes/redux/selectors";
-import { fetchNoteContent } from "@/features/notes/redux/thunks";
+import { fetchNoteContent, refetchNoteContent } from "@/features/notes/redux/thunks";
 import { analyzeDiff } from "@/features/notes/utils/diffAnalysis";
 import { NoteDiffViewer } from "./NoteDiffViewer";
 import {

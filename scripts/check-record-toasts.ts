@@ -65,6 +65,7 @@ import {
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import ts from "typescript";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const REPO_ROOT = resolve(__dirname, "..");
 const SCANNED_DIRS = ["features", "lib", "app", "components", "hooks"] as const;
@@ -270,4 +271,4 @@ function main(): number {
   return strict && fresh.length > 0 ? 1 : 0;
 }
 
-if (require.main === module) process.exit(main());
+if (require.main === module) exitAfterDrain(main());

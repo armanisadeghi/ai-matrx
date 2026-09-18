@@ -12,6 +12,7 @@ This skill captures the exact workflow used to build the original `/notes` route
 - **Writing any scaffold file in Phases 1–4 → copy its template from [file-templates.md](file-templates.md).** Every code template (types, `data.ts`, route files, hydrators) lives there, keyed by phase.
 - **Route UI not built yet (placeholder `page.tsx`) → read [coming-soon-placeholder.md](coming-soon-placeholder.md).**
 - **Full shell implementations, data flow, anti-patterns, mobile, more questions for Arman → [route-architecture.md](route-architecture.md).**
+- **A route needs agent-aware context or bindings → invoke `surface-authoring`; this includes agent-native routes, where outside helpers may receive an approved task-appropriate snapshot while native and resident agents remain isolated from ambient inheritance.**
 
 ## STOP: Questions to Ask Before Writing a Single Line
 

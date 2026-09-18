@@ -38,6 +38,7 @@
  */
 import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { join, relative } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const SCAN_DIRS = ["app", "features", "components", "lib"];
@@ -274,5 +275,5 @@ function main(): number {
 }
 
 if (process.argv[1] && /check-phone-layout\.ts$/.test(process.argv[1])) {
-  process.exit(main());
+  exitAfterDrain(main());
 }

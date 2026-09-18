@@ -162,3 +162,18 @@ public/__kind-sandbox-*.html
 
 # Playwright run artifacts are reproducible local output.
 /test-results/
+
+# The mandate reference check (`check:mandate-references`) writes its module
+# index cache here. It must never make the working tree dirty: a dirty tree is
+# reported UNMEASURED with an `incomplete` verdict, which would mean the check
+# spoiled its own report just by running.
+.cache/
+
+# PARKED CHECKOUTS — `.wt/` and `.coldwalk*/` hold other lanes' worktrees and
+# symlinks (`.wt/aidream -> ../aidream`). Tailwind v4's automatic source
+# detection honours this file: unignored, it followed that symlink into the
+# sibling repo and Turbopack panicked on every route for every agent
+# ("FileSystemPath("").join("../aidream") leaves the filesystem root",
+# 2026-09-18). The census guards already skip these as parked checkouts.
+.wt/
+.coldwalk*/

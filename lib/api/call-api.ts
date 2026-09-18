@@ -754,6 +754,22 @@ export function buildRequestBody(
     }
   }
 
+  // A caller that writes `organization_id: someId ?? null` is saying "I have no
+  // organization of my own to name here", not "send this request for a
+  // DIFFERENT organization". Treating that absence as a conflict is what turned
+  // the Libraries paste box into "Request body organization_id must match the
+  // request context organization" with no second organization anywhere in
+  // sight, so a null (or a blank string) is dropped and the scope's
+  // organization is injected below, exactly as if the caller had never written
+  // the key. A real, non-empty value that disagrees with the scope is still a
+  // refusal — that is the guard.
+  if (
+    base.organization_id === null ||
+    (typeof base.organization_id === "string" && base.organization_id.trim() === "")
+  ) {
+    delete base.organization_id;
+  }
+
   const bodyOrganizationId = base.organization_id;
   if (
     scope.organization_id !== undefined &&

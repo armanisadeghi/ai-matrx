@@ -62,6 +62,7 @@ interface AssetRowRaw {
 interface AgentRunRaw {
   id: string;
   status: string | null;
+  error: unknown;
   request: Record<string, unknown> | null;
   result: Record<string, unknown> | null;
   episode_id: string | null;
@@ -72,7 +73,7 @@ interface AgentRunRaw {
 }
 
 const RUN_SELECT =
-  "id,status,request,result,episode_id,last_heartbeat_at,created_at,updated_at," +
+  "id,status,error,request,result,episode_id,last_heartbeat_at,created_at,updated_at," +
   "agent_run_stage(stage_key,status,output,error,started_at,finished_at)";
 
 const ASSET_SELECT =
@@ -108,6 +109,15 @@ function parseFencedJson(text: string | null): Record<string, unknown> | null {
 function stringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is string => typeof item === "string");
+}
+
+function durableErrorMessage(value: unknown): string | null {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  if (!value || typeof value !== "object") return null;
+  const message = (value as { message?: unknown }).message;
+  return typeof message === "string" && message.trim()
+    ? message.trim()
+    : null;
 }
 
 function sourceSummary(request: Record<string, unknown>): RunSource {
@@ -394,6 +404,7 @@ export async function fetchPodcastRunDetail(
   const summary = toSummary(run, now);
   return {
     ...summary,
+    error: durableErrorMessage(run.error),
     title: summary.title || (typeof meta.title === "string" ? meta.title : ""),
     description: typeof meta.description === "string" ? meta.description : null,
     script: scriptOut,

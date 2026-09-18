@@ -44,6 +44,7 @@ export type KnowledgeAnswer = (typeof KNOWLEDGE_OPTIONS)[number];
 const RELEVANCE: Record<KnowledgeAnswer, string[]> = {
   "In my head": [
     "interview",
+    "teach_back",
     "monologue",
     "bad_example_probe",
     "triad_game",
@@ -71,7 +72,10 @@ const RELEVANCE: Record<KnowledgeAnswer, string[]> = {
     "file",
     "body_of_work",
   ],
-  "Nothing yet — just an idea": ["vision_interview", "interview"],
+  // The teach-back is the one lane that needs NO material: with an empty
+  // Rulebook it explains what a generalist would do, says so, and the
+  // corrections are the whole method.
+  "Nothing yet — just an idea": ["vision_interview", "interview", "teach_back"],
 };
 
 /** Below this, a "best for you" row reads as a thin guess rather than help —

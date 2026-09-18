@@ -19,6 +19,11 @@ import {
 } from "@/features/surfaces/manifests/data-tables.manifest";
 import type { SurfaceScopePayload } from "@/features/surfaces/types";
 
+import {
+  describeValidationRules,
+  parseValidationRules,
+} from "../validation";
+
 /** One column definition as the viewer holds it (a `TableField`). */
 export interface DataTableScopeField {
   field_name: string;
@@ -34,6 +39,12 @@ export interface DataTableScopeField {
   format?: string;
   /** Resolved options for a choice column, already narrowed by any binding. */
   choices?: string[];
+  /**
+   * The column's raw `validation_rules` jsonb, straight off the field row.
+   * Parsed and put into plain English here rather than by the viewer, so the
+   * rule model has exactly one reader (`features/data-tables/validation.ts`).
+   */
+  validationRules?: unknown;
 }
 
 /** One row as the viewer holds it. */
@@ -61,13 +72,24 @@ export interface DataTableScopeInput {
    */
   fullDataset: DataTableScopeRow[] | null;
   /**
-   * The cell whose full-content editor is open, if any. This grid has no
-   * persistent click-to-select cell, so this is the only sense in which a cell
-   * is "current".
+   * The current cell: the one whose full-content editor is open (its draft is
+   * the value), else the cell the user has SELECTED on the grid (click / arrow
+   * keys). Null when neither.
    */
   openCell: { rowId: string; fieldName: string; value: string } | null;
   /** The row whose row editor is open, if any. */
   openRow: { rowId: string; data: Record<string, unknown> | null } | null;
+  /**
+   * The cells the user has selected as a RANGE (shift-click / drag / shift+
+   * arrows / row / column / select-all) as spreadsheet TSV with a header row
+   * of machine field names. Null when only one cell (or nothing) is selected —
+   * that case is `openCell`.
+   */
+  selectedRangeTsv?: string | null;
+  /** How many cells that range spans (0 when none). */
+  selectedRangeCellCount?: number;
+  /** The rows ticked with the row checkboxes, as `{ row_id, ...cells }`. */
+  selectedRows?: DataTableScopeRow[];
 }
 
 /** RFC4180-ish escaping: quote when the value contains a delimiter or quote. */
@@ -114,19 +136,28 @@ export function buildDataTablesScope(
     (a, b) => a.field_order - b.field_order,
   );
 
-  const columnList: DataTableColumnEntry[] = orderedFields.map((f) => ({
-    name: f.field_name,
-    display_name: f.display_name,
-    type: f.data_type,
-    required: f.is_required,
-    order: f.field_order,
-    // Both are OMITTED rather than sent empty when absent — the same rule the
-    // rest of this builder follows. An empty `choices` would read as "this
-    // column offers nothing", which is a different claim from "not a choice
-    // column" and from "its pick list has not loaded yet".
-    ...(f.format ? { format: f.format } : {}),
-    ...(f.choices && f.choices.length > 0 ? { choices: f.choices } : {}),
-  }));
+  const columnList: DataTableColumnEntry[] = orderedFields.map((f) => {
+    // The rules ENFORCED on this column, said the way the row forms say them.
+    // An agent that cannot see a rule can only learn it by being refused, and
+    // a refusal it could have avoided is a wasted turn for the user.
+    const validation = describeValidationRules(
+      parseValidationRules(f.validationRules),
+    );
+    return {
+      name: f.field_name,
+      display_name: f.display_name,
+      type: f.data_type,
+      required: f.is_required,
+      order: f.field_order,
+      // All three are OMITTED rather than sent empty when absent — the same rule
+      // the rest of this builder follows. An empty `choices` would read as "this
+      // column offers nothing", which is a different claim from "not a choice
+      // column" and from "its pick list has not loaded yet".
+      ...(f.format ? { format: f.format } : {}),
+      ...(f.choices && f.choices.length > 0 ? { choices: f.choices } : {}),
+      ...(validation.length > 0 ? { validation } : {}),
+    };
+  });
 
   const tableSchema: Record<string, string> = {};
   for (const f of orderedFields) tableSchema[f.field_name] = f.data_type;
@@ -160,6 +191,20 @@ export function buildDataTablesScope(
       : {}),
     ...(currentRowId ? { current_row_id: currentRowId } : {}),
     ...(currentRowData ? { current_row_json: currentRowData } : {}),
+    ...(input.selectedRangeTsv
+      ? {
+          selected_range_tsv: input.selectedRangeTsv,
+          selected_range_cell_count: input.selectedRangeCellCount ?? 0,
+        }
+      : {}),
+    ...(input.selectedRows && input.selectedRows.length > 0
+      ? {
+          selected_rows_json: input.selectedRows.map((row) => ({
+            row_id: row.id,
+            ...row.data,
+          })),
+        }
+      : {}),
 
     ...(orderedFields.length > 0 && input.visibleRows.length > 0
       ? { visible_data_csv: rowsToCsv(orderedFields, input.visibleRows) }

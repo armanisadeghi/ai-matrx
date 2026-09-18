@@ -23,6 +23,7 @@ import {
   Settings as SettingsIcon,
   MessageSquare,
   Camera,
+  MonitorSmartphone,
   AppWindow,
   Activity,
   Building2,
@@ -38,6 +39,7 @@ import {
   FileSpreadsheet,
   Gauge,
   Archive,
+  Clapperboard,
 } from "lucide-react";
 import { Chrome } from "@/components/icons/brand-icons";
 import Placeholder from "./tabs/PlaceholderTab";
@@ -56,6 +58,7 @@ import ImageGenerationTab from "./tabs/ImageGenerationTab";
 import PhotoEditingTab from "./tabs/PhotoEditingTab";
 import VideoConferenceTab from "./tabs/VideoConferenceTab";
 import MediaDevicesTab from "./tabs/MediaDevicesTab";
+import DevicesSyncTab from "@/features/files/devices/DevicesSyncTab";
 import CodingTab from "./tabs/CodingTab";
 import CodeWorkspaceTab from "./tabs/CodeWorkspaceTab";
 import FlashcardsTab from "./tabs/FlashcardsTab";
@@ -76,6 +79,7 @@ import ProfileEmergencyTab from "./tabs/ProfileEmergencyTab";
 import OrganizationsTab from "./tabs/OrganizationsTab";
 import IntegrationsTab from "./tabs/IntegrationsTab";
 import GoogleWorkspaceTab from "./tabs/GoogleWorkspaceTab";
+import MicrosoftTab from "./tabs/MicrosoftTab";
 import SandboxStorageTab from "./tabs/SandboxStorageTab";
 import FeedbackTab from "./tabs/FeedbackTab";
 import ExtensionTab from "./tabs/ExtensionTab";
@@ -83,6 +87,7 @@ import VoiceMicTab from "./tabs/VoiceMicTab";
 import MemoryTab from "./tabs/MemoryTab";
 import ConversationFiltersTab from "./tabs/ConversationFiltersTab";
 import ListsTab from "./tabs/ListsTab";
+import SourceLibrarySettingsTab from "@/features/source-library/settings/SourceLibrarySettingsTab";
 import type { SettingsTabDef, ResolvedSettingsTab } from "./types";
 import type { SettingsTreeNode } from "@/components/official/settings/tree/types";
 
@@ -411,6 +416,32 @@ export const settingsRegistry: SettingsTabDef[] = [
     persistence: "synced",
   },
 
+  // ── Devices & sync (folder sync: the machines, their folders, their state) ─
+  {
+    id: "files.devices",
+    label: "Devices & sync",
+    icon: MonitorSmartphone,
+    description:
+      "Every computer signed in to this account, the folders each one syncs, and what is happening with them right now.",
+    searchKeywords: [
+      "devices",
+      "sync",
+      "folder sync",
+      "computers",
+      "machines",
+      "matrx local",
+      "desktop",
+      "storage",
+      "quota",
+      "pause sync",
+      "mappings",
+      "offline",
+    ],
+    component: DevicesSyncTab,
+    requiresAuth: true,
+    persistence: "synced",
+  },
+
   // ── Voice & Audio ─────────────────────────────────────────────────────────
   {
     id: "voice",
@@ -655,23 +686,72 @@ export const settingsRegistry: SettingsTabDef[] = [
     component: OrganizationsTab,
     persistence: "synced",
   },
+  {
+    id: "organizations.mediaCatalog",
+    label: "Media Source Catalog",
+    icon: Clapperboard,
+    parentId: "organizations",
+    description:
+      "How this organization catalogues Libraries, Sources and Actions. The server declares every setting here.",
+    searchKeywords: [
+      "media",
+      "library",
+      "source",
+      "catalog",
+      "youtube",
+      "shorts",
+      "transcript",
+      "captions",
+      "classify",
+    ],
+    component: SourceLibrarySettingsTab,
+    persistence: "server",
+  },
 
-  // ── Integrations ──────────────────────────────────────────────────────────
+  // ── Connectors ────────────────────────────────────────────────────────────
+  // "Connector" is the word (Arman, 2026-09-17): Anthropic, Microsoft Copilot
+  // and the whole data-tooling world say Connectors, and "integration" is
+  // banned as a generic in the lexicon. The `id` stays `integrations` because it
+  // addresses deep links and the live route; only the visible label changes.
   {
     id: "integrations",
-    label: "Integrations",
+    label: "Connectors",
     icon: Plug,
-    description: "Connect MCP servers and external tools to your agents.",
+    description:
+      "Connect Google, MCP servers and other services, and see exactly what each one may do.",
     searchKeywords: [
+      "connector",
+      "connectors",
       "mcp",
       "integration",
       "connect",
+      "google",
       "tools",
       "github",
       "slack",
       "linear",
     ],
     component: IntegrationsTab,
+    persistence: "synced",
+  },
+  {
+    id: "integrations.microsoft",
+    label: "Microsoft",
+    icon: Plug,
+    parentId: "integrations",
+    description:
+      "Connect a Microsoft work account to read OneDrive, Outlook, and Teams.",
+    searchKeywords: [
+      "microsoft",
+      "onedrive",
+      "outlook",
+      "teams",
+      "sharepoint",
+      "entra",
+      "office 365",
+      "oauth",
+    ],
+    component: MicrosoftTab,
     persistence: "synced",
   },
   {

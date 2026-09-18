@@ -78,10 +78,12 @@ async def main():
         page = await ctx.new_page()
 
         await page.goto(f"{ORIGIN}/hr/people?org={ORG}", wait_until="networkidle")
+        # /api/whoami, NEVER /api/session-token. Decoding the JWT meant FETCHING
+        # a live credential into the page (and one step from printing it) just to
+        # learn an email; whoami answers the same question with no credential.
         who = await page.evaluate(
-            "async () => { const r = await fetch('/api/session-token').then(r=>r.json());"
-            " const p = JSON.parse(atob(r.access_token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));"
-            " return {email: p.email, sub: p.sub}; }")
+            "async () => { const r = await fetch('/api/whoami').then(r=>r.json());"
+            " return {email: r.email, sub: r.user_id}; }")
         print(f"IDENTITY ON PRODUCTION: {who}")
         if who.get("email") != ADMIN:
             print("REFUSING TO REPORT: the production session is not the admin"); return 2

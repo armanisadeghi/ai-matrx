@@ -54,6 +54,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import * as dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
   FLATTENING_REMEDY,
   isStructuredOutputKind,
@@ -311,7 +312,7 @@ function unmeasured(reason: string): never {
   console.error(
     `\n  ✗ UNMEASURED — check:flattened-shapes could not read the mandate catalogue.\n    ${reason}\n    This is NOT a pass. Fix the credential/read and rerun.\n`,
   );
-  process.exit(2);
+  exitAfterDrain(2);
 }
 
 async function fetchCatalogue(): Promise<Map<string, string | null>> {
@@ -419,7 +420,7 @@ async function main(): Promise<void> {
 
   if (json) {
     console.log(JSON.stringify({ findings, prose, unknown, unresolved, byAgentId }, null, 2));
-    process.exit(findings.length > 0 ? 1 : 0);
+    exitAfterDrain(findings.length > 0 ? 1 : 0);
   }
 
   console.log(
@@ -447,7 +448,7 @@ async function main(): Promise<void> {
   }
   if (findings.length === 0) {
     console.log("  ✓ No shaped job is being run headless-for-text.\n");
-    process.exit(0);
+    exitAfterDrain(0);
   }
   console.log(`  ✗ ${findings.length} FLATTENED SHAPE${findings.length === 1 ? "" : "S"}:\n`);
   for (const f of findings) {
@@ -457,7 +458,7 @@ async function main(): Promise<void> {
         `      ${FLATTENING_REMEDY}\n`,
     );
   }
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 main().catch((error: unknown) => {

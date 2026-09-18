@@ -7,11 +7,12 @@
 
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
-import { Globe, Zap, Search, ScanSearch } from "lucide-react";
+import { Globe, Zap, Search, ScanSearch, ClipboardList } from "lucide-react";
 
 const HUB_NAV_ITEMS = [
   { name: "Home", href: "/scraper", icon: Globe },
   { name: "Quick Scrape", href: "/scraper/quick", icon: Zap },
+  { name: "Batch", href: "/scraper/batch", icon: ClipboardList },
   { name: "Search", href: "/scraper/search", icon: Search },
   { name: "Search & Scrape", href: "/scraper/search-and-scrape", icon: ScanSearch },
 ];

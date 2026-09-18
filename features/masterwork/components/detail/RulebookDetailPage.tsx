@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useDeepLinkArrival } from "@/lib/deep-link/useDeepLinkArrival";
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -25,6 +26,7 @@ import {
   BrainCircuit,
   Workflow,
   Library,
+  Signature,
 } from "lucide-react";
 import { recordToast, toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
@@ -63,6 +65,7 @@ import {
 import { fetchAssistLaunch, MASTERWORK_RULEBOOK_SURFACE } from "../../assists";
 import {
   getRulebook,
+  listMasterworksAfterBuild,
   listMasterworksForRulebook,
   saveRules,
   splitMasterworksByArchive,
@@ -98,8 +101,17 @@ import {
 import { RuleDecision, RuleDecisionBadge } from "./RuleDecision";
 import { BodyOfWorkDialog } from "./BodyOfWorkDialog";
 import { ChatImportDialog } from "./ChatImportDialog";
+import { MeetingScavengerDialog } from "./MeetingScavengerDialog";
+import { ShadowInboxDialog } from "./ShadowInboxDialog";
 import { IngestSourceDialog } from "./IngestSourceDialog";
+import { RedPenDialog } from "./RedPenDialog";
 import { IngestTimelineDialog } from "./IngestTimelineDialog";
+import { PredictionLedgerDialog } from "@/features/masterwork/prediction/PredictionLedgerDialog";
+import { DailyDripDialog } from "@/features/masterwork/drip/DailyDripDialog";
+import { DripStreakReadout } from "@/features/masterwork/drip/DripStreakReadout";
+import { dripOf } from "@/features/masterwork/drip/service";
+import { CalibrationReadout } from "@/features/masterwork/prediction/CalibrationReadout";
+import { ledgerOf } from "@/features/masterwork/prediction/service";
 import { ApproachPickerDialog } from "@/features/masterwork/browse/ApproachPickerDialog";
 import {
   fetchDistillationApproaches,
@@ -127,6 +139,20 @@ import {
 } from "./RuleFeedbackDialog";
 import { ImproveRuleDialog } from "./ImproveRuleDialog";
 import { RuleDecisionActions } from "../../review/RuleDecisionActions";
+// THE EXPERT'S OWN WORDS (2026-09-15) — "mine / not mine / mine but wrong",
+// the agenda they produce, and the signature on a finished result. All three
+// are readings of state this page already holds; none of them is a new store.
+import {
+  NOT_MINE_REASON,
+  REVIEW_VOCABULARY_LABELS,
+  useReviewVocabulary,
+  type ReviewVocabulary,
+} from "../../review/vocabulary";
+import {
+  NextSessionAgenda,
+  useAgendaPanelEnabled,
+} from "../../review/NextSessionAgenda";
+import { countSignedOutputs, type SignedOutputTally } from "../../review/signature";
 import { RuleReviewWizard } from "./RuleReviewWizard";
 import {
   computeKpis,
@@ -156,7 +182,9 @@ import { useOpenMasterworkCheckupWindow } from "@/features/overlays/openers/mast
 // modal. The RuleEditorDialog keeps only EDIT plus agent-staged drafts.
 import { useOpenAddRuleWindow } from "@/features/overlays/openers/masterworkAddRuleWindow";
 import { useOpenBuildWindow } from "@/features/overlays/openers/masterworkBuildWindow";
+import { BuildInFlightNotice } from "../../build/BuildInFlightNotice";
 import { useOpenMasterworkYourWordsWindow } from "@/features/overlays/openers/masterworkYourWordsWindow";
+import { RulePassageLink } from "../../kept-sources/RulePassageLink";
 
 /**
  * The Expert surface: read your Rulebook, correct it, grow it. Rules are
@@ -210,6 +238,87 @@ function formatClock(seconds: number): string {
   return formatDurationSeconds(seconds, { style: "clock" });
 }
 
+/**
+ * A time range with no `granularity` (a rule distilled before W10) reads as
+ * a real moment only when it's short enough to plausibly be one — anything
+ * wider is almost certainly an un-stamped chunk range. A few sentences of
+ * speech rarely runs past a minute and a half.
+ */
+const NARROW_UNSTAMPED_RANGE_SECONDS = 90;
+
+/**
+ * Render a recording rule's time anchor per its granularity (W10, aidream
+ * `dd86f564d`): "segment" (or an absent-but-narrow range, for rules
+ * distilled before the field existed) is a real moment — "at 2:54–3:30".
+ * "chunk" is honest about being a whole ingestion chunk, not a moment —
+ * "somewhere in 0:00–34:38".
+ */
+export function formatTimeAnchor(timeRange: NonNullable<RuleSourceRef["time_range"]>): string {
+  const startLabel = formatClock(timeRange.start);
+  if (timeRange.end == null) {
+    return `at ${startLabel}`;
+  }
+  const endLabel = formatClock(timeRange.end);
+  const granularity = timeRange.granularity;
+  const isChunk =
+    granularity === "chunk" ||
+    (granularity == null && timeRange.end - timeRange.start > NARROW_UNSTAMPED_RANGE_SECONDS);
+  return isChunk ? `somewhere in ${startLabel}–${endLabel}` : `at ${startLabel}–${endLabel}`;
+}
+
+/**
+ * THE MOMENT THIS RULE CAME FROM, in the row itself.
+ *
+ * Doctrine CORE.md §5: "Each rule carries its origin so the expert can say
+ * 'yes, that's mine' rule by rule." Until 2026-09-15 the origin lived only
+ * inside the expanded row, so an Expert scanning the list was asked to own a
+ * sentence with nothing behind it and had to open every rule to see where it
+ * came from. This is the same provenance, at a glance — the SAME
+ * `formatTimeAnchor` rendering the expanded row uses, never a second format.
+ *
+ * Renders nothing when the rule carries no moment. A rule with no recorded
+ * origin is a real state and it must not be given a manufactured one.
+ */
+export function RuleProvenanceMoment({ rule }: { rule: RulebookRule }) {
+  const sourceRef = rule.source_ref;
+  if (!sourceRef) return null;
+  const time =
+    sourceRef.time_range && Number.isFinite(sourceRef.time_range.start)
+      ? formatTimeAnchor(sourceRef.time_range)
+      : null;
+  // A meeting rule's moment is WHO plus WHEN: "Dana Whitfield, at 4:12". The
+  // clock alone cannot answer the only question the Expert is being asked —
+  // was that me? — because a meeting has several people in it.
+  const spoken = sourceRef.speaker
+    ? time
+      ? `${sourceRef.speaker}, ${time}`
+      : sourceRef.speaker
+    : null;
+  const where =
+    spoken ??
+    time ??
+    (sourceRef.source_pages?.length
+      ? formatPages(sourceRef.source_pages)
+      : sourceRef.pages
+        ? `page ${sourceRef.pages}`
+        : sourceRef.section_label
+          ? sourceRef.section_label
+          : sourceRef.interview
+            ? "your interview"
+            : (sourceRef.note ?? null));
+  const quote = rule.quote?.trim() || null;
+  if (!where && !quote) return null;
+  return (
+    <span className="inline-flex min-w-0 items-baseline gap-1 text-xs text-muted-foreground">
+      <Quote className="h-3 w-3 shrink-0 self-center" aria-hidden="true" />
+      {where ? <span className="shrink-0">{where}</span> : null}
+      {quote ? (
+        <span className="min-w-0 truncate italic">“{quote}”</span>
+      ) : null}
+    </span>
+  );
+}
+
 function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
   const pages = sourceRef.source_pages?.length
     ? formatPages(sourceRef.source_pages)
@@ -219,9 +328,7 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
   // The recording lane's anchor — where in the audio the expert said it.
   const time =
     sourceRef.time_range && Number.isFinite(sourceRef.time_range.start)
-      ? sourceRef.time_range.end != null
-        ? `at ${formatClock(sourceRef.time_range.start)}–${formatClock(sourceRef.time_range.end)}`
-        : `at ${formatClock(sourceRef.time_range.start)}`
+      ? formatTimeAnchor(sourceRef.time_range)
       : null;
   const label =
     sourceRef.note ?? (sourceRef.interview ? "your interview" : "ingested");
@@ -230,7 +337,19 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
     <div className="space-y-1 text-xs text-muted-foreground">
       <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
         <span>From the source:</span>
-        {sourceRef.entity ? (
+        {sourceRef.meeting_slug ? (
+          // THE DOOR LAW: the meeting is a real record with a durable link —
+          // the rule's origin opens the room, never sits as dead prose.
+          <Link
+            href={`/meet/${sourceRef.meeting_slug}`}
+            target="_blank"
+            className="text-primary underline-offset-2 hover:underline"
+          >
+            {sourceRef.meeting_title ?? label}
+          </Link>
+        ) : sourceRef.meeting_title && !sourceRef.file_id ? (
+          <span>{sourceRef.meeting_title}</span>
+        ) : sourceRef.entity ? (
           // The dump Approach: the rule came from an ATTACHED entity — the
           // registry renders its name and its doors (open in new tab + peek).
           <EntityRef
@@ -273,6 +392,7 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
           <span>{label}</span>
         )}
         {pages ? <span>· {pages}</span> : null}
+        {sourceRef.speaker ? <span>· said by {sourceRef.speaker}</span> : null}
         {time ? <span>· {time}</span> : null}
         {sourceRef.exemplar ? <span>· worked out from an example</span> : null}
         {sourceRef.approach ? (
@@ -322,6 +442,7 @@ export function RuleRow({
   selected,
   onToggleSelected,
   recurrenceThreshold,
+  vocabulary = "standard",
 }: {
   rule: RulebookRule;
   /** Every rule in the Rulebook — a `relates_to` link resolves its sibling's
@@ -340,11 +461,19 @@ export function RuleRow({
   onToggleSelected: () => void;
   /** From `useRecurrenceThreshold`; `null` renders no badge. */
   recurrenceThreshold: number | null;
+  /**
+   * Which words this reviewer sees — `../../review/vocabulary`. Optional so a
+   * surface that has not thought about the wording gets the standard verbs
+   * rather than a crash; the Rulebook page always passes the resolved value.
+   */
+  vocabulary?: ReviewVocabulary;
 }) {
   const [openRow, setOpenRow] = useState(false);
   const state = ruleState(rule);
   const retired = state === "retired";
   const rejected = state === "rejected";
+  const words = REVIEW_VOCABULARY_LABELS[vocabulary];
+  const ownership = vocabulary === "ownership";
   return (
     <div
       // THE DOOR a sibling rule's `relates_to` link opens. `scroll-mt` keeps
@@ -360,13 +489,22 @@ export function RuleRow({
     >
       <div className="flex w-full items-start gap-2 px-3 py-2">
         {canEdit ? (
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={onToggleSelected}
-            aria-label={`Select "${rule.name}" for a bulk action`}
-            className="mt-1 h-4 w-4 shrink-0 accent-primary"
-          />
+          // 16px is the right SIZE for a tick box and the wrong TAP TARGET on a
+          // phone (measured 16×16 at 390px, 2026-09-17). The subtree touch
+          // floor deliberately refuses to grow a checkbox — it would paint a
+          // 44px empty square — so the label carries the platform's hit-area
+          // ring instead (`.matrx-tap-area`, app/globals.css): the tick stays
+          // 16px and the finger gets 44. `mt-1` moves to the label so the ring
+          // is centred on the box, not above it.
+          <label className="matrx-tap-area mt-1 inline-flex shrink-0">
+            <input
+              type="checkbox"
+              checked={selected}
+              onChange={onToggleSelected}
+              aria-label={`Select "${rule.name}" for a bulk action`}
+              className="h-4 w-4 shrink-0 accent-primary"
+            />
+          </label>
         ) : null}
         <button
           type="button"
@@ -391,7 +529,9 @@ export function RuleRow({
                   variant="outline"
                   className="px-1.5 py-0 text-[10px] border-primary/40 text-primary"
                 >
-                  Draft — needs your approval
+                  {ownership
+                    ? "Waiting on you — is this yours?"
+                    : "Draft — needs your approval"}
                 </Badge>
               ) : null}
               {rejected ? (
@@ -399,7 +539,9 @@ export function RuleRow({
                   variant="outline"
                   className="px-1.5 py-0 text-[10px] border-destructive/50 text-destructive"
                 >
-                  Rejected — with the interviewer
+                  {ownership
+                    ? "Not mine — with the interviewer"
+                    : "Rejected — with the interviewer"}
                 </Badge>
               ) : null}
               {rule.feedback && !rejected ? (
@@ -407,7 +549,7 @@ export function RuleRow({
                   variant="outline"
                   className="px-1.5 py-0 text-[10px] border-primary/40 text-primary"
                 >
-                  Change requested
+                  {ownership ? "Mine but wrong" : "Change requested"}
                 </Badge>
               ) : null}
               {retired ? (
@@ -439,6 +581,9 @@ export function RuleRow({
             <p className="mt-0.5 text-sm text-muted-foreground">
               {rule.statement}
             </p>
+            {/* WHERE IT CAME FROM, in the same row — so "is this mine?" is a
+                question the Expert can actually answer without opening it. */}
+            <RuleProvenanceMoment rule={rule} />
           </div>
         </button>
         {canEdit && state === "draft" ? (
@@ -448,10 +593,15 @@ export function RuleRow({
           <RuleDecisionActions
             className="shrink-0 flex-nowrap gap-1"
             size="sm"
+            vocabulary={vocabulary}
             onApprove={onApprove}
             onImprove={onImprove}
             onReject={onReject}
             onEdit={onEdit}
+            // The ownership wording needs all THREE of its words together;
+            // the standard wording keeps the change request in the panel
+            // below, exactly where it has always been.
+            onRequestChanges={ownership ? onRequestChanges : undefined}
           />
         ) : null}
         {canEdit && rejected ? (
@@ -470,7 +620,13 @@ export function RuleRow({
       {rule.feedback ? (
         <div className="mx-3 mb-2 rounded-md border border-primary/30 bg-primary/5 px-2.5 py-1.5 text-xs">
           <span className="font-medium text-foreground">
-            {rejected ? "Why you rejected it: " : "Your change request: "}
+            {rejected
+              ? ownership
+                ? "Why it isn't yours: "
+                : "Why you rejected it: "
+              : ownership
+                ? "What it got wrong: "
+                : "Your change request: "}
           </span>
           <span className="text-muted-foreground">{rule.feedback}</span>
           <span className="ml-1 text-muted-foreground">
@@ -525,6 +681,11 @@ export function RuleRow({
           {rule.source_ref ? (
             <RuleProvenance sourceRef={rule.source_ref} />
           ) : null}
+          {/* THE JUMP: this rule's quote, lit up inside the material it was
+              drawn out of. Renders nothing when that material was not kept —
+              every rule older than the Source system points at words that were
+              read and discarded, and this must not promise them. */}
+          <RulePassageLink rule={rule} />
           <div className="text-xs text-muted-foreground">
             Rule id: <code className="font-mono">{rule.id}</code> — audits cite
             this id.
@@ -544,7 +705,9 @@ export function RuleRow({
               {!retired && !rejected ? (
                 <Button size="sm" variant="outline" onClick={onRequestChanges}>
                   <MessageSquareWarning className="h-3.5 w-3.5" />
-                  {rule.feedback ? "Change the request" : "Request changes"}
+                  {rule.feedback
+                    ? "Change what you said"
+                    : words.requestChanges}
                 </Button>
               ) : null}
               <Button size="sm" variant="ghost" onClick={onToggleRetired}>
@@ -559,7 +722,28 @@ export function RuleRow({
   );
 }
 
+/**
+ * 🚨 A RULEBOOK PAGE NEVER CARRIES THE PREVIOUS RULEBOOK'S WORDS
+ * (jobs-bar-2026-09-16 cold walk 2, finding #1's strongest remaining lead).
+ *
+ * `/masterwork/<id>` is one element position: a Rulebook→Rulebook navigation
+ * changes a prop, React keeps the mounted instance, and every piece of state
+ * derived from the first Rulebook survives into the second — the search box,
+ * the chosen KPI view, an open rule editor holding the other Rulebook's rule,
+ * the staged draft, the description expansion. The record IS the page's
+ * identity, so the mount is keyed by it: a different Rulebook is a different
+ * page. Its lane twin does the same at
+ * `features/masterwork/components/RulebookLaneRoute.tsx`; between the two,
+ * every rulebook-scoped route in the module is covered, and neither a lane nor
+ * a dialog below has to hand-roll a per-id reset.
+ *
+ * Guard: `features/masterwork/__tests__/a-rulebook-page-never-carries-the-previous-rulebooks-words.test.tsx`.
+ */
 export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
+  return <RulebookDetailPageInstance key={rulebookId} rulebookId={rulebookId} />;
+}
+
+function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   const [rulebook, setRulebook] = useState<Rulebook | null>(null);
   const [masterworks, setMasterworks] = useState<Masterwork[]>([]);
   // THE ARCHIVED-ITEMS LAW (common-docs/policies/archived-items.md, Arman
@@ -646,8 +830,9 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // The guided start ("Distill your expertise") lands here with ?interview=1
   // when the knowledge lives in the Expert's head — the Scout interview IS the
   // next step.
-  const [interviewOpen, setInterviewOpen] = useState(
-    searchParams.get("interview") === "1",
+  const [interviewOpen, setInterviewOpen] = useState(false);
+  useDeepLinkArrival(searchParams.get("interview") === "1", true, () =>
+    setInterviewOpen(true),
   );
   // Which interview the panel opens INTO — set by the Conversations section
   // (Continue resumes that conversation; New skips the chooser into a fresh
@@ -660,9 +845,24 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   // THE CONDUCTOR — the one canonical Masterwork system, held as a live
   // streaming conversation with this Rulebook attached. ?conduct=1 deep-links
   // straight into it.
-  const [conductorOpen, setConductorOpen] = useState(
-    searchParams.get("conduct") === "1",
+  const [conductorOpen, setConductorOpen] = useState(false);
+  useDeepLinkArrival(searchParams.get("conduct") === "1", true, () =>
+    setConductorOpen(true),
   );
+  // THE MEETING SCAVENGER lands here with ?meeting=1 — its dialog IS the next
+  // step (`intake_query = {"meeting":"1"}` on the registry row).
+  const [meetingOpen, setMeetingOpen] = useState(false);
+  useDeepLinkArrival(searchParams.get("meeting") === "1", true, () =>
+    setMeetingOpen(true),
+  );
+  // 🚨 THE TRIAD GAME'S DEEP LINK. The guided start (`/masterwork/new?approach=
+  // triad_game`) creates the Rulebook and then appends the registry row's own
+  // `intake_query` to this page's URL — `?triad=1`. Every other lane's query
+  // opens a dialog HERE; this one's lane is a whole route, so the only honest
+  // thing this page can do with it is hand the Expert straight on to it.
+  // Without this the card would be live, selectable, and land her on a bare
+  // Rulebook page with no game and no error — census row 3's exact defect, the
+  // one `approachLane.ts` exists to stop happening a second time.
   // The dump Approach ("Dump everything you have") lands here with ?dump=1 —
   // the Sources panel opens and scrolls into view as the next step.
   const dumpParam = searchParams.get("dump") === "1";
@@ -715,16 +915,41 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const dumpFocus = dumpParam || dumpRequested;
   const router = useRouter();
 
+  const triadParam = searchParams.get("triad") === "1";
+  useDeepLinkArrival(triadParam, Boolean(rulebook?.id), () => {
+    router.replace(`/masterwork/${rulebook!.id}/triad`);
+  });
+
+
   // The body_of_work Approach ("Everything you've published") lands here with
   // ?body_of_work=1 — the corpus dialog IS the next step.
-  const [corpusOpen, setCorpusOpen] = useState(
-    searchParams.get("body_of_work") === "1",
+  const [corpusOpen, setCorpusOpen] = useState(false);
+  useDeepLinkArrival(searchParams.get("body_of_work") === "1", true, () =>
+    setCorpusOpen(true),
   );
   // The chat-import Approach ("Import your AI chats") lands here with
   // ?chatImport=1 — the import dialog IS the next step. Full page:
   // /masterwork/[id]/import.
-  const [chatImportOpen, setChatImportOpen] = useState(
-    searchParams.get("chatImport") === "1",
+  const [chatImportOpen, setChatImportOpen] = useState(false);
+  useDeepLinkArrival(searchParams.get("chatImport") === "1", true, () =>
+    setChatImportOpen(true),
+  );
+  // SHADOW-THE-INBOX ("Shadow your inbox") lands here with ?shadowInbox=1 —
+  // the inbox dialog IS the next step. The registry row carries the same
+  // `{"shadowInbox":"1"}` in its `intake_query`, so the deep link and the
+  // in-page picker can never drift apart. Full page: /masterwork/[id]/inbox.
+  //
+  // 🚨 AN INBOX SESSION BELONGS TO ONE RULEBOOK, the same rule triage, ingest,
+  // unfolding, the ledger and the red pen already live by: this page instance
+  // is REUSED across Rulebooks, and a bare `useState` would leave one Expert's
+  // pasted mail thread — their real correspondence — on screen after
+  // navigating to another Rulebook, and then distil it there.
+  const shadowInboxSession = useRulebookDialogSession(rulebook?.id ?? null);
+  const shadowInboxOpen = shadowInboxSession.open;
+  const setShadowInboxOpen = shadowInboxSession.setOpen;
+  const shadowInboxDeepLink = searchParams.get("shadowInbox") === "1";
+  useDeepLinkArrival(shadowInboxDeepLink, Boolean(rulebook?.id), () =>
+    setShadowInboxOpen(true),
   );
   // The TIMELINE Approach ("a case that unfolded") lands here with
   // ?intake=timeline — the unfolding dialog IS the next step. The registry row
@@ -744,12 +969,127 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
   const timelineOpen = timelineSession.open;
   const setTimelineOpen = timelineSession.setOpen;
   const timelineDeepLink = searchParams.get("intake") === "timeline";
-  const timelineDeepLinkRef = useRef(false);
-  useEffect(() => {
-    if (!timelineDeepLink || timelineDeepLinkRef.current || !rulebook?.id) return;
-    timelineDeepLinkRef.current = true;
-    setTimelineOpen(true);
-  }, [timelineDeepLink, rulebook?.id, setTimelineOpen]);
+  useDeepLinkArrival(timelineDeepLink, Boolean(rulebook?.id), () =>
+    setTimelineOpen(true),
+  );
+
+  // THE BAD EXAMPLE PROBE Approach lands here with ?probe=1 from the guided
+  // start, and its next step is a PAGE, not a dialog — so the deep link does
+  // the one thing the picker's `case "probe"` does: go there.
+  //
+  // 🚨 THE CENSUS ROW 3 CLASS, on the other side of the door. `launchApproach`
+  // is only called when the Expert picks an Approach from THIS page; a Rulebook
+  // the funnel created and deep-linked arrives with nobody having picked
+  // anything. Until this effect existed, `?probe=1` was a query string nothing
+  // read: the funnel created the Rulebook, the card had been a real door all
+  // the way through, and the Expert landed on a bare Rulebook page being told
+  // to start an interview — the exact shape of the `timeline` defect, one step
+  // further in. Found by driving the funnel end to end, 2026-09-15.
+  const probeDeepLink = searchParams.get("probe") === "1";
+  useDeepLinkArrival(probeDeepLink, Boolean(rulebook?.id), () => {
+    router.replace(`/masterwork/${rulebook!.id}/probe`);
+  });
+
+  // THE SORTING TABLE lands here with ?sort=1 from the guided start, and its
+  // next step is a PAGE, not a dialog — so the deep link does the one thing the
+  // picker's `case "sortingTable"` does: go there.
+  //
+  // 🚨 FOUND LIVE, 2026-09-15, driving the funnel end to end as a user: the
+  // registry row was live, `approachLane.ts` resolved it, `launchApproach`
+  // dispatched it — and the funnel still dropped the Expert on a bare Rulebook
+  // page, because `launchApproach` ONLY fires when somebody picks an Approach
+  // ON this page, and a Rulebook the funnel just created arrives with nobody
+  // having picked anything. Census row 3's defect, one step further in, for the
+  // third time (timeline, then probe, then this). The guard that catches it for
+  // every future lane is
+  // `features/masterwork/browse/__tests__/approachLaneCoverage.test.ts`.
+  const sortDeepLink = searchParams.get("sort") === "1";
+  useDeepLinkArrival(sortDeepLink, Boolean(rulebook?.id), () => {
+    router.replace(`/masterwork/${rulebook!.id}/sort`);
+  });
+
+  // THE TEACH-BACK Approach lands here with ?teachBack=1 from the guided start,
+  // and its next step is a PAGE, not a dialog — so the deep link does the one
+  // thing the picker's `case "teachBack"` does: go there. Same census-row-3
+  // reasoning as the probe above: `launchApproach` only fires when the Expert
+  // picks an Approach ON this page, and a Rulebook the funnel created and
+  // deep-linked arrives with nobody having picked anything.
+  const teachBackDeepLink = searchParams.get("teachBack") === "1";
+  useDeepLinkArrival(teachBackDeepLink, Boolean(rulebook?.id), () => {
+    router.replace(`/masterwork/${rulebook!.id}/teach-back`);
+  });
+
+  // THE CAPTURE PLAN lands here with ?plan=1 from the guided start, and its
+  // next step is its own PAGE. Same census-row-3 reasoning as the probe and the
+  // teach-back above: `launchApproach` only fires when the Expert picks an
+  // Approach ON this page, and a Rulebook the funnel just created arrives with
+  // nobody having picked anything — without this the card is a real door all
+  // the way through and the Expert still lands on a bare Rulebook.
+  const planDeepLink = searchParams.get("plan") === "1";
+  useDeepLinkArrival(planDeepLink, Boolean(rulebook?.id), () => {
+    router.replace(`/masterwork/${rulebook!.id}/plan`);
+  });
+
+  // THE PREDICTION LEDGER Approach ("Call it before you know") lands here with
+  // ?predictions=1 — the ledger dialog IS the next step. The registry row
+  // carries the same `{"predictions":"1"}` in its `intake_query`, so the deep
+  // link and the in-page picker can never drift apart.
+  //
+  // 🚨 A LEDGER SESSION BELONGS TO ONE RULEBOOK, the same rule triage, ingest
+  // and unfolding already live by: this page instance is REUSED across
+  // Rulebooks, and a bare `useState` would leave a half-typed call about one
+  // Expert's open case on screen after navigating to another Rulebook — and
+  // then write it there.
+  const predictionSession = useRulebookDialogSession(rulebook?.id ?? null);
+  const predictionOpen = predictionSession.open;
+  const setPredictionOpen = predictionSession.setOpen;
+  const predictionDeepLink = searchParams.get("predictions") === "1";
+  useDeepLinkArrival(predictionDeepLink, Boolean(rulebook?.id), () =>
+    setPredictionOpen(true),
+  );
+
+  // THE DAILY DRIP ("One question a day") lands here with ?drip=1 — the drip
+  // dialog IS the next step, because the first thing to do is pick a channel
+  // and a time. The registry row carries the same `{"drip":"1"}` in its
+  // `intake_query`, so the deep link and the in-page picker can never drift.
+  //
+  // 🚨 The ANSWERING does not happen here: it happens on
+  // `/masterwork/[id]/drip`, which is where every daily question links, because
+  // the person tapping that link is on a phone with thirty seconds and one
+  // question in front of them.
+  //
+  // A drip session belongs to ONE Rulebook, the same rule the ledger above
+  // lives by: this page instance is REUSED across Rulebooks, and a bare
+  // `useState` would leave a half-typed answer about one Expert's morning on
+  // screen after navigating to another Rulebook — and then write it there.
+  const dripSession = useRulebookDialogSession(rulebook?.id ?? null);
+  const dripOpen = dripSession.open;
+  const setDripOpen = dripSession.setOpen;
+  const dripDeepLink = searchParams.get("drip") === "1";
+  useDeepLinkArrival(dripDeepLink, Boolean(rulebook?.id), () => setDripOpen(true));
+  // THE RED-PEN LANE ("Mark it up here instead") lands here with ?red_pen=1 —
+  // the markup dialog IS the next step. The registry row carries the same
+  // `{"red_pen":"1"}` in its `intake_query`, so the deep link and the in-page
+  // picker can never drift apart.
+  //
+  // 🚨 A MARKUP SESSION BELONGS TO ONE RULEBOOK, the same rule triage, ingest,
+  // unfolding and the ledger already live by: this page instance is REUSED
+  // across Rulebooks, and a bare `useState` would leave one Expert's
+  // half-marked draft on screen after navigating to another Rulebook — and
+  // then distil it there.
+  const redPenSession = useRulebookDialogSession(rulebook?.id ?? null);
+  const redPenOpen = redPenSession.open;
+  const setRedPenOpen = redPenSession.setOpen;
+  const redPenDeepLink = searchParams.get("red_pen") === "1";
+  useDeepLinkArrival(redPenDeepLink, Boolean(rulebook?.id), () =>
+    setRedPenOpen(true),
+  );
+
+  // Read straight off the Rulebook already in hand — the ledger lives on
+  // `metadata.prediction_ledger`, so the page owes it no query of its own.
+  const predictionEntries = rulebook ? ledgerOf(rulebook).entries : [];
+  const drip = rulebook ? dripOf(rulebook) : null;
+  const predictionEntryCount = predictionEntries.length;
 
   /**
    * THE ONE MAP from a `platform.approach` row to the lane it opens on this
@@ -799,8 +1139,18 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         case "dump":
           setDumpRequested(true);
           return;
+        case "meeting":
+          setMeetingOpen(true);
+          return;
         case "conduct":
           setConductorOpen(true);
+          return;
+        // THE TRIAD GAME has no dialog on this page on purpose: it takes the
+        // whole screen, on a phone, with a sticky footer and a swipe. The
+        // picker sends the Expert to its route instead of half-rendering it
+        // inside a Rulebook panel.
+        case "triad":
+          router.push(`/masterwork/${rulebookId}/triad`);
           return;
         // Trial 7's UNFOLDING-CASE door — the dialog that can also SEAL a case
         // as a held-out exam, which the `timeline` ingest lane has no notion
@@ -808,9 +1158,69 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         case "unfolding":
           setTimelineOpen(true);
           return;
+        // THE PREDICTION LEDGER — calls on live cases, scored when the answer
+        // arrives. A registry row reaches it with `intake_query.predictions="1"`.
+        case "prediction":
+          setPredictionOpen(true);
+          return;
+        // THE DAILY DRIP — one question a day by text or email. The DIALOG is
+        // the right first step and not a page, because what an Expert does here
+        // once is choose a channel and a time; the ANSWERING lives at
+        // `/masterwork/[id]/drip`, which is where every daily question links,
+        // because that reader is on a phone with thirty seconds. A registry row
+        // reaches this with `intake_query.drip="1"`.
+        case "drip":
+          setDripOpen(true);
+          return;
+        // THE RED-PEN LANE — somebody else's work, marked up correction by
+        // correction. A registry row reaches it with `intake_query.red_pen="1"`.
+        case "redPen":
+          setRedPenOpen(true);
+          return;
+        // THE BAD EXAMPLE PROBE — boundary hunting. Its own PAGE, not a dialog
+        // or a panel: a probe is minutes of back-and-forth (a bad example, a
+        // dictated catch, the next bad example), which is a working mode and
+        // therefore owed a real URL like the interview and the Conductor.
+        case "probe":
+          router.push(`/masterwork/${rulebookId}/probe`);
+          return;
+        // THE TEACH-BACK — we explain their method back to them and they
+        // interrupt. Its own PAGE for the probe's reason and one more: a round
+        // plays AUDIO, and a voice coming out of a dialog somebody opened over
+        // their Rulebook is not a working mode, it is an ambush.
+        case "teachBack":
+          router.push(`/masterwork/${rulebookId}/teach-back`);
+          return;
+        // THE SORTING TABLE — a pile of real cases sorted wordlessly, then the
+        // boundary questions the edges between the piles produce. Its own PAGE
+        // and not a dialog, for the Triad's reason: a phone-first sort needs the
+        // whole screen and a sticky thumb-reachable row of piles.
+        case "sortingTable":
+          router.push(`/masterwork/${rulebookId}/sort`);
+          return;
+        // THE CAPTURE PLAN — a PROGRAM over the other lanes rather than a lane.
+        // Its own PAGE because it is the longest-lived working mode here: an
+        // Expert comes back to it daily, and every session reminder links to it.
+        case "plan":
+          router.push(`/masterwork/${rulebookId}/plan`);
+          return;
+        // SHADOW-THE-INBOX — the Expert's real mail, diffed against the reply
+        // a competent generalist would have written. A registry row reaches it
+        // with `intake_query.shadowInbox="1"`.
+        case "shadowInbox":
+          setShadowInboxOpen(true);
+          return;
       }
     },
-    [router, openIngestLane],
+    [
+      router,
+      rulebookId,
+      openIngestLane,
+      setPredictionOpen,
+      setRedPenOpen,
+      setShadowInboxOpen,
+      setTimelineOpen,
+    ],
   );
 
   // Composer seed for the Scout panel — set when a recording distillation
@@ -914,6 +1324,46 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     };
   }, [assistKey, launchApproach, openCheckup, openIngestLane, rulebookId]);
   const userId = useAppSelector(selectUserId);
+  // THE EXPERT'S WORDING for this Rulebook's review, and the agenda panel's
+  // knob. Both are read once here and handed down — never re-read per row.
+  const vocabulary = useReviewVocabulary(
+    rulebook,
+    rulebook?.organization_id ?? null,
+    userId,
+  );
+  const agendaPanelEnabled = useAgendaPanelEnabled(
+    rulebook?.organization_id ?? null,
+    userId,
+  );
+  // THE MOST IMPORTANT SIGNAL WE HAVE (Arman, 2026-09-15) — how many of this
+  // Rulebook's results the Expert has actually put their name to. `null` means
+  // we could not read it, and the line SAYS so rather than printing a zero.
+  const [signedTally, setSignedTally] = useState<SignedOutputTally | null>(null);
+  const [signedUnreadable, setSignedUnreadable] = useState(false);
+  const masterworkIdKey = masterworks.map((m) => m.id).join(",");
+  useEffect(() => {
+    let cancelled = false;
+    const ids = masterworkIdKey ? masterworkIdKey.split(",") : [];
+
+    void countSignedOutputs({ rulebookId, masterworkIds: ids })
+      .then((tally) => {
+        if (cancelled) return;
+        setSignedTally(tally);
+        setSignedUnreadable(false);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setSignedTally(null);
+        setSignedUnreadable(true);
+        console.warn(
+          "[masterwork] could not count signed outputs:",
+          error instanceof Error ? error.message : error,
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [masterworkIdKey, rulebookId]);
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const openAddRule = useOpenAddRuleWindow();
 
@@ -950,6 +1400,31 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       .catch(() => undefined);
   }, [rulebookId]);
 
+  /**
+   * 🚨 THE COUNT AFTER A BUILD IS CONFIRMED, NEVER GUESSED (cold walk 5,
+   * finding 6). The Build's terminal event fires the moment the run completes,
+   * and the plain reload above read `workflow.definition` before the new row
+   * was visible — so this page said "0 Built" about a Masterwork it had just
+   * watched being built, and only a fresh navigation corrected it. The read now
+   * waits for the id the Build announced, and if it still never appears it SAYS
+   * so with the remedy instead of leaving a wrong number on screen.
+   */
+  const reloadMasterworksAfterBuild = useCallback(
+    (workflowId: string) => {
+      void listMasterworksAfterBuild(rulebookId, workflowId)
+        .then(({ masterworks: next, confirmed }) => {
+          setMasterworks(next);
+          if (!confirmed) {
+            toast.warning(
+              "Your new Masterwork was built, but it has not shown up on this page yet — reload in a moment and it will be here.",
+            );
+          }
+        })
+        .catch(() => reloadMasterworks());
+    },
+    [reloadMasterworks, rulebookId],
+  );
+
   // Every human "Add rule" entry point opens the WindowPanel (With AI default
   // + Manually) — the Rulebook stays visible behind it. The old blocking
   // dialog path is gone; RuleEditorDialog keeps only edit + staged drafts.
@@ -972,10 +1447,10 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
     setBuildOpen(true);
     openBuild({
       rulebookId,
-      onBuilt: () => reloadMasterworks(),
+      onBuilt: (e) => reloadMasterworksAfterBuild(e.workflowId),
       onWindowClose: () => setBuildOpen(false),
     });
-  }, [openBuild, rulebookId, reloadMasterworks]);
+  }, [openBuild, rulebookId, reloadMasterworksAfterBuild]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1322,8 +1797,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
       });
       try {
         const saved = await saveRules({
-          rulebookId: rulebook.id,
-          expectedVersion: rulebook.version,
+          base: rulebook,
           rules: stamped,
         });
         setRulebook(saved);
@@ -1739,12 +2213,26 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
         >
           {/* Rulebook summary */}
           <div className="rounded-lg border border-border bg-card p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
+            {/* MOBILE: the Rulebook's NAME is the sentence the expert typed,
+                and it shared this row with the icon utilities. At 390px that
+                left the heading 182px — "An assistant that deci…" — so the one
+                thing on the page that is hers was the one thing she could not
+                read. The row wraps on a phone (`basis-full`): the name takes
+                the card's full width on its own line and the utilities drop
+                below it, right-aligned. From `sm:` up nothing changes. */}
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0 flex-1 basis-full sm:basis-0">
                 <div className="flex items-center gap-2">
                   <BookOpen className="h-4 w-4 text-muted-foreground" />
+                  {/* MOBILE: `truncate` gave this heading ONE line. At 390px
+                      that line is 182px wide and a Rulebook's name is the
+                      sentence the expert typed — 528px of it here — so the
+                      phone showed "An assistant that deci…" and the expert
+                      could not read back her own goal anywhere on the page.
+                      Two lines on a phone, one truncated line from `sm:` up
+                      where the row has the width for it. */}
                   <h2
-                    className="truncate text-base font-semibold text-foreground"
+                    className="line-clamp-2 min-w-0 text-base font-semibold text-foreground sm:truncate"
                     data-surface-value="rulebook_name"
                   >
                     {rulebook.name}
@@ -1753,7 +2241,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               </div>
               {/* Rulebook-level utilities only. Rule actions live with the
                   rule KPIs below; Masterwork actions live in their own section. */}
-              <div className="flex shrink-0 items-center gap-1.5">
+              <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:ml-0">
                 {/* CANONICAL SHARING, NEVER A BESPOKE ONE (Arman, 2026-08-20):
                     a Rulebook is a registered shareable resource
                     (`platform.shareable_resource_registry` token `rulebook`,
@@ -1816,7 +2304,19 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 />
               </div>
             </div>
-            {rulebook.description ? (
+            {/* THE SAME SENTENCE TWICE IS NOT A HEADER, IT IS A BUG.
+                A Rulebook auto-named from its goal gets a NAME that is the
+                first N characters of its DESCRIPTION, so the header printed
+                "Replying to client emails about data destruction scheduling"
+                and then, directly under it, "Replying to client emails about
+                data destruction scheduling and pricing"
+                (jobs-bar-2026-09-16, item 19). When the description only
+                repeats the name it adds nothing and is left out. */}
+            {rulebook.description &&
+            !rulebook.description
+              .trim()
+              .toLowerCase()
+              .startsWith(rulebook.name.trim().toLowerCase().replace(/…$/, "")) ? (
               <div className="mt-2">
                 <p
                   ref={descriptionRef}
@@ -1872,7 +2372,45 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 activeFilter={ruleFilter}
                 onFilterChange={showRules}
               />
+              {/* BESIDE THE QUICK CHECK: the Expert's own signature count. A
+                  score a judge produced is a check; a result the Expert signed
+                  is the signal. Only shown once something exists to run. */}
+              {masterworks.length > 0 ||
+              signedUnreadable ||
+              (signedTally !== null &&
+                signedTally.signed + signedTally.corrected > 0) ? (
+                <p className="mt-2 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                  <Signature className="h-3.5 w-3.5 shrink-0 text-primary" />
+                  {signedUnreadable ? (
+                    <span>
+                      Couldn&apos;t read the signatures on this Rulebook&apos;s
+                      results just now — reload to try again.
+                    </span>
+                  ) : (
+                    <>
+                      <span className="font-medium text-foreground">
+                        {signedTally?.signed ?? 0}{" "}
+                        {signedTally?.signed === 1 ? "output" : "outputs"} signed
+                        by the expert
+                      </span>
+                      {signedTally && signedTally.corrected > 0 ? (
+                        <span>
+                          · {signedTally.corrected} corrected — each one a rule
+                          waiting to be written
+                        </span>
+                      ) : null}
+                    </>
+                  )}
+                </p>
+              ) : null}
             </div>
+            {agendaPanelEnabled ? (
+              <NextSessionAgenda
+                rulebook={rulebook}
+                vocabulary={vocabulary}
+                className="mt-3"
+              />
+            ) : null}
             {/* Rules-only actions. Masterwork creation and inventory have a
                 separate section so these controls never imply mixed scope. */}
             <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-flow-col sm:auto-cols-fr sm:grid-cols-none">
@@ -2016,6 +2554,21 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                   />
                 </div>
 
+                {/* 🚨 "0 Built" OVER A LIVE BUILD IS NOT A COUNT, IT IS A LIE
+                    (cold walk 7, finding 1, 2026-09-17). The Build keeps going
+                    without the person who started it — the window says so —
+                    but every signal that one was in flight lived in the tab
+                    that launched it (a `localStorage` receipt, and the window
+                    that renders the progress). The walk started a Quick Build,
+                    closed the browser context entirely, came back inside the
+                    build's own stated minute, and got a page identical to one
+                    where nothing had ever been started. This asks the SERVER
+                    row instead, on mount, in any browser. */}
+                <BuildInFlightNotice
+                  rulebookId={rulebook.id}
+                  onSettled={reloadMasterworks}
+                />
+
                 {/* THE ARCHIVED-ITEMS LAW: the KPI strip above counts only the
                     LIVE systems, so the archived ones get their own honest
                     count and are one click from being read — here, on this
@@ -2149,6 +2702,62 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                 rulebookVersion={rulebook.version}
                 canEdit={canEdit}
                 onCreated={reloadMasterworks}
+              />
+            </div>
+          ) : null}
+
+          {/* THE PREDICTION LEDGER — what she called before she knew, and how
+          close those calls land. Renders only once there is a ledger: a
+          Rulebook built any other way shows nothing here, which is the true
+          state. With calls recorded but no outcomes yet, the readout says so
+          in words and draws no chart — an empty plot would read as "you are
+          calibrated at nothing" rather than "we do not know yet". */}
+          {predictionEntryCount > 0 ? (
+            <div
+              className="space-y-2"
+              data-surface-value="prediction_ledger"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold text-foreground">
+                  Calls you made before you knew
+                </h2>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setPredictionOpen(true)}
+                >
+                  Open your calls
+                </Button>
+              </div>
+              <CalibrationReadout entries={predictionEntries} />
+            </div>
+          ) : null}
+
+          {/* THE DAILY DRIP — the streak and, far more importantly, what a
+          minute a day has actually bought. Renders only once there is a
+          subscription or a question has gone out: a Rulebook built any other
+          way shows nothing here, which is the true state. */}
+          {drip && (drip.subscription || drip.days.length > 0) ? (
+            <div className="space-y-2" data-surface-value="daily_drip">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold text-foreground">
+                  Your daily question
+                </h2>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setDripOpen(true)}
+                >
+                  Open it
+                </Button>
+              </div>
+              <DripStreakReadout
+                drip={drip}
+                rules={rulebook.rules ?? []}
+                // The detail page does not read this knob — the dialog does,
+                // one tap away. `null` means the sentence that depends on it is
+                // not shown, rather than shown against a number nobody read.
+                minAnswersToDistill={null}
               />
             </div>
           ) : null}
@@ -2353,6 +2962,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
                             selected={selectedIds.has(rule.id)}
                             onToggleSelected={() => toggleSelected(rule.id)}
                             recurrenceThreshold={recurrenceThreshold}
+                            vocabulary={vocabulary}
                           />
                         ))}
                       </div>
@@ -2439,6 +3049,7 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               if (!open) setFeedbackTarget(null);
             }}
             mode={feedbackTarget?.mode ?? "request"}
+            vocabulary={vocabulary}
             ruleName={feedbackTarget?.rule.name ?? ""}
             rulebookId={rulebook.id}
             rulebookName={rulebook.name}
@@ -2446,7 +3057,13 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               if (!feedbackTarget) return;
               try {
                 if (feedbackTarget.mode === "reject") {
-                  await rejectRule(feedbackTarget.rule, text);
+                  // "Not mine" is a complete answer on its own — one tap. The
+                  // reason is stored either way so the interviewer always has
+                  // a sentence to act on.
+                  await rejectRule(
+                    feedbackTarget.rule,
+                    text.trim() || NOT_MINE_REASON,
+                  );
                 } else {
                   await requestChanges(feedbackTarget.rule, text);
                 }
@@ -2461,7 +3078,11 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           <TriageDraftsDialog
             // Her purpose, her preview choice and the run being rejoined all
             // belong to THIS Rulebook — see `triageSession.ts`.
-            key={rulebook.id}
+            // The key is NAMESPACED: these dialogs are siblings in one children
+            // array, so a bare record id collides with another sibling's key and
+            // React reconciles the whole region by destroying and recreating it
+            // — which unmounts an open dialog mid-typing.
+            key={`triage-${rulebook.id}`}
             open={triageOpen}
             onOpenChange={setTriageOpen}
             rulebookId={rulebook.id}
@@ -2575,11 +3196,59 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
           <IngestTimelineDialog
             // The unfolding session, its form and its run pointer all belong to
             // THIS Rulebook — see `durable-run/rulebookDialogSession.ts`.
-            key={rulebook.id}
+            // Namespaced for the same reason as TriageDraftsDialog above.
+            key={`timeline-${rulebook.id}`}
             open={timelineOpen}
             onOpenChange={setTimelineOpen}
             rulebook={rulebook}
             onIngested={() => void reloadRulebook()}
+          />
+          <PredictionLedgerDialog
+            // The ledger session, its half-typed call and its run pointer all
+            // belong to THIS Rulebook — same rule, same remount, as the
+            // unfolding dialog above.
+            key={`prediction-${rulebook.id}`}
+            open={predictionOpen}
+            onOpenChange={setPredictionOpen}
+            rulebook={rulebook}
+            canEdit={canEdit}
+            onChanged={() => void reloadRulebook()}
+          />
+          <DailyDripDialog
+            // The drip's settings, its half-typed answer and its run pointer
+            // all belong to THIS Rulebook — same rule, same remount, as the
+            // ledger dialog above.
+            key={`drip-${rulebook.id}`}
+            open={dripOpen}
+            onOpenChange={setDripOpen}
+            rulebook={rulebook}
+            canEdit={canEdit}
+            onChanged={() => void reloadRulebook()}
+          />
+          <RedPenDialog
+            // The marked-up work, its corrections and its run pointer all
+            // belong to THIS Rulebook — same rule, same remount, as the
+            // ledger dialog above.
+            key={`red-pen-${rulebook.id}`}
+            open={redPenOpen}
+            onOpenChange={setRedPenOpen}
+            rulebook={rulebook}
+            onIngested={() => void reloadRulebook()}
+          />
+          <ShadowInboxDialog
+            // The pasted thread, the picked threads and the run pointer all
+            // belong to THIS Rulebook — same rule, same remount, as the red-pen
+            // dialog above. Sharper here than anywhere else: the staged content
+            // is the Expert's real correspondence.
+            key={`shadow-inbox-${rulebook.id}`}
+            open={shadowInboxOpen}
+            onOpenChange={setShadowInboxOpen}
+            rulebook={rulebook}
+            onIngested={() => void reloadRulebook()}
+            onFollowupSeed={(seed) => {
+              setInterviewSeed(seed);
+              setInterviewOpen(true);
+            }}
           />
           {/* Keyed on the lane so `chat_import` and `matrx_conversations` —
               two registry rows, ONE dialog — each open on their own tab. A
@@ -2596,6 +3265,14 @@ export function RulebookDetailPage({ rulebookId }: { rulebookId: string }) {
               setInterviewSeed(seed);
               setInterviewOpen(true);
             }}
+          />
+          <MeetingScavengerDialog
+            key={`meeting-${rulebook.id}`}
+            open={meetingOpen}
+            onOpenChange={setMeetingOpen}
+            rulebook={rulebook}
+            onIngested={() => void reloadRulebook()}
+            onFollowupSeed={(seed) => setInterviewSeed(seed)}
           />
           <ConductorPanel
             rulebookId={rulebook.id}

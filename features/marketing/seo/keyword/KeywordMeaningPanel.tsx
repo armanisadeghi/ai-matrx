@@ -35,10 +35,6 @@ import { WhyScoreBody } from "@/features/marketing/seo/value-system/workbench/Wh
 import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 
 import { useKeywordMeaning } from "./keyword-meaning";
-import {
-  SCOPE_TIER_SOURCE,
-  isInheritedTier,
-} from "@/features/marketing/seo/keyword-workbench/scope-tiers";
 import type { KeywordAssignSurfaces, KeywordMenuRow } from "./keyword-actions";
 
 function Field({
@@ -179,11 +175,11 @@ export function KeywordMeaningPanel({
                   {service.lineage} ›
                 </span>
               ) : null}
-              <span className="font-medium">{service.topicName}</span>
+              <span className="font-medium">{service.offeringName}</span>
               {service.hasOwnWorth ? (
                 <span
                   className="inline-flex items-center gap-0.5 text-[10px] text-success"
-                  title="This service carries its own worth ruling on this site."
+                  title="This offering carries its own worth on this site."
                 >
                   <BadgeCheck className="h-3 w-3" /> worth set here
                 </span>
@@ -195,18 +191,6 @@ export function KeywordMeaningPanel({
               {service.assignedBy ? (
                 <span className="text-[10px] text-muted-foreground">
                   · placed by {humanizeSlug(service.assignedBy)}
-                </span>
-              ) : null}
-              {/*
-                WHO DECIDED THE PLACEMENT — the dossier is where a person comes
-                to understand one keyword, so the rung is said in words here
-                rather than left to the (i) the dense tables carry. A site's
-                own ruling says nothing: that is the case the reader expects.
-              */}
-              {isInheritedTier(service.scopeTier) ? (
-                <span className="text-[10px] text-muted-foreground">
-                  · placed by {SCOPE_TIER_SOURCE[service.scopeTier]}, not this
-                  site
                 </span>
               ) : null}
             </span>

@@ -38,7 +38,7 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import MarkdownStream from "@/components/MarkdownStream";
+import { RichDocument } from "@/features/rich-document/RichDocument";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
@@ -675,7 +675,13 @@ function readoutContent({
         />
       );
     case "static":
-      return <MarkdownStream content={source.markdown} />;
+      return (
+        <RichDocument
+          content={source.markdown}
+          source={{ type: "raw" }}
+          actionsVariant="mini-bar"
+        />
+      );
     case "action":
       return (
         <ActionReadout

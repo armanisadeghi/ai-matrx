@@ -109,6 +109,7 @@ import { marketingDiscoveryManifest } from "./marketing-discovery.manifest";
 import { marketingBrandAssetsManifest } from "./marketing-brand-assets.manifest";
 import { marketingIntegrationsManifest } from "./marketing-integrations.manifest";
 import { marketingSiteSettingsManifest } from "./marketing-site-settings.manifest";
+import { marketingTopicalMapManifest } from "./marketing-topical-map.manifest";
 import { contentPlanManifest } from "./content-plan.manifest";
 import { contentPlanEntitiesManifest } from "./content-plan-entities.manifest";
 import { contentPlanListManifest } from "./content-plan-list.manifest";
@@ -122,6 +123,7 @@ import { dashboardManifest } from "./dashboard.manifest";
 import { educationManifest } from "./education.manifest";
 import { educationTutorManifest } from "./education-tutor.manifest";
 import { educationFlashcardsManifest } from "./education-flashcards.manifest";
+import { educationFlashcardSetManifest } from "./education-flashcard-set.manifest";
 import { educationFlashcardEditorManifest } from "./education-flashcard-editor.manifest";
 import { educationFastfireManifest } from "./education-fastfire.manifest";
 import { educationAssessmentManifest } from "./education-assessment.manifest";
@@ -138,6 +140,8 @@ import { educationProgressManifest } from "./education-progress.manifest";
 import { settingsManifest } from "./settings.manifest";
 import { agentAppsManifest } from "./agent-apps.manifest";
 import { publicAgentAppManifest } from "./public-agent-app.manifest";
+import { barcodePreviewManifest } from "./barcode-preview.manifest";
+import { markdownPdfManifest } from "./markdown-pdf.manifest";
 import { agentConnectionsManifest } from "./agent-connections.manifest";
 import { connectionsSkillsManifest } from "./connections-skills.manifest";
 import { keywordResearchManifest } from "./keyword-research.manifest";
@@ -196,9 +200,12 @@ import { adminAgentReviewManifest } from "./admin-agent-review.manifest";
 import { adminAgentReviewItemManifest } from "./admin-agent-review-item.manifest";
 import { adminCxDashboardManifest } from "./admin-cx-dashboard.manifest";
 import { adminServerLogsManifest } from "./admin-server-logs.manifest";
+import { adminBillingSpendManifest } from "./admin-billing-spend.manifest";
 import { adminSandboxManifest } from "./admin-sandbox.manifest";
 import { adminOfficialComponentsManifest } from "./admin-official-components.manifest";
 import { adminApplicationsManifest } from "./admin-applications.manifest";
+import { adminSyncFleetManifest } from "./admin-sync-fleet.manifest";
+import { adminProofRunsManifest } from "./admin-proof-runs.manifest";
 import { adminSchedulingManifest } from "./admin-scheduling.manifest";
 import { adminAgentAppsManifest } from "./admin-agent-apps.manifest";
 import { adminBundlesManifest } from "./admin-bundles.manifest";
@@ -238,6 +245,8 @@ import { quickDataManifest } from "./quick-data.manifest";
  */
 export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   agentShortcutsManifest,
+  barcodePreviewManifest,
+  markdownPdfManifest,
   aiWorkManifest,
   aiWorkComposerManifest,
   aiWorkConversationsManifest,
@@ -323,6 +332,9 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   marketingBrandAssetsManifest,
   marketingIntegrationsManifest,
   marketingSiteSettingsManifest,
+  // The brand's topical map — which pages should exist and where they live.
+  // The Content section's home; the content plan below is its production line.
+  marketingTopicalMapManifest,
   // Content planning (plan schema) — sibling of the marketing fleet.
   // One workspace, five surfaces: the ?view= param is a different page with
   // different agents (list front door, plan-editor base, setup, entities,
@@ -341,6 +353,7 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   educationManifest,
   educationTutorManifest,
   educationFlashcardsManifest,
+  educationFlashcardSetManifest,
   educationFlashcardEditorManifest,
   educationFastfireManifest,
   educationAssessmentManifest,
@@ -417,12 +430,15 @@ export const RAW_MANIFESTS: readonly SurfaceManifest[] = [
   adminAgentReviewItemManifest,
   adminCxDashboardManifest,
   adminServerLogsManifest,
+  adminBillingSpendManifest,
   adminSandboxManifest,
   adminOfficialComponentsManifest,
   adminApplicationsManifest,
   adminSchedulingManifest,
   adminAgentAppsManifest,
   adminBundlesManifest,
+  adminSyncFleetManifest,
+  adminProofRunsManifest,
   adminMcpServersManifest,
   adminLookupsManifest,
   mandatesManifest,

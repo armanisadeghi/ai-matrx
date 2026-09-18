@@ -154,6 +154,7 @@ export function SingleRowActionButtons({
           className="h-6 w-6 p-0 shrink-0 rounded-full bg-muted text-foreground hover:bg-destructive/15 hover:text-destructive"
           tabIndex={-1}
           title="Stop the run (everything streamed so far is kept)"
+          aria-label="Stop the run"
         >
           <CircleStop className="w-3 h-3" />
         </Button>
@@ -171,6 +172,15 @@ export function SingleRowActionButtons({
               : voiceBusy
                 ? "Finish recording to send"
                 : "Send Message"
+          }
+          // Icon-only: the tooltip is not an accessible name. See the same
+          // comment in InputActionButtons and the shared guard.
+          aria-label={
+            isExecuting
+              ? "Queue message"
+              : voiceBusy
+                ? "Finish recording to send"
+                : "Send message"
           }
         >
           <ArrowUp className="w-3 h-3" />

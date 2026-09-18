@@ -45,6 +45,7 @@
 import { readFileSync } from "node:fs";
 import { globSync } from "node:fs";
 import { join } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 
@@ -90,7 +91,7 @@ if (findings.length === 0) {
   console.log(
     `${GREEN}✓ check:kind-schema-source — a kind's fields are derived from its schema, in one place${RESET}`,
   );
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 console.error(
@@ -107,4 +108,4 @@ console.error(
   "The schema is the contract; the stored list is a copy that had already drifted\n" +
     "on 13 of the 62 live kinds carrying both. Read the header of this script.\n",
 );
-process.exit(1);
+exitAfterDrain(1);

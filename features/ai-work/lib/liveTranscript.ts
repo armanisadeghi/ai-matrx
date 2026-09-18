@@ -15,6 +15,7 @@
 // `captureGapVerdict()` is the one capture-gap decider.
 
 import type { CodingSessionBinding } from "@/features/agent-connections/coding-sessions/service";
+import { deliveredAtMs } from "@/features/ai-work/conversations/bindingPlurality";
 
 /**
  * How recently a binding must have delivered for "live" to be a PRESENT-TENSE
@@ -39,18 +40,19 @@ export interface LiveSessionState {
   lastSeenAt: string | null;
 }
 
-function timeOf(value: string | null | undefined): number {
-  if (!value) return Number.NEGATIVE_INFINITY;
-  const parsed = Date.parse(value);
-  return Number.isNaN(parsed) ? Number.NEGATIVE_INFINITY : parsed;
-}
-
 /**
  * Reads the conversation's own bindings and states whether its coding session
  * is still running. `status` alone is not enough: a binding stays `active`
  * after the session goes quiet (nothing closes it when Claude Code simply
  * stops), so an unbounded `status === "active"` check would poll an idle
  * mirror forever. `last_seen_at` is what makes the claim present-tense.
+ *
+ * An UNCLAIMED HANDOFF OFFER is skipped outright. It is `status = "active"` and
+ * was stamped `last_seen_at = created_at`, so offering a conversation to
+ * another tool used to make it read as "Delivering" for the next five minutes —
+ * a present-tense claim about a session that does not exist (verifier V-XT-5
+ * § A5). `deliveredAtMs` answers `null` for it, for a null stamp, and for an
+ * unparseable one, and `null` is never ordered or believed.
  */
 export function liveSessionState(
   bindings: CodingSessionBinding[],
@@ -60,12 +62,12 @@ export function liveSessionState(
   let live = false;
 
   for (const binding of bindings) {
-    const seen = timeOf(binding.last_seen_at);
+    const seen = deliveredAtMs(binding);
+    if (seen === null) continue;
     if (seen > newest) newest = seen;
     if (
       binding.status === "active" &&
       binding.ended_at === null &&
-      seen !== Number.NEGATIVE_INFINITY &&
       now - seen <= LIVE_SESSION_WINDOW_MS
     ) {
       live = true;

@@ -47,6 +47,12 @@ import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRunti
 import { createWorkbooksScope } from "@/features/surfaces/manifests/workbooks.manifest";
 import { ImportRouteDialog } from "@/features/data-tables/components/ImportRouteDialog";
 import { smartImportPickupSlot } from "@/features/data-tables/smart-import-pickup";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 
 /**
  * Pre-flight import file check. We deliberately do NOT use the `accept`
@@ -58,7 +64,11 @@ import { smartImportPickupSlot } from "@/features/data-tables/smart-import-picku
 function unsupportedFileReason(file: File): string | null {
   const name = file.name.toLowerCase();
   // Native, parseable formats.
-  if (name.endsWith(".xlsx") || name.endsWith(".xls") || name.endsWith(".csv")) {
+  if (
+    name.endsWith(".xlsx") ||
+    name.endsWith(".xls") ||
+    name.endsWith(".csv")
+  ) {
     return null;
   }
   if (name.endsWith(".tsv") || name.endsWith(".txt")) return null; // SheetJS parses these too
@@ -76,6 +86,7 @@ function unsupportedFileReason(file: File): string | null {
 
 export default function WorkbooksLandingPage() {
   const router = useRouter();
+  const organizationId = useAppSelector(selectOrganizationId);
   const [workbooks, setWorkbooks] = useState<Workbook[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -114,7 +125,29 @@ export default function WorkbooksLandingPage() {
 
   const handleCreate = useCallback(async () => {
     setCreating(true);
-    const res = await createWorkbook({ name: "Untitled workbook" });
+    let capturedOrganizationId: string;
+    try {
+      capturedOrganizationId = await ensureOrganizationContext({
+        organizationId,
+      });
+    } catch (error) {
+      setCreating(false);
+      if (!isOrganizationSelectionCancelled(error)) {
+        toast({
+          title: "Could not create workbook",
+          description:
+            error instanceof Error
+              ? error.message
+              : "Select an organization before creating a workbook.",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
+    const res = await createWorkbook({
+      name: "Untitled workbook",
+      organizationId: capturedOrganizationId,
+    });
     setCreating(false);
     if (isServiceFailure(res)) {
       toast({
@@ -125,7 +158,7 @@ export default function WorkbooksLandingPage() {
       return;
     }
     router.push(`/workbooks/${res.data.id}`);
-  }, [router]);
+  }, [organizationId, router]);
 
   const handleImportXlsx = useCallback(
     async (file: File) => {
@@ -144,12 +177,15 @@ export default function WorkbooksLandingPage() {
         return;
       }
       setImporting(true);
+      let selectionCancelled = false;
       try {
+        const capturedOrganizationId = await ensureOrganizationContext({
+          organizationId,
+        });
         // Parse first — if the file is malformed, we surface the error
         // BEFORE creating an empty workbook the user would have to delete.
-        const { xlsxToUniverWorkbook } = await import(
-          "@/features/data-tables/xlsx-to-univer"
-        );
+        const { xlsxToUniverWorkbook } =
+          await import("@/features/data-tables/xlsx-to-univer");
         const snapshot = await xlsxToUniverWorkbook(file);
 
         // Stash the lossless original in cld_files so users can download or
@@ -171,13 +207,15 @@ export default function WorkbooksLandingPage() {
           );
         }
 
-        const cleanName = file.name.replace(/\.[^.]+$/, "") || "Imported workbook";
+        const cleanName =
+          file.name.replace(/\.[^.]+$/, "") || "Imported workbook";
         const created = await createWorkbook({
           name: cleanName,
           description: `Imported from ${file.name}`,
           source: file.name.toLowerCase().endsWith(".csv")
             ? "imported_csv"
             : "imported_xlsx",
+          organizationId: capturedOrganizationId,
           originalFileId,
         });
         if (isServiceFailure(created)) throw new Error(created.error);
@@ -204,18 +242,24 @@ export default function WorkbooksLandingPage() {
         });
         router.push(`/workbooks/${created.data.id}`);
       } catch (err) {
-        toast({
-          title: "Could not import workbook",
-          description: err instanceof Error ? err.message : String(err),
-          variant: "destructive",
-        });
+        selectionCancelled = isOrganizationSelectionCancelled(err);
+        if (!selectionCancelled) {
+          toast({
+            title: "Could not import workbook",
+            description: err instanceof Error ? err.message : String(err),
+            variant: "destructive",
+          });
+        }
       } finally {
         setImporting(false);
-        // Reset the file input so the same file can be selected again later.
-        if (fileInputRef.current) fileInputRef.current.value = "";
+        // Cancelling the organization picker leaves the chosen file intact so
+        // the user can resume this exact import after selecting an org.
+        if (!selectionCancelled && fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
       }
     },
-    [router],
+    [organizationId, router],
   );
 
   const handleSmartImport = useCallback(async (file: File) => {
@@ -234,9 +278,8 @@ export default function WorkbooksLandingPage() {
     }
 
     try {
-      const { detectImportRoute } = await import(
-        "@/features/data-tables/smart-importer"
-      );
+      const { detectImportRoute } =
+        await import("@/features/data-tables/smart-importer");
       const detection = await detectImportRoute(file);
       setSmartFile(file);
       setSmartDetection(detection);

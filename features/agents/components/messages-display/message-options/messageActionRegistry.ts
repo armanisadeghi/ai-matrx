@@ -63,6 +63,10 @@ import { NotesAPI } from "@/features/notes/service/notesApi";
 import { CodeFilesAPI } from "@/features/code-files/service/codeFilesApi";
 import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
 import { toast } from "@/lib/toast";
+import {
+  announceProposedGoogleWrite,
+  isProposedGoogleWrite,
+} from "@/features/google-workspace/export/proposedWrite";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { openListenSummaryWindowAction } from "@/features/overlays/openers/listenSummaryWindow";
 import { primeAudioOutput } from "@/features/audio/unlock";
@@ -85,9 +89,12 @@ import { openAssistantMessageEditor } from "./openAssistantMessageEditor";
 import type { AssistantEditTarget } from "./resolveAssistantEditTarget";
 import { hasConvertibleContent } from "./convertibleContent";
 import { messageMayContainKindBlock } from "@/features/content-ir/studio/message-kind-gate";
-import { selectEffectiveOrganizationId, selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { requireOrganizationContext } from "@/lib/api/organization-context";
-import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 import { shapeInstancesHref } from "@/features/content-ir/studio/constants";
 import type { OpenQuickMessageTemplateSaveWindowOptions } from "@/features/overlays/openers/quickMessageTemplateSaveWindow";
 
@@ -660,6 +667,16 @@ function actionsItems(ctx: MessageActionContext): MenuItem[] {
           });
           return;
         }
+        // NOTHING WAS WRITTEN, and it is not a failure: the organization reviews
+        // this kind of change first, so the server filed it in the approval queue
+        // instead. Saying "Created" here would claim a file that does not exist,
+        // and saying it failed would tell the user their work was lost when it is
+        // sitting in a queue with their name on it. ONE module owns those words
+        // and that door for all four call sites (F-99).
+        if (isProposedGoogleWrite(result)) {
+          announceProposedGoogleWrite(result);
+          return;
+        }
         if (!result.ok) {
           toast.info("Connect Google to send this to a Doc", {
             description:
@@ -811,12 +828,22 @@ function saveAsItems(ctx: MessageActionContext): MenuItem[] {
           )
         )
           return;
+        let organizationId: string;
+        try {
+          organizationId = await ensureOrganizationContext({
+            organizationId: selectOrganizationId(ctx.getState()),
+          });
+        } catch (error) {
+          if (isOrganizationSelectionCancelled(error)) return;
+          throw error;
+        }
         // Lazy-import so Univer (heavy) stays out of the chat bundle until used.
         const { pushMarkdownToDocument } =
           await import("@/features/data-tables/export-targets");
         const res = await pushMarkdownToDocument(
           content,
           deriveMessageTitle(ctx),
+          organizationId,
         );
         if (!res.ok || !res.href) {
           // showToast is false on this item, so AdvancedMenu won't surface a
@@ -992,8 +1019,16 @@ function saveAsItems(ctx: MessageActionContext): MenuItem[] {
         // Identical to Save as Note, minus the questions: folder is Scratch,
         // title auto-derived, saved immediately.
         try {
-          const organizationId = await ensureOrganizationContext({ organizationId: selectOrganizationId(ctx.getState()) });
-          await NotesAPI.create({ label: deriveMessageTitle(ctx) ?? "New Note", content, folder_name: "Scratch", tags: [], organization_id: organizationId });
+          const organizationId = await ensureOrganizationContext({
+            organizationId: selectOrganizationId(ctx.getState()),
+          });
+          await NotesAPI.create({
+            label: deriveMessageTitle(ctx) ?? "New Note",
+            content,
+            folder_name: "Scratch",
+            tags: [],
+            organization_id: organizationId,
+          });
         } catch (error) {
           if (isOrganizationSelectionCancelled(error)) throw error;
           throw error;
@@ -1561,13 +1596,27 @@ function saveShapeInstanceItem(ctx: MessageActionContext): MenuItem {
     label: "Save to my Shapes",
     action: async () => {
       ctx.onClose();
+      // THE EXPLICIT ACTIVE ORG, NEVER A PERSONAL SUBSTITUTE. This read the
+      // legacy effective-org selector, so a shape saved with no organization
+      // selected was filed into the user's personal workspace with nothing on
+      // screen saying so. The gate asks instead of guessing; cancelling writes
+      // nothing and says nothing.
+      let organizationId: string;
+      try {
+        organizationId = await ensureOrganizationContext({
+          organizationId: selectOrganizationId(ctx.getState()),
+        });
+      } catch (error) {
+        if (isOrganizationSelectionCancelled(error)) return;
+        throw error;
+      }
       const toastId = toast.loading("Saving shape instance…");
       try {
         const { saveKindInstancesFromMessage } =
           await import("@/features/content-ir/studio/message-kind-instances");
         const saved = await saveKindInstancesFromMessage({
           text,
-          organizationId: selectEffectiveOrganizationId(ctx.getState()),
+          organizationId,
           // Provenance rides with the save (DD-131 slice 1): the record is
           // HOMED in this conversation and carries a `produced_by` edge back
           // to this message, exactly as the server store writes it.
@@ -1697,8 +1746,8 @@ function listeningItems(ctx: MessageActionContext): MenuItem[] {
       key: "summarize-for-listening",
       icon: Headphones,
       iconColor: "text-violet-500 dark:text-violet-400",
-      label: "Summarize for listening",
-      description: "Condense this response into listening-ready prose",
+      label: "Summarize without playing",
+      description: "Writes the listening summary and waits — press play when you are ready",
       action: () => openListen(false),
       category: "Actions",
       showToast: false,
@@ -2271,7 +2320,9 @@ export function resumePendingAuthAction(
     };
     if (savedContent !== content) return;
     if (action === "save-scratch") {
-      const organizationId = requireOrganizationContext(selectOrganizationId(getState()));
+      const organizationId = requireOrganizationContext(
+        selectOrganizationId(getState()),
+      );
       NotesAPI.create({
         label: "New Note",
         content: savedContent,
@@ -2298,25 +2349,39 @@ export function resumePendingAuthAction(
         defaultRole: "assistant",
       });
     } else if (action === "add-docs") {
-      import("@/features/data-tables/export-targets")
-        .then(async ({ pushMarkdownToDocument }) => {
-          const res = await pushMarkdownToDocument(savedContent);
-          if (res.ok && res.href) {
-            const href = res.href;
-            toast.success("Saved as Document", {
-              action: {
-                label: "Open",
-                onClick: () =>
-                  window.open(href, "_blank", "noopener,noreferrer"),
-              },
-            });
-          } else {
-            toast.error("Failed to create document", {
-              description: res.ok ? undefined : res.error,
-            });
+      ensureOrganizationContext({
+        organizationId: selectOrganizationId(getState()),
+      })
+        .then((organizationId) =>
+          import("@/features/data-tables/export-targets").then(
+            async ({ pushMarkdownToDocument }) => {
+              const res = await pushMarkdownToDocument(
+                savedContent,
+                undefined,
+                organizationId,
+              );
+              if (res.ok && res.href) {
+                const href = res.href;
+                toast.success("Saved as Document", {
+                  action: {
+                    label: "Open",
+                    onClick: () =>
+                      window.open(href, "_blank", "noopener,noreferrer"),
+                  },
+                });
+              } else {
+                toast.error("Failed to create document", {
+                  description: res.ok ? undefined : res.error,
+                });
+              }
+            },
+          ),
+        )
+        .catch((error) => {
+          if (!isOrganizationSelectionCancelled(error)) {
+            toast.error("Failed to create document");
           }
-        })
-        .catch(() => toast.error("Failed to create document"));
+        });
     } else if (action === "share-webpage") {
       import("./shareMessageAsWebpage")
         .then(({ shareMessageAsWebpage }) =>
@@ -2344,27 +2409,29 @@ export function resumePendingAuthAction(
         import("@ai-matrx/print/pdf"),
         import("@ai-matrx/print/markdown"),
       ])
-        .then(async ([
-          { markdownToPdfBlob },
-          { markdownToHtml, getMarkdownStylesheet },
-        ]) => {
-          const blob = await markdownToPdfBlob(savedContent, {
-            convertToHtml: markdownToHtml,
-            loadCss: getMarkdownStylesheet,
-          });
-          const ts = new Date()
-            .toISOString()
-            .replace(/[:.]/g, "-")
-            .slice(0, 19);
-          const file = new File([blob], `message-${ts}.pdf`, {
-            type: "application/pdf",
-          });
-          await fileHandler.upload(
-            { kind: "file", file },
-            { folderPath: "Chat Saves" },
-          );
-          toast.success("PDF saved to Files");
-        })
+        .then(
+          async ([
+            { markdownToPdfBlob },
+            { markdownToHtml, getMarkdownStylesheet },
+          ]) => {
+            const blob = await markdownToPdfBlob(savedContent, {
+              convertToHtml: markdownToHtml,
+              loadCss: getMarkdownStylesheet,
+            });
+            const ts = new Date()
+              .toISOString()
+              .replace(/[:.]/g, "-")
+              .slice(0, 19);
+            const file = new File([blob], `message-${ts}.pdf`, {
+              type: "application/pdf",
+            });
+            await fileHandler.upload(
+              { kind: "file", file },
+              { folderPath: "Chat Saves" },
+            );
+            toast.success("PDF saved to Files");
+          },
+        )
         .catch(() => toast.error("Failed to create PDF"));
     } else if (action === "save-as-file") {
       const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);

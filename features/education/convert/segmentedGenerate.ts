@@ -30,6 +30,7 @@ import {
   type CoveragePlan,
   type SourceSegment,
 } from "./coverage";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { runAgentExtraction } from "./runAgentExtraction";
 import type {
   ConvertContext,
@@ -45,7 +46,7 @@ export interface SegmentedGenerateArgs<T> {
   targetKind: TargetKind;
   options?: ConvertOptions;
   /** The MANDATE to run per section (resolved live to a DB-bound agent). */
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   surfaceKey: string;
   sourceFeature: SourceFeature;
   /**

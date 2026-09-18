@@ -20,7 +20,12 @@
  *    there is nothing to show). Bound here — not in the Impl — because the
  *    Impl isn't mounted until an item exists.
  *
- * Mount gate: `currentItemId != null`. `closeCanvas` keeps items and
+ * Mount gate: `currentItemId != null`. THIS IS THE ONLY PRESENTATION OF THE
+ * CANVAS — every route gets the same one; a route never wraps its body in a
+ * presentation of its own (owner, 2026-09-16, on the docked column that used
+ * to exist for chat: *"adds an unnecessary layer… FOLLOW established
+ * patterns"*). A capability one route needs is added to THIS surface for all
+ * of them. `closeCanvas` keeps items and
  * `currentItemId` for reopen, so once opened the Impl stays mounted and the
  * Sheet's close animation plays normally; `clearCanvas` unmounts it again.
  */

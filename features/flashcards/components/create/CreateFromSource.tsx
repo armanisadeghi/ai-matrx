@@ -66,10 +66,15 @@ import { useEntitlementGuard } from "@/features/entitlements/components/useEntit
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { FC_MANDATES } from "../../data/mandates";
+import { useFlashcardMandates } from "../../data/mandate-disclosure";
 import { fcService } from "../../data/fcService";
 import type { NewCardInput } from "../../data/types";
 import { useGenerateCards } from "../../data/useGenerateCards";
 import { LiveGenerationPreview } from "./LiveGenerationPreview";
+import {
+  ASSISTANT_MESSAGE_COLUMN_CLASS,
+  ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,
+} from "@/features/agents/components/shared/assistant-message-layout";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -93,6 +98,7 @@ const FIELD_INPUT_CLASS = "text-base";
 type Step = "pick-doc" | "curate";
 
 export function CreateFromSource() {
+  useFlashcardMandates(["generateFromSource"]);
   const router = useRouter();
   const { generate, isGenerating, activeRequestId } = useGenerateCards();
 
@@ -288,7 +294,13 @@ export function CreateFromSource() {
   return (
     <div className="min-h-full w-full bg-textured">
       <coppa.Gate />
-      <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
+      <div
+        className={cn(
+          ASSISTANT_MESSAGE_COLUMN_CLASS,
+          ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,
+          "py-6 sm:py-8",
+        )}
+      >
         {/* Header */}
         <div className="flex items-center gap-3">
           <Button
@@ -342,7 +354,7 @@ export function CreateFromSource() {
               </div>
               {/* Live card-by-card preview — every card mounts the moment its
                   front arrives (same component CreateFromTopic uses). */}
-              <LiveGenerationPreview envelope={envelope} />
+              <LiveGenerationPreview requestId={activeRequestId} />
             </div>
           ) : step === "pick-doc" ? (
             <DocPickerStep
@@ -422,8 +434,9 @@ function DocPickerStep({
             No processed documents yet
           </p>
           <p className="max-w-sm text-xs text-muted-foreground">
-            Upload and process a PDF or document in your Knowledge library first —
-            once it finishes chunking, it'll show up here to build a deck from.
+            Upload and process a PDF or document in your Knowledge library first
+            — once it finishes chunking, it'll show up here to build a deck
+            from.
           </p>
           <Button variant="outline" size="sm" asChild className="mt-1">
             <a href="/knowledge/library">Open Knowledge library</a>

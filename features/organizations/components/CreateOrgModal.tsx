@@ -17,6 +17,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { createOrganization } from "../service";
+import type { Organization } from "../types";
 import {
   generateOrganizationAbbreviation,
   generateSlug,
@@ -33,6 +34,18 @@ interface CreateOrgModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  /**
+   * P23 (every picker takes new input): when a picker's type-ahead hands the
+   * person here, what they typed arrives as the name — never retyped.
+   */
+  initialName?: string;
+  /**
+   * The picker path: the caller receives the new organization and owns what
+   * happens next (select it in place). When set, the modal does NOT navigate
+   * to the org's settings page — leaving the screen would lose the record the
+   * person was editing, which is the dead end P23 exists to close.
+   */
+  onCreated?: (organization: Organization) => void;
 }
 
 /**
@@ -49,6 +62,8 @@ export function CreateOrgModal({
   isOpen,
   onClose,
   onSuccess,
+  initialName,
+  onCreated,
 }: CreateOrgModalProps) {
   const router = useRouter();
   const fieldId = useId();
@@ -94,6 +109,15 @@ export function CreateOrgModal({
     slugAvailable &&
     !checkingSlug;
 
+  // A picker's typed text seeds the name (and the derived slug/abbreviation)
+  // the moment the modal opens — the person never retypes it.
+  useEffect(() => {
+    if (!isOpen || !initialName) return;
+    setName(initialName);
+    setSlug(generateSlug(initialName));
+    setAbbreviation(generateOrganizationAbbreviation(initialName));
+  }, [isOpen, initialName]);
+
   // Reset form when modal closes
   useEffect(() => {
     if (!isOpen) {
@@ -138,8 +162,13 @@ export function CreateOrgModal({
         onClose();
         onSuccess?.();
 
-        // Navigate to the new organization's settings page
-        router.push(`/organizations/${result.organization.id}/settings`);
+        if (onCreated) {
+          // The caller (a picker) selects it in place; no navigation.
+          onCreated(result.organization);
+        } else {
+          // Navigate to the new organization's settings page
+          router.push(`/organizations/${result.organization.id}/settings`);
+        }
       } else {
         toast.error(result.error || "Failed to create organization");
       }

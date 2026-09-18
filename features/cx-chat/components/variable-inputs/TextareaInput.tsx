@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { VoiceTextarea } from '@/components/official/VoiceTextarea';
 import { toast } from "@/lib/toast";
+import { variableInputPlaceholder } from "@/features/agents/components/inputs/input-components/variablePlaceholder";
 
 interface TextareaInputProps {
   value: string;
@@ -36,7 +37,7 @@ export function TextareaInput({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       onFocus={handleFocus}
-      placeholder={`Enter ${variableName.toLowerCase()}... (hover for voice input)`}
+      placeholder={variableInputPlaceholder()}
       className={compact ? "min-h-[65px] text-xs" : "min-h-[200px] text-sm"}
       rows={compact ? 2 : undefined}
       autoFocus

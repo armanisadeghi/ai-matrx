@@ -8,9 +8,62 @@
 
 "use client";
 
-import { count, usd } from "../format";
+import { usd } from "../format";
 import type { SpendBreakdown } from "../types";
-import { compactNumber, percent } from "./labels";
+import { compactNumber } from "./labels";
+import { formatCount, formatPercentFromFraction } from "@ai-matrx/kit/format";
+
+export interface SpendLeadingKpis {
+  windowTotal: { value: string; hint: string };
+  manual: { value: string; hint: string };
+  automated: { value: string; hint: string };
+  requests: { value: string; hint: string };
+  tokensIn: { value: string; hint: string };
+  explainedByRequest: { value: string; hint: string };
+}
+
+/** One formatter for both the rendered KPI strip and its Copy-for-AI context. */
+export function buildSpendLeadingKpis(data: SpendBreakdown): SpendLeadingKpis {
+  const t = data.totals;
+  const sliceHours = data.filters.hour ? 1 : data.filters.day ? 24 : t.hours;
+  const perHour = sliceHours > 0 ? t.cost / sliceHours : 0;
+  const cached =
+    t.tokensIn + t.tokensCached > 0
+      ? t.tokensCached / (t.tokensIn + t.tokensCached)
+      : 0;
+
+  return {
+    windowTotal: {
+      value: usd(t.cost),
+      hint: data.filters.hour
+        ? `${formatCount(t.paidExecutions)} executions`
+        : `${usd(perHour)}/hr · ${formatCount(t.paidExecutions)} executions`,
+    },
+    manual: {
+      value: usd(t.manualCost),
+      hint: formatPercentFromFraction(t.cost > 0 ? t.manualCost / t.cost : 0),
+    },
+    automated: {
+      value: usd(t.automatedCost),
+      hint: formatPercentFromFraction(t.cost > 0 ? t.automatedCost / t.cost : 0),
+    },
+    requests: {
+      value: formatCount(t.requests),
+      hint: `${formatCount(t.conversations)} conversations · ${formatCount(t.executions)} ledger rows`,
+    },
+    tokensIn: {
+      value: compactNumber(t.tokensIn + t.tokensCached),
+      hint: `${formatPercentFromFraction(cached)} served from cache · ${compactNumber(t.tokensOut)} out`,
+    },
+    explainedByRequest: {
+      value: formatPercentFromFraction(t.cost > 0 ? t.linkedCost / t.cost : 0),
+      hint:
+        t.unlinkedCost > 0
+          ? `${usd(t.unlinkedCost)} from execution context`
+          : "Fully attributed",
+    },
+  };
+}
 
 function Tile({
   label,
@@ -45,56 +98,40 @@ function Tile({
 }
 
 export function TotalsStrip({ data }: { data: SpendBreakdown }) {
-  const t = data.totals;
-  // A slice filtered to one hour or one day spans that, not the whole window;
-  // dividing by the window's hours would caption a $27 hour as "$0.57 per hour".
-  const sliceHours = data.filters.hour ? 1 : data.filters.day ? 24 : t.hours;
-  const perHour = sliceHours > 0 ? t.cost / sliceHours : 0;
-  const cached =
-    t.tokensIn + t.tokensCached > 0
-      ? t.tokensCached / (t.tokensIn + t.tokensCached)
-      : 0;
+  const kpis = buildSpendLeadingKpis(data);
   return (
     <div className="grid gap-2 grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
       <Tile
         label="Window total"
-        value={usd(t.cost)}
-        hint={
-          data.filters.hour
-            ? `${count(t.paidExecutions)} executions`
-            : `${usd(perHour)}/hr · ${count(t.paidExecutions)} executions`
-        }
+        value={kpis.windowTotal.value}
+        hint={kpis.windowTotal.hint}
       />
       <Tile
         label="Manual"
         tone="manual"
-        value={usd(t.manualCost)}
-        hint={percent(t.cost > 0 ? t.manualCost / t.cost : 0)}
+        value={kpis.manual.value}
+        hint={kpis.manual.hint}
       />
       <Tile
         label="Automated"
         tone="automated"
-        value={usd(t.automatedCost)}
-        hint={percent(t.cost > 0 ? t.automatedCost / t.cost : 0)}
+        value={kpis.automated.value}
+        hint={kpis.automated.hint}
       />
       <Tile
         label="Requests"
-        value={count(t.requests)}
-        hint={`${count(t.conversations)} conversations · ${count(t.executions)} ledger rows`}
+        value={kpis.requests.value}
+        hint={kpis.requests.hint}
       />
       <Tile
         label="Tokens in"
-        value={compactNumber(t.tokensIn + t.tokensCached)}
-        hint={`${percent(cached)} served from cache · ${compactNumber(t.tokensOut)} out`}
+        value={kpis.tokensIn.value}
+        hint={kpis.tokensIn.hint}
       />
       <Tile
         label="Explained by a request"
-        value={percent(t.cost > 0 ? t.linkedCost / t.cost : 0)}
-        hint={
-          t.unlinkedCost > 0
-            ? `${usd(t.unlinkedCost)} from execution context`
-            : "Fully attributed"
-        }
+        value={kpis.explainedByRequest.value}
+        hint={kpis.explainedByRequest.hint}
       />
     </div>
   );

@@ -1,34 +1,80 @@
 /**
  * Audio Transcription Constants
  *
- * Single source of truth for all audio recording and transcription limits.
- * Provider limits and model selection live in the backend catalog.
+ * 🚨 NO PRODUCT LIMIT LIVES IN THIS FILE. Every ceiling, quota, threshold and
+ * cadence for audio and transcription is a `platform.feature_knob` row under
+ * the feature `media.transcription`, read through `features/audio/limits.ts`
+ * (`uploadLimits()`, `recordingLimits()`, `resolveAudioLimit()`), seeded by
+ * `migrations/audio_transcription_limits_knobs.sql`, and turned by an admin at
+ * Users & Access → Limits & Knobs or by an organization under Organization
+ * settings → Configuration.
+ *
+ * WHY, and what it cost (2026-09-17): this file used to carry
+ * `MAX_FILE_SIZE_BYTES: 100 MB` and `MAX_DURATION_SECONDS: 3600`. An expert who
+ * owns a 9-hour audiobook could not get it into AI Matrx, even though
+ * `aidream/aidream/services/audio/file_transcription.py` had for months been
+ * splitting arbitrarily long audio into provider-sized windows and reassembling
+ * it with shifted timestamps. A literal here was guarding a capability the
+ * server already had, and nobody could turn it off without a deploy. Law 6
+ * (opinions become knobs) + `common-docs/policies/limits-are-knobs-agents-set-them.md`.
+ *
+ * What remains below is deliberate, and each entry says why it is NOT a knob:
+ * a hard platform limit we do not get to choose, a measured physical property
+ * of the codec, or a protocol fact. Adding a product limit back here is the
+ * defect `features/audio/__tests__/audio-limits-are-knobs.test.ts` fails on.
  */
 
-// ── Vercel Pro Plan limits ──────────────────────────────────────────────────
+// ── Vercel platform limits — HARD, not ours to choose ───────────────────────
+// 🚨 NOT KNOBS. `MAX_BODY_BYTES` is Vercel's request-body ceiling: 4.5 MB on
+// every plan, enforced by the platform before our code runs. Raising a knob
+// past it would change nothing except turn a clear refusal into a 413. The two
+// function-duration values are likewise Vercel's, set by the plan and the
+// Fluid Compute setting, not by us.
 export const VERCEL_LIMITS = {
   MAX_BODY_BYTES: 4.5 * 1024 * 1024, // 4.5 MB — hard limit, all plans
   MAX_FUNCTION_DURATION_DEFAULT: 300, // 300s default
   MAX_FUNCTION_DURATION_FLUID: 800, // 800s with Fluid Compute
 } as const;
 
-// ── Recording limits (derived from provider constraints) ────────────────────
-export const AUDIO_LIMITS = {
-  MAX_CHUNK_SIZE_BYTES: 4 * 1024 * 1024, // 4 MB — safely under Vercel 4.5 MB
-  MAX_FILE_SIZE_BYTES: 100 * 1024 * 1024, // 100 MB — Groq Developer via URL
-  MAX_DURATION_SECONDS: 3_600, // 60 min practical limit
-  WARN_DURATION_SECONDS: 3_000, // Warn at 50 min
-  CHUNK_DURATION_MS: 2_000, // 2 seconds per streaming chunk
-  ESTIMATED_BYTES_PER_SECOND: 16_000, // ~128kbps for webm/opus
-  MIN_CHUNK_BYTES: 1_024, // Skip chunks under 1 KB
-  CHUNK_FETCH_TIMEOUT_MS: 30_000, // Abort a chunk transcription that hangs (bad network) so finalize never wedges
+// ── Physical and platform-derived constants (NOT product limits) ────────────
+export const AUDIO_CONSTANTS = {
+  /**
+   * NOT A KNOB — derived from `VERCEL_LIMITS.MAX_BODY_BYTES` above. A streaming
+   * chunk must fit inside a request body Vercel will accept; 4 MB sits safely
+   * under the hard 4.5 MB with room for the multipart envelope. It moves only
+   * when Vercel's hard limit moves.
+   */
+  MAX_CHUNK_SIZE_BYTES: 4 * 1024 * 1024,
+  /**
+   * NOT A KNOB — a measured property of the encoder, not an opinion. webm/opus
+   * from `MediaRecorder` runs about 128 kbps ≈ 16 KB/s. It is used to PROJECT
+   * a recording's size from its elapsed time; turning it would not change what
+   * the browser produces, it would only make the projection wrong.
+   */
+  ESTIMATED_BYTES_PER_SECOND: 16_000,
+  /**
+   * NOT A KNOB — a correctness floor, not a ceiling. A `MediaRecorder` slice
+   * under 1 KB carries no decodable audio, so sending it costs a request and
+   * returns nothing.
+   */
+  MIN_CHUNK_BYTES: 1_024,
 } as const;
 
+/**
+ * Back-compat alias. The product limits that used to live under this name
+ * (`MAX_FILE_SIZE_BYTES`, `MAX_DURATION_SECONDS`, `WARN_DURATION_SECONDS`,
+ * `CHUNK_DURATION_MS`, `CHUNK_FETCH_TIMEOUT_MS`) are gone — they are knobs in
+ * `features/audio/limits.ts`. What is left is the non-negotiable remainder.
+ */
+export const AUDIO_LIMITS = AUDIO_CONSTANTS;
+
 // ── Retry configuration ─────────────────────────────────────────────────────
+// The attempt count and the two backoff delays are product opinions about how
+// hard we fight a flaky network, so they are knobs
+// (`upload_retry_max_attempts`, `upload_retry_base_delay_ms`,
+// `upload_retry_max_delay_ms`). What stays here is a protocol fact: which HTTP
+// statuses are retryable at all.
 export const RETRY_CONFIG = {
-  MAX_ATTEMPTS: 3,
-  BASE_DELAY_MS: 1_000,
-  MAX_DELAY_MS: 8_000,
   RETRYABLE_STATUS_CODES: [429, 500, 502, 503, 504] as readonly number[],
 } as const;
 

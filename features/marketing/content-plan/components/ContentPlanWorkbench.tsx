@@ -75,6 +75,8 @@ import {
 } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { liveMatchesById, usePlanReality } from "../hooks/usePlanReality";
+import { StrategyBriefWorkspace } from "@/features/marketing/strategy/components/StrategyBriefWorkspace";
+import { useMarketingBrandOptional } from "@/features/marketing/lib/brand-context";
 import { useCmsPageMap } from "../hooks/useCmsPageMap";
 import { useSitePipeline } from "../hooks/useSitePipeline";
 import { SitePipelineStrip } from "./SitePipelineStrip";
@@ -138,6 +140,7 @@ const VIEW_HEADINGS: Record<PlanView, string> = {
   map: "Pillar map",
   entities: "People, companies and sources",
   "ai-runs": "AI runs",
+  brief: "Site brief",
 };
 
 export function ContentPlanWorkbench({
@@ -174,6 +177,8 @@ export function ContentPlanWorkbench({
     (sites.data ?? []).find((row) => row.id === siteId) ??
     orgSites.find((row) => row.id === siteId) ??
     null;
+  // The brand this plan sits under — the site brief reads its strategy.
+  const brand = useMarketingBrandOptional();
   const siteResearchLinks = useContainerLinks({
     containerType: "web_site",
     containerId: siteId,
@@ -919,6 +924,23 @@ export function ContentPlanWorkbench({
               siteId={siteId}
               organizationId={site.organization_id}
             />
+          ) : view === "brief" && site && !brand ? (
+            // Honest, never a silently wrong screen: the brief needs the brand.
+            <p className="p-4 text-sm text-muted-foreground">
+              This plan is not under a brand yet, so it has no site brief. Open it from the brand&apos;s content section.
+            </p>
+          ) : view === "brief" && site && brand ? (
+            // What this website is for, reading the brand strategy — the
+            // reference the plan generator, brief writer and page writer read.
+            <div className="h-full overflow-y-auto bg-textured">
+              <StrategyBriefWorkspace
+                scope="site"
+                id={site.id}
+                brandId={brand.id}
+                brandSeg={brand.seg}
+                organizationId={site.organization_id}
+              />
+            </div>
           ) : view === "ai-runs" ? (
             // Every recorded AI run for this site. A per-page run opens the
             // page it ran for, right here — never a dead end.

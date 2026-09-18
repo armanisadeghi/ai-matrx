@@ -27,11 +27,15 @@ import { TriangleAlert } from "lucide-react";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import { useEnsureKindRenderable } from "@/features/content-ir/react/ensure-kind-renderable";
 import { useContentIrKindVersion } from "@/features/content-ir/react/use-registry-repaint";
+import { readAtVersionForKey } from "@/features/content-ir/react/registry-versioned";
 import { reportKindComponentIncident } from "@/features/content-ir/react/db-component/kindComponentIncident";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { FoundKindMarker } from "@/features/content-ir/react/kind-problems";
 
 const screamed = new Set<string>();
+
+/** One entry per kind slug — catalog membership at a known registry version. */
+const registeredCache = new Map<string, { version: number; value: boolean }>();
 
 export function KindEscapedNotice({
   markers,
@@ -44,11 +48,22 @@ export function KindEscapedNotice({
   // definition and repaint when it lands — the same guarantee every other
   // render path gets from ensure-kind-renderable.
   useEnsureKindRenderable(slug);
-  useContentIrKindVersion(slug);
+  // 🚨 THE VERSION IS AN ARGUMENT, NEVER A BARE SUBSCRIPTION (DD-215c).
+  // Discarding it left `isKnownKind` below to the React Compiler, which is ON
+  // and memoized that read on `slug` alone — so a definition landing after this
+  // notice mounted never flipped it, and the promise two lines up ("demand the
+  // definition and repaint when it lands") was not kept. Rule + the production
+  // story: `./registry-versioned.ts`. Guard: `pnpm check:registry-repaint`.
+  const kindVersion = useContentIrKindVersion(slug);
   // "Registered" = catalog membership (`isKnownKind`) — the lazy registry's
   // one predicate, covering compiled kinds, every catalog row (Python-owned
   // included), and anything a cold fetch landed.
-  const registered = Boolean(slug && kindRegistry.isKnownKind(slug));
+  const registered = readAtVersionForKey(
+    registeredCache,
+    slug ?? "",
+    kindVersion,
+    () => Boolean(slug && kindRegistry.isKnownKind(slug)),
+  );
 
   useEffect(() => {
     if (!slug || !registered) return;

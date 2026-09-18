@@ -261,6 +261,7 @@ function UserSearchWindowInner({
               ? "Reading the available user directory."
               : "Change the search or clear column filters.",
           }}
+          onRowOpen={select}
           rowActions={(row) => (
             <Button size="sm" onClick={() => select(row)}>
               Select

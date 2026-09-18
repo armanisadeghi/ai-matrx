@@ -17,14 +17,23 @@
 // reachable from this bar — the chat stays MOUNTED underneath while a
 // document is on screen, so reading the document never interrupts a stream.
 
-import { useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  ArrowRight,
   BookOpenText,
+  ChevronDown,
   FileText,
   ListChecks,
+  MessagesSquare,
   ScrollText,
   type LucideIcon,
 } from "lucide-react";
+import {
+  BottomSheet,
+  BottomSheetBody,
+  BottomSheetHeader,
+} from "@ai-matrx/design-system";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { ChatRoomClient } from "@/features/agents/components/chat/ChatRoomClient";
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
 import { selectSubmissionPhase } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
@@ -36,6 +45,7 @@ import { Button } from "@/components/ui/button";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { cn } from "@/lib/utils";
 import {
+  activeRoleTabChanged,
   docViewChanged,
   pendingAnswersCleared,
   selectActiveRoleTab,
@@ -53,13 +63,16 @@ import { useObserveRoleTurns } from "../hooks/useObserveRoleTurns";
 import {
   normalizeStage,
   ROLES,
+  ROLE_TABS,
   roleBinding,
+  roomMayClaimMaterialization,
   stageForRole,
   STAGES,
   type DocView,
   type InterviewStage,
   type RoleKey,
 } from "../types";
+import { LEAD_ROLE, OpeningVisionSend, RoleHeroIdentity } from "./RoomOpening";
 import { DeliverablePane } from "./DeliverablePane";
 import { DocumentPane } from "./DocumentPane";
 import { StageTabs } from "./StageTabs";
@@ -304,16 +317,257 @@ function RoleTurnObserver({
   return null;
 }
 
+/**
+ * THE PHONE BAR — one row, above the conversation, never six wrapped tabs.
+ *
+ * On a 390px screen `StageTabs` wrapped into three rows and took a third of
+ * the screen before a single word of the conversation, and the document
+ * controls — icon-only below `sm` — were stranded in the gap beside them with
+ * nothing saying what they were (jobs-bar-2026-09-16, item 19). Both are the
+ * same mistake: a desktop rail printed at phone width.
+ *
+ * So on a phone they become what they actually are — two CHOICES, each behind
+ * one labelled control and one bottom sheet, in the platform's own sheet
+ * primitive: who you are talking to, and which record you are reading. The
+ * conversation gets everything else.
+ */
+function PhoneRoomBar({
+  activeRole,
+  onPickRole,
+  docTabs,
+  docView,
+  onPickDoc,
+  advance,
+}: {
+  activeRole: RoleKey;
+  onPickRole: (role: RoleKey) => void;
+  docTabs: DocTab[];
+  docView: DocView | null;
+  onPickDoc: (view: DocView | null) => void;
+  /** The next step, and how to take it — only while the room is waiting. */
+  advance: { label: string; run: () => void } | null;
+}) {
+  const [sheet, setSheet] = useState<"experts" | "records" | null>(null);
+  const session = useAppSelector(selectRoomSession);
+  const roleBindings = useAppSelector(selectRoleBindings);
+  const currentStage = session ? normalizeStage(session.stage) : null;
+  const meta = ROLES[activeRole];
+  const ActiveIcon = meta.icon;
+  const activeStage = stageForRole(activeRole);
+  const openDoc = docTabs.find((t) => t.key === docView) ?? null;
+
+  return (
+    <div className="flex shrink-0 items-center gap-2 border-b border-border px-2 py-1.5">
+      <button
+        type="button"
+        onClick={() => setSheet("experts")}
+        className="flex min-h-[44px] min-w-0 flex-1 items-center gap-2 rounded-lg border border-border bg-card px-2 text-left"
+      >
+        <span
+          className={cn(
+            "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
+            meta.accent.avatar,
+          )}
+        >
+          <ActiveIcon className="h-3.5 w-3.5" aria-hidden />
+        </span>
+        <span className="flex min-w-0 flex-col leading-tight">
+          <span
+            className={cn(
+              "truncate text-[13px] font-semibold",
+              meta.accent.text,
+            )}
+          >
+            {meta.name}
+          </span>
+          <span className="truncate text-[10px] text-muted-foreground">
+            {activeStage ? STAGES[activeStage].label : "this step"}
+            {activeStage && activeStage === currentStage ? " · now" : ""}
+          </span>
+        </span>
+        <ChevronDown
+          className="ml-auto h-4 w-4 shrink-0 text-muted-foreground"
+          aria-hidden
+        />
+      </button>
+
+      {/* LABELLED, because four unlabelled document glyphs said nothing. */}
+      <button
+        type="button"
+        onClick={() => setSheet("records")}
+        className={cn(
+          "flex min-h-[44px] shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-[13px]",
+          openDoc
+            ? "border-border bg-muted font-medium text-foreground"
+            : "border-border bg-card text-muted-foreground",
+        )}
+      >
+        <FileText className="h-4 w-4" aria-hidden />
+        {openDoc ? openDoc.label : "Documents"}
+        <ChevronDown className="h-4 w-4" aria-hidden />
+      </button>
+
+      <BottomSheet
+        open={sheet === "experts"}
+        onOpenChange={(next) => !next && setSheet(null)}
+        title="Who you are talking to"
+        size="full"
+      >
+        <BottomSheetHeader
+          title="Who you are talking to"
+          trailing={
+            <button
+              onClick={() => setSheet(null)}
+              className="min-h-[44px] px-1 text-[15px] text-primary active:opacity-70"
+            >
+              Done
+            </button>
+          }
+        />
+        <BottomSheetBody>
+          <div className="max-h-[68dvh] overflow-auto">
+            {ROLE_TABS.map(({ stage, role }) => {
+              const m = ROLES[role];
+              const Icon = m.icon;
+              const isActive = role === activeRole;
+              const hasJoined =
+                roleBinding({ role_bindings: roleBindings }, role) !== null;
+              return (
+                <button
+                  key={role}
+                  type="button"
+                  onClick={() => {
+                    onPickRole(role);
+                    setSheet(null);
+                  }}
+                  className="flex min-h-[60px] w-full items-center gap-3 border-b border-glass-edge px-5 text-left last:border-0 active:bg-glass-active"
+                >
+                  <span
+                    className={cn(
+                      "flex h-8 w-8 shrink-0 items-center justify-center rounded-full",
+                      m.accent.avatar,
+                      isActive && `ring-2 ${m.accent.ring}`,
+                      !isActive && !hasJoined && "opacity-60",
+                    )}
+                  >
+                    <Icon className="h-4 w-4" aria-hidden />
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span
+                      className={cn(
+                        "text-[15px] font-semibold",
+                        isActive ? m.accent.text : "text-foreground",
+                      )}
+                    >
+                      {m.name}
+                    </span>
+                    <span className="truncate text-[12px] text-muted-foreground">
+                      {STAGES[stage].label}
+                      {stage === currentStage ? " · the step you are on" : ""}
+                    </span>
+                  </span>
+                  {isActive && (
+                    <MessagesSquare
+                      className="h-4 w-4 shrink-0 text-muted-foreground"
+                      aria-hidden
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          {/* The header's "Advance" control is icon-only and blank at phone
+              width; the step it takes belongs with the step you are on. */}
+          {advance && (
+            <div className="border-t border-glass-edge px-5 py-3 pb-safe">
+              <Button
+                className="w-full"
+                onClick={() => {
+                  advance.run();
+                  setSheet(null);
+                }}
+              >
+                {advance.label}
+                <ArrowRight className="ml-1.5 h-4 w-4" aria-hidden />
+              </Button>
+            </div>
+          )}
+        </BottomSheetBody>
+      </BottomSheet>
+
+      <BottomSheet
+        open={sheet === "records"}
+        onOpenChange={(next) => !next && setSheet(null)}
+        title="Documents"
+        size="full"
+      >
+        <BottomSheetHeader
+          title="Documents"
+          trailing={
+            <button
+              onClick={() => setSheet(null)}
+              className="min-h-[44px] px-1 text-[15px] text-primary active:opacity-70"
+            >
+              Done
+            </button>
+          }
+        />
+        <BottomSheetBody>
+          <button
+            type="button"
+            onClick={() => {
+              onPickDoc(null);
+              setSheet(null);
+            }}
+            className="flex min-h-[52px] w-full items-center gap-3 border-b border-glass-edge px-5 text-left active:bg-glass-active"
+          >
+            <MessagesSquare
+              className="h-4 w-4 shrink-0 text-muted-foreground"
+              aria-hidden
+            />
+            <span className="flex-1 text-[15px]">Back to the conversation</span>
+          </button>
+          {docTabs.map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => {
+                onPickDoc(key);
+                setSheet(null);
+              }}
+              className="flex min-h-[52px] w-full items-center gap-3 border-b border-glass-edge px-5 text-left last:border-0 active:bg-glass-active"
+            >
+              <Icon
+                className="h-4 w-4 shrink-0 text-muted-foreground"
+                aria-hidden
+              />
+              <span className="flex-1 text-[15px]">
+                {label}
+                {docView === key ? " · open" : ""}
+              </span>
+            </button>
+          ))}
+        </BottomSheetBody>
+      </BottomSheet>
+    </div>
+  );
+}
+
 export function RoomChatPane({
   onGotoStage,
   onRetryRoles,
+  onAdvanceStage,
 }: {
   /** Human-controlled stage movement (v2 `goto_stage`) — armed only while the
    *  run is waiting on the human, exactly as the retired stage rail was. */
   onGotoStage: (stage: InterviewStage) => void;
   /** Ask the server for the role bindings again, now (see useRoleBindings). */
   onRetryRoles: () => void;
+  /** Move to the next stage — the header's control, which is unusable at phone
+   *  width, so the phone bar's expert sheet carries it instead. */
+  onAdvanceStage: () => Promise<void>;
 }) {
+  const isMobile = useIsMobile();
   const dispatch = useAppDispatch();
   const role = useAppSelector(selectActiveRoleTab);
   const session = useAppSelector(selectRoomSession);
@@ -324,6 +578,20 @@ export function RoomChatPane({
   const rolesPhase = useAppSelector(selectRolesPhase);
   const rolesError = useAppSelector(selectRolesError);
   const binding = roleBinding({ role_bindings: roleBindings }, role);
+  /**
+   * 🚨 THE ROOM WAITS FOR THE ANSWER INSTEAD OF GUESSING IT (cold walk 5,
+   * finding 7). `conversation_started` is computed live per `/roles` call and
+   * is DELIBERATELY never persisted, so the copy on the session row can never
+   * carry it: before that call lands, every binding read `false` and the room
+   * called an already-used conversation a reservation. The next turn then went
+   * out as turn 1 with `is_new: true`, and the server's 409 — a raw UUID and
+   * "Pass is_new=false to continue it" — rendered inside a live interview.
+   *
+   * Until the answer is here the room shows its own honest "Opening … room…"
+   * state, which is what `ExpertNotJoined` already is. A FAILED `/roles` stops
+   * the wait, because that screen's error half is what should speak then.
+   */
+  const bindingAnswerPending = !!binding && !roomMayClaimMaterialization(binding, rolesPhase);
   // Which record is on screen lives in the SLICE, not here: the finish dialog
   // has to be able to open the Vision document the moment it is written (a
   // document you are told about but cannot reach is a dead end). Switching
@@ -331,6 +599,40 @@ export function RoomChatPane({
   const docView = useAppSelector(selectDocView);
   const { tabs: docTabs, finalizedAt } = useDocTabs();
   const activeDoc = docTabs.find((t) => t.key === docView) ?? null;
+
+  // 🚨 FINISHING LANDS ON WHAT WAS WRITTEN (cold-walk-2, jobs-bar-2026-09-16,
+  // finding 3). "Finish the interview" promises three documents by name, and
+  // the room used to answer by leaving the person exactly where they were —
+  // in a dialog, in front of a chat tab — with three `Open` buttons she had to
+  // notice and press. A promise kept only if you go looking for it is not kept.
+  // The moment `finalized_at` lands (it arrives over the session row's
+  // realtime subscription, whether the run finished in this tab or another),
+  // the room OPENS the Vision document it just wrote. Once per finalize, so a
+  // person who then chooses a different record is not dragged back.
+  const landedOnFinalizeRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!finalizedAt) return;
+    if (landedOnFinalizeRef.current === finalizedAt) return;
+    // Nothing to land on: a finalize that wrote no Vision document is a
+    // server-side failure, and the finish dialog says so. Never open a blank.
+    if (!docTabs.some((t) => t.key === "vision")) return;
+    landedOnFinalizeRef.current = finalizedAt;
+    dispatch(docViewChanged("vision"));
+  }, [finalizedAt, docTabs, dispatch]);
+
+  // 🚨 THE ROOM OWNS ITS OWN URL (cold-walk-2 finding 3, the other half).
+  // `ChatRoomClient`'s two navigation effects — the pending-navigation promote
+  // and the first-turn id promotion — both call
+  // `router.replace(buildConversationHref(id))`, and the DEFAULT is
+  // `/chat/<id>`. That default is right for the chat route and catastrophic
+  // for an embedded room: it silently replaces a guided interview with a bare
+  // chat thread, which is how an Expert ended up reading the machine's own
+  // briefing instead of her documents. The room's answer is its OWN route, so
+  // any such promotion is a no-op and the person stays where she is.
+  const roomHref = useCallback(
+    () => `/masterwork/vision-interview/${session?.id ?? ""}`,
+    [session?.id],
+  );
 
   const meta = ROLES[role];
   const stage = stageForRole(role);
@@ -342,33 +644,55 @@ export function RoomChatPane({
     currentStage !== null &&
     stage !== currentStage &&
     runPhase === "waiting_human";
+  // The same gate the room header puts on "Advance" — the run is handed back
+  // to the person, and the step they are on has a next one.
+  const nextStage = currentStage ? STAGES[currentStage].next : null;
+  const canAdvanceStage = runPhase === "waiting_human" && nextStage !== null;
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-card">
-      <div className="flex shrink-0 flex-wrap items-stretch border-b border-border">
-        <StageTabs className="min-w-0 flex-1 border-b-0" />
-        <div className="flex shrink-0 items-center gap-1 px-2 py-1 sm:border-l sm:border-border">
-          {docTabs.map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() =>
-                dispatch(docViewChanged(docView === key ? null : key))
-              }
-              className={cn(
-                "inline-flex min-h-[36px] items-center gap-1.5 rounded-md px-2 text-xs",
-                docView === key
-                  ? "bg-muted font-medium text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-              title={`${label} — the Scribe's record`}
-            >
-              <Icon className="h-4 w-4" aria-hidden />
-              <span className="hidden sm:inline">{label}</span>
-            </button>
-          ))}
+    <div className="flex h-full min-h-0 min-w-0 flex-col bg-card">
+      {isMobile ? (
+        <PhoneRoomBar
+          activeRole={role}
+          onPickRole={(next) => dispatch(activeRoleTabChanged(next))}
+          docTabs={docTabs}
+          docView={docView}
+          onPickDoc={(view) => dispatch(docViewChanged(view))}
+          advance={
+            canAdvanceStage && nextStage
+              ? {
+                  label: `Move on to ${STAGES[nextStage].label}`,
+                  run: () => void onAdvanceStage(),
+                }
+              : null
+          }
+        />
+      ) : (
+        <div className="flex shrink-0 flex-wrap items-stretch border-b border-border">
+          <StageTabs className="min-w-0 flex-1 border-b-0" />
+          <div className="flex shrink-0 items-center gap-1 border-l border-border px-2 py-1">
+            {docTabs.map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() =>
+                  dispatch(docViewChanged(docView === key ? null : key))
+                }
+                className={cn(
+                  "inline-flex min-h-[36px] items-center gap-1.5 rounded-md px-2 text-xs",
+                  docView === key
+                    ? "bg-muted font-medium text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+                title={`${label} — the Scribe's record`}
+              >
+                <Icon className="h-4 w-4" aria-hidden />
+                <span>{label}</span>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       {canMoveHere && stage && (
         <div className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-1.5">
@@ -389,8 +713,10 @@ export function RoomChatPane({
       <div className="relative min-h-0 flex-1">
         {/* The chat stays MOUNTED while a document is open — reading the
             record never interrupts a live stream. */}
-        <div className={cn("h-full", activeDoc && "hidden")}>
-          {binding ? (
+        <div
+          className={cn("flex h-full min-h-0 flex-col", activeDoc && "hidden")}
+        >
+          {binding && !bindingAnswerPending ? (
             /* Origin stamp — every dictation started in this room's composer
                is saved by the shared recorder WITH attribution to this
                session (v2 §13.1: never lose the speaker's audio). */
@@ -404,12 +730,61 @@ export function RoomChatPane({
                   : "/masterwork/vision-interview",
               }}
             >
-              <ChatRoomClient
-                key={binding.conversationId}
-                agentId={binding.agentId}
+              {/* WHO IS IN THE ROOM — this expert's own name, first words
+                  and icon on the empty hero, never the shared "Ready to run"
+                  wireframe. Keyed per role, because six experts open six
+                  rooms. */}
+              <RoleHeroIdentity
+                role={role}
                 conversationId={binding.conversationId}
-                variablesPanelStyle="hidden"
               />
+              {/* WHAT YOU ALREADY SAID — the paragraph typed into "What do
+                  you see?" is handed to the lead expert as the first user
+                  turn, once. Renders a banner ONLY if that could not start. */}
+              {session && role === LEAD_ROLE && (
+                <OpeningVisionSend
+                  sessionId={session.id}
+                  visionStatement={session.vision_statement}
+                  role={role}
+                  binding={binding}
+                />
+              )}
+              {/* The chat takes whatever height is left — the opening-send
+                  banner above it is the only thing that ever takes any. */}
+              <div className="min-h-0 flex-1">
+                <ChatRoomClient
+                  key={binding.conversationId}
+                  agentId={binding.agentId}
+                  conversationId={binding.conversationId}
+                  /* The person in this room is the Expert being interviewed
+                     about her own vision, never a builder — so tool cards,
+                     raw result grids and bound-variable chips stand down.
+                     Creator mode still shows all of it on the same screen.
+                     Law: features/agents/components/shared/transcript-audience.tsx */
+                  audience="expert"
+                  variablesPanelStyle="hidden"
+                  /* The binding's conversation id is a RESERVATION until
+                     someone speaks in this room — the server writes
+                     `chat.conversation` on the first turn and tells us here
+                     which of the two this is. Saying so is what stops an
+                     unwritten room from wearing "Couldn't load this
+                     conversation" forever (census W1). */
+                  /* 🚨 AND WE DO NOT CLAIM ONE WE HAVE NOT BEEN TOLD (cold
+                     walk 5, finding 7). `conversation_started` is computed live
+                     per `/roles` call and never persisted, so before that call
+                     answers the persisted binding always reads `false` — which
+                     labelled an already-used conversation a reservation, sent
+                     the next turn as turn 1 with `is_new: true`, and put the
+                     server's 409 ("Pass is_new=false to continue it", with the
+                     raw UUID) inside a live interview thread. The room now
+                     waits for the answer below rather than guessing here. */
+                  conversationMaterialization={
+                    binding.conversationStarted ? "existing" : "reserved"
+                  }
+                  /* The room, never `/chat` — see THE ROOM OWNS ITS OWN URL. */
+                  buildConversationHref={roomHref}
+                />
+              </div>
               <PendingAnswersRider conversationId={binding.conversationId} />
               {/* A finished exchange is reported to the Scribe from here —
                   the hijack's client half (useObserveRoleTurns). */}

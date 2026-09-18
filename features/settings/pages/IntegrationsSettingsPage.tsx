@@ -7,6 +7,7 @@ import {
   connectServer,
   connectServerWithCredentials,
   disconnectServer,
+  discoverServerTools,
   selectMcpCatalog,
   selectMcpCatalogStatus,
   selectMcpCatalogError,
@@ -50,12 +51,13 @@ import {
   Unlock,
   Eye,
   EyeOff,
-  ChevronDown,
-  ChevronUp,
   Zap,
   Info,
   Plus,
   Trash2,
+  Settings2,
+  TestTube2,
+  PlugZap,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -71,9 +73,12 @@ import { cn } from "@/lib/utils";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
 import { githubConnectUrl } from "@/features/github-integration/service";
+import { useGitHubConnection } from "@/features/github-integration/useGitHubConnection";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { DirectoryConnectorCards } from "@/features/connectors/DirectoryConnectorCards";
+import { ConnectorsSettingsPanel } from "@/features/connectors/ConnectorsSettingsPanel";
+import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { catalogConnectionPresentation } from "./integration-catalog-state";
 import {
   buildManualMcpCredentials,
   type ManualHeaderInput,
@@ -132,6 +137,11 @@ const STATUS_CONFIG: Record<
       "bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/20",
     icon: <AlertCircle className="h-3 w-3" />,
   },
+  checking: {
+    label: "Checking…",
+    className: "bg-muted text-muted-foreground border-border",
+    icon: <Loader2 className="h-3 w-3 animate-spin" />,
+  },
   error: {
     label: "Error",
     className: "bg-red-500/15 text-red-700 dark:text-red-400 border-red-500/20",
@@ -146,6 +156,30 @@ const STATUS_CONFIG: Record<
 
 type ViewFilter = "all" | "connected" | "available" | "coming_soon";
 
+/**
+ * "Your connections" section summary — the loading-state guard the class of
+ * bug is named for.
+ *
+ * `totalConnected` alone told a partial truth: it only ever reflected the MCP
+ * catalog, never the GitHub card or the Google directory cards that render in
+ * the SAME section right below it, and neither `status` (the catalog fetch)
+ * nor either of those two other loading states gated the claim it made. On a
+ * cold load, `totalConnected` reads `0` on the very first paint — before ANY
+ * of the three sources has answered — so the summary declared "Nothing
+ * connected yet" in the same instant `GitHubConnectionCard` right underneath
+ * it was still showing "Loading GitHub account…": a loading surface and its
+ * own "found nothing" verdict, on screen together. The fix is the rule this
+ * whole family must follow: the empty sentence is earned only by "no items
+ * AND nothing still loading" — never by item count alone.
+ */
+export function connectionsSummaryLabel(
+  stillLoading: boolean,
+  totalConnected: number,
+): string {
+  if (stillLoading) return "Checking connections…";
+  return totalConnected > 0 ? `${totalConnected} active` : "Nothing connected yet";
+}
+
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function IntegrationsPage() {
@@ -155,6 +189,17 @@ export default function IntegrationsPage() {
   const status = useAppSelector(selectMcpCatalogStatus);
   const error = useAppSelector(selectMcpCatalogError);
   const connectingId = useAppSelector(selectMcpConnectingServerId);
+  // The other two "your connections" contributors rendered in this same
+  // section (GitHubConnectionCard below, ConnectorsSettingsPanel for
+  // Google) — their own loading state must gate the section summary too,
+  // not just the MCP catalog's.
+  const github = useGitHubConnection();
+  const googleInventory = useGoogleConnectionInventory();
+  const githubStatus = github.loading
+    ? undefined
+    : github.inventory.connection?.status ?? null;
+  const catalogPresentation = (entry: McpCatalogEntry) =>
+    catalogConnectionPresentation(entry, githubStatus, github.loading);
 
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string>("all");
@@ -177,7 +222,7 @@ export default function IntegrationsPage() {
 
   if (viewFilter === "connected") {
     filtered = filtered.filter(
-      (entry) => entry.connectionStatus === "connected",
+      (entry) => catalogPresentation(entry).connected,
     );
   } else if (viewFilter === "available") {
     filtered = filtered.filter(
@@ -197,8 +242,8 @@ export default function IntegrationsPage() {
   }
 
   const sorted = [...filtered].sort((a, b) => {
-    const aConn = a.connectionStatus === "connected" ? 0 : 1;
-    const bConn = b.connectionStatus === "connected" ? 0 : 1;
+    const aConn = catalogPresentation(a).connected ? 0 : 1;
+    const bConn = catalogPresentation(b).connected ? 0 : 1;
     if (aConn !== bConn) return aConn - bConn;
     if (a.isFeatured !== b.isFeatured) return a.isFeatured ? -1 : 1;
     const statusOrder = {
@@ -220,8 +265,16 @@ export default function IntegrationsPage() {
   }
 
   const connectedCount = catalog.filter(
-    (entry) => entry.connectionStatus === "connected",
+    (entry) => catalogPresentation(entry).connected,
   ).length;
+
+  const githubConnectedCount =
+    github.inventory.connection?.status === "connected" ? 1 : 0;
+  const googleConnectedCount = (googleInventory.data?.connections ?? []).length;
+  const totalConnectedCount =
+    connectedCount + githubConnectedCount + googleConnectedCount;
+  const connectionsStillLoading =
+    status === "loading" || github.loading || googleInventory.isLoading;
 
   useSurfaceScopeContribution(
     "matrx-user/settings",
@@ -366,6 +419,21 @@ export default function IntegrationsPage() {
     }
   };
 
+  const handleTestConnection = async (entry: McpCatalogEntry) => {
+    try {
+      const discovery = await dispatch(
+        discoverServerTools(entry.serverId),
+      ).unwrap();
+      toast.success(`${entry.name} is ready to use`, {
+        description: `${discovery.tools.length} tools available to your agents.`,
+      });
+    } catch (error) {
+      toast.error(`Could not test ${entry.name}`, {
+        description: error instanceof Error ? error.message : String(error),
+      });
+    }
+  };
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   if (status === "loading" && catalog.length === 0) {
@@ -382,38 +450,44 @@ export default function IntegrationsPage() {
 
   return (
     <TooltipProvider>
-      <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-5 pb-12">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">
-              Integrations
+      <div className="mx-auto max-w-6xl space-y-6 p-4 pb-12 md:p-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div className="max-w-2xl">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary">
+              <PlugZap className="h-3.5 w-3.5" />
+              Tools for your agents
+            </div>
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+              Connect the services you already use
             </h1>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Connect MCP servers to give your agents access to external tools
-              and data.
-              {connectedCount > 0 && (
-                <span className="text-foreground font-medium ml-1">
-                  {connectedCount} connected
-                </span>
-              )}
+            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+              Give your agents useful context and actions. Connect once, then
+              manage access and test it whenever you need.
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-11 w-full sm:h-8 sm:w-auto"
-            onClick={() => dispatch(fetchCatalog())}
-            disabled={status === "loading"}
-          >
-            <RefreshCw
-              className={cn(
-                "h-3.5 w-3.5 mr-1.5",
-                status === "loading" && "animate-spin",
-              )}
-            />
-            Refresh
-          </Button>
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="rounded-lg border border-border bg-card px-3 py-2 text-right">
+              <p className="text-lg font-semibold leading-none text-foreground">
+                {totalConnectedCount}
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground">ready to use</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-10"
+              onClick={() => dispatch(fetchCatalog())}
+              disabled={status === "loading"}
+            >
+              <RefreshCw
+                className={cn(
+                  "mr-1.5 h-3.5 w-3.5",
+                  status === "loading" && "animate-spin",
+                )}
+              />
+              Refresh
+            </Button>
+          </div>
         </div>
 
         {/* Error */}
@@ -424,14 +498,33 @@ export default function IntegrationsPage() {
           </div>
         )}
 
-        <GitHubConnectionCard />
+        <section className="space-y-3">
+          <div className="flex items-end justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Your connections</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Connected services are ready for agent work. Open settings for access details.
+              </p>
+            </div>
+            <span className="hidden text-xs text-muted-foreground sm:block">
+              {connectionsSummaryLabel(connectionsStillLoading, totalConnectedCount)}
+            </span>
+          </div>
+          <GitHubConnectionCard />
+          {/* Settings → Connectors: every connected Google account with its
+              per-capability health rows, and the same consent body the "Choose
+              what to connect" dialog uses. Replaced the three status-only
+              `DirectoryConnectorCards` on 2026-09-17. */}
+          <ConnectorsSettingsPanel />
+        </section>
 
-        {/* First-party Google connectors (no MCP server backs these) */}
-        <DirectoryConnectorCards />
-
-        {/* Filters */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <div className="relative w-full flex-1 sm:max-w-sm">
+        <section className="space-y-4">
+          <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Discover integrations</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Find a service, connect it, and start using it in your agents.</p>
+            </div>
+            <div className="relative w-full md:max-w-sm">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
             <Input
               value={search}
@@ -439,8 +532,9 @@ export default function IntegrationsPage() {
               placeholder="Search integrations..."
               className="h-11 pl-8 text-base sm:h-8 sm:text-sm"
             />
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
             {(
               [
                 ["all", "All"],
@@ -525,9 +619,8 @@ export default function IntegrationsPage() {
               />
             )}
           </div>
-        </div>
+        </section>
 
-        {/* Category pills */}
         <div className="flex flex-wrap gap-1.5">
           <Button
             variant={activeCategory === "all" ? "default" : "outline"}
@@ -561,6 +654,7 @@ export default function IntegrationsPage() {
               <ServerCard
                 key={entry.serverId}
                 entry={entry}
+                connectionPresentation={catalogPresentation(entry)}
                 isExpanded={expandedId === entry.serverId}
                 onToggleExpand={() =>
                   setExpandedId(
@@ -579,6 +673,7 @@ export default function IntegrationsPage() {
                   handleManualConnect(entry, endpointOverride, headers)
                 }
                 onDisconnect={() => void handleDisconnect(entry)}
+                onTest={() => void handleTestConnection(entry)}
               />
             ))}
           </div>
@@ -592,6 +687,7 @@ export default function IntegrationsPage() {
 
 interface ServerCardProps {
   entry: McpCatalogEntry;
+  connectionPresentation: ReturnType<typeof catalogConnectionPresentation>;
   isExpanded: boolean;
   onToggleExpand: () => void;
   isConnecting: boolean;
@@ -603,10 +699,12 @@ interface ServerCardProps {
     headers: ManualHeaderInput[],
   ) => Promise<void>;
   onDisconnect: () => void;
+  onTest: () => void;
 }
 
 function ServerCard({
   entry,
+  connectionPresentation,
   isExpanded,
   onToggleExpand,
   isConnecting,
@@ -615,15 +713,20 @@ function ServerCard({
   onNoAuthConnect,
   onManualConnect,
   onDisconnect,
+  onTest,
 }: ServerCardProps) {
   const isComingSoon = entry.serverStatus === "coming_soon";
   const isCommunity = entry.serverStatus === "community";
-  const isConnected = entry.connectionStatus === "connected";
+  const isConnected = connectionPresentation.connected;
   const isActive =
     entry.serverStatus === "active" || entry.serverStatus === "beta";
   const hasEndpoint = !!entry.endpointUrl;
   const isStdioOnly = entry.transport === "stdio" && !hasEndpoint;
-  const canConnect = (isActive || isCommunity) && hasEndpoint && !isConnected;
+  const canConnect =
+    (isActive || isCommunity) &&
+    hasEndpoint &&
+    !isConnected &&
+    connectionPresentation.state !== "checking";
   const needsOAuth = entry.authStrategy === "oauth_discovery";
   const needsToken =
     entry.authStrategy === "bearer" || entry.authStrategy === "api_key";
@@ -631,8 +734,8 @@ function ServerCard({
 
   const transport = TRANSPORT_META[entry.transport] ?? TRANSPORT_META.http;
   const connectionStatus =
-    entry.connectionStatus && entry.connectionStatus !== "disconnected"
-      ? STATUS_CONFIG[entry.connectionStatus]
+    connectionPresentation.state && connectionPresentation.state !== "disconnected"
+      ? STATUS_CONFIG[connectionPresentation.state]
       : null;
 
   // Inline token form state
@@ -642,6 +745,7 @@ function ServerCard({
   const [supabaseProjectRef, setSupabaseProjectRef] = useState("");
   const [supabaseError, setSupabaseError] = useState<string | null>(null);
   const [showManualForm, setShowManualForm] = useState(false);
+  const [iconFailed, setIconFailed] = useState(false);
 
   const isSupabase = entry.slug === "supabase";
 
@@ -707,19 +811,19 @@ function ServerCard({
         {/* Top row */}
         <div className="flex items-start gap-3">
           <div className="shrink-0 mt-0.5">
-            {entry.iconUrl ? (
+            {entry.iconUrl && !iconFailed ? (
               <img
                 src={entry.iconUrl}
                 alt=""
                 className={cn(
-                  "w-9 h-9 rounded-lg object-contain",
+                  "h-11 w-11 rounded-xl border border-border bg-background object-contain p-1.5",
                   isComingSoon && "grayscale",
                 )}
+                onError={() => setIconFailed(true)}
               />
             ) : (
               <div
-                className="w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold text-white"
-                style={{ backgroundColor: entry.color ?? "#6b7280" }}
+                className="flex h-11 w-11 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-sm font-semibold text-primary"
               >
                 {entry.name.charAt(0).toUpperCase()}
               </div>
@@ -789,40 +893,36 @@ function ServerCard({
 
         {/* Description */}
         {entry.description && (
-          <p className="text-xs text-muted-foreground mt-2 line-clamp-2">
+          <p className="mt-3 line-clamp-2 text-sm leading-5 text-muted-foreground">
             {entry.description}
           </p>
         )}
 
-        {/* Metadata */}
-        <div className="flex items-center gap-1.5 mt-3 flex-wrap">
-          <Badge
-            variant="outline"
-            className={cn("text-[10px] px-1.5 py-0 gap-1", transport.className)}
-          >
-            {transport.icon}
-            {transport.label}
-          </Badge>
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0 gap-1">
-            <Key className="h-2.5 w-2.5" />
-            {AUTH_LABELS[entry.authStrategy] ?? entry.authStrategy}
-          </Badge>
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-            {MCP_CATEGORY_META[entry.category]?.label ?? entry.category}
-          </Badge>
-        </div>
-
         {/* Actions */}
-        <div className="flex items-center gap-2 mt-3">
+        <div className="mt-4 flex items-center gap-2">
           {isConnected ? (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-11 flex-1 text-sm sm:h-7 sm:text-xs"
-              onClick={onDisconnect}
-            >
-              Disconnect
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-10 flex-1 text-sm"
+                onClick={onTest}
+                disabled={isConnecting}
+              >
+                <TestTube2 className="mr-1.5 h-3.5 w-3.5" />
+                Test access
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-10 gap-1.5 px-3 text-sm"
+                onClick={onToggleExpand}
+                aria-label={isExpanded ? `Hide ${entry.name} settings` : `Open ${entry.name} settings`}
+              >
+                <Settings2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Settings</span>
+              </Button>
+            </>
           ) : canConnect && needsOAuth && !isSupabase ? (
             <div className="flex flex-1 gap-2">
               <Button
@@ -916,27 +1016,25 @@ function ServerCard({
             </Tooltip>
           ) : null}
 
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-11 w-11 shrink-0 p-0 sm:h-7 sm:w-7"
-            onClick={onToggleExpand}
-            aria-label={
-              isExpanded
-                ? `Hide ${entry.name} details`
-                : `Show ${entry.name} details`
-            }
-          >
-            {isExpanded ? (
-              <ChevronUp className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronDown className="h-3.5 w-3.5" />
-            )}
-          </Button>
+          {!isConnected && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-10 w-10 shrink-0 p-0"
+              onClick={onToggleExpand}
+              aria-label={isExpanded ? `Hide ${entry.name} settings` : `Open ${entry.name} settings`}
+            >
+              <Settings2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         {isSupabase && !isConnected && canConnect && (
-          <div className="mt-3 pt-3 border-t border-border space-y-2">
+          <div className="mt-3 space-y-2 rounded-xl border border-border bg-muted/30 p-3">
+            <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
+              <Settings2 className="h-3.5 w-3.5" />
+              Advanced settings
+            </div>
             <label className="block text-xs font-medium text-foreground">
               Supabase project reference
             </label>

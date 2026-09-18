@@ -33,7 +33,10 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { cn } from "@/lib/utils";
 
 import { useWorkflowRunControls } from "../../hooks/useWorkflowRunControls";
-import { selectRunStatus } from "../../redux/workflow-runs.selectors";
+import {
+  selectRunStatus,
+  selectRunStatusKnown,
+} from "../../redux/workflow-runs.selectors";
 import {
   isParked,
   runStateLabel,
@@ -84,7 +87,14 @@ function ControlButton({
 }
 
 export function RunControlBar({ runId }: { runId: string }) {
-  const status = useAppSelector(selectRunStatus(runId));
+  const rawStatus = useAppSelector(selectRunStatus(runId));
+  // 🚨 AN ATTACHED RUN IS BORN `"pending"` (cold walk 7, finding 5). Until the
+  // server has actually told us, the bar holds `null` — which its own verb
+  // table and `runStateLabel` already mean by "we have not been told", and
+  // which keeps every verb disabled rather than offering Stop on a run whose
+  // state nobody knows.
+  const statusKnown = useAppSelector(selectRunStatusKnown(runId));
+  const status = statusKnown ? rawStatus : null;
   const { pause, resumePaused, cancel } = useWorkflowRunControls();
   const [busy, setBusy] = useState<RunControlVerb | null>(null);
 

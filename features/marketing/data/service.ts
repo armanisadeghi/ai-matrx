@@ -312,6 +312,10 @@ function mergeSiteListRow(
     gsc_position_28d: kpis?.gsc_position_28d ?? null,
     gsc_clicks_prev_28d: kpis?.gsc_clicks_prev_28d ?? null,
     gsc_impressions_prev_28d: kpis?.gsc_impressions_prev_28d ?? null,
+    // BOTH windows' coverage travels with the row: the delta is judged on the
+    // pair (`analytics/gsc-delta.ts`), and `gsc_cur_days` used to be selected
+    // here and silently dropped — round-3 verdict B-N1.
+    gsc_cur_days: Number(kpis?.gsc_cur_days ?? 0),
     gsc_prev_days: Number(kpis?.gsc_prev_days ?? 0),
     gsc_latest_date: kpis?.gsc_latest_date ?? null,
   };
@@ -1761,6 +1765,239 @@ export async function listSnapshots(
     rows: assertData(response.data, response.error),
     total: response.count ?? 0,
   };
+}
+
+const SNAPSHOT_SORT_COLUMNS = {
+  captured_at: "captured_at",
+  final_url: "final_url",
+  http_status: "http_status",
+  word_count: "word_count",
+  content_hash: "content_hash",
+} as const;
+
+type SnapshotSortId = keyof typeof SNAPSHOT_SORT_COLUMNS;
+type SnapshotCursorValue = string | number | null;
+
+export type SnapshotReceiptCursor = {
+  watermark: string;
+  sortId: SnapshotSortId;
+  direction: "asc" | "desc";
+  value: SnapshotCursorValue;
+  id: string;
+};
+
+export type SnapshotReceiptPage = {
+  rows: PageSnapshot[];
+  total: number;
+  nextCursor: string | null;
+};
+
+/** A receipt failure means the user must restart from a new immutable boundary. */
+export class SnapshotReceiptError extends Error {
+  constructor(message: string) {
+    super(`Snapshot history changed while loading. Refresh required: ${message}`);
+    this.name = "SnapshotReceiptError";
+  }
+}
+
+function snapshotSort(state: MatrxDataTableQueryState): {
+  id: SnapshotSortId;
+  column: (typeof SNAPSHOT_SORT_COLUMNS)[SnapshotSortId];
+  direction: "asc" | "desc";
+} {
+  const requested = state.sort?.id;
+  const id =
+    requested && requested in SNAPSHOT_SORT_COLUMNS
+      ? (requested as SnapshotSortId)
+      : "captured_at";
+  return {
+    id,
+    column: SNAPSHOT_SORT_COLUMNS[id],
+    direction: state.sort?.direction === "asc" ? "asc" : "desc",
+  };
+}
+
+/** Quote one PostgREST logic literal; null is always expressed through `is.null`. */
+export function quotePostgrestLogicLiteral(value: string | number): string {
+  if (typeof value === "number") return String(value);
+  return `"${value.replaceAll("\\", "\\\\").replaceAll('"', '\\"')}"`;
+}
+
+export function encodeSnapshotReceiptCursor(cursor: SnapshotReceiptCursor): string {
+  return btoa(encodeURIComponent(JSON.stringify(cursor)));
+}
+
+function cursorValueMatchesSort(
+  sortId: SnapshotSortId,
+  value: unknown,
+): value is SnapshotCursorValue {
+  if (value === null) return true;
+  if (sortId === "http_status" || sortId === "word_count") {
+    return typeof value === "number" && Number.isFinite(value);
+  }
+  return typeof value === "string";
+}
+
+export function decodeSnapshotReceiptCursor(value: string): SnapshotReceiptCursor {
+  try {
+    const parsed: unknown = JSON.parse(decodeURIComponent(atob(value)));
+    if (!parsed || typeof parsed !== "object") throw new Error("not an object");
+    const cursor = parsed as Record<string, unknown>;
+    if (
+      typeof cursor.watermark !== "string" ||
+      !(typeof cursor.id === "string") ||
+      !(typeof cursor.sortId === "string" && cursor.sortId in SNAPSHOT_SORT_COLUMNS) ||
+      (cursor.direction !== "asc" && cursor.direction !== "desc") ||
+      !cursorValueMatchesSort(cursor.sortId as SnapshotSortId, cursor.value)
+    ) {
+      throw new Error("invalid cursor fields");
+    }
+    return cursor as SnapshotReceiptCursor;
+  } catch {
+    throw new SnapshotReceiptError("the next-page cursor was malformed");
+  }
+}
+
+/** Immutable identity: deliberately excludes the UI page number and unsupported controls. */
+export function snapshotSourceIdentity(state: MatrxDataTableQueryState) {
+  const sort = snapshotSort(state);
+  const filters = state.columnFilters;
+  return {
+    pageSize: state.pageSize,
+    search: cleanSearch(state.search),
+    searchMatchMode: state.searchMatchMode ?? "contains",
+    sort: { id: sort.id, direction: sort.direction },
+    final_url: textFilter(state, "final_url"),
+    content_hash: textFilter(state, "content_hash"),
+    http_status: numberFilter(state, "http_status"),
+    word_count: numberFilter(state, "word_count"),
+    // Referencing filters makes accidental expansion visible in review without
+    // granting source ownership to anyOf/layered/whole-word controls.
+    filterKeys: Object.keys(filters)
+      .filter((key) => ["final_url", "content_hash", "http_status", "word_count"].includes(key))
+      .sort(),
+  };
+}
+
+export async function getSnapshotReceiptWatermark(
+  siteId: string,
+  pageId: string,
+  signal?: AbortSignal,
+): Promise<string | null> {
+  const response = await (await authenticatedWebDb(supabase))
+    .from("snapshot")
+    .select("created_at")
+    .eq("site_id", siteId)
+    .eq("page_id", pageId)
+    .order("created_at", { ascending: false, nullsFirst: false })
+    .limit(1)
+    .abortSignal(signal ?? new AbortController().signal)
+    .maybeSingle();
+  const row = assertData(response.data, response.error);
+  return row?.created_at ?? null;
+}
+
+export async function listSnapshotReceiptPage(input: {
+  siteId: string;
+  pageId: string;
+  state: MatrxDataTableQueryState;
+  watermark: string;
+  cursor?: SnapshotReceiptCursor;
+  expectedTotal?: number;
+  verifyTerminal?: boolean;
+  signal?: AbortSignal;
+}): Promise<SnapshotReceiptPage> {
+  const { siteId, pageId, state, watermark, cursor, expectedTotal, verifyTerminal, signal } = input;
+  if (state.search && state.searchMatchMode === "whole_words") {
+    throw new SnapshotReceiptError(
+      "whole-word search is not available for snapshot history; clear that search mode and try again",
+    );
+  }
+  const sort = snapshotSort(state);
+  if (cursor && (cursor.sortId !== sort.id || cursor.direction !== sort.direction || cursor.watermark !== watermark)) {
+    throw new SnapshotReceiptError("the cursor does not belong to this view");
+  }
+  const db = await authenticatedWebDb(supabase);
+  const search = cleanSearch(state.search);
+  const finalUrl = textFilter(state, "final_url");
+  const hash = textFilter(state, "content_hash");
+  const http = numberFilter(state, "http_status");
+  const words = numberFilter(state, "word_count");
+  let countQuery = db
+    .from("snapshot")
+    .select("id", { count: "exact", head: true })
+    .eq("site_id", siteId)
+    .eq("page_id", pageId)
+    // Deliberately include deleted snapshots: history is an audit record.
+    .lte("created_at", watermark);
+  if (search) countQuery = countQuery.or(`final_url.ilike.%${search}%,content_hash.ilike.%${search}%`);
+  if (finalUrl) countQuery = countQuery.ilike("final_url", `%${finalUrl}%`);
+  if (hash) countQuery = countQuery.ilike("content_hash", `%${hash}%`);
+  if (http?.min !== undefined) countQuery = countQuery.gte("http_status", http.min);
+  if (http?.max !== undefined) countQuery = countQuery.lte("http_status", http.max);
+  if (words?.min !== undefined) countQuery = countQuery.gte("word_count", words.min);
+  if (words?.max !== undefined) countQuery = countQuery.lte("word_count", words.max);
+  const countResponse = await countQuery.abortSignal(signal ?? new AbortController().signal);
+  if (countResponse.error) throw countResponse.error;
+  if (typeof countResponse.count !== "number" || !Number.isFinite(countResponse.count) || countResponse.count < 0) {
+    throw new SnapshotReceiptError("the exact count was unavailable");
+  }
+  if (expectedTotal !== undefined && countResponse.count !== expectedTotal) {
+    throw new SnapshotReceiptError("the matching count changed");
+  }
+
+  let query = db
+    .from("snapshot")
+    .select(SNAPSHOT_COLUMNS)
+    .eq("site_id", siteId)
+    .eq("page_id", pageId)
+    .lte("created_at", watermark);
+  if (search) query = query.or(`final_url.ilike.%${search}%,content_hash.ilike.%${search}%`);
+  if (finalUrl) query = query.ilike("final_url", `%${finalUrl}%`);
+  if (hash) query = query.ilike("content_hash", `%${hash}%`);
+  if (http?.min !== undefined) query = query.gte("http_status", http.min);
+  if (http?.max !== undefined) query = query.lte("http_status", http.max);
+  if (words?.min !== undefined) query = query.gte("word_count", words.min);
+  if (words?.max !== undefined) query = query.lte("word_count", words.max);
+  if (cursor) {
+    const relation = sort.direction === "asc" ? "gt" : "lt";
+    const idRelation = relation;
+    const id = quotePostgrestLogicLiteral(cursor.id);
+    const after = cursor.value === null
+      ? `and(${sort.column}.is.null,id.${idRelation}.${id})`
+      : `${sort.column}.${relation}.${quotePostgrestLogicLiteral(cursor.value)},${sort.column}.is.null,and(${sort.column}.eq.${quotePostgrestLogicLiteral(cursor.value)},id.${idRelation}.${id})`;
+    query = query.or(after);
+  }
+  const response = await query
+    .order(sort.column, { ascending: sort.direction === "asc", nullsFirst: false })
+    .order("id", { ascending: sort.direction === "asc" })
+    .limit(state.pageSize)
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertData(response.data, response.error);
+  if (verifyTerminal) {
+    let terminalCount = db.from("snapshot").select("id", { count: "exact", head: true }).eq("site_id", siteId).eq("page_id", pageId).lte("created_at", watermark);
+    if (search) terminalCount = terminalCount.or(`final_url.ilike.%${search}%,content_hash.ilike.%${search}%`);
+    if (finalUrl) terminalCount = terminalCount.ilike("final_url", `%${finalUrl}%`);
+    if (hash) terminalCount = terminalCount.ilike("content_hash", `%${hash}%`);
+    if (http?.min !== undefined) terminalCount = terminalCount.gte("http_status", http.min);
+    if (http?.max !== undefined) terminalCount = terminalCount.lte("http_status", http.max);
+    if (words?.min !== undefined) terminalCount = terminalCount.gte("word_count", words.min);
+    if (words?.max !== undefined) terminalCount = terminalCount.lte("word_count", words.max);
+    const terminalResponse = await terminalCount.abortSignal(signal ?? new AbortController().signal);
+    if (terminalResponse.error) throw terminalResponse.error;
+    if (terminalResponse.count !== countResponse.count) throw new SnapshotReceiptError("the matching count changed at the terminal page");
+  }
+  const last = rows.at(-1);
+  const nextCursor = rows.length < state.pageSize || !last
+    ? null
+    : encodeSnapshotReceiptCursor({
+        watermark,
+        sortId: sort.id,
+        direction: sort.direction,
+        value: last[sort.column] as SnapshotCursorValue,
+        id: last.id,
+      });
+  return { rows, total: countResponse.count, nextCursor };
 }
 
 export async function getSnapshot(
@@ -4247,6 +4484,8 @@ export async function addDiscoveredPublisher(
       categories: input.categories,
       citation_weight: input.citationWeight,
       sort_rank: input.sortRank,
+      // org-fallback-deliberate: a directory/aggregator definition is public
+      //   reference data the whole platform shares, not one organization's record
       organization_id: SYSTEM_ORGANIZATION_ID,
       visibility: "public",
       metadata: input.metadata,

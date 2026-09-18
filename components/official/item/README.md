@@ -63,6 +63,10 @@ to attach a record which does not exist under that name.
   accessibility tree and in the `title` attribute — the mask is visual only.
 - **Kebab reserves no space** — it's an absolute sibling, revealed on
   hover/focus/`data-[state=open]`/touch.
+- **Active means blue and unmistakable.** `active` applies the shared
+  `bg-primary/10 text-primary` treatment and medium primary label weight in
+  both themes. Consumers supply route/record ownership; they must not override
+  the active row back to neutral `bg-accent` gray.
 - **Right-click = the same menu** (`ItemContextMenu`), disabled on touch.
 - **Inline rename**: double-click the row, or add a `command` with
   `intent: "rename"` to the menu — ItemRow swaps that entry's action for its own
@@ -155,3 +159,9 @@ label clears everything that appears on hover. Defined in `app/globals.css`
 (`@property --item-fade-w` + the `.item-row` / `.item-fade` / `.item-shift`
 utilities). Tailwind 4's native `mask-*` utilities can't transition gradient
 stops, which is why the fade lives in a registered custom property.
+
+---
+
+## Change log
+
+- `2026-09-15` — Codex: made the shared `ItemRow` active state visibly blue in light and dark themes so chat and every other list consumer inherit one unambiguous selected-row treatment.

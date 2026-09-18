@@ -1,4 +1,5 @@
 "use client";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * AgentSurfacesPanel — the agent engineer's view for binding an agent to
@@ -33,7 +34,7 @@ import {
   Search,
   Zap,
   Trash2,
-  User
+  User,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,7 +60,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { toast } from "@/lib/toast";
+import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
+import {
+  isCapturedSurfaceRegistrationError,
+  isSurfaceRegistrationError,
+} from "@/features/surfaces/services/surface-registration-error";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
@@ -76,10 +81,7 @@ import {
 } from "@/features/surfaces/components/ValueMappingEditor";
 import type { SurfaceWithStats } from "@/features/surfaces/services/surfaces.service";
 import type { AgentSurfaceBinding } from "@/features/surfaces/services/bind-agent-to-surface.service";
-import type {
-  SurfaceValue,
-  ValueMappingMap,
-} from "@/features/surfaces/types";
+import type { SurfaceValue, ValueMappingMap } from "@/features/surfaces/types";
 import {
   loadSurfaces,
   loadSurfaceValues,
@@ -241,8 +243,7 @@ export function AgentSurfacesPanel({ agent }: Props) {
   const surfacesError = useAppSelector(selectSurfacesError);
   const bindingsStatus = useAppSelector(selectBindingsStatus);
   const bindingsError = useAppSelector(selectBindingsError);
-  const loading =
-    surfacesStatus === "loading" || bindingsStatus === "loading";
+  const loading = surfacesStatus === "loading" || bindingsStatus === "loading";
   const error = bindingsError ?? surfacesError;
 
   const [editingId, setEditingId] = useState<string | "new" | null>(null);
@@ -257,9 +258,7 @@ export function AgentSurfacesPanel({ agent }: Props) {
     async (force = false) => {
       await Promise.all([
         dispatch(loadSurfaces(force ? { force: true } : undefined)).unwrap(),
-        dispatch(
-          loadBindingsForAgent({ agentId: agent.id, force }),
-        ).unwrap(),
+        dispatch(loadBindingsForAgent({ agentId: agent.id, force })).unwrap(),
       ]);
     },
     [dispatch, agent.id],
@@ -332,7 +331,13 @@ export function AgentSurfacesPanel({ agent }: Props) {
       ).unwrap();
       toast.success("Binding removed");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Delete failed");
+      (isCapturedSurfaceRegistrationError(e)
+        ? toastErrorAlreadyCaptured
+        : toast.error)(
+        e instanceof Error || isSurfaceRegistrationError(e)
+          ? e.message
+          : "Delete failed",
+      );
     }
   };
 
@@ -632,7 +637,9 @@ function SurfaceMandateRoles({ surfaceName }: { surfaceName: string }) {
   const roles = (getManifest(surfaceName)?.agentRoles ?? []).filter(
     (r) => typeof r.mandateKey === "string" && r.mandateKey.length > 0,
   );
-  const keys = roles.map((r) => r.mandateKey as string);
+  const keys: readonly AnyMandateKey[] = roles.flatMap((r) =>
+    r.mandateKey ? [r.mandateKey] : [],
+  );
   const resolved = useMandateSet(keys, { optionalKeys: keys });
 
   if (roles.length === 0) return null;
@@ -850,11 +857,15 @@ function BindingEditorDialog({
   // surface in `surfacesCatalogSlice`).
   useEffect(() => {
     if (!surfaceName) return;
-    void dispatch(loadSurfaceValues({ surfaceName })).unwrap().catch((e) => {
-      toast.error(
-        e instanceof Error ? e.message : "Failed to load surface values",
-      );
-    });
+    void dispatch(loadSurfaceValues({ surfaceName }))
+      .unwrap()
+      .catch((e) => {
+        toast.error(
+          e instanceof Error || isSurfaceRegistrationError(e)
+            ? e.message
+            : "Failed to load surface values",
+        );
+      });
   }, [dispatch, surfaceName]);
 
   // Once hydrated for an existing binding, copy the persisted assignments
@@ -965,7 +976,13 @@ function BindingEditorDialog({
       toast.success(existing ? "Binding updated" : "Binding created");
       onSaved();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Save failed");
+      (isCapturedSurfaceRegistrationError(e)
+        ? toastErrorAlreadyCaptured
+        : toast.error)(
+        e instanceof Error || isSurfaceRegistrationError(e)
+          ? e.message
+          : "Save failed",
+      );
     } finally {
       setBusy(false);
     }
@@ -1238,7 +1255,13 @@ function CreateShortcutFromBindingDialog({
       onClose();
       router.push(`/agents/shortcuts/edit/${newId}`);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Create failed");
+      (isCapturedSurfaceRegistrationError(e)
+        ? toastErrorAlreadyCaptured
+        : toast.error)(
+        e instanceof Error || isSurfaceRegistrationError(e)
+          ? e.message
+          : "Create failed",
+      );
     } finally {
       setBusy(false);
     }
@@ -1253,8 +1276,7 @@ function CreateShortcutFromBindingDialog({
         <div className="space-y-3 pt-1 pb-2">
           <div className="rounded-md border border-dashed border-border bg-background px-3 py-2 text-[11px] text-muted-foreground">
             Seeds a new personal shortcut for{" "}
-            <span className="font-medium text-foreground">{agentName}</span>{" "}
-            on{" "}
+            <span className="font-medium text-foreground">{agentName}</span> on{" "}
             <span className="font-mono text-[10px] text-foreground">
               {binding.surfaceName}
             </span>

@@ -47,6 +47,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import process from "node:process";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
   AIDREAM_SCAN_DIRS,
   C,
@@ -189,12 +190,12 @@ function main(): void {
     console.log(
       `${seeding ? "Seeded" : "Ratcheted"} ${relative(ROOT, ALLOWLIST_FILE)}: ${entries.length} entr${entries.length === 1 ? "y" : "ies"}${seeding ? "" : ` (removed ${allow.length - kept.length})`}.`,
     );
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   if (json) {
     console.log(JSON.stringify({ live: live.length, allowlisted: allow.length, fresh, stale }, null, 2));
-    process.exit(fresh.length > 0 ? 1 : 0);
+    exitAfterDrain(fresh.length > 0 ? 1 : 0);
   }
 
   console.log(`\n${C.bold}${C.white}HARDCODED SETTINGS${C.reset} ${C.dim}(${GUARD})${C.reset}`);
@@ -241,7 +242,7 @@ function main(): void {
   }
 
   console.log("");
-  process.exit(fresh.length > 0 ? 1 : 0);
+  exitAfterDrain(fresh.length > 0 ? 1 : 0);
 }
 
 main();

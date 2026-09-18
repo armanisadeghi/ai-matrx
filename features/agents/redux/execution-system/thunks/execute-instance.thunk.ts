@@ -1,4 +1,7 @@
-import { executionRejectionMeta, type ExecutionRejectionMeta } from "@/lib/diagnostics/executionRejectionMeta";
+import {
+  executionRejectionMeta,
+  type ExecutionRejectionMeta,
+} from "@/lib/diagnostics/executionRejectionMeta";
 /**
  * Execute Instance Thunk
  *
@@ -54,6 +57,7 @@ import {
   userInputPartToMessagePart,
 } from "../instance-resources/instance-resources.selectors";
 import {
+  selectHostVariableNames,
   selectRuntimeVariableResourcePolicies,
   selectVariablesForRequest,
 } from "../instance-variable-values/instance-variable-values.selectors";
@@ -104,7 +108,8 @@ import {
 } from "./run-ai-stream";
 import { validateMessageBlocks } from "@/features/agents/runtime/validation";
 import { getCapabilitiesForConversation } from "@/features/agents/runtime/get-model-capabilities";
-import { setUserVariableValues } from "../instance-variable-values/instance-variable-values.slice";
+import { restoreVariableValues } from "../instance-variable-values/instance-variable-values.slice";
+import { persistVariableAuthorship } from "../instance-variable-values/instance-variable-values.persistence";
 import {
   markInputSubmitted,
   clearUserInput,
@@ -470,7 +475,10 @@ export const executeInstance = createAsyncThunk<
   ) => {
     const requestId = generateRequestId();
     const rejectWithValue = (value: unknown, originalErrorName?: string) =>
-      reject(value, executionRejectionMeta(requestId, conversationId, originalErrorName));
+      reject(
+        value,
+        executionRejectionMeta(requestId, conversationId, originalErrorName),
+      );
 
     try {
       // `let`, not `const`: the organization gate below can suspend for human
@@ -689,14 +697,29 @@ export const executeInstance = createAsyncThunk<
       const hasFirstTurnVariables =
         isFirstTurn(state, conversationId) &&
         Boolean(payload.variables && Object.keys(payload.variables).length > 0);
+      //
+      // 🚨 THE STAMP REPLAYS WHAT IS BEING SENT — IT DOES NOT CLAIM IT. Until
+      // 2026-09-16 this went through `setUserVariableValues`, whose whole
+      // meaning is "the person just set these", so it RELEASED the authorship
+      // the launcher had recorded a moment earlier and the host's launch
+      // values went straight back into her bubble on the live first turn —
+      // the same defect `09d06177f0` fixed at the launcher, reopened at send.
+      const hostNamesAtSubmit = selectHostVariableNames(conversationId)(state);
       if (hasFirstTurnVariables && payload.variables) {
         dispatch(
-          setUserVariableValues({
+          restoreVariableValues({
             conversationId,
             values: payload.variables,
+            hostValueNames: hostNamesAtSubmit,
           }),
         );
       }
+      // Authorship has to outlive this tab: `chat.conversation.variables` is
+      // the merged payload and cannot tell a host value from a typed one, so
+      // the names are written beside it once the row exists (post-stream,
+      // below). Captured here because `isFirstTurn` is no longer true by then.
+      const shouldPersistAuthorship =
+        hasFirstTurnVariables && hostNamesAtSubmit.length > 0;
       const resourceBlocks = Array.isArray(payload.user_input)
         ? payload.user_input
             .filter((part) => part.type !== "text")
@@ -1112,6 +1135,13 @@ export const executeInstance = createAsyncThunk<
           // preserves every server-owned sibling key.
           if (!isEphemeral) {
             await dispatch(persistInputCapabilities({ conversationId }));
+            // Which of the launch variables the HOST wired — written beside
+            // them so a reopen of this conversation can still tell the
+            // person's words from the surface's. First turn only: the values
+            // and their authorship are both fixed at launch.
+            if (shouldPersistAuthorship) {
+              await dispatch(persistVariableAuthorship({ conversationId }));
+            }
           }
           return result;
         } catch (streamError) {
@@ -1183,7 +1213,10 @@ export const executeInstance = createAsyncThunk<
           await import("../instance-user-input/clear-composer.thunk");
         dispatch(clearComposerIfUnsubmitted(conversationId, { via: "clear" }));
       }
-      return rejectWithValue(message, error instanceof Error ? error.name : undefined);
+      return rejectWithValue(
+        message,
+        error instanceof Error ? error.name : undefined,
+      );
     }
   },
 );

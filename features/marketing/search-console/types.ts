@@ -81,12 +81,19 @@ export interface GscFilters {
   /** C6 — value LEVELS, encoded `level|level` (`lv=`); RPC `levels: [...]`. */
   levels?: string;
   /**
-   * THE SERVICE FILTER (`tp=`) — a `seo.topic` uuid, meaning that topic AND
-   * everything under it, or the literal `none` for keywords nobody has placed
-   * on the tree yet. Keyword-level, so it rides the query / query_page
-   * profiles like a stamp does. The topic tree is the ONE hierarchical
-   * exception in the stamp model (P19), which is why it is its own key and not
-   * a `stamps` pair.
+   * THE OFFERING FILTER (`of=`) — a brand offering id (that offering AND
+   * everything under it in the brand's catalog, placed on THIS site), or the
+   * literal `none` for keywords this site has not placed on any offering.
+   * Keyword-level, so it rides the query / query_page profiles like a stamp.
+   * Server: `filters.offering` on `seo.gsc_perf_breakdown` /
+   * `seo.gsc_breakdown_keyword_ids` (brand-offerings cutover).
+   */
+  offering?: string;
+  /**
+   * TRANSITION (brand-offerings cutover, deleted at step 8): the legacy
+   * `seo.topic` subtree filter (`tp=`). Only the Offerings screen that still
+   * renders the old topic tree sends it; every offering surface sends
+   * `offering`.
    */
   topic?: string;
   /**
@@ -540,7 +547,9 @@ export type GscSortKey =
   | "position"
   | "key"
   | "delta_clicks"
-  /** The SERVICE column — sorted by topic name, server-side (C14 + services). */
+  /** The OFFERING column — sorted by this site's offering name, server-side. */
+  | "offering"
+  /** TRANSITION (brand-offerings cutover): the legacy topic-name sort. */
   | "topic"
   /** MSR-03/04 — Class · Score · Level, server-side, query dimension only. */
   | "traffic_class"

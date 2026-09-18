@@ -27,7 +27,7 @@ handler, whose judge agent returned output missing its required keys).
 
 | File | Owns |
 |---|---|
-| `service/batchAdminService.ts` | Every read. Exact `head` counts per lifecycle/delivery value; `readAllRows` for the savings roll-up and provider batches; a filtered, counted page for the item table. |
+| `service/batchAdminService.ts` | Every read. Exact `head` counts per lifecycle/delivery value; `readAllRows` for provider batches; a filtered, counted page for the item table. The savings band is a window over `features/batch-savings` (`batch.savings_summary`) — nothing is summed here. |
 | `components/BatchDashboard.tsx` | The page: undelivered alert, queue chips (which are also the filter), savings band with a 7d/30d/all window, and the two tabs. |
 | `components/WorkItemsPanel.tsx` | The filterable item ledger + expand-in-place detail (`error` / `handler_error` jsonb, timings, tokens, deadline/escalation). |
 | `components/ProviderBatchesPanel.tsx` | One row per provider submission: lifecycle, item count, poll count, turnaround, escalation state, realized savings. |
@@ -48,9 +48,19 @@ leads with `is_platform_admin()`) is the authorization layer.
 - **Counts are `{ count: "exact", head: true }`.** The queue is unbounded by
   design; a count computed as `rows.length` of a page PostgREST silently capped
   at 1000 would be a confident lie (CLAUDE.md § `readAllRows`).
-- **Sums page through `readAllRows`** inside an explicit window, because a total
-  must see every row it claims to cover. The window is shown in the UI
-  ("across N completed items"), never implied.
+- **Savings are one database computation, never a client sum.** The band reads
+  `batch.savings_summary` through `features/batch-savings/service.ts` — the same
+  number the platform spend dashboard and the kg-cost tile show. The window and
+  item count are shown in the UI ("across N completed items"), never implied.
+
+## Savings — the one honest basis
+
+**Saving = `live_equivalent_cost_usd − actual_cost_usd`**: the item's actual
+tokens at the same model's live catalog rate, minus the bill. **`est_live_cost_usd`
+is a pre-submission estimate and is never a saving basis** — the 2026-09-13 run
+read 76.8% on it for what was really 50%. It is shown only labelled
+("Pre-submission estimate", "est. live"). Guard: aidream
+`scripts/check_batch_savings_source.py`. Contract: `features/batch-savings/FEATURE.md`.
 
 Nothing on this page treats a rendered page as a complete set. The item table
 states `Showing X of Y matching items` and says so when the newest 200 is not
@@ -98,8 +108,10 @@ detail has a "Show its N work items" button that narrows the items tab to
 is the dead-end class `no-dead-ends` forbids.
 
 A cost cell on an unsettled row (`status !== 'completed'`) says **not billed
-yet** and shows only the live estimate — never `$0.0000 -100%`, which would read
-as a measured total discount.
+yet** and shows only the labelled estimate (`est. live`) — never `$0.0000 -100%`,
+which would read as a measured total discount. A settled row's discount is
+computed from `live_equivalent_cost_usd`; a row without one says "live price not
+recorded".
 
 ## Verified
 
@@ -113,6 +125,10 @@ door probe (`lib/diagnostics/errorTierRules.ts`), not this surface.
 
 ## Change log
 
+- **2026-09-14** — Savings band, cost cells and detail fields moved off
+  `est_live_cost_usd` onto `live_equivalent_cost_usd` via `batch.savings_summary`;
+  the estimate is labelled wherever it still shows; the band links to the platform
+  spend dashboard, which now leads with the same figure.
 - **2026-09-11** — Cross-tab jumps (item ↔ submission), honest unsettled cost
   cell, `Input` imported from `@ai-matrx/design-system` (the host
   `components/ui/input` no longer exports it — the page 500'd), phone layout of

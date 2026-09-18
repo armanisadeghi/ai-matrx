@@ -31,9 +31,13 @@ import Link from "next/link";
 import {
   Award,
   BookOpen,
+  CalendarClock,
   Check,
   Clock,
+  Columns3,
   Compass,
+  Ear,
+  History,
   Eye,
   FileText,
   Inbox,
@@ -45,6 +49,7 @@ import {
   PenLine,
   ScanSearch,
   Shuffle,
+  Sunrise,
   Target,
   Upload,
   type LucideIcon,
@@ -116,6 +121,17 @@ const APPROACH_LOOK: Record<
   bad_example_probe: { icon: Eye, accent: "amber" },
   triad_game: { icon: Shuffle, accent: "violet" },
   prediction_ledger: { icon: Target, accent: "emerald" },
+  teach_back: { icon: Ear, accent: "violet" },
+  // FOUR APPROACHES WORE ONE ICON. `capture_plan`, `timeline`, `daily_drip`
+  // and `sorting_table` were all added as registry rows and all fell through
+  // to the neutral compass, so four completely different methods rendered as
+  // the same blue circle on the catalog (jobs-bar-2026-09-16, item 4). The
+  // fallback still exists for a row nobody has drawn yet — it is just no
+  // longer the face of a quarter of the catalog.
+  capture_plan: { icon: CalendarClock, accent: "emerald" },
+  timeline: { icon: History, accent: "blue" },
+  daily_drip: { icon: Sunrise, accent: "amber" },
+  sorting_table: { icon: Columns3, accent: "emerald" },
 };
 const APPROACH_FALLBACK: { icon: LucideIcon; accent: keyof typeof ACCENT } = {
   icon: Compass,
@@ -179,12 +195,45 @@ export function ApproachCard({
   // predicate's answer AND a real handler — a card with neither an `href` nor
   // an `onSelect` used to render as a <button> that did nothing when clicked.
   const state = approachState(approach);
+  /**
+   * 🚨 A CARD THAT CANNOT BE *PICKED HERE* IS NOT A DISABLED CARD — IT IS A
+   * LINK, AND THE WHOLE CARD IS THAT LINK (cold walk 7, finding 4, 2026-09-17).
+   *
+   * `inert` means one thing only: "this Approach cannot be the lane THIS
+   * surface starts with". It was being read as "this Approach has no door",
+   * and the two are different: the Vision Interview and the Oracle tap are
+   * fully built lanes whose door is their own PAGE (`launch_href`), not a
+   * `/masterwork/[id]` query param. They rendered as
+   * `<div aria-disabled="true">` on the guided start with a live door sitting
+   * one line lower, inside a ~150px inline link at the bottom of the card.
+   *
+   * On screen that is 21 cards that respond to a click anywhere and 2 that
+   * respond almost nowhere, in the same clothes. Walk 7 clicked the title, the
+   * blurb and the "You bring:" line of the Vision Interview card, got nothing
+   * from any of them, pressed Start and was given the default interview — and
+   * concluded the product was broken. A control is absent or honest, never
+   * dead (law 4).
+   *
+   * So: inert + a door of its own = a reachable card that navigates, and says
+   * in words that it opens its own page. Only a genuinely door-less card
+   * (`coming_soon`, or a row the registry gave nowhere to go) stays inert, and
+   * it says so in the same place.
+   */
+  const ownDoor =
+    inert && state.status !== "coming_soon" && state.href ? state.href : null;
   const reachable =
-    state.reachable && !inert && Boolean(href ?? onSelect);
+    state.reachable &&
+    (!inert || Boolean(ownDoor)) &&
+    Boolean(href ?? onSelect ?? ownDoor);
 
   const body = (
     <>
-      <div className="flex items-center gap-3">
+      {/* `items-center` centred the icon against the TITLE BLOCK, so a card
+          whose title wrapped to two lines pushed its icon ~10px lower than its
+          neighbours and the row of icons came out ragged
+          (jobs-bar-2026-09-16, item 5). Icons align to the top; the title gets
+          a two-line box so every card's blurb starts on the same line. */}
+      <div className="flex items-start gap-3">
         <span
           className={cn(
             "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-colors",
@@ -194,8 +243,8 @@ export function ApproachCard({
         >
           <Icon className="h-5 w-5" />
         </span>
-        <div className="min-w-0">
-          <span className="block text-base font-semibold text-foreground">
+        <div className="min-w-0 flex-1">
+          <span className="block text-base font-semibold leading-6 text-foreground sm:min-h-[3rem]">
             {approach.label}
           </span>
           <span className="mt-0.5 flex flex-wrap items-center gap-1.5">
@@ -219,7 +268,13 @@ export function ApproachCard({
       <p className="text-sm leading-relaxed text-muted-foreground">
         {approach.blurb}
       </p>
-      <div className="mt-auto space-y-1 text-xs text-muted-foreground">
+      {/* NOT `mt-auto`. Pinning this block to the bottom of an equal-height
+          grid cell tore a 150px hole through the middle of every card with a
+          short blurb — most visibly the RECOMMENDED card on the guided start
+          (jobs-bar-2026-09-16, item 20). The cards still share a height; the
+          empty space now falls below the text where nobody reads it, instead
+          of between two sentences that belong together. */}
+      <div className="space-y-1 text-xs text-muted-foreground">
         <p>
           <span className="font-medium text-foreground/80">You bring:</span>{" "}
           {approach.whatItNeeds}
@@ -229,6 +284,27 @@ export function ApproachCard({
           {approach.costTimeShape}
         </p>
       </div>
+      {/* A CARD THAT REFUSES TO BE PICKED SAYS SO, AND SAYS WHERE TO GO.
+          On the guided start the Vision Interview rendered dashed, greyed and
+          unclickable with NOT ONE WORD about why — while the very same card
+          IS clickable on the catalog one route away (jobs-bar-2026-09-16,
+          item 7). A first-timer clicks it twice and concludes the product is
+          broken. Now a card that cannot be chosen here names its own door. */}
+      {inert && state.status !== "coming_soon" ? (
+        <p className="border-t border-dashed border-border pt-2 text-xs text-muted-foreground">
+          {ownDoor ? (
+            // No nested <a>: the whole card IS the link to `ownDoor` now, so
+            // this line describes where the click goes rather than being the
+            // only thing that goes there.
+            <span className="font-medium text-primary">
+              This one is not a way to begin — it has its own page. Opens{" "}
+              {approach.label} →
+            </span>
+          ) : (
+            "This one cannot start a Rulebook — pick another way to begin, and you can use this one afterwards."
+          )}
+        </p>
+      ) : null}
     </>
   );
 
@@ -248,9 +324,10 @@ export function ApproachCard({
       </div>
     );
   }
-  if (href) {
+  const linkHref = href ?? ownDoor;
+  if (linkHref) {
     return (
-      <Link href={href} className={shell}>
+      <Link href={linkHref} className={shell}>
         {body}
       </Link>
     );

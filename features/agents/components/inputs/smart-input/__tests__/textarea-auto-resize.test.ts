@@ -15,6 +15,10 @@ const connectorSource = readFileSync(
   join(__dirname, "../../../../../connectors/ConnectorStrip.tsx"),
   "utf8",
 );
+const connectionsStripSource = readFileSync(
+  join(__dirname, "../ChatConnectionsStrip.tsx"),
+  "utf8",
+);
 const windowPanelSource = readFileSync(
   join(__dirname, "../../../../../window-panels/WindowPanel.tsx"),
   "utf8",
@@ -87,12 +91,26 @@ describe("AgentTextarea auto-resize", () => {
     expect(stackedSource).toContain('"w-full shrink-0 border"');
   });
 
-  it("keeps the connector reminder dense without shrinking mobile hit areas", () => {
-    expect(smartInputSource).toContain(
-      '<ChatConnectorStrip className="mt-0.5 pl-5" />',
-    );
+  it("keeps the connector line dense without shrinking mobile hit areas", () => {
+    // The composer's line is now THIS chat's real connections (the suggestion
+    // bag is its fallback) — Arman, 2026-09-14: "I don't see an MCP chip."
+    expect(smartInputSource).toContain("<ChatConnectionsStrip");
+    expect(smartInputSource).toContain('className="mt-0.5 pl-5"');
+    expect(smartInputSource).not.toContain("<ChatConnectorStrip");
+    expect(connectionsStripSource).toContain("flex h-4 w-full");
+    expect(connectionsStripSource).toContain("before:-inset-y-3");
     expect(connectorSource).toContain("flex h-4 w-full");
     expect(connectorSource).toContain("before:-inset-y-3");
+  });
+
+  it("puts this chat's connections one click from the picker that changes them", () => {
+    // Before 2026-09-14 the only door was: + → Tools → scroll. Two clicks and
+    // a three-row scroll box is not "visible at a glance" (Claude.ai /
+    // ChatGPT connectors, Cursor's MCP indicator).
+    expect(connectionsStripSource).toContain('initialTab: "tools"');
+    expect(connectionsStripSource).toContain("selectChatConnections");
+    // A chip never claims more than the run allows.
+    expect(connectionsStripSource).toContain("mcpChipPresentation");
   });
 
   it("paints the window body guard ring with the canonical background", () => {

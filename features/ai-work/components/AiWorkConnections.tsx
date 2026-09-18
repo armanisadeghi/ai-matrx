@@ -18,10 +18,11 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import {
-  INITIAL_CAPABILITY,
-  readManagedCapability,
-  type ManagedCapability,
-} from "@/features/ai-work/lib/managedClaudeCapability";
+  INITIAL_BRIDGE_CAPABILITY,
+  readBridgeCapability,
+  type CodingBridgeCapability,
+} from "@/features/ai-work/lib/codingBridgeCapability";
+import { destinationAvailability } from "@/features/ai-work/compose/destinations";
 import {
   CODING_SESSION_PROVIDERS,
   CODING_SESSION_PROVIDER_META,
@@ -36,6 +37,10 @@ import {
   providerAccountIdentity,
   workspaceName,
 } from "@/features/ai-work/lib/codingSessionPresentation";
+import {
+  deliveryHistory,
+  newestDeliveryAt,
+} from "@/features/ai-work/conversations/bindingPlurality";
 import { SyncStatePanel } from "@/features/ai-work/conversations/components/SyncStatePanel";
 import { MATRX_LOCAL_DOWNLOAD_PATH } from "@/features/matrx-local-download/release";
 
@@ -139,26 +144,43 @@ export function AiWorkConnections() {
   // Derived from the bindings this page already loaded — no second read, and
   // no chance of disagreeing with the delivery facts rendered below.
   const captureGap = captureGapVerdict({
-    lastSeenAt: sessions[0]?.last_seen_at ?? null,
-    history: sessions.map((session) => session.last_seen_at),
+    // The newest DELIVERY, never the first row: an unclaimed handoff offer has
+    // delivered nothing and sorts first once its `last_seen_at` is null.
+    lastSeenAt: newestDeliveryAt(sessions),
+    history: deliveryHistory(sessions),
     readSucceeded: checkedAtMs === 0 ? null : error === null,
     nowMs: checkedAtMs,
   });
-  const [capability, setCapability] =
-    useState<ManagedCapability>(INITIAL_CAPABILITY);
+  // The hosted-runtime verdict comes from the coding session bridge
+  // (`claude_code × matrx_sandbox`) — the SAME reader `/work/new` uses, so the
+  // two surfaces cannot disagree about whether a sandbox can be started.
+  const [capability, setCapability] = useState<CodingBridgeCapability>(
+    INITIAL_BRIDGE_CAPABILITY,
+  );
   const organizationId = useAppSelector(selectOrganizationId);
 
-  const refreshManagedCapability = () => {
-    setCapability(INITIAL_CAPABILITY);
-    void readManagedCapability().then(setCapability);
+  // ONE decider, shared with the composer's destination gate: this card and
+  // `/work/new` can never disagree about whether a hosted run can start, and
+  // the refusal sentence is the server's own either way.
+  const hostedStart = destinationAvailability(
+    "claude-code-hosted",
+    capability,
+  );
+
+  const refreshHostedCapability = () => {
+    setCapability(INITIAL_BRIDGE_CAPABILITY);
+    void readBridgeCapability("claude_code", "matrx_sandbox").then(
+      setCapability,
+    );
   };
 
   // Keyed on the active organization so choosing one in the inline notice
-  // re-runs the read instead of leaving a dead card.
+  // re-runs the read instead of leaving a dead card. The bridge verdict is per
+  // user AND per organization, so this is not an optimisation.
   useEffect(() => {
     let cancelled = false;
-    setCapability(INITIAL_CAPABILITY);
-    void readManagedCapability().then((next) => {
+    setCapability(INITIAL_BRIDGE_CAPABILITY);
+    void readBridgeCapability("claude_code", "matrx_sandbox").then((next) => {
       if (!cancelled) setCapability(next);
     });
     return () => {
@@ -205,7 +227,7 @@ export function AiWorkConnections() {
         */}
         <CaptureGapAlert
           verdict={captureGap}
-          lastSeenAt={sessions[0]?.last_seen_at ?? null}
+          lastSeenAt={newestDeliveryAt(sessions)}
           onRefresh={refresh}
           refreshing={loading}
         />
@@ -377,61 +399,63 @@ export function AiWorkConnections() {
               <ServerCog className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
               <div className="min-w-0 flex-1">
                 <h2 className="text-sm font-semibold text-foreground">
-                  Start a Claude Code session
+                  Start a hosted Claude Code session
                 </h2>
                 {capability.organizationRequired ? (
                   <div className="mt-1">
                     <OrganizationRequiredNotice
                       compact
-                      description="Starting a managed Claude Code session needs to know which organization to work in. Pick one below and this checks again automatically."
+                      description="Starting a hosted Claude Code session needs to know which organization to work in. Pick one below and this checks again automatically."
                     />
                   </div>
                 ) : capability.state === "loading" ? (
                   <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    Checking the live backend capability…
+                    Checking whether a hosted sandbox can be started for you…
                   </p>
-                ) : capability.available ? (
+                ) : hostedStart.selectable ? (
                   <>
                     <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                      The backend reports a managed Claude runtime. Native
-                      resume:{" "}
-                      {capability.nativeResume ? "available" : "unavailable"};
-                      native fork:{" "}
-                      {capability.nativeFork ? "available" : "unavailable"}.
-                      Launching from this page is still in certification — the
-                      start/stream/resume path must pass an end-to-end
-                      certification run before this button goes live.
+                      AI Matrx can start a Claude Code session for you in a
+                      Matrx Sandbox
+                      {capability.runtime ? ` (${capability.runtime})` : ""}.
+                      Start it from the composer, where you also say what you
+                      want done and where the result should live.
                     </p>
                     <Button
-                      type="button"
+                      asChild
                       size="sm"
+                      variant="outline"
                       className="mt-2 gap-1.5"
-                      disabled
-                      title="Managed launch is certification-pending"
                     >
-                      <Play className="h-3.5 w-3.5" />
-                      Start session — certification pending
+                      <Link href="/work/new">
+                        <Play className="h-3.5 w-3.5" />
+                        Start a hosted session
+                      </Link>
                     </Button>
                   </>
                 ) : (
                   <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    Starting a managed Claude Code session from AI Matrx is not
-                    available:{" "}
-                    {capability.reason ||
-                      "the backend reports no managed Claude runtime here."}{" "}
-                    No launch button is shown until the live capability call
-                    says otherwise.
+                    Starting a hosted Claude Code session is not available:{" "}
+                    {hostedStart.reason} No launch control is shown until the
+                    live capability verdict says otherwise.
                   </p>
                 )}
               </div>
               <button
                 type="button"
-                onClick={refreshManagedCapability}
-                aria-label="Refresh managed Claude capability"
+                onClick={refreshHostedCapability}
+                aria-label="Refresh the hosted Claude Code capability"
+                aria-busy={capability.state === "loading"}
                 className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
               >
-                <RefreshCw className="h-3.5 w-3.5" />
+                <RefreshCw
+                  className={
+                    capability.state === "loading"
+                      ? "h-3.5 w-3.5 animate-spin"
+                      : "h-3.5 w-3.5"
+                  }
+                />
               </button>
             </div>
           </article>

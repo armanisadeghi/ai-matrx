@@ -9,9 +9,9 @@
 //
 // - `deleteStale: false` (default) leaves `db_only` rows alone so admins can
 //   review the drift report and decide.
-// - `createMissingSurfaces: false` (default) refuses to register manifests
-//   whose `surfaceName` isn't present in `ui.ui_surface`. Set true to
-//   auto-create the surface row before upserting its values.
+// - `createMissingSurfaces: true` (default) registers manifests
+//   whose `surfaceName` is absent from `ui.ui_surface` before their values.
+//   Explicit false refuses missing registrations before any writes.
 // - `includeRecent: false` (default) makes `deleteStale` skip any `db_only`
 //   row touched inside `RECENT_ROW_WINDOW_HOURS` — the sweep's version of the
 //   same recency guard `deleteMirrorRow` enforces per-row, because a recent
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     const supabase = createAdminClient();
     const result = await applyManifestSync(supabase, {
       deleteStale: body?.deleteStale ?? false,
-      createMissingSurfaces: body?.createMissingSurfaces ?? false,
+      createMissingSurfaces: body?.createMissingSurfaces ?? true,
       includeRecent: body?.includeRecent ?? false,
       provenance: { syncedBy, syncedFrom: apiSyncedFrom() },
     });

@@ -16,7 +16,12 @@ import { bootSync } from "../engine/boot";
 import { definePolicy } from "../policies/define";
 import { REHYDRATE_ACTION_TYPE, isRehydrateAction } from "../engine/rehydrate";
 import type { RehydrateAction } from "../engine/rehydrate";
-import { clearAll, writeSlice } from "../persistence/idb";
+import {
+    clearAll,
+    IDB_OPERATION_TIMEOUT_MS,
+    openDb,
+    writeSlice,
+} from "../persistence/idb";
 import type { SyncChannel } from "../channel";
 import type { IdentityKey } from "../types";
 
@@ -138,6 +143,33 @@ describe("bootSync — IDB hydration + cold-boot fallback", () => {
         const hydrated = await result.idbHydration;
         expect(hydrated).toEqual(["warm"]);
         expect(store.getState().warm.items).toEqual(["from-mirror"]);
+    });
+
+    it("settles boot when a browser IDB read never resolves", async () => {
+        const db = await openDb();
+        expect(db).not.toBeNull();
+        const database = db!;
+        const get = jest
+            .spyOn(database.slices, "get")
+            .mockImplementation(
+                (() => new Promise<undefined>(() => {})) as unknown as typeof database.slices.get,
+            );
+        jest.useFakeTimers();
+        try {
+            const { policy, store } = makeWarmSetup({});
+            const result = await bootSync({
+                store,
+                identity,
+                policies: [policy],
+                openChannel: () => fakeChannel(),
+            });
+
+            await jest.advanceTimersByTimeAsync(IDB_OPERATION_TIMEOUT_MS);
+            await expect(result.idbHydration).resolves.toEqual([]);
+        } finally {
+            get.mockRestore();
+            jest.useRealTimers();
+        }
     });
 
     it("invokes remote.fetch for cold-boot when IDB + mirror both miss", async () => {

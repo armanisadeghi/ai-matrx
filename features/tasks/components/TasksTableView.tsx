@@ -55,7 +55,10 @@ import {
 import { cn } from "@/utils/cn";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { TaskProvenanceChip } from "@/features/tasks/components/TaskProvenanceChip";
-import { TASK_ROW_DOM_ATTR } from "@/features/tasks/components/TasksListContextMenu";
+import {
+  TASK_ROW_DOM_ATTR,
+  TASK_TITLE_DOM_ATTR,
+} from "@/features/tasks/components/TasksListContextMenu";
 import {
   compareTimestamps,
   formatAbsoluteDate,
@@ -783,24 +786,26 @@ export default function TasksTableView() {
                             ROW did), so there is no hit target to preserve, and
                             in a 200px cell the controls read better beside the
                             name than pinned to the far edge. */}
-                        <EntityRef
-                          token="task"
-                          id={task.id}
-                          name={task.title}
-                          showIcon={false}
-                          onOpen={() => dispatch(setSelectedTaskId(task.id))}
-                          className="text-[13px]"
-                          // On the LABEL, not the wrapper: `line-through` is
-                          // the completed-state signal, and whether a wrapper
-                          // decoration reaches an inline-flex child's link is
-                          // not something to leave to inheritance — especially
-                          // when that link carries its own ``.
-                          labelClassName={
-                            task.completed
-                              ? "line-through text-muted-foreground"
-                              : "font-medium text-foreground"
-                          }
-                        />
+                        <span {...{ [TASK_TITLE_DOM_ATTR]: task.id }}>
+                          <EntityRef
+                            token="task"
+                            id={task.id}
+                            name={task.title}
+                            showIcon={false}
+                            onOpen={() => dispatch(setSelectedTaskId(task.id))}
+                            className="text-[13px]"
+                            // On the LABEL, not the wrapper: `line-through` is
+                            // the completed-state signal, and whether a wrapper
+                            // decoration reaches an inline-flex child's link is
+                            // not something to leave to inheritance — especially
+                            // when that link carries its own ``.
+                            labelClassName={
+                              task.completed
+                                ? "line-through text-muted-foreground"
+                                : "font-medium text-foreground"
+                            }
+                          />
+                        </span>
                         {labels.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-0.5">
                             {labels.slice(0, 2).map((label) => (

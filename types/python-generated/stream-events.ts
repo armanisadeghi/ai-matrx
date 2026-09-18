@@ -29,6 +29,7 @@ export const EventType = {
   INJECTION_CONSUMED: "injection_consumed",
   PROVIDER_RETRY: "provider_retry",
   CITATION: "citation",
+  CONTROL_TOKEN: "control_token",
 } as const;
 
 export type EventType = (typeof EventType)[keyof typeof EventType];
@@ -80,6 +81,12 @@ export interface ChunkPayload {
 export interface CitationPayload {
   block_index?: number | null;
   citation: Record<string, unknown>;
+}
+
+export interface ControlTokenPayload {
+  name: string;
+  value: string;
+  declared_by?: string | null;
 }
 
 export interface ReasoningChunkPayload {
@@ -780,6 +787,13 @@ export interface ImageStudioVariantData {
   total?: number;
 }
 
+export interface MediaSelectionJobProgressData {
+  type?: "job.progress";
+  job_id: string;
+  at: string;
+  totals?: Record<string, number>;
+}
+
 export interface LegalSyncEventData {
   type?: "legal_sync_event";
   phase: string;
@@ -811,6 +825,95 @@ export interface LegalSyncEventData {
   per_resource_rows?: Record<string, number> | null;
   per_resource_errors?: Record<string, string> | null;
   error?: string | null;
+}
+
+export interface LibrarySyncClassifiedData {
+  type?: "library.sync.classified";
+  library_id: string;
+  seq: number;
+  at: string;
+  classifications?: Record<string, JsonValue>[];
+  from_cache: boolean;
+}
+
+export interface LibrarySyncCompletedData {
+  type?: "library.sync.completed";
+  library_id: string;
+  seq: number;
+  at: string;
+  total_listed: number;
+  elapsed_ms: number;
+  listed_ms: number;
+  quota_units_spent: number;
+  metrics?: Record<string, JsonValue>;
+  removed_count?: number;
+  retire_refused?: boolean;
+  skipped_by_reason?: Record<string, number>;
+  skipped_total?: number;
+}
+
+export interface LibrarySyncFailedData {
+  type?: "library.sync.failed";
+  library_id: string;
+  seq: number;
+  at: string;
+  code: string;
+  message: string;
+  partial_total?: number;
+  retryable?: boolean;
+}
+
+export interface LibrarySyncListedData {
+  type?: "library.sync.listed";
+  library_id: string;
+  seq: number;
+  at: string;
+  total_listed: number;
+  elapsed_ms: number;
+  deciding: number;
+  skipped_by_reason?: Record<string, number>;
+  skipped_total?: number;
+}
+
+export interface LibrarySyncPageData {
+  type?: "library.sync.page";
+  library_id: string;
+  seq: number;
+  at: string;
+  page_index: number;
+  page_size: number;
+  cumulative: number;
+  next_page_token_present: boolean;
+  videos?: Record<string, JsonValue>[];
+}
+
+export interface LibrarySyncPersistedData {
+  type?: "library.sync.persisted";
+  library_id: string;
+  seq: number;
+  at: string;
+  ids?: Record<string, string>;
+  count: number;
+}
+
+export interface LibrarySyncStartedData {
+  type?: "library.sync.started";
+  library_id: string;
+  seq: number;
+  at: string;
+  mode: string;
+  expected_total?: number | null;
+}
+
+export interface LibrarySyncUnavailableData {
+  type?: "library.sync.unavailable";
+  library_id: string;
+  seq: number;
+  at: string;
+  code: string;
+  message: string;
+  remedy?: string | null;
+  partial_total?: number;
 }
 
 export interface MasterworkAuditionOutcomeVerdictData {
@@ -877,6 +980,58 @@ export interface MasterworkAuditionVerdictData {
   lost_to_vanilla_rules?: number | null;
   vanilla_rules_compared?: number | null;
   verdict_sentence?: string | null;
+}
+
+export interface MasterworkBenchArmData {
+  type?: "masterwork_bench_arm";
+  rulebook_id: string;
+  trial_id: string;
+  arm: string;
+  label: string;
+  ran?: boolean;
+  error?: string;
+  cost_usd?: number;
+  seconds?: number;
+  priced?: boolean;
+  model?: string;
+  note?: string;
+}
+
+export interface MasterworkBenchProgressData {
+  type?: "masterwork_bench_progress";
+  rulebook_id: string;
+  trial_id: string;
+  stage: string;
+  message: string;
+  arm?: string;
+}
+
+export interface MasterworkBenchVerdictData {
+  type?: "masterwork_bench_verdict";
+  rulebook_id: string;
+  trial_id: string;
+  passed?: boolean;
+  void?: boolean;
+  not_scored?: boolean;
+  void_reason?: string;
+  not_scored_reason?: string;
+  win_claimed?: string | null;
+  win_rationale?: string;
+  arm?: string;
+  budget_multiple?: number | null;
+  panel_winner?: string | null;
+  panel_votes?: number;
+  gt_in_pool?: boolean;
+  gt_won?: boolean;
+  c_cost_usd?: number | null;
+  c_seconds?: number | null;
+  total_cost_usd?: number;
+  record_path?: string | null;
+  report_path?: string | null;
+  row_id?: string | null;
+  stored?: boolean;
+  storage_note?: string;
+  headline?: string;
 }
 
 export interface MasterworkBuildCompleteData {
@@ -975,6 +1130,7 @@ export interface MasterworkDumpResourceOutcome {
   rules_added?: number;
   duplicates?: number;
   error?: string | null;
+  note?: string | null;
   already_distilled?: MasterworkSourceAlreadyDistilled | null;
   replaced_rules?: number;
 }
@@ -1041,6 +1197,7 @@ export interface MasterworkIngestCompleteData {
   followup_seed?: string | null;
   already_distilled?: MasterworkSourceAlreadyDistilled[];
   replaced_rules?: number;
+  narrowed_rules?: number;
   corpus_item_id?: string | null;
   sealed?: boolean;
   timeline_steps?: number;
@@ -1101,6 +1258,26 @@ export interface MasterworkPairwiseVerdictData {
   verdict_sentence?: string | null;
 }
 
+export interface MasterworkProbeRoundData {
+  type?: "masterwork_probe_round";
+  rulebook_id: string;
+  rulebook_version?: number;
+  round_index?: number;
+  round_count?: number;
+  done?: boolean;
+  done_reason?: string;
+  example_title?: string;
+  example_body?: string;
+  probe_label?: string;
+  rules_added?: number;
+  rule_ids?: string[];
+  duplicates_skipped?: number;
+  quotes_verified?: number;
+  quotes_unverified?: number;
+  already_distilled?: MasterworkSourceAlreadyDistilled[];
+  answered_rounds?: number;
+}
+
 export interface MasterworkRunData {
   type?: "masterwork_run";
   run_id: string;
@@ -1158,6 +1335,72 @@ export interface MasterworkShortlistData {
   type?: "masterwork_shortlist";
   selected?: MasterworkShortlistItem[];
   considered?: number;
+}
+
+export interface MasterworkSortCase {
+  id: string;
+  text: string;
+  note?: string;
+}
+
+export interface MasterworkSortCasesReadyData {
+  type?: "masterwork_sort_cases_ready";
+  rulebook_id: string;
+  cases?: MasterworkSortCase[];
+  requested?: number;
+  repeats_dropped?: number;
+  pile_count?: number;
+  boundary_questions?: number;
+  voice_default_on?: boolean;
+}
+
+export interface MasterworkTeachBackRoundData {
+  type?: "masterwork_teach_back_round";
+  rulebook_id: string;
+  rulebook_version?: number;
+  run_id?: string;
+  round_index?: number;
+  round_count?: number;
+  done?: boolean;
+  done_reason?: string;
+  subject?: string;
+  explanation?: string;
+  basis?: string;
+  rule_ids_cited?: string[];
+  uncertain_part?: string;
+  distilled_round?: number;
+  rules_added?: number;
+  rule_ids?: string[];
+  duplicates_skipped?: number;
+  quotes_verified?: number;
+  quotes_unverified?: number;
+  signed_rule_ids?: string[];
+  signature_note?: string;
+  already_distilled?: MasterworkSourceAlreadyDistilled[];
+  answered_rounds?: number;
+}
+
+export interface MasterworkTriad {
+  id: string;
+  prompt: string;
+  items?: MasterworkTriadItem[];
+  mode?: string;
+}
+
+export interface MasterworkTriadItem {
+  key: string;
+  text: string;
+  note?: string;
+}
+
+export interface MasterworkTriadsReadyData {
+  type?: "masterwork_triads_ready";
+  rulebook_id: string;
+  triads?: MasterworkTriad[];
+  mode?: string;
+  requested?: number;
+  repeats_dropped?: number;
+  voice_default_on?: boolean;
 }
 
 export interface MasterworkTriageDecision {
@@ -1950,9 +2193,20 @@ export type TypedDataPayload =
   | ImageStudioProcessCompleteData
   | ImageStudioVariantData
   | LegalSyncEventData
+  | LibrarySyncClassifiedData
+  | LibrarySyncCompletedData
+  | LibrarySyncFailedData
+  | LibrarySyncListedData
+  | LibrarySyncPageData
+  | LibrarySyncPersistedData
+  | LibrarySyncStartedData
+  | LibrarySyncUnavailableData
   | MasterworkAuditionOutcomeVerdictData
   | MasterworkAuditionProgressData
   | MasterworkAuditionVerdictData
+  | MasterworkBenchArmData
+  | MasterworkBenchProgressData
+  | MasterworkBenchVerdictData
   | MasterworkBuildCompleteData
   | MasterworkBuildProgressData
   | MasterworkCheckupCompleteData
@@ -1965,16 +2219,21 @@ export type TypedDataPayload =
   | MasterworkIngestCompleteData
   | MasterworkIngestProgressData
   | MasterworkPairwiseVerdictData
+  | MasterworkProbeRoundData
   | MasterworkRunCancelledData
   | MasterworkRunData
   | MasterworkRunFailedData
   | MasterworkRunSnapshotData
   | MasterworkSealedCaseDisclosureData
   | MasterworkShortlistData
+  | MasterworkSortCasesReadyData
+  | MasterworkTeachBackRoundData
+  | MasterworkTriadsReadyData
   | MasterworkTriageCompleteData
   | MasterworkTriageProgressData
   | MediaBlockData
   | MediaNoticeData
+  | MediaSelectionJobProgressData
   | MemoryBufferSpawnedData
   | MemoryContextInjectedData
   | MemoryErrorData
@@ -7536,6 +7795,11 @@ export interface CitationEvent {
   data: CitationPayload;
 }
 
+export interface ControlTokenEvent {
+  event: "control_token";
+  data: ControlTokenPayload;
+}
+
 /** Discriminated union — `event.event === "chunk"` narrows `data` automatically. */
 export type TypedStreamEvent =
   | ChunkEvent
@@ -7561,7 +7825,8 @@ export type TypedStreamEvent =
   | ContextTrimmedEvent
   | InjectionConsumedEvent
   | ProviderRetryEvent
-  | CitationEvent;
+  | CitationEvent
+  | ControlTokenEvent;
 
 /**
  * @deprecated Use `TypedStreamEvent` instead — it provides automatic type narrowing
@@ -7691,6 +7956,10 @@ export function isProviderRetryEvent(e: TypedStreamEvent): e is { event: "provid
 
 export function isCitationEvent(e: TypedStreamEvent): e is { event: "citation"; data: CitationPayload } {
   return e.event === "citation";
+}
+
+export function isControlTokenEvent(e: TypedStreamEvent): e is { event: "control_token"; data: ControlTokenPayload } {
+  return e.event === "control_token";
 }
 
 export function isCompactChunkEvent(e: unknown): e is CompactChunkEvent {

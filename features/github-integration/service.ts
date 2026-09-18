@@ -3,14 +3,23 @@ import { isJsonObject } from "@/types/json";
 import { createClient } from "@/utils/supabase/client";
 import { startOAuthPopup } from "@/utils/oauth-popup";
 import type {
+  GitHubAccount,
   GitHubConnectionInventory,
   GitHubConnectionRow,
+  GitHubInstallation,
   GitHubRepository,
   GitHubResourceRow,
 } from "./types";
 import { postJson, del as deleteJson } from "@/lib/python-client";
 import { operationFailed } from "@/utils/errors";
 
+/**
+ * Where a user adds AI Matrx to another account. GitHub's installation flow is
+ * the ONLY place repository access can be widened — AI Matrx never invents a
+ * second access list (common-docs/systems/integrations/github/FEATURE.md).
+ * Every visit carries an opaque, user-bound state minted by aidream. A bare
+ * GitHub installation URL is never safe enough to link an account.
+ */
 const CONNECTION_SELECT =
   "id, owner_type, owner_user_id, organization_id, provider, provider_subject, account_email, account_name, scopes, status, last_verified_at, last_error, created_at, updated_at, metadata, deleted_at";
 const RESOURCE_SELECT =
@@ -38,6 +47,15 @@ function optionalMetadataBoolean(
     : false;
 }
 
+export const EMPTY_INVENTORY: GitHubConnectionInventory = {
+  connection: null,
+  repositories: [],
+  account: null,
+  installations: [],
+  syncedRepositoryCount: 0,
+  lastSyncedAt: null,
+};
+
 export function githubRepositoryFromRow(
   row: GitHubResourceRow,
 ): GitHubRepository {
@@ -64,6 +82,79 @@ export function githubRepositoryFromRow(
   };
 }
 
+function metadataString(
+  metadata: Record<string, unknown>,
+  key: string,
+): string | null {
+  const value = metadata[key];
+  return typeof value === "string" && value.length > 0 ? value : null;
+}
+
+function metadataNumber(
+  metadata: Record<string, unknown>,
+  key: string,
+): number | null {
+  const value = metadata[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+/**
+ * aidream writes these rows in `_installation_metadata` and they are the only
+ * record of WHICH accounts are covered. Parsed defensively: a connection saved
+ * by an older backend simply yields fewer rows, which the card renders as
+ * "no installations" with the fix attached — never as a crash or a silent
+ * "connected".
+ */
+export function githubInstallationsFromConnection(
+  connection: GitHubConnectionRow | null,
+): GitHubInstallation[] {
+  if (!connection || !isJsonObject(connection.metadata)) return [];
+  const raw = connection.metadata.installations;
+  if (!Array.isArray(raw)) return [];
+  const installations: GitHubInstallation[] = [];
+  for (const entry of raw) {
+    if (!isJsonObject(entry)) continue;
+    const accountLogin = metadataString(entry, "account_login");
+    if (!accountLogin) continue;
+    const selection = metadataString(entry, "repository_selection");
+    installations.push({
+      id: metadataNumber(entry, "id"),
+      accountLogin,
+      accountType: metadataString(entry, "account_type"),
+      accountAvatarUrl: metadataString(entry, "account_avatar_url"),
+      repositorySelection:
+        selection === "all" || selection === "selected" ? selection : null,
+      repositoryCount: metadataNumber(entry, "repository_count") ?? 0,
+      suspended: entry.suspended === true,
+      htmlUrl:
+        metadataString(entry, "html_url") ??
+        (metadataNumber(entry, "id") === null
+          ? null
+          : `https://github.com/settings/installations/${metadataNumber(entry, "id")}`),
+    });
+  }
+  return installations.sort((a, b) =>
+    a.accountLogin.localeCompare(b.accountLogin),
+  );
+}
+
+export function githubAccountFromConnection(
+  connection: GitHubConnectionRow | null,
+): GitHubAccount | null {
+  if (!connection) return null;
+  const metadata = isJsonObject(connection.metadata) ? connection.metadata : {};
+  const login =
+    metadataString(metadata, "account_login") ?? connection.account_name;
+  if (!login) return null;
+  return {
+    login,
+    avatarUrl: metadataString(metadata, "account_avatar_url"),
+    htmlUrl:
+      metadataString(metadata, "account_html_url") ??
+      `https://github.com/${encodeURIComponent(login)}`,
+  };
+}
+
 export async function loadGitHubConnectionInventory(): Promise<GitHubConnectionInventory> {
   const supabase = createClient();
   const {
@@ -72,13 +163,16 @@ export async function loadGitHubConnectionInventory(): Promise<GitHubConnectionI
   // `users.integration_connections` grants no access to `anon`. This direct
   // service can also be called outside its hook, so make the last auth check
   // immediately before constructing the PostgREST query.
-  if (!session?.access_token) return { connection: null, repositories: [] };
+  const userId = session?.user?.id;
+  if (!session?.access_token || !userId) return EMPTY_INVENTORY;
 
   const connectionResult = await supabase
     .schema("users")
     .from("integration_connections")
     .select(CONNECTION_SELECT)
     .eq("provider", "github")
+    .eq("owner_type", "user")
+    .eq("owner_user_id", userId)
     .is("deleted_at", null)
     .order("updated_at", { ascending: false })
     .limit(1)
@@ -91,7 +185,10 @@ export async function loadGitHubConnectionInventory(): Promise<GitHubConnectionI
   }
 
   const connection: GitHubConnectionRow | null = connectionResult.data;
-  if (!connection) return { connection: null, repositories: [] };
+  if (!connection) return EMPTY_INVENTORY;
+  if (connection.owner_type !== "user" || connection.owner_user_id !== userId) {
+    return EMPTY_INVENTORY;
+  }
 
   const resources = await readAllRows<GitHubResourceRow>(
     ({ from, to }) =>
@@ -106,21 +203,25 @@ export async function loadGitHubConnectionInventory(): Promise<GitHubConnectionI
         .range(from, to),
     { label: "users.integration_connection_resources (GitHub repositories)" },
   );
+  const metadata = isJsonObject(connection.metadata) ? connection.metadata : {};
   return {
     connection,
     repositories: resources
       .map(githubRepositoryFromRow)
       .sort((a, b) => a.fullName.localeCompare(b.fullName)),
+    account: githubAccountFromConnection(connection),
+    installations: githubInstallationsFromConnection(connection),
+    syncedRepositoryCount:
+      metadataNumber(metadata, "repository_count") ?? resources.length,
+    lastSyncedAt: metadataString(metadata, "last_repository_sync_at"),
   };
 }
 
 /**
  * Routed through the canonical `lib/python-client.ts` kernel instead of a
- * hand-rolled fetch — this used to build its own Authorization-only headers
- * and never attached X-Organization-Id, even though GitHub connections are
- * organization-scoped (`users.integration_connections.organization_id`).
- * `postJson`/`del` resolve the organization from Redux and are mandatory,
- * fail-closed (aidream commit 8e5ee0b93's AuthMiddleware admission gate).
+ * hand-rolled fetch. GitHub accounts are per-Matrx-user; the organization
+ * header only admits the action in the current workspace and is never stored
+ * as ownership on `users.integration_connections`.
  */
 async function githubBackend(
   path: string,
@@ -152,32 +253,31 @@ export function disconnectGitHubConnection(): Promise<void> {
 export function githubConnectUrl(
   returnUrl: string,
   organizationId: string,
+  flow: "authorize" | "install" = "authorize",
 ): string {
   const params = new URLSearchParams({
     return_url: returnUrl,
     organization_id: organizationId,
+    flow,
   });
   return `/api/github/oauth/start?${params.toString()}`;
 }
 
 /**
- * `organizationId` is mandatory here — GitHub connections are
- * organization-scoped (users.integration_connections.organization_id) and
- * neither this call nor the OAuth round trip it starts can resolve one on
- * its own (a Redux read has to happen at the call site, which has React
- * context this module does not). Callers pass the currently selected
- * organization (`selectOrganizationId`); `start/route.ts` re-validates it
- * fail-closed before ever redirecting to GitHub.
+ * `organizationId` is required for request admission. The GitHub account
+ * connection itself stays owned by the authenticated Matrx user; individual
+ * GitHub App installations are discovered separately.
  */
 export function startGitHubConnection(
   returnUrl: string,
   organizationId: string,
+  flow: "authorize" | "install" = "authorize",
 ): Promise<
   | { ok: true; value: "connected" }
   | { ok: false; error: string; cancelled: boolean }
 > {
   return startOAuthPopup({
-    url: githubConnectUrl(returnUrl, organizationId),
+    url: githubConnectUrl(returnUrl, organizationId, flow),
     target: "github_oauth",
     successType: "github_oauth_complete",
     errorType: "github_oauth_error",

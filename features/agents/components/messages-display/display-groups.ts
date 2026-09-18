@@ -17,6 +17,8 @@ export interface DisplayEntry {
   isStreamActive: boolean;
   isFailed: boolean;
   canRetry: boolean;
+  streamSlotStart?: number;
+  streamSlotEnd?: number;
   /** True for a delivered agent-collaboration note (see isCollabNoteRecord). */
   isCollabNote?: boolean;
 }
@@ -103,7 +105,10 @@ export function buildDisplayEntries({
     for (let i = messages.length - 1; i >= 0; i--) {
       const rec = messages[i];
       if (rec.role !== "assistant") continue;
-      if (rec._streamRequestId === latestRequestId) {
+      if (
+        rec._streamRequestId === latestRequestId &&
+        rec._streamSlotEnd === undefined
+      ) {
         streamingAssistantId = rec.id;
         break;
       }
@@ -114,7 +119,12 @@ export function buildDisplayEntries({
   for (const rec of messages) {
     if (rec.role === "tool" || rec.role === "system") continue;
     const isStreamingMessage = rec.id === streamingAssistantId;
-    if (isEmptyReservedAssistant(rec) && !isStreamingMessage) continue;
+    if (
+      isEmptyReservedAssistant(rec) &&
+      !isStreamingMessage &&
+      rec._streamSlotEnd === undefined
+    )
+      continue;
 
     const recFailed =
       rec.role === "assistant" &&
@@ -129,19 +139,46 @@ export function buildDisplayEntries({
       isFailed: recFailed,
       canRetry: false,
       isCollabNote: rec.role === "user" ? isCollabNoteRecord(rec) : false,
+      streamSlotStart: rec._streamSlotStart,
+      streamSlotEnd: rec._streamSlotEnd,
     });
   }
 
-  if (isActive && latestRequestId && streamingAssistantId === null) {
-    entries.push({
-      key: `__streaming__:${latestRequestId}`,
-      role: "assistant",
-      messageId: null,
-      requestId: latestRequestId,
-      isStreamActive: true,
-      isFailed: isErrorPhase,
-      canRetry: false,
-    });
+  const hasOpenRequestAnchor = Boolean(
+    latestRequestId &&
+    messages.some(
+      (rec) =>
+        rec.role === "assistant" &&
+        rec._streamRequestId === latestRequestId &&
+        rec._streamSlotEnd === undefined,
+    ),
+  );
+  if (latestRequestId && !hasOpenRequestAnchor) {
+    const closedSegmentEnds = messages
+      .filter(
+        (rec) =>
+          rec.role === "assistant" &&
+          rec._streamRequestId === latestRequestId &&
+          typeof rec._streamSlotEnd === "number",
+      )
+      .map((rec) => rec._streamSlotEnd as number);
+    // A settled request needs a synthetic tail only when a visible inbox
+    // boundary closed its last real anchor. Ordinary hydrated history must
+    // never gain a phantom assistant merely because request metadata remains.
+    if (isActive || closedSegmentEnds.length > 0)
+      entries.push({
+        key: `__streaming__:${latestRequestId}`,
+        role: "assistant",
+        messageId: null,
+        requestId: latestRequestId,
+        isStreamActive: isActive,
+        isFailed: isErrorPhase,
+        canRetry: false,
+        streamSlotStart:
+          closedSegmentEnds.length > 0
+            ? Math.max(...closedSegmentEnds)
+            : undefined,
+      });
   }
 
   const last = entries[entries.length - 1];
@@ -189,6 +226,8 @@ export function groupDisplayEntries(
         messageId: entry.messageId,
         requestId: entry.requestId,
         isStreamActive: entry.isStreamActive,
+        streamSlotStart: entry.streamSlotStart,
+        streamSlotEnd: entry.streamSlotEnd,
       });
       continue;
     }

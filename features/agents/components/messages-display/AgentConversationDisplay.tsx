@@ -19,9 +19,14 @@
  */
 
 import { useEffect, useMemo, useRef } from "react";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+// The canonical "this read failed — try again" primitive (docs/reuse-first.md).
+// A transcript that could not be read is exactly its `hasData={false}` case.
+import { StaleDataNotice } from "@/components/official/stale-data/StaleDataNotice";
 import {
   selectConversationMessages,
+  selectMessagesHydrationFailure,
   selectVisibleMessageGroupLimit,
 } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import {
@@ -82,7 +87,13 @@ export function AgentConversationDisplay({
   fallbackVisibleGroupLimit = null,
   bottomPinned = false,
 }: AgentConversationDisplayProps) {
+  const dispatch = useAppDispatch();
   const messages = useAppSelector(selectConversationMessages(conversationId));
+  // Set by `loadConversation` when a read for a conversation the server was
+  // supposed to have came back with nothing, or failed outright.
+  const hydrationFailure = useAppSelector(
+    selectMessagesHydrationFailure(conversationId),
+  );
   const phase = useAppSelector(selectStreamPhase(conversationId));
   const latestRequestId = useAppSelector(selectLatestRequestId(conversationId));
   const visibleGroupLimit = useAppSelector(
@@ -201,6 +212,29 @@ export function AgentConversationDisplay({
     resolveMarkdownContext(target, conversationId);
 
   if (displayGroups.length === 0) {
+    // An empty room is a claim about the database: "nothing was ever said
+    // here". When the read failed, nobody is entitled to make it — say what
+    // happened and carry the one-click fix (law 4: nothing fails silently).
+    if (hydrationFailure) {
+      return (
+        <div className="p-4">
+          <StaleDataNotice
+            hasData={false}
+            what="this conversation"
+            detail={hydrationFailure}
+            onRetry={() => {
+              void dispatch(
+                loadConversation({
+                  conversationId,
+                  surfaceKey,
+                  expectMaterialized: true,
+                }),
+              );
+            }}
+          />
+        </div>
+      );
+    }
     return <AgentEmptyMessageDisplay conversationId={conversationId} />;
   }
 

@@ -26,6 +26,7 @@
 import { readFileSync, existsSync, statSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const REPO_ROOT = resolve(__dirname, "..");
 const NEXT_DIR = join(REPO_ROOT, ".next");
@@ -58,7 +59,7 @@ const TRACKED_ROUTES: Array<{ manifestKey: string; label: string }> = [
 
 function die(code: number, msg: string): never {
   process.stderr.write(`check-bundle-size: ${msg}\n`);
-  process.exit(code);
+  exitAfterDrain(code);
 }
 
 function loadManifest(): Manifest {
@@ -220,15 +221,15 @@ function main(): void {
       );
     }
     writeBaseline(reports);
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   if (update) {
     writeBaseline(reports);
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
-  process.exit(compare(reports, verbose));
+  exitAfterDrain(compare(reports, verbose));
 }
 
 main();

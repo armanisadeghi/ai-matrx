@@ -25,8 +25,16 @@
 //   secret    → state only, from `knob.secret`; the value never comes here
 //               and is never asked for here (see the note on the case below).
 
-import { useRef, useState } from "react";
-import { Check, ChevronDown, Loader2, Play, ShieldCheck, ShieldOff, Square } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  Check,
+  ChevronDown,
+  Loader2,
+  Play,
+  ShieldCheck,
+  ShieldOff,
+  Square,
+} from "lucide-react";
 import Link from "next/link";
 import {
   Input,
@@ -43,6 +51,7 @@ import { Button } from "@/components/ui/button";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
 import { useCartesia } from "@/hooks/tts/useCartesia";
 import { VoiceSpeed } from "@/lib/cartesia/cartesia.types";
+import { ASSISTANT_VOICE_ID, READING_VOICE_ID } from "@/lib/cartesia/config";
 import { availableVoices } from "@/lib/cartesia/voices";
 import {
   formatKnobValue,
@@ -53,6 +62,12 @@ import type { ScopedKnob } from "@/lib/scoped-config/types";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import { extractErrorMessage } from "@/utils/errors";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectPlatformDefaultTextModelId } from "@/features/ai-models/redux/platformDefaultModel";
+import { getSystemShortcut } from "@/features/agents/constants/system-shortcuts";
+import { ensureShortcutLoaded } from "@/features/agents/redux/agent-shortcuts/thunks";
+import { fetchAgentExecutionFull } from "@/features/agents/redux/agent-definition/thunks";
+import { selectAgentCustomExecutionPayload } from "@/features/agents/redux/agent-definition/selectors";
 
 /** The control kinds this file renders. Anything else keeps the row's own editor. */
 const RENDERED: ReadonlySet<KnobControl> = new Set<KnobControl>([
@@ -64,6 +79,75 @@ const RENDERED: ReadonlySet<KnobControl> = new Set<KnobControl>([
   "secret",
   "json",
 ]);
+
+function canonicalVoiceName(voiceId: string): string {
+  const name = availableVoices.find((voice) => voice.id === voiceId)?.name;
+  return name?.replace(/\s+\([^)]*\)$/, "") ?? voiceId;
+}
+
+const purposeDefaultVoiceLabel = `${canonicalVoiceName(ASSISTANT_VOICE_ID)} / ${canonicalVoiceName(READING_VOICE_ID)}`;
+const purposeDefaultVoiceDescription = `Assistant replies: ${canonicalVoiceName(ASSISTANT_VOICE_ID)}; reading: ${canonicalVoiceName(READING_VOICE_ID)}`;
+const AGENT_GENERATOR_SHORTCUT_ID = getSystemShortcut("agent-generator-01").id;
+
+/**
+ * The builder's default is the generator shortcut's actual agent model, not
+ * a generic catalog default. These are the same read thunks AgentGenerator
+ * uses to load its shortcut; neither runs the agent nor writes configuration.
+ */
+function useAgentBuilderDefaultModel(enabled: boolean): {
+  modelId: string | null;
+  unavailable: boolean;
+} {
+  const dispatch = useAppDispatch();
+  const shortcut = useAppSelector(
+    (state) =>
+      state.agentShortcut.shortcuts[AGENT_GENERATOR_SHORTCUT_ID] ?? null,
+  );
+  const agentId = shortcut?.agentId ?? null;
+  const execution = useAppSelector((state) =>
+    agentId ? selectAgentCustomExecutionPayload(state, agentId) : null,
+  );
+  const [failedIdentity, setFailedIdentity] = useState<string | null>(null);
+  const readIdentity = agentId ?? "shortcut";
+
+  useEffect(() => {
+    if (!enabled || shortcut) return;
+    let cancelled = false;
+    void dispatch(ensureShortcutLoaded(AGENT_GENERATOR_SHORTCUT_ID))
+      .unwrap()
+      .catch(() => {
+        if (!cancelled) setFailedIdentity(readIdentity);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, enabled, shortcut, readIdentity]);
+
+  useEffect(() => {
+    if (!enabled || !agentId || execution?.isReady) return;
+    let cancelled = false;
+    void dispatch(fetchAgentExecutionFull(agentId))
+      .unwrap()
+      .catch(() => {
+        if (!cancelled) setFailedIdentity(readIdentity);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, enabled, agentId, execution?.isReady, readIdentity]);
+
+  // Do not leave a broken or incomplete reader looking like a perpetual
+  // loading state. A loaded shortcut without an agent, or an execution record
+  // without a model, is an honest unavailable default. The identity-qualified
+  // failure vanishes when a newly loaded shortcut points to another agent.
+  const unavailable =
+    enabled &&
+    (failedIdentity === readIdentity ||
+      (Boolean(shortcut) && !agentId) ||
+      Boolean(execution?.isReady && !execution.modelId));
+
+  return { modelId: execution?.modelId ?? null, unavailable };
+}
 
 export function hasFieldControl(control: KnobControl): boolean {
   return RENDERED.has(control);
@@ -135,7 +219,9 @@ function JsonField({
       <Button
         size="sm"
         variant="outline"
-        aria-label={labelId ? undefined : `Edit structured value for ${knob.label}`}
+        aria-label={
+          labelId ? undefined : `Edit structured value for ${knob.label}`
+        }
         aria-labelledby={labelId}
         disabled={disabled}
         onClick={() => setEditing(true)}
@@ -331,10 +417,28 @@ function ModelField({
   inputId,
   labelId,
 }: KnobFieldControlProps) {
-  const value =
+  const isBuilderKey =
+    knob.full_key === "agents.model_prefs.agent_authoring_default_model";
+  const configuredValue =
     typeof ladder.value === "string" && ladder.value !== ""
       ? ladder.value
       : null;
+  // Basic chat has a canonical, catalog-backed runtime default. Show that
+  // concrete model when the ladder's stored answer deliberately means
+  // "platform default". The authoring key reads its generator's configured
+  // model through the same read path that prepares the generator itself.
+  const platformTextModelId = useAppSelector(selectPlatformDefaultTextModelId);
+  const builderDefault = useAgentBuilderDefaultModel(
+    isBuilderKey && !configuredValue,
+  );
+  const value =
+    configuredValue ??
+    (knob.full_key === "agents.model_prefs.chat_default_model"
+      ? platformTextModelId
+      : isBuilderKey
+        ? builderDefault.modelId
+        : null);
+  const isBuilderDefault = !configuredValue && isBuilderKey;
   return (
     <ModelListDropdown
       id={inputId}
@@ -342,11 +446,19 @@ function ModelField({
       aria-labelledby={labelId}
       value={value}
       onValueChange={(next) => {
-        if (next) void onCommit(next);
+        // A rendered runtime default is already the effective choice. Picking
+        // that same catalog row must not materialize a redundant user override.
+        if (next && next !== value) void onCommit(next);
       }}
       inputModalities={[]}
       outputModalities={["text"]}
-      placeholder="Choose a model"
+      placeholder={
+        builderDefault.unavailable
+          ? "Agent builder model is unavailable"
+          : isBuilderDefault
+            ? "Loading agent builder's model…"
+            : "Loading current model…"
+      }
       disabled={disabled}
       triggerVariant="settings"
       className="w-full min-w-0 justify-between"
@@ -379,7 +491,7 @@ function VoiceField({
     ? selected.name
     : current
       ? `Unknown voice: ${current}`
-      : "Choose a voice";
+      : purposeDefaultVoiceLabel;
   const handleSelect = (voiceId: string) => {
     void Promise.resolve(onCommit(voiceId))
       .then((result) => {
@@ -396,8 +508,12 @@ function VoiceField({
           type="button"
           variant="outline"
           disabled={disabled}
+          title={current ? undefined : purposeDefaultVoiceDescription}
           aria-label={labelId ? undefined : knob.label}
           aria-labelledby={labelId}
+          aria-description={
+            current ? undefined : purposeDefaultVoiceDescription
+          }
           className={selectTriggerVariants({
             size: "default",
             className:
@@ -490,38 +606,44 @@ function VoiceChooser({
           <p className="px-3 py-4 text-sm text-muted-foreground">
             No voices match “{query}”.
           </p>
-        ) : matchingVoices.map((voice) => (
-          <div
-            key={voice.id}
-            className="flex min-w-0 items-center gap-1 rounded-sm px-1 py-0.5 hover:bg-accent"
-          >
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-auto min-w-0 flex-1 justify-start whitespace-normal px-2 py-1.5 text-left text-sm"
-              disabled={disabled}
-              onClick={() => onSelect(voice.id)}
+        ) : (
+          matchingVoices.map((voice) => (
+            <div
+              key={voice.id}
+              className="flex min-w-0 items-center gap-1 rounded-sm px-1 py-0.5 hover:bg-accent"
             >
-              <span className="min-w-0 flex-1 break-words">{voice.name}</span>
-              {voice.id === current && <Check className="h-4 w-4 shrink-0" />}
-            </Button>
-            <Button
-              type="button"
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8 shrink-0"
-              aria-label={playingVoiceId === voice.id ? "Stop voice sample" : `Play sample for ${voice.name}`}
-              disabled={disabled || !isConnected}
-              onClick={() => void play(voice.id)}
-            >
-              {playingVoiceId === voice.id ? (
-                <Square className="h-3.5 w-3.5" />
-              ) : (
-                <Play className="h-3.5 w-3.5" />
-              )}
-            </Button>
-          </div>
-        ))}
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-auto min-w-0 flex-1 justify-start whitespace-normal px-2 py-1.5 text-left text-sm"
+                disabled={disabled}
+                onClick={() => onSelect(voice.id)}
+              >
+                <span className="min-w-0 flex-1 break-words">{voice.name}</span>
+                {voice.id === current && <Check className="h-4 w-4 shrink-0" />}
+              </Button>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8 shrink-0"
+                aria-label={
+                  playingVoiceId === voice.id
+                    ? "Stop voice sample"
+                    : `Play sample for ${voice.name}`
+                }
+                disabled={disabled || !isConnected}
+                onClick={() => void play(voice.id)}
+              >
+                {playingVoiceId === voice.id ? (
+                  <Square className="h-3.5 w-3.5" />
+                ) : (
+                  <Play className="h-3.5 w-3.5" />
+                )}
+              </Button>
+            </div>
+          ))
+        )}
       </div>
       {!isConnected && !error && (
         <p className="flex shrink-0 items-center gap-1.5 px-2 py-1 text-[11px] text-muted-foreground">

@@ -151,13 +151,18 @@ import {
   type AssignTarget,
 } from "@/features/marketing/seo/keyword-workbench/components/AssignPanel";
 import {
-  getKeywordServices,
+  getKeywordOfferings,
   getKeywordStamps,
-  setKeywordService,
+  KEYWORD_OFFERINGS_KEY,
+  setKeywordOffering,
   setKeywordStamps,
 } from "@/features/marketing/seo/keyword-workbench/data";
 import { ServiceCell } from "@/features/marketing/seo/keyword-workbench/components/ServiceCell";
-import { useSiteServices } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteServices";
+import {
+  requireOfferingOrganization,
+  SITE_OFFERINGS_KEY,
+  useSiteOfferings,
+} from "@/features/marketing/seo/keyword-workbench/hooks/useSiteOfferings";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { KEYWORD_VALUE_WORKBENCH_SURFACE_NAME } from "@/features/surfaces/manifests/keyword-value-workbench.manifest";
@@ -169,7 +174,7 @@ import {
   useKeywordAssignSurfaces,
   useKeywordMenuSection,
 } from "@/features/marketing/seo/keyword/keyword-actions";
-import { KeywordMeaningSuggestions } from "@/features/marketing/seo/value-system/suggestions/KeywordMeaningSuggestions";
+import { ApprovalQueue } from "@/features/approvals/ApprovalQueue";
 import { BandScoreboard } from "./BandScoreboard";
 import { ValueKpiBand } from "./ValueKpiBand";
 import { useAppDispatch } from "@/lib/redux/hooks";
@@ -447,7 +452,7 @@ export function ValueWorkbench() {
   const dimensions = catalog.data ?? [];
   const classDimension = dimensions.find((d) => d.slug === "traffic_class");
   const classOptions = (classDimension?.values ?? []).filter((v) => !v.abstain);
-  const services = useSiteServices(siteId, window.start, window.end);
+  const offerings = useSiteOfferings(siteId, window.start, window.end);
 
   /**
    * 🚨 THE MISSING MENU, closed 2026-08-24. Arman: *"I talked at length about
@@ -707,32 +712,27 @@ export function ValueWorkbench() {
     staleTime: 60_000,
   });
   const placements = useQuery({
-    queryKey: [
-      "marketing",
-      "seo",
-      "keyword-services",
-      siteId,
-      visibleKeywordIds,
-    ],
+    queryKey: [...KEYWORD_OFFERINGS_KEY, siteId, visibleKeywordIds],
     queryFn: ({ signal }) =>
-      getKeywordServices(siteId, visibleKeywordIds, signal),
+      getKeywordOfferings(siteId, visibleKeywordIds, signal),
     enabled: visibleKeywordIds.length > 0,
     staleTime: 60_000,
   });
 
   const quickPlaceService = async (
     row: ValueReviewRow,
-    topicId: string | null,
+    offeringId: string | null,
   ) => {
     try {
-      await setKeywordService({
+      await setKeywordOffering({
+        organizationId: requireOfferingOrganization(offerings),
         siteId,
         keywordIds: [row.keyword_id],
-        topicId,
+        offeringId,
       });
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: ["marketing", "seo", "keyword-services", siteId],
+          queryKey: [...KEYWORD_OFFERINGS_KEY, siteId],
         }),
         queryClient.invalidateQueries({
           queryKey: ["marketing", "gsc", "keyword-value-for", siteId],
@@ -743,17 +743,15 @@ export function ValueWorkbench() {
         queryClient.invalidateQueries({
           queryKey: ["marketing", "value", "summary", siteId],
         }),
-        queryClient.invalidateQueries({
-          queryKey: ["seo", "topics", "stats", siteId],
-        }),
+        queryClient.invalidateQueries({ queryKey: SITE_OFFERINGS_KEY }),
       ]);
-      const offeringName = topicId
-        ? (services.byId.get(topicId)?.name ?? "that offering")
+      const offeringName = offeringId
+        ? (offerings.byId.get(offeringId)?.name ?? "that offering")
         : null;
       toast.success(
         offeringName
           ? `“${row.keyword}” maps to ${offeringName}.`
-          : `“${row.keyword}” is off the offering tree.`,
+          : `“${row.keyword}” maps to no offering now.`,
       );
     } catch (error) {
       toast.error(extractErrorMessage(error));
@@ -828,14 +826,14 @@ export function ValueWorkbench() {
       filter: false,
       width: 170,
       accessorFn: (row) =>
-        placements.data?.get(row.keyword_id)?.topicName ?? "",
+        placements.data?.get(row.keyword_id)?.offeringName ?? "",
       cell: (row) => (
         <ServiceCell
           siteId={siteId}
-          services={services}
+          offerings={offerings}
           placement={placements.data?.get(row.keyword_id)}
-          disabled={services.loading || placements.isLoading}
-          onPlace={(topicId) => void quickPlaceService(row, topicId)}
+          disabled={offerings.loading || placements.isLoading}
+          onPlace={(offeringId) => void quickPlaceService(row, offeringId)}
         />
       ),
     },
@@ -1188,7 +1186,16 @@ export function ValueWorkbench() {
           exactly this queue, so a session that hid it would tell a person to
           "approve it below" and then show them nothing. */}
         {sessionOpen ? (
-          <KeywordMeaningSuggestions siteId={siteId} className="shrink-0" />
+          <ApprovalQueue
+            scope={{
+              key: siteId,
+              siteId,
+              brandId,
+              organizationId: site.organization_id,
+              siteLabel: site.domain,
+            }}
+            className="shrink-0"
+          />
         ) : null}
 
         {sessionOpen ? (
@@ -1310,7 +1317,16 @@ export function ValueWorkbench() {
           is P12. It used to sit above every number, which put a suggestion
           ahead of the site's own facts; it is one chip row, below them, and
           it renders nothing at all when the queue is empty. */}
-            <KeywordMeaningSuggestions siteId={siteId} className="shrink-0" />
+            <ApprovalQueue
+              scope={{
+                key: siteId,
+                siteId,
+                brandId,
+                organizationId: site.organization_id,
+                siteLabel: site.domain,
+              }}
+              className="shrink-0"
+            />
 
             {/* ONE assignment surface, borrowed whole from the shared keyword
           actions — never a second implementation of "assign with a reason".

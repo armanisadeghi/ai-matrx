@@ -27,6 +27,7 @@
 // features/legal/wc/pd-ratings/api/hooks.ts. `/runs/{run_id}/resume` IS
 // generated and stays fully typed.
 
+import { reloadResumeVerdict } from "./reloadResume";
 import { useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { callApi } from "@/lib/api/call-api";
@@ -43,7 +44,6 @@ import {
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import { isTransportFailure } from "@ai-matrx/data/net";
 import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
-import { appendVisionStatement } from "../service";
 import { roleFromNodeId, type InterviewStage, type RoleKey } from "../types";
 import {
   nodeCompleted,
@@ -83,6 +83,77 @@ export interface ResumeInput {
   done?: boolean;
 }
 
+/**
+ * What the room says when the run ENDED without finishing — including the
+ * case where the server never sent a terminal event at all and the follower
+ * had to read the run row to find out (wall W9's second half: the room sat on
+ * "Handing the interview to the room… Working…" over a run that was already
+ * errored). A sentence AND a remedy; never a spinner over a dead run.
+ */
+export const RUN_ENDED_MESSAGE =
+  "The room's run ended on the server before it finished. Nothing you have said is lost — the interview, its questions and its document are saved; press Finish again to start a fresh run over the same interview.";
+
+/** The honest sentence for a start/finish stream that ended having said
+ *  nothing terminal. */
+export const SILENT_START_MESSAGE =
+  "The server took the request but never said what happened. Nothing you have said is lost — the interview, its questions and its document are saved; try Finish again.";
+
+/** What the inline start/resume NDJSON stream just told us, or null.
+ *
+ * Pure on purpose: this is the one place the room reads that wire, and the
+ * room's whole "is it working or is it dead" answer hangs off it. */
+export type InlineVerdict =
+  | { kind: "run_started"; runId: string }
+  /** The finish landed: the interview is closed and the documents are written
+   *  (`failed` names any deliverable that did not land — never silence). */
+  | { kind: "finished"; written: string[]; failed: Record<string, string> }
+  | { kind: "failed"; message: string };
+
+export function interpretInlineEvent(event: unknown): InlineVerdict | null {
+  const wire = event as {
+    event?: string;
+    data?: {
+      event?: string;
+      run_id?: string;
+      message?: string;
+      user_message?: string;
+      written?: unknown;
+      failed?: unknown;
+    };
+  } | null;
+  if (!wire || typeof wire !== "object") return null;
+  const inner = wire.data;
+  if (wire.event === "data") {
+    if (
+      (inner?.event === "interview_run_started" ||
+        inner?.event === "workflow_run_started") &&
+      typeof inner.run_id === "string" &&
+      inner.run_id
+    ) {
+      return { kind: "run_started", runId: inner.run_id };
+    }
+    if (inner?.event === "interview_finished") {
+      return {
+        kind: "finished",
+        written: Array.isArray(inner.written) ? inner.written.map(String) : [],
+        failed:
+          inner.failed && typeof inner.failed === "object"
+            ? (inner.failed as Record<string, string>)
+            : {},
+      };
+    }
+    return null;
+  }
+  if (wire.event === "error") {
+    const message =
+      inner?.user_message?.trim() ||
+      inner?.message?.trim() ||
+      "The room could not start the run, and the server did not say why.";
+    return { kind: "failed", message };
+  }
+  return null;
+}
+
 export function useInterviewRun(sessionId: string) {
   const dispatch = useAppDispatch();
   const runPhase = useAppSelector(selectRunPhase);
@@ -92,6 +163,10 @@ export function useInterviewRun(sessionId: string) {
   const hydrated = useAppSelector(selectRoomHydrated);
   // A second click while a call is in flight must not start a second run.
   const inFlightRef = useRef(false);
+  // Did THIS start/resume stream tell us anything terminal — a run_id or an
+  // error? A stream that ends having said neither is a silent failure, and the
+  // room says so rather than spinning (see runStream's tail).
+  const sawTerminalRef = useRef(false);
   // The SSE follower for the current run — armed EXACTLY ONCE per run_id and
   // aborted only on unmount or a genuine new run. Re-arming a live follower
   // aborts its SSE connection and replays the feed from seq 0, pushing stale
@@ -159,8 +234,8 @@ export function useInterviewRun(sessionId: string) {
           runFailed({
             message:
               (typeof event.error_message === "string" &&
-                event.error_message) ||
-              "The interview run failed.",
+                event.error_message.trim()) ||
+              RUN_ENDED_MESSAGE,
           }),
         );
         break;
@@ -233,37 +308,83 @@ export function useInterviewRun(sessionId: string) {
   // complete / errored). Auto-resume is the floor, never a question.
   const reconciledRunRef = useRef<string | null>(null);
   const sessionRunId = session?.run_id ?? null;
+  const sessionFinalizedAt = session?.finalized_at ?? null;
   useEffect(() => {
     if (!hydrated || !sessionRunId) return;
     if (runPhase !== "idle") return;
     if (reconciledRunRef.current === sessionRunId) return;
     reconciledRunRef.current = sessionRunId;
+    /**
+     * 🚨 A FINISHED INTERVIEW HAS NOTHING TO FOLLOW (cold walk 5, finding 8,
+     * 2026-09-16). The rule above — "the session row is truth, follow its run"
+     * — was applied to EVERY row carrying a `run_id`, including one whose
+     * interview had already been finished and whose documents were already
+     * written. Coming back to such a session armed a follower over a long-dead
+     * run and put the room straight into `starting`, so the header wore
+     * "Working…" permanently and the room never left its stale read of the
+     * run: the walker could not reach the Vision, Requirements or Transcript
+     * documents that Finish had just written — the room's entire terminal
+     * payoff — through this page at all.
+     *
+     * The row already says the run is over: `finalized_at`. That IS the
+     * reconcile for a terminal session, and it costs no network call. The
+     * follower stays for the live case it was written for.
+     */
+    if (reloadResumeVerdict(sessionFinalizedAt) === "already_finished") {
+      dispatch(runCompleted());
+      return;
+    }
     dispatch(runStarted({ runId: sessionRunId }));
     ensureAdopted();
     startFollowing(sessionRunId);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- startFollowing/ensureAdopted are render-scoped helpers over stable refs; the guard ref makes re-runs no-ops
-  }, [hydrated, sessionRunId, runPhase, dispatch]);
+  }, [hydrated, sessionRunId, sessionFinalizedAt, runPhase, dispatch]);
 
   /**
    * Events on the inline NDJSON start/resume stream. It detaches almost
-   * immediately — the only load-bearing signal is the run_id, which arms
-   * the SSE follower.
+   * immediately — the load-bearing signals are the run_id (which arms the SSE
+   * follower) and a `fatal_error` the server sends when the start task crashed
+   * before a run ever existed.
+   *
+   * 🚨 THE ROOM MUST NEVER SIT ON "Working…" (wall W9, 2026-09-15). This
+   * handler used to `return` on every non-`data` event, so the server's
+   * `error` envelope — the ONE thing it sends when `start_session_run` raises
+   * before `run_store.create` — was dropped on the floor. `callApi` resolves
+   * happily (HTTP 200, stream consumed to its end), `runStream` reported the
+   * request ACCEPTED, and the phase stayed `starting` forever: the Finish
+   * dialog showed "Handing the interview to the room… Working…" for nine
+   * minutes over a run that did not exist and never would. The server was
+   * honest; the room deafened itself.
    */
   const handleInlineEvent = (event: TypedStreamEvent) => {
-    const wire = event as unknown as {
-      event?: string;
-      data?: { event?: string; run_id?: string };
-    };
-    if (wire.event !== "data") return;
-    const inner = wire.data;
-    if (
-      (inner?.event === "interview_run_started" ||
-        inner?.event === "workflow_run_started") &&
-      typeof inner.run_id === "string"
-    ) {
-      dispatch(runStarted({ runId: inner.run_id }));
-      startFollowing(inner.run_id);
+    const verdict = interpretInlineEvent(event);
+    if (!verdict) return;
+    if (verdict.kind === "failed") {
+      sawTerminalRef.current = true;
+      dispatch(runFailed({ message: verdict.message }));
+      toastErrorAlreadyCaptured(verdict.message);
+      return;
     }
+    if (verdict.kind === "finished") {
+      // The interview is closed and safe. A deliverable that did not land is
+      // NAMED here — the room's own dialog offers "Write them again", and a
+      // silent "not written yet" with no reason is the thing four cold walks
+      // kept meeting.
+      sawTerminalRef.current = true;
+      dispatch(runCompleted());
+      const missing = Object.keys(verdict.failed);
+      if (missing.length > 0) {
+        toast.error(
+          `Your interview is closed and nothing is lost, but ${missing.length === 1 ? "one document" : `${missing.length} documents`} could not be written (${missing.join(", ")}). Open Finish again and choose "Write them again".`,
+        );
+      } else {
+        toast.success("Your interview is closed — the documents are written.");
+      }
+      return;
+    }
+    sawTerminalRef.current = true;
+    dispatch(runStarted({ runId: verdict.runId }));
+    startFollowing(verdict.runId);
   };
 
   const adopt = () =>
@@ -300,6 +421,7 @@ export function useInterviewRun(sessionId: string) {
   ): Promise<boolean> => {
     if (inFlightRef.current) return false;
     inFlightRef.current = true;
+    sawTerminalRef.current = false;
     dispatch(runStarting());
     try {
       const result = await dispatch(call());
@@ -312,6 +434,15 @@ export function useInterviewRun(sessionId: string) {
           : error.message ?? "The interview run could not start.";
         dispatch(runFailed({ message }));
         toastErrorAlreadyCaptured(message);
+        return false;
+      }
+      // THE BELT. The stream ended cleanly and said nothing terminal — no
+      // run_id, no error. There is no run, so nothing will ever arrive on the
+      // SSE feed and no phase change can come from anywhere else. Say so.
+      if (!sawTerminalRef.current) {
+        const message = SILENT_START_MESSAGE;
+        dispatch(runFailed({ message }));
+        toast.error(message);
         return false;
       }
       return true;
@@ -330,63 +461,6 @@ export function useInterviewRun(sessionId: string) {
     } finally {
       inFlightRef.current = false;
     }
-  };
-
-  /**
-   * Start (or restart — the tables are truth, a new run re-hydrates) the
-   * session's workflow run.
-   *
-   * `openingMessage` is the pre-start composer draft: it is appended to the
-   * session's vision statement BEFORE the run starts (the backend seeds
-   * turn 0 from it on a fresh session, and it stays on the session as
-   * durable context for restarts). Returns true when the draft was CONSUMED
-   * — false means keep it in the composer.
-   *
-   * Consumption == the append landing, NOT the run starting. Once the
-   * statement is durably on the session row, the composer must clear even if
-   * the run then fails to start — otherwise "Try again" re-appends the same
-   * text and corrupts the vision statement (Bugbot, PR #146). A run-start
-   * failure after a successful append surfaces via `runFailed` as usual.
-   */
-  const start = async (openingMessage?: string): Promise<boolean> => {
-    if (inFlightRef.current) return false;
-    const message = openingMessage?.trim();
-    let draftConsumed = false;
-    if (message) {
-      try {
-        const saved = await appendVisionStatement(sessionId, message);
-        // Merge the fresh row now; the realtime echo is dropped by the
-        // slice's monotonic guard.
-        dispatch(sessionMerged(saved));
-        draftConsumed = true;
-      } catch (err) {
-        toast.error(
-          isTransportFailure(err)
-            ? "Could not reach the database — check your connection and try again. Your draft is still here."
-            : err instanceof Error
-              ? err.message
-              : "Could not save your statement — nothing was started.",
-        );
-        return false; // Draft stays in the composer; Start stays armed.
-      }
-    }
-    const consume = adopt();
-    const started = await runStream(() =>
-      callApi({
-        path: "/vision-interview/sessions/{session_id}/start" as never,
-        method: "POST",
-        pathParams: { session_id: sessionId } as never,
-        body: {} as never,
-        stream: true,
-        consumeStream: consume,
-      }),
-    );
-    if (draftConsumed && !started) {
-      toast.info(
-        "Your statement is saved on the session — starting the room failed; try Start again.",
-      );
-    }
-    return draftConsumed || started;
   };
 
   /** Answer the pending human-input interrupt (and/or send controls).
@@ -433,5 +507,58 @@ export function useInterviewRun(sessionId: string) {
     return accepted;
   };
 
-  return { runPhase, runId, pendingInterrupt, start, resume };
+  /**
+   * 🚨 A FINISH FINISHES — ONE PRESS, ONE REQUEST, AND NEVER A ROUND.
+   *
+   * FOUR cold walks of this room reported the same thing: the control
+   * labelled Finish did not finish. The walk-3 fix round put both halves of
+   * the old journey behind one press — arm the intent, START a run, spend the
+   * arm when the run hands back — and proved it against a session that was
+   * already parked on a human turn, where `finish` sends `done` into the
+   * waiting run and the gate converges with no round at all. That proof could
+   * not fail, and that is exactly why it missed the defect.
+   *
+   * A BRAND-NEW room has no run. In v3 the person's whole interview happens
+   * in the per-role chat tabs (`POST /observe`), and the orchestrated
+   * workflow is never started — so `finish` fell through to `start()`, and a
+   * run's first act, by construction, is a complete interview round: six
+   * voices speak, the Scribe opens new questions, the round counter climbs.
+   * The fourth walk pressed Finish on a fresh session and watched Round 1
+   * become Round 2 become Round 3, open questions go 9 → 15, and the
+   * Requirements document never arrive.
+   *
+   * A terminal action may not depend on a machine being in one particular
+   * state. Finishing is now ONE server operation that works from every phase
+   * — idle, starting, running, waiting, complete, error, run or no run
+   * (`POST /vision-interview/sessions/{id}/finish`, aidream
+   * `services/vision_interview/finalize.py`). It cancels whatever run the
+   * session is bound to, closes the interview, and writes the three
+   * documents. There is no arm, no second journey, and no branch on phase —
+   * the branch WAS the bug.
+   *
+   * Returns true when the finish landed. The documents arrive both in this
+   * response and through the session row's realtime subscription.
+   */
+  const finish = async (): Promise<boolean> => {
+    if (inFlightRef.current) return false;
+    const consume = adopt();
+    return runStream(() =>
+      callApi({
+        path: "/vision-interview/sessions/{session_id}/finish" as never,
+        method: "POST",
+        pathParams: { session_id: sessionId } as never,
+        body: {} as never,
+        stream: true,
+        consumeStream: consume,
+      }),
+    );
+  };
+
+  // There is NO `start` any more, returned or private. Starting a run was the
+  // only road the room had to `interview.finalize`, and a run's first act is a
+  // full interview round — so the terminal control ran a round every time it
+  // was pressed on a fresh session. Finishing has its own server operation
+  // now, and the road that ran a round is gone rather than hidden. Closing a
+  // class means removing the door.
+  return { runPhase, runId, pendingInterrupt, resume, finish };
 }

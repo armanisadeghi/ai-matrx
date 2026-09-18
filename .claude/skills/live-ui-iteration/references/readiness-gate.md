@@ -15,7 +15,7 @@ This is the pre-handoff gate for `live-ui-iteration`. It does not replace `surfa
 - The resolved surface identity, manifest, route/overlay mapping, readiness, DB mirror, values, groups, inheritance, roles, and write targets pass applicable Surface Check sections.
 - Every piece of useful loaded state is honestly declared and emitted at trigger time.
 - Surface Context Admin has no missing Always values or unexplained undeclared runtime keys.
-- A representative bound-agent run proves mapped context arrives when the surface launches agents.
+- A representative outside-helper run proves its approved named inputs or task-appropriate snapshot arrives. A native subject-agent run proves only engineered inputs arrive; a permanent-resident run proves its deliberate contract and no automatic inheritance. Record agent/job, surface, purpose, mode, allowed names or snapshot, approval provenance, and evidence.
 
 ## Canonical context menu
 

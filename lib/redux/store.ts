@@ -31,6 +31,7 @@ import { transcriptStudioRealtimeMiddleware } from "@/features/transcript-studio
 import { tasksRealtimeMiddleware } from "@/features/tasks/redux/tasksRealtimeMiddleware";
 import { pdfStudioPersistenceMiddleware } from "@/features/pdf-extractor/state/persistence";
 import { agentCacheBustMiddleware } from "@/features/agents/redux/agent-definition/cache-bust-middleware";
+import { composerDraftMiddleware } from "@/features/agents/redux/execution-system/instance-user-input/composer-draft.middleware";
 import { mandateOrgSwitchCacheMiddleware } from "@/features/mandates/redux/org-switch-cache-middleware";
 import { activeOrgCookieMiddleware } from "@/lib/organizations/activeOrgCookieMiddleware";
 import { scopeTreeInvalidationMiddleware } from "@/features/scopes/redux/scopeTreeInvalidationMiddleware";
@@ -238,6 +239,7 @@ export const makeStore = (initialState?: Partial<BaseReduxState>) => {
         tasksRealtimeMiddleware,
         pdfStudioPersistenceMiddleware,
         agentCacheBustMiddleware,
+        composerDraftMiddleware,
         mandateOrgSwitchCacheMiddleware,
         activeOrgCookieMiddleware,
         scopeTreeInvalidationMiddleware,

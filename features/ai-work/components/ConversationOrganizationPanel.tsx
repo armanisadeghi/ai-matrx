@@ -94,7 +94,7 @@ export function ConversationOrganizationPanel({
   };
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4">
+    <section>
       <h2 className="text-sm font-semibold text-foreground">
         Organize this conversation
       </h2>

@@ -21,12 +21,18 @@ import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { useCapturedErrorStats } from "@/lib/diagnostics/useCapturedErrors";
 import { useToggleErrorInspector } from "./useOpenErrorInspector";
 import { suppressErrorInspectorBadge } from "./error-inspector-badge-state";
+import { useFixedCornerClearance } from "./useFixedCornerClearance";
 
 export default function ErrorInspectorBadge() {
   const pathname = usePathname();
   const isAdmin = useAppSelector(selectIsAdmin);
   const { red, orange, unseenRed, unseenOrange } = useCapturedErrorStats();
   const toggle = useToggleErrorInspector();
+  // This badge sits in the bottom-left corner OVER whatever the page put
+  // there. It publishes the band it occupies so a page can reserve exactly
+  // that much — measured, because its height and its offset both change with
+  // the viewport and with its own contents (see useFixedCornerClearance).
+  const cornerRef = useFixedCornerClearance<HTMLButtonElement>();
 
   if (!isAdmin || suppressErrorInspectorBadge(pathname)) return null;
 
@@ -34,6 +40,7 @@ export default function ErrorInspectorBadge() {
   if (red > 0) {
     return (
       <button
+        ref={cornerRef}
         onClick={toggle}
         title={`${red} error${red === 1 ? "" : "s"} captured — open Error Inspector`}
         className={cn(
@@ -64,6 +71,7 @@ export default function ErrorInspectorBadge() {
   if (orange > 0) {
     return (
       <button
+        ref={cornerRef}
         onClick={toggle}
         title={`${orange} minor issue${orange === 1 ? "" : "s"} — open Error Inspector`}
         aria-label="Open Error Inspector"

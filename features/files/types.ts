@@ -20,6 +20,7 @@
 import type { components } from "@/types/python-generated/api-types";
 import type { Database } from "@/types/database.types";
 import type { FieldFlags } from "@/features/agents/redux/shared/field-flags";
+import type { readFileRowById } from "@/features/files/filesDb";
 
 // ---------------------------------------------------------------------------
 // 1. Enums (backend contract — copied verbatim from cld_files_frontend.md §7)
@@ -138,14 +139,27 @@ export type CloudFileInsert = FilesTables["files"]["Insert"];
 export type CloudFileUpdate = FilesTables["files"]["Update"];
 
 /**
- * What the client is actually ALLOWED to read from `files.files`.
- * `storage_uri` is server-only (column grant REVOKEd from `authenticated` —
- * selecting it, or `select("*")`, errors). Every client read uses
- * `FILES_TABLE_COLUMNS` from [filesDb.ts](./filesDb.ts) and lands on this
- * shape. Same deal for `file_versions` via `FILE_VERSIONS_TABLE_COLUMNS`.
+ * What the client is actually ALLOWED to read from `files.files` — DERIVED from
+ * `FILES_TABLE_COLUMNS` (the ONE canonical select, in [filesDb.ts](./filesDb.ts))
+ * rather than declared beside it, so the two can never disagree.
+ *
+ * `files.files` grants `authenticated` NO table-level SELECT: every readable
+ * column carries its own column grant, which is how the server-only native
+ * storage location stays server-only. So a column ADDED to the table is
+ * readable by nobody until a migration grants it, and a column list that names
+ * an ungranted column fails the WHOLE read with "permission denied for table
+ * files". Subtracting one name from the generated Row type therefore described
+ * a row the client cannot actually read: on 2026-09-13 the table gained
+ * `origin_device_id` and `client_modified_at` (folder-sync 028, no client
+ * grant) and every selected row stopped matching this type (2 errors, and the
+ * tempting "fix" — adding them to the select — would have 403'd every file read
+ * in the app). Deriving from the query makes the select list the single truth.
+ *
+ * Same deal for `file_versions` via `FILE_VERSIONS_TABLE_COLUMNS`.
  */
-// eslint-disable-next-line no-restricted-syntax -- the ONE sanctioned mention: subtracting the server-only column from the generated Row type
-export type CloudFileReadRow = Omit<CloudFileRow, "storage_uri">;
+export type CloudFileReadRow = NonNullable<
+  Awaited<ReturnType<typeof readFileRowById>>
+>;
 export type CloudFileVersionReadRow = Omit<
   FilesTables["file_versions"]["Row"],
   // eslint-disable-next-line no-restricted-syntax -- same sanctioned subtraction for file_versions
@@ -1022,6 +1036,22 @@ export interface StorageUsageResponse {
   rate_limit_uploads_per_min: number | null;
   rate_limit_downloads_per_min: number | null;
   features: Record<string, unknown>;
+  /**
+   * TRUE when `files.user_storage_usage` actually holds a row for this user.
+   *
+   * `get_usage_status` synthesizes `{bytes_used: 0, files_count: 0, …}` when
+   * the ledger row is ABSENT, which on screen is indistinguishable from a
+   * genuinely empty account — so the UI would say "0 bytes of 5 GB" about an
+   * account whose usage nobody has measured. The flattener detects the
+   * synthesized shape (it carries no `user_id`) and says so here, and the
+   * meter renders "usage being recalculated" instead of a number it does not
+   * have. folder-sync SPEC-SERVER §8: metering only just landed on the
+   * standalone service, and FS-L6 still has to rebuild and re-grain the
+   * ledger — an unbuilt row is the expected state, not an error.
+   */
+  ledger_measured: boolean;
+  /** When the ledger row was last written, or null when there is no row. */
+  ledger_measured_at: string | null;
 }
 
 // ---------------------------------------------------------------------------

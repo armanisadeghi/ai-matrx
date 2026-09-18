@@ -4,6 +4,12 @@
 
 **Status:** live everywhere — the ONLY context menu (`features/context-menu-v2/` deleted 2026-07-19). One menu for every surface: a near-zero shell on mount, full power on first open, all modals through the OverlayController.
 
+## Change log
+
+- `2026-09-17` — **`primary` sections: the clicked target comes first.** New optional `ContextMenuExtraSection.primary`; `liftPrimarySections` (classic) and `arrangeMenu` (tiered/command) put it at the top, inline, heading kept, with the pane's sibling sections directly under it. First adopter: the data-table grid (a header right-click opened on dead Cell and Row folds with the column's actions eleven rows down). Verified live on `/data/[id]`; `layout-parity.test.ts` pins order, no-fold, headings and losslessness in all three layouts.
+
+- `2026-09-17` — Native numeric inputs retain their browser editing contract. Selection capture treats inputs without a supported selection API as one whole value, routes edits through the controlled replacement callback, and skips unsupported range restoration; text inputs and textareas retain partial selections.
+
 `EditableContextMenu` / `NonEditableContextMenu` wrap children; the menu does everything automatically from `surfaceName` + a few value props. **The single most important contract is value mapping** (below) — the AI shortcuts and bound agents depend on it.
 
 ---
@@ -71,6 +77,20 @@ with ≤ `INLINE_SURFACE_MAX` (3) rows renders inline; a longer one folds into
 ONE submenu named by its `label` with its optional `icon` (notes → "Note" with
 `StickyNote`). The surface never knows which layout is active.
 
+**THE PRIMARY SECTION — the thing the user right-clicked (Arman, 2026-09-17:
+"make it clear what section of actions are specific to the cell, the table or
+something else").** A pane with several targets (a grid's cell / row / column)
+marks the clicked target's section `primary: true` (`ContextMenuExtraSection`).
+Every layout then renders it FIRST — above the universal rows — INLINE, with
+its heading, never folded, however long; in tiered/command the pane's other
+sections follow it directly (inline ones keep their headings), so the pane's
+hierarchy reads as one block and the platform's rows as another. Lossless: it
+only MOVES rows (`layout-parity.test.ts` § primary section). The host decides
+which sections exist for a target — a column header has no cell and no row, so
+the grid offers neither there; that is not a layout hiding rows. A surface with
+one identity never needs `primary`. Reference: `UserTableViewer`
+(`gridMenuTargetKind`) + `features/data-tables/grid-context-menu.ts`.
+
 **Overflow law:** the desktop menus cap at the Radix available height and
 scroll (`max-h-[var(--radix-context-menu-content-available-height)] overflow-y-auto`) —
 the classic /notes menu measured 1136px in a 900px viewport and its tail was
@@ -106,7 +126,7 @@ A menu that opens but Copy does nothing and the selection bar is empty is a **bu
 
 > **Owning doc:** the Listening & Speech stack (speech entry point, iOS unlock, the system→org→user settings cascade, the mandate-backed default agent) is documented in [`features/audio/FEATURE.md`](../audio/FEATURE.md) § LISTENING & SPEECH. This section covers only the menu's half.
 
-Read-only content with actionable text exposes **Speak** and ONE **Listen** submenu (single slot) carrying **Summarize for listening** and **Summarize & listen**. Speak sends the current selection (or resolved content when nothing is selected) through the canonical speech queue. Both Listen actions auto-run the resolved `spoken_summary` agent in the floating **Listen panel** (`features/window-panels/windows/listen/ListenSummaryWindow.tsx`, overlay `listenSummaryWindow`) with `content` plus `style = "Extremely Concise Summary"` — the panel shows the streaming summary through the canonical pipeline plus an audio transport. "Summarize & listen" additionally streams speech in real time (stream-to-stream via the `voicePlaybackBus` `includeActive` request); plain "Summarize for listening" waits for the user to press Play. **Listening is UNIVERSAL:** a surface that declares its own `spoken_summary` role wins; every other surface falls back to the platform home role on `matrx-user/assistant-message` (`LISTEN_SUMMARY_HOME_SURFACE` in the `listenSummaryWindow` opener), which carries the `ambient.spoken_summary` mandate — `agent.mandate` holds the default builtin agent ("Listening Summary", system org), so the actions resolve for every user on every surface with no per-user binding. The submenu disables (never hides) only when there is no actionable text or the mandate is unseeded. Assistant messages tag their rendered response body with `data-message-content`, so no-selection actions exclude action-bar labels and other message chrome.
+Read-only content with actionable text exposes **Speak** and ONE **Listen** submenu (single slot) carrying **Summarize without playing** and **Summarize & listen**. Speak sends the current selection (or resolved content when nothing is selected) through the canonical speech queue. Both Listen actions auto-run the resolved `spoken_summary` agent in the floating **Listen panel** (`features/window-panels/windows/listen/ListenSummaryWindow.tsx`, overlay `listenSummaryWindow`) with `content` plus `style = "Extremely Concise Summary"` — the panel shows the streaming summary through the canonical pipeline plus an audio transport. "Summarize & listen" additionally streams speech in real time (stream-to-stream via the `voicePlaybackBus` `includeActive` request); plain "Summarize without playing" waits for the user to press Play. **Listening is UNIVERSAL:** a surface that declares its own `spoken_summary` role wins; every other surface falls back to the platform home role on `matrx-user/assistant-message` (`LISTEN_SUMMARY_HOME_SURFACE` in the `listenSummaryWindow` opener), which carries the `ambient.spoken_summary` mandate — `agent.mandate` holds the default builtin agent ("Listening Summary", system org), so the actions resolve for every user on every surface with no per-user binding. The submenu disables (never hides) only when there is no actionable text or the mandate is unseeded. Assistant messages tag their rendered response body with `data-message-content`, so no-selection actions exclude action-bar labels and other message chrome.
 
 ---
 

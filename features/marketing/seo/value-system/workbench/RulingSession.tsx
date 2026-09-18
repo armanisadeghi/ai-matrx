@@ -15,7 +15,7 @@
  * the topic tree, and a level — through the SAME RPCs every other surface uses:
  *
  *   • a dimension value → `setKeywordStamps`   (`seo.gsc_set_keyword_stamps`)
- *   • a service         → `setKeywordService`  (`seo.gsc_set_keyword_topic`)
+ *   • an offering       → `setKeywordOffering` (`seo.gsc_set_keyword_offering`)
  *   • a level           → the workbench's own ruling mutation
  *
  * This component owns NO write path. It owns a posture: one question, one
@@ -59,9 +59,14 @@ import { InlineQueryError } from "@/features/marketing/components/shared/Marketi
 import { formatCount } from "@/features/marketing/search-console/types";
 import { knobInts } from "@/lib/knobs/featureKnobs";
 import type { FacetDimension } from "@/features/marketing/seo/value-system/dimensions/data";
-import { setKeywordStamps } from "@/features/marketing/seo/keyword-workbench/data";
-import { setKeywordService } from "@/features/marketing/seo/keyword-workbench/data";
-import { useSiteServices } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteServices";
+import {
+  setKeywordOffering,
+  setKeywordStamps,
+} from "@/features/marketing/seo/keyword-workbench/data";
+import {
+  requireOfferingOrganization,
+  useSiteOfferings,
+} from "@/features/marketing/seo/keyword-workbench/hooks/useSiteOfferings";
 import {
   OfferingPicker,
   OFFERING_UNPLACED,
@@ -174,7 +179,7 @@ export function RulingSession({
     placeholderData: keepPreviousData,
   });
 
-  const services = useSiteServices(
+  const offerings = useSiteOfferings(
     siteId,
     reviewWindow.start,
     reviewWindow.end,
@@ -252,16 +257,17 @@ export function RulingSession({
 
   /** A service placement — the ONE placement write. */
   const place = useMutation({
-    mutationFn: (input: { row: SessionQueueRow; topicId: string; reason: string }) =>
-      setKeywordService({
+    mutationFn: (input: { row: SessionQueueRow; offeringId: string; reason: string }) =>
+      setKeywordOffering({
+        organizationId: requireOfferingOrganization(offerings),
         siteId,
         keywordIds: [input.row.keywordId],
-        topicId: input.topicId,
+        offeringId: input.offeringId,
         notes: input.reason || null,
       }),
     onSuccess: (_result, input) => {
       toast.success(
-        `Placed on ${services.byId.get(input.topicId)?.name ?? "that offering"}`,
+        `Placed on ${offerings.byId.get(input.offeringId)?.name ?? "that offering"}`,
       );
       advance(input.row.keywordId);
     },
@@ -610,13 +616,13 @@ export function RulingSession({
               </p>
               <OfferingPicker
                 siteId={siteId}
-                services={services}
+                offerings={offerings}
                 value={null}
                 onSelect={(next) => {
                   if (next === OFFERING_UNPLACED) return;
                   place.mutate({
                     row: current,
-                    topicId: next,
+                    offeringId: next,
                     reason: notes.trim(),
                   });
                 }}

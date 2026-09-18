@@ -120,7 +120,7 @@ export function MessageOptionsMenu({
   const openMessageTemplateSave = useOpenQuickMessageTemplateSaveWindow();
 
   // Effective `spoken_summary` agent — powers the two listening actions
-  // (Summarize for listening / Summarize & listen). Null hides them.
+  // (Summarize without playing / Summarize & listen). Null hides them.
   const { roles: surfaceAgentRoles } = useSurfaceAgentRoles(
     LISTENING_HOME_SURFACE,
   );

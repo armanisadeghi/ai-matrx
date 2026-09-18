@@ -57,6 +57,8 @@ import { MockProcessAdapter } from "../../adapters/SandboxProcessAdapter";
 import { useCodeWorkspace } from "../../CodeWorkspaceProvider";
 import { useSandboxWorkspaceConnection } from "./useSandboxWorkspaceConnection";
 import { useOpenSandboxManagementWindow } from "@/features/overlays/openers/sandboxManagementWindow";
+import { useSandboxLifecycleSubmission } from "@/lib/sandbox/useSandboxLifecycleSubmission";
+import { useSandboxLifecycleTerminalInvalidation } from "@/lib/sandbox/useSandboxLifecycleTerminalInvalidation";
 import {
   Tooltip,
   TooltipContent,
@@ -76,11 +78,20 @@ import {
   selectActiveSandboxProxyUrl,
   setActiveSandboxId,
   setActiveSandboxProxyUrl,
-  setActiveView,
 } from "../../redux/codeWorkspaceSlice";
-import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import {
+  selectAuthReady,
+  selectIsSuperAdmin,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { requireMatchingSandboxOrganization } from "@/lib/sandbox/explicit-organization";
+import {
+  classifySandboxLifecycleResponse,
+  sandboxLifecycleMessage,
+  sandboxLifecycleTransportUnknown,
+} from "@/lib/sandbox/lifecycle-response";
+import { toast } from "@/lib/toast";
 import { clearFsChangesBucket } from "../../redux/fsChangesSlice";
 import { SidePanelAction, SidePanelHeader } from "../SidePanelChrome";
 import {
@@ -104,6 +115,8 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   const activeId = useAppSelector(selectActiveSandboxId);
   const activeProxyUrl = useAppSelector(selectActiveSandboxProxyUrl);
   const isAdmin = useAppSelector(selectIsSuperAdmin);
+  const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectOrganizationId);
   const { setFilesystem, setProcess } = useCodeWorkspace();
 
@@ -111,7 +124,13 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  const { submit: submitLifecycle } = useSandboxLifecycleSubmission();
+  const [creatingRequest, setCreatingRequest] = useState<{
+    generation: number;
+    organizationId: string;
+    userId: string | null;
+    authReady: boolean;
+  } | null>(null);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<SandboxInstance | null>(
@@ -130,8 +149,45 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
 
   const pollTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const didMountReconcileRef = useRef(false);
+  const mountedRef = useRef(false);
+  const currentOrganizationIdRef = useRef(organizationId);
+  const currentUserIdRef = useRef(userId);
+  const currentAuthReadyRef = useRef(authReady);
+  const createRequestGenerationRef = useRef(0);
+  const refreshGenerationRef = useRef(0);
+  const creating =
+    creatingRequest?.organizationId === organizationId &&
+    creatingRequest.userId === userId &&
+    creatingRequest.authReady === authReady &&
+    authReady;
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    currentOrganizationIdRef.current = organizationId;
+    currentUserIdRef.current = userId;
+    currentAuthReadyRef.current = authReady;
+    // A scope switch invalidates its old request's UI ownership. `creating`
+    // is scoped to the request's organization, so the new scope is usable
+    // immediately while an old completion cannot clear a newer create.
+    const invalidatedGeneration = ++createRequestGenerationRef.current;
+    refreshGenerationRef.current += 1;
+    queueMicrotask(() => {
+      setCreatingRequest((current) =>
+        current && current.generation <= invalidatedGeneration ? null : current,
+      );
+    });
+  }, [authReady, organizationId, userId]);
 
   const refresh = useCallback(async () => {
+    if (!mountedRef.current) return;
+    const generation = refreshGenerationRef.current;
+    const scope = { authReady, organizationId, userId };
     setLoading(true);
     setError(null);
     try {
@@ -139,13 +195,14 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
       if (!resp.ok)
         throw new Error(`Failed to list sandboxes (${resp.status})`);
       const data: SandboxListResponse = await resp.json();
-      setInstances(data.instances ?? []);
+      if (mountedRef.current && refreshGenerationRef.current === generation && currentAuthReadyRef.current === scope.authReady && currentOrganizationIdRef.current === scope.organizationId && currentUserIdRef.current === scope.userId) setInstances(data.instances ?? []);
     } catch (err) {
-      setError(extractErrorMessage(err));
+      if (mountedRef.current && refreshGenerationRef.current === generation) setError(extractErrorMessage(err));
     } finally {
-      setLoading(false);
+      if (mountedRef.current && refreshGenerationRef.current === generation) setLoading(false);
     }
-  }, []);
+  }, [authReady, organizationId, userId]);
+  useSandboxLifecycleTerminalInvalidation(() => refresh(), () => mountedRef.current && currentAuthReadyRef.current === authReady && currentOrganizationIdRef.current === organizationId && currentUserIdRef.current === userId);
 
   // First mount only: ask the orchestrator which of our "active" rows still
   // exist. Anything orphaned gets marked `destroyed` server-side and falls
@@ -205,7 +262,7 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
    * probe; callers are expected to gate this on whatever readiness check
    * makes sense for their entry point.
    */
-  const { connect, connectingId, wireInstance } = useSandboxWorkspaceConnection(
+  const { connect, connectingId } = useSandboxWorkspaceConnection(
     {
       onError: setError,
       onConnected: () => setError(null),
@@ -234,59 +291,90 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
   }, [activeId, dispatch, setFilesystem, setProcess]);
 
   const createSandbox = useCallback(
-    async (
-      request: SandboxCreateRequest,
-    ): Promise<SandboxInstance | undefined> => {
-      setCreating(true);
+    (request: SandboxCreateRequest): void => {
+      const requestedOrganizationId = request.organization_id;
+      const requestedUserId = userId;
+      const requestedAuthReady = authReady;
+      const requestGeneration = ++createRequestGenerationRef.current;
+      const toastId = toast.loading("Requesting sandbox creation");
+      setCreatingRequest({
+        generation: requestGeneration,
+        organizationId: requestedOrganizationId,
+        userId: requestedUserId,
+        authReady: requestedAuthReady,
+      });
       setError(null);
-      try {
-        const explicitOrganizationId = requireMatchingSandboxOrganization(
-          request.organization_id,
-          organizationId,
-        );
-        const resp = await fetch("/api/sandbox", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...request,
-            organization_id: explicitOrganizationId,
-          }),
-        });
-        const data = (await resp.json()) as
-          SandboxDetailResponse | { error?: string };
-        if (!resp.ok) {
-          const err = "error" in data ? data.error : undefined;
-          throw new Error(err ?? `Create failed (${resp.status})`);
+      void (async () => {
+        const isCurrentSurface = () =>
+          mountedRef.current &&
+          currentOrganizationIdRef.current === requestedOrganizationId &&
+          currentUserIdRef.current === requestedUserId &&
+          currentAuthReadyRef.current === requestedAuthReady &&
+          requestedAuthReady &&
+          createRequestGenerationRef.current === requestGeneration;
+        try {
+          const explicitOrganizationId = requireMatchingSandboxOrganization(
+            requestedOrganizationId,
+            organizationId,
+          );
+          const resp = await fetch("/api/sandbox", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...request,
+              organization_id: explicitOrganizationId,
+            }),
+          });
+          const data = (await resp.json().catch(() => null)) as
+            | SandboxDetailResponse
+            | { error?: string }
+            | null;
+          if (!resp.ok) {
+            const message = data && "error" in data ? data.error : undefined;
+            if (resp.status >= 400 && resp.status < 500) {
+              const refusal = message ?? `Creation refused (${resp.status})`;
+              if (isCurrentSurface()) {
+                setError(refusal);
+                toast.dismiss(toastId);
+                toast.error(refusal);
+              }
+              return;
+            }
+            throw new Error("creation outcome unknown");
+          }
+          if (!data || !("instance" in data) || !data.instance) {
+            throw new Error("creation outcome unknown");
+          }
+          if (!isCurrentSurface()) return;
+          setInstances((current) => {
+            const remaining = (current ?? []).filter(
+              (instance) => instance.id !== data.instance.id,
+            );
+            return [data.instance, ...remaining];
+          });
+          toast.dismiss(toastId);
+          toast.success("Sandbox creation requested. It may still be starting.");
+        } catch {
+          if (isCurrentSurface()) {
+            const unknown = "Could not confirm creation; check sandbox list before retrying";
+            setError(unknown);
+            toast.dismiss(toastId);
+            toast.warning(unknown);
+          }
+        } finally {
+          // Always retire the exact toast this request created, including
+          // after logout/unmount/scope change. Only its own generation may
+          // clear busy, so a late old completion cannot clear a newer create.
+          toast.dismiss(toastId);
+          if (isCurrentSurface()) {
+            setCreatingRequest((current) =>
+              current?.generation === requestGeneration ? null : current,
+            );
+          }
         }
-        await refresh();
-        // DON'T wire the instance yet — the modal will run diagnostics first
-        // and only call back to wire it (via onReady) once aidream is up.
-        // Return the instance so the modal knows which sandbox to diagnose.
-        if ("instance" in data && data.instance) {
-          return data.instance;
-        }
-        return undefined;
-      } catch (err) {
-        const message = extractErrorMessage(err);
-        setError(message);
-        throw err;
-      } finally {
-        setCreating(false);
-      }
+      })();
     },
-    [organizationId, refresh],
-  );
-
-  // Called by the diagnostics modal once aidream reports overall_ok=true.
-  // This is what wireInstance + setActiveView used to happen synchronously
-  // inside createSandbox above — now deferred to verified state.
-  const handleSandboxReady = useCallback(
-    (instance: SandboxInstance) => {
-      wireInstance(instance);
-      dispatch(setActiveView("explorer"));
-      setCreateModalOpen(false);
-    },
-    [dispatch, wireInstance],
+    [authReady, organizationId, refresh, userId],
   );
 
   const stopSandbox = useCallback(
@@ -294,24 +382,25 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
       setBusyId(instance.id);
       setError(null);
       try {
-        const resp = await fetch(`/api/sandbox/${instance.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "stop" }),
-        });
-        if (!resp.ok) {
-          const data = await resp.json().catch(() => null);
-          throw new Error(data?.error ?? `Stop failed (${resp.status})`);
+        const result = await submitLifecycle({ rowId: instance.id, sandboxId: instance.sandbox_id, kind: "stop" });
+        if (!result.admitted) {
+          setError(result.reason === "already_pending" ? "A sandbox operation is already pending for this target." : "Sandbox lifecycle is still connecting to your account.");
+          return;
         }
         if (activeId === instance.id) disconnect();
-        await refresh();
       } catch (err) {
-        setError(extractErrorMessage(err));
+        if (err instanceof TypeError) {
+          const result = sandboxLifecycleTransportUnknown("stop");
+          setError(sandboxLifecycleMessage(result));
+          toast.warning(sandboxLifecycleMessage(result));
+        } else {
+          setError(extractErrorMessage(err));
+        }
       } finally {
         setBusyId(null);
       }
     },
-    [activeId, disconnect, refresh],
+    [activeId, disconnect, submitLifecycle],
   );
 
   const deleteSandbox = useCallback(
@@ -319,23 +408,25 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
       setBusyId(instance.id);
       setError(null);
       try {
-        const resp = await fetch(`/api/sandbox/${instance.id}`, {
-          method: "DELETE",
-        });
-        if (!resp.ok && resp.status !== 204) {
-          const data = await resp.json().catch(() => null);
-          throw new Error(data?.error ?? `Delete failed (${resp.status})`);
+        const result = await submitLifecycle({ rowId: instance.id, sandboxId: instance.sandbox_id, kind: "delete" });
+        if (!result.admitted) {
+          setError(result.reason === "already_pending" ? "A sandbox operation is already pending for this target." : "Sandbox lifecycle is still connecting to your account.");
+          return;
         }
         if (activeId === instance.id) disconnect();
-        await refresh();
-        setDeleteTarget(null);
       } catch (err) {
-        setError(extractErrorMessage(err));
+        if (err instanceof TypeError) {
+          const result = sandboxLifecycleTransportUnknown("delete");
+          setError(sandboxLifecycleMessage(result));
+          toast.warning(sandboxLifecycleMessage(result));
+        } else {
+          setError(extractErrorMessage(err));
+        }
       } finally {
         setBusyId(null);
       }
     },
-    [activeId, disconnect, refresh],
+    [activeId, disconnect, submitLifecycle],
   );
 
   const resetSandbox = useCallback(
@@ -510,7 +601,6 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
         busy={creating}
         onClose={() => setCreateModalOpen(false)}
         onCreate={createSandbox}
-        onReady={handleSandboxReady}
       />
       <ConfirmDialog
         open={!!deleteTarget}
@@ -534,7 +624,9 @@ export const SandboxesPanel: React.FC<SandboxesPanelProps> = ({
         variant="destructive"
         busy={!!deleteTarget && busyId === deleteTarget.id}
         onConfirm={() => {
-          if (deleteTarget) void deleteSandbox(deleteTarget);
+          const target = deleteTarget;
+          setDeleteTarget(null);
+          if (target) void deleteSandbox(target);
         }}
       />
     </div>

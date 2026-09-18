@@ -9,7 +9,6 @@
 //
 // React Compiler is on: no manual memo.
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -25,6 +24,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectAccessToken,
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
+import { useLoginHref } from "@/hooks/auth/useLoginHref";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { cn } from "@/lib/utils";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
@@ -32,7 +38,8 @@ import {
   createEducationAudioStudyScope,
   type AudioLibraryEntry,
 } from "@/features/surfaces/manifests/education-audio-study.manifest";
-import { studyMediaService } from "../../service";
+import { authenticatedStudyMediaLoadKey } from "../../authLoad";
+import { useStudyMediaLibrary } from "../../useStudyMediaLibrary";
 import type { StudyMediaRow } from "../../types";
 
 const SURFACE_NAME = "matrx-user/education-audio-study";
@@ -46,15 +53,25 @@ const FORMAT_ICON: Record<string, typeof Headphones> = {
 
 export function AudioStudyHome() {
   const router = useRouter();
-  const [rows, setRows] = useState<StudyMediaRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const loginHref = useLoginHref();
+  const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
+  const accessToken = useAppSelector(selectAccessToken);
+  const loadKey = authenticatedStudyMediaLoadKey({
+    authReady,
+    userId,
+    accessToken,
+  });
+  const library = useStudyMediaLibrary("audio", loadKey);
+  const rows = library.rows;
+  const loading = !authReady || library.loading;
 
   // Read at trigger time, never from stale closure state.
   const buildScope = () =>
     createEducationAudioStudyScope({
       view: "list",
-      library_loaded: !loading,
-      ...(loading
+      library_loaded: library.loaded,
+      ...(!library.loaded
         ? {}
         : {
             audio_count: rows.length,
@@ -70,17 +87,23 @@ export function AudioStudyHome() {
           }),
     });
 
-  useEffect(() => {
-    let active = true;
-    studyMediaService.listByKind("audio").then((res) => {
-      if (!active) return;
-      setRows(res.data ?? []);
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  if (authReady && !loadKey) {
+    return (
+      <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
+        <EducationToolHeader title="Audio Study" />
+        <div className="mx-auto w-full max-w-3xl px-4 pb-4">
+          <div className="rounded-xl border border-dashed border-border p-10 text-center">
+            <p className="text-sm text-muted-foreground">
+              Sign in to view and create your audio studies.
+            </p>
+            <Button asChild className="mt-4" size="sm">
+              <Link href={loginHref}>Sign in</Link>
+            </Button>
+          </div>
+        </div>
+      </SurfaceRuntimeProvider>
+    );
+  }
 
   return (
     <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
@@ -102,6 +125,8 @@ export function AudioStudyHome() {
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-16 w-full" />
         </div>
+      ) : library.error ? (
+        <LibraryError error={library.error} onRetry={library.retry} />
       ) : rows.length === 0 ? (
         <EmptyState onNew={() => router.push("/education/audio-study/new")} />
       ) : (
@@ -113,6 +138,16 @@ export function AudioStudyHome() {
       )}
     </div>
     </SurfaceRuntimeProvider>
+  );
+}
+
+function LibraryError({ onRetry }: { error: string; onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 p-10 text-center">
+      <AlertCircle className="h-8 w-8 text-destructive" />
+      <p className="text-sm text-muted-foreground">Could not load audio studies right now.</p>
+      <Button size="sm" onClick={onRetry}>Try again</Button>
+    </div>
   );
 }
 

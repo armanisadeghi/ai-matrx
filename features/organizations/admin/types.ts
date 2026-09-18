@@ -17,7 +17,7 @@ export interface OrgAdminMember {
   /** Governance status overlay (iam.org_member_controls). */
   status: OrgMemberStatus;
   memberLevel: string | null;
-  /** files.account_tiers.id override (advisory). */
+  /** files.account_tiers.tier_key override (advisory). */
   tierOverride: string | null;
   storageCapBytes: number | null;
   monthlyBudgetMcents: number | null;

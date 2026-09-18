@@ -529,7 +529,7 @@ export function CrawlsTable() {
           router.push(marketingRoutes.site(brandId, site.id, `/crawls/${row.id}`))
         }
         rowActions={(row) => (
-          <div className="flex items-center gap-0.5">
+          <>
             {ACTIVE_STATUSES.has(row.status) ? (
               <button
                 type="button"
@@ -555,7 +555,7 @@ export function CrawlsTable() {
             >
               <Trash2 className="h-3.5 w-3.5" />
             </button>
-          </div>
+          </>
         )}
         emptyState={{
           icon: <ScanSearch className="h-8 w-8 text-muted-foreground" />,

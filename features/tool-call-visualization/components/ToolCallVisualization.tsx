@@ -37,6 +37,7 @@ import {
   getToolDisplayMode,
   getToolGlyph,
   getToolChrome,
+  hasCustomRenderer,
 } from "../registry/registry";
 import { ToolGlyph } from "../renderers/_shared-entity/ToolGlyph";
 import { selectToolDisplayPreference } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.selectors";
@@ -48,11 +49,12 @@ import {
   markToolCardLive,
   wasToolCardLive,
 } from "./toolCardUiSession";
-import { useDbToolMeta } from "../db-renderer/useDbToolMeta";
+import { useDbToolRendererState } from "../db-renderer/useDbToolMeta";
 import { ToolErrorCard } from "../result-fields/ToolErrorCard";
 import { ToolUpdatesOverlay } from "./ToolUpdatesOverlay";
 import { getToolArtifact } from "../registry/toolArtifact";
 import { ArtifactResultBar } from "./ArtifactResultBar";
+import { resolveToolShellDisplayMode } from "./resolveToolShellDisplayMode";
 
 // ─── Public props ─────────────────────────────────────────────────────────────
 
@@ -129,14 +131,24 @@ const ToolCallVisualizationInner: React.FC<{
   // A DB renderer's author-declared label (e.g. "Weather" for `travel_get_weather`).
   // Resolves async on first sight, then re-renders — so a fully DB-authored tool
   // controls its collapsed line, not just its expanded body.
-  const dbMeta = useDbToolMeta(headerTool?.toolName ?? null);
+  const dbRendererState = useDbToolRendererState(
+    headerTool?.toolName ?? null,
+  );
+  const dbMeta = dbRendererState.meta;
   const toolMode = getToolDisplayMode(headerTool?.toolName ?? null, headerTool);
-  const effectiveMode: "auto" | "stay-open" | "never-open" =
-    userPref === "verbose"
-      ? "stay-open"
-      : userPref === "minimal"
-        ? "never-open"
-        : toolMode;
+  // A confirmed generic fallback is disclosure-only: keep its raw internals
+  // behind the condensed line until the user explicitly clicks. While a DB
+  // lookup is unresolved, preserve the existing behavior; if a custom DB
+  // renderer lands, nothing changes for it, and if no renderer exists the
+  // still-empty body folds before GenericRenderer ever mounts visibly.
+  const usesGenericFallback =
+    dbRendererState.resolution === "generic" &&
+    !hasCustomRenderer(headerTool?.toolName ?? null);
+  const effectiveMode = resolveToolShellDisplayMode(
+    userPref,
+    toolMode,
+    usesGenericFallback,
+  );
 
   // Glossy per-tool glyph for the folded line. Card chrome: a self-headed entity
   // card — once the tool COMPLETES the shell renders the InlineComponent
@@ -182,8 +194,8 @@ const ToolCallVisualizationInner: React.FC<{
     if (!isPersisted) markToolCardLive(primaryCallId);
   }, [isPersisted, primaryCallId]);
 
-  // The automatic expand decision (no user override). Errors NEVER default to
-  // expanded — even a stay-open tool collapses to one calm line on error.
+  // The automatic expand decision (no user override). Errors and generic raw
+  // payloads NEVER default to expanded; a click still wins via `userChoice`.
   const autoExpanded =
     phase === "error"
       ? false

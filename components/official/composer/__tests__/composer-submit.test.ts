@@ -7,7 +7,6 @@ import fs from "node:fs";
 import path from "node:path";
 
 import {
-  composerHintText,
   composerKeyIntent,
   intentTakesTheKey,
   type ComposerKeyEvent,
@@ -74,14 +73,6 @@ describe("composerKeyIntent — Enter sends, Shift+Enter is a new line", () => {
       expect(intentTakesTheKey(intent)).toBe(true);
     }
     expect(intentTakesTheKey("newline")).toBe(false);
-  });
-});
-
-describe("composerHintText — one wording, never invented per screen", () => {
-  it("names the key that sends, both ways round", () => {
-    expect(composerHintText(true)).toContain("Enter to send");
-    expect(composerHintText(true)).toContain("Shift+Enter");
-    expect(composerHintText(false)).toContain("Enter for a new line");
   });
 });
 

@@ -30,6 +30,13 @@ export interface QuestionDeskRailProps {
   /** Review-mode rows, which live in the table rather than this queue. */
   reviewTotal: number;
   reviewReviewed: number;
+  /**
+   * Answers the server has turned into work that no agent has picked up yet.
+   * The row's `status_note` says "recording…", which reads as work in flight;
+   * ten such items sat untouched for seven hours and nothing on the screen
+   * said so (V2 finding 6, 2026-09-14). Waiting is now visible.
+   */
+  awaitingAgent: number;
   /** Rendered under the legend — the live/failed state of this surface. */
   footer?: React.ReactNode;
 }
@@ -43,12 +50,13 @@ export function QuestionDeskRail({
   totalCount,
   reviewTotal,
   reviewReviewed,
+  awaitingAgent,
   footer,
 }: QuestionDeskRailProps) {
   const percent = totalCount === 0 ? 0 : (answeredCount / totalCount) * 100;
 
   return (
-    <aside className="flex flex-col gap-4 border-b border-border bg-muted/40 px-4 py-4 lg:sticky lg:top-0 lg:h-dvh lg:w-[260px] lg:shrink-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
+    <aside className="qd-rail flex flex-col gap-4 border-b border-border bg-muted/40 px-4 py-4 lg:sticky lg:top-0 lg:w-[260px] lg:shrink-0 lg:overflow-y-auto lg:border-b-0 lg:border-r">
       <div>
         <h1 className="qd-editorial text-xl leading-tight font-semibold tracking-tight text-foreground">
           {interview.title}
@@ -73,6 +81,13 @@ export function QuestionDeskRail({
         {reviewTotal > 0 ? (
           <b className="font-mono text-[11px] font-medium tracking-wide text-muted-foreground">
             {reviewReviewed} of {reviewTotal} decisions reviewed
+          </b>
+        ) : null}
+        {awaitingAgent > 0 ? (
+          <b className="font-mono text-[11px] font-medium tracking-wide text-warning">
+            {awaitingAgent}{" "}
+            {awaitingAgent === 1 ? "answer is" : "answers are"} waiting for an
+            agent to record {awaitingAgent === 1 ? "it" : "them"}
           </b>
         ) : null}
       </div>
@@ -110,11 +125,18 @@ export function QuestionDeskRail({
         })}
       </ul>
 
-      {/* The app shell parks fixed chrome (the error chip, the schedules pill)
-          in the bottom-left corner, which sat directly on top of the "J / K"
-          line in both themes (verifier finding 6, 2026-09-12). The legend keeps
-          its own clearance rather than hoping the chip moves. */}
-      <div className="mt-auto space-y-2 border-t border-border pt-3.5 lg:pb-14">
+      {/* The app shell parks fixed chrome (the error chip) in the bottom-left
+          corner, on top of this legend (verifier finding 6, 2026-09-12; the
+          guessed `pb-14` only moved the collision one line up — V2 finding 7).
+          The chrome publishes the band it ACTUALLY occupies as
+          `--shell-fixed-corner-clearance`. A bottom padding on this block was
+          the first answer and was still wrong at 1280×720 (V3, 2026-09-16):
+          the rail is a scroll container, so when its content is taller than
+          the viewport the line under the chip is whatever is mid-scroll, and
+          padding at the END of the content protects nothing. The rail's own
+          height now stops above the band (`.qd-rail` in question-desk.css), so
+          no rail content can ever sit under the chip at any scroll position. */}
+      <div className="mt-auto space-y-2 border-t border-border pt-3.5">
         {/* A phone has no keyboard, so a key legend there is an affordance
             that cannot be used. It is not dimmed or disabled — it is absent. */}
         <dl className="hidden grid-cols-[auto_1fr] gap-x-2 gap-y-1 font-mono text-[10.5px] leading-relaxed text-muted-foreground lg:grid">

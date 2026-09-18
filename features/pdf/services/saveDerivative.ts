@@ -41,7 +41,32 @@ export async function saveDerivative({
   derivationKind,
   derivationMetadata,
 }: SaveDerivativeParams): Promise<{ docId: string | null; error: string | null }> {
-  // 1. Upload blob to cld_files via the canonical handler.
+  // 1. The derivative lives in its PARENT's tenant — a derived document can
+  //    never sit in a different organization from the document it came from,
+  //    and it is never left for a database default to choose. Read it first,
+  //    before spending an upload, and refuse with the remedy when the parent
+  //    carries none.
+  const { data: parentRow, error: parentError } = await supabase
+    .schema("docproc")
+    .from("processed_documents")
+    .select("organization_id")
+    .eq("id", parent.id)
+    .single();
+  if (parentError) {
+    return {
+      docId: null,
+      error: `Couldn't read the source document: ${parentError.message}`,
+    };
+  }
+  if (!parentRow.organization_id) {
+    return {
+      docId: null,
+      error:
+        "The source document isn't filed in an organization, so the derived copy has nowhere to live. Open it from an organization workspace and try again.",
+    };
+  }
+
+  // 2. Upload blob to cld_files via the canonical handler.
   const file = new File([result.blob], result.filename, {
     type: result.contentType || "application/pdf",
   });
@@ -62,11 +87,13 @@ export async function saveDerivative({
     };
   }
 
-  // 2. Create the derivative processed_documents row with lineage.
-  const { data: newDoc, error: insertError } = await (supabase as any)
-    .schema("docproc").from("processed_documents")
+  // 3. Create the derivative processed_documents row with lineage.
+  const { data: newDoc, error: insertError } = await supabase
+    .schema("docproc")
+    .from("processed_documents")
     .insert({
       name: result.filename.replace(/\.pdf$/i, ""),
+      organization_id: parentRow.organization_id,
       source_kind: "cld_file",
       source_id: fileId,
       source_hash: "",
@@ -86,5 +113,5 @@ export async function saveDerivative({
   if (insertError) {
     return { docId: null, error: insertError.message };
   }
-  return { docId: (newDoc as { id: string }).id, error: null };
+  return { docId: newDoc.id, error: null };
 }

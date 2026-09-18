@@ -45,10 +45,15 @@ import { useEntitlementGuard } from "@/features/entitlements/components/useEntit
 import { useAiComplianceGate } from "@/features/education/compliance/useAiComplianceGate";
 import { EntitlementMeter } from "@/features/entitlements/components/EntitlementMeter";
 import { FC_MANDATES } from "../../data/mandates";
+import { useFlashcardMandates } from "../../data/mandate-disclosure";
 import { fcService } from "../../data/fcService";
 import { generatedSetFromEnvelope } from "../../data/generated-set-from-envelope";
 import { useGenerateCards } from "../../data/useGenerateCards";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import {
+  ASSISTANT_MESSAGE_COLUMN_CLASS,
+  ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,
+} from "@/features/agents/components/shared/assistant-message-layout";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -67,13 +72,13 @@ const COUNT_MAX = 50;
 const FIELD_INPUT_CLASS = "text-base";
 
 export function CreateFromTopic() {
+  useFlashcardMandates(["generateCards"]);
   const router = useRouter();
   const { generate, isGenerating, activeRequestId } = useGenerateCards();
   const cardGen = useEntitlementGuard("education.generate_cards");
   // COPPA before billing, and before any AI work (see useAiComplianceGate).
   const coppa = useAiComplianceGate();
   const [isNavigating, startNavigation] = useTransition();
-
 
   // PRIMARY envelope source: the StreamBlockAccumulator's shadow session
   // already parses the streaming JSON region and re-attaches a live
@@ -154,7 +159,9 @@ export function CreateFromTopic() {
         ? generatedSetFromEnvelope(envelopeRef.current)
         : null;
       const result =
-        fromEnvelope && fromEnvelope.cards.length > 0 ? fromEnvelope : extracted;
+        fromEnvelope && fromEnvelope.cards.length > 0
+          ? fromEnvelope
+          : extracted;
 
       // Single-writer contract (D-WP3): the run's stream ALSO materializes its
       // render block into an fc_set (FLASHCARDS_CANONICAL_ADAPTER). This call
@@ -172,7 +179,9 @@ export function CreateFromTopic() {
       );
 
       if (setRes.error || !setRes.data) {
-        toast.error(setRes.error ?? "Could not save the generated flashcard set");
+        toast.error(
+          setRes.error ?? "Could not save the generated flashcard set",
+        );
         return;
       }
 
@@ -195,7 +204,13 @@ export function CreateFromTopic() {
 
   return (
     <div className="min-h-full w-full bg-textured">
-      <div className="mx-auto max-w-2xl px-4 sm:px-6 py-6 sm:py-8">
+      <div
+        className={cn(
+          ASSISTANT_MESSAGE_COLUMN_CLASS,
+          ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,
+          "py-6 sm:py-8",
+        )}
+      >
         {/* Header */}
         <div className="flex items-center gap-3">
           <Button
@@ -242,7 +257,7 @@ export function CreateFromTopic() {
               </div>
               {/* Live card-by-card preview — the hoisted content-ir session
                   renders each card the moment its front arrives. */}
-              <LiveGenerationPreview envelope={envelope} />
+              <LiveGenerationPreview requestId={activeRequestId} />
             </div>
           ) : (
             <form
@@ -297,7 +312,10 @@ export function CreateFromTopic() {
                     onValueChange={(v) => setDifficulty(v as Difficulty)}
                     disabled={busy}
                   >
-                    <SelectTrigger id="fc-difficulty" className={FIELD_INPUT_CLASS}>
+                    <SelectTrigger
+                      id="fc-difficulty"
+                      className={FIELD_INPUT_CLASS}
+                    >
                       <SelectValue placeholder="Select difficulty" />
                     </SelectTrigger>
                     <SelectContent>

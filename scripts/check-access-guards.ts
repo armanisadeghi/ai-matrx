@@ -34,6 +34,7 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -267,7 +268,6 @@ function detectLowestTierDefault(allow: Allowlist) {
 // update/delete query in the same function body as an active-org selector read.
 
 const ACTIVE_ORG_SELECTORS = [
-  "selectEffectiveOrganizationId",
   "selectActiveOrganizationId",
   "selectOrganizationId",
   "selectHasExplicitOrganization",
@@ -521,7 +521,7 @@ function main() {
   if (findings.length === 0) {
     console.log(`${GREEN}${BOLD}  No access-guard findings.${RESET}`);
     console.log("");
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   const byDetector = new Map<string, Finding[]>();
@@ -557,9 +557,9 @@ function main() {
   console.log("");
 
   if (STRICT && failCount > 0) {
-    process.exit(1);
+    exitAfterDrain(1);
   }
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 main();

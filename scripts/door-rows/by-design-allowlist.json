@@ -1,0 +1,31 @@
+{
+  "why": "THE BY-DESIGN ALLOWLIST for `pnpm check:door-rows --population=signed-in` (DD-208, extended by DD-210). The b75 lane (477 doors) has blocked at FAIL = 0 since DD-192 and has NO allowlist and never will. The wider 892-door population could not block, because it carries a handful of doors whose PURPOSE is to act across the organization boundary — a whistleblower report into an organization you are not in, an access request that necessarily writes into the owner's organization, the AccessGate that must NAME the thing you were denied. Those are not leaks and no fix can make the harness read them as anything else, so without a way to say so the wide lane stays advisory forever and every real leak in the other 888 doors goes unblocked. This file is that way of saying so. EVERY entry names its REASON, its OWNER and the cross-boundary SHAPE it permits — what crosses, in which direction, and how far (DD-210) — each in a full sentence, because a door that crosses a tenant boundary on purpose is the single most dangerous shape on this platform and nobody should be able to add one in silence. RULES: (1) an allowlisted door that FAILs is reported as ALLOWED BY DESIGN, printed by name on every run, and does not block; (2) an allowlist entry whose door is NOT failing any more is STALE and FAILS the gate, so the list can only shrink as doors are tightened; (3) an entry naming no live declared door FAILS; (4) this file has no effect on the b75 lane. Adding an entry is a decision about what the platform intends and belongs to the Data Doctrine chair, not to the lane that trips over the door.",
+  "generatedAt": "2026-09-13",
+  "generatedBy": "DD-208 / B-96 — the minimal reasoned list, created so the wide lane could go BLOCKING the day its three row-boundedness leaks were closed. DD-210 extends it. 2026-09-14 (DD-210 / B-108): every entry now carries the SHAPE it permits, checked by check:impl-doors D17; no entry was added or removed.",
+  "entries": [
+    {
+      "door": "public.anonymous_report_open(p_organization_id uuid, p_ip inet)",
+      "owner": "the Anonymous Reporting feature (HR / whistleblower intake)",
+      "shape": "WRITES OUTWARD, identity-free: one platform.actor_token plus its event row, INTO the organization named in the argument, by a caller with no standing there. Nothing of that organization is read and nothing is returned but the token. The crossing is one-way and write-only.",
+      "reason": "A whistleblower report is BY DEFINITION opened into an organization the reporter has no standing in, and usually one they are deliberately not identified to. The call mints a platform.actor_token plus its event row scoped to that organization; that token IS the anonymity mechanism, and requiring membership first would destroy the feature and the reporter's protection with it. The write is bounded to token issuance — it creates no organization data and reads none back."
+    },
+    {
+      "door": "public.access_request_create(p_resource_type text, p_resource_id uuid, p_level text, p_message text)",
+      "owner": "the Access Request / AccessGate surface",
+      "shape": "WRITES OUTWARD, one row: a single iam.access_requests row naming the caller as requester, into the organization that owns the resource. It reads nothing of that organization and grants nothing — a person with standing must approve before any access exists.",
+      "reason": "Asking for access to something you cannot reach necessarily writes a row into the owner's organization — that row IS the request, and the owner is the only person who can grant it. A door that refused to write outside the caller's own organizations could not implement 'request access' at all. The write is bounded to one iam.access_requests row naming the caller as its requester; it grants nothing until a person with standing approves it."
+    },
+    {
+      "door": "crm.issue_unsubscribe_token(p_contact_medium_id uuid, p_outreach_list_id uuid, p_sending_identity_id uuid)",
+      "owner": "the Outreach / CRM sending system",
+      "shape": "WRITES OUTWARD, one single-purpose token row in the SENDING organization on behalf of a recipient outside it. It discloses nothing about that organization and its only power is to stop mail; it never reads or returns organization data.",
+      "reason": "An unsubscribe token is minted for the RECIPIENT of an outreach message, who is by construction outside the sending organization — that is what makes an unsubscribe link work from an email nobody signed into. The row written is a single-purpose opt-out token in the sender's organization; it discloses nothing about that organization and its only power is to stop mail."
+    },
+    {
+      "door": "public.access_denied_context(p_type text, p_id uuid)",
+      "owner": "the AccessGate surface",
+      "shape": "READS OUTWARD, bounded to identity: level, exists, deleted, disclosure and a DISPLAY NAME of a row the caller cannot SELECT — never the row's contents, never a list, never anything beyond the single id the caller already holds. It writes nothing.",
+      "reason": "This door's entire job is to tell a person WHAT they were denied, so a screen can say 'you do not have access to Acme Corp's project, ask its owner' instead of a blank wall — the no-dead-ends law applied to refusals. It therefore returns the name of an iam.organizations row the caller cannot SELECT, which the harness correctly reads as a row handed over. The disclosure is deliberate and it is bounded to identity and existence: it is a read-only door that returns level/exists/deleted/disclosure and a display name, never the organization's contents. 🚨 It is the ONE entry here that discloses rather than writes, and the one the Data Doctrine chair should re-examine first if the disclosure surface ever widens beyond a name."
+    }
+  ]
+}

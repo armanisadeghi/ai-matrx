@@ -1,3 +1,9 @@
+// A newer CLEAN server observation must not take the phone editor's unsaved
+// work away. Since 2026-09-14 the mobile editor writes tags straight into the
+// record (the canonical `updateNoteTags`) instead of holding them in React
+// state, so the guard now lives where it belongs: the record goes dirty, and
+// `applyServerNoteUpsert` preserves dirty fields when version 5 arrives.
+
 import React, { act } from "react";
 import { Provider, useSelector } from "react-redux";
 import { configureStore } from "@reduxjs/toolkit";
@@ -9,16 +15,23 @@ import type { Note } from "../../types";
 import MobileNoteEditor from "./MobileNoteEditor";
 
 let captured: ContentSource | undefined;
-const updateNote = jest.fn();
 const setActiveNoteDirty = jest.fn();
-jest.mock("../../hooks/useNotesRedux", () => ({ useNotesRedux: () => ({ updateNote, setActiveNoteDirty }) }));
+jest.mock("../../hooks/useNotesRedux", () => ({
+  useNotesRedux: () => ({
+    copyNote: jest.fn(),
+    moveNote: jest.fn(),
+    moveNoteToNewFolder: jest.fn(),
+    setActiveNoteDirty,
+  }),
+}));
 jest.mock("../../hooks/useNoteAccess", () => ({ useNoteAccess: () => ({ readOnly: false }) }));
 jest.mock("../../hooks/useNoteDelete", () => ({ useNoteDelete: () => ({ isDeleting: false, requestDelete: jest.fn() }) }));
 jest.mock("@/hooks/useToastManager", () => ({ useToastManager: () => ({ success: jest.fn(), error: jest.fn() }) }));
-jest.mock("@/lib/toast", () => ({ toastErrorAlreadyCaptured: jest.fn() }));
+jest.mock("@/lib/toast", () => ({ toast: { success: jest.fn(), error: jest.fn() }, toastErrorAlreadyCaptured: jest.fn() }));
 jest.mock("next/dynamic", () => () => () => null);
 jest.mock("@/features/rich-document/RichDocument", () => ({ RichDocument: () => null }));
 jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({ NonEditableContextMenu: () => null }));
+jest.mock("../NoteDraftRecoveryBanner", () => ({ NoteDraftRecoveryBanner: () => null }));
 jest.mock("@/features/context-menu-v3/EditableContextMenu", () => ({ EditableContextMenu: ({ children, contentSource }: {children: React.ReactNode; contentSource?: ContentSource}) => { captured = contentSource; return <>{children}</>; } }));
 jest.mock("./NoteEditorDock", () => ({ NoteEditorDock: ({onTagsChange}: {onTagsChange: (tags: string[]) => void}) => <button onClick={() => onTagsChange(["local tag"])}>Change local tags</button> }));
 
@@ -33,10 +46,10 @@ function Host() {
 }
 
 beforeAll(() => { enableMapSet(); (globalThis as typeof globalThis & {IS_REACT_ACT_ENVIRONMENT?: boolean}).IS_REACT_ACT_ENVIRONMENT = true; });
-beforeEach(() => { jest.useFakeTimers(); captured = undefined; updateNote.mockClear(); });
+beforeEach(() => { jest.useFakeTimers(); captured = undefined; setActiveNoteDirty.mockClear(); });
 afterEach(() => { jest.useRealTimers(); });
 
-it.each([false, true])("preserves local-only tags=%s across a newer clean Redux observation", async (editTags) => {
+it.each([false, true])("survives a newer clean Redux observation with edits=%s", async (editTags) => {
   const store = makeStore();
   store.dispatch(upsertNoteFromServer({ note: note(4), fetchStatus: "full" }));
   const container = document.createElement("div");
@@ -47,14 +60,23 @@ it.each([false, true])("preserves local-only tags=%s across a newer clean Redux 
     expect(captured).toMatchObject({ mode: "editable", editBase: { version: 4 } });
     await act(async () => {
       if (editTags) container.querySelector("button")!.click();
+    });
+    await act(async () => {
       store.dispatch(upsertNoteFromServer({ note: note(5), fetchStatus: "list" }));
     });
-    // No autosave timer elapsed and no local tag was dispatched into Redux.
-    expect(updateNote).not.toHaveBeenCalled();
-    expect(store.getState().notes.notes[id]._dirty).toBe(false);
-    expect(store.getState().notes.notes[id].tags).toEqual([]);
-    if (editTags) expect(captured).toMatchObject({ mode: "editable", editBase: { version: 4 }, displayedPhysicalSnapshot: { tags: ["local tag"], version: 4 } });
-    else expect(captured).toMatchObject({ mode: "identity" });
+
+    const record = store.getState().notes.notes[id];
+    if (editTags) {
+      // The edit is IN the record — a phone edit is durable the moment it is
+      // made — and the newer clean observation did not take it back.
+      expect(record._dirty).toBe(true);
+      expect(record.tags).toEqual(["local tag"]);
+      expect(captured).toMatchObject({ mode: "editable", displayedPhysicalSnapshot: { tags: ["local tag"] } });
+    } else {
+      expect(record._dirty).toBe(false);
+      expect(record.tags).toEqual([]);
+      expect(captured).toMatchObject({ mode: "identity" });
+    }
   } finally {
     await act(async () => root.unmount());
     container.remove();

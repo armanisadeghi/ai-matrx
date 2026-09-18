@@ -86,4 +86,5 @@ All discovered existing-account selectors now expose `UserSearchField`; invitati
 
 ## Change log
 
+- `2026-09-14` — Made the visible result row itself select the account, so a picker remains usable when the table's trailing action column is outside the current viewport; the explicit Select action remains available.
 - `2026-08-24` — Codex: Added the canonical inline plus advanced-window user picker and its protected/provided directory modes.

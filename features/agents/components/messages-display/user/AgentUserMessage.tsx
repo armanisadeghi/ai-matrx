@@ -27,6 +27,7 @@ import {
 import { UserActionBar } from "./UserActionBar";
 import { FirstTurnVariables, UserMessageVariables } from "./FirstTurnVariables";
 import { ContextPolicyChipStrip } from "@/features/agents/components/context-policies-display/ContextPolicyChipStrip";
+import { useMachineFramesVisible } from "@/features/agents/components/shared/transcript-audience";
 import { useCollapsibleMessageText } from "./useCollapsibleMessageText";
 import { selectUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
@@ -137,6 +138,7 @@ export function AgentUserMessage({
   compact = false,
 }: AgentUserMessageProps) {
   const record = useAppSelector(selectMessageById(conversationId, messageId));
+  const machineFramesVisible = useMachineFramesVisible();
   // The agent driving this conversation — used by ContextPolicyChipStrip to
   // resolve slot definitions for type/label/description on each chip.
   const agentId = useAppSelector(
@@ -322,7 +324,18 @@ export function AgentUserMessage({
                 with. Display-only, sourced from the instance variable slice, so
                 live and reloaded conversations render identically. Shown once,
                 on turn 1. */}
-            {isFirstTurnMessage && (
+            {/* 🚨 AND THE LAUNCH VARIABLES ARE A BUILDER'S VIEW TOO. Found
+                live on 2026-09-16 while verifying the tool-frame fix: with
+                every tool card gone, the Conductor's first bubble still opened
+                with "Attachments: … Rulebook Document: # … Rulebook id:
+                a84d1c5e-… Status: draft · Version: 25", and the interview's
+                with "Interview Probes: story_time / Interview Context Mode:
+                blank_slate". Those are the values the HOST wired, in the
+                host's vocabulary — the Expert neither typed them nor can act
+                on them, and a raw enum token in her own message bubble is the
+                purest form of the machine talking to itself. Creator mode
+                still shows every one. */}
+            {machineFramesVisible && isFirstTurnMessage && (
               <FirstTurnVariables conversationId={conversationId} />
             )}
 
@@ -334,7 +347,13 @@ export function AgentUserMessage({
                 the live conversation context here: doing so made every historical
                 bubble lie, showing the current context as if the model had seen
                 it. Neither source → show nothing (honest). */}
-            {contextSnapshot && contextSnapshot.length > 0 && (
+            {/* 🚨 A CONTEXT SNAPSHOT IS A BUILDER'S RECORD OF WHAT THE MODEL
+                SAW — it is not something an Expert asked for, attached, or can
+                act on. On an expert-audience transcript the "CONTEXT · Context
+                Items (13)" strip is the same leak as a tool card, one bubble
+                higher (cold walk 2026-09-16, finding #2's family). Creator mode
+                still shows it. See ../../shared/transcript-audience.tsx. */}
+            {machineFramesVisible && contextSnapshot && contextSnapshot.length > 0 && (
               <ContextPolicyChipStrip
                 conversationId={conversationId}
                 agentId={agentId}

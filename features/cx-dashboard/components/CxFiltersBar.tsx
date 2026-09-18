@@ -13,12 +13,16 @@ import { Input } from "@ai-matrx/design-system";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Download, Search, X } from "lucide-react";
 import {
+  clearCxTableFilters,
+  hasActiveCxSourceFilters,
   filtersFromSearchParams,
-  filtersToSearchParams,
+  updateCxSourceFilter,
 } from "../utils/filters";
 import type { CxFilters } from "../types/cxDashboardTypes";
 
 type Props = {
+  /** Hide the local Clear action when the canonical table owns it. */
+  hideClear?: boolean;
   showSearch?: boolean;
   showStatusFilter?: boolean;
   showProviderFilter?: boolean;
@@ -30,6 +34,7 @@ type Props = {
 };
 
 export function CxFiltersBar({
+  hideClear = false,
   showSearch = true,
   showStatusFilter = true,
   showProviderFilter = false,
@@ -47,22 +52,23 @@ export function CxFiltersBar({
 
   const updateFilter = useCallback(
     (key: keyof CxFilters, value: string | undefined) => {
-      const newFilters = { ...filters, [key]: value, page: undefined };
-      const params = filtersToSearchParams(newFilters);
+      const params = updateCxSourceFilter(new URLSearchParams(window.location.search), key, value);
       startTransition(() => {
         router.push(`${pathname}?${params.toString()}`);
       });
     },
-    [filters, pathname, router],
+    [pathname, router],
   );
 
   const clearFilters = useCallback(() => {
     startTransition(() => {
-      router.push(pathname);
+      const params = clearCxTableFilters(new URLSearchParams(window.location.search));
+      const query = params.toString();
+      router.push(`${pathname}${query ? `?${query}` : ""}`, { scroll: false });
     });
   }, [pathname, router]);
 
-  const hasActiveFilters = searchParams.toString().length > 0;
+  const hasActiveFilters = hasActiveCxSourceFilters(new URLSearchParams(searchParams));
 
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -132,6 +138,7 @@ export function CxFiltersBar({
         <div className="relative">
           <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
           <Input
+            key={filters.search ?? ""}
             className="h-8 text-xs pl-7 w-[180px]"
             placeholder="Search..."
             defaultValue={filters.search || ""}
@@ -148,7 +155,7 @@ export function CxFiltersBar({
       )}
 
       <div className="flex items-center gap-1 ml-auto">
-        {hasActiveFilters && (
+        {!hideClear && hasActiveFilters && (
           <Button
             variant="ghost"
             size="sm"

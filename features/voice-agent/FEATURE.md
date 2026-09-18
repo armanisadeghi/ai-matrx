@@ -72,6 +72,13 @@ Below is only what an agent editing THIS directory must not get wrong.
   interrupted → `abandoned`.
 - `cx_conversation.last_model_id` stays `null` (UUID FK; the slug lives in `metadata.voice.model`).
 - `metadata.voice.turn_id` is the idempotency key — do not change its semantics.
+- 🚨 **The writers RETURN failures, they never throw them** (2026-09-17). Every function in
+  `persistence/voiceTranscriptWriter.ts` answers `{ ok: false, error }`, and callers branch on
+  it. `ensureOrgId` throws, so a missing organization used to blow straight past every `if
+  (!ok)` and out of a voice session that shows no error UI at all — the conversation never
+  existed and the transcript went nowhere. `ensureConversation` and `persistTurns` now catch
+  that refusal, speak it with its remedy (`presentOrganizationRefusal`), and answer in the
+  shape the caller reads.
 - Raw audio is NEVER persisted. Voice rows are excluded from the text-chat history list via
   `excludeSourceFeatures`; do not render them there.
 

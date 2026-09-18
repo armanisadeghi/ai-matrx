@@ -11,7 +11,7 @@ Read `../work-loop/SKILL.md`, then `../surface-check/SKILL.md` and its
 
 `CHECKLIST_VERSION = 2`
 
-`SURFACE_CERTIFICATION_RULE_VERSION = 2026-09-13.1`
+`SURFACE_CERTIFICATION_RULE_VERSION = 2026-09-18.1`
 
 **Bump the rule version for every material acceptance-rule change.** A version
 change creates recheck items for every previously certified surface whose
@@ -20,7 +20,7 @@ grandfathers a page.
 
 ## Campaign contract
 
-One campaign drains all registered, eligible ordinary product surfaces. One
+One campaign drains all registered surfaces, including agent-native surfaces. One
 work item is one surface and one rule version. Stable key:
 `surface-certification:<surfaceName>:c<CHECKLIST_VERSION>:r<RULE_VERSION>`.
 Re-adding the same key is idempotent; a bumped version deliberately creates new
@@ -131,7 +131,7 @@ When Arman identifies a missed requirement:
 1. update the owning skill/checklist and bump
    `SURFACE_CERTIFICATION_RULE_VERSION` in the same change;
 2. preserve the feedback as a concise rule reference in new item contracts;
-3. compare every active eligible `ui.ui_surface.last_check` with the current
+3. compare every active `ui.ui_surface.last_check` with the current
    checklist/rule versions and required evidence keys;
 4. enqueue every mismatch with a stable key for the new version, prioritizing
    surfaces certified after the earliest affected rule/evidence date;
@@ -144,6 +144,11 @@ When Arman identifies a missed requirement:
 Never mutate a prior certification to look current. The old record is evidence
 of what was proved under the old contract; the new item is the audit trail.
 
+This change requires retroactive rechecks under `2026-09-18.1`; they have not
+been enqueued or executed by this documentation change. Each recheck must prove
+outside-helper access and native/resident isolation under the explicit-context
+contract.
+
 ## Discovery is a separate lane
 
 Certification covers registered surfaces only. A separate
@@ -155,7 +160,7 @@ After registration is independently verified, add the new surface through
 
 ## Pilot gate
 
-Before unattended operation, choose five eligible surfaces that differ in
+Before unattended operation, choose five registered surfaces that differ in
 feature owner, interaction model, route/overlay form, data shape, and mobile
 behavior. Run them in parallel through worker plus independent verifier. Present
 only verifier-passed review routes and their durable checklist summaries to

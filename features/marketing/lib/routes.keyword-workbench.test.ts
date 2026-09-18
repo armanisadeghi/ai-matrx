@@ -36,3 +36,28 @@ describe("marketingRoutes.siteKeywordWorkbench", () => {
     );
   });
 });
+
+describe("marketingRoutes.site compatibility paths", () => {
+  it("normalizes an unknown slash-prefixed section without producing a double slash", () => {
+    expect(
+      marketingRoutes.site(
+        "all-green-recycling",
+        "allgreenrecycling-com",
+        "/reputation",
+      ),
+    ).toBe(
+      "/marketing/all-green-recycling/websites/allgreenrecycling-com/reputation",
+    );
+  });
+
+  it("uses the dedicated brand reputation route when both keys are available", () => {
+    expect(
+      marketingRoutes.brandReputation(
+        "all-green-recycling",
+        "allgreenrecycling-com",
+      ),
+    ).toBe(
+      "/marketing/all-green-recycling/intelligence/reputation/allgreenrecycling-com",
+    );
+  });
+});

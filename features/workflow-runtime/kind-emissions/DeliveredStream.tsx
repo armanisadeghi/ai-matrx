@@ -36,6 +36,8 @@ import { cn } from "@/lib/utils";
 
 import { selectNodeAggregate } from "../redux/workflow-runs.selectors";
 import type { NodeInvocationState } from "../redux/workflow-runs.slice";
+import { WorkflowDocumentActions } from "../components/WorkflowDocumentActions";
+import { workflowDocumentText } from "../workflow-document-text";
 
 import {
   emissionsByDeliverable,
@@ -197,12 +199,17 @@ function DeliverableSlotCard({
           {emission ? (
             <EmissionRender runId={runId} emission={emission} variant="bare" />
           ) : produced && produced.outputKind ? (
-            <KindInstanceRender
-              kind={produced.outputKind}
-              value={produced.output}
-              showRoutingNote={false}
-              variant="bare"
-            />
+            <>
+              <KindInstanceRender
+                kind={produced.outputKind}
+                value={produced.output}
+                showRoutingNote={false}
+                variant="bare"
+              />
+              <WorkflowDocumentActions
+                content={workflowDocumentText(produced.output)}
+              />
+            </>
           ) : null}
         </KindSlot>
       </div>

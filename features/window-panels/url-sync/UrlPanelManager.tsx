@@ -76,8 +76,14 @@ export function parseParams(paramString: string | null) {
     if (argsStr) {
       const parsedArgs: Record<string, string> = {};
       argsStr.split("_").forEach((pair) => {
-        const [k, v] = pair.split("-");
-        if (k && v) parsedArgs[k] = v;
+        // 🚨 Split on the FIRST hyphen only. `pair.split("-")` threw away
+        // everything after the second segment, so an arg value containing a
+        // hyphen — a uuid, a date, an escaped list (NEW-15) — arrived truncated
+        // and the panel restored wrong. Existing args (`v-fc`, `as-window`) are
+        // unaffected: they hold no hyphen.
+        const at = pair.indexOf("-");
+        if (at <= 0 || at === pair.length - 1) return;
+        parsedArgs[pair.slice(0, at)] = pair.slice(at + 1);
       });
       args = parsedArgs;
     }

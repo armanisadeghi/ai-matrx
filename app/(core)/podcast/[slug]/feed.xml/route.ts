@@ -14,6 +14,10 @@
 // Resolves the show by slug OR id. Returns 404 (plain Response) when missing.
 
 import { createClient } from '@/utils/supabase/server';
+import {
+    PC_EPISODE_PUBLIC_SELECT,
+    PC_SHOW_PUBLIC_SELECT,
+} from '@/features/podcasts/publicColumns';
 import { formatDurationSeconds } from '@ai-matrx/kit/format';
 import { mapPcShowRow, mapPcEpisodeRow } from '@/features/podcasts/types';
 import {
@@ -21,6 +25,7 @@ import {
     chaptersJsonUrl,
     CHAPTERS_JSON_MIME,
 } from '@/features/podcasts/chapters-json';
+import { publiclyServableEpisodes } from '@/features/podcasts/publicGate';
 
 export const revalidate = 3600;
 
@@ -83,10 +88,33 @@ export async function GET(
     const supabase = await createClient();
 
     // Resolve show by id (UUID) or slug.
-    const showQuery = supabase.schema('podcast').from('pc_shows').select('*').is('deleted_at', null);
-    const { data: showRow } = isUUID(slug)
+    // A podcast client fetches this feed with no account, so this read runs as
+    // `anon` — which holds a COLUMN grant here. `select('*')` asked for the
+    // five withheld columns too and the whole feed answered 404 'Podcast not
+    // found' on a 42501 nobody saw. Name them (DD-230).
+    const showQuery = supabase
+        .schema('podcast')
+        .from('pc_shows')
+        .select(PC_SHOW_PUBLIC_SELECT)
+        .is('deleted_at', null);
+    const { data: showRow, error: showError } = isUUID(slug)
         ? await showQuery.eq('id', slug).single()
         : await showQuery.eq('slug', slug).single();
+
+    // 🚨 "Podcast not found" is a claim about the CATALOGUE, and a refused query
+    // cannot support it. PostgREST answers `PGRST116` for a genuine no-row
+    // `.single()`; anything else — 42501 above all — means we were REFUSED, and
+    // telling the open web the show does not exist would be the same silent lie
+    // DD-230 found this route already telling (the `select('*')` era). Throw.
+    if (showError && showError.code !== 'PGRST116') {
+        throw new Error(
+            `The podcast feed could not read podcast.pc_shows: ${showError.message}` +
+                (showError.code ? ` (${showError.code})` : '') +
+                '. The signed-out column bound for this table is declared in ' +
+                'lib/security/public-exposure.ts#ANON_COLUMN_SURFACE and mirrored in ' +
+                'features/podcasts/publicColumns.ts.',
+        );
+    }
 
     if (!showRow) {
         return new Response('Podcast not found', {
@@ -98,14 +126,27 @@ export async function GET(
     const show = mapPcShowRow(showRow);
 
     // Published episodes, newest-first: episode_number desc (nulls last), then created_at desc.
-    const { data: episodeRows } = await supabase
-        .schema('podcast').from('pc_episodes')
-        .select('*')
-        .is('deleted_at', null)
-        .eq('show_id', show.id)
-        .eq('is_published', true)
+    // THE ONE ROW GATE (features/podcasts/publicGate.ts). The `deleted_at IS NULL`
+    // + `is_published` pair used to be written out here, and chapters.json carried
+    // only half of it — see that file's header for what that served.
+    const { data: episodeRows, error: episodeError } = await publiclyServableEpisodes(
+        supabase
+            .schema('podcast').from('pc_episodes')
+            .select(PC_EPISODE_PUBLIC_SELECT)
+            .eq('show_id', show.id),
+    )
         .order('episode_number', { ascending: false, nullsFirst: false })
         .order('created_at', { ascending: false });
+
+    // A feed with no items is a real state; a feed with no items BECAUSE the read
+    // was refused is a broken feed that directories will happily ingest as empty.
+    if (episodeError) {
+        throw new Error(
+            `The podcast feed could not read podcast.pc_episodes: ${episodeError.message}` +
+                (episodeError.code ? ` (${episodeError.code})` : '') +
+                '. See lib/security/public-exposure.ts#ANON_COLUMN_SURFACE.',
+        );
+    }
 
     const episodes = (episodeRows ?? []).map(mapPcEpisodeRow);
 

@@ -66,7 +66,12 @@ import {
 } from "@/features/shell/constants/route-menu-style";
 import { ChatHistorySidebar } from "./ChatHistorySidebar";
 import { PinnedAgentsSection } from "./PinnedAgentsSection";
-import { beginFreshChat, parseChatPath } from "./begin-fresh-chat";
+import {
+  beginFreshChat,
+  interceptChatAgentLink,
+  parseChatPath,
+  stageChatAgentSwitch,
+} from "./begin-fresh-chat";
 
 /** Sidebar history list scope. Stable, owned by ChatSidebarMenu. */
 const CHAT_HISTORY_SCOPE = "chat-route";
@@ -117,7 +122,18 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
     // gap-0.5 (= 0.125rem) matches `.shell-sidebar-main-nav` / `route-nav`
     // gap so the chrome rows sit at the exact same rhythm as the main app
     // nav items.
-    <div className="flex flex-1 min-h-0 flex-col gap-0.5">
+    <div
+      className="flex flex-1 min-h-0 flex-col gap-0.5"
+      onClickCapture={(event) =>
+        interceptChatAgentLink(event, {
+          dispatch,
+          router,
+          getState: store.getState,
+          sourceAgentId: activeAgentId,
+          sourceConversationId: activeConversationId,
+        })
+      }
+    >
       {/* ── CHROME ROWS ── identical DOM in both states. Icons NEVER move
             on collapse/expand. Order is fixed; positions are stable. */}
 
@@ -204,9 +220,8 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
           <div className="flex h-[min(70dvh,560px)] flex-col">
             <ChatHistorySidebar
               scopeId={CHAT_HISTORY_SEARCH_SCOPE}
-              // ALLOW-list: the "chat" surface defaults to real chats only
-              // (source_feature = chat-route). Everything else — system runs,
-              // transcription, voice — is reachable via the filter tree.
+              // The "chat" surface: the lane toggles (Chat + Matrx by
+              // default) gate the list; the source tree narrows within them.
               surfaceId="chat"
               activeConversationId={activeConversationId}
               onOpenConversation={() => setChatSearchOpen(false)}
@@ -222,6 +237,16 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
           rail (not over it). */}
       <AgentListDropdown
         navigateTo="/chat/a/{id}"
+        onSelect={(agentId) =>
+          stageChatAgentSwitch({
+            dispatch,
+            router,
+            getState: store.getState,
+            targetAgentId: agentId,
+            sourceAgentId: activeAgentId,
+            sourceConversationId: activeConversationId,
+          })
+        }
         contentSide="right"
         triggerSlot={
           <button
@@ -292,10 +317,9 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
           <ChatHistorySidebar
             scopeId={CHAT_HISTORY_SCOPE}
             activeConversationId={activeConversationId}
-            // ALLOW-list (surface default): "chat" shows only real chats
-            // (source_feature = chat-route). System runs, transcription, and
-            // voice transcripts (which can't be replayed here) are hidden by
-            // default and reachable through the source-filter tree.
+            // The "chat" surface: the lane toggles (Chat + Matrx by
+            // default; Auto, Plugins, Subagents off) gate the list; the
+            // source tree narrows within the enabled lanes.
             surfaceId="chat"
             // The Search chats chrome above is the single search entry
             // point — don't ship a second one inline.

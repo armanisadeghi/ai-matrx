@@ -20,6 +20,7 @@ import { NextResponse } from "next/server";
 
 import { createClient } from "@/utils/supabase/server";
 import { sandboxDisplayName } from "@/lib/sandbox/format";
+import { isJsonObject } from "@/types/json";
 import { filesDb } from "@/features/files/filesDb";
 
 const DEVICE_FRESHNESS_WINDOW_MS = 10 * 60 * 1000;
@@ -80,7 +81,7 @@ export async function GET() {
     supabase
       .from("sandbox_instances")
       .select(
-        "id, name, sandbox_id, status, tier, config, expires_at, updated_at",
+        "id, name, sandbox_id, status, tier, template, config, expires_at, updated_at",
       )
       .eq("user_id", user.id)
       .is("deleted_at", null)
@@ -97,7 +98,11 @@ export async function GET() {
   const sandboxes: ComputeTarget[] = [];
   for (const row of sandboxResult.data ?? []) {
     if (!RENDERABLE_SANDBOX_STATUSES.has(row.status ?? "")) continue;
-    const config = (row.config as { template?: string } | null) ?? {};
+    // `template` is canonical on current rows. Older rows may still carry it
+    // in config (bare `unknown` JSONB), so narrow that leaf at read time and
+    // use it only when the canonical column is null.
+    const configTemplate = isJsonObject(row.config) && typeof row.config.template === "string" ? row.config.template : null;
+    const template = row.template ?? configTemplate;
     if (row.tier !== "ec2" && row.tier !== "hosted") {
       console.error(
         `[GET /api/compute-targets] sandbox row ${row.id} has no valid tier (got: ${JSON.stringify(row.tier)}). ` +
@@ -116,7 +121,7 @@ export async function GET() {
       is_this_device: false,
       sandbox_id: row.sandbox_id ?? null,
       tier,
-      template: config.template ?? null,
+      template,
       expires_at: row.expires_at ?? null,
       instance_id: null,
       tunnel_url: null,
@@ -197,7 +202,10 @@ async function resolveMaxSandboxes(
   const { data: tier } = await filesDb(supabase)
     .from("account_tiers")
     .select("features")
-    .eq("id", tierId)
+    // DD-173 (B-103): the tier slug moved off `id` to `tier_key` when
+    // `files.account_tiers` gained its canonical uuid identity. `user_account.tier_id`
+    // still holds the SLUG, so this lookup keys on `tier_key`, not the uuid.
+    .eq("tier_key", tierId)
     .maybeSingle();
   const features =
     (tier?.features as { max_sandboxes?: number } | null) ?? null;

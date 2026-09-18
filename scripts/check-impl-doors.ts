@@ -122,6 +122,90 @@
  *       a grant-name census cannot see one of those. ABSOLUTE: no baseline, no
  *       allowlist. The population is zero and zero is the only correct number.
  *
+ *  D12 In HR, a CAPABILITY is asked before a ROLE. A function that reads both
+ *       a capability (`hr.capability` / `hr._l1_capabilities`) and an
+ *       organization membership role (`hr._l1_org_role`, or `role into <var>`
+ *       off `iam.memberships` / `iam.organization_member`), and that RAISES or
+ *       RETURNS on the role before the capability is ever consulted, is a
+ *       finding. DD-206 (2026-09-14): `hr.capability`'s source of truth is an
+ *       EMPLOYMENT, never a membership row, so a capability holder who is not a
+ *       member is constructible — and `hr_structure_list`, `hr_directory_list`
+ *       and `hr_org_chart` refused exactly that person with "no standing in this
+ *       employer" while `hr_knob_index` served them the whole settings index.
+ *       Comments are stripped before the positions are compared, so prose about
+ *       a role helper is not a finding. ABSOLUTE: no baseline, no allowlist.
+ *
+ *   D15 No `platform.client_callable_door` row fails to resolve to exactly one
+ *       live function. DD-210 (2026-09-14): 28 rows named none. ABSOLUTE.
+ *   D16 The register and the grants agree in BOTH directions — (a) no door row's
+ *       `signed_in_callers`/`anonymous_callers` disagrees with the live
+ *       `authenticated`/`anon` EXECUTE grant, and (b) no client-executable
+ *       SECURITY DEFINER function carries no door row at all. ABSOLUTE.
+ *   D17 Every entry in `scripts/door-rows/by-design-allowlist.json` names its
+ *       owner, its reason and the cross-boundary SHAPE it permits. ABSOLUTE.
+ *   D18 No CLOSED helper is reached by a client path. For `authenticated` and
+ *       `anon`, walk every place the database runs code AS THE CALLER —
+ *       SECURITY INVOKER trigger functions on tables the role can write,
+ *       SECURITY INVOKER functions the role can execute (for `anon`, only those
+ *       declared with an anonymous purpose), RLS policies on tables the role can
+ *       touch, views it can read, column defaults on tables it can insert into —
+ *       and fail on a call to a function of which NO overload the role can
+ *       execute. EXECUTE on a function called inside an invoker body is checked
+ *       against the CALLER, so every hit is a 42501 inside a working user path.
+ *       DD-169 batch 3 closed helpers after a census that never read invoker
+ *       bodies: `seo.fn_geo_area_sync_meaning` is called by the
+ *       `seo.site_geo_area` trigger, and every geo-area edit answered `42501
+ *       permission denied for function fn_geo_area_sync_meaning` (2026-09-14;
+ *       the same census found conversation delete and the cross-site rank list
+ *       broken the same way). Calls are read by name from the body with comments
+ *       and string literals stripped, so a generator that only WRITES a call
+ *       into policy text is not a call. Hits that predate this gate live in
+ *       `scripts/impl-doors/closed-helper-reach-baseline.json`, each with a
+ *       reason; the file may only shrink and a stale entry fails.
+ *
+ *   D19 No `platform.client_callable_door` row's function body names a schema-
+ *       qualified relation the catalogue does not have. DD-235 (2026-09-14):
+ *       `communication.set_my_sms_assistant_enabled` and
+ *       `public.masterwork_improvement_summary` both named `agent.mandate`, which
+ *       the Phase 1W mandate detach retired on 2026-08-29 in favour of
+ *       `mandate.definition`. Both answered EVERY caller — the victim's own
+ *       identical call included — with `42P01 relation "agent.mandate" does not
+ *       exist`, proven live over HTTPS as test@test.com. A body is parsed, not
+ *       bound, at CREATE time and PostgreSQL records no dependency from it to the
+ *       relations it names, so a rename leaves the door syntactically valid and
+ *       broken forever; and in `check:door-rows` a permanently broken door reads
+ *       as UNMEASURED, i.e. as a coverage gap rather than a defect. Findings carry
+ *       the successor from `platform.deprecated_relations` when there is one.
+ *       ABSOLUTE: no baseline, no allowlist.
+ *
+ *   D13 Every `platform.client_callable_door` row's `anonymous_callers` flag
+ *       says the same thing as the live `anon` EXECUTE grant on its function.
+ *       DD-212 (2026-09-14) made the FLAG the declaration — before it, D5/D9 and
+ *       the DD-202 birth trigger all read `reason ~* '(anonymous|signed[- ]out|
+ *       guest|kiosk|outsider)'`, and V-68 proved a row reading "SIGNED-IN door …
+ *       No anonymous caller exists" opened the birth door for a new INVOKER
+ *       function. A flag is only as good as its agreement with the database, so
+ *       this arm holds the two together in both directions: TRUE with no grant is
+ *       a stand-down waiting to hand anon back on the next CREATE OR REPLACE;
+ *       FALSE with a grant is DD-207's silent door (16 rows on 2026-09-14,
+ *       `public.admin_spend_headline` declared SUPER-ADMIN-ONLY while the
+ *       published anon key could call it). Rows whose function does not exist
+ *       under that exact identity_args are out of the population. ABSOLUTE.
+ *
+ *   D14 Every ASSOCIATION door's declared reason names BOTH ENDS of the edge.
+ *       An association is the one row shape with two subjects, and a gate that
+ *       asks about one of them is a direction, not a gate. DD-195 (2026-09-13)
+ *       gated the end an edge REVEALS and said so honestly — "The door does NOT
+ *       gate the anchor the caller named" — and that true, incomplete sentence
+ *       survived a whole verification round because incomplete read as fine.
+ *       DD-205 (2026-09-14) measured what it left open: passing nine ids the
+ *       kernel refused you as the ANCHOR returned all nine edges. So a reason
+ *       that does not say `both ends`, or that disclaims gating an end, is the
+ *       finding — the class is the sentence, not the one door. ABSOLUTE: no
+ *       baseline, no allowlist; the population is every
+ *       `platform.client_callable_door` row whose function name starts
+ *       `assoc_`, and it was 11 of 11 green the day this shipped.
+ *
  *   pnpm check:impl-doors            # loud, non-blocking (exit 0)
  *   pnpm check:impl-doors:strict     # exit 1 on any finding
  *
@@ -134,6 +218,8 @@
  * Exit codes: 0 clean (or findings without --strict) · 1 findings/UNMEASURED
  * with --strict · 2 script error.
  */
+
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -250,6 +336,12 @@ interface GrandfatherRow {
 //
 // D2b closes it as an ABSOLUTE: no grandfather row may duplicate a declared
 // door. B-64 deleted the 33 that existed, so the only correct number is zero.
+//
+// 🚨 DD-223 (B-118, 2026-09-14): this used to join `d.identity_args = g.identity_args`
+// — two renderings of the same signature, each written by whoever happened to be
+// connected. The grandfather table has keyed on `proargtypes` since hr_l3_109 and
+// the register does now too, so the join is the catalog's key on both sides and a
+// duplicate can no longer hide behind a different spelling of the same types.
 const DUPE_DOOR_GRANDFATHER_QUERY = `
   select g.schema_name || '.' || g.function_name as fn,
          g.identity_args as args
@@ -258,7 +350,7 @@ const DUPE_DOOR_GRANDFATHER_QUERY = `
     select 1 from platform.client_callable_door d
     where d.schema_name = g.schema_name
       and d.function_name = g.function_name
-      and d.identity_args = g.identity_args
+      and array_to_string(d.identity_argtypes, ' ') = g.argtypes
   )
   order by 1, 2
 `;
@@ -361,6 +453,16 @@ interface ClientWriteRow {
 // `anon` can execute it and it is SECURITY DEFINER, there is a row saying why an
 // anonymous caller may reach it. Trigger functions are excluded (a trigger is
 // not called by a client); extension-owned `pgsodium.*` is left to Supabase.
+//
+// 🚨 DD-212 (2026-09-14) STRENGTHENED IT: the row must carry
+// `anonymous_callers = true`, not merely exist. Before that, ANY door row
+// satisfied D5, so 16 functions `anon` could execute passed on a row that
+// described a signed-in caller and never considered a stranger (DD-207:
+// `public.admin_spend_headline` held anon EXECUTE behind a door row saying
+// SUPER-ADMIN-ONLY). Those 16 were decided in
+// `migrations/dd212_an_anonymous_door_is_declared_never_inferred.sql` —
+// `log_client_error` declared, the other 15 revoked — so this strengthening
+// costs the baseline nothing: the population was 8 before it and is 8 after.
 const UNDECLARED_ANON_DEFINER_QUERY = `
   select n.nspname || '.' || p.proname as fn,
          pg_get_function_identity_arguments(p.oid) as args
@@ -368,7 +470,10 @@ const UNDECLARED_ANON_DEFINER_QUERY = `
   join pg_catalog.pg_namespace n on n.oid = p.pronamespace
   where p.prosecdef
     and p.prokind = 'f'
-    and p.prorettype <> 'trigger'::regtype
+    -- A trigger function of EITHER kind is unreachable through PostgREST: trigger was always
+    -- excluded; event_trigger joined it 2026-09-18 after platform._door_follows_its_function()
+    -- and platform._provision_shape_guard() — born with the default PUBLIC EXECUTE — grew D5 8 -> 10.
+    and p.prorettype not in ('trigger'::regtype, 'event_trigger'::regtype)
     and n.nspname not in ('pg_catalog', 'information_schema')
     and has_function_privilege('anon', p.oid, 'EXECUTE')
     and not exists (
@@ -376,6 +481,7 @@ const UNDECLARED_ANON_DEFINER_QUERY = `
       where d.schema_name = n.nspname
         and d.function_name = p.proname
         and d.identity_args = pg_get_function_identity_arguments(p.oid)
+        and d.anonymous_callers
     )
   order by 1, 2
 `;
@@ -664,12 +770,19 @@ interface NullUnsafeRoleRow {
 //
 // THE RULE. A SECURITY INVOKER, non-trigger function in a PostgREST-exposed
 // schema whose body writes may not be executable by `anon` unless a
-// `platform.client_callable_door` row declares it AND that row says out loud that
-// the caller may have no account. The door register's own wording is the test —
-// every anonymous door on this database says "ANONYMOUS door", "signed-out",
-// "guest", "kiosk" or "outsider" in its reason — because a door row that does not
-// mention the anonymous caller is a declaration about signed-in callers, and
-// silently reading it as permission for a stranger is the drift this closes.
+// `platform.client_callable_door` row declares it with `anonymous_callers = true`.
+//
+// 🚨 DD-212 (2026-09-14) CHANGED WHAT "DECLARES" MEANS. Until then this test was
+// `reason ~* '(anonymous|signed[- ]out|guest|kiosk|outsider)'` — a substring over
+// prose, and prose has no polarity. V-68 planted a row reading "SIGNED-IN door
+// (authenticated only; anon revoked). No anonymous caller exists for it in any
+// repo." on a new INVOKER function and the DD-202 birth guard, reading the same
+// regex, let it keep `anon` EXECUTE: a sentence that said the OPPOSITE of an
+// anonymous purpose opened the door. It was not a rare wording either — 314 of
+// 971 live door rows matched that regex while only 47 named a function `anon`
+// could actually execute. The declaration is now a FLAG a human sets beside an
+// `anonymous_purpose` sentence, and D12 below keeps the flag honest against the
+// live grant. No regex over `reason` decides anything here any more.
 const ANON_INVOKER_WRITER_QUERY = `
   select n.nspname || '.' || p.proname as fn,
          pg_get_function_identity_arguments(p.oid) as args,
@@ -694,7 +807,7 @@ const ANON_INVOKER_WRITER_QUERY = `
       select 1 from platform.client_callable_door d
       where d.schema_name = n.nspname
         and d.function_name = p.proname
-        and d.reason ~* '(anonymous|signed[- ]out|guest|kiosk|outsider)'
+        and d.anonymous_callers
     )
   order by 1, 2
 `;
@@ -793,10 +906,691 @@ const NULL_UNSAFE_ROLE_HELPER_QUERY = `
   order by 1, 3
 `;
 
+// ─── D12: in HR a capability is asked before a role ─────────────────────────
+//
+// DD-206 (2026-09-14), the chair's ruling: a capability is an authority in its
+// own right everywhere in HR, and every HR door tests capability first, then
+// role, in that order.
+//
+// WHY THE ORDER IS THE WHOLE DEFECT. `hr.capability` resolves through
+// `hr.employments_of` → `hr.role_assignment` → `hr.access_role.capabilities`,
+// tenant-bounded by `ra.organization_id`. It never reads `iam.memberships`. So
+// an HR admin whose standing is an EMPLOYMENT and not a membership row is
+// constructible, and V-61/V-67/B-98 constructed one (rolled back) and measured
+// the same identity, same organization, same probe run:
+//
+//   hr_knob_index      -> ADMITTED, 215 keys
+//   hr_structure_list  -> 42501 "hr_structure_list: no standing in this employer"
+//   hr_directory_list  -> 42501 "hr_directory_list: no standing in this employer"
+//   hr_org_chart       -> 42501 "hr_org_chart: no standing in this employer"
+//
+// Each refusal fired on `role is null` BEFORE the body ever asked about a
+// capability — in `hr_structure_list` the capability call sits nine lines below
+// the raise it can never reach.
+//
+// THE RULE. In any function that reads both a capability and an organization
+// membership role, the FIRST capability reference must precede the FIRST
+// membership-role reference whenever a `raise` or a `return` sits between them.
+// A lenient role READ ahead of a capability is not a finding — `hr._l1_viewer`
+// resolves `v_org_role` first and then decides self → capability → manager →
+// role, which IS capability-first — because nothing refuses in between. What is
+// a finding is a REFUSAL decided from a role the body has not yet earned the
+// right to decide from.
+//
+// Comments are stripped first (`--` to end of line, and `/* … */`), so a
+// migration's prose about `hr._l1_org_role` cannot make a correct door look
+// wrong. `hr.capability`, `hr._l1_capabilities` and `hr._l1_org_role` are
+// excluded from the population: they ARE the readers.
+//
+// Proven failing-then-passing 2026-09-14 against the live database with a
+// rolled-back restore of the pre-fix `public.hr_structure_list` body — one row
+// while restored, zero rows after the rollback. No file on disk was weakened to
+// produce the RED. ABSOLUTE: no baseline, no allowlist.
+const ROLE_BEFORE_CAPABILITY_QUERY = `
+  with stripped as (
+    select n.nspname || '.' || p.proname as fn,
+           pg_get_function_identity_arguments(p.oid) as args,
+           regexp_replace(
+             regexp_replace(p.prosrc, '/\\*.*?\\*/', ' ', 'gs'),
+             '--[^' || chr(10) || ']*', ' ', 'g') as src
+      from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname not in ('pg_catalog','information_schema','pg_toast','extensions',
+                             'graphql','graphql_public','pgbouncer','vault','realtime','storage',
+                             'supabase_functions','net','cron','auth','pgsodium','pgsodium_masks')
+       and p.prokind in ('f','p')
+       and p.proname not in ('capability','_l1_capabilities','_l1_org_role')
+  ),
+  pos as (
+    select fn, args, src,
+           least(nullif(strpos(src, 'hr.capability('), 0),
+                 nullif(strpos(src, 'hr._l1_capabilities('), 0)) as cap_pos,
+           least(nullif(strpos(src, 'hr._l1_org_role('), 0),
+                 (select nullif(strpos(src, t.m), 0)
+                    from (select substring(src from
+                            '[^a-z_.]role[[:space:]]+into[[:space:]]+[a-z_]+') as m) t
+                   where t.m is not null)) as role_pos
+      from stripped
+     where (strpos(src, 'hr.capability(') > 0 or strpos(src, 'hr._l1_capabilities(') > 0)
+  )
+  select fn, args,
+         substring(btrim(regexp_replace(
+           substring(src from role_pos for (cap_pos - role_pos)),
+           '[[:space:]]+', ' ', 'g')) for 150) as between_text
+    from pos
+   where cap_pos is not null
+     and role_pos is not null
+     and role_pos < cap_pos
+     and substring(src from role_pos for (cap_pos - role_pos))
+           ~* '(raise[[:space:]]+exception|[^a-z_]return[^a-z_])'
+   order by 1, 2
+`;
+
+interface RoleBeforeCapabilityRow {
+  fn: string;
+  args: string;
+  between_text: string;
+}
+
+// ─── D11: a door's declared reason names the gate its body actually reaches ──
+//
+// DD-195 (2026-09-13). D5 asks whether an anon-callable definer DECLARED itself; D6 asks whether
+// the declared `gate_predicate` is still in the body. Neither reads the REASON — the English
+// sentence every later reviewer trusts instead of opening the function.
+//
+// Measured live before the DD-195 migration: `platform.client_callable_door` said of
+// `public.assoc_for_entity`, `assoc_for_sources` and `assoc_for_targets` that each "resolves access
+// per entity via iam.has_access before touching an edge". Not one of the three had ever called
+// `iam.has_access`. All three are SECURITY DEFINER over `platform.associations`, so they bypass its
+// RLS entirely, and their whole gate was an ORGANIZATION-level predicate — a plain member of the
+// row's organization was handed edges revealing rows the kernel said they could not read (two
+// `personal` conversations and the `personal` working document they hang off, all authored by
+// somebody else). The body was the defect; the sentence is what kept anyone from finding it.
+//
+// THE RULE. If a door's reason names an ACCESS PREDICATE from the live gate vocabulary, the door
+// must actually reach that predicate. Three deliberate choices:
+//
+//  (a) THE VOCABULARY IS READ FROM THE DATABASE, never guessed — the same derivation D6 uses (every
+//      boolean / `uuid[]` / `SETOF uuid` function in `iam` whose name starts with an access-predicate
+//      prefix). So prose that merely mentions `iam.entity_read_expr` (returns text) or
+//      `iam.canonical_certify` is not a gate claim and is not a finding, and a new platform gate is
+//      understood the day it ships without editing this file.
+//  (b) ONE HOP. A door that reaches the kernel through a named helper is honest — `assoc_for_entity`
+//      now calls `iam.assoc_side_readable`, which calls `iam.has_access` — so the closure is the
+//      door's own body PLUS the bodies of the functions its body names. Only suspects pay for that
+//      second pass, so the cost is bounded by the finding count, not by the door count.
+//  (c) ABSOLUTE — no baseline, no allowlist. The population was 3 and is now 0, and zero is the only
+//      correct number: a reason that overstates its gate can always be rewritten to the truth.
+const REASON_CLAIMS_UNREACHED_GATE_QUERY = `
+  with gate_vocab as (
+    select distinct lower('iam.' || p.proname) as fn
+      from pg_catalog.pg_proc p
+      join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'iam'
+       and pg_get_function_result(p.oid) in ('boolean', 'uuid[]', 'SETOF uuid')
+       and p.proname ~ '^(has_|is_|can_|my_|org_|accessible_|discoverable_|membership_|runnable_|scraper_|assoc_)'
+  ),
+  doors as (
+    select d.schema_name, d.function_name, d.identity_args, d.reason,
+           p.oid as oid, pg_get_functiondef(p.oid) as def
+      from platform.client_callable_door d
+      join pg_catalog.pg_proc p on p.proname = d.function_name
+      join pg_catalog.pg_namespace n on n.oid = p.pronamespace and n.nspname = d.schema_name
+     where p.prokind = 'f'
+       and pg_get_function_identity_arguments(p.oid) = d.identity_args
+  ),
+  suspects as (
+    select d.schema_name, d.function_name, d.identity_args, d.def, m.claimed
+      from doors d
+      cross join lateral (
+        select distinct lower(x[1]) as claimed
+          from regexp_matches(d.reason, '(iam\\.[a-z_][a-z0-9_]*)', 'g') x
+      ) m
+     where m.claimed in (select fn from gate_vocab)
+       and strpos(lower(d.def), m.claimed) = 0
+  )
+  select s.schema_name || '.' || s.function_name as fn,
+         s.identity_args as args,
+         s.claimed as claimed
+    from suspects s
+   where not exists (
+     select 1
+       from pg_catalog.pg_proc h
+       join pg_catalog.pg_namespace hn on hn.oid = h.pronamespace
+      -- Rule (b) says "the bodies of the functions its body names" — any schema. Until
+      -- 2026-09-18 only iam / public / platform were searched, so seo.list_page_intents,
+      -- seo.list_topic_gaps and seo.map_diagnostics — which reach iam.has_access through
+      -- seo._tm_map / seo._tm_visible_sites, one hop — read as overstated reasons.
+      where hn.nspname in ('iam', 'public', 'platform', s.schema_name)
+        and h.prokind = 'f'
+        and strpos(lower(s.def), lower(hn.nspname || '.' || h.proname)) > 0
+        and strpos(lower(pg_get_functiondef(h.oid)), s.claimed) > 0
+   )
+   order by 1, 3
+`;
+
+interface ReasonClaimRow {
+  fn: string;
+  args: string;
+  claimed: string;
+}
+
 interface NullUnsafeRoleHelperRow {
   fn: string;
   args: string;
   site: string;
+}
+
+// ─── D14: an association door's reason names BOTH ends of the edge ───────────
+//
+// DD-205 (2026-09-14). D11 asks whether a door reaches the gate it names. This asks the question
+// D11 cannot: whether the sentence is COMPLETE. An association row has two subjects — the anchor the
+// caller named and the row at the other end — and every one of the eleven `assoc_*` doors touches
+// both. Until DD-205 the readers gated one of them, and the door register said so in a sentence that
+// was true and incomplete: "The door does NOT gate the anchor the caller named, so a caller holding
+// an id they cannot read can still learn an edge touches it." Measured live the day after: as a
+// plain member of the row's organization, passing nine `confidential` `personal` `agent_run` ids the
+// kernel refused him as the ANCHOR returned all nine edges, with their roles, labels, positions and
+// metadata. Two more doors carried the same shape unnoticed — `assoc_list` gated only the anchor,
+// `assoc_members_visible` admitted an edge on an organization predicate OR'd with the anchor check.
+//
+// THE RULE, and why it is worded as prose rather than as body analysis. The bodies of these eleven
+// doors gate their ends five different ways (a materialized anchor boolean, a reduced id array, an
+// up-front RAISE, a per-edge conjunct, and one hop down into `assoc_add`/`assoc_remove`), so no
+// single structural pattern recognises "both ends are gated" across all of them without lying about
+// at least one. What every one of them CAN do is say which ends it gates, in the register row that
+// is the only thing most reviewers ever read. So: the reason must contain `both ends`, and must not
+// contain a disclaimer that an end is ungated. A door that genuinely gates one end may not pass this
+// by rewording — it has to be fixed, and then the sentence is true. ABSOLUTE: no baseline.
+const ASSOC_DOOR_REASON_QUERY = `
+  select d.schema_name || '.' || d.function_name as fn,
+         d.identity_args as args,
+         case
+           when d.reason ~* 'not gate the (anchor|other|far)'
+             then 'its reason DISCLAIMS gating an end'
+           else 'its reason never says what happens to BOTH ENDS'
+         end as problem
+    from platform.client_callable_door d
+   where d.function_name ~ '^assoc_'
+     and (d.reason !~* 'both ends' or d.reason ~* 'not gate the (anchor|other|far)')
+   order by 1
+`;
+
+interface AssocDoorReasonRow {
+  fn: string;
+  args: string;
+  problem: string;
+}
+
+// ─── D13: the declared flag and the live anon grant say the same thing ───────
+//
+// DD-212 / DD-207 (2026-09-14). Every other arm here asks about the DATABASE.
+// This one asks whether the REGISTER still tells the truth about it, because
+// after DD-212 the register is what the birth trigger and D5/D9 obey. Two ways
+// it can lie, and both have happened:
+//
+//   * `anonymous_callers = true` while `anon` holds no EXECUTE — a door row that
+//     will hand a `CREATE OR REPLACE` its anon grant back at birth, for a
+//     function somebody deliberately closed. A stand-down waiting for a rebuild.
+//   * `anonymous_callers = false` while `anon` DOES hold EXECUTE — DD-207's
+//     class, measured at 16 rows on 2026-09-14: `public.admin_spend_headline`
+//     declared SUPER-ADMIN-ONLY with `anon` holding EXECUTE, plus the four
+//     `ues_*`, the four `cmt_*`, `cat_list`, `can_curate_library_document`
+//     (whose reason claimed "2 live policies, anon included" — zero policies
+//     named it and `anon` could not SELECT the table at all), the two
+//     `agx_get_shared_*`, `agx_build_shortcut_menu_m` and
+//     `platform._confirmation_admission`. Fifteen were revoked and
+//     `log_client_error` was declared; the population is 0 and 0 is the only
+//     correct number.
+//
+// Rows whose function does not exist under that exact identity_args are OUT of
+// the population — 28 of them on 2026-09-14, a separate staleness question this
+// arm must not silently answer. ABSOLUTE: no baseline, no allowlist.
+const DOOR_FLAG_VS_GRANT_QUERY = `
+  select d.schema_name || '.' || d.function_name as fn,
+         d.identity_args as args,
+         d.anonymous_callers as flag,
+         has_function_privilege('anon', p.oid, 'EXECUTE') as anon_executes,
+         (d.anonymous_purpose is not null) as has_purpose
+    from platform.client_callable_door d
+    join pg_catalog.pg_namespace n on n.nspname = d.schema_name
+    join pg_catalog.pg_proc p
+      on p.pronamespace = n.oid
+     and p.proname = d.function_name
+     -- 🚨 DD-223: the catalog's key, not the rendered signature. An exact string
+     -- join here dropped web.create_site out of D13's population entirely,
+     -- because its row is spelled the way the 6d-4 guard renders it and this
+     -- gate reads over PostgREST under a different search_path.
+     and platform.door_argtypes(p.proargtypes) = d.identity_argtypes
+   where d.anonymous_callers <> has_function_privilege('anon', p.oid, 'EXECUTE')
+   order by 1, 2
+`;
+
+interface DoorFlagRow {
+  fn: string;
+  args: string;
+  flag: boolean;
+  anon_executes: boolean;
+  has_purpose: boolean;
+}
+
+// ─── D15/D16: the register names only LIVE, correctly granted doors ──────────
+//
+// DD-210 (B-108, 2026-09-14). D13 asks whether a door row's anonymous flag
+// matches the live grant, over the rows whose function it can find. These two ask
+// the questions D13 deliberately left open, in both directions:
+//
+//   D15  Does the row name anything at all? 28 of the 971 rows named no live
+//        function under their identity_args: 15 were a second, wrongly-spelled
+//        copy of a door already declared correctly, 11 named a live function no
+//        client may execute (the access kernel's internal helpers), and 2 spelled
+//        `(view)` for a VIEW entered in a FUNCTION register. None of them was
+//        inert: the §6d-4 guard STANDS DOWN on a function that has a door row, so
+//        a row that names nothing is a stand-down reserved for a name.
+//
+//   D16  Does the grant match the declaration, BOTH WAYS?
+//          (a) `signed_in_callers` / `anonymous_callers` against the live
+//              `authenticated` / `anon` EXECUTE grant. A TRUE with no grant is a
+//              door the platform believes it has and nobody can open; a FALSE
+//              with a grant is a door nobody declared.
+//          (b) A SECURITY DEFINER function a CLIENT can execute with no door row
+//              at all. D5 asks this for `anon` against a shrink-only baseline;
+//              this asks it for `authenticated`, where the population is 0 and 0
+//              is the only correct number (DD-169 finished the census).
+//
+// 🚨 WHY THE COMPARISON STRIPS SCHEMA QUALIFIERS FROM BOTH SIDES.
+// `pg_get_function_identity_arguments` renders a type BARE when its schema is on
+// the caller's search_path and SCHEMA-QUALIFIED when it is not, so the SAME row
+// matches or does not match depending on who asks. The §6d-4 guard reads the
+// register under `SET search_path TO 'platform', 'public', 'pg_catalog'`; this
+// gate reads it over PostgREST as `"$user", public, extensions`. Measured
+// 2026-09-14: `web.create_site`'s row is spelled `p_visibility visibility` — the
+// guard's rendering, and the one that keeps the guard from revoking the site
+// builder's grant — and an exact string join from HERE drops it silently. So both
+// sides are normalised (`platform.visibility` → `visibility`) and a normalised
+// match that is not unique is itself a finding. The deeper fix is to key the
+// register on `proargtypes` the way `platform.definer_client_grant_grandfather`
+// already does (hr_l3_109) — that is a change to the §6d-4 guard, reported to the
+// Data Doctrine chair rather than made here.
+//
+// 🚨 DD-223 (B-118, 2026-09-14) CLOSED THE CLASS THE PARAGRAPH ABOVE DESCRIBES.
+// Stripping schema qualifiers from both sides made two renderings comparable; it
+// did not make either of them an identity, and two different functions in the same
+// schema could still normalise to the same string. `platform.client_callable_door`
+// now carries `identity_argtypes` — `pg_proc.proargtypes` through
+// `platform.door_argtypes` — and every arm below joins on THAT. `identity_args` is
+// a display column from today; nothing matches on it anywhere in this file, in
+// either DDL guard, or in the database.
+const DOOR_KEY = `d.identity_argtypes`;
+const FN_KEY = `platform.door_argtypes(p.proargtypes)`;
+
+const STALE_DOOR_ROW_QUERY = `
+  select d.schema_name || '.' || d.function_name as fn,
+         d.identity_args as args,
+         coalesce(d.declared_by, '(none)') as declared_by,
+         (select count(*) from pg_catalog.pg_proc p
+            join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = d.schema_name and p.proname = d.function_name) as siblings
+    from platform.client_callable_door d
+   where (select count(*) from pg_catalog.pg_proc p
+            join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+           where n.nspname = d.schema_name and p.proname = d.function_name
+             and ${FN_KEY} = ${DOOR_KEY}) <> 1
+   order by 1, 2
+`;
+
+interface StaleDoorRow {
+  fn: string;
+  args: string;
+  declared_by: string;
+  siblings: number;
+}
+
+const DOOR_GRANT_VS_DECLARATION_QUERY = `
+  select d.schema_name || '.' || d.function_name as fn,
+         d.identity_args as args,
+         d.signed_in_callers as signed_in_flag,
+         has_function_privilege('authenticated', p.oid, 'EXECUTE') as auth_executes,
+         d.anonymous_callers as anon_flag,
+         has_function_privilege('anon', p.oid, 'EXECUTE') as anon_executes
+    from platform.client_callable_door d
+    join pg_catalog.pg_namespace n on n.nspname = d.schema_name
+    join pg_catalog.pg_proc p
+      on p.pronamespace = n.oid
+     and p.proname = d.function_name
+     and ${FN_KEY} = ${DOOR_KEY}
+   where d.signed_in_callers <> has_function_privilege('authenticated', p.oid, 'EXECUTE')
+      or d.anonymous_callers <> has_function_privilege('anon', p.oid, 'EXECUTE')
+   order by 1, 2
+`;
+
+interface DoorGrantRow {
+  fn: string;
+  args: string;
+  signed_in_flag: boolean;
+  auth_executes: boolean;
+  anon_flag: boolean;
+  anon_executes: boolean;
+}
+
+// The §6d-4 guard's own exempt-schema list, verbatim, plus its extension and
+// grandfather escapes — so this arm names exactly the functions the guard would
+// have closed, and never an extension's function this role cannot revoke.
+const UNDECLARED_CLIENT_DEFINER_QUERY = `
+  select n.nspname || '.' || p.proname as fn,
+         pg_get_function_identity_arguments(p.oid) as args,
+         has_function_privilege('anon', p.oid, 'EXECUTE') as anon_x,
+         has_function_privilege('authenticated', p.oid, 'EXECUTE') as auth_x
+    from pg_catalog.pg_proc p
+    join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+   where p.prosecdef
+     and p.prokind in ('f','p')
+     and p.prorettype not in ('pg_catalog.trigger'::regtype, 'pg_catalog.event_trigger'::regtype)
+     and n.nspname <> all (array['pg_catalog','information_schema','pg_toast','extensions','graphql',
+                                 'graphql_public','pgbouncer','realtime','_realtime','storage','auth',
+                                 'cron','net','vault','pgsodium','pgsodium_masks','supabase_functions',
+                                 'supabase_migrations','dashboard','pgtle','tiger','tiger_data','topology'])
+     and has_function_privilege('authenticated', p.oid, 'EXECUTE')
+     and not exists (select 1 from pg_catalog.pg_depend dp where dp.objid = p.oid and dp.deptype = 'e')
+     and not exists (select 1 from platform.definer_client_grant_grandfather g
+                      where g.schema_name = n.nspname and g.function_name = p.proname
+                        and g.argtypes = p.proargtypes::text)
+     and not exists (select 1 from platform.client_callable_door d
+                      where d.schema_name = n.nspname and d.function_name = p.proname
+                        and ${DOOR_KEY} = ${FN_KEY})
+   order by 1, 2
+`;
+
+interface UndeclaredClientDefinerRow {
+  fn: string;
+  args: string;
+  anon_x: boolean;
+  auth_x: boolean;
+}
+
+// ─── D17: the by-design allowlist is fully reasoned ──────────────────────────
+//
+// `scripts/door-rows/by-design-allowlist.json` excuses a door that crosses the
+// organization boundary ON PURPOSE from the wide `check:door-rows` lane — the
+// single most dangerous shape on this platform. That gate already refuses an
+// entry with no owner or a one-word reason and FAILS on a stale entry (DD-208).
+// DD-210 adds the third thing a reader needs and the file did not carry: the
+// SHAPE the entry permits — what crosses, in which direction, and how far. It is
+// checked here rather than in `check-door-rows.ts` only because another lane owns
+// that file this week; the two gates run side by side in the blocking list.
+// ABSOLUTE: no baseline. The file may only shrink.
+interface ByDesignEntry {
+  door: string;
+  owner: string;
+  reason: string;
+  shape?: string;
+}
+
+interface ByDesignAllowlist {
+  entries: ByDesignEntry[];
+}
+
+function loadByDesignAllowlist(): ByDesignAllowlist | null {
+  const p = resolve(ROOT, "scripts/door-rows/by-design-allowlist.json");
+  if (!existsSync(p)) return null;
+  try {
+    return JSON.parse(readFileSync(p, "utf8")) as ByDesignAllowlist;
+  } catch {
+    return null;
+  }
+}
+
+// ─── D19: a door never names a relation the catalog does not have ────────────
+//
+// DD-235 (B-125, 2026-09-14). Measured live over HTTPS as test@test.com, before
+// the fix:
+//
+//   rpc/set_my_sms_assistant_enabled   -> 42P01 relation "agent.mandate" does not exist
+//   rpc/masterwork_improvement_summary -> 42P01 relation "agent.mandate" does not exist
+//
+// Neither answer depends on the caller, so neither is an authorization decision:
+// the two SECURITY DEFINER bodies named a relation this database does not have,
+// and NO caller could open either door. `agent.mandate` was retired by the Phase
+// 1W mandate detach on 2026-08-29 and `platform.deprecated_relations` has named
+// its successor (`mandate.definition`) ever since — nothing re-read the bodies.
+//
+// WHY NOTHING ELSE CATCHES THIS. A plpgsql or sql body is parsed, not bound, at
+// CREATE time: PostgreSQL records no dependency from the body to the relations it
+// names, so renaming or dropping one leaves every body that names it syntactically
+// valid and permanently broken at run time. The door registry, the §6d-4 guard,
+// D13/D15/D16 and the by-design allowlist all ask WHO may open a door; none of
+// them asks whether the door opens onto anything. `check:door-rows` calls doors
+// for real, which is the only other place this could surface — and there it lands
+// in the UNMEASURED bucket as "the call failed for a non-authorization reason",
+// where a permanently broken door reads exactly like a probe with bad arguments.
+// A broken door must be a FINDING, not a coverage gap.
+//
+// WHAT IT READS. Every `platform.client_callable_door` row that resolves to a live
+// non-C function (joined on `identity_argtypes`, like every other arm here). The
+// body has its block comments, dollar-quoted inner blocks, line comments and
+// string literals stripped — in that order — so prose and dynamic SQL cannot make
+// a finding. From what is left it takes every schema-qualified name in RELATION
+// POSITION (`from` / `join` / `update` / `into`, with an optional `only`), which
+// is the one position where `a.b` can only be a relation or a set-returning
+// function, never `alias.column`. A name passes when its schema holds a relation
+// OR a function of that name; an unknown SCHEMA is not a finding, because that is
+// how a record variable's field (`preference.user_id`) reads to a regex. When the
+// missing name is a `platform.deprecated_relations` row, the finding carries its
+// SUCCESSOR, so the fix is in the failure message rather than in a follow-up hunt.
+//
+// ABSOLUTE: no baseline, no allowlist. A door the catalog cannot serve is broken
+// for every caller, so the population is zero and zero is the only correct number.
+const DOOR_NAMES_MISSING_RELATION_QUERY = `
+  with door_body as (
+    select d.schema_name || '.' || d.function_name as fn,
+           d.identity_args as args,
+           regexp_replace(
+             regexp_replace(
+               regexp_replace(
+                 regexp_replace(
+                   regexp_replace(p.prosrc, '/\\*.*?\\*/', ' ', 'gs'),
+                 '\\$[a-zA-Z_][a-zA-Z0-9_]*\\$.*?\\$[a-zA-Z_][a-zA-Z0-9_]*\\$', ' ', 'gs'),
+               '\\$\\$.*?\\$\\$', ' ', 'gs'),
+             '--[^' || chr(10) || ']*', ' ', 'g'),
+           '''(''''|[^''])*''', ' ', 'g') as body
+      from platform.client_callable_door d
+      join pg_catalog.pg_namespace n on n.nspname = d.schema_name
+      join pg_catalog.pg_proc p
+        on p.pronamespace = n.oid
+       and p.proname = d.function_name
+       and ${FN_KEY} = ${DOOR_KEY}
+     where p.prolang <> (select oid from pg_catalog.pg_language where lanname = 'c')
+  ),
+  named as (
+    select b.fn, b.args, lower(m[1]) as sch, lower(m[2]) as rel
+      from door_body b,
+           lateral regexp_matches(
+             b.body,
+             '\\m(?:from|join|update|into)\\s+(?:only\\s+)?([a-zA-Z_][a-zA-Z0-9_$]*)\\.([a-zA-Z_][a-zA-Z0-9_$]*)',
+             'gi') as m
+  )
+  select distinct
+         named.fn,
+         named.args,
+         named.sch || '.' || named.rel as missing_ref,
+         coalesce(dep.new_ref, '(no successor recorded)') as successor
+    from named
+    join pg_catalog.pg_namespace ns on ns.nspname = named.sch
+    left join platform.deprecated_relations dep
+      on lower(dep.old_ref) = named.sch || '.' || named.rel
+   where not exists (
+           select 1 from pg_catalog.pg_class c
+            where c.relnamespace = ns.oid and c.relname = named.rel
+         )
+     and not exists (
+           select 1 from pg_catalog.pg_proc pr
+            where pr.pronamespace = ns.oid and pr.proname = named.rel
+         )
+   order by 1, 2, 3
+`;
+
+interface DoorMissingRelationRow {
+  fn: string;
+  args: string;
+  missing_ref: string;
+  successor: string;
+}
+
+// ─── D18: no closed helper is reached by a client path ───────────────────────
+//
+// See the D18 header note. `closed` is (role, schema, name) where NO overload is
+// executable — a name-only match cannot tell overloads apart, so a function with
+// one open overload is never reported. An unqualified call resolves against the
+// caller's own `search_path` (or `public`), and is skipped when any schema on that
+// path holds an executable function of the name. Every name is rendered from the
+// catalog (schema + relname / oidvectortypes), never through `::regclass` or
+// `::regprocedure`, which drop the schema for whatever the session's search_path
+// holds and would make the baseline keys depend on who runs the gate.
+//
+// One statement per KIND of client path: `execute_admin_query` dies at ~8 s, and
+// the single union over every kind measured 25 s. Each body is tokenized ONCE
+// (`bodies`), however many roles reach it.
+const REACH_KINDS = ["trigger", "invoker", "policy", "view", "default"] as const;
+type ReachKind = (typeof REACH_KINDS)[number];
+
+const REACH_FN_PATH = `coalesce((select string_to_array(replace(replace(substring(c from '^search_path=(.*)$'), '"', ''), ' ', ''), ',')
+                       from unnest(p.proconfig) c where c like 'search_path=%'), array['public'])`;
+const REACH_FN_SIG = `n.nspname || '.' || p.proname || '(' || pg_catalog.oidvectortypes(p.proargtypes) || ')'`;
+const REACH_INVOKER_FN = `not p.prosecdef
+       and p.prolang in (select oid from pg_catalog.pg_language where lanname in ('plpgsql', 'sql'))
+       and n.nspname not like 'pg\\_%' and n.nspname <> 'information_schema'
+       and not exists (select 1 from pg_catalog.pg_depend dep where dep.objid = p.oid and dep.deptype = 'e')`;
+
+// Every arm yields (r, via, caller, obj_key, body, path).
+const REACH_SRC: Record<ReachKind, string> = {
+  trigger: `
+    select ro.r, 'trigger on ' || tn.nspname || '.' || tc.relname as via, ${REACH_FN_SIG} as caller,
+           'fn:' || p.oid as obj_key, p.prosrc as body, ${REACH_FN_PATH} as path
+      from roles ro
+      cross join pg_catalog.pg_trigger t
+      join pg_catalog.pg_proc p on p.oid = t.tgfoid
+      join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+      join pg_catalog.pg_class tc on tc.oid = t.tgrelid
+      join pg_catalog.pg_namespace tn on tn.oid = tc.relnamespace
+     where ${REACH_INVOKER_FN}
+       and not t.tgisinternal and t.tgenabled <> 'D'
+       and (has_table_privilege(ro.r, t.tgrelid, 'INSERT')
+         or has_table_privilege(ro.r, t.tgrelid, 'UPDATE')
+         or has_table_privilege(ro.r, t.tgrelid, 'DELETE'))`,
+  invoker: `
+    select ro.r, 'client-executable invoker function' as via, ${REACH_FN_SIG} as caller,
+           'fn:' || p.oid as obj_key, p.prosrc as body, ${REACH_FN_PATH} as path
+      from roles ro
+      cross join pg_catalog.pg_proc p
+      join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+     where ${REACH_INVOKER_FN}
+       and p.prorettype not in ('pg_catalog.trigger'::regtype, 'pg_catalog.event_trigger'::regtype)
+       and has_function_privilege(ro.r, p.oid, 'EXECUTE')
+       and (ro.r = 'authenticated' or exists (
+             select 1 from platform.client_callable_door d
+              where d.schema_name = n.nspname and d.function_name = p.proname
+                and d.identity_argtypes = platform.door_argtypes(p.proargtypes) and d.anonymous_callers))`,
+  policy: `
+    select ro.r, 'policy ' || pol.policyname || ' on ' || pol.schemaname || '.' || pol.tablename as via,
+           '' as caller, 'policy:' || pol.schemaname || '.' || pol.tablename || '.' || pol.policyname as obj_key,
+           coalesce(pol.qual, '') || ' ' || coalesce(pol.with_check, '') as body, array['public'] as path
+      from roles ro cross join pg_catalog.pg_policies pol
+     where pol.roles && array[ro.r::name, 'public'::name]
+       and has_any_column_privilege(ro.r, format('%I.%I', pol.schemaname, pol.tablename)::regclass,
+                                    'SELECT,INSERT,UPDATE')`,
+  view: `
+    select ro.r, 'view ' || vn.nspname || '.' || vc.relname as via, '' as caller,
+           'view:' || vc.oid as obj_key, pg_get_viewdef(vc.oid) as body, array['public'] as path
+      from roles ro
+      cross join pg_catalog.pg_class vc
+      join pg_catalog.pg_namespace vn on vn.oid = vc.relnamespace
+     where vc.relkind in ('v', 'm')
+       and vn.nspname not like 'pg\\_%' and vn.nspname <> 'information_schema'
+       and has_table_privilege(ro.r, vc.oid, 'SELECT')`,
+  default: `
+    select ro.r, 'column default on ' || dn.nspname || '.' || dc.relname as via, '' as caller,
+           'default:' || ad.oid as obj_key, pg_get_expr(ad.adbin, ad.adrelid) as body, array['public'] as path
+      from roles ro
+      cross join pg_catalog.pg_attrdef ad
+      join pg_catalog.pg_class dc on dc.oid = ad.adrelid
+      join pg_catalog.pg_namespace dn on dn.oid = dc.relnamespace
+     where has_table_privilege(ro.r, ad.adrelid, 'INSERT')`,
+};
+
+function closedHelperReachQuery(kind: ReachKind): string {
+  return `
+  with roles(r) as (values ('authenticated'), ('anon')),
+  fns as (
+    select p.oid, n.nspname as sch, p.proname as nm
+      from pg_catalog.pg_proc p
+      join pg_catalog.pg_namespace n on n.oid = p.pronamespace
+     where p.prokind = 'f'
+       and p.prorettype not in ('pg_catalog.trigger'::regtype, 'pg_catalog.event_trigger'::regtype)
+       and n.nspname not like 'pg\\_%' and n.nspname <> 'information_schema'
+  ),
+  reach as (
+    select ro.r, f.sch, f.nm, bool_or(has_function_privilege(ro.r, f.oid, 'EXECUTE')) as can
+      from roles ro cross join fns f
+     group by ro.r, f.sch, f.nm
+  ),
+  closed as materialized (select r, sch, nm from reach where not can),
+  open_by_name as materialized (
+    select r, nm, array_agg(sch::text) as schs from reach where can group by r, nm
+  ),
+  src as materialized (${REACH_SRC[kind]}),
+  bodies as (select distinct on (obj_key) obj_key, body from src),
+  toks as (
+    select distinct b.obj_key, lower(m[1]) as sch, lower(m[2]) as nm
+      from bodies b
+      cross join lateral regexp_matches(
+        regexp_replace(regexp_replace(regexp_replace(b.body,
+          '--[^\\n]*', '', 'g'),
+          '/\\*([^*]|\\*+[^*/])*\\*+/', '', 'g'),
+          '''([^'']|'''')*''', '''''', 'g'),
+        '(([A-Za-z_][A-Za-z0-9_]*)"?\\.)?"?([A-Za-z_][A-Za-z0-9_]*)"?\\s*\\(', 'g') as mm(m0)
+      cross join lateral (select array[mm.m0[2], mm.m0[3]] as m) x
+  ),
+  -- Tokens meet their source BEFORE the closed set: joined the other way the
+  -- planner pairs every closed function with every source row on role alone
+  -- (2M rows, a 500 MB on-disk sort, 6.6 s measured).
+  src_toks as materialized (
+    select s.r, s.via, s.caller, s.path, t.sch as tsch, t.nm as tnm
+      from src s join toks t on t.obj_key = s.obj_key
+  )
+  select distinct st.r as role, st.via, coalesce(st.caller, '') as caller, c.sch || '.' || c.nm as callee
+    from src_toks st
+    join closed c on c.r = st.r and c.nm = st.tnm
+    left join open_by_name o on o.r = st.r and o.nm = st.tnm
+   where (st.tsch is not null and c.sch = st.tsch)
+      or (st.tsch is null and c.sch = any (st.path)
+          and not coalesce(o.schs && (st.path || array['pg_catalog']), false))
+   order by 1, 4, 2, 3
+`;
+}
+
+interface ClosedHelperReachRow {
+  role: string;
+  via: string;
+  caller: string;
+  callee: string;
+}
+
+interface ClosedHelperReachBaseline {
+  entries: { key: string; reason: string }[];
+}
+
+function closedHelperReachKey(r: ClosedHelperReachRow): string {
+  return `${r.role} | ${r.via} | ${r.caller} | ${r.callee}`;
+}
+
+function loadClosedHelperReachBaseline(): ClosedHelperReachBaseline | null {
+  const p = resolve(ROOT, "scripts/impl-doors/closed-helper-reach-baseline.json");
+  if (!existsSync(p)) return null;
+  try {
+    return JSON.parse(readFileSync(p, "utf8")) as ClosedHelperReachBaseline;
+  } catch {
+    return null;
+  }
 }
 
 // ─── Baseline for D2 (may only shrink) ───────────────────────────────────────
@@ -865,6 +1659,15 @@ async function main(): Promise<number> {
   let nullUnsafeRoles: NullUnsafeRoleRow[];
   let nullUnsafeHelpers: NullUnsafeRoleHelperRow[];
   let anonInvokerWriters: AnonInvokerWriterRow[];
+  let unreachedGateClaims: ReasonClaimRow[];
+  let roleBeforeCapability: RoleBeforeCapabilityRow[];
+  let doorFlagMismatches: DoorFlagRow[];
+  let assocDoorReasons: AssocDoorReasonRow[];
+  let staleDoorRows: StaleDoorRow[];
+  let doorGrantMismatches: DoorGrantRow[];
+  let undeclaredClientDefiners: UndeclaredClientDefinerRow[];
+  let closedHelperReach: ClosedHelperReachRow[];
+  let doorsNamingMissingRelations: DoorMissingRelationRow[];
   try {
     openImpls = await q<OpenImplRow>(OPEN_IMPL_QUERY, "D1 open impls");
     undeclared = await q<GrandfatherRow>(
@@ -911,6 +1714,47 @@ async function main(): Promise<number> {
       ANON_INVOKER_WRITER_QUERY,
       "D9 anon-executable SECURITY INVOKER functions that write",
     );
+    unreachedGateClaims = await q<ReasonClaimRow>(
+      REASON_CLAIMS_UNREACHED_GATE_QUERY,
+      "D11 door reasons naming a gate the body never reaches",
+    );
+    roleBeforeCapability = await q<RoleBeforeCapabilityRow>(
+      ROLE_BEFORE_CAPABILITY_QUERY,
+      "D12 HR functions that refuse on a role before asking a capability",
+    );
+    doorFlagMismatches = await q<DoorFlagRow>(
+      DOOR_FLAG_VS_GRANT_QUERY,
+      "D13 door rows whose anonymous_callers flag disagrees with the live anon grant",
+    );
+    assocDoorReasons = await q<AssocDoorReasonRow>(
+      ASSOC_DOOR_REASON_QUERY,
+      "D14 association door reasons that do not name both ends",
+    );
+    staleDoorRows = await q<StaleDoorRow>(
+      STALE_DOOR_ROW_QUERY,
+      "D15 door rows naming no live function",
+    );
+    doorGrantMismatches = await q<DoorGrantRow>(
+      DOOR_GRANT_VS_DECLARATION_QUERY,
+      "D16a door declarations that disagree with the live client grant",
+    );
+    undeclaredClientDefiners = await q<UndeclaredClientDefinerRow>(
+      UNDECLARED_CLIENT_DEFINER_QUERY,
+      "D16b client-executable SECURITY DEFINER functions with no door row",
+    );
+    doorsNamingMissingRelations = await q<DoorMissingRelationRow>(
+      DOOR_NAMES_MISSING_RELATION_QUERY,
+      "D19 doors naming a relation the catalog does not have",
+    );
+    closedHelperReach = [];
+    for (const kind of REACH_KINDS) {
+      closedHelperReach.push(
+        ...(await q<ClosedHelperReachRow>(
+          closedHelperReachQuery(kind),
+          `D18 closed helpers reached by a client path (${kind})`,
+        )),
+      );
+    }
   } catch (err) {
     console.error(`${TAG.fail}Impl doors: query failed — ${String(err)}`);
     return 2;
@@ -1441,6 +2285,388 @@ async function main(): Promise<number> {
     );
   }
 
+  // ── D11 ───────────────────────────────────────────────────────────────────
+  if (unreachedGateClaims.length === 0) {
+    console.log(
+      `${TAG.ok}D11 every door reason that names an access predicate reaches it ${C.dim}(DD-195)${C.reset}`,
+    );
+  } else {
+    findings += unreachedGateClaims.length;
+    console.log(
+      `${TAG.fail}D11 ${unreachedGateClaims.length} declared door reason(s) name a gate the body never reaches:`,
+    );
+    for (const r of unreachedGateClaims) {
+      console.log(
+        `  ${C.white}- ${r.fn}(${r.args})${C.reset} ${C.dim}→ claims ${r.claimed}, body never calls it${C.reset}`,
+      );
+    }
+    console.log(
+      `${C.dim}       A door's reason is the sentence the next reviewer trusts instead of opening the${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       function. DD-195: the three assoc reader doors said they resolved access per${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       entity via iam.has_access; none of them had ever called it, and the real gate was${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       organization-level, so a plain member read edges revealing other people's private${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       rows. Fix the BODY if the reason is what you meant; fix the REASON if the body is.${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       A helper counts: the closure is the door's body plus the bodies it names (1 hop).${C.reset}`,
+    );
+  }
+
+  // ── D12 ───────────────────────────────────────────────────────────────────
+  if (roleBeforeCapability.length === 0) {
+    console.log(
+      `${TAG.ok}D12 no HR function refuses on a role before asking a capability ${C.dim}(DD-206)${C.reset}`,
+    );
+  } else {
+    findings += roleBeforeCapability.length;
+    console.log(
+      `${TAG.fail}D12 ${roleBeforeCapability.length} HR function(s) decide a refusal from a membership role before any capability is consulted:`,
+    );
+    for (const r of roleBeforeCapability) {
+      console.log(`  ${C.white}- ${r.fn}(${r.args})${C.reset}`);
+      console.log(`    ${C.dim}between the role read and the first capability: ${r.between_text}${C.reset}`);
+    }
+    console.log(
+      `${C.dim}       DD-206: in HR a capability is an authority in its OWN RIGHT, and it is asked${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       first. hr.capability resolves through an EMPLOYMENT (hr.employments_of ->${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       hr.role_assignment -> hr.access_role), never through iam.memberships, so an HR${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       admin who holds no membership row is a real person. hr_structure_list,${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       hr_directory_list and hr_org_chart told exactly that person "no standing in${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       this employer" while hr_knob_index served them its whole settings index.${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       Fix: two statements — \`if <capability> then null; elsif <role test> then${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       raise ...; end if;\` — never one boolean expression, whose operand order is a${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       cost estimate rather than a rule.${C.reset}`,
+    );
+  }
+
+  // ── D13 ────────────────────────────────────────────────────────────────
+  if (doorFlagMismatches.length === 0) {
+    console.log(
+      `${TAG.ok}D13 every door row's anonymous_callers flag matches the live anon grant ${C.dim}(DD-212/DD-207)${C.reset}`,
+    );
+  } else {
+    findings += doorFlagMismatches.length;
+    console.log(
+      `${TAG.fail}D13 ${doorFlagMismatches.length} declared door(s) disagree with the database about a signed-out caller:`,
+    );
+    for (const r of doorFlagMismatches) {
+      const said = r.flag
+        ? "declares anonymous_callers = true, but anon holds NO EXECUTE"
+        : "declares anonymous_callers = false, but anon HOLDS EXECUTE";
+      console.log(`  ${C.white}- ${r.fn}(${r.args})${C.reset} ${C.dim}→ ${said}${C.reset}`);
+    }
+    console.log(
+      `${C.dim}       DD-212: the flag is what the DD-202 birth trigger and D5/D9 obey, so a flag that${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       disagrees with the grant is a decision nobody made. TRUE with no grant re-opens${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       anon on the next CREATE OR REPLACE of a function somebody closed on purpose;${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       FALSE with a grant is DD-207's silent door — admin_spend_headline sat there${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       declared SUPER-ADMIN-ONLY while the published anon key could call it. Fix: decide.${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       Either \`revoke execute on function <fn>(<args>) from anon, public;\` (re-granting${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       every signed-in role that held it), or set anonymous_callers = true WITH an${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       anonymous_purpose saying who the signed-out caller is and what stands in for an${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       identity — and gate the body for a NULL auth.uid(). Never both, never neither.${C.reset}`,
+    );
+  }
+
+  // ── D14 ───────────────────────────────────────────────────────────────────
+  if (assocDoorReasons.length === 0) {
+    console.log(
+      `${TAG.ok}D14 every association door's reason names BOTH ends of the edge ${C.dim}(DD-205)${C.reset}`,
+    );
+  } else {
+    findings += assocDoorReasons.length;
+    console.log(
+      `${TAG.fail}D14 ${assocDoorReasons.length} association door row(s) describe only one end of the edge:`,
+    );
+    for (const r of assocDoorReasons) {
+      console.log(
+        `  ${C.white}- ${r.fn}(${r.args})${C.reset} ${C.dim}→ ${r.problem}${C.reset}`,
+      );
+    }
+    console.log(
+      `${C.dim}       An association is the one row shape with TWO subjects — the anchor the caller${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       named and the row at the other end — and a gate that asks about one of them is${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       a direction, not a gate. DD-195 gated the revealed end and said honestly that it${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       did not gate the anchor; that true, incomplete sentence survived a verification${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       round, and DD-205 then measured nine confidential agent runs handed to a plain${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       member who passed their ids as the anchor. Fix the BODY so both ends are gated,${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       then say so: the reason must contain "both ends" and disclaim neither of them.${C.reset}`,
+    );
+  }
+
+  // ── D15 ───────────────────────────────────────────────────────────────────
+  if (staleDoorRows.length === 0) {
+    console.log(
+      `${TAG.ok}D15 every door row names exactly one live function ${C.dim}(DD-210)${C.reset}`,
+    );
+  } else {
+    findings += staleDoorRows.length;
+    console.log(
+      `${TAG.fail}D15 ${staleDoorRows.length} platform.client_callable_door row(s) do not resolve to exactly one live function:`,
+    );
+    for (const r of staleDoorRows) {
+      console.log(
+        `  ${C.white}- ${r.fn}(${r.args})${C.reset} ${C.dim}→ declared_by ${r.declared_by}; ${r.siblings} function(s) of that name exist${C.reset}`,
+      );
+    }
+    console.log(
+      `${C.dim}       A door row is not a note — the §6d-4 guard STANDS DOWN on a function that has${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       one, so a row naming nothing reserves a stand-down for a name. Decide it: if the${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       function moved or was re-spelled, correct identity_args; if it is gone or was${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       never a client door, retire the row and record WHY and WHAT REPLACED IT in${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       platform.client_callable_door_retirement (DD-210 retired 28 that way).${C.reset}`,
+    );
+  }
+
+  // ── D16a ──────────────────────────────────────────────────────────────────
+  if (doorGrantMismatches.length === 0) {
+    console.log(
+      `${TAG.ok}D16a every door row's signed_in_callers / anonymous_callers matches the live grant ${C.dim}(DD-210)${C.reset}`,
+    );
+  } else {
+    findings += doorGrantMismatches.length;
+    console.log(
+      `${TAG.fail}D16a ${doorGrantMismatches.length} door row(s) declare a client the grant does not:`,
+    );
+    for (const r of doorGrantMismatches) {
+      const parts: string[] = [];
+      if (r.signed_in_flag !== r.auth_executes) {
+        parts.push(
+          `signed_in_callers=${r.signed_in_flag} but authenticated EXECUTE=${r.auth_executes}`,
+        );
+      }
+      if (r.anon_flag !== r.anon_executes) {
+        parts.push(`anonymous_callers=${r.anon_flag} but anon EXECUTE=${r.anon_executes}`);
+      }
+      console.log(
+        `  ${C.white}- ${r.fn}(${r.args})${C.reset} ${C.dim}→ ${parts.join("; ")}${C.reset}`,
+      );
+    }
+    console.log(
+      `${C.dim}       A flag TRUE with no grant is a door the platform believes it has and nobody can${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       open — and it hands the grant back at the next CREATE OR REPLACE. A flag FALSE${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       with a grant is a door nobody declared. Fix whichever side is wrong; if NO client${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       may reach it, set both flags false and say who really calls it in non_client_lane.${C.reset}`,
+    );
+  }
+
+  // ── D16b ──────────────────────────────────────────────────────────────────
+  if (undeclaredClientDefiners.length === 0) {
+    console.log(
+      `${TAG.ok}D16b no SECURITY DEFINER function a signed-in caller can execute lacks a door row ${C.dim}(DD-210)${C.reset}`,
+    );
+  } else {
+    findings += undeclaredClientDefiners.length;
+    console.log(
+      `${TAG.fail}D16b ${undeclaredClientDefiners.length} SECURITY DEFINER function(s) hold client EXECUTE with no platform.client_callable_door row:`,
+    );
+    for (const r of undeclaredClientDefiners) {
+      const roles = [r.anon_x ? "anon" : null, r.auth_x ? "authenticated" : null]
+        .filter(Boolean)
+        .join(", ");
+      console.log(`  ${C.white}- ${r.fn}(${r.args})${C.reset} ${C.dim}→ ${roles}${C.reset}`);
+    }
+    console.log(
+      `${C.dim}       DD-169 finished the census: every client-executable definer in this database is a${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       DECLARED door. The population is 0 and 0 is the only correct number — a new one${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       means a migration granted EXECUTE without declaring the door in the same file.${C.reset}`,
+    );
+  }
+
+  // ── D17 ───────────────────────────────────────────────────────────────────
+  const byDesign = loadByDesignAllowlist();
+  if (!byDesign) {
+    console.log(
+      `${TAG.warn}D17 scripts/door-rows/by-design-allowlist.json is missing or unreadable — the wide check:door-rows lane cannot be read here`,
+    );
+  } else {
+    const incomplete = byDesign.entries.filter(
+      (e) =>
+        !e.owner?.trim() ||
+        (e.reason ?? "").trim().length < 60 ||
+        (e.shape ?? "").trim().length < 40,
+    );
+    if (incomplete.length === 0) {
+      console.log(
+        `${TAG.ok}D17 all ${byDesign.entries.length} by-design cross-boundary door(s) name an owner, a reason and the shape they permit ${C.dim}(DD-210)${C.reset}`,
+      );
+    } else {
+      findings += incomplete.length;
+      console.log(
+        `${TAG.fail}D17 ${incomplete.length} by-design allowlist entr(ies) are not fully reasoned:`,
+      );
+      for (const e of incomplete) {
+        const missing = [
+          e.owner?.trim() ? null : "owner",
+          (e.reason ?? "").trim().length >= 60 ? null : "reason (>= 60 chars)",
+          (e.shape ?? "").trim().length >= 40 ? null : "shape (>= 40 chars)",
+        ]
+          .filter(Boolean)
+          .join(", ");
+        console.log(`  ${C.white}- ${e.door ?? "(unnamed entry)"}${C.reset} ${C.dim}→ missing ${missing}${C.reset}`);
+      }
+      console.log(
+        `${C.dim}       These four doors write or disclose ACROSS the organization boundary on purpose.${C.reset}`,
+      );
+      console.log(
+        `${C.dim}       Nobody should be able to add one in silence: an entry says who owns it, why the${C.reset}`,
+      );
+      console.log(
+        `${C.dim}       crossing is the feature, and the SHAPE it permits — what crosses, which way, how${C.reset}`,
+      );
+      console.log(
+        `${C.dim}       far — so the next reader can tell a widened door from the one that was excused.${C.reset}`,
+      );
+    }
+  }
+
+  // ── D18 ───────────────────────────────────────────────────────────────────
+  {
+    const baseline = loadClosedHelperReachBaseline();
+    if (!baseline) {
+      console.log(
+        `${TAG.warn}D18 scripts/impl-doors/closed-helper-reach-baseline.json is missing or unreadable — every hit below counts as new`,
+      );
+    }
+    const known = new Map((baseline?.entries ?? []).map((e) => [e.key, e.reason]));
+    const liveKeys = new Set(closedHelperReach.map(closedHelperReachKey));
+    const fresh = closedHelperReach.filter((r) => !known.has(closedHelperReachKey(r)));
+    const stale = (baseline?.entries ?? []).filter((e) => !liveKeys.has(e.key));
+    const unreasoned = (baseline?.entries ?? []).filter((e) => (e.reason ?? "").trim().length < 60);
+    if (fresh.length === 0 && stale.length === 0 && unreasoned.length === 0) {
+      console.log(
+        `${TAG.ok}D18 no client path reaches a closed helper ${C.dim}(${known.size} reasoned pre-existing hit(s) in the baseline; DD-169 reach fix)${C.reset}`,
+      );
+    } else {
+      findings += fresh.length + stale.length + unreasoned.length;
+      if (fresh.length > 0) {
+        console.log(
+          `${TAG.fail}D18 ${fresh.length} client path(s) call a function the calling role cannot execute — each is a 42501 inside a working user path:`,
+        );
+        for (const r of fresh) {
+          console.log(
+            `  ${C.white}- ${r.callee}${C.reset} ${C.dim}← ${r.via}${r.caller ? ` → ${r.caller}` : ""} (as ${r.role})${C.reset}`,
+          );
+        }
+        console.log(
+          `${C.dim}       Keep the helper closed and repair the path: make the trigger function SECURITY DEFINER${C.reset}`,
+        );
+        console.log(
+          `${C.dim}       (fixed search_path), call an auth.uid()-bound door instead, or declare the helper a door${C.reset}`,
+        );
+        console.log(
+          `${C.dim}       with a reason and a gate in the SAME migration as the grant. Never re-grant it blind.${C.reset}`,
+        );
+      }
+      for (const e of stale) {
+        console.log(
+          `${TAG.fail}D18 stale baseline entry (no longer live — delete it): ${C.white}${e.key}${C.reset}`,
+        );
+      }
+      for (const e of unreasoned) {
+        console.log(
+          `${TAG.fail}D18 baseline entry without a reason (>= 60 chars): ${C.white}${e.key}${C.reset}`,
+        );
+      }
+    }
+  }
+
+  // ── D19 ───────────────────────────────────────────────────────────────────
+  if (doorsNamingMissingRelations.length === 0) {
+    console.log(
+      `${TAG.ok}D19 no client-callable door names a relation the catalog does not have ${C.dim}(DD-235)${C.reset}`,
+    );
+  } else {
+    findings += doorsNamingMissingRelations.length;
+    console.log(
+      `${TAG.fail}D19 ${doorsNamingMissingRelations.length} door body(ies) name a relation this database does not have — each is a 42P01 for EVERY caller:`,
+    );
+    for (const r of doorsNamingMissingRelations) {
+      console.log(
+        `  ${C.white}- ${r.fn}(${r.args})${C.reset} ${C.dim}→ ${r.missing_ref} (successor: ${r.successor})${C.reset}`,
+      );
+    }
+    console.log(
+      `${C.dim}       A body is parsed, not bound, at CREATE time, so a renamed or dropped relation leaves the${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       door syntactically valid and broken for everyone. Replace the body against the live${C.reset}`,
+    );
+    console.log(
+      `${C.dim}       catalogue in a migration (pnpm db:based-on, then pnpm db:apply) — never re-grant around it.${C.reset}`,
+    );
+  }
+
   if (findings === 0) {
     console.log(`${TAG.ok}${C.green}Impl doors: clean${C.reset}`);
     return 0;
@@ -1452,8 +2678,8 @@ async function main(): Promise<number> {
 }
 
 main()
-  .then((code) => process.exit(code))
+  .then((code) => exitAfterDrain(code))
   .catch((err) => {
     console.error(`${TAG.fail}check-impl-doors crashed — ${String(err)}`);
-    process.exit(2);
+    exitAfterDrain(2);
   });

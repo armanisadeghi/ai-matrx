@@ -114,7 +114,6 @@ export interface ConversationInputProps {
   seamless?: boolean; // borderless style for embedded layouts
   placeholder?: string;
   compact?: boolean;
-  showShiftEnterHint?: boolean;
   /**
    * When true, renders a single-line input with flat top corners — designed to
    * attach seamlessly below a variable inputs component. The input still grows
@@ -180,7 +179,6 @@ export function ConversationInput({
   seamless = false,
   placeholder = "Ask anything",
   compact = false,
-  showShiftEnterHint = false,
   singleLine = false,
   attachmentCapabilities,
   onSend,
@@ -786,14 +784,6 @@ export function ConversationInput({
           </div>
         )}
 
-        {/* Submit hint */}
-        {showShiftEnterHint && (
-          <p className="text-[10px] text-muted-foreground/60 px-3">
-            <kbd className="text-[9px]">⌘+Enter</kbd> to send,{" "}
-            <kbd className="text-[9px]">Shift+Enter</kbd> for new line
-          </p>
-        )}
-
         {/* Submit-on-enter toggle */}
         {showSubmitOnEnterToggle && (
           <div className="flex items-center gap-2 px-3">
@@ -809,7 +799,6 @@ export function ConversationInput({
                 />
               </div>
               <CornerDownLeft className="w-3 h-3" />
-              <span>Enter to send</span>
             </button>
           </div>
         )}

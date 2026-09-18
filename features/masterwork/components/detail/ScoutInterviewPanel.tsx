@@ -28,6 +28,11 @@ import { VoiceRelayBar } from "@/features/voice-agent/relay/VoiceRelayBar";
 import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import {
+  setDisplayDescriptionOverride,
+  setDisplayIconNameOverride,
+  setDisplayNameOverride,
+} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
@@ -46,7 +51,17 @@ import {
 } from "@/features/mandates/service";
 import { RULEBOOK_DOCUMENT_VARIABLE } from "@/features/masterwork/agent-context/rulebookDocument";
 import { useRulebookDocument } from "@/features/masterwork/agent-context/useRulebookDocument";
+import { declareBlankSlateInterview } from "@/features/masterwork/record/blankSlateLane";
 import { InterviewChooser } from "@/features/masterwork/record/InterviewChooser";
+import {
+  InterviewStartScreen,
+  type InterviewChoice,
+} from "@/features/masterwork/record/InterviewStartScreen";
+import {
+  blankSlateScopeOverride,
+  buildInterviewLaunchVariables,
+  contextModeOption,
+} from "@/features/masterwork/record/interviewModes";
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
@@ -140,6 +155,8 @@ function InterviewConversation({
   rulebookId,
   rulebookName,
   rulebookDocument,
+  expertName,
+  choice,
   agentId,
   seedText,
   freshSessionKey,
@@ -148,6 +165,10 @@ function InterviewConversation({
   rulebookName: string;
   /** The Rulebook itself, already loaded — see ScoutInterviewContent. */
   rulebookDocument: string;
+  /** The Expert's own name — half of everything a blank-slate session gets. */
+  expertName: string;
+  /** What the Expert picked on the start screen (mode, probes, closing, voice). */
+  choice: InterviewChoice;
   agentId: string;
   seedText?: string;
   freshSessionKey: number;
@@ -155,6 +176,18 @@ function InterviewConversation({
   const surfaceKey = `masterwork-interview:${rulebookId}`;
   const dispatch = useAppDispatch();
   const store = useAppStore();
+
+  // 🚨 DECLARE THE MODE TO THE PAGE, not just to the launch. The lane's
+  // `<SurfaceRuntimeProvider>` republishes its scope EVERY turn, so an empty
+  // scope at launch buys one turn of silence and nothing more — the whole
+  // rendered Rulebook came straight back as `content` on turn two (found live
+  // 2026-09-15). The register in `record/blankSlateLane.ts` is what the lane
+  // reads; this declaration is live for exactly as long as the interview is.
+  useEffect(() => {
+    if (choice.mode !== "blank_slate") return undefined;
+    return declareBlankSlateInterview(rulebookId);
+  }, [choice.mode, rulebookId]);
+
   const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature: SOURCE_FEATURE,
@@ -164,7 +197,19 @@ function InterviewConversation({
       surfaceName: MASTERWORK_RULEBOOK_SURFACE_NAME,
       // NAMED VARIABLES, never prose in the human's turn (THE USER-INPUT LAW).
       //
-      // 🚨 `rulebook_document` is THE CURE for disease D4. Until 2026-08-19
+      // 🚨 THE MODE RIDES HERE (Arman, 2026-09-15). `interview_context_mode`,
+      // `interview_probes`, `interview_closing_surprises` and `expert_goal` are
+      // offered by the `masterwork.scout_interview` provision and substituted
+      // into the Scout's own instructions; the prose for every mode and every
+      // probe lives in its `agent.definition` row, never here.
+      //
+      // 🚨 In `blank_slate` mode `rulebook_document` is ABSENT from this map —
+      // not empty, absent — because "the agent has no context to begin with" is
+      // a promise this screen makes. `buildInterviewLaunchVariables` is the one
+      // place that decides, and `interviewModes.test.ts` proves it.
+      //
+      // 🚨 `rulebook_document` is THE CURE for disease D4 in `primed` mode.
+      // Until 2026-08-19
       // the Scout received only `rulebook_id` and its own prompt said "Before
       // saying anything, call rulebook action=read" — so its intake answers,
       // its existing rules, and the Expert's open review feedback all arrived
@@ -174,10 +219,24 @@ function InterviewConversation({
       // refuses when it is absent. The `rulebook` tool stays for RE-reads —
       // the Scout WRITES rules mid-conversation and variables substitute once,
       // at conversation start.
-      variables: {
-        rulebook_id: rulebookId,
-        [RULEBOOK_DOCUMENT_VARIABLE]: rulebookDocument,
-      },
+      // 🚨 THE SECOND DOOR (found live 2026-09-15, fixed the same session). A
+      // launch that names a surface and passes no scope ADOPTS everything the
+      // mounted provider publishes — for this surface that is the Rulebook's
+      // name, description and full rule set. A blank-slate interview therefore
+      // opened by reciting the Rulebook's description back to the Expert, one
+      // second after the card promised her it knew nothing about her. An
+      // explicit scope beats adoption, so blank slate passes an empty one and
+      // keeps the surface NAME (dropping that resolves NO bindings at all).
+      ...blankSlateScopeOverride(choice.mode),
+      variables: buildInterviewLaunchVariables({
+        rulebookId,
+        expertName,
+        rulebookName,
+        mode: choice.mode,
+        probes: choice.probes,
+        closingSurprises: choice.closingSurprises,
+        rulebookDocument,
+      }),
     },
     config: { responseDensity: "compact" },
     // "Start a new interview" must NEVER revive the previous conversation the
@@ -230,6 +289,7 @@ function InterviewConversation({
       rulebookId={rulebookId}
       rulebookName={rulebookName}
       agentId={agentId}
+      voiceOn={choice.voiceOn}
     />
   );
 }
@@ -245,12 +305,15 @@ function ResumedInterviewConversation({
   rulebookName,
   agentId,
   conversationId,
+  voiceOn,
   onBack,
 }: {
   rulebookId: string;
   rulebookName: string;
   agentId: string;
   conversationId: string;
+  /** The hands-free voice bar, per `masterwork.interview.voice_default_on`. */
+  voiceOn: boolean;
   onBack: () => void;
 }) {
   const surfaceKey = `masterwork-interview:${rulebookId}`;
@@ -294,6 +357,7 @@ function ResumedInterviewConversation({
       rulebookId={rulebookId}
       rulebookName={rulebookName}
       agentId={agentId}
+      voiceOn={voiceOn}
     />
   );
 }
@@ -310,6 +374,7 @@ function InterviewColumn({
   rulebookId,
   rulebookName,
   agentId,
+  voiceOn,
 }: {
   conversationId: string;
   surfaceKey: string;
@@ -318,9 +383,60 @@ function InterviewColumn({
   rulebookName: string;
   /** The Scout (mandate-resolved) — the voice layer's primary agent. */
   agentId: string;
+  /**
+   * Whether this interview offers the HANDS-FREE voice relay beside the
+   * composer (`masterwork.interview.voice_default_on`). The composer's own
+   * dictation microphone is always there either way — this control never
+   * takes away the Expert's ability to answer out loud, it decides whether
+   * the spoken back-and-forth bar is offered too.
+   */
+  voiceOn: boolean;
 }) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
+
+  // 🚨 WHO IS IN THE ROOM, AND WHAT DO I DO NOW (jobs-bar-2026-09-16, item 24).
+  //
+  // An Expert chose an interviewer, chose how it should dig, pressed "Start the
+  // interview" — and landed on the generic agent hero: a wireframe glyph over
+  // "Ready to run", and underneath it, as the one instruction on the screen,
+  // "Fill in any variables below and type a message to start."
+  //
+  // There are no variables below. This panel wires every one of them
+  // (`rulebook_id`, the mode, the probes, the document) precisely so the Expert
+  // never sees one, and `variablesPanelStyle: "hidden"` removes the collection
+  // UI — so the sentence pointed at something that does not exist on the page,
+  // and nothing anywhere said what this conversation was, who was asking, or
+  // that she should just start talking. The whole promise of the screen before
+  // it — an interviewer who asks YOU questions — evaporated into a blank box.
+  //
+  // Same mechanism the Conductor lane adopted for the identical defect: the
+  // hero is display state, so the surface that knows what the conversation is
+  // for says so.
+  //
+  // The dispatch does not wait for the instance row any more: the slice keeps a
+  // write that arrives before the row and replays it when the row lands (D326,
+  // fixed 2026-09-16). This surface had to gate on the row's existence until
+  // then, which was a local workaround for a defect every setter in that slice
+  // shared.
+  useEffect(() => {
+    dispatch(
+      setDisplayNameOverride({ conversationId, value: "Your interviewer" }),
+    );
+    dispatch(
+      setDisplayDescriptionOverride({
+        conversationId,
+        value:
+          "Start anywhere — the thing you decided today, the call you keep having " +
+          "to explain, the one people get wrong. I ask from there, one question " +
+          "at a time, and you can talk instead of typing. Or press one of the " +
+          "openers below and I'll take it from there.",
+      }),
+    );
+    dispatch(
+      setDisplayIconNameOverride({ conversationId, value: "BrainCircuit" }),
+    );
+  }, [conversationId, dispatch]);
 
   // "What did it get wrong?" entry: stage the run context in the composer so
   // the Expert only finishes the sentence. Keyed by the seed text so opening
@@ -370,6 +486,11 @@ function InterviewColumn({
       <AgentConversationColumn
         conversationId={conversationId}
         surfaceKey={surfaceKey}
+        /* The reader here is the Expert being interviewed about her own
+           judgment — never a builder. Tool cards, raw result grids and
+           bound-variable chips do not belong in front of her; an admin with
+           creator mode on still sees all of it. */
+        audience="expert"
         constrainWidth
         edgeToEdgeScroll
         smartInputProps={{
@@ -387,7 +508,7 @@ function InterviewColumn({
           // Voice is a composer action, not a second section above a column that
           // already owns the full available height. Keeping it in the pinned
           // toolbar leaves the textarea reachable at every panel size.
-          extraRightControls: (
+          extraRightControls: voiceOn ? (
             <VoiceRelayBar
               primaryAgentId={agentId}
               conversationId={conversationId}
@@ -396,7 +517,7 @@ function InterviewColumn({
               questionPacing="one_at_a_time"
               variant="toolbar"
             />
-          ),
+          ) : undefined,
         }}
         afterMessages={
           <div className="flex flex-wrap gap-1.5 px-1 pt-2">
@@ -448,6 +569,15 @@ export function ScoutInterviewContent({
   startNew?: boolean;
 }) {
   const { mandate, loading, error } = useMandate(SCOUT_MANDATE_KEY);
+  // The Expert's own name — with the Rulebook's name it is ALL a blank-slate
+  // session is given. Never their email: an address is an identifier, not the
+  // way a person is addressed by someone interviewing them.
+  const expertName = useAppSelector(
+    (s) =>
+      s.userProfile?.userMetadata?.fullName ??
+      s.userProfile?.userMetadata?.name ??
+      "The expert",
+  );
   // THE DOCUMENT COMES FIRST — loaded before any conversation is minted, so
   // the Scout's first turn already holds the intake answers, the rules so far,
   // and the Expert's open review feedback (disease D4).
@@ -455,15 +585,21 @@ export function ScoutInterviewContent({
   const [interviews, setInterviews] = useState<RulebookInterview[] | null>(
     null,
   );
+  // THE START SCREEN is its own step (Arman, 2026-09-15): a fresh interview
+  // goes `configure` → `new`, so the Expert sees which interviewer they are
+  // about to get and can change it, BEFORE a conversation is minted. Resuming
+  // never re-asks — the mode was bound at that conversation's first turn and
+  // variables substitute once, at start.
   const [choice, setChoice] = useState<
     | { mode: "choose" }
-    | { mode: "new"; key: number }
+    | { mode: "configure"; key: number }
+    | { mode: "new"; key: number; picked: InterviewChoice }
     | { mode: "resume"; conversationId: string }
   >(
     initialConversationId
       ? { mode: "resume", conversationId: initialConversationId }
       : startNewProp
-        ? { mode: "new", key: 0 }
+        ? { mode: "configure", key: 0 }
         : { mode: "choose" },
   );
   const [freshKey, setFreshKey] = useState(0);
@@ -487,7 +623,7 @@ export function ScoutInterviewContent({
       // No history → straight into a new interview, exactly as before.
       if (rows.length === 0) {
         setChoice((prev) =>
-          prev.mode === "choose" ? { mode: "new", key: 0 } : prev,
+          prev.mode === "choose" ? { mode: "configure", key: 0 } : prev,
         );
       }
     })();
@@ -499,7 +635,7 @@ export function ScoutInterviewContent({
   const startNew = useCallback(() => {
     const key = freshKey + 1;
     setFreshKey(key);
-    setChoice({ mode: "new", key });
+    setChoice({ mode: "configure", key });
   }, [freshKey]);
 
   if (loading || rulebookDoc.loading || interviews === null)
@@ -514,23 +650,12 @@ export function ScoutInterviewContent({
     );
   }
 
-  // THE RUN REFUSES RATHER THAN STARTING BLIND (disease D4).
-  const launchVariables = {
-    rulebook_id: rulebookId,
-    [RULEBOOK_DOCUMENT_VARIABLE]: rulebookDoc.document ?? "",
-  };
-  const missing = missingRequiredVariables(mandate.contract, launchVariables);
-  if (rulebookDoc.error || missing.length > 0) {
+  // A Rulebook we could not open at all is a refusal in BOTH modes — without
+  // it we cannot even name what the Expert is building.
+  if (rulebookDoc.error) {
     return (
       <div className="space-y-3 px-4 py-6 text-sm">
-        <p className="text-foreground">
-          {rulebookDoc.error ??
-            missingVariablesMessage(SCOUT_MANDATE_KEY, missing)}
-        </p>
-        <p className="text-muted-foreground">
-          The interviewer would have had to guess what you&apos;ve already told
-          it, so we stopped instead.
-        </p>
+        <p className="text-foreground">{rulebookDoc.error}</p>
         <Button size="sm" variant="outline" onClick={rulebookDoc.reload}>
           Try again
         </Button>
@@ -557,8 +682,68 @@ export function ScoutInterviewContent({
         rulebookName={rulebookName}
         agentId={mandate.agentId}
         conversationId={choice.conversationId}
+        // A resumed interview keeps the surface's current voice setting; the
+        // context mode and probes were bound at that conversation's first turn
+        // and cannot be changed mid-conversation (variables substitute once).
+        voiceOn
         onBack={() => setChoice({ mode: "choose" })}
       />
+    );
+  }
+
+  if (choice.mode === "configure") {
+    const key = choice.key;
+    return (
+      <InterviewStartScreen
+        rulebookId={rulebookId}
+        rulebookOrganizationId={rulebookDoc.organizationId}
+        onBack={interviews.length > 0 ? () => setChoice({ mode: "choose" }) : undefined}
+        onStart={(picked) => setChoice({ mode: "new", key, picked })}
+      />
+    );
+  }
+
+  // THE RUN REFUSES RATHER THAN STARTING BLIND — but only about what THIS mode
+  // actually promises. In `primed` that is still disease D4's cure: the whole
+  // Rulebook, bound before turn 1. In `blank_slate` the missing document is the
+  // POINT, so the check runs against the payload the mode really sends.
+  const launchVariables = buildInterviewLaunchVariablesSafely({
+    rulebookId,
+    expertName,
+    rulebookName,
+    mode: choice.picked.mode,
+    probes: choice.picked.probes,
+    closingSurprises: choice.picked.closingSurprises,
+    rulebookDocument: rulebookDoc.document,
+  });
+  const missing = launchVariables
+    ? missingRequiredVariables(mandate.contract, launchVariables)
+    : [RULEBOOK_DOCUMENT_VARIABLE];
+  if (missing.length > 0) {
+    const mode = contextModeOption(choice.picked.mode);
+    return (
+      <div className="space-y-3 px-4 py-6 text-sm">
+        <p className="text-foreground">
+          {missingVariablesMessage(SCOUT_MANDATE_KEY, missing)}
+        </p>
+        <p className="text-muted-foreground">
+          You chose &ldquo;{mode.title}&rdquo;, and we could not give the
+          interviewer everything that mode needs — so we stopped rather than
+          starting a session that would quietly be something else.
+        </p>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={rulebookDoc.reload}>
+            Try again
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => setChoice({ mode: "configure", key: choice.key })}
+          >
+            Choose a different interviewer
+          </Button>
+        </div>
+      </div>
     );
   }
 
@@ -567,11 +752,29 @@ export function ScoutInterviewContent({
       rulebookId={rulebookId}
       rulebookName={rulebookName}
       rulebookDocument={rulebookDoc.document ?? ""}
+      expertName={expertName}
+      choice={choice.picked}
       agentId={mandate.agentId}
       seedText={seedText}
       freshSessionKey={choice.key}
     />
   );
+}
+
+/**
+ * `buildInterviewLaunchVariables` THROWS when a primed interview has no
+ * document — that throw is the contract for a caller that should have refused.
+ * Here we want the refusal SCREEN, so the throw becomes `null` and the caller
+ * above renders it.
+ */
+function buildInterviewLaunchVariablesSafely(
+  input: Parameters<typeof buildInterviewLaunchVariables>[0],
+): ReturnType<typeof buildInterviewLaunchVariables> | null {
+  try {
+    return buildInterviewLaunchVariables(input);
+  } catch {
+    return null;
+  }
 }
 
 export function ScoutInterviewPanel({

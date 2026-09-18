@@ -29,6 +29,9 @@
     "_armani",
     "_dev",
     ".claude",
+    ".wt",
+    ".matrx",
+    ".coldwalk*",
     "out",
     "utils/schema/schemaUtils.ts",
     "next-env.d.ts"

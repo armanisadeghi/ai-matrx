@@ -87,7 +87,6 @@ export function NotifyOwnerDialog({ open, target, onClose }: NotifyOwnerDialogPr
     for (let i = 0; i < recipients.length; i += 1) {
       try {
         await sendDirectActionMessage({
-          currentUserId,
           recipientId: recipients[i],
           content,
           actionData,

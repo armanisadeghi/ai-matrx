@@ -16,6 +16,9 @@ import { mayRunNoteConflictCommand } from "./conflictCommandLock";
  *   saveNoteField            — quick single-field save + optimistic update
  */
 
+import { noteEditBaseFromRecord } from "../utils/saveVerification";
+import { resolveNewNoteOrganization } from "../hooks/useNewNoteOrganization";
+import { readAllRows } from "@ai-matrx/data/db";
 import { createAsyncThunk, unwrapResult, type ThunkAction, type ThunkDispatch, type UnknownAction } from "@reduxjs/toolkit";
 import { supabase } from "@/utils/supabase/client";
 import {
@@ -57,6 +60,8 @@ import type {
   NoteUndoableField,
   SharedNotePermissionLevel,
 } from "./notes.types";
+import { NOTE_DELETED_DRAFT_REASON, captureNoteDraftFor } from "../utils/notesDrafts";
+import { getNoteLiveContent } from "../utils/noteLiveContent";
 import {
   upsertNoteFromServer,
   upsertNotesFromServer,
@@ -168,6 +173,46 @@ async function assertCurrentNotesUser(expectedUserId: string): Promise<void> {
   }
 }
 
+/** How long the FIRST read after boot waits for the Supabase session to name
+ *  the same user Redux does. */
+export const LIST_SESSION_SETTLE_MS = 6_000;
+
+/**
+ * The list read's auth boundary. `assertCurrentNotesUser` is the right check
+ * for a write mid-session — the session either names this user or it does
+ * not. It is the WRONG check for the first read after a fresh sign-in, where
+ * Redux already holds the user (hydrated from the cookie) while supabase-js is
+ * still restoring the session from storage: the one-shot check threw
+ * `SessionUnavailableError`, the list went back to `idle`, the mount guard
+ * believed it had already fetched, and /notes showed no folders, no notes and
+ * no loading state until something else happened to dispatch a fetch
+ * (2026-09-14: Ava's empty sidebar; Arman's empty /notes that filled in only
+ * after toggling the view menu). So the read WAITS, bounded, for the session
+ * to settle, and only then gives up — loudly.
+ */
+async function awaitCurrentNotesUser(
+  expectedUserId: string,
+  timeoutMs = LIST_SESSION_SETTLE_MS,
+): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  for (;;) {
+    // A hung `getSession` (the multi-tab navigator.locks class) must not turn
+    // the bounded wait into an unbounded one: one poll gets one second.
+    const poll = await Promise.race([
+      supabase.auth.getSession(),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 1_000)),
+    ]);
+    if (poll && !poll.error && poll.data.session?.user.id === expectedUserId) return;
+    if (Date.now() >= deadline) throw new SessionUnavailableError();
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+}
+
+/** Monotonic run id for the owner list, like `sharedListFetchSeq` below: a
+ *  run that a newer run has superseded (account switch mid-flight) dispatches
+ *  nothing, so it can neither clobber the new run's status nor its rows. */
+let notesListFetchSeq = 0;
+
 function dispatchCustomEvent(name: string, detail?: unknown): void {
   if (typeof window !== "undefined") {
     window.dispatchEvent(new CustomEvent(name, { detail }));
@@ -182,42 +227,87 @@ function dispatchCustomEvent(name: string, detail?: unknown): void {
  * Fetch basics for sidebar: id, label, folder_name, tags, updated_at, position.
  * Dispatches upsertNoteFromServer for each with fetchStatus "list".
  */
+type NoteListRow = Pick<
+  Note,
+  | "id"
+  | "created_by"
+  | "label"
+  | "content_preview"
+  | "folder_name"
+  | "folder_id"
+  | "tags"
+  | "updated_at"
+  | "position"
+  | "organization_id"
+  | "visibility"
+  | "version"
+>;
+
 export const fetchNotesList = createAsyncThunk<void, void>(
   "notes/fetchNotesList",
   async (_, { dispatch, getState }) => {
     console.log("[Track Quick Notes] 6, thunks.ts — fetchNotesList started");
     const userId = getUserId(getState);
+    const seq = ++notesListFetchSeq;
+    const superseded = () => seq !== notesListFetchSeq;
 
     dispatch(setListStatus("loading"));
 
     try {
-      await assertCurrentNotesUser(userId);
+      await awaitCurrentNotesUser(userId);
+      if (superseded()) return;
       // DD-137c / §3.3: where this list lands is the `note` token's registry word, not a literal.
       const ownerOnly = await scopeToOwner("note");
-      const { data, error } = await runWithSessionRetry(() => {
-        let q = supabase
-          .schema("workbench")
-          .from("notes")
-          .select(
-            "id, label, content, folder_name, folder_id, tags, updated_at, position, organization_id, visibility, version",
-          )
-          .is("deleted_at", null);
-        if (ownerOnly) q = q.eq("created_by", userId);
-        return q.order("updated_at", { ascending: false });
-      });
-
-      if (error) {
-        if (isMissingSessionError(error)) throw new SessionUnavailableError();
-        dispatch(setListError(error.message ?? "Failed to load notes"));
-        dispatch(setListStatus("error"));
-        throw error;
+      // THE COMPLETE LIST. PostgREST caps a bare select at 1000 rows and says
+      // nothing; a sidebar is a list the user treats as complete, so it reads
+      // through `readAllRows` (count-verified paging on a stable order).
+      let data: NoteListRow[];
+      try {
+        data = await runWithSessionRetry(async () => ({
+          data: await readAllRows<NoteListRow>(
+            ({ from, to }) => {
+              let q = supabase
+                .schema("workbench")
+                .from("notes")
+                // NEVER the body. The list reads the database-maintained
+                // 240-char preview; the body is read once, on open, by
+                // fetchNoteContent (audit N-24 — every route entry and every
+                // refresh used to download the full text of every note).
+                .select(
+                  "id, created_by, label, content_preview, folder_name, folder_id, tags, updated_at, position, organization_id, visibility, version",
+                  { count: "exact" },
+                )
+                .is("deleted_at", null);
+              if (ownerOnly) q = q.eq("created_by", userId);
+              return q
+                .order("updated_at", { ascending: false })
+                .order("id", { ascending: true })
+                .range(from, to);
+            },
+            { label: "workbench.notes (list)" },
+          ),
+          error: null,
+        })).then((result) => {
+          if (result.error) throw result.error;
+          return result.data ?? [];
+        });
+      } catch (readError) {
+        const shaped =
+          typeof readError === "object" && readError !== null
+            ? (readError as { code?: string | null; message?: string | null })
+            : null;
+        if (isMissingSessionError(shaped)) throw new SessionUnavailableError();
+        throw readError;
       }
+
+      if (superseded()) return;
 
       // Redux identity can disappear while the notes query is in flight.
       // Recheck immediately before the association package's synchronous
       // requireUserId boundary so a logout cannot fan out into extra captures.
       await assertCurrentNotesUser(userId);
-      const notes = await hydrateNoteContextLinks(data ?? []);
+      const notes = await hydrateNoteContextLinks(data);
+      if (superseded()) return;
 
       // ONE dispatch for the whole page. A per-note dispatch loop notified
       // every store subscriber (and re-ran every sorted list selector) once
@@ -226,8 +316,11 @@ export const fetchNotesList = createAsyncThunk<void, void>(
       // doctrine).
       dispatch(
         upsertNotesFromServer({
+          // `created_by` is the ROW's value (the select carries it) — never
+          // stamped with the viewer, which under organization scope claimed
+          // colleagues' notes as the viewer's own.
           upserts: notes.map((note) => ({
-            note: { ...note, created_by: userId },
+            note,
             fetchStatus: "list" as const,
           })),
         }),
@@ -238,9 +331,20 @@ export const fetchNotesList = createAsyncThunk<void, void>(
       });
       dispatch(setListStatus("loaded"));
     } catch (error) {
-      if (error instanceof SessionUnavailableError) {
-        dispatch(setListStatus("idle"));
-      }
+      // A superseded run reports nothing: the newer run owns the status.
+      if (superseded()) throw error;
+      // EVERY failure ends in `error` with a sentence and a Try again — a
+      // session that never settled, a refused query, a failed association
+      // read. Leaving the status at `loading` (or `idle`) is a spinner that
+      // nothing will ever resolve, which is the screen this thunk used to show.
+      dispatch(
+        setListError(
+          error instanceof SessionUnavailableError
+            ? "Your sign-in is still loading, so your notes could not be read yet. Try again in a moment."
+            : `Your notes could not be loaded${error instanceof Error && error.message ? `: ${error.message}` : "."}`,
+        ),
+      );
+      dispatch(setListStatus("error"));
       throw error;
     }
   },
@@ -269,22 +373,49 @@ export const initializeAutogeneratedNote = createAsyncThunk<
   }));
 });
 
-/** RTK serializes rejected thunk errors, so UI controls cannot rely on Error. */
-export function draftInitializationErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "message" in error &&
-    typeof error.message === "string" &&
-    error.message.trim()
-  ) return error.message;
-  return "Could not start a new note.";
-}
-
 // ---------------------------------------------------------------------------
 // 2. fetchNoteContent
 // ---------------------------------------------------------------------------
+
+/**
+ * Re-read a note the store already holds in full. `fetchNoteContent` returns
+ * early for a loaded note by design (open-tab reads); this is the read for
+ * the case where the SERVER changed under a loaded record and the editor must
+ * follow — a version restore. Before this existed every restore caller
+ * dispatched `fetchNoteContent`, which returned null, so the database held the
+ * restored text while the editor kept the old one and the next autosave wrote
+ * it straight back (audit N-04, 2026-09-14).
+ */
+export const refetchNoteContent = createAsyncThunk<Note | null, string>(
+  "notes/refetchNoteContent",
+  async (noteId, { dispatch, getState }) => {
+    const record = (getState() as RootState).notes?.notes?.[noteId];
+    if (record?._dirty) {
+      // Unsaved local edits outrank a server re-read; the editor's own save
+      // path (and its conflict review) reconciles them.
+      return null;
+    }
+    const { data, error } = await supabase
+      .schema("workbench")
+      .from("notes")
+      .select("*")
+      .eq("id", noteId)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) {
+      throw recordUnavailable({
+        entity: "note",
+        reason: "unknown",
+        recordId: noteId,
+        token: "note",
+        relation: "workbench.notes",
+      });
+    }
+    const [note] = await hydrateNoteContextLinks([data]);
+    dispatch(upsertNoteFromServer({ note, fetchStatus: "full" }));
+    return note;
+  },
+);
 
 /**
  * Fetch the full note when a tab is opened.
@@ -597,6 +728,11 @@ const saveNotePayload = createAsyncThunk<NoteSaveReceipt | undefined, { noteId: 
           updatedAt: note.updated_at ?? undefined,
           version: note.version,
           savedSnapshot,
+          // The INSERT's row IS this record's first edit base. Without it a
+          // web-created note had no base at all, and the desktop sync's
+          // file_path stamp 0.9s later was a conflict again (adversarial
+          // review, 2026-09-13).
+          acknowledgedPhysicalSnapshot: note,
         }));
       } catch (error) {
         if (error instanceof SessionUnavailableError) throw error;
@@ -669,6 +805,10 @@ const saveNotePayload = createAsyncThunk<NoteSaveReceipt | undefined, { noteId: 
       }, {
         expectedVersion: record.version,
         expectedOrganizationId: record.organization_id,
+        // The edit base: a CAS miss on a row whose edited fields still equal
+        // it is a phantom (the version moved for a column nobody edits) and
+        // is retried inside the service, never shown as a conflict.
+        acknowledgedBase: noteEditBaseFromRecord(record),
       });
       retainAttemptReceipt(attempt, receipt);
       if (receipt.failedFields.length > 0) throw new NoteContextPartialSaveError(receipt);
@@ -1096,6 +1236,36 @@ export const createNewNote = createAsyncThunk<
 // ---------------------------------------------------------------------------
 
 /**
+ * Does this note hold text the database does not? `_dirty` is the Redux half;
+ * `noteLiveContent` is the editor's PRE-debounce buffer, where the last words
+ * typed live for 200–1000 ms before Redux ever hears about them.
+ */
+export function noteHasUnsavedEdits(
+  record: Pick<NoteRecord, "id" | "_dirty" | "content"> | undefined | null,
+): boolean {
+  if (!record) return false;
+  if (record._dirty) return true;
+  const live = getNoteLiveContent(record.id);
+  return live !== undefined && live !== (record.content ?? "");
+}
+
+/**
+ * Deleting used to throw the last few seconds of typing away in silence
+ * (audit N-21): `removeNote` drops the record, the pending autosave timer then
+ * finds nothing and returns, and Undo restores the SERVER's older text with no
+ * mention that newer words went with it. Snapshot the browser draft first, so
+ * the text is recoverable from the draft-recovery banner either way.
+ */
+function captureDraftsBeforeDelete(record: NoteRecord | undefined): void {
+  if (!noteHasUnsavedEdits(record)) return;
+  try {
+    captureNoteDraftFor(record!.id, NOTE_DELETED_DRAFT_REASON);
+  } catch {
+    // A full/blocked localStorage must never stop a delete the user asked for.
+  }
+}
+
+/**
  * Soft delete a note (set deleted_at = now).
  * Dispatches removeNote and custom event "notes:deleted".
  */
@@ -1107,6 +1277,7 @@ export const deleteNote = createAsyncThunk<void, string>(
     const state = getState() as RootState;
     const record = state.notes.notes[noteId] as NoteRecord | undefined;
     if (record?._isAutogenerated) {
+      captureDraftsBeforeDelete(record);
       dispatch(removeNote(noteId));
       dispatchCustomEvent("notes:deleted", { noteId });
       return;
@@ -1147,6 +1318,7 @@ export const deleteNote = createAsyncThunk<void, string>(
       throw failed;
     }
 
+    captureDraftsBeforeDelete(record);
     dispatch(removeNote(noteId));
     dispatchCustomEvent("notes:deleted", { noteId });
   },
@@ -1237,8 +1409,11 @@ export const copyNote = createAsyncThunk<
 export const findOrCreateEmptyNote = createAsyncThunk<Note, string | undefined>(
   "notes/findOrCreateEmptyNote",
   async (folder = "Draft", { dispatch, getState }) => {
+    // Wait for the active organization to exist (fresh sign-in, multi-org
+    // user with no default) instead of refusing the tap — the same resolver
+    // the desktop "+" uses.
+    const organizationId = await resolveNewNoteOrganization({ getState, dispatch });
     const state = getState() as RootState;
-    const organizationId = requireOrganizationContext(selectOrganizationId(state));
     const allNotes = state.notes.notes;
 
     // Check state for existing "New Note" with empty content in the folder
@@ -1449,7 +1624,7 @@ export const fetchDeletedNotes = createAsyncThunk<void, void>(
       .schema("workbench")
       .from("notes")
       .select(
-        "id, label, folder_name, folder_id, tags, content, updated_at, position, organization_id, visibility, deleted_at, version",
+        "id, created_by, label, folder_name, folder_id, tags, content_preview, updated_at, position, organization_id, visibility, deleted_at, version",
       )
       .not("deleted_at", "is", null);
     if (ownerOnly) trashQuery = trashQuery.eq("created_by", userId);
@@ -1458,14 +1633,53 @@ export const fetchDeletedNotes = createAsyncThunk<void, void>(
     if (error) throw error;
 
     const notes = await hydrateNoteContextLinks(data ?? []);
-    for (const note of notes) {
+    // ONE dispatch for the whole bin — a per-note loop re-notified every store
+    // subscriber and re-ran every sorted list selector once per row, the exact
+    // O(N^2 log N) freeze shape `fetchNotesList` was fixed for (audit N-22).
+    // `created_by` is the ROW's value, never stamped with the viewer: under
+    // organization scope the bin holds colleagues' notes too (audit N-10).
+    dispatch(
+      upsertNotesFromServer({
+        upserts: notes.map((note) => ({
+          note,
+          // A preview row, not the body — "list", so an open reads the body.
+          fetchStatus: "list" as const,
+        })),
+      }),
+    );
+  },
+);
+
+/**
+ * Load the BODY of every listed note that the store holds only as a preview
+ * row. The list read carries `content_preview` alone (audit N-24); the few
+ * operations that genuinely need every body at once — find across notes,
+ * bulk markdown export — call this first, in chunks, with one batched upsert
+ * per chunk. Records already `full` cost nothing. Returns the fresh records.
+ */
+export const ENSURE_BODIES_CHUNK = 100;
+export const ensureNoteBodiesLoaded = createAsyncThunk<NoteRecord[], string[]>(
+  "notes/ensureNoteBodiesLoaded",
+  async (noteIds, { dispatch, getState }) => {
+    const before = (getState() as RootState).notes.notes;
+    const missing = noteIds.filter((id) => before[id]?._fetchStatus !== "full");
+    for (let at = 0; at < missing.length; at += ENSURE_BODIES_CHUNK) {
+      const chunk = missing.slice(at, at + ENSURE_BODIES_CHUNK);
+      const { data, error } = await supabase
+        .schema("workbench")
+        .from("notes")
+        .select("*")
+        .in("id", chunk);
+      if (error) throw error;
+      const notes = await hydrateNoteContextLinks(data ?? []);
       dispatch(
-        upsertNoteFromServer({
-          note: { ...note, created_by: userId },
-          fetchStatus: "full",
+        upsertNotesFromServer({
+          upserts: notes.map((note) => ({ note, fetchStatus: "full" as const })),
         }),
       );
     }
+    const after = (getState() as RootState).notes.notes;
+    return noteIds.map((id) => after[id]).filter((r): r is NoteRecord => Boolean(r));
   },
 );
 

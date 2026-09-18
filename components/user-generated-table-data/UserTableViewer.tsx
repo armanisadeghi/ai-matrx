@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Table,
   TableBody,
@@ -42,6 +42,7 @@ import {
   Redo2,
   ChevronLeft,
   ChevronRight,
+  Paintbrush,
 } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { VersionHistoryViewer } from "@/features/data-tables/components/VersionHistoryViewer";
@@ -51,7 +52,8 @@ import {
 } from "@/features/data-tables/components/EditableCell";
 import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
 import { FormattedFieldValue } from "@/lib/field-formats/FormattedFieldValue";
-import { resolveFieldFormat } from "@/lib/field-formats/format";
+import { parseFieldInput, resolveFieldFormat } from "@/lib/field-formats/format";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import {
   choicesForRow,
   useFieldChoiceMap,
@@ -71,6 +73,7 @@ import { useGridSelection } from "@/features/data-tables/hooks/useGridSelection"
 import { useCellUndo } from "@/features/data-tables/hooks/useCellUndo";
 import {
   cellDomKey,
+  rangeRows as rangeRowsOf,
   type CellAddress,
 } from "@/features/data-tables/grid-selection";
 import { classifyEcho } from "@/features/data-tables/realtime-echo";
@@ -80,8 +83,38 @@ import {
   getCompleteTable,
   getTableMetadata,
   listUserTables,
+  renameColumn,
+  renumberFields,
+  setTableStyle,
   upsertCell,
 } from "@/features/data-tables/service";
+import {
+  CELL_TINT_CLASS,
+  ROW_TINT_CLASS,
+  applyStylePath,
+  colorForChoice,
+  parseTableStyle,
+  resolveCellColor,
+  resolveRowColor,
+  stylePath,
+  tableStyleFromMetadata,
+  type ChoiceColorLookup,
+  type StylePath,
+  type TableStyle,
+} from "@/features/data-tables/table-style";
+import { ColorRulesDialog } from "@/features/data-tables/components/ColorRulesDialog";
+import { isChoiceFormat } from "@/lib/field-formats/choices";
+import {
+  formulaColumnsOf,
+  isFormulaColumn,
+  withComputedColumns,
+} from "@/features/data-tables/formulas";
+import {
+  hasValidationRules,
+  parseValidationRules,
+  validateCellValue,
+  type ValidationRules,
+} from "@/features/data-tables/validation";
 import { confirm as confirmDialog } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import {
   isBulkOpError,
@@ -91,12 +124,36 @@ import {
   type FieldDataType,
 } from "@/features/data-tables/types";
 import {
+  buildDuplicateOps,
   buildFillDownOps,
   buildSetColumnOps,
   capturePriorValues,
   orderSelectedRows,
   type SelectableRow,
 } from "@/features/data-tables/bulk-row-actions";
+import {
+  cellClipboardText,
+  gridToTsv,
+  parseClipboardGrid,
+  planPaste,
+  storedValuesEqual,
+} from "@/features/data-tables/grid-clipboard";
+import {
+  EMPTY_GRID_MENU_TARGET,
+  GRID_FIELD_DOM_ATTR,
+  GRID_ROW_DOM_ATTR,
+  buildGridCellMenuSection,
+  buildGridColumnMenuSection,
+  buildGridRowMenuSection,
+  resolveGridMenuTarget,
+  type GridMenuTarget,
+} from "@/features/data-tables/grid-context-menu";
+import {
+  buildDatasetTableMenuSection,
+  datasetTableEntityRef,
+} from "@/features/data-tables/dataset-table-actions";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import { BulkRowActions } from "@/features/data-tables/components/BulkRowActions";
 import {
   applyColumnFilters as applyFilters,
@@ -160,9 +217,13 @@ export interface TableInfo {
   table_name: string;
   description?: string;
   user_id?: string;
+  /** The owning organization. The platform's example tables live in the global system org and are read-only for everyone. */
+  organization_id?: string;
   row_ordering_config?: RowOrderingConfig;
   /** `permissive` | `strict` — read by TableConfigModal's Strict Validation switch. */
   validation_mode?: string;
+  /** The full `udt_datasets.metadata` blob; `metadata.style` is the table's colors (`table-style.ts`). */
+  metadata?: unknown;
 }
 
 interface UserTable {
@@ -294,6 +355,13 @@ interface UserTableViewerProps {
 
 const DATA_TABLES_SURFACE_NAME = "matrx-user/data-tables" as const;
 
+/**
+ * Up to this many visible columns the desktop grid shares the width evenly
+ * (`table-fixed`); beyond it every column keeps its natural width and the
+ * grid scrolls sideways. Eight 150px columns fill a 1280px viewport.
+ */
+const FIXED_LAYOUT_MAX_COLUMNS = 8;
+
 /** Shared with the saved-view codec so "default page size" means one thing. */
 const SAVED_VIEW_DEFAULTS = { pageSize: 20 } as const;
 
@@ -417,9 +485,30 @@ const UserTableViewer = ({
 
   // Additional modals
   const [showAddColumnModal, setShowAddColumnModal] = useState(false);
+  // Inline column rename: the header label becomes an input, in place — the
+  // way Airtable, Notion and Sheets rename a column. `null` = not renaming.
+  const [renamingField, setRenamingField] = useState<string | null>(null);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [renameSaving, setRenameSaving] = useState(false);
+  /** When the rename input opened — see the blur guard on the input. */
+  const renameOpenedAtRef = React.useRef(0);
   const [showAddRowModal, setShowAddRowModal] = useState(false);
+  const [showColorsDialog, setShowColorsDialog] = useState(false);
+  /**
+   * The table's colors, patched locally the moment a write is sent so the grid
+   * repaints without a round trip. Keyed on the metadata object identity: a
+   * reload brings a new `tableInfo.metadata` and the local patch retires in
+   * favour of what the server holds (which includes the write).
+   */
+  const [localStyle, setLocalStyle] = useState<{
+    base: unknown;
+    style: TableStyle;
+  } | null>(null);
+  /** Right-click "Insert column left/right" — where the next new column lands. */
+  const [pendingColumnInsert, setPendingColumnInsert] = useState<{
+    order: number;
+  } | null>(null);
   const [showPasteRowsDialog, setShowPasteRowsDialog] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false);
   const [showTableConfigModal, setShowTableConfigModal] = useState(false);
   const [showReferenceOverlay, setShowReferenceOverlay] = useState(false);
 
@@ -454,6 +543,23 @@ const UserTableViewer = ({
     fetchCurrentUser();
   }, []);
 
+  const [systemOrgId, setSystemOrgId] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    resolveSystemOrgId()
+      .then((id) => {
+        if (!cancelled) setSystemOrgId(id);
+      })
+      .catch((err) => {
+        // Without it an example table would look editable to its seeding
+        // account; say so rather than silently guessing either way.
+        console.error("Could not resolve the system organization:", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // has_permission is the source of truth for sharing, so the UI matches
   // what the RLS-protected RPCs will actually accept — previously shared
   // EDITORS were wrongly shown the read-only UI.
@@ -461,8 +567,19 @@ const UserTableViewer = ({
     tableInfo !== null &&
     currentUserId !== null &&
     tableInfo.user_id === currentUserId;
+  // The platform's example tables (Arman: "defaults that they can see, which
+  // are read-only") belong to the global system org. They are read-only for
+  // EVERYONE in the UI — including the admin account that seeded them, since
+  // every agent signs in as that account and one stray keystroke would rewrite
+  // the showcase every user sees. Their only writer is the seed script.
+  const isExampleTable =
+    tableInfo !== null &&
+    systemOrgId !== null &&
+    tableInfo.organization_id === systemOrgId;
   const isReadOnly =
-    tableInfo !== null && currentUserId !== null && !isOwner && !sharedEditor;
+    tableInfo !== null &&
+    currentUserId !== null &&
+    (isExampleTable || (!isOwner && !sharedEditor));
 
   useEffect(() => {
     if (!tableInfo || currentUserId === null || isOwner) return;
@@ -482,12 +599,20 @@ const UserTableViewer = ({
     };
   }, [tableInfo, currentUserId, isOwner, tableId]);
 
+  // Why the grid is read-only, in one sentence, for the context menu's
+  // disabled-item hints. The default "ask the owner for edit access" is a LIE
+  // on an example table for the account that seeded it — it IS the owner.
+  const readOnlyReason = isExampleTable
+    ? "Platform example table — read-only for everyone"
+    : undefined;
+
   // Show toast when trying to edit in read-only mode
   const showReadOnlyToast = () => {
     toast({
       title: "View Only",
-      description:
-        "You don't have edit access to this shared table. You would need to duplicate it first to make changes.",
+      description: isExampleTable
+        ? "This is one of the platform's example tables, so it is read-only for everyone. Create a table of your own to try this out."
+        : "You don't have edit access to this shared table. You would need to duplicate it first to make changes.",
       variant: "default",
     });
   };
@@ -741,6 +866,48 @@ const UserTableViewer = ({
     })),
   );
 
+  // ─── Colors (table-style.ts) ─────────────────────────────────────────────
+  const serverStyle = tableStyleFromMetadata(tableInfo?.metadata);
+  const tableStyle: TableStyle =
+    localStyle && localStyle.base === tableInfo?.metadata
+      ? localStyle.style
+      : serverStyle;
+
+  /** A choice column's option color for a value — what color-by paints with. */
+  const choiceColorFor: ChoiceColorLookup = (fieldName, value) =>
+    colorForChoice(choiceMap.get(fieldName)?.choices, value);
+
+  /** Write ONE style path: optimistic repaint, then the server's answer wins. */
+  const writeStylePath = async (path: StylePath, value: unknown) => {
+    if (isReadOnly) return;
+    const before = tableStyle;
+    const base = tableInfo?.metadata;
+    setLocalStyle({ base, style: applyStylePath(before, path, value) });
+    const result = await setTableStyle({ tableId, path, value });
+    if (isServiceFailure(result)) {
+      setLocalStyle({ base, style: before });
+      toast({
+        title: "Could not save the color",
+        description: result.error,
+        variant: "destructive",
+      });
+      return;
+    }
+    setLocalStyle({ base, style: parseTableStyle(result.data.style) });
+  };
+
+  const rowTintClass = (row: TableDataRow): string | undefined => {
+    const color = resolveRowColor(tableStyle, row, choiceColorFor);
+    return color ? ROW_TINT_CLASS[color] : undefined;
+  };
+  const cellTintClass = (row: TableDataRow, fieldName: string): string | undefined => {
+    const color = resolveCellColor(tableStyle, row, fieldName, choiceColorFor);
+    return color ? CELL_TINT_CLASS[color] : undefined;
+  };
+  const fieldCanColorBy = (field: TableField): boolean =>
+    field.data_type === "boolean" ||
+    isChoiceFormat(resolveFieldFormat(field.data_type, field.metadata).id);
+
   // --- Column filtering -------------------------------------------------
 
   // Cap on how many rows we pull for client-side column filtering. Large
@@ -933,7 +1100,26 @@ const UserTableViewer = ({
     [currentPage, limit, sortField, sortDirection, searchTerm],
   );
 
-  useTableRealtime(tableId, handleRealtime);
+  useTableRealtime(tableId, handleRealtime, {
+    // Another editor renamed the table, rewrote its description or changed
+    // its colors: adopt the row. `metadata` arriving as a NEW object is what
+    // retires any optimistic local style patch in favour of the server's.
+    onTableChange: (row) =>
+      setTableInfo((prev) =>
+        prev
+          ? {
+              ...prev,
+              ...(typeof row.table_name === "string"
+                ? { table_name: row.table_name }
+                : {}),
+              ...(row.description !== undefined
+                ? { description: row.description ?? undefined }
+                : {}),
+              ...(row.metadata !== undefined ? { metadata: row.metadata } : {}),
+            }
+          : prev,
+      ),
+  });
 
   useEffect(
     () => () => {
@@ -1089,6 +1275,28 @@ const UserTableViewer = ({
     const newDirection =
       explicitDirection ??
       (field === sortField && sortDirection === "asc" ? "desc" : "asc");
+
+    // A formula column exists only in the browser: the server's sort RPC
+    // reads the stored (empty) cell. Client-side sorting covers it whenever
+    // the browser can hold every row; when it cannot, say so — never a sort
+    // arrow over an order that is not real.
+    const sortTarget = fields.find((f) => f.field_name === field);
+    if (
+      sortTarget &&
+      isFormulaColumn(sortTarget) &&
+      !hasColumnFilters &&
+      (totalCount > CLIENT_SORT_THRESHOLD || Boolean(searchTerm))
+    ) {
+      toast({
+        title: `Can't sort by ${sortTarget.display_name} right now`,
+        description: searchTerm
+          ? "Formula columns are calculated in your browser, so they can't be sorted while a search is active. Clear the search, then sort."
+          : `Formula columns are calculated in your browser, and this table has more than ${CLIENT_SORT_THRESHOLD.toLocaleString()} rows. Filter the table down first, then sort.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSortField(field);
     setSortDirection(newDirection);
 
@@ -1141,8 +1349,10 @@ const UserTableViewer = ({
 
         const allPayload = allData as typeof allData & { data: unknown[] };
         // Sort all data client-side with type awareness
+        // A formula column has no stored value to sort by — compute it over
+        // the freshly loaded rows first, then sort on what the user sees.
         const sortedData = smartSort(
-          asTableDataRows(allPayload.data),
+          withComputedColumns(asTableDataRows(allPayload.data), fields).rows,
           field,
           newDirection,
           fieldDataType,
@@ -1191,10 +1401,12 @@ const UserTableViewer = ({
     });
     if (isServiceFailure(complete)) throw new Error(complete.error);
 
-    let rows: TableDataRow[] = complete.data.rows.map((row) => ({
-      id: row.id,
-      data: row.data,
-    }));
+    // Formula columns are EMPTY in what the database returns — compute them
+    // before the search, the filters and the sort look at the rows.
+    let rows: TableDataRow[] = withComputedColumns(
+      complete.data.rows.map((row) => ({ id: row.id, data: row.data })),
+      fields,
+    ).rows;
     const query = searchTerm.trim().toLowerCase();
     if (query) {
       rows = rows.filter((row) =>
@@ -1594,6 +1806,81 @@ const UserTableViewer = ({
    * one delete-column path, so the header shortcut and the settings dialog can
    * never diverge on what deletion means or what it warns about.
    */
+  /**
+   * Begin renaming a column in its header. Deferred a beat: this is called
+   * from a menu row, and the menu hands focus back to its trigger as it
+   * closes — an input mounted before that would be blurred (and cancelled)
+   * the instant it appeared.
+   */
+  const startColumnRename = (fieldName: string) => {
+    if (isReadOnly) {
+      showReadOnlyToast();
+      return;
+    }
+    const field = fields.find((f) => f.field_name === fieldName);
+    if (!field) return;
+    window.setTimeout(() => {
+      renameOpenedAtRef.current = Date.now();
+      setRenameDraft(field.display_name);
+      setRenamingField(fieldName);
+    }, 150);
+  };
+
+  const cancelColumnRename = () => {
+    setRenamingField(null);
+    setRenameDraft("");
+  };
+
+  const commitColumnRename = async () => {
+    if (renameSaving || renamingField === null) return;
+    const field = fields.find((f) => f.field_name === renamingField);
+    const nextName = renameDraft.trim();
+    if (!field || !nextName || nextName === field.display_name) {
+      cancelColumnRename();
+      return;
+    }
+    setRenameSaving(true);
+    const result = await renameColumn({
+      tableId,
+      field,
+      newName: nextName,
+      fields,
+    });
+    setRenameSaving(false);
+    if (isServiceFailure(result)) {
+      // Keep the input open with what was typed, so it can be fixed.
+      toast({
+        title: "Couldn't rename the column",
+        description: result.error,
+        variant: "destructive",
+      });
+      return;
+    }
+    cancelColumnRename();
+    const { formulasUpdated, formulasFailed } = result.data;
+    if (formulasFailed.length > 0) {
+      toast({
+        title: `Renamed to "${nextName}" — but a formula still uses the old name`,
+        description: `Open Table settings and fix the formula in: ${formulasFailed.join(", ")}. Until then it shows #ERROR.`,
+        variant: "destructive",
+      });
+    } else if (formulasUpdated.length > 0) {
+      toast({
+        title: `Renamed to "${nextName}"`,
+        description: `Updated the formula in ${formulasUpdated.join(", ")} to use the new name.`,
+        variant: "success",
+      });
+    }
+    await loadTableData(
+      currentPage,
+      limit,
+      sortField,
+      sortDirection,
+      searchTerm,
+      true,
+    );
+  };
+
   const handleDeleteColumn = async (field: TableField) => {
     const ok = await confirmDialog({
       title: `Remove "${field.display_name}"?`,
@@ -1792,7 +2079,9 @@ const UserTableViewer = ({
   let effectiveTotalPages = totalPages;
 
   if (hasColumnFilters) {
-    const source = fullDatasetCache ?? data;
+    // Formula values are computed BEFORE the filter and the sort run, so a
+    // filter on a formula column judges the number the user sees.
+    const source = withComputedColumns(fullDatasetCache ?? data, fields).rows;
     let filtered = applyColumnFilters(source);
     if (sortField) {
       filtered = smartSort(
@@ -1807,6 +2096,43 @@ const UserTableViewer = ({
     const startIndex = (currentPage - 1) * limit;
     displayRows = filtered.slice(startIndex, startIndex + limit);
   }
+
+  // ─── Formula columns (features/data-tables/formulas.ts) ──────────────────
+  //
+  // A formula column STORES nothing; its value is computed from the row at
+  // read time by ONE helper, `withComputedColumns` — used here for the page,
+  // by `loadRowsForCopy` / `loadAllRows` for every copy and export, by the
+  // client-side sort, and by the agent scope — so every reader sees the same
+  // number and a write can never land in it (the cell is read-only below, and
+  // paste / clear / fill skip it). Errors are per cell: a bad reference or a
+  // division by zero renders #ERROR with the reason.
+  const formulaColumns = formulaColumnsOf(fields);
+  const computedPage = withComputedColumns(displayRows, fields);
+  displayRows = computedPage.rows;
+  const formulaErrors = computedPage.errors;
+  const isFormulaField = (fieldName: string): boolean =>
+    formulaColumns.some((c) => c.field.field_name === fieldName);
+
+  // ─── Validation rules (features/data-tables/validation.ts) ───────────────
+  // Parsed once per render per column; the cell editors, the amber mismatch
+  // marker and the paste path all judge against the same parsed rules.
+  const validationByField = new Map<string, ValidationRules>(
+    fields.flatMap((field) => {
+      const rules = parseValidationRules(field.validation_rules);
+      return hasValidationRules(rules) ? [[field.field_name, rules] as const] : [];
+    }),
+  );
+  /**
+   * Every OTHER loaded row's value for a `unique` column. Read from the full
+   * cache when the viewer holds it, else the page — the honest set the browser
+   * has; the strict-mode trigger does not enforce uniqueness (cross-row).
+   */
+  const existingValuesFor = (fieldName: string, rowId: string): unknown[] | undefined => {
+    if (!validationByField.get(fieldName)?.unique) return undefined;
+    return (fullDatasetCache ?? data)
+      .filter((row) => row.id !== rowId)
+      .map((row) => row.data[fieldName]);
+  };
 
   // True while we're fetching the full dataset for a freshly-applied filter.
   const filteringInProgress =
@@ -1935,65 +2261,102 @@ const UserTableViewer = ({
     [displayRows],
   );
 
-  const handleCopyCell = useCallback(
-    (address: CellAddress) => {
-      const raw = readCell(address);
-      const text =
-        raw === null || raw === undefined
-          ? ""
-          : typeof raw === "object"
-            ? JSON.stringify(raw)
-            : String(raw);
-      void navigator.clipboard.writeText(text).then(
-        () =>
-          toast({
-            title: "Copied",
-            description: text.slice(0, 80) || "Empty cell",
-          }),
-        () =>
-          toast({
-            title: "Could not copy",
-            description: "The browser refused clipboard access.",
-            variant: "destructive",
-          }),
-      );
-    },
+  /** What a cell puts on the clipboard — the same text a spreadsheet would. */
+  const getCellText = useCallback(
+    (address: CellAddress): string => cellClipboardText(readCell(address)),
     [readCell],
   );
 
-  /** Delete / Backspace on a selected cell. A write, so it is undoable. */
-  const handleClearCell = useCallback(
-    async (address: CellAddress) => {
-      if (isReadOnly) return;
-      const prior = readCell(address);
-      if (prior === null || prior === undefined || prior === "") return;
+  const handleCopied = useCallback((cells: CellAddress[], text: string) => {
+    toast({
+      title: cells.length > 1 ? `Copied ${cells.length} cells` : "Copied",
+      description: text.slice(0, 80) || "Empty cell",
+    });
+  }, []);
 
-      const field = fields.find((f) => f.field_name === address.fieldName);
-      const result = await upsertCell({
-        tableId,
-        rowId: address.rowId,
-        fieldName: address.fieldName,
+  /**
+   * Coerce pasted text EXACTLY the way a hand edit does: the column's declared
+   * format owns the parse (currency strips "$", a number column yields a
+   * number, empty text becomes null). A second normalizer here is how a paste
+   * and a typed edit end up storing different things for the same characters.
+   */
+  const coerceForField = useCallback(
+    (field: TableField, raw: string): unknown =>
+      parseFieldInput(
+        raw,
+        resolveFieldFormat(field.data_type, field.metadata),
+        field.data_type,
+      ),
+    [],
+  );
+
+  /**
+   * Delete / Backspace on the selection (one cell or a range), and the second
+   * half of a cut. ONE transaction however many cells, each recorded on the
+   * undo stack so Cmd-Z walks the clearing back cell by cell. Cells that are
+   * already empty are skipped — nothing to write, nothing to undo.
+   */
+  const handleClearCells = useCallback(
+    async (addresses: CellAddress[]) => {
+      if (isReadOnly) return;
+      const fieldByName = new Map(fields.map((f) => [f.field_name, f]));
+      const targets = addresses
+        .filter((address) => !isFormulaField(address.fieldName))
+        .map((address) => ({ address, prior: readCell(address) }))
+        .filter(
+          ({ prior }) => prior !== null && prior !== undefined && prior !== "",
+        );
+      if (targets.length === 0) return;
+
+      const ops: BulkOp[] = targets.map(({ address }) => ({
+        op: "cell",
+        row_id: address.rowId,
+        field_name: address.fieldName,
         value: null,
-      });
+      }));
+      const result = await bulkWrite({ tableId, operations: ops });
       if (isServiceFailure(result)) {
         toast({
-          title: "Could not clear that cell",
+          title:
+            targets.length === 1
+              ? "Could not clear that cell"
+              : `Could not clear ${targets.length} cells`,
           description: result.error,
           variant: "destructive",
         });
         return;
       }
-      cellUndo.record({
-        tableId,
-        rowId: address.rowId,
-        fieldName: address.fieldName,
-        fieldDisplayName: field?.display_name ?? address.fieldName,
-        priorValue: prior,
-        nextValue: null,
-      });
-      patchLocalCell(address.rowId, address.fieldName, null);
+      const failed = new Set(
+        result.data.results.filter(isBulkOpError).map((r) => r.row_id),
+      );
+      for (const { address, prior } of targets) {
+        if (failed.has(address.rowId)) continue;
+        cellUndo.record({
+          tableId,
+          rowId: address.rowId,
+          fieldName: address.fieldName,
+          fieldDisplayName:
+            fieldByName.get(address.fieldName)?.display_name ?? address.fieldName,
+          priorValue: prior,
+          nextValue: null,
+        });
+        patchLocalCell(address.rowId, address.fieldName, null);
+      }
+      if (failed.size > 0) {
+        toast({
+          title: `Cleared ${targets.length - failed.size} of ${targets.length}`,
+          description: `${failed.size} row${failed.size === 1 ? "" : "s"} could not be found — they may have been removed by someone else.`,
+          variant: "destructive",
+        });
+      } else if (targets.length > 1) {
+        toast({ title: `Cleared ${targets.length} cells` });
+      }
     },
     [cellUndo, fields, isReadOnly, patchLocalCell, readCell, tableId],
+  );
+  const handleClearCell = useCallback(
+    (address: CellAddress) => handleClearCells([address]),
+    [handleClearCells],
   );
 
   /** Run one bulk transaction and report it honestly. */
@@ -2070,6 +2433,260 @@ const UserTableViewer = ({
     [cellUndo, fields, patchLocalCell, runBulkOps, tableId],
   );
 
+  /**
+   * Clipboard text landed on a selected cell (Cmd-V, the Edit menu, or the
+   * right-click Paste). One value writes one cell; a spreadsheet block (tabs /
+   * line breaks) lands from that cell downward and rightward over the rows on
+   * this page, in ONE transaction, every cell recorded on the undo stack.
+   *
+   * Rows that do not fit below the anchor are never dropped silently: the user
+   * is asked whether to append them as new rows or skip them. Columns that
+   * fall off the right edge are reported after the write lands.
+   */
+  const handlePasteText = useCallback(
+    async (anchor: CellAddress, text: string, targetCells?: CellAddress[]) => {
+      if (isReadOnly) return;
+      let block = parseClipboardGrid(text);
+      // ONE value pasted over a RANGE fills every cell of the range — Excel's
+      // gesture. The single value is tiled into the range's shape so the
+      // normal block planner does the landing.
+      if (
+        targetCells &&
+        targetCells.length > 1 &&
+        block.length === 1 &&
+        block[0].length === 1
+      ) {
+        const value = block[0][0];
+        const rowSet = new Set(targetCells.map((c) => c.rowId));
+        const colSet = new Set(targetCells.map((c) => c.fieldName));
+        block = Array.from(rowSet, () => Array.from(colSet, () => value));
+      }
+      const plan = planPaste(anchor, block, rowIdsOnPage, fieldNamesInOrder);
+      if (!plan) {
+        toast({
+          title: "Nothing to paste into",
+          description:
+            "The selected cell is no longer on this page. Click a cell and paste again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const fieldByName = new Map(fields.map((f) => [f.field_name, f]));
+      const ops: BulkOp[] = [];
+      const priors = new Map<string, unknown>();
+      let skippedComputed = 0;
+      const rejected: string[] = [];
+      for (const cell of plan.cells) {
+        const field = fieldByName.get(cell.fieldName);
+        if (!field) continue;
+        if (isFormulaField(cell.fieldName)) {
+          skippedComputed += 1;
+          continue;
+        }
+        const next = coerceForField(field, cell.raw);
+        const rules = validationByField.get(cell.fieldName);
+        if (rules) {
+          const verdict = validateCellValue({
+            rules,
+            dataType: field.data_type,
+            format: resolveFieldFormat(field.data_type, field.metadata),
+            value: next,
+            existingValues: existingValuesFor(cell.fieldName, cell.rowId),
+          });
+          if (!verdict.ok) {
+            rejected.push(`${field.display_name}: ${verdict.reason}`);
+            continue;
+          }
+        }
+        const prior = readCell(cell) ?? null;
+        if (storedValuesEqual(next, prior)) continue;
+        ops.push({
+          op: "cell",
+          row_id: cell.rowId,
+          field_name: cell.fieldName,
+          value: next,
+        });
+        priors.set(`${cell.rowId}::${cell.fieldName}`, prior);
+      }
+
+      let appended = 0;
+      if (plan.overflowRows.length > 0) {
+        const n = plan.overflowRows.length;
+        const rowsWord = n === 1 ? "row" : "rows";
+        const colsWord = plan.fieldNames.length === 1 ? "column" : "columns";
+        const ok = await confirmDialog({
+          title: `Add ${n} new ${rowsWord}?`,
+          description: `The pasted block has ${n} more ${rowsWord} than this page has below the selected cell. Adding them creates ${n} new ${rowsWord} filled from the ${plan.fieldNames.length} pasted ${colsWord}; skipping keeps only the rows that fit.`,
+          confirmLabel: `Add ${n} ${rowsWord}`,
+          cancelLabel: "Skip them",
+        });
+        if (ok) {
+          for (const overflow of plan.overflowRows) {
+            const data: Record<string, unknown> = {};
+            plan.fieldNames.forEach((fieldName, i) => {
+              const field = fieldByName.get(fieldName);
+              if (field) data[fieldName] = coerceForField(field, overflow[i] ?? "");
+            });
+            ops.push({ op: "insert", data });
+            appended += 1;
+          }
+        }
+      }
+
+      const cellCount = ops.length - appended;
+      if (ops.length === 0) {
+        toast({
+          title: "Nothing changed",
+          description: "The pasted values match what is already there.",
+        });
+        return;
+      }
+
+      const describe =
+        `Pasted ${cellCount} cell${cellCount === 1 ? "" : "s"}` +
+        (appended > 0
+          ? ` and added ${appended} row${appended === 1 ? "" : "s"}`
+          : "");
+      // Inserting rows changes which rows exist, so that case refetches; a
+      // pure cell batch patches in place and stays undoable cell by cell.
+      const landed = await runBulkOps(ops, describe, appended > 0);
+      if (!landed) return;
+      for (const op of ops) {
+        if (op.op !== "cell") continue;
+        patchLocalCell(op.row_id, op.field_name, op.value);
+        cellUndo.record({
+          tableId,
+          rowId: op.row_id,
+          fieldName: op.field_name,
+          fieldDisplayName:
+            fieldByName.get(op.field_name)?.display_name ?? op.field_name,
+          priorValue: priors.get(`${op.row_id}::${op.field_name}`) ?? null,
+          nextValue: op.value,
+        });
+      }
+      if (plan.clippedColumns > 0) {
+        const c = plan.clippedColumns;
+        toast({
+          title: `${c} column${c === 1 ? "" : "s"} did not fit`,
+          description:
+            "The pasted block is wider than the columns to the right of the selected cell. Paste again from a column further left, or add columns first.",
+        });
+      }
+      if (skippedComputed > 0) {
+        toast({
+          title: `${skippedComputed} formula cell${skippedComputed === 1 ? "" : "s"} skipped`,
+          description:
+            "A formula column computes its own values, so nothing can be pasted into it.",
+        });
+      }
+      if (rejected.length > 0) {
+        toast({
+          title: `${rejected.length} value${rejected.length === 1 ? "" : "s"} did not pass the column rules`,
+          description: [...new Set(rejected)].slice(0, 3).join(" · "),
+          variant: "destructive",
+        });
+      }
+    },
+    [
+      cellUndo,
+      coerceForField,
+      fieldNamesInOrder,
+      fields,
+      isReadOnly,
+      patchLocalCell,
+      readCell,
+      rowIdsOnPage,
+      runBulkOps,
+      tableId,
+    ],
+  );
+
+  /**
+   * Cmd-D / "Fill down": copy the range's FIRST row into every row below it,
+   * column by column, in one transaction, each cell undoable.
+   */
+  const handleFillDownRange = useCallback(
+    async (rows: CellAddress[][]) => {
+      if (isReadOnly || rows.length < 2) return;
+      const fieldByName = new Map(fields.map((f) => [f.field_name, f]));
+      const ops: BulkOp[] = [];
+      const priors = new Map<string, unknown>();
+      const source = rows[0];
+      for (let c = 0; c < source.length; c += 1) {
+        if (isFormulaField(source[c].fieldName)) continue;
+        const value = readCell(source[c]) ?? null;
+        for (let r = 1; r < rows.length; r += 1) {
+          const target = rows[r][c];
+          const prior = readCell(target) ?? null;
+          if (storedValuesEqual(value, prior)) continue;
+          ops.push({
+            op: "cell",
+            row_id: target.rowId,
+            field_name: target.fieldName,
+            value,
+          });
+          priors.set(`${target.rowId}::${target.fieldName}`, prior);
+        }
+      }
+      if (ops.length === 0) {
+        toast({ title: "Nothing to fill", description: "The rows below already match." });
+        return;
+      }
+      const landed = await runBulkOps(
+        ops,
+        `Filled ${ops.length} cell${ops.length === 1 ? "" : "s"} down`,
+        false,
+      );
+      if (!landed) return;
+      for (const op of ops) {
+        if (op.op !== "cell") continue;
+        patchLocalCell(op.row_id, op.field_name, op.value);
+        cellUndo.record({
+          tableId,
+          rowId: op.row_id,
+          fieldName: op.field_name,
+          fieldDisplayName:
+            fieldByName.get(op.field_name)?.display_name ?? op.field_name,
+          priorValue: priors.get(`${op.row_id}::${op.field_name}`) ?? null,
+          nextValue: op.value,
+        });
+      }
+    },
+    [cellUndo, fields, isReadOnly, patchLocalCell, readCell, runBulkOps, tableId],
+  );
+
+  /** Duplicate ONE row from the right-click menu — the bulk-bar action, for one row. */
+  const handleDuplicateRow = useCallback(
+    async (rowId: string) => {
+      const row = displayRows.find((r) => r.id === rowId);
+      if (!row) return;
+      await runBulkOps(buildDuplicateOps([row]), "Duplicated 1 row");
+    },
+    [displayRows, runBulkOps],
+  );
+
+  /** Copy ONE row as a spreadsheet-ready TSV line, in the view's column order. */
+  const copyRowToClipboard = useCallback(
+    (rowId: string) => {
+      const row = displayRows.find((r) => r.id === rowId);
+      if (!row) return;
+      const text = gridToTsv([
+        viewFields.map((f) => row.data?.[f.field_name] ?? null),
+      ]);
+      void navigator.clipboard.writeText(text).then(
+        () => toast({ title: "Row copied", description: text.slice(0, 80) }),
+        () =>
+          toast({
+            title: "Could not copy",
+            description: "The browser refused clipboard access.",
+            variant: "destructive",
+          }),
+      );
+    },
+    [displayRows, viewFields],
+  );
+
   const handleBulkSetColumn = useCallback(
     async (fieldName: string, rawValue: string) => {
       const rows = orderSelectedRows(displayRows, selectedRowIds);
@@ -2109,11 +2726,80 @@ const UserTableViewer = ({
     rowIds: rowIdsOnPage,
     fieldNames: fieldNamesInOrder,
     editable: !isReadOnly,
-    onCopyCell: handleCopyCell,
-    onClearCell: (address) => void handleClearCell(address),
+    // A formula cell is computed — Enter / typing / double-click must not
+    // open an editor on it, or the grid would sit in an invisible edit state.
+    canEdit: (address) => !isFormulaField(address.fieldName),
+    getCellText,
+    onCopied: handleCopied,
+    onClearCells: (addresses) => void handleClearCells(addresses),
+    // A block paste may open a confirm dialog; when it closes the grid must
+    // get focus back or the very next Cmd-Z goes nowhere.
+    onPasteText: (address, text, targetCells) =>
+      void handlePasteText(address, text, targetCells).finally(() =>
+        grid.refocusGrid(),
+      ),
+    onFillDown: (rows) => void handleFillDownRange(rows),
     onUndo: () => void cellUndo.undo(),
     onRedo: () => void cellUndo.redo(),
   });
+
+  // ─── The ONE right-click menu for the grid ──────────────────────────────
+  //
+  // Single-instance delegation (context-menu-v3): one `NonEditableContextMenu`
+  // wraps the scroll container and `resolveContextOnOpen` works out which
+  // cell / row / column was clicked from the DOM anchors the grid already
+  // renders. A ref keeps `getApplicationScope` (read at click time) truthful;
+  // the state is what re-renders the section labels with the clicked cell's
+  // column name. Right-clicking a cell SELECTS it, the way every spreadsheet
+  // does, so the menu's Cut / Paste / Clear act on the cell under the cursor.
+  const menuTargetRef = useRef<GridMenuTarget>(EMPTY_GRID_MENU_TARGET);
+  const [menuTarget, setMenuTarget] = useState<GridMenuTarget>(
+    EMPTY_GRID_MENU_TARGET,
+  );
+
+  const resolveGridMenu = (target: HTMLElement | null) => {
+    const next = resolveGridMenuTarget(target);
+    menuTargetRef.current = next;
+    setMenuTarget(next);
+    // Right-clicking a cell selects it — unless it is already inside the
+    // extended range, which must survive so the menu can act on the range.
+    if (
+      next.cell &&
+      !grid.isEditing(next.cell.rowId, next.cell.fieldName) &&
+      !grid.isInRange(next.cell.rowId, next.cell.fieldName)
+    ) {
+      grid.select(next.cell);
+    }
+    // No per-row entity: a dataset row has no entity token of its own, so the
+    // menu-level `entity` (the dataset) stands for Attach To / Share.
+    return null;
+  };
+
+  const getMenuApplicationScope = () => {
+    const t = menuTargetRef.current;
+    // `content` is what the menu's own Copy verb copies: the clicked cell's
+    // text, else the clicked row as TSV. Never the whole grid's DOM text.
+    const content = t.cell
+      ? getCellText(t.cell)
+      : t.rowId
+        ? gridToTsv([
+            viewFields.map(
+              (f) =>
+                displayRows.find((r) => r.id === t.rowId)?.data?.[
+                  f.field_name
+                ] ?? null,
+            ),
+          ])
+        : "";
+    return buildApplicationScopeFromMenuContext({
+      selectedText: window.getSelection?.()?.toString() ?? "",
+      selectionRange: null,
+      contextData: {
+        ...(getSurfaceScope() as Record<string, unknown>),
+        content,
+      },
+    });
+  };
 
   if (loading && !tableInfo)
     return (
@@ -2207,6 +2893,10 @@ const UserTableViewer = ({
   // read-only, which refuses a write it could have allowed. Refusing early is
   // the safe direction; allowing early is not.
   const surfacePermissionKnown = tableInfo !== null && currentUserId !== null;
+  // The "current cell" an agent is told about: the one whose full-content
+  // editor is open wins (its draft is the live value); otherwise the cell the
+  // user has SELECTED on the grid. Before the grid had a persistent selection
+  // this was editor-only, and the manifest said so — now a click is enough.
   const surfaceOpenCell =
     showTextModal && expandedRowId && expandedFieldKey
       ? {
@@ -2214,7 +2904,13 @@ const UserTableViewer = ({
           fieldName: expandedFieldKey,
           value: expandedText ?? "",
         }
-      : null;
+      : grid.selected
+        ? {
+            rowId: grid.selected.rowId,
+            fieldName: grid.selected.fieldName,
+            value: getCellText(grid.selected),
+          }
+        : null;
 
   const surfaceWriteSnapshot: DataTableWriteLiveState = {
     tableId,
@@ -2232,6 +2928,7 @@ const UserTableViewer = ({
     const isDefault = declared.id === defaultFormatForBase(field.data_type);
     const resolvedChoices = choiceMap.get(field.field_name)?.choices;
     return {
+      validationRules: field.validation_rules,
       field_name: field.field_name,
       display_name: field.display_name,
       data_type: field.data_type,
@@ -2244,8 +2941,30 @@ const UserTableViewer = ({
     };
   });
 
+  // "These cells" / "these rows" for an agent: the range (with a header line
+  // of machine field names) and the checkbox-ticked rows.
+  const selectedRangeTsv =
+    grid.range && grid.selectedCells.length > 1
+      ? [
+          [...new Set(grid.selectedCells.map((c) => c.fieldName))].join("\t"),
+          grid.selectionText(),
+        ].join("\n")
+      : null;
+  // Both agent-facing row sets carry computed formula values — the same
+  // numbers the user is looking at, never the stored blanks.
+  const tickedRows = withComputedColumns(
+    (fullDatasetCache ?? data).filter((row) => selectedRowIdSet.has(row.id)),
+    fields,
+  ).rows;
+  const fullDatasetForScope = fullDatasetCache
+    ? withComputedColumns(fullDatasetCache, fields).rows
+    : null;
+
   const surfaceScopeSnapshot: DataTableScopeInput = {
     tableId,
+    selectedRangeTsv,
+    selectedRangeCellCount: selectedRangeTsv ? grid.selectedCells.length : 0,
+    selectedRows: tickedRows,
     tableName: tableInfo?.table_name,
     tableDescription: tableInfo?.description,
     isReadOnly: surfacePermissionKnown ? isReadOnly : null,
@@ -2253,13 +2972,187 @@ const UserTableViewer = ({
     visibleRows: displayRows,
     totalCount: effectiveTotalCount,
     searchTerm,
-    fullDataset: fullDatasetCache,
+    fullDataset: fullDatasetForScope,
     openCell: surfaceOpenCell,
     openRow:
       showEditModal && selectedRowId
         ? { rowId: selectedRowId, data: selectedRowData }
         : null,
   };
+
+  const menuField = menuTarget.fieldName
+    ? (fields.find((f) => f.field_name === menuTarget.fieldName) ?? null)
+    : null;
+  const menuRow = menuTarget.rowId
+    ? (displayRows.find((r) => r.id === menuTarget.rowId) ?? null)
+    : null;
+  // WHAT WAS RIGHT-CLICKED decides the menu's shape (Arman, 2026-09-17: a
+  // header click buried the column's actions under dead Cell and Row groups).
+  // The clicked target's section is `primary` — first in the menu, inline,
+  // under its own heading — and a group with no target at all is not offered:
+  // a header has no cell and no row. A cell shows Cell → Row → Column → Table,
+  // most specific first.
+  const gridMenuTargetKind: "cell" | "row" | "column" | "table" = menuTarget.cell
+    ? "cell"
+    : menuTarget.rowId
+      ? "row"
+      : menuTarget.fieldName
+        ? "column"
+        : "table";
+  const gridCellSection = buildGridCellMenuSection({
+      primary: gridMenuTargetKind === "cell",
+      cell:
+        menuTarget.cell && menuField
+          ? {
+              address: menuTarget.cell,
+              displayName: menuField.display_name,
+              highlight:
+                tableStyle.cells?.[menuTarget.cell.rowId]?.[
+                  menuTarget.cell.fieldName
+                ] ?? null,
+            }
+          : null,
+      // The right-clicked cell is inside the extended range → the menu acts
+      // on the whole range (cut / clear / fill / highlight every cell).
+      rangeCells:
+        grid.range &&
+        menuTarget.cell &&
+        grid.isInRange(menuTarget.cell.rowId, menuTarget.cell.fieldName)
+          ? grid.selectedCells
+          : null,
+      readOnly: isReadOnly,
+      readOnlyReason: readOnlyReason,
+      on: {
+        copy: (address) => grid.copyCell(address),
+        cut: (address) => grid.cutCell(address),
+        paste: (address) => void grid.pasteIntoCell(address),
+        clear: (address) => void handleClearCell(address),
+        clearMany: (addresses) => void handleClearCells(addresses),
+        edit: (address) => grid.beginEdit(address),
+        fillDown: () => {
+          if (grid.range)
+            void handleFillDownRange(
+              rangeRowsOf(grid.range, rowIdsOnPage, fieldNamesInOrder),
+            );
+        },
+        highlight: (address, color) =>
+          void writeStylePath(
+            stylePath.cell(address.rowId, address.fieldName),
+            color,
+          ),
+        highlightMany: (addresses, color) => {
+          for (const address of addresses) {
+            void writeStylePath(
+              stylePath.cell(address.rowId, address.fieldName),
+              color,
+            );
+          }
+        },
+      },
+    });
+  const gridRowSection = buildGridRowMenuSection({
+      primary: gridMenuTargetKind === "row",
+      row: menuRow
+        ? {
+            id: menuRow.id,
+            label:
+              viewFields
+                .map((f) => cellClipboardText(menuRow.data?.[f.field_name]).trim())
+                .find(Boolean)
+                ?.slice(0, 40) ?? "row",
+            highlight: tableStyle.rows?.[menuRow.id] ?? null,
+          }
+        : null,
+      readOnly: isReadOnly,
+      readOnlyReason: readOnlyReason,
+      on: {
+        add: () => setShowAddRowModal(true),
+        highlight: (rowId, color) =>
+          void writeStylePath(stylePath.row(rowId), color),
+        edit: (rowId) => {
+          const row = displayRows.find((r) => r.id === rowId);
+          if (row) handleEditRow(row.id, row.data);
+        },
+        duplicate: (rowId) => void handleDuplicateRow(rowId),
+        copy: copyRowToClipboard,
+        history: (rowId) => setHistoryRowId(rowId),
+        reference: (rowId) => {
+          const row = displayRows.find((r) => r.id === rowId);
+          if (!row) return;
+          setReferenceRowId(row.id);
+          setReferenceRowData(row.data);
+          setShowReferenceModal(true);
+        },
+        remove: (rowId) => handleDeleteRow(rowId),
+      },
+    });
+  const gridColumnSection = buildGridColumnMenuSection({
+      primary: gridMenuTargetKind === "column",
+      column: menuField
+        ? {
+            fieldName: menuField.field_name,
+            displayName: menuField.display_name,
+            sortedBy: sortField === menuField.field_name ? sortDirection : null,
+            highlight: tableStyle.columns?.[menuField.field_name] ?? null,
+            canColorBy: fieldCanColorBy(menuField),
+            isColorBy: tableStyle.colorBy?.field === menuField.field_name,
+          }
+        : null,
+      readOnly: isReadOnly,
+      readOnlyReason: readOnlyReason,
+      isOnlyColumn: fields.length <= 1,
+      on: {
+        rename: (fieldName) => startColumnRename(fieldName),
+        insert: (fieldName, side) => {
+          const field = fields.find((f) => f.field_name === fieldName);
+          if (!field) return;
+          setPendingColumnInsert({
+            order: side === "left" ? field.field_order : field.field_order + 1,
+          });
+          setShowAddColumnModal(true);
+        },
+        highlight: (fieldName, color) =>
+          void writeStylePath(stylePath.column(fieldName), color),
+        colorBy: (fieldName, on) =>
+          void writeStylePath(
+            stylePath.colorBy(),
+            on ? { field: fieldName, target: "row" } : null,
+          ),
+        colors: () => setShowColorsDialog(true),
+        sortAsc: (fieldName) => void handleSort(fieldName, "asc"),
+        sortDesc: (fieldName) => void handleSort(fieldName, "desc"),
+        clearSort,
+        hide: (fieldName) =>
+          setHiddenColumns(
+            hiddenColumns.includes(fieldName)
+              ? hiddenColumns
+              : [...hiddenColumns, fieldName],
+          ),
+        configure: () => setShowTableConfigModal(true),
+        remove: (fieldName) => {
+          const field = fields.find((f) => f.field_name === fieldName);
+          if (field) void handleDeleteColumn(field);
+        },
+      },
+    });
+  const gridMenuSections = [
+    ...(gridMenuTargetKind === "cell"
+      ? [gridCellSection, gridRowSection, gridColumnSection]
+      : gridMenuTargetKind === "row"
+        ? [gridRowSection]
+        : gridMenuTargetKind === "column"
+          ? [gridColumnSection]
+          : []),
+    buildDatasetTableMenuSection({
+      label: tableInfo.table_name ? `Table · ${tableInfo.table_name}` : "Table",
+      getRow: () => ({ id: tableId, name: tableInfo.table_name ?? null }),
+      unavailable: {
+        // On the route itself the door leads to where the user already is.
+        "dataset-open-workspace":
+          emitSurfaceScope && "Already open in the Data Workspace",
+      },
+    }),
+  ];
 
   const body = (
     // fillHeight: a three-band column (chrome / grid / pagination) where only
@@ -2291,7 +3184,10 @@ const UserTableViewer = ({
 
       {/* Read-only banner for shared tables */}
       {isReadOnly && (
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm">
+        <div
+          data-surface-value="is_read_only"
+          className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm"
+        >
           <Eye className="h-4 w-4" />
           <span className="font-medium">Shared Table</span>
           <span className="text-purple-500 dark:text-purple-400">
@@ -2370,7 +3266,6 @@ const UserTableViewer = ({
         showDeleteModal={showDeleteModal}
         showAddColumnModal={showAddColumnModal}
         showAddRowModal={showAddRowModal}
-        showExportModal={showExportModal}
         showTableConfigModal={showTableConfigModal}
         showReferenceOverlay={showReferenceOverlay}
         showRowOrderingModal={showRowOrderingModal}
@@ -2378,9 +3273,48 @@ const UserTableViewer = ({
         // Modal visibility state setters
         setShowEditModal={setShowEditModal}
         setShowDeleteModal={setShowDeleteModal}
-        setShowAddColumnModal={setShowAddColumnModal}
+        setShowAddColumnModal={(show) => {
+          // Opening from the toolbar appends; only the right-click insert
+          // carries a position, and it is consumed once the modal closes.
+          if (!show) setPendingColumnInsert(null);
+          setShowAddColumnModal(show);
+        }}
         setShowAddRowModal={setShowAddRowModal}
-        setShowExportModal={setShowExportModal}
+        addColumnInsertAtOrder={pendingColumnInsert?.order}
+        onColumnAdded={async () => {
+          const insert = pendingColumnInsert;
+          setPendingColumnInsert(null);
+          if (!insert) return;
+          // The new column already sits AT `order`; shift the columns that
+          // held that slot or a later one so no two share a position.
+          const result = await renumberFields({
+            tableId,
+            updates: fields
+              .filter((f) => f.field_order >= insert.order)
+              .map((f) => ({ id: f.id, field_order: f.field_order + 1 })),
+          });
+          if (isServiceFailure(result)) {
+            toast({
+              title: "Column added at the end instead",
+              description: `It could not be moved into place: ${result.error}. Drag it in Table Settings.`,
+              variant: "destructive",
+            });
+          }
+        }}
+        colorsControl={
+          !isReadOnly ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowColorsDialog(true)}
+              className="whitespace-nowrap"
+              title="Color rows by a column, or add color rules"
+            >
+              <Paintbrush className="h-3.5 w-3.5 md:mr-1.5" />
+              <span className="hidden md:inline">Colors</span>
+            </Button>
+          ) : undefined
+        }
         setShowTableConfigModal={setShowTableConfigModal}
         setShowReferenceOverlay={setShowReferenceOverlay}
         setShowRowOrderingModal={setShowRowOrderingModal}
@@ -2434,15 +3368,27 @@ const UserTableViewer = ({
           setAllSortedData(null);
           loadTableData(currentPage, limit, null, "asc", searchTerm, true);
         }}
-        copyControls={
+        copyControls={(onChooseReference) => (
           <TableCopyControls
             tableId={tableId}
             tableName={tableInfo.table_name}
             fields={fields}
+            hiddenColumns={hiddenColumns}
             selectedRowIds={selectedRowIds}
             loadRows={loadRowsForCopy}
+            loadAllRows={async () => {
+              const complete = await getCompleteTable({ tableId, sortField, sortDirection });
+              if (isServiceFailure(complete)) throw new Error(complete.error);
+              // Same rule as `loadRowsForCopy`: formula columns are computed
+              // before anything downstream (export, sort) reads the rows.
+              const rows = withComputedColumns(complete.data.rows, fields).rows;
+              return sortField
+                ? smartSort(rows, sortField, sortDirection, getFieldDataType(sortField))
+                : rows;
+            }}
+            onChooseReference={onChooseReference}
           />
-        }
+        )}
         mobileViewControls={
           <div className="space-y-2">
             {sortField && !isReadOnly ? (
@@ -2694,11 +3640,50 @@ const UserTableViewer = ({
         onFillDown={handleFillDown}
       />
 
+      {/* Table colors — color-by a column + rules (table-style.ts). */}
+      <ColorRulesDialog
+        open={showColorsDialog}
+        onOpenChange={setShowColorsDialog}
+        fields={fields}
+        style={tableStyle}
+        choicesByField={Object.fromEntries(
+          [...choiceMap.entries()].map(([fieldName, resolved]) => [
+            fieldName,
+            resolved.choices.map((c) => ({
+              value: c.value,
+              label: c.label,
+              color: c.color,
+            })),
+          ]),
+        )}
+        onSetPath={(path, value) => writeStylePath(path, value)}
+      />
+
       {/* Table. In fillHeight mode the grid is the ONLY flexible band and owns
           the scroll (`min-h-0` so flex lets it actually shrink); otherwise it
           keeps the legacy content-sized cap. */}
+      <NonEditableContextMenu
+        sourceFeature="udt"
+        // Only the /data/[id] mount IS the data-tables surface; inside another
+        // surface's window the menu resolves the host surface instead.
+        surfaceName={emitSurfaceScope ? DATA_TABLES_SURFACE_NAME : undefined}
+        menuVersion={1}
+        getApplicationScope={getMenuApplicationScope}
+        resolveContextOnOpen={resolveGridMenu}
+        entity={
+          datasetTableEntityRef({
+            id: tableId,
+            name: tableInfo.table_name ?? null,
+          }) ?? undefined
+        }
+        contentSource={{ type: "raw" }}
+        extraSections={gridMenuSections}
+      >
       <div
         ref={grid.containerRef}
+        data-surface-value={
+          selectedRangeTsv ? "selected_range_cell_count" : undefined
+        }
         // tabIndex makes the grid a focus target so arrow keys, Tab, Enter,
         // Delete and Cmd-Z actually arrive. `outline-none` because the SELECTED
         // CELL's ring is the real focus indicator — a second ring around the
@@ -2707,13 +3692,32 @@ const UserTableViewer = ({
         tabIndex={0}
         role="grid"
         onKeyDown={grid.onKeyDown}
-        className={
+        // The Edit-menu / browser-native door for copy, cut and paste on the
+        // selected cell (`useGridSelection` — THE CLIPBOARD HAS TWO DOORS).
+        {...grid.clipboardHandlers}
+        // While a drag is extending the range, the browser must not start a
+        // text selection underneath it.
+        className={cn(
           fillHeight
             ? "flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm outline-none [&>div]:min-h-0 [&>div]:flex-1 [&>div]:overflow-auto"
-            : "border rounded-xl border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm outline-none [&>div]:max-h-[70dvh] [&>div]:overflow-auto"
-        }
+            : "border rounded-xl border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm outline-none [&>div]:max-h-[70dvh] [&>div]:overflow-auto",
+          grid.dragging && "select-none",
+        )}
       >
-        <Table className="w-auto min-w-max table-auto md:w-full md:min-w-full md:table-fixed">
+        <Table
+          data-surface-value="visible_data_csv"
+          // A fixed layout divides the width evenly, which is right for a
+          // handful of columns and unreadable past that — the 26-column
+          // example table rendered every cell 40px wide with the text of
+          // neighbouring cells overlapping. Past the cap the grid keeps its
+          // content-driven widths (150px minimum per header) and scrolls
+          // horizontally, exactly as it already does on a phone.
+          className={cn(
+            "w-auto min-w-max table-auto",
+            viewFields.length <= FIXED_LAYOUT_MAX_COLUMNS &&
+              "md:w-full md:min-w-full md:table-fixed",
+          )}
+        >
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className="sticky left-0 top-0 z-30 w-10 bg-gray-100 px-2 dark:bg-gray-800 md:px-3">
@@ -2740,11 +3744,63 @@ const UserTableViewer = ({
                 return (
                   <TableHead
                     key={field.id}
+                    {...{ [GRID_FIELD_DOM_ATTR]: field.field_name }}
+                    data-surface-value="table_schema"
+                    // Clicking the header's own surface (not its sort label
+                    // or its menu) selects the whole column — the Excel and
+                    // Sheets gesture. Ctrl/Cmd+Space does the same from the
+                    // keyboard.
+                    onClick={(e) => {
+                      if ((e.target as HTMLElement).closest("button")) return;
+                      grid.selectColumn(field.field_name);
+                      grid.refocusGrid();
+                    }}
+                    title={`Click to select the ${field.display_name} column`}
                     className="sticky top-0 z-20 max-w-[70vw] border-b border-gray-200 bg-gray-100 py-1.5 font-semibold text-gray-700 transition-colors hover:bg-gray-200/70 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700/70 md:max-w-none md:min-w-[150px]"
                   >
-                    <div className="flex items-center justify-between gap-1">
+                    <div
+                      data-surface-value="column_list"
+                      className="flex items-center justify-between gap-1"
+                    >
+                      {renamingField === field.field_name ? (
+                        <input
+                          autoFocus
+                          aria-label={`Rename the ${field.display_name} column`}
+                          value={renameDraft}
+                          disabled={renameSaving}
+                          onChange={(e) => setRenameDraft(e.target.value)}
+                          onFocus={(e) => e.currentTarget.select()}
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => {
+                            // The grid owns arrow keys / typing; none of it
+                            // may fire while a name is being typed.
+                            e.stopPropagation();
+                            if (e.key === "Enter") void commitColumnRename();
+                            if (e.key === "Escape") cancelColumnRename();
+                          }}
+                          onBlur={(e) => {
+                            // A closing menu / popover hands focus back to its
+                            // trigger a moment AFTER this input mounts. That
+                            // is not the user leaving the field — take focus
+                            // back instead of ending the rename they just
+                            // asked for (live-found 2026-09-17).
+                            if (Date.now() - renameOpenedAtRef.current < 700) {
+                              const input = e.currentTarget;
+                              window.setTimeout(() => input.focus(), 0);
+                              return;
+                            }
+                            void commitColumnRename();
+                          }}
+                          className="min-w-0 flex-1 rounded border border-primary bg-background px-1.5 py-0.5 text-sm font-semibold text-foreground outline-none ring-2 ring-primary/30"
+                        />
+                      ) : (
                       <button
                         type="button"
+                        data-surface-value={
+                          surfaceOpenCell?.fieldName === field.field_name
+                            ? "current_column_name"
+                            : undefined
+                        }
                         onClick={() => handleSort(field.field_name)}
                         className="flex min-w-0 flex-1 items-center gap-1 rounded px-1 py-0.5"
                         title={`Sort by ${field.display_name}`}
@@ -2756,8 +3812,14 @@ const UserTableViewer = ({
                           </span>
                         )}
                       </button>
+                      )}
                       <ColumnHeaderMenu
-                        tableId={tableId}
+                        // A formula column has no stored value, so the server
+                        // facet RPC would return nothing for it. Omitting the
+                        // table identity makes the menu work from the rows the
+                        // browser holds (with computed values) and say when
+                        // that is not every row — its own honest fallback.
+                        tableId={isFormulaField(field.field_name) ? undefined : tableId}
                         fieldName={field.field_name}
                         displayName={field.display_name}
                         dataType={field.data_type}
@@ -2770,13 +3832,22 @@ const UserTableViewer = ({
                         // which IS the whole table for the many tables that fit
                         // on one page. The menu asks the server only when these
                         // do not cover `totalCount`.
-                        localRows={fullDatasetCache ?? data}
+                        localRows={
+                          isFormulaField(field.field_name)
+                            ? withComputedColumns(fullDatasetCache ?? data, fields).rows
+                            : (fullDatasetCache ?? data)
+                        }
                         totalCount={totalCount}
                         onSortAsc={() => handleSort(field.field_name, "asc")}
                         onSortDesc={() => handleSort(field.field_name, "desc")}
                         onClearSort={clearSort}
                         onFilterChange={(value) =>
                           handleColumnFilterChange(field.field_name, value)
+                        }
+                        onRename={
+                          isReadOnly
+                            ? undefined
+                            : () => startColumnRename(field.field_name)
                         }
                         onConfigure={
                           isReadOnly
@@ -2846,15 +3917,47 @@ const UserTableViewer = ({
               displayRows.map((row, index) => (
                 <TableRow
                   key={row.id}
-                  className={`
-                    ${index % 2 === 0 ? "bg-white dark:bg-gray-950" : "bg-gray-50 dark:bg-gray-900"}
-                    ${selectedRowIdSet.has(row.id) ? "bg-primary/5" : ""}
-                    hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors
-                  `}
+                  {...{ [GRID_ROW_DOM_ATTR]: row.id }}
+                  data-surface-value={
+                    surfaceOpenCell?.rowId === row.id ||
+                    (showEditModal && selectedRowId === row.id)
+                      ? "current_row_json"
+                      : undefined
+                  }
+                  // Zebra → color tint (table-style.ts) → selection. `cn`
+                  // (tailwind-merge) keeps the LAST background, so a tinted
+                  // row shows its tint and a selected row still reads selected.
+                  className={cn(
+                    index % 2 === 0
+                      ? "bg-white dark:bg-gray-950"
+                      : "bg-gray-50 dark:bg-gray-900",
+                    selectedRowIdSet.has(row.id) && "bg-primary/5",
+                    // The tint is LAST so a colored row stays colored while
+                    // selected — the checkbox already says it is selected.
+                    rowTintClass(row),
+                    !rowTintClass(row) &&
+                      "hover:bg-gray-100 dark:hover:bg-gray-800",
+                    "transition-colors",
+                  )}
                 >
                   <TableCell
+                    data-surface-value={
+                      surfaceOpenCell?.rowId === row.id ||
+                      (showEditModal && selectedRowId === row.id)
+                        ? "current_row_id"
+                        : undefined
+                    }
                     className="sticky left-0 z-10 w-10 bg-inherit px-2 md:px-3"
-                    onClick={(event) => event.stopPropagation()}
+                    // The checkbox ticks the row for bulk actions; the cell
+                    // AROUND it selects the row's cells as a range (Shift+
+                    // Space from the keyboard) — the Sheets row-number gesture.
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if ((event.target as HTMLElement).closest("button")) return;
+                      grid.selectRow(row.id);
+                      grid.refocusGrid();
+                    }}
+                    title="Click beside the checkbox to select this row's cells"
                   >
                     <Checkbox
                       checked={selectedRowIdSet.has(row.id)}
@@ -2898,11 +4001,22 @@ const UserTableViewer = ({
                     );
                     const hasCustomFormat =
                       fieldFormat.id !== defaultFormatForBase(field.data_type);
-                    const display = hasCustomFormat ? (
+                    const formulaError = formulaErrors.get(
+                      `${row.id}::${field.field_name}`,
+                    );
+                    const display = formulaError ? (
+                      <span
+                        className="text-amber-700 dark:text-amber-300"
+                        title={formulaError}
+                      >
+                        #ERROR
+                      </span>
+                    ) : hasCustomFormat || validationByField.has(field.field_name) ? (
                       <FormattedFieldValue
                         value={rawValue}
                         format={fieldFormat}
                         dataType={field.data_type}
+                        validationRules={validationByField.get(field.field_name) ?? null}
                         className="truncate text-left"
                       />
                     ) : cellData ? (
@@ -2942,6 +4056,13 @@ const UserTableViewer = ({
                           rowId: row.id,
                           fieldName: field.field_name,
                         })}
+                        data-surface-value={
+                          grid.isSelected(row.id, field.field_name)
+                            ? "current_cell_value"
+                            : grid.isInRange(row.id, field.field_name)
+                              ? "selected_range_tsv"
+                              : undefined
+                        }
                         // THE SELECTION RING OUTLINES THE WHOLE CELL. An inset
                         // ring on the <td> follows the cell's real edges; drawn
                         // on the inner content div it boxed the text and left
@@ -2966,16 +4087,74 @@ const UserTableViewer = ({
                         // signal that an editor was open at all — a cell with
                         // unsaved text became indistinguishable from a saved
                         // one, which is how you lose an edit without knowing.
+                        // 🚨 THE SELECTION WASH IS AN OVERLAY, NOT A
+                        // BACKGROUND. `cn` is tailwind-merge: a selection fill
+                        // written as `bg-primary/10` and a manual highlight
+                        // written as `bg-red-100` are the same utility group,
+                        // so the LAST one wins and the other is deleted from
+                        // the class list entirely. The tint is applied last —
+                        // so every highlighted cell inside a selected block
+                        // silently lost its selection shading, and a block
+                        // drawn across coloured cells appeared to have holes in
+                        // it while Cmd-C happily copied the cells that looked
+                        // excluded (found on live review 2026-09-15). Painting
+                        // the wash on the `after:` pseudo-element puts it in a
+                        // different utility group, so the two genuinely survive
+                        // together the way the comment below always claimed.
                         className={cn(
-                          "group max-w-[70vw] py-2 md:max-w-0 md:py-3",
-                          !isReadOnly && "cursor-cell",
+                          // `overflow-hidden`: past FIXED_LAYOUT_MAX_COLUMNS the
+                          // table is `table-auto`, where `max-w-0` caps the
+                          // column's width but NOT the content's paint — a long
+                          // email was drawn straight across the phone number
+                          // beside it (clientWidth 150, scrollWidth 192; found
+                          // on independent review 2026-09-15). Clipping at the
+                          // cell is what lets the inner `truncate` end in an
+                          // ellipsis, the way Sheets and Airtable clip. The
+                          // selection ring is inset and the wash is `inset-0`,
+                          // so neither is cut.
+                          "group relative max-w-[70vw] overflow-hidden py-2 md:max-w-0 md:py-3",
+                          "after:pointer-events-none after:absolute after:inset-0 after:content-['']",
+                          // A computed cell keeps the default cursor: the
+                          // text-cursor is a promise that you can type here,
+                          // and on a formula column that promise is false.
+                          !isReadOnly &&
+                            (isFormulaField(field.field_name)
+                              ? "cursor-default"
+                              : "cursor-cell"),
                           grid.isSelected(row.id, field.field_name) &&
                             !grid.isEditing(row.id, field.field_name) &&
-                            "bg-primary/5 ring-2 ring-inset ring-primary/70",
+                            "ring-2 ring-inset ring-primary/70 after:bg-primary/5",
                           grid.isEditing(row.id, field.field_name) &&
-                            "bg-primary/10 ring-[3px] ring-inset ring-primary",
+                            "ring-[3px] ring-inset ring-primary after:bg-primary/10",
+                          // A cell inside the extended range — softer than the
+                          // anchor's ring, so the anchor stays findable.
+                          grid.isInRange(row.id, field.field_name) &&
+                            !grid.isSelected(row.id, field.field_name) &&
+                            "after:bg-primary/10",
+                          // Tint LAST: the ring says "selected", the tint says
+                          // "highlighted", and both must survive together.
+                          cellTintClass(row, field.field_name),
                         )}
-                        onClick={() => {
+                        // Press starts a drag-select (or, with Shift, extends
+                        // the range to here); sweeping over cells while the
+                        // button is down grows it; release anywhere ends it.
+                        onPointerDown={(e) => {
+                          if (e.button !== 0) return;
+                          const address = { rowId: row.id, fieldName: field.field_name };
+                          if (e.shiftKey) grid.extendTo(address);
+                          else if (!grid.isEditing(row.id, field.field_name))
+                            grid.beginDrag(address);
+                        }}
+                        onPointerEnter={() =>
+                          grid.dragOver({ rowId: row.id, fieldName: field.field_name })
+                        }
+                        onClick={(e) => {
+                          // A shift-click already extended the range on press;
+                          // a plain click after a drag must not collapse it.
+                          if (e.shiftKey || grid.range) {
+                            grid.refocusGrid();
+                            return;
+                          }
                           grid.select({
                             rowId: row.id,
                             fieldName: field.field_name,
@@ -2989,7 +4168,32 @@ const UserTableViewer = ({
                           // handle their own interaction and stop propagation;
                           // a double-click that reaches here is on a plain
                           // cell and means "edit me".
-                          if (isReadOnly) return;
+                          // 🚨 A COMPUTED CELL SAYS NO OUT LOUD. Refusing in
+                          // silence is the same defect as a dead control: the
+                          // cell carries the normal text-cursor, opens nothing,
+                          // and leaves the person to conclude the grid is
+                          // broken rather than that the column is calculated
+                          // (found on live review 2026-09-15). The sentence is
+                          // the one the row forms already use for these
+                          // columns, so the explanation reads the same
+                          // wherever you meet it.
+                          if (isFormulaField(field.field_name)) {
+                            toast({
+                              title: `${field.display_name} is calculated`,
+                              description:
+                                "Calculated from the other columns in this row — it updates on its own. Change its formula in Table settings.",
+                            });
+                            return;
+                          }
+                          // A double-click that opens nothing and says nothing
+                          // reads as a broken grid. Say why the editor did not
+                          // open — for an example table the notice names it as
+                          // one. (Found on independent review 2026-09-15: this
+                          // was a silent return.)
+                          if (isReadOnly) {
+                            showReadOnlyToast();
+                            return;
+                          }
                           grid.beginEdit({
                             rowId: row.id,
                             fieldName: field.field_name,
@@ -3008,7 +4212,9 @@ const UserTableViewer = ({
                               row={row.data}
                               value={rawValue}
                               display={display}
-                              editable={!isReadOnly}
+                              validationRules={validationByField.get(field.field_name) ?? null}
+                              existingValues={existingValuesFor(field.field_name, row.id)}
+                              editable={!isReadOnly && !isFormulaField(field.field_name)}
                               selected={grid.isSelected(
                                 row.id,
                                 field.field_name,
@@ -3173,6 +4379,7 @@ const UserTableViewer = ({
           </TableBody>
         </Table>
       </div>
+      </NonEditableContextMenu>
 
       {/* Pagination — pinned band in fillHeight mode, normal flow otherwise. */}
       {!loading && displayRows.length > 0 && (
@@ -3221,7 +4428,10 @@ const UserTableViewer = ({
                 </SelectItem>
               </SelectContent>
             </Select>
-            <span className="whitespace-nowrap md:ml-4">
+            <span
+              data-surface-value="row_count"
+              className="whitespace-nowrap md:ml-4"
+            >
               of {effectiveTotalCount} rows
               {hasColumnFilters && " (filtered)"}
             </span>

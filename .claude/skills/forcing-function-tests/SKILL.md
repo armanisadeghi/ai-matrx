@@ -4,7 +4,7 @@ type: Skill
 title: "forcing-function-tests — a test may pass only when the real system works"
 description: "The bar every automated test or guard must clear: green only when the real system works. Use when writing, fixing, or reviewing a test, mock, stub, fixture, snapshot, or self-test; adding a regression test for a bug; or about to call work done because tests pass."
 tags: [testing, guards, verification, doctrine]
-timestamp: 2026-09-10T00:00:00Z
+timestamp: 2026-09-14T00:00:00Z
 ---
 
 <!-- SYNCED COPY — do not edit here.
@@ -65,6 +65,10 @@ argument · wrong branch · missing side effect or state change · empty/default
 refusal for empty, zero, null, unauthorized, malformed · stages swapped or data between them
 corrupted · work silently skipped or dropped. A mutation nothing catches is an unguarded behavior:
 add the forcing input; do not bolt assertions onto a weak test.
+**Shared checkout → every mutation runs through `plant.py` beside this skill, never a hand edit**,
+one test file per command (usage in its docstring; proof: `plant_selftest.sh`). Exit 3 (restore failed) or
+5 (mutation committed) → stop and revert it. Hand plants were left on disk and captured by peer commits,
+one of them an auth bypass (2026-09-10).
 
 ## 4. Doubles replace what the SUT CALLS, never what it IS
 

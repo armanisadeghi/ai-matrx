@@ -33,11 +33,19 @@ with operational status and the categorized tool registry.
   the PostgreSQL statement.
 - The SQL workbench mounts one canonical editable context menu over its pane;
   it resolves live surface scope and edits the same controlled query buffer.
-- **One SQL execution path:** the enhanced editor and legacy dashboard call
+- **One privileged-client boundary:** every interactive database tool that
+  needs service-role SQL first calls `requireSuperAdminDatabaseClient`. The
+  helper verifies the current super-admin before it creates the secret client;
+  the route group's any-admin admission is never authorization for privileged
+  SQL. The enhanced editor and legacy dashboard call
   `useDatabaseAdmin.executeQuery`; the notebook calls the same
-  `executeSqlQuery` Server Action directly. Only that action invokes
-  `execute_admin_query`. The surface contract test censuses all three callers
-  and rejects direct client RPCs plus the retired timer/cancel path.
+  `executeSqlQuery` Server Action directly. SQL Functions, Enums, and Schema
+  Overview use the same privileged-client boundary for their distinct SQL
+  operations. Canonicalization and Data Integrity use this boundary too. The
+  surface contract derives a census across the surface-owned server roots,
+  rejects raw service-client construction in every direct SQL caller, and
+  rejects the retired timer/cancel path. Schema Overview authenticates before consulting its
+  process-local cache and forbids shared or browser response caching.
 - Browser storage entering the notebook is reconstructed only after its blocks,
   variables, and merge configuration pass runtime shape checks. Query result
   rows are narrowed as plain objects, and saved query history is reconstructed
@@ -45,6 +53,12 @@ with operational status and the categorized tool registry.
 
 ## Change log
 
+- 2026-09-15 — Every browser-callable database tool now creates its service-role
+  client through one super-admin-verifying boundary; schema-overview responses
+  are private and never CDN-cached.
+- 2026-09-14 — The database frame's sole terminal scroll owner now carries
+  `scroll-page-end-space`, keeping the final meaningful result clear of fixed
+  bottom chrome at every viewport width.
 - 2026-09-13 — Database navigation now reserves trailing horizontal scroll room, so the terminal tab clears the fixed fade on narrow viewports.
 - 2026-08-31 — The SQL workbench gained its missing canonical editable context menu, including live scope and controlled-buffer editing.
 - 2026-08-31 — Result provenance now distinguishes a query that exists in the cache from an execution actually served by that cache; uncached reruns never display the false `From Cache` badge.

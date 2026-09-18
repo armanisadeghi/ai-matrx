@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { closeShellMobileMenu } from "@/features/shell/utils/closeShellMobileMenu";
 import type { ShellIconName } from "@/features/shell/shellIconMap";
 import ShellIcon from "../ShellIcon";
+import { isOnRoute } from "@/features/shell/utils/is-nav-group-active";
 
 interface MobileSheetNavLinkProps {
   href: string;
@@ -18,6 +19,10 @@ interface MobileSheetNavLinkProps {
   openInNewTab?: boolean;
   /** Optional parent label shown under a search result. */
   contextLabel?: string;
+  /** Match only this route, not its descendants. */
+  exact?: boolean;
+  /** Canonical route ownership resolved by the parent menu. */
+  active?: boolean;
 }
 
 export default function MobileSheetNavLink({
@@ -28,13 +33,14 @@ export default function MobileSheetNavLink({
   external = false,
   openInNewTab = false,
   contextLabel,
+  exact = false,
+  active,
 }: MobileSheetNavLinkProps) {
   const pathname = usePathname();
   const isActive =
     !external &&
     !openInNewTab &&
-    (pathname === href ||
-      (href !== "/" && pathname?.startsWith(`${href}/`) === true));
+    (active ?? isOnRoute(pathname ?? "", href, exact));
   const className = isChild
     ? "shell-mobile-nav-item shell-mobile-nav-child"
     : "shell-mobile-nav-item";

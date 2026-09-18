@@ -44,11 +44,15 @@ import { renderRulebookDocument } from "../agent-context/rulebookDocument";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 // Transport only. Nothing below stubs a rendering decision.
-jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: jest.fn(), replace: jest.fn() }),
-  useSearchParams: () => new URLSearchParams(),
-  usePathname: () => "/masterwork/rb-1",
-}));
+// The row is rendered at the Rulebook's own route, so `useParams` answers the
+// id `RulePassageLink` reads off it — the one place the route, not a prop,
+// carries the Rulebook identity.
+jest.mock("next/navigation", () =>
+  require("@/test-utils/next-navigation").nextNavigationMock({
+    params: { id: "rb-1" },
+    pathname: "/masterwork/rb-1",
+  }),
+);
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => undefined,
   useAppDispatch: () => jest.fn(),

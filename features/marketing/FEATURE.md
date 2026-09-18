@@ -2,7 +2,7 @@
 
 **Status:** active  
 **Tier:** 1  
-**Last updated:** 2026-09-12
+**Last updated:** 2026-09-17
 
 Supporting-keyword chips in the Page Workspace may wrap their label and
 metadata, but keep their action buttons together and inside the phone viewport.
@@ -43,6 +43,46 @@ the site Links workspace, and each page's Backlinks/Internal links cards so the
 underlying evidence never dead-ends. The nested
 `matrx-user/marketing-authority` surface exposes the loaded verdict, pages,
 candidate allowlist, and recommendations to platform agents without refetching.
+
+## Brand strategy and site brief — THE reference every page refers back to (2026-09-14)
+
+Org → Brand → Website, and Arman's ruling: _a property of the brand belongs to
+the brand; a property of the site belongs to the site._ So the strategy is ONE
+staged-confidence document in TWO scopes, stored in `seo.landscape_brief`
+(`scope` = brand|site) — the machine the competitor classifier already used
+(facts, a plain-language brief the owner corrects in one sentence, a 1-5
+confidence the system honours, a 24-hour review window that never blocks, the
+owner's words carried forward through every regeneration). It was site-only,
+server-only, fed from name+domain+description and read by nothing but the
+classifier — the "big overarching plan" Arman kept asking for, buried.
+
+- **Brand strategy** (`/marketing/[brandId]/identity/strategy`, a Brand Home
+  room): the business facts — what it does, who it serves, each service line
+  with its OWN footprint. Built from the brand, every site's crawl, and the
+  research report.
+- **Site brief** (`/marketing/[brandId]/content/plan/[siteId]/brief`, the plan
+  workspace's seventh view): what THIS website is for — which service lines it
+  carries, who it is for, what it must win, its shape. READS the brand strategy,
+  never restates it. Built from the crawl, Search Console, the keyword library,
+  the existing plan and the research report; `inputs` records exactly which.
+- **One component** (`strategy/components/StrategyBriefWorkspace.tsx`, split by
+  `scope`); data in `strategy/data.ts` (defensive parse — HONESTY RULE), hooks
+  in `strategy/hooks.ts`. Generation is a DURABLE SEO command
+  (`useSeoCommandRun`, final kind `seo.strategy_brief_result`) — floats into
+  the live window and rejoins after a reload; regenerating SUPERSEDES (history
+  is real) and the button names that consequence first.
+- **Regenerate is honest about what it costs and what it repeats.** The run's
+  identity carries the active version's id and a digest of the owner's
+  guidance (aidream `dd036665f`): a regenerate after a new version or a
+  correction is a NEW paid run; two launches with nothing changed in between
+  claim ONE run (the second arrives with `reused_completed_run: true`). An
+  empty ruling is a confirmation ("this is right"); the site brief reads the
+  latest brand strategy whatever its review state and is told that state
+  (`inputs.brand_strategy_status`); supersede + insert are one transaction.
+- **Readers (server-side):** the content-plan generator, the brief writer, the
+  page writer and the plan review all receive the composed brand+site guidance
+  as a named variable. The brief is inert on its own — it changes no page and
+  no plan; the readers are how it reaches them.
 
 ## THE AGENCY MODEL — two planes, the brand is the tenant (2026-08-28)
 
@@ -501,6 +541,9 @@ to_jsonb(NEW))` and dereference that composite so column drift still fails
 - **A winning AccessGate branch still resolves every failed sibling read it hides.** The site shell reads site and brand in parallel, but React renders only the first failed record's gate. Pass the other failed reads through `AccessGate.relatedReads`; each read asks the access resolver for its own state and reconciles its own Error Inspector entry. Never infer the brand verdict from the site verdict, and never leave a handled sibling denial as an unresolved red error merely because its visible branch did not mount.
 - **A data module never hands a PostgREST message to a person.** Bind the module's sentence once with `makeAssertData(action)` from [`utils/errors.ts`](../../utils/errors.ts) (`const assertData = makeAssertData("reach your Search Console data")`), override it per call for a write (`assertData(r.data, r.error, "save that dig rule")`); the raw response still travels as `cause` for the Error Inspector. **`throw new Error(error.message)` is the defect** `pnpm check:access-errors` counts, and a private per-file `assertData` copy is how ten of them appeared. A zero-row UPDATE goes through `assertMutated` (`data/service.ts`), which names all three causes rather than asserting a permission verdict.
 
+- 🚨 **GA4 daily rows are RUN-scoped, so a total must pick the winning run per day.** `seo.web_analytics_daily.dedup_key` includes the collection run's idempotency key, so a re-sync of an overlapping window writes a second full set of rows for the same days (one live site holds five runs on most of its days). Every GA4 read goes through `features/marketing/analytics/window.ts`, which keeps only the newest run per date — never a fresh `SUM()` over the table. The same module owns the second rule: `sessions`, `engaged_sessions` and `conversions` add up across the row grain, `users` does NOT, and the panel prints that caveat on the number instead of pretending.
+- **Freshness wording is ONE primitive, never per-surface:** `features/marketing/google/freshness.ts` + `components/shared/DataFreshnessLine.tsx`, with the stale threshold in the knob `google.marketing.freshness_warning_hours`. Never hand-write a "last synced" line beside a Google number.
+- **A Search Console property choice is pre-flighted against the site's canonical URL** by `preflightGscProperty` (`google/gsc-property.ts`) — www/non-www, http/https, a path-prefixed property and a foreign domain are all named refusals carrying the property to pick instead. Never add a second judge: extend that file.
 - **The five connection statuses (Init / GSC / GA4 / PSI / CMS) are derived ONLY through `features/marketing/lib/site-status.ts`** — the portfolio list and the site page must never compute them independently. A configured GSC binding with `gsc_synced_at` null is `attention` ("Connected, never synced"), never `connected` — no data has flowed until the sync command stamps the site row.
 - **Initialization hydrates progressively, never behind one monolithic spinner.** The initialize stream's granular `initialize_step` events (`step: identity|screenshots|sitemaps|discovered`, `status: started|complete|failed`) drive a live step strip (`InitializeProgress`) and per-step query invalidation: identity → the site row only (exact key — the site key prefixes the whole subtree), screenshots → hero + gallery keys, sitemaps → sitemap list/coverage/coverage-matrix keys, discovered → the brand's discovery lists + pending count. The map lives ONLY in `components/site/initialize-progress.ts` (`queryKeysForInitializeStep`, unit-tested); the event narrower is `initializeStepFromEvent` in `crawler/direct-client.ts`. Against a scraper deploy that predates the contract, the strip stays honestly indeterminate (neutral steps + one spinner) and the run falls back to the end-of-stream refetch — never fake per-step progress.
 - **A finished initialize stream is NOT success.** The server records per-step failures in `web.site.initialization.errors`; the overview re-reads the row after every run, toasts the failed steps, renders the "Initialization issues" panel, and captures each step to the Error Inspector (`source: "marketing-crawler"`). A green toast with failed steps hidden is the exact defect this exists to prevent.
@@ -511,7 +554,7 @@ to_jsonb(NEW))` and dereference that composite so column drift still fails
 - **`activeCrawl` means the site-wide CRAWL, never a command.** `useSiteCrawlActivity` derives it from `scope.mode` (full / list / initialization / homepage) and exposes every live session separately as `activeSessions`. Taking the newest active row of any mode is what made a GSC sync render as "Crawling" in the site header.
 - **Every scraper-boundary failure feeds `captureError`** via the chokepoints in `features/marketing/crawler/direct-client.ts`. Marketing components import `toast` from `@/lib/toast` (the captured sonner wrapper), never from `"sonner"` — bare sonner toasts are invisible to the admin Error Inspector.
 - **A scraper stream's `user_message` is a TEMPLATE, never the answer.** The streaming layer emits `"<CanonicalCommand> failed unexpectedly. Please try again or adjust your settings."` for every unclassified crash while the true cause (often a stringified upstream aidream payload) rides in `message`. `direct-client.ts` throws `BackendApiError` built through `describeBackendFailure` (`lib/api/errors.ts`), which unwraps the nesting; the Error Inspector `message` is the SPECIFIC cause and the template goes to `userMessage`. Any surface reporting a command failure must render `headline` + keep `cause`/`code`/`requestId`/`chain` visible (see `GscSyncRow`). This is the class that produced a year of meaningless marketing failures — reintroducing `toast.error(extractErrorMessage(error))` on a stream is a regression.
-- **Google connection health is DERIVED, never the stored `status`.** `users.integration_connections` can read `status='connected'`, `last_error=NULL` while its vault credential reference is gone — the exact state that made every GSC sync fail on 2026-07-25 with nothing to see. The table publishes generated, client-safe `credential_present` / `credential_stable` facts from its protected `credential_item_id` + `vault_secret_key`; the browser may read those facts but never the vault reference identifiers. `google/service.ts` combines those facts into `health` (byte-for-byte the precondition aidream's `resolve_connection_credential` enforces), and `google/health.ts` (`diagnoseGoogleConnection`, `googleConnectionDiagnostics`) is the ONE place that turns a row into a sentence. Every surface that offers Google-backed work states a blocking diagnosis and disables the action BEFORE the call — never "connected" plus a mid-stream crash. aidream now also stamps `status='needs_attention'` + `last_error` on any credential-resolution failure and self-heals on success, so the failure is durable, not experiential.
+- **Google connection health is DERIVED, never the stored `status`.** `users.integration_connections` can read `status='connected'`, `last_error=NULL` while its vault credential reference is gone — the exact state that made every GSC sync fail on 2026-07-25 with nothing to see. The table publishes generated, client-safe `credential_present` / `credential_stable` facts from its protected `credential_item_id` + `vault_secret_key`; the browser may read those facts but never the vault reference identifiers. `google/service.ts` combines those facts into `health` (byte-for-byte the precondition aidream's `resolve_connection_credential` enforces), and `google/health.ts` (`diagnoseGoogleConnection`, `googleConnectionDiagnostics`) is the ONE place that turns a row into a sentence. 🚨 **`last_error` is CLASSIFIED, never rendered** (F-19, `VERIFY-U-P2-R3` N9): the stored reason is operator text — a vault item name, a connection UUID, a Python exception class — so `diagnoseGoogleConnection` reads the typed code aidream stamps in `metadata.credential_failure` when it is there, else classifies the text, and speaks only the sentences in `googleAccountFaultLanguage`, with an honest "something on our side needs repair" for anything it cannot classify. `googleConnectionDiagnostics` keeps the raw column because its reader is an operator on the super-admin connections workspace. Every surface that offers Google-backed work states a blocking diagnosis and disables the action BEFORE the call — never "connected" plus a mid-stream crash. aidream now also stamps `status='needs_attention'` + `last_error` on any credential-resolution failure and self-heals on success, so the failure is durable, not experiential.
 - **RLS visibility is not Google-credential reachability.** Admins can see other owners' connection rows; a user-shaped provider action filters with `isGoogleConnectionReachableByUser` before selection, mirroring aidream's personal-owner-or-owning-org-membership boundary.
 - **SEO sync failures use the canonical backend-error contract.** GA4 and
   PageSpeed command clients throw `BackendApiError` through `parseHttpError` /
@@ -574,6 +617,7 @@ to_jsonb(NEW))` and dereference that composite so column drift still fails
 - Crawl artifact access fails closed: immutable metadata plus the direct snapshot/screenshot file FK classify the file, and the database requires an exact tenant match plus current site-viewer access. No `platform.associations` row exists for this relationship. Missing, forged, cross-tenant, or soft-deleted references never fall back to file ownership.
 - No legacy crawler data is migrated or read.
 - **Google OAuth refresh tokens live ONLY in the canonical secrets vault** (`features/secrets`; aidream is the sole encryption owner). `users.integration_connections` holds safe metadata plus the stable `credential_item_id`; `vault_secret_key` is only a loud legacy fallback until its removal — never ciphertext. One Google connection grows through capability-specific incremental consent; ordinary onboarding requests only the approved Search Console scope, never a combined deferred-scope bundle. YouTube channels are safe `youtube_channel` resource rows; access tokens remain server-side and ephemeral. A parallel encryption pathway for any credential is a defect (the bespoke AES-256-GCM control plane was annihilated 2026-07-20). Site JSON contains only connection/resource references, never tokens or client secrets.
+- **Reconnect is a row action, even while the row looks healthy.** Each Google Connection row offers Reconnect and sends its exact id, stored owner (including its original organization), account hint, and the union of its existing scopes with only the explicitly requested feature scopes. It forces consent but never silently adds a product permission. This lets an older OAuth-client credential migrate through aidream's current-client, fresh-token, cumulative-scope guard without creating a second connection row.
   Browser readers consume only the generated boolean health projection; the
   stable and legacy reference identifiers remain excluded from the
   `authenticated` role.
@@ -614,50 +658,101 @@ name: retain it only for genuine semantic taxonomy and move commercial identity
 to `brand_offering`. Cutover proposal:
 [`docs/db_rebuild/proposals/brand-offerings-cutover.md`](../../docs/db_rebuild/proposals/brand-offerings-cutover.md).
 
-#### Current legacy surface (pending cutover)
+#### Canonical offering writers — THE CONTRACT (live 2026-09-14)
 
-`[brandKey]/identity/offerings` is the customer-facing route and vocabulary —
-business-knowledge screens moved OUT of the site keyword-value ladder and onto
-the brand home in the agency restructure (`VALUE_TO_IDENTITY` in
+Build on these and nothing else. Every write carries the site's
+`organization_id` explicitly and is refused when it does not own the site;
+every placement and worth write is refused for an offering the site has not
+made available (`site_offering_unavailable`). No caller writes the tables
+directly.
+
+| Job                                                                                                                                                                                 | Signed-in client (PostgREST RPC)                                                                                                                                                                                                                                                               | Service job (service_role)                                                                                                                                                                                                                                                                                                                          |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| List what a site offers                                                                                                                                                             | `web.site_offerings(p_site_id)`                                                                                                                                                                                                                                                                | same                                                                                                                                                                                                                                                                                                                                                |
+| The Offerings screen: every offering the site's BRAND owns, whether this site offers it, other sites offering it, template provenance, this site's worth in points                  | `web.brand_offering_catalog(p_site_id)`                                                                                                                                                                                                                                                        | same                                                                                                                                                                                                                                                                                                                                                |
+| Offer or stop offering on this site, one or many (D2; stopping removes this site's placements and worth under one stamp, offering again restores exactly those; the reason is kept) | preview `web.site_offering_availability_impact(p_site_id, p_offering_ids)`, then `web.set_site_offering_availability(p_organization_id, p_site_id, p_offering_ids, p_available, p_reason)` → per offering: changed / placements_removed / placements_restored / worth_removed / worth_restored | same                                                                                                                                                                                                                                                                                                                                                |
+| Suggestions, only inside Add offering (D6)                                                                                                                                          | `web.offering_templates_for_site(p_site_id, p_search)`                                                                                                                                                                                                                                         | same                                                                                                                                                                                                                                                                                                                                                |
+| Adopt a suggestion (copy-on-adopt; also makes it available on the site)                                                                                                             | `web.adopt_offering_template(p_organization_id, p_site_id, p_template_id)` → brand offering id                                                                                                                                                                                                 | same                                                                                                                                                                                                                                                                                                                                                |
+| Create / rename / retype / reparent an offering the brand owns (create also makes it available on the site)                                                                         | `web.save_site_offering(p_organization_id, p_site_id, p_offering_id NULL=create, p_name, p_kind product\|service, p_description, p_parent_id)` → id                                                                                                                                            | same                                                                                                                                                                                                                                                                                                                                                |
+| Reorder / reparent                                                                                                                                                                  | `web.move_site_offering(p_organization_id, p_site_id, p_offering_id, p_parent_id, p_sibling_order)`                                                                                                                                                                                            | same                                                                                                                                                                                                                                                                                                                                                |
+| Remove from a site (preview first)                                                                                                                                                  | `web.site_offering_delete_impact(p_site_id, p_offering_id)` then `web.remove_site_offering(p_organization_id, p_site_id, p_offering_id, p_replacement_offering_id)`                                                                                                                            | same                                                                                                                                                                                                                                                                                                                                                |
+| Place keywords (NULL offering = take them off)                                                                                                                                      | `seo.gsc_set_keyword_offering(p_organization_id, p_site_id, p_keyword_ids ≤5,000, p_offering_id, p_notes)` → each keyword's value band                                                                                                                                                         | `seo.write_site_keyword_offering(p_organization_id, p_site_id, p_keyword_ids, p_offering_id, p_notes, p_assigned_by 'human'\|'agent', p_confidence, p_placement jsonb)` → written / removed / human_protected. An agent never overwrites a human ruling (P12).                                                                                      |
+| Worth (D9: **points**, not a 0–100 weight; `p_clear` removes the ruling)                                                                                                            | `seo.set_site_offering_value(p_organization_id, p_site_id, p_brand_offering_id, p_worth_points, p_lead_quality, p_offering_match, p_notes, p_clear, p_audience_fit, p_capacity_appetite, p_brand_fit)`                                                                                         | `seo.write_site_offering_value(… same …, p_metadata jsonb)`                                                                                                                                                                                                                                                                                         |
+| An agent wants an offering the site does not offer (D2: it PROPOSES, never adopts or makes available)                                                                               | —                                                                                                                                                                                                                                                                                              | `seo.fn_site_available_offering_for_template(p_site_id, p_template_id)` → the site's offering or NULL; when NULL, `seo.propose_site_offering_from_template(p_site_id, p_template_id, p_keyword_ids, p_value_add, p_agent_name, p_reasoning, p_provenance)` → one pending `keyword_meaning:offering` row per site and offering in the approval queue |
+| Read placements for the keywords on screen (≤2,000)                                                                                                                                 | `seo.gsc_keyword_offerings_for(p_site_id, p_keyword_ids)`                                                                                                                                                                                                                                      | same                                                                                                                                                                                                                                                                                                                                                |
+| Per-offering keywords/clicks/bands                                                                                                                                                  | `seo.gsc_offering_stats(p_site_id, p_start, p_end)`                                                                                                                                                                                                                                            | same                                                                                                                                                                                                                                                                                                                                                |
+| Filter / sort the keyword breakdown                                                                                                                                                 | `filters.offering` = offering id or `"none"`; `p_sort: 'offering'` on `seo.gsc_perf_breakdown` / `seo.gsc_breakdown_keyword_ids`                                                                                                                                                               | same                                                                                                                                                                                                                                                                                                                                                |
+
+What a worth row means: a keyword placed on an offering, or beneath it in the
+brand's hierarchy, starts at the site baseline plus the nearest offering's
+`worth_points`; `lead_quality = negative_value` or `offering_match` in
+`not_offered | actively_avoided` makes it Negative. `seo.keyword_value_map`
+reads only this site's rows (proven lossless: 40,574 keywords, 0 unexplained;
+`pnpm check:offering-resolver-equivalence:self-test`).
+
+TRANSITION, deleted at cutover step 8: the legacy `seo.gsc_set_keyword_topic`,
+`seo.gsc_set_topic_value` and `seo.gsc_confirm_keyword_topic` still serve the
+screens not yet moved and also write the canonical rows through the writers
+above; `seo.fn_reconcile_site_offering_facts` and `seo.fn_site_offering_for_topic`
+exist only for that bridge. Never call any of them from new code
+(`pnpm check:offering-topic-refs` fails a new caller).
+
+#### The Offerings screen (canonical, 2026-09-14)
+
+`[brandKey]/identity/offerings` is the customer-facing route —
+business-knowledge screens live on the brand home (`VALUE_TO_IDENTITY` in
 `lib/routes.ts`: old site `seo/[siteKey]/keywords/value/offerings` and
-`.../value/topics` both redirect here with `?site=` selection and any other
-query string intact, so saved links still open the same state). The stored
-catalog entity remains `seo.topic` because the hierarchy also contains
-non-offering roots such as authority and reputation; that database name is not
-customer copy.
+`.../value/topics` redirect here with `?site=` and every other query string
+intact). It renders `seo/value-system/offerings/OfferingsWorkbench.tsx`
+entirely on the canonical model (brand-offerings cutover D1–D9): the BRAND's
+offerings (`web.brand_offering_catalog`), with the selected site's explicit
+availability, this site's worth in points, and nothing from `seo.topic`.
 
-The surface is a true hierarchy powered by the canonical `MatrxDataTable`, not
-a hand-built grid. Its hierarchy processor honors the table's URL-backed
-search, per-column filters, layered filters, and sort while preserving matching
-lineage, collapsed branches, and sibling-only ordering. Each fact has its own
-sortable/filterable column: Offering, Type, Branch, Worth, Worth source,
-Offering match, Lead quality, Keywords here, Keywords in branch, Clicks,
-Impressions, and one column per value band. Name, type, worth, offering match,
-and lead quality edit directly in the row through the table's deferred Save
-contract. The compact traffic summary above the table does not repeat the
-catalog or consume the working viewport. Every number in that summary is a
-button: revenue/authority and placed-demand metrics apply the canonical table's
-URL-backed column filters, while unplaced and confirmation counts scroll to
-their already-filtered keyword tables. Back restores the prior lens and scroll
-target. Placement coverage lives in this single KPI band; the run strip below
-is one terse operational line and never advertises a count with no drill-in.
-The tree viewport is approximately 1.5x the former working height. Desktop row
-copy/menu actions use the canonical micro preset; phone/tablet targets remain
-44px.
-
-The whole tree pane mounts ONE delegated universal context menu. Every row
-resolves its own `seo_topic` entity and exposes the same actions as the
-ellipsis menu: see keywords, pin/make root/add child, set worth, edit, and
-delete. Keyword counts and “See keywords” open the existing multi-instance
-Search Console drill-down `WindowPanel` with the topic-subtree filter; no
-second keyword table or window system exists.
-
-Offerings are shared catalog rows, so deletion is global. The preview RPC reports
-associated keywords and organizations plus child offerings, site-worth rulings,
-and starter-pack references. The atomic delete RPC either merges every keyword
-association into an active replacement (preserving primary placement) or
-removes the links; children move up one level. Site-worth and starter-pack
-judgments are removed rather than silently transplanted to a different offering.
+- **One canonical table** (`OfferingCatalogTable`, `MatrxDataTable`) drawn as
+  the brand's catalog tree (D3). The pure tree math is
+  `offerings/catalog-tree.ts` (18 tests): lineage-keeping filters, sibling-only
+  sort, the exact move order `web.move_site_offering` expects, and worth that
+  mirrors `seo.keyword_value_map` — the nearest offering self-first carrying
+  this site's ruling adds its points and its negative ruling forces the branch.
+  Columns: Offering, Offered here, Kind, Worth here, Worth used (names the
+  offering a row takes its worth from), Do you do this?, Lead quality, Source
+  (From a suggestion / Changed from a suggestion / Your own), Other sites,
+  Keywords here, In branch, Clicks, Impressions, one per value band. Name,
+  kind, worth, match and lead quality edit in the row.
+- **Explicit availability (D2).** The Offered here switch offers an offering
+  immediately; switching it off, or "Stop offering here…" on any selection
+  (per row or select-all), opens `StopOfferingDialog`, which previews
+  `web.site_offering_availability_impact` (placements, how many a person made,
+  the worth ruling, keywords beneath that inherit it) and keeps the reason.
+  `web.set_site_offering_availability` removes this site's placements and
+  worth under one stamp and restores exactly those when offered again
+  (`pnpm check:offering-availability-round-trip:self-test`).
+- **Add offering is the only place suggestions appear (D6).** `AddOfferingDialog`
+  searches `web.offering_templates_for_site` as the person types; choosing one
+  copies it into the brand (`web.adopt_offering_template`), an offering the
+  brand already has is offered here instead, and anything else is created from
+  exactly what was typed (`web.save_site_offering`, P23). The reason is kept on
+  the site's availability row (P24).
+- **Worth (D9)** is `OfferingWorthDialog` over `seo.set_site_offering_value`:
+  signed, unbounded points, the inherited ruling named, the negative rulings
+  stated in words, and the why kept with the ruling. Only an offering this site
+  offers can be valued here.
+- **Doors.** Every strip number filters the table through its URL state or
+  scrolls to the unsure / unplaced keyword tables. "In branch" and "See
+  keywords" open the Search Console drill-down window filtered to the offering
+  (`filters.offering`). `?offering=<id>[&worth=1]` lands on the offering (value
+  receipts use `offeringNodeHref`); a pre-cutover `?topic=<id>` link resolves
+  to the brand's copy of that suggestion (`resolveOfferingLink`).
+- **Remove from this brand** is offered only when no other site offers it:
+  `RemoveOfferingDialog` previews `web.site_offering_delete_impact` and moves
+  the keywords to another offering or leaves them unplaced
+  (`web.remove_site_offering`); it states that this is not undone by offering
+  it again.
+- The pane mounts ONE delegated universal context menu per row (see keywords,
+  set worth, edit, add beneath). Below the table: the placement strip, the
+  `placement_drift` approval queue, and the canonical unsure/unplaced keyword
+  tables. The strip's status read (`seo.topic_placement_status`) is the one
+  legacy read still on this screen; it moves with the remaining readers.
 
 ## Related features
 
@@ -681,6 +776,263 @@ judgments are removed rather than silently transplanted to a different offering.
 The site/page/crawl foundation, direct live-crawl controls, dedicated technical-SEO crawl reports, analysis/finding workspaces, link/screenshot inspection, backlinks, persisted 28-day GSC keyword performance, reusable personal/org Google OAuth, GSC property binding/synchronization, app-managed PageSpeed with per-page synchronization/history/regression UI, site access/settings, and provider spend rollups are live in code. Google approved GA4 and YouTube read-only access on 2026-08-25: their code-controlled campaign phases are `approved`, so normal signed-in users can authorize, bind, manually sync GA4, and read an explicitly discovered owned YouTube channel. The GA4 recurring dispatcher remains disabled pending exact name-and-interval approval. Google Ads now has a real reporting-only workspace and server path behind an `internal_test` super-admin gate; live certification remains blocked on Google's passkey requirement for revealing the existing Explorer Access developer token and on a distinct Ads test identity. The RLS-protected `seo` schema is exposed read-only to authenticated browser clients and included in generated database types; product SEO workspaces read ordinary persisted facts directly through Supabase, while the canonical combined page-performance read and collection work run in aidream. Remaining verticals include automatic GSC keyword-market enrichment, target-keyword analysis, broader GA4 history, connection health/sync history, cross-site analysis, catalog/configuration UI, crawl scheduling UI/worker, analysis and AI-batch execution workers, actionable reconciliation/finding mutations, current-link projections, and CMS task/change/publish workflows.
 
 ## Change log
+
+- 2026-09-18 — **F-106: both Quick-view row menus now open the ONE addressed overlay; the page-local panel host is deleted.** Round 8 (F-93) ruled that a site opens in one overlay-owned panel from loading to loaded, but TWO callers still ran their own copy of the older, unaddressed pattern — each set local `peeking` state and mounted its own `SitePeekWindow` (a page-local `WindowPanel` with no `overlayId` and no address), while the platform's addressed `siteQuickViewWindow` overlay (`useOpenSiteQuickViewWindow`/`useOpenItemPresentation`) sat unused for both doors. Both wrapped the same canonical `SitePeekBody`, but only the overlay had a URL. Fixed in `SitesPortfolio.tsx` first, then the same way in `content-plan/components/PlanSitesList.tsx`'s `openQuickView` (which also dropped its own now-redundant `getSiteListRow` fetch — the overlay's window does that read itself): both now call `useOpenSiteQuickViewWindow()({ siteId, siteLabel })` directly. A repo-wide census after both fixes found no remaining importer, so `SitePeekWindow.tsx`/`SitePeekWindowImpl.tsx` are DELETED; every comment that named them as a live component (`SitePeekBody.tsx`, `site-item-type.ts`, the item-presentation and window-panels test docstrings, the marketing admin map entry in `app/(core)/marketing/admin/page.tsx`) now points at `SitePeekBody` + the `siteQuickViewWindow` overlay/`SiteQuickViewWindow.tsx` instead — historical F-87/F-88 regression narratives describing what used to break were left as history, not corrected. Guards: `features/marketing/components/sites/__tests__/quick-view-opens-the-one-overlay.test.tsx` (the Sites portfolio door; red on the old wiring, green now) and the class guard `features/marketing/__tests__/no-page-local-site-peek-window.test.ts` (a static census over every `.ts`/`.tsx` under `features/marketing` for a `SitePeekWindow`/`SitePeekWindowImpl` import specifier — red with `PlanSitesList.tsx`'s pre-fix import restored, green on the fixed tree; catches a future regression anywhere in the feature, not just these two callers).
+
+- 2026-09-18 — **F-88: the site Quick view's CONTENT is a component, so one panel holds the whole window.** F-87's `SiteQuickViewWindow` returned `SitePeekWindow` — a standalone `WindowPanel` with no `overlayId` — the moment its read resolved, which unmounted the `siteQuickViewWindow`-bound panel that had been showing the loading state. The peek body is now `components/sites/SitePeekBody.tsx` (content only, no `WindowPanel` import): the one copy of the KPI tiles, the 90-day trend, the top pages, the connection chips and the workspace door. `SitePeekWindowImpl.tsx` is reduced to the thin panel host for the two callers that already hold the row (the Sites portfolio and the Content Plan list, unchanged behaviour: same panel id `site-peek-<id>`, same inline `onClose`, same geometry), and `SiteQuickViewWindow` mounts the same body inside ITS own panel when the row lands. No second renderer of the same data, and no screen was seen.
+
+- 2026-09-18 — **F-87: a site opens in place from anywhere, through the one item-presentation path.** `web_site` was a registered entity token with a route and a peek but was NOT a known item type, so nothing could open a site through `useOpenItemPresentation` — including the door F-86 had just added to the Google marketing answer, which was additionally written against the non-existent token `site` and therefore rendered nothing at all. New `features/marketing/site-item-type.ts` registers `web_site` (label Site, `Globe`, `web.site` / `name`, an `enrich` giving an agent-emitted card the site's real name, domain and status) with a curated detail field list instead of the generic `select *` dump (five jsonb columns, `previous_slugs` and `version` stay off the reader's screen; the owning marketing account is a door on `web_brand`). The click opens the platform's OWN site Quick view, not a new site screen: `features/window-panels/windows/marketing/SiteQuickViewWindow.tsx` (overlay `siteQuickViewWindow`, opener `features/overlays/openers/siteQuickViewWindow.tsx`) wraps `SitePeekWindow` — the panel the Sites portfolio and the Content Plan list already open on a row — and adds only the canonical `getSiteListRow` read, with an honest loading panel and a retry on failure. `/detail/web_site/<id>` resolves through the Detail primitive's type map from the same registration. No marketing surface needed converting: the 13 places that name a site already use `EntityRef token="web_site"`, and the two literal `/marketing/sites/${id}` hrefs left in `insights/ClassInsights.tsx` and `local/LocalListingsWorkspace.tsx` are navigation into the workspace, not identity doors. Not attempted, and recorded rather than hidden: the full site workspace (`components/site/SiteOverview.tsx`) still cannot be a panel body, because `useMarketingSite()` throws outside the route layout's `MarketingSiteProvider` — making it mountable from a record is a refactor of that provider chain. Evidence: red-then-green in `features/item-presentation/__tests__/a-site-opens-in-place.test.tsx` (8/8), `.../the-one-opener-routes-a-site-to-the-quick-view.test.tsx`, `.../every-registered-type-opens-or-says-why-not.test.ts` and `features/content-ir/__tests__/kind-google-result-families.test.tsx`. No screen was seen.
+
+- 2026-09-18 — Claude Fable 5.1 (lane F-45, google-native VERIFY-U-P4-U-M1-R5
+  V14-10 / V18-1 and V18-3): **THE UNHOLDABLE-REF LAW.**
+  `preflightGscProperty` (`features/marketing/google/gsc-property.ts`) used to
+  fall through to the ordinary host/path checks for a URL-prefix ref, so a ref
+  Google can never hold at all — one carrying a username and password, a query
+  string, a #fragment, or a non-http(s) scheme — answered `ok` whenever the
+  host matched the site, and `judgeGscBindingWrite` (the ONE choke point every
+  write path asks, per its own docstring) wrote the RAW ref, never the
+  normalized `suggestedRef`, into `web.site.integrations` jsonb — an
+  org-readable column. Verifier's exact repro:
+  `preflightGscProperty("http://user:pw@bhrcenter.com/", {domain:
+  "bhrcenter.com", root_url: "http://bhrcenter.com/"})` answered `ok`/`allowed:
+  true`. Fixed with a new `unholdableGscUrlReason` predicate, run
+  unconditionally on the parsed URL BEFORE any host/path comparison: it
+  refuses by name ("a username and password inside the address", "a query
+  string in the address", "a #fragment in the address", "a “ftp” scheme, and
+  Search Console only holds http and https properties"), never echoes the ref
+  (so a password never reaches the refusal sentence), and offers the
+  normalized `suggestedRef`. `judgeGscBindingWrite` needed no separate change —
+  it composes `preflightGscProperty`, so the ceiling and the view are the same
+  one function. Census (`grep -rn "resource_ref\|gsc_property\|sc-domain"
+  features/marketing`): every write path (per-provider Enable, the
+  page-level Save, `persistBuiltInProvider`, `kickGscFirstImport`) already
+  routes through `integrationsWriteIssues`/`integrationsWriteRefusal`
+  (`components/integrations/integration-issues.ts`), which composes this same
+  judge — nothing else accepts or writes a GSC property ref. Separately,
+  `validateSiteIntegrations`'s own shape check (`data/integrations-schema.ts`
+  `isHttpUrl`) is a weaker, independent sanity check that does not itself
+  reject credentials — it is not the mismatch judge and was left as-is; the
+  judge is what blocks Save. Also fixed V18-3 (LOW): the GA4/GSC zero-baseline
+  caveat in `features/marketing/analytics/gsc-delta.ts`
+  (`judgeGscWindowDelta`, `no_baseline` branch) spliced "and nothing in this
+  one either." after a full stop when `current = 0, previous = 0`, reading as
+  two sentences with a lower-case "and" starting the second. Now one sentence:
+  "There were no sessions in this window either, so there is nothing in
+  either period to compare." Both fixes proven red-then-green against HEAD
+  (`git show HEAD:<path>` swapped in, RED reproduced verbatim, restored) —
+  `npx jest features/marketing/google features/marketing/analytics
+  features/marketing/search-console` → 295 passed.
+
+- 2026-09-17 — Claude Fable 5.1 (lane F-39, adopting aidream B-19 `bf037695fd`):
+  **the GA4 honesty caveats now read the true false/absent distinction and name
+  the report window instead of a per-day-row count.** `Ga4CollectionMetadata`
+  changed under the panel (`packages/matrx-seo/matrx_seo/providers/ga4.py`
+  §"GA4 collection honesty metadata"): `subjectToThresholding`,
+  `dataLossFromOtherRow` and `samplingMetadatas` are now ALWAYS present on a
+  new row (`false`/`[]` = Google affirmed clean, absent = never captured —
+  pre-2026-09-17 rows only), plus new `report_date_range` and `captured_at`.
+  **Census: the single read site is `analytics/caveats.ts`.** The per-flag
+  detectors (`=== true`, `Array.isArray(...) && .length > 0`) already used
+  strict checks, never a truthiness bug on `false`. The real defect was in the
+  catch-all gate: `affirmed` used `.some()` over the window's days, so ONE day
+  carrying the keys (even a day genuinely affirmed clean) silently suppressed
+  the "nothing was flagged" note for the WHOLE window — including any other
+  day in the same window that predates 2026-09-17 and truly was never
+  captured. Fixed to require EVERY day to carry the keys before treating the
+  window as affirmed (`fullyAffirmed`), proven RED-then-GREEN with a
+  cutover-straddling window test. `ga4Caveats` now prints the flagged window as
+  `report_date_range` + `captured_at` when a matched day carries them ("Google
+  withheld some rows for Aug 21 – Sep 17, captured Sep 18 07:15 UTC
+  (thresholding)"), falling back to the old per-day count named as a gap
+  ("… report window not recorded") for pre-cutover rows. `analytics/window.ts`'s
+  freshness `pulledAt` already comes from the exact `created_at` instant of the
+  winning row — an equally precise source to `captured_at` — so it is
+  unchanged; `captured_at` is read only inside the caveat window sentence.
+  Evidence: `caveats-on-the-numbers.test.tsx` § "the GA4 collection honesty
+  upgrade (B-19)" (6 new cases) + `npx jest features/marketing/analytics` (92
+  passed) + `pnpm check:parse` + `pnpm check:kind-marker-law`, both green;
+  scoped `tsc --noEmit` over `features/marketing/analytics/**` clean (full
+  `type-check` OOMs in this environment, per this file's own note). No live
+  row carries the new shape yet — 0 rows collected since 2026-09-17's GA4
+  provider change as of this commit, so the new window-sentence branch is
+  unverified against a real report until the next GA4 collection run.
+
+- 2026-09-17 — Claude (google-native lane F-33; round-4 hostile re-verification,
+  common-docs `/projects/google-native/VERIFY-U-P4-U-M1-R4.md` — **verdict U-M1:
+  REOPEN** — findings V14-4 (B side), V14-8 and V14-9): **the GA4 caveats moved
+  onto the numbers, a zero baseline stopped being explained as a collection gap,
+  and the freshness line runs on one clock.**
+
+  (1) **§ V14-4 — the caveats are printed ON the numbers now**
+  (`analytics/caveats.ts`, `analytics/disclosures.ts`, the new
+  `analytics/components/CaveatMark.tsx`, `SiteAnalyticsPanel.tsx`,
+  `AnalyticsTrendChart.tsx`). PLAN §4.9 asks for *"the honesty caveats printed on
+  the numbers (thresholding, `(other)` rows, sampling)"* and §1 for *"the caveat
+  on the number itself"* — the champion edge over every other GA4 consumer. What
+  shipped put only the COMPARISON caveat on a tile and collected thresholding,
+  sampling, schema restriction, the `(other)` row and users-are-summed into one
+  bordered block *below the chart*, with the Users tile reading "Summed across
+  landing pages — see the caveat" (an instruction to go and look) and a landing
+  page literally named `(other)` rendering as an ordinary table row. Now: ONE
+  component (`CaveatMark` — not interactive, `role="img"`, the sentence as BOTH
+  the hover title and the accessible name, and the accessible name says WHICH
+  number it qualifies) and ONE attribution map (`AFFECTS` in `disclosures.ts`,
+  with `disclosuresForTile` / `…Series` / `…LandingPage` / `…Table`), so a
+  surface never decides for itself again. The attributions are the caveats' own
+  physics: thresholding, sampling, schema restriction and the measurement note
+  mark every total and every series; users-are-summed marks the Users tile and
+  the Users line ALONE; `(other)` marks the `(other)` ROW and the page list and
+  never a site total (site totals stay right when Google bundles — the per-page
+  list is what loses pages by name); sampling also marks every row, because then
+  every figure in the list is an estimate; the comparison caveat is deliberately
+  NOT duplicated into a mark, because the tile and the chart legend already print
+  it in full. The explanation block stays — it is where the DETAIL belongs — but
+  it is no longer the only place the caveat exists.
+
+  🚨 **AND THE UNMEASURED STATE IS SAID OUT LOUD, with the consumer action for
+  aidream.** Live 2026-09-17: `seo.web_analytics_daily` holds **62,301** GA4 rows,
+  every one carrying `extras.ga4_collection_metadata`, and there is exactly **ONE
+  distinct value** across all of them — `{timeZone: "America/Los_Angeles",
+  currencyCode: "USD", schemaRestrictionResponse: {}}`. **0** rows carry a
+  `subjectToThresholding`, `samplingMetadatas` or `dataLossFromOtherRow` key at
+  all, and **0** landing pages equal `(other)`, so no honesty caveat has ever
+  fired on this platform. Google reports those three only when they apply, so
+  their absence is "nothing flagged" — which is NOT the positive all-clear a
+  silent clean number implies. So a window that carries no flag now carries the
+  caveat `flags-not-affirmed` as a note-toned mark on its totals and on its page
+  list: *"Nothing was flagged for this window — which is not the same as a clean
+  bill of health"*, with the two known limits in its detail. **Consumer action for
+  aidream** (`packages/matrx-seo/matrx_seo/providers/ga4.py`, written onto
+  `seo.web_analytics_daily.extras.ga4_collection_metadata`): (a) persist
+  `subjectToThresholding` and `dataLossFromOtherRow` **explicitly as `false`** and
+  `samplingMetadatas` as `[]` when Google omits them, so a consumer can tell
+  "Google said no" from "never captured"; (b) MERGE the metadata across report
+  pages — `report_metadata` is taken from the first page only (`if report_metadata
+  is None: report_metadata = current_metadata`) and later pages are compared on
+  `timeZone`/`currencyCode` alone (`_property_metadata_identity`), so a flag
+  Google raises on page 2 is **discarded** — the three flags should be OR'd and
+  `samplingMetadatas` concatenated; (c) the object describes the whole REPORT yet
+  is stored on every row, so this repo's per-day caveat counts ("all 28 collected
+  days") are really per-run — a per-day capture, or a field naming the report
+  window, would make that count true.
+
+  (2) **§ V14-8 — a zero baseline is its own verdict** (`analytics/gsc-delta.ts`).
+  `percent` was nulled for four different reasons and both delta pills could only
+  tell the coverage story, so five live sites with 28 of 28 days collected in BOTH
+  windows and nothing recorded before printed **"no comparison · 28 of 28 days now
+  vs 28 of 28"** with the tooltip *"The two windows were not collected alike."*
+  They were collected identically. `GscWindowDelta` now carries a `verdict`
+  (`comparable` / `coverage_refused` / `no_baseline` / `unknown_totals`), judged in
+  that order because coverage outranks a zero (with 4 of 28 previous days a zero is
+  not a measurement, so "nothing happened before" would be a guess) and a missing
+  total is not a zero. Each verdict has its own sentence and its own pill label —
+  *"There is no previous period to compare: the previous 28 days recorded 0 … Both
+  windows were collected the same way, so this is the site, not our collection."*
+  — and a refused delta now ALWAYS carries a caveat, which makes the two pills'
+  hand-typed `?? "The two windows were not collected alike."` fallbacks
+  unreachable (`SiteKpiPeeks.tsx`, `SearchConsolePortfolio.tsx` — left in place
+  because they belong to other lanes' files this lane may not touch; they are dead
+  strings, and a guard here fails if any refused delta ever returns a null caveat
+  again).
+
+  (3) **§ V14-9 — ONE clock** (`google/freshness.ts`,
+  `components/shared/DataFreshnessLine.tsx` + its new test). `stale` was judged
+  against the injectable `now` while the printed age came from
+  `formatRelativeTime`'s own `Date.now()`: a 40-minute-old pull printed "pulled 4
+  hours ago" under a frozen test clock, which is why the PRINTED half of round-2's
+  NEW-B7 was never proven. `formatRelativeTime` already accepts `now`, so both
+  halves now read one instant, and `DataFreshnessLine` takes an optional `now` —
+  omitted in production, frozen by its first-ever render test, which holds the
+  printed age, the stale warning, the unreadable-knob stand-in and the clock-ahead
+  sentence to that one instant.
+
+  Tests: `npx jest features/marketing` — **160 of 161 suites, 1,545 of 1,546 tests
+  green**; the one failure is `lib/route-metadata.test.ts` (a favicon letter badge,
+  `Ce` vs the generated `Tm`), which this lane did not touch and which fails
+  identically at `01566c21` — recorded here, not fixed, because it is another
+  lane's file. `pnpm check:parse` and `pnpm check:kind-marker-law` green; `pnpm
+  type-check` cannot complete in this container (`tsc` over the whole repo is
+  OOM-killed) so these files were type-checked under the repo `tsconfig.json` over
+  a scoped include. **No screen was seen** — this lane has no browser and no
+  sign-in, so the marks are proven by rendering the real `CaveatMark` and the real
+  `AnalyticsTrendChart` legend in jsdom and by source-guarding the panel's call
+  sites, not by looking at the panel.
+
+- 2026-09-17 — Claude (google-native lane F-23, closing aidream B-9's cross-repo
+  half): **the client's refusal vocabulary was RED against B-9's new
+  `resource_permission_denied`, and `metadata.discovery_outage` was unread.**
+  `features/connectors/__tests__/refusal-codes-are-the-servers-codes.test.ts`
+  failed on head the moment aidream `ea0161993` landed
+  `call_health.py::RefusalCode`'s eighth code — Google's property-level
+  PERMISSION_DENIED (a GA4 property, a Search Console site, a Tag Manager
+  container never shared with this account) — because `parseGoogleCapabilityHealth`
+  drops any refusal code `isConnectorRefusalCode` does not recognise, so a
+  denial like this rendered NO refusal at all. `health.ts` now declares the
+  code with a new disposition, `share_required` — never `reconnect` (the
+  scopes are already all present; re-approving them asks Google for nothing
+  new) and never `retry` (the denial will not clear on its own) — and the
+  `refused`/"Not working" state census now names it explicitly alongside
+  `reconnect`/`ours`, so the row states the server's own sentence (which
+  already names the remedy: ask the item's owner to share it, or choose
+  another item) and offers no button. Also adopted: `capability_health.<key>
+  .last_grant` (B-9's `record_consent_grants`, verifier N12) — a consent that
+  re-grants a capability's scopes no longer writes `last_success`, so
+  `google-capability-health.ts` now folds a `lastGrantAt` per product distinct
+  from `lastSuccessAt`, and `ProductPermissionsDisclosure` says "connected, no
+  calls yet (granted …)" rather than borrowing the "last successful use" label
+  for an approval that was never a call. And `metadata.discovery_outage` (B-9's
+  `google_discovery_health`, verifier N15) — a discovery outage during consent
+  keeps the connection `connected` with no `last_error`, so `googleAccount`
+  never flagged the credential for it to begin with; the missing half was the
+  server's own outage sentence, now read by
+  `marketing/google/health.ts::googleDiscoveryOutageSentence` and shown once on
+  the account card (`ConnectedAccountHealth`) with no Reconnect nearby, because
+  each affected capability already carries its own self-healing
+  `provider_unavailable`/`call_failed` refusal through the existing per-product
+  path. Confirmed unchanged and now censused: `metadata.credential_failure.code`
+  is what `googleAccountFault` prefers over `classifyGoogleAccountFault`'s text
+  match, for every one of B-9's seven `CredentialFailureCode`s — a new
+  `credential-failure-codes-are-the-servers-codes.test.ts` reads
+  `credential_failure.py`'s `Literal` from the sibling aidream checkout and
+  fails the same way `refusal-codes-are-the-servers-codes.test.ts` and
+  `admission-codes-are-the-servers-codes.test.ts` already do when a server code
+  the client does not know appears (falsified by hand: commenting out one
+  mapping breaks it). Guards, each reproduced RED first against the pre-fix
+  files:
+  `features/connectors/__tests__/a-resource-permission-denial-is-not-a-reconnect.test.ts`,
+  `a-grant-is-not-a-successful-call.test.tsx`,
+  `a-discovery-outage-gets-no-reconnect.test.tsx`,
+  `features/marketing/google/__tests__/a-discovery-outage-is-not-a-dead-credential.test.ts`,
+  `credential-failure-codes-are-the-servers-codes.test.ts`. Verified: the whole
+  `features/connectors` + `features/marketing/google` jest suite — 48 suites /
+  347 tests passed; `pnpm check:parse` OK; `pnpm check:kind-marker-law` OK; a
+  scoped `tsc --noEmit` shows zero errors on every file this lane touched (the
+  one error inside the two directories, `connectors/attachable-resources.ts:68`,
+  is pre-existing and untouched by this change). **Not verified on a screen:**
+  this sandbox cannot sign in or reach a live server.
+
+- 2026-09-17 — Claude (google-native lane F-24, retiring the `capability_health` stand-in): **the column is generated; the stand-in that named its own end is gone.** `types/database.types.ts` now carries `capability_health: Json` on `users.integration_connections`, so `CONNECTION_PENDING_SELECT`, `CapabilityHealthPending` and `service.ts`'s `.returns<ConnectionRow[]>()` cast — whose own comment said to delete them the moment the generated row gained the column — are deleted; the query's `select()` now names `capability_health` directly in `CONNECTION_SELECT` and `ConnectionRow` is a `Pick` off the generated row. Fixtures that predated the column on `GoogleConnectionSummary` (missing `capability_health` was already a required-property gap, not something this change introduced) now carry `capability_health: null`: `google-workspace/GoogleWorkspaceOverviewBody.test.tsx`, `google-workspace/connection.test.ts`, `marketing/google/service.test.ts` (4 fixtures). `marketing/google/service.auth.test.ts`'s query mock, which F-19 had made both Thenable and `.returns()`-able to survive either shape, is simplified back to a bare awaited builder now that the cast is gone. **Left alone (pre-existing, unrelated to the missing column):** `GoogleWorkspaceOverviewBody.tsx:532,542` (`boolean | undefined` vs `string` comparison) and `connectors/attachable-resources.ts:68` (`AttachableAvailability` extends mismatch on `attachable`) — both still error under a scoped `tsc` and neither traces to `capability_health`. Verified: scoped `tsc --noEmit` over `features/marketing/google`, `features/google-workspace`, `features/connectors` shows zero errors on every file touched here; `npx jest features/marketing/google features/google-workspace --no-coverage` — 18 suites / 141 tests passed; `pnpm check:parse` OK.
+- 2026-09-17 — Claude (google-native lane F-19, closing `VERIFY-U-P2-R3` N9 in this repo's half): **`google/health.ts` classifies `last_error`; it never speaks it.** The `needs_attention` branch returned the stored column verbatim, and the connector primitive carried it onto a person's card eleven times — the vault item's name, the connection UUID and a Python `KeyError` among them, past this repo's own rule that vault reference identifiers are not client-readable. The file now carries the one account-fault vocabulary (`GOOGLE_ACCOUNT_FAULT_CODES`, `classifyGoogleAccountFault`, `googleAccountFaultLanguage`, `googleAccountRefusalSentence`): the typed code aidream stamps in `metadata.credential_failure` is preferred, the recorded text is classified when there is no code, and anything unrecognised says "something on our side needs repair" and nothing more. `googleConnectionDiagnostics` still carries the raw column — its reader is an operator on the super-admin connections workspace. Reproduced RED first in `features/connectors/__tests__/the-account-fault-is-a-sentence-not-a-stack.test.tsx` over the nine reasons `service.py::_record_credential_failure` actually writes; `google/health.test.ts` swapped its "surfaces the server-recorded reason" case for the translation rule and the typed-code preference. Also repaired while here: `google/service.auth.test.ts` failed on head ("…returns is not a function") because its query mock stopped at `abortSignal` while the read ends `.returns<ConnectionRow[]>()`, so the client-safe-projection guard was proving nothing.
+- 2026-09-17 — Claude (google-native lane F-22, closing round-3 verdict `common-docs/projects/google-native/VERIFY-U-P4-U-M1-R3.md` Unit B, items B-N1…B-N6): **there is ONE comparison judge, it judges BOTH windows, and every refusal names what it refused.** (1) **B-N1 (HIGH, live on five sites)** — the Search Console 28-day delta was implemented three times (`trendPercent` in `components/sites/SiteKpiPeeks.tsx`, read by the managed-sites table, its phone card and `SitePeekWindowImpl`; a second `trendPercent` inside `search-console/components/SearchConsolePortfolio.tsx`; and that file's own inline `site.gsc_prev_days >= 21`), and all three judged the PREVIOUS window only with `21` typed in by hand. `gsc_cur_days` was already selected from `web.v_site_kpis` in `data/service.ts` and silently dropped in `mergeSiteListRow`. Live on 2026-09-17 five managed sites sat at **8 of 28 current days against 23 of 28 previous**, so those screens printed **−54.3% … −72.6%** while two of the sites had gone UP per collected day. New `analytics/gsc-delta.ts` composes the platform's one judge, `judgeAnalyticsComparison` — both windows' coverage, the 75% share and 3-day gap tolerance derived from `COMPARISON_COVERAGE_MIN_SHARE` / `COMPARISON_COVERAGE_TOLERANCE_DAYS`, never a literal — and every surface asks `siteKpiDelta(row, metric)`. `gsc_cur_days` is typed onto `SiteListRow` and carried through the merge. A refused pair now prints "no comparison · 8 of 28 days now vs 23 of 28" with the judge's whole sentence on hover, instead of a wrong percentage OR (when the old rule did suppress) nothing at all. The two duplicate implementations are deleted, and `judgeAnalyticsComparison` itself now refuses a short CURRENT window too. (2) **B-N2** — `preferredGscProperty`'s third rank returned the only discovered candidate without asking anything, so four of six inventories handed back a pick this file's own judge refuses, under a header claiming it could not; the rank is gone (nothing to bind is the honest answer) and the header says what the code does. (3) **B-N3** — `judgeGscBindingWrite` returned `allowed: true` early for an empty `site.domain` while `preflightGscProperty`, which judges off `root_url`, answered MISMATCH on the same pair (and the backfill gate therefore said start). The judge always asks the pre-flight now; only a row with neither a domain nor a parseable address is unjudgeable, and that is refused BY NAME. (4) **B-N4** — the URL-prefix `ok` branch echoed the ref verbatim, recommending `https://user:pw@example.com/` with the password, an uppercase host, and a query string — none of which Google holds. New `gscUrlPropertyRef` is the URL half of the ONE normalizer (`gscDomainPropertyRef` is the domain half) and every URL branch, `ok` included, recommends its output with each change named out loud. (5) **B-N5** — `sc-domain:` and `sc-domain:"   "` refused with an empty hole in the sentence ("the domain property , which is a different domain"); an empty tail is now named, and `sc-domain:example.com:443` / `sc-domain:https://example.com` are told they are not domain names rather than "a different domain". (6) **B-N6** — `judgeAnalyticsComparison` accepted `previous = 31` against a 28-day window as comparable with no caveat, and described `windowDays: 0` as "28 of 0 days collected"; an impossible coverage count and a zero-length window are both refused by name. Guards, each reproduced RED on the pre-fix bytes first: `analytics/gsc-delta.test.ts` (the five live rows, the per-collected-day direction, plus a class guard that fails on any hand-typed `prevDays >= n` or any re-declared `trendPercent` anywhere under `features/marketing/` — proven falsifiable with a probe file), `components/sites/site-list-presentation.test.tsx` (+3: the table cell and the phone card print no percentage and say why), `google/gsc-property.preflight.test.ts` (+11 across B-N2…B-N5), `analytics/window.test.ts` (+5 impossible-coverage cases). **Left alone deliberately:** the live binding of site `d7c4aeb1-…` to `http://bhrcenter.com/` — the judge refuses it correctly and `lib/site-status.test.ts` proves the site's GSC health chip says "Search Console property does not match this site — …" with `bhrcenter.com` named. **Not verified on a screen:** this container cannot sign in, so the refusal chip was proven through server-rendered markup, not a person's eye.
+- 2026-09-17 — Claude (google-native lane F-15, closing round-2 verdict `common-docs/projects/google-native/VERIFY-U-P4-U-M1-R2.md` Unit B): **the property judge is symmetric, the picture obeys the number, and a caveat travels with the number wherever it goes.** (1) NEW-B1 — `bareDomain()` stripped `www.` from BOTH sides, so `sc-domain:www.example.com` compared equal to a site at `https://example.com/` and was accepted as `ok`, with the ~16-month backfill allowed to start against a property that will never hold one row for it. A domain property covers its domain and its SUBdomains, never its parent: the picked host is now compared unstripped against the site's own host, an ancestor is an advisory, a www twin is refused by its own sentence (“a domain property covers that domain and everything UNDER it, never the domain above it”) with `sc-domain:<site domain>` suggested. The third www-equating branch went with it — `gscUrlPropertyMatchesDomain` is deleted and `preferredGscProperty` now asks the pre-flight, so the auto-pick cannot choose a property the judge will refuse. (2) NEW-B2 — ONE normalizer: `gscDomainPropertyRef` runs `normalizeHost`, so `sc-domain:example.com.` binds and is recommended as `sc-domain:example.com`, with the change said out loud like the uppercase case; `isSiteDomainProperty` normalizes both sides. (3) NEW-B3 — `AnalyticsTrendChart` placed every point by its INDEX in the collected array, so with 28 current days against 6 previous the dashed line was squeezed into the first six twenty-eighths of the axis and every hover compared the wrong two days. New `analytics/chart-alignment.ts` places a day by its OFFSET from its own window's start — day N of the previous window under day N of the current one — an uncollected day is a GAP (own subpath), and when the tile refuses the comparison the chart draws no previous series at all and prints the tile's own sentence on the legend. (4) NEW-B4 — new `analytics/disclosures.ts` is the ONE disclosure list (comparison caveat first, then every GA4 caveat) feeding the tile, the chart legend, the caveat block and the Copy / Copy-for-AI payload; the payload no longer prints `Sessions 14,909 (was 4,485)` when that pair is refused — it prints the refusal, both windows' collected-day counts and the per-collected-day figures. (5) NEW-B5 — thresholding, sampling and schema restriction were read from the ONE freshest row (`readFreshest` → `limit 1`), so a 28-day total whose newest day was clean printed no caveat while an earlier day in the same total was withheld. `extras` now rides every window row, `ga4Caveats` judges every collected day of the window and each caveat names how many days carry it (“on 1 of 3 collected days” / “on all 3”); a superseded run's metadata is never read. (6) NEW-B6 — the page-level Save wrote the whole integrations blob through `updateSiteIntegrations` with no judge, gated only on the issue list the screen was SHOWING, and the OAuth-review surface filtered that list to GA4 — so a pre-existing Search Console mismatch was re-saved, unjudged, from a screen that never mentioned it. `integrationsWriteIssues` / `integrationsWriteRefusal` is the fifth write path asking the one judge, the surface filter is gone (nothing that blocks a write is hidden), and review mode carries the canonical `GscBindingRefusalLine` Fix door. (7) NEW-B7 — a `pulledAt` in the future no longer prints “pulled in 1 day” (it names the clock skew and refuses to call the row fresh or stale), a `dataThrough` past today says the stored day is wrong, both wear the warning state, and the unreadable-threshold stand-in no longer hard-codes “72 hours since 2026-09-17” — it names the knob and stamps today's date. Guards, each proven failing on the pre-fix bytes: `google/gsc-property.preflight.test.ts` (+7 cases), `analytics/window.test.ts` (caveats over the window), `analytics/disclosures.test.ts`, `analytics/components/AnalyticsTrendChart.test.tsx`, `google/freshness.test.ts`, `components/integrations/integration-issues.test.ts` (+6 cases). **Not verified on a screen:** this container cannot sign in, and the branch's own 500 (a partial merge's missing `barcode-preview.manifest`, another lane's file) is unrelated to this work and untouched by it.
+- 2026-09-17 — Claude (google-native lane F-4, reopening the zero-authorship verification `common-docs/projects/google-native/VERIFY-U-P4-U-M1.md`): **a GA4 comparison is now refused when the two windows were not collected alike, and the Search Console pre-flight finally runs at the moment that binds.** (1) `analytics/window.ts` gained accuracy RULE 3 (`judgeAnalyticsComparison`, `perCollectedDay`, `previousDaysWithData`): the panel compared a fully collected 28-day window against a previous window with 6 of 28 days collected and printed about **+232%** on live site `d0aff5b6-…` (All Green Recycling, org `5dc930e9-…`) where per collected day traffic had **fallen ~29%** — the coverage disclosure measured only the CURRENT window, so it never fired. The percentage is now withheld ("No comparison — the previous 28 days have only 6 of 28 days collected") with the per-collected-day figures printed ON the number; the champion is **Databox**, which withholds current-vs-prior change for an incomplete period and names the period it left out, against **Looker Studio**, which compares the raw totals and prints exactly the number we were printing. Tolerance: both windows ≥75% collected and within 3 days of each other, matching the Search Console rule already in `SiteKpiPeeks.trendPercent`. Proven in `analytics/window.test.ts` with hand-written rows carrying the verifier's live totals (14,909 vs 4,485 over 28 and 6 days). (2) Every Search Console property guard used to be gated on the binding already being `enabled`, so nothing judged the FIRST Enable — the one moment PLAN §4.8 exists for — and `persistBuiltInProvider` saved the mismatch and fired `kickGscFirstImport`, a ~16-month backfill against the wrong property (live proof: site `d7c4aeb1-…`, `ga4-oauth-qa-00fb6a62a3.invalid`, bound to `http://bhrcenter.com/`). One judge now answers every write path — `judgeGscBindingWrite` / `shouldStartGscFirstImport` in `google/gsc-property.ts`, composed by `components/integrations/integration-issues.ts` — judging the DRAFT whether or not the switch is on; the persist choke point refuses by name, the backfill never starts on a refused binding, and the auto-bind that follows a Google connection no longer saves an unmatched property. (3) The per-provider Save/Connect button is disabled while its own issue stands, with the issue printed beside it (it used to stay enabled while the handler returned early — an enabled click that did nothing). (4) The refusal shows outside the editor (PLAN §5.3): the GSC chip in `lib/site-status.ts` says "Search Console property does not match this site — …" instead of "Connected", and the new `components/shared/GscBindingRefusalLine.tsx` prints it with a **Fix** door on the site list card and the Search Console portfolio card, beside the freshness line. (5) `preflightGscProperty` no longer accepts a port (`https://example.com:8443/`), a trailing-dot host, or an uppercase `SC-DOMAIN:` ref whose uppercase form Google rejects — the first two are refused by name, the third is normalized and the normalization is said out loud. **Correction:** the knob `google.marketing.freshness_warning_hours` IS live (72, `platform.feature_knob`, since 2026-09-17 06:37:24Z), so the earlier "not yet applied · cannot warn yet" caveat here, in `search-console/FEATURE.md` and in `google/freshness.ts` was stale; the stand-in sentence now means the knob READ failed, not that the row is missing.
+- 2026-09-17 — Claude (Cursor Bugbot on `0061daaa`, finding 4): **a disconnected site keeps the Analytics it already has.** `BrandAnalyticsWorkspace`'s per-site headline read was `enabled: binding.enabled`, so a site whose GA4 binding had been turned off skipped the window read entirely and printed "No Google Analytics property is bound to this site yet" — even with months of `seo.web_analytics_daily` rows behind it. The binding says whether the numbers can REFRESH, never whether they exist (google-native PLAN §4.9 + §5.6: last-synced data stays visible with an honest health line). The read now runs for every site; a disconnected site with history shows its totals, the ONE freshness line, and a warning line saying the numbers cannot refresh and how far they run, with a "Reconnect to refresh" door to the site's integrations settings. No disconnect DATE is printed because none is stored — inventing one would be the freshness line lying. The "nothing bound yet" copy now fires only when there is also no history. Guard: `features/marketing/analytics/components/BrandAnalyticsWorkspace.test.tsx` (both cases).
+- 2026-09-17 — Claude (google-native PLAN §4.8/§4.9/§5.3): **The site Analytics panel is real, and every Google number states its freshness.** `/marketing/[brandId]/analytics` no longer renders `<MarketingComingSoon>`: it lists the client's websites with their 28-day GA4 headline numbers and opens the ONE canonical panel — `features/marketing/analytics/components/SiteAnalyticsPanel.tsx`, mounted by that route, by the site's Google Analytics settings section (`SiteAnalyticsCard` is now a one-line door to it) and by the new `siteAnalyticsWindow` window panel. Reads stay browser → Supabase over `seo.web_analytics_daily`; the only compute call is still the sync trigger. **Two accuracy rules are now enforced in `analytics/window.ts` and were both live defects before it:** (1) WINNING-RUN DEDUP — `dedup_key` is scoped to the collection RUN, so every re-sync writes a second full set of rows for the same days, and live site `d0aff5b6-…` carries up to FIVE runs on 31 of its 34 days; the old `SiteAnalyticsCard` summed them all and could report 5× the real traffic (it also read only the 30 newest ROWS, which for that site is under one day); (2) USERS DO NOT ADD — the row grain is date × landing page × source × medium × campaign × device, so a summed `users` figure double-counts a returning visitor, and the panel prints that caveat on the number. Honesty caveats come ONLY from what the server persisted at `extras.ga4_collection_metadata` (`analytics/caveats.ts` reads `subjectToThresholding`, `dataLossFromOtherRow`, `samplingMetadatas`, `schemaRestrictionResponse`); measured 2026-09-17, live rows carry only `timeZone`/`currencyCode`/empty `schemaRestrictionResponse`, so today the `(other)` caveat fires from an actual `(other)` landing-page row and the rest stay silent rather than invented. Quota exhaustion and a refused grant are named states with the site's one Reconnect door (`analytics/failures.ts` reuses `classifyGscAccessFailure`; quota says plainly that waiting fixes it), and an empty property names the Analytics Data API being switched off with the door to enable it. The trend is hand-drawn SVG, not recharts — the panel mounts inside statically imported chrome, and a `next/dynamic` edge per host would be the Fragmentation Law; palette `#3b82f6 / #0d9488 / #ea580c` passes `dataviz`'s validator in light AND dark. **Freshness is ONE primitive** (`features/marketing/google/freshness.ts` + `components/shared/DataFreshnessLine.tsx`): "data through Sep 14 · pulled 40 minutes ago · Google runs about three days behind", now on the Search Console dashboard header, every Search Console portfolio site card, and the GA4 panel. Its stale threshold is the knob `google.marketing.freshness_warning_hours` (default 72 — GSC lag is 2–3 days and our sweep is nightly, so anything under that would badge healthy sites), seeded in `migrations/google_marketing_knobs.sql` and **applied 2026-09-17 06:37:24Z** (value 72, read back from `platform.feature_knob` the same day — this entry's original "not yet applied · cannot warn yet" wording was corrected on 2026-09-17); a knob has no code fallback by design, so an unreadable knob still prints its own named stand-in. **Gap, recorded not hidden:** there is no server-side GA4 summary RPC, so the panel pages the raw grain through `readAllRows` (~60k rows for the busiest live site over 56 days, complete-or-throw). The follow-up is a `seo.web_analytics_summary` DEFINER RPC beside the four `seo.gsc_perf_*` ones, with the same winning-run and accuracy contract.
+
+- 2026-09-17 — Claude (google-native PLAN §4.8): **Search Console connect has a property-type pre-flight.** `google/gsc-property.ts` gained `preflightGscProperty` (+ `siteCanonicalUrl`), extending the file that already owns THE DOMAIN-PROPERTY RULE rather than forking a second judge. Search Console treats `https://example.com/`, `https://www.example.com/`, `http://example.com/` and `sc-domain:example.com` as four different properties, and binding the wrong one is silent — 200 with zero rows forever, while every screen reports a healthy connection. The pre-flight names the site AND the property picked and gives the property to pick instead, for a www/non-www swap, a scheme swap, a URL prefix whose path excludes the site, and an unrelated host; a domain property that covers the site is `ok` and is never nudged toward a URL version (that would break Arman's 2026-08-29 ruling); a parent-domain property bound to one subdomain is an advisory, not a refusal. Enforced in two places: the site Integrations workspace turns a mismatch into a configuration issue, so Save is refused until it is resolved, and prints it under the picker with a one-click "Use sc-domain:…"; the site setup checklist (the intake wizard's first screen) fails its `search_console` step with the same sentence and a door, because a wrong-type binding used to pass that step and leave every step below it reading "no data yet" forever. Guard: `features/marketing/google/gsc-property.preflight.test.ts` (10 cases, proven failing-then-passing by removing the www check).
+- 2026-09-17 — **A site-tier SEO schedule is never filed under the system organization.** `ScheduleCascadePanel`'s save fell back to `SYSTEM_ORGANIZATION_ID` when the site was missing from the loaded list, so a row that spends money on its own cadence could land in the system org with nothing on screen saying so. It now refuses, naming the site, and writes nothing. `ContentPlanHeader` also reads the explicit active org (`selectOrganizationId`) for picker ordering only — with none selected every administrable site still lists, unsorted.
+
+- 2026-09-17 — Codex: **Brand media byte ingestion is bound to the brand's organization, never the shell's ambient organization.** `UploadOpts.organizationId` is now the explicit ownership input for file creation while existing scope metadata remains intact. Brand Library uploads, Brand Asset Editor replacements, Stock Sources imports, and Marketing Media imports all pass the target brand organization, preventing cross-organization `brand_asset_file_org_fkey` failures when an admin opens a brand outside the active workspace.
+
+- 2026-09-15 — Codex: the agency-plane Marketing sidebar now resolves one most-specific route owner before applying the shared blue selected treatment, so `/marketing/reports/ranks` selects Rank Roll-up without also faking Reports as active.
+
+- 2026-09-14 — Claude (brand-offerings cutover, step 6): **The Offerings screen runs on the canonical model.** `OfferingsWorkbench` replaced `TopicTreeWorkbench` and its legacy tree, dialogs and data (deleted: `OfferingTreeTable`, `OfferingSplitHeadline`, `TopicEditDialog`, `TopicWorthDialog`, `TopicPickerDialog`, `TopicDeleteDialog`, `topics/lib.ts`, and every `seo.topic` / `seo.site_topic_value` read and write in `topics/data.ts`). The brand owns the catalog; the site chooses what it offers, one at a time or in bulk, with the consequence previewed and the reason kept; suggestions appear only inside Add offering and are copied on adopt; worth is points. New doors in the contract above (migrations `brand_offerings_step6h`, `6h1`, `6h2`, `6h3`). Verified on the local dev server as admin@admin.com for Data Destruction: 43 of 43 offerings, 8 with worth here, 2,373 keywords placed; Consumer Electronics Recycling shows "+5 · Set here · Negative" and its children "+5 · From Consumer Electronics Recycling · Negative". Legacy offering census 128 references / 38 files → 100 / 37.
+
+- 2026-09-14 — Claude (brand-offerings cutover, step 6): **The canonical offering writers are live; their contract is published above** ("Canonical offering writers — THE CONTRACT"). The value resolver reads `seo.site_keyword_offering` / `web.brand_offering` / `seo.site_offering_value` (lossless: 40,574 keywords, 0 unexplained); offering worth is points (D9); a brand sets a placement once natively, never through `seo.keyword_topic` rungs (D10); the placement and worth writers refuse unavailable offerings and foreign organizations; the legacy topic RPCs still used by the screens also write the canonical rows until the screens move. Migrations `brand_offerings_step6a`…`6e`; guards `check:offering-resolver-equivalence`, `check:offering-tenancy`, `check:offering-topic-refs`.
+
+- 2026-09-14 — Claude (KI-040): **Business discovery step 6 proposes every Offering, and discovery opens beside any value screen.** Step 6 (`proposed_setup`, aidream `services/seo/business_discovery.py`) calls no agent: it turns the latest step-4 Offerings and step-5 points into one `keyword_meaning:offering` proposal each through `seo.keyword_meaning_suggest` (new `offering` kind, `migrations/seo_suggest_offering_proposal_ki040.sql`), inventing nothing — an unvalued Offering says "not valued", a kind outside product/service is skipped with its reason. Proposals land in the one approval queue (`seo/value-system/approvals/`); Approve replays the canonical offering writers above (`web.save_site_offering`, reusing an offering the site already offers by name, then `seo.set_site_offering_value` with points), Reject keeps its reason and is never re-proposed. `DiscoveryLadder` shows what step 6 proposed and what it could not, plus doors for what only this customer decides — service areas, combination rules, the blind check. `DiscoveryWorkspace` is the one discovery surface: mounted by the brand Knowledge route and by the new `siteDiscoveryWindow` (opened from the `ValueDoors` row on the site's keyword Start here screen), and it rules discovery's own proposals in place through `ApprovalQueue` narrowed to `keyword_meaning:offering` + `keyword_meaning:guideline_edit`. **Walked live** on a disposable admin-org site (mrrooter.com): steps 1–6 in the UI produced 6 proposals and 1 honest skip; 3 approved as a batch with a reason wrote exactly 3 brand offerings, 3 active site rows and 3 worth rows (220/200/250 points) under the site's organization, created by the approver; 3 rejected with a reason wrote nothing.
+
+- 2026-09-13 — Codex: **Google same-tab OAuth requires server-verified identity before consent and exchange.** The start route mints no state or redirect when browser and server principals disagree or server Auth is unavailable. On callback, the continuation remains available across retryable Auth outages and confirmed signed-out responses; the server consumes it only after an authenticated same-user success or confirmed user mismatch, and the browser no longer performs a second transient `getUser` check before the canonical exchange.
 
 - **2026-09-12 — Organization Keyword Value routes resolve addresses before
   data access.** `/organizations/[orgId]/settings/keyword-value` accepts the
@@ -1558,8 +1910,11 @@ placement` / `User-posted`), and `r412` renders as `Authority 412`. The
 - 2026-08-16 — Claude: **SERP prospecting — the SECOND method on the ONE Prospects triage surface, never a ninth sub-view.** The Prospects tab (`?view=prospects`) gained a compact method switcher (`?method=`): "Competitor links" (the existing link-gap UI, unchanged) and "Search results" — who already ranks for the searches the user's topics live in. New: `data/serp-prospects.ts` (direct Supabase reads/writes of `seo.serp_opportunity` + `seo.serp_mention`, mirroring the link-gap readers one-for-one incl. THE UNMEASURED RULE and unfiltered statusCounts), `useSerpProspects` (keywords + variants + the no-spend `/serp-prospecting/preview` — every expanded query grouped by variant with the estimated cost BEFORE any spend, editing voids the preview — the streamed paid run with stage labels in `lib/serp-prospecting.ts`, review, CRM fold via `/crm/serp-prospects`, and an optional search-volume check that reuses the canonical `useKeywordVolumeRefresh` (now batch-capable) + `listKeywordsWithMarketByPhrases`), and `SerpProspectsTab` (plain-language variant checkboxes — guest-post footprints, resource pages, best-of lists, fresh coverage; HTTP 400 renders INLINE at the form, never toast-only). The Matrx Authority cell + breakdown were extracted to `MatrxAuthorityScore.tsx` — ONE renderer for both methods; `BacklinkProspectsTab` consumes it. New surface values `serp_prospecting_preview` / `serp_prospecting_prospects` / `serp_prospecting_review_backlog` and the IC-7 agent-role seam `keyword_expander` (defaultAgentId null — the "Expand with AI" affordance renders disabled with a plain-language tooltip until WP5 binds an agent; manual entry always works).
 - 2026-08-16 — Claude: **Promoters ("they linked to us before") on the Prospects triage surface, and a per-page broken-link check.** New `data/promoter-signal.ts` — READ-ONLY over `platform.outcome_event` (`status='confirmed'` ONLY; a `proposed` row is the machine's guess and must never render as a win), joined on `crm.party.primary_domain`, the party resolver's own key. **There is no promoter table, column, or cached score** — the signal is the join, computed at read time, so it is current the moment a human confirms the next win. Two surfaces on `SerpProspectsTab`: a chip beside the domain (a DOOR — the Outcomes view on the campaign that earned it, or the party when the win had no campaign) and a **priority band drawn from the WINS**, not from the rendered page: `listPromoterProspects(siteId)` starts from the confirmed outcomes (few, human-confirmed) and intersects them with the site's PENDING prospects, so a promoter on page four of an authority-sorted table still surfaces. A domain with no win is ABSENT from the map, never `win_count: 0` — an explicit zero reads as a measured absence. Also: `checkOnePage(url)` on `useSerpProspects` and a "Check this page / Re-check this page" button on each piece of evidence — a named page bypasses the frontier rules (which choose what to do NEXT) and is always re-checked; a URL that is not a candidate page comes back in `not_a_candidate` and is reported, never silently dropped.
 - 2026-08-17 — Claude: **Four SEO runs stopped dying on refresh — and no new durability was invented.** The Page Analyzer and the three anonymous public tools (`/seo/page-audit`, `/seo/robots-tester`, `/seo/structured-data`) narrated real stages but held the run in an in-tab `await`. The durable half already existed SERVER-side and was simply never consumed: every SEO command claims a `seo.collection_run` row BEFORE its first paid/AI call, announces the id as `seo.command_run`, and runs under `detach_on_disconnect=True`, so the work never stopped — only delivery did. New `seo/durable-run/useSeoCommandRun.ts` is the missing client half: it remembers the run id, rejoins on load, and settles from server truth; it also KEEPS a finished run's receipt, because losing the answer to a refresh is the same defect as losing the run. 🚨 The anonymous half needed an aidream route: measured against production, a guest can CREATE a run (guests are ordinary fingerprint-minted `auth.users` rows) but `POST /seo/collections/{run_id}/rejoin` answered 401 `token_required` — its router sits behind `require_authenticated`. aidream gained `POST /seo/public/runs/{run_id}/rejoin` (same `rejoin_stream`, same `collection_run_readable` ownership check, guest-or-above gate), and every consumer uses that one path signed in or not — ownership, not the gate, keeps a run private. Live-verified on `/seo/page-audit`: run, reload, the finished score came back from the durable row. The Page Analyzer consumes the identical primitive but was not exercised with a live run (its card needs a page with an accepted snapshot).
+- 2026-09-14 — **Google reconnect is an explicit, cumulative row action.** Every connection row exposes Reconnect, preserves its own scopes, owner, organization and Google account hint, forces consent, and targets that exact row. It does not broaden a healthy connection with Search Console or any other deferred capability.
 - 2026-08-29 — Codex: **A YouTube channel invalidated after inventory load recovers locally.** The Google connections page clears the stale channel, refreshes its RLS-scoped connection inventory, and explains how to reconnect on exact HTTP 403/404 outcomes; provider, transport, and server failures remain captured errors.
 - 2026-08-26 — Codex: **Governed website-delete refusals stay local.** The database deliberately reserves `web.site` soft-delete for full access/the creator, and all three delete surfaces already turn its exact `42501` contract into `GovernedActionDialog`; diagnostics now downgrades only that exact `web.site` update refusal to yellow, while unrelated permission failures remain red.
+- 2026-09-17 — Claude: **Analytics stopped rendering under the shell header glass.** `[brandId]/analytics/page.tsx` wrapped `BrandAnalyticsWorkspace` in a bare `p-3` scroller with no `--shell-header-h` offset — the first site cards and the "Open Analytics" button sat in the header band, where clicks are swallowed (Bugbot round 12, PR 228). Fixed to the same offset every non-`<PageHeader>` sibling under `[brandId]/*` already carries. New census `features/marketing/lib/brand-page-header-offset.test.ts` fails any `[brandId]` page that skips both `<PageHeader>` and the offset (one import level deep, so pages that carry it in their workspace component still pass).
+- 2026-09-14 — Claude: **Pages → "Analyze all pages" (the half-price Batch lane finally has a caller).** aidream built `POST /seo/pages/analyze-batch` + the `seo.page_analysis` batch handler on 2026-08-10 and nothing ever called it (census: aidream `docs/handoffs/batch-candidates-census-2026-09-14.md` Leg 3; aidream's `check_unwired.py --only batch-untriggered` now fails when a batch route has no client caller). `components/pages/AnalyzeAllPagesControl.tsx` in the Pages toolbar: confirm dialog states exactly what happens (up to 200 crawled pages still needing analysis, unchanged pages skipped for free, ~half price, results usually within the hour, at most ~10 hours); the toast reports queued / skipped and whether more pages wait (the server picks the NEXT pages each press). State is never a spinner: `data/page-analysis-batch.ts` counts `batch.work_item` rows for the site (waiting · arriving · analyzed · failed) direct from Supabase under RLS, refreshing every minute while work moves. 402 = the org's daily background budget denied it, shown as the error. `more_pages_waiting` is read through one runtime check until `pnpm sync-types` can run again (it stops at the entity-token vocabulary step — `@ai-matrx/associations` lags `platform.entity_types` by two tokens).
 
 ## Realtime
 
@@ -1570,3 +1925,4 @@ placement` / `User-posted`), and `r412` renders as `Authority 412`. The
 ### 2026-09-11 — Compact workspace chrome
 
 Removed page introduction copy and redundant body titles. Workspace identity belongs in the shell header; Marketing view and create actions share the query toolbar. Brand descriptions remain editable record data but are not repeated as card/table subtitles.
+in editable record data but are not repeated as card/table subtitles.

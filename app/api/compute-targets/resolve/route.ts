@@ -17,6 +17,10 @@
 import { NextResponse } from "next/server";
 
 import { createClient } from "@/utils/supabase/server";
+import {
+  documentRequestRefusal,
+  isDocumentRequest,
+} from "@/lib/api/credential-door";
 import { resolveOrchestratorByTier } from "@/lib/sandbox/orchestrator-routing";
 import type { components } from "@/types/python-generated/api-types";
 import { isJsonObject } from "@/types/json";
@@ -24,6 +28,20 @@ import { isJsonObject } from "@/types/json";
 export type SandboxBindingPayload = Required<components["schemas"]["SandboxBindingRequest"]>;
 
 export async function POST(request: Request) {
+  // 🚨 THE SECOND DOOR OF THE 2026-09-17 CLASS. This route's local-pc branch
+  // returns the user's live Supabase JWT as `access_token`, and its ec2/hosted
+  // branch a fresh sandbox HMAC token. Being POST-only makes it far harder to
+  // reach by navigation than `/api/session-token` was — but "harder" is not the
+  // standard: a cross-site <form method=POST> IS a top-level navigation, and
+  // its answer renders as page text just the same. Same guard, same reason;
+  // see `lib/api/credential-door.ts`.
+  if (isDocumentRequest(request.headers)) {
+    return NextResponse.json(
+      documentRequestRefusal("/api/compute-targets/resolve"),
+      { status: 400, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   const supabase = await createClient();
   const {
     data: { user },

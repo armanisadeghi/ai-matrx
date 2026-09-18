@@ -1,4 +1,6 @@
 /**
+ * 2026-09-13 Codex Alchemy: the dedicated /alchemy demo also emits declared
+ * context with its current editable samples and filtered/selected sample rows.
  * Surface manifest — Official Components (`matrx-admin/official-components`).
  *
  * ADMIN SURFACE. Adopts an EXISTING `ui_surface` row name — this manifest

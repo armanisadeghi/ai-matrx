@@ -29,6 +29,7 @@ import {
   selectRunStatus,
   selectRunStatusTs,
   selectRunReadFailure,
+  selectRunStatusKnown,
 } from "../../redux/workflow-runs.selectors";
 import { runIsOver } from "../../types";
 import {
@@ -43,6 +44,26 @@ const STATUS_COPY: Record<
   string,
   { label: string; tone: "idle" | "live" | "good" | "bad" | "hold" }
 > = {
+  /**
+   * 🚨 "UNREAD" IS NOT "PENDING" (cold walk 7, finding 5, 2026-09-17).
+   *
+   * `null` here means THIS PAGE has not read the run yet — a fact about the
+   * page. `pending` means THE RUN has not started yet — a fact about the run.
+   * They were the same default, so every permalink opened by saying
+   * "GETTING READY · 0 of 13 steps" about whatever it was pointed at,
+   * including a run that finished half an hour ago.
+   *
+   * Measured live on a warm dev server: 1.2s of "GETTING READY · 0 of 13
+   * steps" on `workflow.run` 09a644d4 (completed, 13/13, $0.31, 22 minutes
+   * old) before the row landed at 1.8s. On a cold server, or across the
+   * preview restart that happened mid-walk, that window is seconds to tens of
+   * seconds — and cold walk 7 read it as a second paid run starting under a
+   * click meant to READ the first one, and pressed "Cancel now" on it.
+   *
+   * W39 (2026-09-12) closed the half where the attach read FAILED. This is the
+   * half where it simply has not answered yet, which is every load.
+   */
+  unread: { label: "Opening this run", tone: "idle" },
   pending: { label: "Getting ready", tone: "idle" },
   running: { label: "Working on it", tone: "live" },
   pausing: { label: "Pausing", tone: "hold" },
@@ -129,11 +150,18 @@ export function RunHero({
   // over work that had finished hours earlier. A refused read is not progress,
   // and the reader is told which it is.
   const readFailure = useAppSelector(selectRunReadFailure(runId));
+  const statusKnown = useAppSelector(selectRunStatusKnown(runId));
+  /** Nothing read yet — the page knows nothing about this run, and says so. */
+  const unread = !readFailure && !statusKnown;
   const copy = readFailure
     ? ({ label: "Could not read this run", tone: "bad" } as const)
-    : (STATUS_COPY[status ?? "pending"] ?? STATUS_COPY.pending);
-  const terminal = runIsOver(status);
-  const live = !terminal;
+    : unread
+      ? // NOT `STATUS_COPY[status]`: `status` is a non-nullable field that is
+        // born "pending", so reading it here is exactly how the lie got out.
+        STATUS_COPY.unread
+      : (STATUS_COPY[status ?? "unread"] ?? STATUS_COPY.unread);
+  const terminal = !unread && runIsOver(status);
+  const live = !terminal && !unread;
 
   const done = steps.filter((step) => {
     const phase = phases[step.nodeId];
@@ -153,7 +181,11 @@ export function RunHero({
   });
   const headline = current
     ? current.label
-    : terminal
+    : // While nothing has been read, the first step's name is not what is
+      // happening — it is the first name in a list. Printing it under
+      // "GETTING READY" is how a finished run's permalink read as a run that
+      // had just been started (cold walk 7, finding 5).
+      terminal || unread
       ? copy.label
       : (steps.find((step) => phases[step.nodeId] === undefined)?.label ??
         copy.label);
@@ -182,8 +214,11 @@ export function RunHero({
         </span>
         <div className="ml-auto flex items-center gap-3 text-xs tabular-nums text-muted-foreground">
           {cost ? <span title="AI cost so far">{cost}</span> : null}
+          {/* "0 of 13 steps" about a run nobody has read yet is a measurement
+              of nothing, and it reads as a run that just started. Until the
+              row lands, the denominator is all we honestly have. */}
           <span>
-            {done} of {denominator} steps
+            {unread ? `${denominator} steps` : `${done} of ${denominator} steps`}
           </span>
           <ElapsedTime
             startedAt={startedAt}
@@ -209,9 +244,11 @@ export function RunHero({
       >
         {readFailure
           ? readFailure
-          : live && current
-            ? headline
-            : (workflowDescription ?? (terminal ? "" : headline))}
+          : unread
+            ? (workflowDescription ?? "")
+            : live && current
+              ? headline
+              : (workflowDescription ?? (terminal ? "" : headline))}
       </p>
 
       <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
@@ -224,7 +261,13 @@ export function RunHero({
                 ? "bg-emerald-500"
                 : "bg-gradient-to-r from-primary to-primary/60",
           )}
-          style={{ width: readFailure ? "100%" : `${Math.max(2, pct)}%` }}
+          style={{
+            width: readFailure
+              ? "100%"
+              : unread
+                ? "0%"
+                : `${Math.max(2, pct)}%`,
+          }}
         />
       </div>
 

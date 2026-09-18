@@ -130,11 +130,12 @@ export function MadeFromSource({
             <Link
               key={s.edgeId}
               href={s.href}
-              className="inline-flex max-w-[16rem] items-center gap-1 rounded-full border border-border bg-card px-2 py-0.5 text-[11px] text-foreground transition-colors hover:bg-muted"
+              title={s.detail ? `${s.title} · ${s.detail}` : s.title}
+              className="inline-flex min-w-0 max-w-full items-center gap-1 overflow-hidden rounded-full border border-border bg-card px-2 py-0.5 text-[11px] text-foreground transition-colors hover:bg-muted sm:max-w-[24rem]"
             >
-              <span className="truncate">{s.title}</span>
+              <span className="min-w-0 truncate">{s.title}</span>
               {s.detail && (
-                <span className="shrink-0 text-muted-foreground">
+                <span className="max-w-[12rem] shrink truncate text-muted-foreground">
                   · {s.detail}
                 </span>
               )}

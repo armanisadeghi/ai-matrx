@@ -169,10 +169,36 @@ export interface CommerceIntakeBenchGradingOffer {
 /** Offered shape of provision `commerce_intake.disposal_challenge` (kind `commerce_intake.disposal_challenge.offer`). */
 export interface CommerceIntakeDisposalChallengeOffer {
   __kind?: "commerce_intake.disposal_challenge.offer";
-  original_valuation: unknown;
+  original_valuation: {
+  __kind?: "value_assessment";
+  bucket: string;
+  unknowns?: unknown[];
+  reasoning?: string | null;
+  confidence: number;
+  gem_reasoning?: string | null;
+  estimated_value?: unknown | null;
+  bucket_reasoning: string;
+  is_gem_candidate?: boolean;
+};
   original_confidence?: number;
-  extraction: unknown;
-  research: unknown;
+  extraction: {
+  __kind?: "item_vision_extraction";
+  status: string;
+  products?: unknown[];
+  status_notes?: string | null;
+  image_count_received: number;
+};
+  research: {
+  specs?: unknown[];
+  __kind?: "product_research";
+  sources?: string[];
+  identity?: unknown | null;
+  reasoning?: string | null;
+  confidence?: number | null;
+  channel_refs?: unknown[];
+  identity_unresolved?: unknown | null;
+  undetermined_by_part_number?: string[];
+};
   quantity: number;
   grading_standard: string;
   burden: string;
@@ -181,19 +207,65 @@ export interface CommerceIntakeDisposalChallengeOffer {
 /** Offered shape of provision `commerce_intake.enrichment_bundle` (kind `commerce_intake.enrichment_bundle.offer`). */
 export interface CommerceIntakeEnrichmentBundleOffer {
   __kind?: "commerce_intake.enrichment_bundle.offer";
-  valuation: unknown;
+  valuation: {
+  __kind?: "value_assessment";
+  bucket: string;
+  unknowns?: unknown[];
+  reasoning?: string | null;
+  confidence: number;
+  gem_reasoning?: string | null;
+  estimated_value?: unknown | null;
+  bucket_reasoning: string;
+  is_gem_candidate?: boolean;
+};
   answered_unknowns: unknown;
-  extraction?: unknown;
-  research?: unknown;
-  lot_context?: unknown;
+  extraction?: {
+  __kind?: "item_vision_extraction";
+  status: string;
+  products?: unknown[];
+  status_notes?: string | null;
+  image_count_received: number;
+};
+  research?: {
+  specs?: unknown[];
+  __kind?: "product_research";
+  sources?: string[];
+  identity?: unknown | null;
+  reasoning?: string | null;
+  confidence?: number | null;
+  channel_refs?: unknown[];
+  identity_unresolved?: unknown | null;
+  undetermined_by_part_number?: string[];
+};
+  lot_context?: {
+  notes?: string | null;
+  __kind?: "lot_detection";
+  is_lot: boolean;
+  unit_type?: string;
+  folded_from?: string | null;
+  quantity_estimate?: unknown | null;
+};
   client_notes?: string;
 }
 
 /** Offered shape of provision `commerce_intake.extraction_dossier` (kind `commerce_intake.extraction_dossier.offer`). */
 export interface CommerceIntakeExtractionDossierOffer {
   __kind?: "commerce_intake.extraction_dossier.offer";
-  extraction: unknown;
-  lot_context: unknown;
+  extraction: {
+  __kind?: "item_vision_extraction";
+  status: string;
+  products?: unknown[];
+  status_notes?: string | null;
+  image_count_received: number;
+};
+  lot_context: {
+  notes?: string | null;
+  __kind?: "lot_detection";
+  is_lot: boolean;
+  unit_type?: string;
+  folded_from?: string | null;
+  quantity_estimate?: unknown | null;
+};
 }
 
 /** Offered shape of provision `commerce_intake.instant_capture` (kind `commerce_intake.instant_capture.offer`). */
@@ -214,9 +286,32 @@ export interface CommerceIntakeInstantCaptureOffer {
 /** Offered shape of provision `commerce_intake.valuation_dossier` (kind `commerce_intake.valuation_dossier.offer`). */
 export interface CommerceIntakeValuationDossierOffer {
   __kind?: "commerce_intake.valuation_dossier.offer";
-  research: unknown;
-  extraction: unknown;
-  lot_context: unknown;
+  research: {
+  specs?: unknown[];
+  __kind?: "product_research";
+  sources?: string[];
+  identity?: unknown | null;
+  reasoning?: string | null;
+  confidence?: number | null;
+  channel_refs?: unknown[];
+  identity_unresolved?: unknown | null;
+  undetermined_by_part_number?: string[];
+};
+  extraction: {
+  __kind?: "item_vision_extraction";
+  status: string;
+  products?: unknown[];
+  status_notes?: string | null;
+  image_count_received: number;
+};
+  lot_context: {
+  notes?: string | null;
+  __kind?: "lot_detection";
+  is_lot: boolean;
+  unit_type?: string;
+  folded_from?: string | null;
+  quantity_estimate?: unknown | null;
+};
   quantity: number;
   grading_standard: string;
 }
@@ -315,6 +410,7 @@ export interface ContentPlanPageBriefOffer {
   page: string;
   keyword_assignment: string;
   neighbours: string;
+  strategy_guidance: string;
 }
 
 /** Offered shape of provision `content_plan.page_build` (kind `content_plan.page_build.offer`). */
@@ -331,6 +427,7 @@ export interface ContentPlanPageBuildOffer {
   plan_node: unknown;
   primary_keyword?: unknown;
   keyword_directive: string;
+  strategy_guidance: string;
   approved_content?: unknown;
   family_links?: unknown;
   page_scaffold?: string;
@@ -416,6 +513,7 @@ export interface ContentPlanPlanReviewOffer {
   site_domain?: string;
   guidance?: string;
   current_plan: string;
+  strategy_guidance: string;
 }
 
 /** Offered shape of provision `content_plan.plan_shape` (kind `content_plan.plan_shape.offer`). */
@@ -522,6 +620,23 @@ export interface CrmSaveContactSelectionOffer {
 export interface DictionaryWorkspaceOffer {
   __kind?: "dictionary.workspace.offer";
   dictionary_workspace: string;
+}
+
+/** Offered shape of provision `distillation.case_narrative` (kind `distillation.case_narrative.offer`). */
+export interface DistillationCaseNarrativeOffer {
+  __kind?: "distillation.case_narrative.offer";
+  narrative: string;
+  title?: string;
+  domain?: string;
+}
+
+/** Offered shape of provision `distillation.timeline_window` (kind `distillation.timeline_window.offer`). */
+export interface DistillationTimelineWindowOffer {
+  __kind?: "distillation.timeline_window.offer";
+  known_before: string[];
+  steps: unknown;
+  start_step: number;
+  end_step: number;
 }
 
 /** Offered shape of provision `education.analytics_narrate` (kind `education.analytics_narrate.offer`). */
@@ -955,6 +1070,38 @@ export interface FoundryAgentPlanningOffer {
   anything_else?: string;
 }
 
+/** Offered shape of provision `google.channel_plan_context` (kind `google.channel_plan_context.offer`). */
+export interface GoogleChannelPlanContextOffer {
+  __kind?: "google.channel_plan_context.offer";
+  channel_id: string;
+  channel_title: string;
+  brand_name: string;
+  window_days: string;
+  topical_map?: string;
+}
+
+/** Offered shape of provision `google.desk_context` (kind `google.desk_context.offer`). */
+export interface GoogleDeskContextOffer {
+  __kind?: "google.desk_context.offer";
+  today: string;
+  organization_name: string;
+  google_account: string;
+  agenda_days: string;
+  picked_documents?: string;
+}
+
+/** Offered shape of provision `google.site_performance_context` (kind `google.site_performance_context.offer`). */
+export interface GoogleSitePerformanceContextOffer {
+  __kind?: "google.site_performance_context.offer";
+  site_id: string;
+  site_name: string;
+  site_url: string;
+  comparison_window: string;
+  evidence_freshness: string;
+  analytics_property?: string;
+  search_console_property?: string;
+}
+
 /** Offered shape of provision `growth_loop.stage_dispatch` (kind `growth_loop.stage_dispatch.offer`). */
 export interface GrowthLoopStageDispatchOffer {
   __kind?: "growth_loop.stage_dispatch.offer";
@@ -1166,6 +1313,36 @@ export interface MasterworkBadDraftWriteOffer {
   approved_rules: unknown;
 }
 
+/** Offered shape of provision `masterwork.bad_example_generation` (kind `masterwork.bad_example_generation.offer`). */
+export interface MasterworkBadExampleGenerationOffer {
+  __kind?: "masterwork.bad_example_generation.offer";
+  case_brief: string;
+  rulebook_id?: string;
+  rulebook_name?: string;
+  rulebook_description?: string;
+  intake_goal?: string;
+  history?: string;
+  round_index: number;
+  round_count: number;
+}
+
+/** Offered shape of provision `masterwork.case_disclosure` (kind `masterwork.case_disclosure.offer`). */
+export interface MasterworkCaseDisclosureOffer {
+  __kind?: "masterwork.case_disclosure.offer";
+  timeline: {
+  steps?: unknown[];
+  title?: string;
+  __kind?: "serial_observation_timeline";
+  domain?: string;
+  sealed?: boolean;
+  opening?: unknown | null;
+  resolution?: unknown | null;
+};
+  request: unknown;
+  disclosed?: string[];
+  ledger?: unknown;
+}
+
 /** Offered shape of provision `masterwork.checkup_scan` (kind `masterwork.checkup_scan.offer`). */
 export interface MasterworkCheckupScanOffer {
   __kind?: "masterwork.checkup_scan.offer";
@@ -1229,6 +1406,35 @@ export interface MasterworkCorpusSynthesisOffer {
   corpus_digest: string;
 }
 
+/** Offered shape of provision `masterwork.counterparty_turn` (kind `masterwork.counterparty_turn.offer`). */
+export interface MasterworkCounterpartyTurnOffer {
+  __kind?: "masterwork.counterparty_turn.offer";
+  profile: {
+  facts?: unknown[];
+  title?: string;
+  __kind?: "counterparty_profile";
+  domain?: string;
+  policy?: unknown;
+  sealed?: boolean;
+  persona?: string;
+  role_label?: string;
+  opening_line?: string;
+};
+  move: unknown;
+  disclosable_fact_ids: string[];
+  ledger?: {
+  moves?: unknown[];
+  turns?: number;
+  __kind?: "counterparty_ledger";
+  locked_until?: Record<string, number>;
+  decisive_total?: number;
+  lockouts_caused?: number;
+  decisive_surfaced?: number;
+  disclosed_fact_ids?: string[];
+  premature_advice_events?: number;
+};
+}
+
 /** Offered shape of provision `masterwork.draft_triage` (kind `masterwork.draft_triage.offer`). */
 export interface MasterworkDraftTriageOffer {
   __kind?: "masterwork.draft_triage.offer";
@@ -1238,6 +1444,45 @@ export interface MasterworkDraftTriageOffer {
   rulebook_name?: string;
   rulebook_description?: string;
   intake_goal?: string;
+}
+
+/** Offered shape of provision `masterwork.drip_answers` (kind `masterwork.drip_answers.offer`). */
+export interface MasterworkDripAnswersOffer {
+  __kind?: "masterwork.drip_answers.offer";
+  answers: string;
+  day_count: number;
+  span: string;
+  probes?: string;
+  rulebook_name?: string;
+  rulebook_description?: string;
+  intake_goal?: string;
+  source_note?: string;
+}
+
+/** Offered shape of provision `masterwork.drip_question_position` (kind `masterwork.drip_question_position.offer`). */
+export interface MasterworkDripQuestionPositionOffer {
+  __kind?: "masterwork.drip_question_position.offer";
+  probe: string;
+  probe_question: string;
+  probe_why: string;
+  rulebook_name?: string;
+  rulebook_description?: string;
+  intake_goal?: string;
+  recent?: string;
+  day: string;
+}
+
+/** Offered shape of provision `masterwork.elicitation_utterance` (kind `masterwork.elicitation_utterance.offer`). */
+export interface MasterworkElicitationUtteranceOffer {
+  __kind?: "masterwork.elicitation_utterance.offer";
+  question: string;
+  rubric_name: string;
+  rubric: string;
+  verdict_values: string[];
+  subject_label?: string;
+  subject_content: string;
+  subject_metrics?: unknown;
+  context?: unknown;
 }
 
 /** Offered shape of provision `masterwork.faithfulness_judgment` (kind `masterwork.faithfulness_judgment.offer`). */
@@ -1295,6 +1540,18 @@ export interface MasterworkPairwiseJudgmentOffer {
   context?: unknown;
 }
 
+/** Offered shape of provision `masterwork.prediction_batch` (kind `masterwork.prediction_batch.offer`). */
+export interface MasterworkPredictionBatchOffer {
+  __kind?: "masterwork.prediction_batch.offer";
+  calls: string;
+  verdict: string;
+  call_count: number;
+  rulebook_name?: string;
+  rulebook_description?: string;
+  intake_goal?: string;
+  source_note?: string;
+}
+
 /** Offered shape of provision `masterwork.rule_improve` (kind `masterwork.rule_improve.offer`). */
 export interface MasterworkRuleImproveOffer {
   __kind?: "masterwork.rule_improve.offer";
@@ -1317,7 +1574,63 @@ export interface MasterworkRulebookAuditOffer {
 export interface MasterworkScoutInterviewOffer {
   __kind?: "masterwork.scout_interview.offer";
   rulebook_id: string;
-  rulebook_document: string;
+  interview_context_mode: string;
+  interview_probes: string;
+  interview_closing_surprises: string;
+  expert_goal: string;
+  rulebook_document?: string;
+}
+
+/** Offered shape of provision `masterwork.sealed_case_question` (kind `masterwork.sealed_case_question.offer`). */
+export interface MasterworkSealedCaseQuestionOffer {
+  __kind?: "masterwork.sealed_case_question.offer";
+  case_text: string;
+  question: string;
+}
+
+/** Offered shape of provision `masterwork.sort_boundary_answer` (kind `masterwork.sort_boundary_answer.offer`). */
+export interface MasterworkSortBoundaryAnswerOffer {
+  __kind?: "masterwork.sort_boundary_answer.offer";
+  kind: string;
+  question: string;
+  left_case?: string;
+  left_pile?: string;
+  right_case?: string;
+  right_pile?: string;
+  empty_pile?: string;
+  pile_names: string[];
+  reason: string;
+  rulebook_name?: string;
+  rulebook_description?: string;
+  intake_goal?: string;
+}
+
+/** Offered shape of provision `masterwork.sort_cases` (kind `masterwork.sort_cases.offer`). */
+export interface MasterworkSortCasesOffer {
+  __kind?: "masterwork.sort_cases.offer";
+  rulebook_name: string;
+  rulebook_description?: string;
+  intake_goal?: string;
+  existing_rules?: unknown;
+  source_notes?: string[];
+  pile_names: string[];
+  count: number;
+  avoid?: string[];
+}
+
+/** Offered shape of provision `masterwork.teach_back_explanation` (kind `masterwork.teach_back_explanation.offer`). */
+export interface MasterworkTeachBackExplanationOffer {
+  __kind?: "masterwork.teach_back_explanation.offer";
+  rulebook_id?: string;
+  rulebook_name?: string;
+  rulebook_description?: string;
+  intake_goal?: string;
+  rulebook_digest?: string;
+  topic?: string;
+  corrections?: string;
+  round_index: number;
+  round_count: number;
+  explanation_seconds: number;
 }
 
 /** Offered shape of provision `masterwork.timeline_segment` (kind `masterwork.timeline_segment.offer`). */
@@ -1364,6 +1677,34 @@ export interface MasterworkTranscriptShortlistOffer {
   file_id?: string;
 }
 
+/** Offered shape of provision `masterwork.triad_answer` (kind `masterwork.triad_answer.offer`). */
+export interface MasterworkTriadAnswerOffer {
+  __kind?: "masterwork.triad_answer.offer";
+  prompt: string;
+  items: unknown;
+  mode: string;
+  pick: string;
+  picked_text: string;
+  rejected_texts: string[];
+  reason: string;
+  rulebook_name?: string;
+  rulebook_description?: string;
+  intake_goal?: string;
+}
+
+/** Offered shape of provision `masterwork.triad_deal` (kind `masterwork.triad_deal.offer`). */
+export interface MasterworkTriadDealOffer {
+  __kind?: "masterwork.triad_deal.offer";
+  rulebook_name: string;
+  rulebook_description?: string;
+  intake_goal?: string;
+  existing_rules?: unknown;
+  source_notes?: string[];
+  mode: string;
+  count: number;
+  avoid?: string[];
+}
+
 /** Offered shape of provision `masterwork.understudy_run` (kind `masterwork.understudy_run.offer`). */
 export interface MasterworkUnderstudyRunOffer {
   __kind?: "masterwork.understudy_run.offer";
@@ -1372,6 +1713,22 @@ export interface MasterworkUnderstudyRunOffer {
   unconfirmed_rules: string;
   job: string;
   material?: string;
+}
+
+/** Offered shape of provision `masterwork.unfolding_verdict` (kind `masterwork.unfolding_verdict.offer`). */
+export interface MasterworkUnfoldingVerdictOffer {
+  __kind?: "masterwork.unfolding_verdict.offer";
+  question: string;
+  rubric_name: string;
+  rubric: string;
+  verdict_values: string[];
+  subject_label: string;
+  subject_content: string;
+  subject_metrics?: unknown;
+  reference_label?: string;
+  reference_content?: string;
+  reference_metrics?: unknown;
+  context?: unknown;
 }
 
 /** Offered shape of provision `media.youtube_transcription` (kind `media.youtube_transcription.offer`). */
@@ -2052,7 +2409,15 @@ export interface SeoCoverageAnalysisOffer {
 /** Offered shape of provision `seo.finding_fix` (kind `seo.finding_fix.offer`). */
 export interface SeoFindingFixOffer {
   __kind?: "seo.finding_fix.offer";
-  fix_context: unknown;
+  fix_context: {
+  page: unknown;
+  site: unknown;
+  __kind: "seo_finding_fix_context";
+  limits: unknown;
+  finding: unknown;
+  finding_id: string;
+  fixer_version: string;
+};
   fixer_version: string;
   finding_id?: string;
   site_id?: string;
@@ -2137,12 +2502,32 @@ export interface SeoKeywordResearchOffer {
 /** Offered shape of provision `seo.landscape_brief` (kind `seo.landscape_brief.offer`). */
 export interface SeoLandscapeBriefOffer {
   __kind?: "seo.landscape_brief.offer";
-  site_id: string;
-  business_name: string;
-  business_domain: string;
-  business_root_url: string;
-  business_description: string;
+  brand_id: string;
+  brand_name: string;
+  brand_description: string;
+  brand_sites: string;
+  site_crawl_summaries: string;
+  research_document?: string;
   existing_guidance?: string;
+}
+
+/** Offered shape of provision `seo.map_author` (kind `seo.map_author.offer`). */
+export interface SeoMapAuthorOffer {
+  __kind?: "seo.map_author.offer";
+  brand_name: string;
+  brand_description: string;
+  brand_industry: string;
+  brand_locations: string;
+  source_kind: string;
+  source_material: string;
+  source_reference?: string;
+  map_id: string;
+  existing_map_outline: string;
+  section_parent_slug?: string;
+  change_mode: string;
+  min_topics: string;
+  max_topics: string;
+  description_max_chars: string;
 }
 
 /** Offered shape of provision `seo.money_map` (kind `seo.money_map.offer`). */
@@ -2285,7 +2670,19 @@ export interface SeoSiteEvidenceOffer {
 /** Offered shape of provision `seo.site_intake` (kind `seo.site_intake.offer`). */
 export interface SeoSiteIntakeOffer {
   __kind?: "seo.site_intake.offer";
-  intake_bundle: unknown;
+  intake_bundle: {
+  __kind: "gsc_site_intake_bundle";
+  domain: string;
+  periods?: unknown[];
+  site_id: string;
+  site_name?: string | null;
+  brand_name?: string | null;
+  juice_pages: unknown;
+  data_max_date?: string | null;
+  data_min_date?: string | null;
+  cannibalization: unknown;
+  current_brand_aliases?: string[];
+};
   site_id?: string;
   organization_id?: string;
   domain?: string;
@@ -2298,6 +2695,23 @@ export interface SeoSiteIntakeOffer {
   period_days?: number;
   juice_pages?: unknown;
   cannibalization?: unknown;
+}
+
+/** Offered shape of provision `seo.site_strategy_brief` (kind `seo.site_strategy_brief.offer`). */
+export interface SeoSiteStrategyBriefOffer {
+  __kind?: "seo.site_strategy_brief.offer";
+  site_id: string;
+  site_name: string;
+  site_domain: string;
+  site_root_url: string;
+  site_description: string;
+  brand_strategy: string;
+  crawl_summary: string;
+  search_console: string;
+  keyword_library: string;
+  content_plan: string;
+  research_document?: string;
+  existing_guidance?: string;
 }
 
 /** Offered shape of provision `seo.site_strategy_interview` (kind `seo.site_strategy_interview.offer`). */
@@ -2540,6 +2954,8 @@ export interface ProvisionOffers {
   "crm.party_kind_judgment": CrmPartyKindJudgmentOffer;
   "crm.save_contact_selection": CrmSaveContactSelectionOffer;
   "dictionary.workspace": DictionaryWorkspaceOffer;
+  "distillation.case_narrative": DistillationCaseNarrativeOffer;
+  "distillation.timeline_window": DistillationTimelineWindowOffer;
   "education.analytics_narrate": EducationAnalyticsNarrateOffer;
   "education.card_image": EducationCardImageOffer;
   "education.card_image_generation": EducationCardImageGenerationOffer;
@@ -2573,6 +2989,9 @@ export interface ProvisionOffers {
   "flashcards.tts_render": FlashcardsTtsRenderOffer;
   "flashcards.verify_against_source": FlashcardsVerifyAgainstSourceOffer;
   "foundry.agent_planning": FoundryAgentPlanningOffer;
+  "google.channel_plan_context": GoogleChannelPlanContextOffer;
+  "google.desk_context": GoogleDeskContextOffer;
+  "google.site_performance_context": GoogleSitePerformanceContextOffer;
   "growth_loop.stage_dispatch": GrowthLoopStageDispatchOffer;
   "growth_loop.stage_quality": GrowthLoopStageQualityOffer;
   "hindsight.enrollment_review": HindsightEnrollmentReviewOffer;
@@ -2594,24 +3013,38 @@ export interface ProvisionOffers {
   "masterwork.approach_select": MasterworkApproachSelectOffer;
   "masterwork.audition_judgment": MasterworkAuditionJudgmentOffer;
   "masterwork.bad_draft_write": MasterworkBadDraftWriteOffer;
+  "masterwork.bad_example_generation": MasterworkBadExampleGenerationOffer;
+  "masterwork.case_disclosure": MasterworkCaseDisclosureOffer;
   "masterwork.checkup_scan": MasterworkCheckupScanOffer;
   "masterwork.chunk_distill": MasterworkChunkDistillOffer;
   "masterwork.coherence_scan": MasterworkCoherenceScanOffer;
   "masterwork.conduct": MasterworkConductOffer;
   "masterwork.corpus_clean": MasterworkCorpusCleanOffer;
   "masterwork.corpus_synthesis": MasterworkCorpusSynthesisOffer;
+  "masterwork.counterparty_turn": MasterworkCounterpartyTurnOffer;
   "masterwork.draft_triage": MasterworkDraftTriageOffer;
+  "masterwork.drip_answers": MasterworkDripAnswersOffer;
+  "masterwork.drip_question_position": MasterworkDripQuestionPositionOffer;
+  "masterwork.elicitation_utterance": MasterworkElicitationUtteranceOffer;
   "masterwork.faithfulness_judgment": MasterworkFaithfulnessJudgmentOffer;
   "masterwork.intake_design": MasterworkIntakeDesignOffer;
   "masterwork.outcome_judgment": MasterworkOutcomeJudgmentOffer;
   "masterwork.pairwise_judgment": MasterworkPairwiseJudgmentOffer;
+  "masterwork.prediction_batch": MasterworkPredictionBatchOffer;
   "masterwork.rule_improve": MasterworkRuleImproveOffer;
   "masterwork.rulebook_audit": MasterworkRulebookAuditOffer;
   "masterwork.scout_interview": MasterworkScoutInterviewOffer;
+  "masterwork.sealed_case_question": MasterworkSealedCaseQuestionOffer;
+  "masterwork.sort_boundary_answer": MasterworkSortBoundaryAnswerOffer;
+  "masterwork.sort_cases": MasterworkSortCasesOffer;
+  "masterwork.teach_back_explanation": MasterworkTeachBackExplanationOffer;
   "masterwork.timeline_segment": MasterworkTimelineSegmentOffer;
   "masterwork.timeline_step": MasterworkTimelineStepOffer;
   "masterwork.transcript_shortlist": MasterworkTranscriptShortlistOffer;
+  "masterwork.triad_answer": MasterworkTriadAnswerOffer;
+  "masterwork.triad_deal": MasterworkTriadDealOffer;
   "masterwork.understudy_run": MasterworkUnderstudyRunOffer;
+  "masterwork.unfolding_verdict": MasterworkUnfoldingVerdictOffer;
   "media.youtube_transcription": MediaYoutubeTranscriptionOffer;
   "meet.meeting_record": MeetMeetingRecordOffer;
   "messaging.conversation": MessagingConversationOffer;
@@ -2683,6 +3116,7 @@ export interface ProvisionOffers {
   "seo.keyword_expansion": SeoKeywordExpansionOffer;
   "seo.keyword_research": SeoKeywordResearchOffer;
   "seo.landscape_brief": SeoLandscapeBriefOffer;
+  "seo.map_author": SeoMapAuthorOffer;
   "seo.money_map": SeoMoneyMapOffer;
   "seo.offering_extraction": SeoOfferingExtractionOffer;
   "seo.offering_valuation": SeoOfferingValuationOffer;
@@ -2694,6 +3128,7 @@ export interface ProvisionOffers {
   "seo.serp_intent_analysis": SeoSerpIntentAnalysisOffer;
   "seo.site_evidence": SeoSiteEvidenceOffer;
   "seo.site_intake": SeoSiteIntakeOffer;
+  "seo.site_strategy_brief": SeoSiteStrategyBriefOffer;
   "seo.site_strategy_interview": SeoSiteStrategyInterviewOffer;
   "seo.starter_pack_proposal": SeoStarterPackProposalOffer;
   "seo.topic_assignment": SeoTopicAssignmentOffer;
@@ -2766,6 +3201,8 @@ export const PROVISION_OFFER_KINDS = {
   "crm.party_kind_judgment": "crm.party_kind_judgment.offer",
   "crm.save_contact_selection": "crm.save_contact_selection.offer",
   "dictionary.workspace": "dictionary.workspace.offer",
+  "distillation.case_narrative": "distillation.case_narrative.offer",
+  "distillation.timeline_window": "distillation.timeline_window.offer",
   "education.analytics_narrate": "education.analytics_narrate.offer",
   "education.card_image": "education.card_image.offer",
   "education.card_image_generation": "education.card_image_generation.offer",
@@ -2799,6 +3236,9 @@ export const PROVISION_OFFER_KINDS = {
   "flashcards.tts_render": "flashcards.tts_render.offer",
   "flashcards.verify_against_source": "flashcards.verify_against_source.offer",
   "foundry.agent_planning": "foundry.agent_planning.offer",
+  "google.channel_plan_context": "google.channel_plan_context.offer",
+  "google.desk_context": "google.desk_context.offer",
+  "google.site_performance_context": "google.site_performance_context.offer",
   "growth_loop.stage_dispatch": "growth_loop.stage_dispatch.offer",
   "growth_loop.stage_quality": "growth_loop.stage_quality.offer",
   "hindsight.enrollment_review": "hindsight.enrollment_review.offer",
@@ -2820,24 +3260,38 @@ export const PROVISION_OFFER_KINDS = {
   "masterwork.approach_select": "masterwork.approach_select.offer",
   "masterwork.audition_judgment": "masterwork.audition_judgment.offer",
   "masterwork.bad_draft_write": "masterwork.bad_draft_write.offer",
+  "masterwork.bad_example_generation": "masterwork.bad_example_generation.offer",
+  "masterwork.case_disclosure": "masterwork.case_disclosure.offer",
   "masterwork.checkup_scan": "masterwork.checkup_scan.offer",
   "masterwork.chunk_distill": "masterwork.chunk_distill.offer",
   "masterwork.coherence_scan": "masterwork.coherence_scan.offer",
   "masterwork.conduct": "masterwork.conduct.offer",
   "masterwork.corpus_clean": "masterwork.corpus_clean.offer",
   "masterwork.corpus_synthesis": "masterwork.corpus_synthesis.offer",
+  "masterwork.counterparty_turn": "masterwork.counterparty_turn.offer",
   "masterwork.draft_triage": "masterwork.draft_triage.offer",
+  "masterwork.drip_answers": "masterwork.drip_answers.offer",
+  "masterwork.drip_question_position": "masterwork.drip_question_position.offer",
+  "masterwork.elicitation_utterance": "masterwork.elicitation_utterance.offer",
   "masterwork.faithfulness_judgment": "masterwork.faithfulness_judgment.offer",
   "masterwork.intake_design": "masterwork.intake_design.offer",
   "masterwork.outcome_judgment": "masterwork.outcome_judgment.offer",
   "masterwork.pairwise_judgment": "masterwork.pairwise_judgment.offer",
+  "masterwork.prediction_batch": "masterwork.prediction_batch.offer",
   "masterwork.rule_improve": "masterwork.rule_improve.offer",
   "masterwork.rulebook_audit": "masterwork.rulebook_audit.offer",
   "masterwork.scout_interview": "masterwork.scout_interview.offer",
+  "masterwork.sealed_case_question": "masterwork.sealed_case_question.offer",
+  "masterwork.sort_boundary_answer": "masterwork.sort_boundary_answer.offer",
+  "masterwork.sort_cases": "masterwork.sort_cases.offer",
+  "masterwork.teach_back_explanation": "masterwork.teach_back_explanation.offer",
   "masterwork.timeline_segment": "masterwork.timeline_segment.offer",
   "masterwork.timeline_step": "masterwork.timeline_step.offer",
   "masterwork.transcript_shortlist": "masterwork.transcript_shortlist.offer",
+  "masterwork.triad_answer": "masterwork.triad_answer.offer",
+  "masterwork.triad_deal": "masterwork.triad_deal.offer",
   "masterwork.understudy_run": "masterwork.understudy_run.offer",
+  "masterwork.unfolding_verdict": "masterwork.unfolding_verdict.offer",
   "media.youtube_transcription": "media.youtube_transcription.offer",
   "meet.meeting_record": "meet.meeting_record.offer",
   "messaging.conversation": "messaging.conversation.offer",
@@ -2909,6 +3363,7 @@ export const PROVISION_OFFER_KINDS = {
   "seo.keyword_expansion": "seo.keyword_expansion.offer",
   "seo.keyword_research": "seo.keyword_research.offer",
   "seo.landscape_brief": "seo.landscape_brief.offer",
+  "seo.map_author": "seo.map_author.offer",
   "seo.money_map": "seo.money_map.offer",
   "seo.offering_extraction": "seo.offering_extraction.offer",
   "seo.offering_valuation": "seo.offering_valuation.offer",
@@ -2920,6 +3375,7 @@ export const PROVISION_OFFER_KINDS = {
   "seo.serp_intent_analysis": "seo.serp_intent_analysis.offer",
   "seo.site_evidence": "seo.site_evidence.offer",
   "seo.site_intake": "seo.site_intake.offer",
+  "seo.site_strategy_brief": "seo.site_strategy_brief.offer",
   "seo.site_strategy_interview": "seo.site_strategy_interview.offer",
   "seo.starter_pack_proposal": "seo.starter_pack_proposal.offer",
   "seo.topic_assignment": "seo.topic_assignment.offer",

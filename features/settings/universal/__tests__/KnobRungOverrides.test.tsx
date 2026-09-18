@@ -22,9 +22,12 @@ import { createRoot, type Root } from "react-dom/client";
 import { KnobRungOverrides } from "../KnobRungOverrides";
 import { fetchScopeRows } from "../scopeRows";
 import { useUniversalSettings, type RungOverridesState } from "../UniversalSettingsContext";
-import { setKnobOverride } from "@/lib/scoped-config/service";
+import {
+  fetchKnobWriteDoor,
+  writeKnobOverrideThroughDoor,
+} from "@/lib/scoped-config/service";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import type { KnobRungOverrideRow } from "@/lib/scoped-config/service";
+import type { KnobRungOverrideRow, KnobWriteDoor } from "@/lib/scoped-config/service";
 import type { ScopedKnob } from "@/lib/scoped-config/types";
 
 jest.mock("../scopeRows", () => ({
@@ -33,6 +36,10 @@ jest.mock("../scopeRows", () => ({
 }));
 jest.mock("@/lib/scoped-config/service", () => ({
   setKnobOverride: jest.fn(),
+  // DD-221: the panel asks WHICH door writes this key and whether this caller
+  // may use it, and the row writes through that door.
+  fetchKnobWriteDoor: jest.fn(),
+  writeKnobOverrideThroughDoor: jest.fn(),
 }));
 jest.mock("@/lib/toast", () => ({
   toast: { success: jest.fn(), error: jest.fn(), warning: jest.fn() },
@@ -46,7 +53,8 @@ jest.mock("../UniversalSettingsContext", () => ({
 }));
 
 const scopeRows = jest.mocked(fetchScopeRows);
-const writeOverride = jest.mocked(setKnobOverride);
+const writeOverride = jest.mocked(writeKnobOverrideThroughDoor);
+const readWriteDoor = jest.mocked(fetchKnobWriteDoor);
 const settings = jest.mocked(useUniversalSettings);
 const askToConfirm = jest.mocked(confirm);
 
@@ -107,6 +115,8 @@ let root: Root;
 let host: HTMLDivElement;
 let rungOverrides: Record<string, RungOverridesState>;
 let stateOnly: { reason: string; consumerEvidence: string } | null = null;
+/** What `platform.knob_write_door_for` answers for this key in a given case. */
+let doorAnswer: KnobWriteDoor;
 const loadRungOverrides = jest.fn();
 const reloadRungOverrides = jest.fn();
 
@@ -168,6 +178,18 @@ beforeEach(() => {
   askToConfirm.mockResolvedValue(true);
   stateOnly = null;
   rungOverrides = {};
+  readWriteDoor.mockReset();
+  doorAnswer = {
+    key: knob.full_key,
+    featurePrefix: "",
+    setDoor: "platform.knob_override_set",
+    clearDoor: "platform.knob_override_set",
+    authorityKind: "org_steward",
+    mayWrite: true,
+    authorityDetail: "You are an owner or admin of this organization.",
+    reason: "The platform default.",
+  };
+  readWriteDoor.mockImplementation(async () => doorAnswer);
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -258,6 +280,7 @@ it("saves a picked row's value through knob_override_set at that rung", async ()
 
   expect(writeOverride).toHaveBeenCalledWith(
     expect.objectContaining({
+      door: expect.objectContaining({ setDoor: "platform.knob_override_set" }),
       feature: "records",
       key: "confirmation.demo_policy",
       scopeKind: "table",
@@ -312,7 +335,12 @@ it("removes an exception through the same door with a null value, which deletes 
   await act(async () => {});
 
   expect(writeOverride).toHaveBeenCalledWith(
-    expect.objectContaining({ scopeKind: "table", scopeId: WINE, value: null }),
+    expect.objectContaining({
+      door: expect.objectContaining({ clearDoor: "platform.knob_override_set" }),
+      scopeKind: "table",
+      scopeId: WINE,
+      value: null,
+    }),
   );
 });
 
@@ -511,4 +539,125 @@ it("counts the exceptions in the collapsed header and in the narrowed picker (F5
   // The heading counted what it was handed, not what a person could see.
   expect(textOf()).toContain("1 tables");
   expect(textOf()).not.toContain("2 tables");
+});
+
+// ── DD-221: authority belongs to the KEY, and so does the door ──────────────
+
+it("offers no add control while the declared door has not answered yet", async () => {
+  // A control that might be refused is not honest, and neither is one drawn on
+  // a guess. Until `knob_write_door_for` answers there is nothing to add with.
+  rungOverrides = { [knob.full_key]: { status: "ready", rows: [] } };
+  scopeRows.mockResolvedValue([{ id: WINE, label: "wine_tasting" }]);
+  readWriteDoor.mockImplementation(() => new Promise(() => {}));
+
+  mountPanel();
+  await openExceptions();
+  await act(async () => {});
+
+  const add = [...host.querySelectorAll("button"), ...document.body.querySelectorAll("button")].find(
+    (button) => /Add override for a/.test(button.textContent ?? ""),
+  );
+  expect(add).toBeUndefined();
+});
+
+it("hides the add control and says the declared door's own sentence when it refuses", async () => {
+  rungOverrides = { [knob.full_key]: { status: "ready", rows: [] } };
+  scopeRows.mockResolvedValue([{ id: WINE, label: "wine_tasting" }]);
+  doorAnswer = {
+    ...doorAnswer,
+    mayWrite: false,
+    authorityDetail: "Organization configuration is owner/admin only.",
+  };
+
+  mountPanel();
+  await openExceptions();
+  await act(async () => {});
+
+  const add = [...host.querySelectorAll("button"), ...document.body.querySelectorAll("button")].find(
+    (button) => /Add override for a/.test(button.textContent ?? ""),
+  );
+  expect(add).toBeUndefined();
+  expect(textOf()).toContain("Organization configuration is owner/admin only.");
+});
+
+it("draws no exception control at all when which door writes this key cannot be read", async () => {
+  rungOverrides = { [knob.full_key]: { status: "ready", rows: [] } };
+  scopeRows.mockResolvedValue([{ id: WINE, label: "wine_tasting" }]);
+  readWriteDoor.mockRejectedValue(new Error("knob_write_door_for failed: permission denied"));
+
+  mountPanel();
+  await openExceptions();
+  await act(async () => {});
+
+  expect(textOf()).toContain("Who may set an exception could not be read");
+  expect(textOf()).toContain("knob_write_door_for failed: permission denied");
+  const add = [...host.querySelectorAll("button"), ...document.body.querySelectorAll("button")].find(
+    (button) => /Add override for a/.test(button.textContent ?? ""),
+  );
+  expect(add).toBeUndefined();
+});
+
+it("writes through the door the key declares, not through this screen's default", async () => {
+  // The DD-221 defect, from the inside: on an `hr.` key the panel used to call
+  // `platform.knob_override_set`, which refuses a real HR admin and files no
+  // `hr.access_audit` row when it accepts an org admin.
+  rungOverrides = { [knob.full_key]: { status: "ready", rows: [] } };
+  scopeRows.mockResolvedValue([{ id: WINE, label: "wine_tasting" }]);
+  doorAnswer = {
+    ...doorAnswer,
+    featurePrefix: "hr.",
+    setDoor: "public.hr_knob_set",
+    clearDoor: "public.hr_knob_clear",
+    authorityKind: "hr_settings_gate",
+    mayWrite: true,
+    authorityDetail: "You hold HR admin standing in this organization.",
+  };
+  writeOverride.mockResolvedValue({
+    ok: true,
+    feature: knob.feature,
+    key: knob.key,
+    scope_kind: "table",
+    scope_id: WINE,
+    effective_value: "never",
+    origin: "scope_override",
+  });
+
+  mountPanel();
+  await openExceptions();
+  const add = [...host.querySelectorAll("button"), ...document.body.querySelectorAll("button")].find(
+    (button) => /Add override for a table/.test(button.textContent ?? ""),
+  );
+  expect(add).toBeDefined();
+  await act(async () => {
+    add!.click();
+  });
+  await act(async () => {});
+  const option = [...document.body.querySelectorAll('[cmdk-item=""]')].find((item) =>
+    /wine_tasting/.test(item.textContent ?? ""),
+  );
+  await act(async () => {
+    (option as HTMLElement).click();
+  });
+  const input = host.querySelector<HTMLInputElement>(
+    `input[aria-label="Confirmation policy for wine_tasting"]`,
+  );
+  await act(async () => {
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!;
+    setter.call(input, "never");
+    input!.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  const save = [...host.querySelectorAll("button")].find((button) => button.textContent === "Save");
+  await act(async () => {
+    save!.click();
+  });
+
+  expect(writeOverride).toHaveBeenCalledWith(
+    expect.objectContaining({
+      door: expect.objectContaining({
+        setDoor: "public.hr_knob_set",
+        clearDoor: "public.hr_knob_clear",
+      }),
+      value: "never",
+    }),
+  );
 });

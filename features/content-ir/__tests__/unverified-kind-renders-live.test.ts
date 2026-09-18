@@ -21,7 +21,17 @@ import { componentRegistry } from "@/features/content-ir/registry/component-regi
 import { applyIrKindRoute, readIrRouteMarker } from "@/features/content-ir/react/kind-route";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({ captureError: jest.fn() }));
+// 🚨 A PARTIAL MOCK OF A REAL MODULE IS A SUITE THAT DIES ON THE NEXT EXPORT
+// (DD-239). This used to replace the whole capture store with `{ captureError }`.
+// When the session barrier started calling `setSessionStateProbe` from the same
+// module at client-construction time, the mock no longer satisfied it and THIS
+// SUITE DIED AT IMPORT — no test ran, for days, while the file still looked
+// green in a list. Spread the real module: only the export this suite needs to
+// observe is replaced, and a new export can never silently take the suite down.
+jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+  captureError: jest.fn(),
+}));
 
 /** The real message, as the model emitted it: bare pretty-printed JSON. */
 const INTAKE_PAYLOAD = JSON.stringify(

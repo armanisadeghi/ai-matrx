@@ -1,0 +1,66 @@
+{
+  "why": "D18 (check-impl-doors): client paths that call a function the calling role cannot execute, measured 2026-09-14 by the DD-169 reach census. The five DD-169 hits (geo-area trigger, rank list x2, conversation soft-delete, agent usage stats) were FIXED by migrations/dd169_closed_helpers_reached_by_client_paths.sql and are not here. Every entry below predates the gate, is outside DD-169's scope, and is filed as matrx-frontend FOUND_DEFECTS D321. The file may only shrink; a stale entry fails.",
+  "capturedAt": "2026-09-14",
+  "entries": [
+    {
+      "key": "authenticated | trigger on hr.leave_enrollment | hr._leave_enrollment_worker_class_gate() | hr._leave_worker_class_ok",
+      "reason": "Unreachable by a client today: proven 2026-09-14 as authenticated, hr_write_forbidden refuses UPDATE on hr.leave_enrollment before this trigger runs; writes go through the privileged HR write path. Not a DD-169 revoke. D321."
+    },
+    {
+      "key": "authenticated | trigger on hr.leave_enrollment | hr._leave_enrollment_worker_class_gate() | hr.raise_compliance_exception",
+      "reason": "Unreachable by a client today: proven 2026-09-14 as authenticated, hr_write_forbidden refuses UPDATE on hr.leave_enrollment before this trigger runs; writes go through the privileged HR write path. Not a DD-169 revoke. D321."
+    },
+    {
+      "key": "authenticated | trigger on hr.leave_policy | hr._leave_policy_lawful() | hr.raise_compliance_exception",
+      "reason": "Unreachable by a client today: proven 2026-09-14 as authenticated, hr_write_forbidden refuses UPDATE on hr.leave_policy before this trigger runs; writes go through the privileged HR write path. Not a DD-169 revoke. D321."
+    },
+    {
+      "key": "authenticated | trigger on hr.leave_policy | hr._leave_policy_lawful() | hr.resolve_rules",
+      "reason": "Unreachable by a client today: proven 2026-09-14 as authenticated, hr_write_forbidden refuses UPDATE on hr.leave_policy before this trigger runs; writes go through the privileged HR write path. Not a DD-169 revoke. D321."
+    },
+    {
+      "key": "authenticated | trigger on hr.leave_policy | hr._leave_policy_lawful() | hr.validate_org_config",
+      "reason": "Unreachable by a client today: proven 2026-09-14 as authenticated, hr_write_forbidden refuses UPDATE on hr.leave_policy before this trigger runs; writes go through the privileged HR write path. Not a DD-169 revoke. D321."
+    },
+    {
+      "key": "authenticated | trigger on web.screenshot | web.validate_screenshot_artifact_file() | web.assert_crawl_artifact_file",
+      "reason": "Revoked on purpose by migrations/web_crawl_artifacts_zzz_direct_file_access.sql, not DD-169. A default-values probe as authenticated stopped at 'web.screenshot requires site_id' before the call, so whether a valid client insert 403s is UNPROVEN. D321."
+    },
+    {
+      "key": "authenticated | trigger on web.snapshot | web.validate_snapshot_artifact_files() | web.assert_crawl_artifact_file",
+      "reason": "Revoked on purpose by migrations/web_crawl_artifacts_zzz_direct_file_access.sql, not DD-169. A default-values probe as authenticated stopped at 'web.snapshot requires site_id' before the call, so whether a valid client insert 403s is UNPROVEN. D321."
+    },
+    {
+      "key": "authenticated | client-executable invoker function | content_ir.check_kind_admission(uuid, text, integer) | content_ir.resolve_kind_version",
+      "reason": "LIVE 42501 proven 2026-09-14 as authenticated (permission denied for function resolve_kind_version). Revoked by migrations/content_ir_resolve_kind_version_definer.sql, not DD-169; its client callers are not yet censused. D321."
+    },
+    {
+      "key": "authenticated | client-executable invoker function | hr.punch_edit_notify_debt() | hr._notify_channels",
+      "reason": "LIVE 42501 proven 2026-09-14 as authenticated (permission denied for function _notify_channels). Revoked by the hr_l3_114 / hr_l3_116 migrations, not DD-169; whether a client calls it is not yet censused. D321."
+    },
+    {
+      "key": "authenticated | client-executable invoker function | iam.entity_read_expr(text, text, text, text) | iam.class_lanes",
+      "reason": "RLS generator tooling no browser session runs; the open question is why authenticated holds EXECUTE on the invoker tool at all, not whether the helper should reopen. Not a DD-169 revoke. D321."
+    },
+    {
+      "key": "authenticated | client-executable invoker function | iam.org_readable(uuid, text) | iam.class_lanes",
+      "reason": "Access-lane helper with no browser caller found in this census; the open question is why authenticated holds EXECUTE on the invoker function, and whether any RLS path reaches it. Not a DD-169 revoke. D321."
+    },
+    {
+      "key": "authenticated | client-executable invoker function | iam.verify_canonical(text, text, text, text) | iam.class_lanes",
+      "reason": "Canonical-certification tooling no browser session runs; the open question is why authenticated holds EXECUTE on the invoker tool at all, not whether the helper should reopen. Not a DD-169 revoke. D321."
+    },
+    {
+      "key": "authenticated | column default on web.brand |  | platform.entity_default_visibility",
+      "reason": "LIVE 42501 proven 2026-09-14: INSERT into web.brand as authenticated fails on the visibility column default. Not a DD-169 revoke (no revoke of it in any migration file). Whether a client inserts brands directly is UNPROVEN. D321."
+    },
+    {
+      "key": "authenticated | column default on web.site |  | platform.entity_default_visibility",
+      "reason": "LIVE 42501 proven 2026-09-14: INSERT into web.site as authenticated fails on the visibility column default. Not a DD-169 revoke (no revoke of it in any migration file). Whether a client inserts sites directly is UNPROVEN. D321."
+    },
+    {
+      "key": "authenticated | column default on platform.retention_policy |  | platform.retention_settling_interval",
+      "reason": "DD-169 batch 3 revoke with no client path: platform.retention_policy is a service-written policy ladder and no repo writes it from a browser, so a client INSERT is refused either way. Kept closed on purpose. D321."
+    }
+  ]
+}

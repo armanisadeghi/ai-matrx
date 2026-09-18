@@ -123,8 +123,11 @@ describe("a Recent-runs row says what the run produced", () => {
     const text = visibleText(renderToString(<MasterworkRunRow run={row} />));
     // The headline finding is the first thing the regimen says.
     expect(text).toContain("The morning shoe battle and the kitchen chase");
-    // Status, time and cost still ride the row.
-    expect(text).toContain("completed");
+    // Status, time and cost still ride the row — in the Operator's word for
+    // it, never the engine's `completed` (jobs-bar-2026-09-16, item 18: the
+    // row's status map moved here from Encore's own copy of this row).
+    expect(text).toContain("Finished");
+    expect(text).not.toContain("completed");
     // (SSR puts a comment marker between the "$" and the number.)
     expect(text.replace(/\s+/g, "")).toContain("$0.21");
   });

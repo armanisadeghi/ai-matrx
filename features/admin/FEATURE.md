@@ -2,7 +2,7 @@
 
 **Status:** `stable`
 **Tier:** `1`
-**Last updated:** `2026-09-09`
+**Last updated:** `2026-09-15`
 
 ---
 
@@ -133,6 +133,9 @@ No database tables, API endpoints, or Redux state are owned by this feature.
 - Administration sidebar labels use normal font weight, including the active
   destination. Active state is communicated through semantic color and
   background only; do not bold navigation text.
+- The persistent Admin Launchpad door is a neutral new-tab launcher, never a
+  fake selected row. Only the Launchpad row inside the Administration route
+  menu may show selected state, and only while its own route is current.
 - Domain navigation uses static paths such as `/administration/compute`; `?domain=` routing and catch-all domain pages are forbidden.
 - Every `/administration` destination and owned detail route must equal or descend from its declared domain root. `pnpm check:admin-catalog --strict` enforces this.
 - Every Administration page pattern is declared exactly once as either a destination link or an `ownedRoutes` entry. Parent-prefix inference is forbidden because it hides new pages.
@@ -267,6 +270,9 @@ that existing editor; private keys and client secrets remain outside
 ---
 
 ## Change log
+
+- `2026-09-17` — Removed a double `decodeURIComponent` on `rowId` in `app/api/admin/users/acquisition/[rowId]/route.ts` — the App Router already decodes the value, so a row id carrying a literal `%` threw `URIError` on the second decode. Part of the repo-wide `pnpm check:route-param-decode` census/guard; see `lib/detail/FEATURE.md` Change Log.
+- `2026-09-15` — Codex: removed the permanent blue treatment from every Admin Launchpad launcher, made desktop/mobile Administration menus derive selected state only from exact registered route ownership, and browser-verified one active admin destination at a time.
 
 - `2026-09-10` — Documented `AdminSectionShell` (title/icon/navLabel/tabs/
   activeMatch/navSurfaceValue) and its seven adopting section LayoutClients;

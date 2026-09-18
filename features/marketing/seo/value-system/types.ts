@@ -105,6 +105,23 @@ export type ValueReason =
       effect?: "add";
       amount?: number;
     }
+  /**
+   * The keyword's base comes from one of THIS site's offerings (brand-offerings
+   * cutover D9): the nearest offering on the placement's lineage that carries the
+   * site's worth adds its `points`. `kind: "topic"` remains only for genuine
+   * taxonomy (brand / problem / authority / reputation) and for receipts cached
+   * before 2026-09-14.
+   */
+  | {
+      kind: "offering";
+      offering: string;
+      offering_id?: string | null;
+      points: number;
+      root: string | null;
+      negative_guard: boolean;
+      effect?: "add";
+      amount?: number;
+    }
   /** KI-048: the starting point every score is built from. */
   | { kind: "baseline"; amount: number }
   /**

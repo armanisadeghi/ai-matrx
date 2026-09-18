@@ -21,7 +21,7 @@ import { AlertTriangle, FileText, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useConversationMaterialized } from "@/features/agents/hooks/useConversationMaterialized";
 import {
   useContainerLinks,
@@ -245,8 +245,13 @@ export function AttachedDocumentChips({
   const convOrgId = useAppSelector(
     (s) => s.conversations.byConversationId[conversationId]?.organizationId,
   );
-  const effectiveOrgId = useAppSelector(selectEffectiveOrganizationId);
-  const orgId = convOrgId ?? effectiveOrgId;
+  // The conversation's OWN organization is the durable answer; the explicit
+  // active org covers a conversation not yet materialized. Never a personal
+  // fallback — with neither, this stays null (the same shape the hook already
+  // accepted pre-bootstrap) rather than scoping the read to a workspace the
+  // user never chose.
+  const activeOrgId = useAppSelector(selectOrganizationId);
+  const orgId = convOrgId ?? activeOrgId;
 
   const links = useContainerLinks({
     containerType: "conversation",

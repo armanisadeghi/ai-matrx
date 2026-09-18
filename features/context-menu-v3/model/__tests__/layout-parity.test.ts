@@ -421,3 +421,64 @@ describe("command layout filter", () => {
     ).not.toContain("Unwired Shortcut");
   });
 });
+
+// ── THE PRIMARY SECTION — the thing the user right-clicked comes first ──────
+
+describe("primary section (the clicked target)", () => {
+  const withPrimary: ContextMenuExtraSection[] = [
+    ...extraSections,
+    {
+      id: "column",
+      label: "Column · Country",
+      anchor: "after-clipboard",
+      primary: true,
+      // Longer than INLINE_SURFACE_MAX on purpose: a primary section is never
+      // folded, however long.
+      items: [
+        { kind: "item", id: "col:rename", label: "Rename column", onSelect: noop },
+        { kind: "item", id: "col:asc", label: "Sort A→Z", onSelect: noop },
+        { kind: "item", id: "col:desc", label: "Sort Z→A", onSelect: noop },
+        { kind: "item", id: "col:hide", label: "Hide column", onSelect: noop },
+        { kind: "item", id: "col:delete", label: "Delete column…", onSelect: noop },
+      ],
+    },
+  ];
+  const props = { ...(modelProps as object), extraSections: withPrimary } as Parameters<
+    typeof buildMenuModel
+  >[1];
+
+  for (const layout of ["classic", "tiered", "command"] as const) {
+    it(`${layout}: the primary section is FIRST, inline, with its heading`, () => {
+      const arranged = arrangeMenu(buildMenuModel(makeEngine(), props), layout);
+      const first = arranged.sections[0];
+      expect(first.id).toBe("extra:column");
+      expect(first.label).toBe("Column · Country");
+      // Inline = its rows are top-level nodes, not one fold submenu.
+      expect(first.nodes.some((n) => n.kind !== "submenu" && n.kind !== "separator" && n.kind !== "label" && n.label === "Rename column")).toBe(true);
+      expect(first.nodes.some((n) => n.kind === "submenu" && n.id === "extra:column:fold")).toBe(false);
+    });
+  }
+
+  it("tiered: the rest of the pane's sections follow the primary one, before the platform rows", () => {
+    const arranged = arrangeMenu(buildMenuModel(makeEngine(), props), "tiered");
+    const ids = arranged.sections.map((s) => s.id);
+    const surfaceIds = ids.filter((id) => id.startsWith("extra:"));
+    // Every surface section sits in one block at the very top.
+    expect(ids.slice(0, surfaceIds.length)).toEqual(surfaceIds);
+    expect(surfaceIds[0]).toBe("extra:column");
+  });
+
+  it("stays lossless: tiered still shows every leaf classic shows", () => {
+    const model = buildMenuModel(makeEngine(), props);
+    expect([...leafSet(arrangeMenu(model, "tiered"))].sort()).toEqual(
+      [...leafSet(arrangeMenu(model, "classic"))].sort(),
+    );
+  });
+
+  it("a menu with a primary section keeps its inline siblings' headings; one without does not", () => {
+    const labelled = arrangeMenu(buildMenuModel(makeEngine(), props), "tiered");
+    expect(labelled.sections.find((s) => s.id === "extra:note-ops")?.label).toBe("Note");
+    const plain = arrangeMenu(buildModel(), "tiered");
+    expect(plain.sections.find((s) => s.id === "extra:note-ops")?.label).toBeUndefined();
+  });
+});

@@ -2,7 +2,7 @@
 
 Cross-repo Public Relations node: /Users/armanisadeghi/code/common-docs/systems/marketing/public-relations/STATE.md (verified truth + proposal in /Users/armanisadeghi/code/common-docs/projects/public-relations/PLAN.md, research in RESEARCH.md) — a journalist pitch is Lane B and media lists/journalist intelligence/coverage are ALREADY this system. Read it before building anything PR-shaped in ANY repo; do not fork `crm.party`, `agent.message_template`, or the send gate for it.
 
-**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live · deals + kanban pipelines live` · **Tier:** `1` · **Last updated:** `2026-08-30`
+**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live · deals + kanban pipelines live` · **Tier:** `1` · **Last updated:** `2026-09-18`
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/STATE.md` — read it before touching this feature in ANY repo.
 
@@ -820,8 +820,225 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 - **Enrollment asks the same question everywhere** — `OutreachListPicker`
   (hook + fields), extracted from `AddToOutreachListDialog`.
 
+## Email a record with Gmail (`features/crm/gmail/`)
+
+Write an email **from** a Person (or a deal's Person) and send it through the
+reviewed-send path Google approved us on — then keep the sent message as a real
+row on that record's timeline. Champions: HubSpot for the associated sent
+record, Superhuman for the draft experience; the audit trail on the sent record
+is the part neither of them has. Plan: `common-docs/projects/google-native/PLAN.md` §4.4.
+
+**The parts.** `GmailComposePanel` is the surface (compose → review); it is
+mounted by `GmailComposeWindow` (overlay `gmailComposeWindow`, opened with
+`useOpenGmailComposeWindow`) from the Person header, the deal header and the
+Activity card. `recipients.ts` decides which addresses the record offers;
+`mailbox.ts` is the ONE recipient-field parser (RFC 5322 mailboxes);
+`recipient-integrity.ts` decides whose timeline a send may land on and attributes
+every Cc; `preflight.ts` is the ONE Send-time gate for both send paths;
+`reviewed-send-contract.ts` is the wire contract of the reviewed-send endpoint —
+what the request carries and what the answer says the server recorded;
+`sent-record-facts.ts` is the ONE reader of a sent row's facts and
+`GmailSentRecordDetails.tsx` renders them on the timeline; `types.ts` holds the
+shapes.
+
+🚨 **THE ROW IS WRITTEN BY THE SERVER, NOT BY THIS FEATURE** (since 2026-09-17,
+aidream `4dbffdffb`). `POST /google-workspace/gmail/send-reviewed` gates every
+recipient through the same authority the campaign path asks, sends, and then
+writes the `crm.interaction` row, its `platform.associations` edges and the
+`crm.sending_event` — answering with all of it. The browser's own writer
+(`service.ts`) and edge writer (`associations.ts`) are DELETED: two writers meant
+any caller that was not this browser sent ungated, and no sending event existed to
+correlate a bounce or a complaint (VERIFY-B1-B2-R4 V4 / amendment A8). Guard:
+`the-client-writes-no-sent-record.test.ts` (behavioural + a census over every
+module in the folder + the two deleted filenames).
+
+**The rules this corner runs on**
+
+- **The panel never sends.** `GmailReviewCard`
+  (`features/google-workspace/agent/`) sends, because that card IS the
+  authorization: every field editable, the bytes on screen are the bytes that
+  leave, one message per approval. The panel's own primary button says "Review
+  before sending" and the review step spells out the consequence above the
+  card's Send.
+- **`crm.check_send_eligibility` runs before the card is offered**, through
+  `features/crm/compliance/service.ts` — the ONE send authority. A verdict that
+  has not answered yet is NOT permission: Review stays disabled while the checks
+  are in flight, because the card's Send posts straight to the reviewed-send
+  endpoint and cannot be gated from outside it.
+- 🚨 **EVERY RECIPIENT FIELD IS PARSED FIRST, then every parsed address is asked
+  about, held or not.** A To or Cc field is an RFC 5322 address LIST, and
+  `mailbox.ts` is the one thing that reads it: `Ada Lovelace <ada@example.com>`,
+  `"Doe, John" <john@x.com>`, `a@x.com, b@y.com`. A field it cannot read is
+  REFUSED by name with the form to use — never guessed at, never waved through.
+  Each parsed address — INCLUDING one this record holds — is then resolved with
+  `findMediumIdsForAddress`
+  (`crm/compliance/service.ts`, read-only, never creates the row), which returns
+  EVERY medium row the organization holds for it — the live unique index includes
+  `platform_slug`, so one address can hold several and the suppression may be on
+  any of them — and the gate is asked about each. Only an address this
+  organization holds no row for at all passes without a verdict, because no
+  suppression can exist without one. The record's own medium is asked about as
+  well as the organization's rows, never instead of them: the same value can carry
+  a second medium row on another Person, and the opt-out may be on that one. A lookup that cannot be read, INCLUDING a
+  value the canonicalizer refuses, REFUSES: "cannot confirm eligibility" is never
+  "clear". Two holes closed here: before 2026-09-17 both paths `continue`d past
+  exactly the addresses nobody had vetted (VERIFY-B1-B2 D2), and until F-20 the
+  lookup swallowed `normalizeMediumValue`'s throw and answered "no row", so any
+  recipient written the way every mail client prints it walked straight past the
+  gate and was delivered by the server (VERIFY-B1-B2-R2 N2 — the disqualifying
+  finding; `send-authority.test.ts` is the guard).
+- 🚨 **A CHANGED RECIPIENT IS A DIFFERENT PERSON — one primitive, both paths.**
+  `recipient-integrity.ts::assessGmailRecipientIntegrity` decides whether a send
+  may be recorded on the record (the address must be one the RECORD holds, or —
+  for an agent proposal — the address the draft proposed) and words the refusal.
+  A send it refuses is recorded on NO Person and the surface says so with the
+  address. The compose panel had no such guard until 2026-09-17: a message to a
+  stranger landed on the open Person's timeline under the toast "Sent, and
+  recorded on Ada's timeline" (VERIFY-B1-B2 D1). Guard:
+  `recipient-integrity.test.ts` scans BOTH consumers for the shared import and
+  for the absence of a private copy. The comparison is on PARSED addresses, so
+  the record's own address in display form is its own address (it used to be a
+  stranger: the message left and was recorded on nobody, R2 break A).
+- 🚨 **A Cc IS A RECIPIENT, and it is attributed on the row.** The gate asks
+  about every Cc, and `recipient-integrity.ts` now returns one attribution per
+  copied-to address — the contact point when this record holds it, and an honest
+  "this record does not hold it" when it does not. `service.ts` writes that as
+  `metadata.cc_attribution` and `GmailSentRecordDetails` prints it, so a second
+  customer's address on a Person's timeline says what it is instead of sitting
+  there unexplained (R2 N9) — on BOTH paths since 2026-09-17: the approval queue's
+  `gmail_send` kind passed no `sentCc` at all, so an agent-proposed send recorded a
+  stranger's address with nothing saying whose it was, while the compose panel
+  attributed it. Still open, and named: a Cc'd Person gets no row on
+  her OWN timeline — resolving an address to a second Person is the Contacts
+  import's job and is not done here.
+- **`channel = gmail` is `channel_code = 'email'` + `provider = 'gmail'`.**
+  `channel_code`'s CHECK is a closed list of eight and `provider` is already how
+  the table names the carrier (live rows say `twilio`, `apollo`). The external
+  message id is `provider_interaction_id`; the account it went out through is
+  `provider_account_id` (the Google **connection id**, not the address — an
+  address can be aliased).
+- **ONE writer, and both callers describe the same record to it.** The compose
+  panel and the approval queue's `gmail_send` kind each hand `GmailReviewCard` a
+  `plan` — the record context that rides the request (`ReviewedGmailSendPlan` in
+  `reviewed-send-contract.ts`) — so an agent's sent message and a person's sent
+  message are the same row shape on the same timeline. `organization_id` is
+  REQUIRED (422 without it) and is the PARTY's own organization; a send that names
+  no party is still gated and still sent (the card is the authorization) and the
+  server answers `record_failure` saying nothing was recorded.
+- 🚨 **THE PLAN IS DECIDED AT THE CLICK, NEVER FROM THE DRAFT.** Every field on
+  the review card is editable up to the click, and the server records what the
+  request carried — so the Person, the contact point and each Cc's attribution are
+  decided from the recipients on the card at that moment. Before the server owned
+  the record, this ran AFTER the send on the reported receipt; it now runs
+  immediately before the post, over the same parsed addresses, which is sound
+  because the two parsers agree case by case (`mailbox-agreement.test.ts`).
+- 🚨 **EVERY GAP THE SERVER REPORTS IS SAID OUT LOUD, ONCE, BY THE CARD.** The
+  message has left and nothing unsends it, so `record_failure` (error),
+  `sending_event_gap`, each `association_failures` entry and each recipient
+  `warnings` entry become toasts through `reviewedSendNotices` — the card raises
+  them because it is on every send path. The compose panel therefore claims
+  "recorded on X's timeline" ONLY when the answer named an `interaction_id`, and
+  repeats nothing. A person who believes a message was recorded when it was not
+  will send it again.
+- 🚨 **A DELIVERED ADDRESS THAT DISAGREES WITH THE FILED ONE IS NAMED.** The
+  browser can no longer correct the row, so `deliveredAddressDisagreement`
+  compares the address the server says it delivered to (case-insensitively, as the
+  corpus instructs) against the address the row was attributed to, and says so
+  when they differ.
+- 🚨 **A REFUSED RECIPIENT IS HTTP 409 `gmail_send_refused`, AND NOTHING WAS
+  SENT.** The gate runs before the provider write. The card renders the
+  authority's own sentence plus any block `fix` the sentence does not already
+  carry (`reviewedSendRefusalOf` / `reviewedSendRefusalFixes`), and never resolves
+  the ask. The client preflight stays as the fast first answer; this is the last
+  one.
+- 🚨 **AND THE ANSWER'S ADDRESSES ARE THE ONES GOOGLE GOT, not the ones typed.**
+  `POST /gmail/send-reviewed` answers `to` and `cc` as the server's own recipient
+  parser read them — bare addresses, display names stripped (aidream lane B-10,
+  VERIFY-B1-B2-R2 N2) — `sendReviewedGmail` narrows them into
+  `ReviewedGmailSendOutcome`, and the card reports THOSE in its ask. They are what
+  the row's own `metadata.to` / `metadata.cc` carry, and what the filed address is
+  checked against. The card used
+  to report its typed field, so `Ada Lovelace <ada@example.com>` — delivered to
+  `ada@example.com` — was judged as a string no Person holds and the message to the
+  open record's own address was recorded against nobody. A server that answers no
+  addresses is older than that change: the typed field stands in and the stand-in
+  announces itself ON SCREEN with the remedy (a toast, never only the console).
+  Guard:
+  `features/google-workspace/agent/the-card-sends-and-reports-real-addresses.test.tsx`.
+- **The gate runs at Send time, on the card's own recipients.** The compose
+  step's check is about the address in ITS To field; the card's `preflight` prop
+  is the last gate and covers To *and* Cc, failing CLOSED when the checks cannot
+  be read (`preflight.ts`). An address the record does not hold has nothing to
+  look up, and the surface says so in words.
+- **The audit trail is on its six COLUMNS, with the jsonb copy as the fallback,
+  read through one accessor.** `migrations/crm_interaction_gmail_audit_trail.sql`
+  is applied and `types/database.types.ts` now carries all six columns, so
+  `sent-record-facts.ts::gmailSentRecordFacts` reads them as ordinary typed
+  columns — no cast. The server writes the columns AND the same six keys into
+  `metadata.audit_trail`, from the same values in the same statement, and the
+  accessor prefers the column; the jsonb leg is what rows written before the
+  columns existed carry. The earlier claim here, and in `gmail/types.ts` and
+  `sent-record-facts.ts`, that the generated types lagged was true when written and
+  is now false — corrected 2026-09-17 (F-37) with the readers.
+  `approved_by` is never a value this client sends: the server stamps the
+  authenticated caller, and drafted-by is re-read off the approval row when the
+  request names one.
+- **The timeline RENDERS the sent record.** `GmailSentRecordDetails` shows the
+  provider, the address it actually went to, the account it went out through,
+  Gmail's message id, "Associated with" (Person, deal, project — each an
+  `EntityRef` door), drafted-by (the agent as a door, its run as a copyable id —
+  there is no run viewer to route to) and approved-by (the person resolved through
+  `useOrgMembers`, plus the time). Until 2026-09-17 the timeline rendered a
+  subject and a date and none of it (VERIFY-B1-B2 A4/D6).
+- 🚨 **"Associated with" is a real edge, written by the SERVER.** The spine writes
+  `crm_interaction → party | crm_deal | project` with role `gmail_send`
+  (`GMAIL_SEND_ASSOCIATION_ROLE` in `gmail/types.ts` is the same spelling — two
+  would be two sets of edges and a reader would see half of them). A refused edge
+  never unwinds the row: it comes back in `association_failures` and the card says
+  the message is recorded but not linked. The project id is
+  still not a column (a CRM table may not depend on a project FK, db-rules §6d)
+  and stays in `metadata.composed_from_project_id` as the breadcrumb. Two
+  histories here: the browser service once CLAIMED this write with no such code
+  anywhere (A5/D7), then wrote it through the association store, and it now rides
+  the same request as the row.
+- 🚨 **The organization on the row is the PARTY's, and two live triggers agree.**
+  `trg_inherit_org` (`platform.inherit_org_from_parent`) fills a NULL org from the
+  party; `crm._inherit_parent_org` RAISES when an explicit org differs from the
+  party's. The deal record page therefore passes the PARTY's
+  `organization_id` (`InteractionTimeline`'s `partyOrganizationId`), not the
+  deal's — and every database refusal comes back as a sentence with the "log it by
+  hand" remedy (`write_refusal_sentence`, server-side now), never raw Postgres
+  text, which used to reach the toast (VERIFY-B1-B2 D8). The server also refuses a
+  party/organization disagreement in WORDS before the send, rather than letting the
+  insert fail after the message has left.
+- **Compose is a first-class action.** "Send email" sits on the Person header, on
+  the deal header and on the Activity card. It used to appear ONLY after clicking
+  the "Email" chip in the log-a-past-activity strip, so arriving on a Person
+  showed no way to write to them (VERIFY-B1-B2 A1). The chat entrance is the
+  existing `google_email_send` client tool: an agent's `prepare_email` draft is
+  reviewed in `GmailReviewCard` through `PendingAsksZone` — that hand-off is
+  reachable, and it records nothing on a timeline because nothing in a chat says
+  which Person the message is about.
+
 ## Not built yet
 
+- A regenerated `types/python-generated/api-types.ts` for this endpoint. It still
+  carries the pre-spine shape (five request fields, `message_id` alone), because
+  `pnpm sync-types` cannot run without database environment — the two exact
+  failures are in the header of `gmail/reviewed-send-contract.ts`, which holds the
+  shape meanwhile and is measured against the server's Pydantic models by
+  `reviewed-send-contract-is-the-servers.test.ts`. A session with that environment
+  runs `pnpm sync-types` and the contract module becomes a thin camelCase adapter.
+- A caller that passes `projectId` from a PROJECT surface. The compose window,
+  the panel and the request all take it; no project surface opens compose yet, so
+  the project edge is exercised only by its unit test.
+- A door to an agent RUN. `GmailSentRecordDetails` shows the drafted-by run as a
+  copyable id because no run route exists to send a reader to.
+- A `crm.sending_event` row for a send from a PERSONAL Gmail mailbox: that
+  table's `identity_id` is NOT NULL and points at a registered CRM sending
+  identity, which a personal connection is not. The server writes the event when
+  the mailbox IS registered and, when it is not, answers `sending_event_gap` — a
+  sentence the card shows, so the absence is stated instead of discovered later.
 - "Shared" list scope (needs a crm grant-reader RPC).
 - The `web.brand` fold and public expert registration — see
   [`common-docs/systems/crm/HANDOFF.md`](/Users/armanisadeghi/code/common-docs/systems/crm/HANDOFF.md).
@@ -829,6 +1046,323 @@ lands in `/crm/outreach-lists/[listId]`, the workspace that already exists
 ---
 
 ## Change log
+
+- 2026-09-18 — **F-50: `refinePartyDetail` gives the header's TYPE CHIP the record's OWN kind, per row.** F-47 shipped the honest per-TYPE generic ("Contact") because `DetailRecordType.label` is a `string`, not a function of the row — so the chip still said "Contact" for both the real company `d3dc196a-3a63-4fae-b2a4-e2605eadb3b2` and a real person, one register entry serving 1,432 companies and 460 people. F-46 landed the escalation (`DetailRecordType.labelForRow?: (row) => string | null`, consumed by `useDetailCore` for the chip and the stand-in titles only); `refinePartyDetail` now sets it to `partyKindWord(row.party_kind)`, so the chip reads "Company" over the company row and "Person" over a person row, in every presentation. `title` already did this for the "Untitled …" stand-in — `labelForRow` is the same word reaching the chip. Red-then-green over the REAL rows through the REAL type map: `features/item-presentation/__tests__/a-company-is-never-called-a-person.test.tsx`'s new `[data-detail-type-chip]` assertions (6 cases: Company/Person × window/docked/page) all read "Contact" before the fix, the type-level generic; restored, all read the row's own kind. 17/17 green in the file.
+
+- 2026-09-18 — **F-48: the census's 14 baselined offenders converted to the
+  one door.** F-47's `person-doors-census.test.ts` baseline is now the two
+  legitimate entries only (the entity registry's own `hrefFor` and the party
+  route page's own sign-in-gate echo) — every hand-built `/crm/${id}` call
+  site it censused now calls `resolveEntityDoors("party", id).href`:
+  `CrmListPage.tsx` (row open, the row menu's Open entry, Copy link),
+  `columns.tsx` (Name column href), `crm-row-actions.tsx` (both menu targets),
+  `SaveContactFromSelectionDialog.tsx` (the saved-contact toast link),
+  `outreach-lists/OutreachListDetailPage.tsx` (Member column, row menu, row
+  open), `chasebox/types.ts` (`chaseboxFixHref`'s three party-record cases),
+  `chasebox/components/ChaseboxDraftDialog.tsx` (the base path under the
+  `?interaction=` override), `inbox/columns.tsx` (the subject column href),
+  and `entity-write-targets.ts` (the refusal sentence's `/crm/<id>` mention).
+  Two second builders for the same route are gone: `inbox/types.ts`'s
+  `inboxPartyHref` (repointed `inboxRowHref` straight at the resolver) and
+  `hr/routes.ts`'s `hrPartyHref` (repointed `ProfileHeader.tsx` and
+  `useHrEmployeeMenu.tsx`). `CrmCreatePartyWindow.tsx`'s post-create push now
+  resolves through the same door. `record-copy.ts`'s `formatIdentityCopy`
+  printed `Type: Organization` (a title-cased raw enum, not the lexicon word)
+  — it now prints `partyKindWord(view.kind)` from F-47's `party-words.ts`, so
+  a Company reads "Company" in the AI-copy summary, not "Organization" (the
+  lexicon's word for the tenant, never a CRM record). Guard now RED-then-GREEN
+  proven: the shrunk baseline still matches every remaining hand-built site
+  (only the two legitimate ones), and the census + inbox tests are green.
+
+- 2026-09-18 — **F-47: the word for a party lives in ONE place, the CRM inbox
+  stopped leaving itself, and the Person-door guard became a class guard
+  (VERIFY-U-P1-R5, N5–N7).** Live census: `crm.party` holds 1,892 rows, 460
+  `person` and 1,432 `organization`, no other value and no nulls. **The words:**
+  new `features/crm/party-words.ts` is the ONE resolver — Person · Company, and
+  **Contact** for an unknown or not-yet-loaded kind (the CRM's own existing
+  generic; nothing coined) — keyed by the closed `PARTY_KINDS` vocabulary, so the
+  eight hand-written `party_kind === "person" ? … : …` ternaries have a home and a
+  new kind added to the vocabulary fails the guard instead of silently reading
+  "Person". `PartyPeek` no longer titles every loading record, and every nameless
+  company, "Person". **The dossier:** new `features/crm/party-detail.ts` is the
+  curated field set the Detail primitive shows for a party — the record page's own
+  order and labels (`record-copy.ts`), the ONE contact-points read (new
+  `partyContactPointsQuery`, which `fetchPartyDetail` now also uses so there is
+  one join shape, not two), the ONE suppression rule (`reachability.ts`) and the
+  platform's plain-words map for `visibility` (new `lib/record-words.ts`). It
+  reaches all three presentations as ONE `refineDetail` on the party registration
+  (`refinePartyDetail`), never a second loader or renderer.
+  Plumbing — `version`, `name_key`, `record_class`, provenance, locked fields,
+  bare ids — is never shown. **The doors:** `inbox/useInboxRowActions.tsx`
+  hand-built the party route three times, so opening a reply's contact LEFT the
+  queue, which is the exact defect F-40 filed; it now opens in place through the
+  registered opener (`useOpenItemPresentation`) and takes its copy-link URL from
+  `resolveEntityDoors("party", id)`. `__tests__/person-doors-census.test.ts` was
+  instance-scoped (13 named files, `<Link>`/`<a>` tags only) and silent on that
+  very file; it now walks every `.ts`/`.tsx` under `features/`, `app/` and
+  `components/`, reads every shape a URL can be built in, and fails BY NAME.
+  Red-then-green: it named `useInboxRowActions.tsx` lines 74/135/163 before the
+  fix, green after. Its baseline is a census of 14 files that still hand-build the
+  route, each with its reason, and a listed file that stops matching FAILS — the
+  list can only shrink.
+
+- 2026-09-18 — **F-41: the READ surfaces learned about `purpose`, and the approver
+  is told what was set aside and what gets added.** Round-5 verification
+  (`common-docs/projects/google-native/VERIFY-B1-B2-R5.md` W1, W3, W4, W5) found
+  four silences around the reviewed Gmail send, all of them on the client side of
+  lane B-20/B-26. **W1:** the first real reviewed 1:1 registers the sender's own
+  connected mailbox as `crm.sending_identity` with `purpose='correspondence'` so
+  the send has a `crm.sending_event`; every sweep excluded those rows and no READ
+  did, so `/crm/sending-identities` listed a person's personal Gmail as a `draft`
+  outreach mailbox whose next step was "prove you own this domain" — on
+  `gmail.com`, forever — and the Connect-mailbox dialog put the same account in
+  its BLOCKED list under "This mailbox is already set up as a sending identity",
+  which is false, while the server would have promoted it. Now: the list asks for
+  `purpose=outreach` explicitly (`listSendingIdentities(org, purpose)`, aidream's
+  own filter and default), the audit rows are ONE click away through a second
+  read by name (`useCorrespondenceIdentities`) and render as what they are — the
+  server's own `purpose_note`, no status badge, no setup step, no issues list —
+  with "Use for campaigns" stating the consequence FIRST (domain proof, warm-up,
+  and that campaign replies mean we start reading that mailbox), and the dialog
+  renders the server's third state (`recorded_for_audit` + `promotion_note`) as a
+  pickable row behind the same confirmation instead of a false refusal.
+  `features/crm/sending-identities/purpose.ts` holds the client half and
+  `purpose-is-the-servers.test.ts` measures every field, sentence, the route's
+  default and the server's own "an audit row is not already-used" rule against the
+  sibling aidream checkout. **W3:** `crm.check_send_eligibility` answers for a
+  cold CAMPAIGN when no list is named, so `jurisdiction_prohibited` ("Germany
+  requires permission BEFORE you write, even for business email") fires on an
+  ordinary reply; the spine exempts it — correctly — and kept nothing, and the
+  verdict's `warnings` array never carried it, so nobody was told. The approvals
+  queue now renders those set-aside rules above the review card with the spine's
+  declared reason for each (`features/crm/gmail/reviewed-send-exemptions.ts`,
+  whose table is diffed BOTH WAYS against `GATE_EXEMPT_BLOCKS` and
+  `CORRESPONDENCE_EXEMPT_BLOCKS` by
+  `reviewed-send-exemptions-are-the-servers.test.ts`), the send's answer carries
+  `exempted_blocks` into the approval receipt, and the timeline reads them back
+  off `crm.interaction.metadata`. **W4/R24:** when a send names an outreach
+  mailbox and the recipient's medium, the spine appends an unsubscribe footer and
+  a postal block AFTER approval — so the card now says so before the click and the
+  sent record shows the exact `footer_text`; `compliance_class` and the footer
+  ride the receipt too, so "sent exactly as approved" can never be claimed by a
+  message that carried a footer. **W5:** the `crm.sending_event` row now exists
+  for every reviewed send, which makes the machinery LOOK correlated while a
+  mailbox recorded for audit is deliberately never watched — so
+  `bounce_correlation: "not_watched"` is said out loud on the post-send answer and
+  on the sent record, in the server's own sentence, and never guessed either way.
+  No screen was seen (this container has no browser and the hosts are not on its
+  allowlist); `bounce_correlation` is not yet on `gmail_interaction_metadata`, so
+  the timeline's leg for it is UNMEASURED-until-present and prints nothing
+  meanwhile.
+
+- 2026-09-17 — **F-40: an existing Person opens IN PLACE.** `crm.party` had no
+  in-place presentation at all: `hasPeek("party")` was false and the only party
+  window (`CrmCreatePartyWindow`) creates a NEW record, so every surface that
+  names a Person — the approvals queue's contact-import card, the outreach
+  dialogs, the PR/backlink prospect tables, the CRM inbox — could only send the
+  reader to `/crm/<id>` (lane F-36 under Bugbot round 20, PR 228: a reviewer had
+  to leave the queue to find out who a proposal was about). Two registrations,
+  no new Person renderer: `features/organizations/peek/kinds/PartyPeek.tsx`
+  (registered in `peek/registry.ts` + `kinds-list.ts`) reads the canonical
+  `fetchPartyDetail` and answers "which Dana is this?" with the employer line,
+  the contact values and their reachability, inside the shared `PeekDialog`; and
+  a `party` entry in `features/item-presentation/registry.tsx` — THE Detail
+  primitive type map — so the Person also shows as a window (the default), a
+  docked panel or `/detail/party/<id>`. The 360° workspace stays
+  `PartyRecordPage` at `/crm/<id>` and the detail's own doors reach it.
+  ~23 hand-built `/crm/<id>` links (dedup cards, `EmploymentCard`,
+  `GoogleContactsImportPanel`, `TopicExperts`, the inbox/chasebox dialogs) still
+  name a Person with a plain `Link` and therefore have no peek — they are
+  EntityRef-adoption debt, not registry debt.
+
+- 2026-09-18 — **F-43: closed most of F-40's EntityRef-adoption debt.** Every
+  hand-built `/crm/${partyId}` `Link`/`<a>` in the dedup cards
+  (`DuplicateReviewPage`, `MergeStatusCard`, `CandidatePairCard`),
+  `EmploymentCard`, `CallQueuePage`, `ChaseboxDraftDialog`,
+  `InboxReplyDialog`, and `features/research/components/experts/TopicExperts.tsx`
+  / `features/marketing/content-plan/components/{NodeAssociations,EntityManager}.tsx`
+  now names the Person through `EntityRef token="party"` (route + peek + the
+  explicit new-tab door), each keeping its own surface behaviour — a dialog
+  or triage queue's door opens in a new tab so a reviewer never loses their
+  place, a plain page's door stays in-place. `CrmListPage`'s row-open and
+  `OutreachListDetailPage`'s member table were left as-is: both already open
+  through `MatrxDataTable`'s own `href` column (real anchor, keyboard/SR/
+  middle-click, D112) plus `onRowOpen` — a working door, just without a peek,
+  and adding one means touching the `@ai-matrx/design-system` table component
+  itself (a package, out of scope for this lane). `useInboxRowActions.tsx`
+  was left as-is too: its `/crm/${row.party_id}` links live inside
+  `ItemMenuEntry` action-registry builders, the sanctioned door primitive for
+  a row-actions menu, not a bypass of one. Census guard:
+  `features/crm/__tests__/person-doors-census.test.ts`.
+
+- 2026-09-18 — **F-43b: fixed F-43's row-layout regression (Bugbot round 23,
+  frontend PR 228, comment 4042451873).** `EntityRef`'s outer wrapper is
+  `inline-flex` (hugs its own text) — right for a table cell, wrong for a row
+  whose OLD markup was itself the row. Three F-43 sites broke this way:
+  `TopicExperts.tsx`'s roster `<Link className="flex items-center gap-2 …">`
+  was a full-width block row inside a `divide-y` stack, so several people
+  wrapped onto one line instead of stacking — fixed by adding `flex w-full`
+  to the `EntityRef`'s own `className` (which overrides the wrapper's
+  `inline-flex` via `cn()`/`tailwind-merge`). `EntityManager.tsx` and
+  `NodeAssociations.tsx`'s old `<Link className="min-w-0 flex-1 …">` WAS the
+  flex item that took the remaining row width, pushing the unlink/detach
+  control to the far edge — `fill` alone only grows the LABEL *inside*
+  `EntityRef`'s wrapper, not the wrapper itself in the OUTER row, so both now
+  also pass `className="min-w-0 flex-1"` on the `EntityRef`. Census of the
+  other eight F-43 sites found no sibling instance of the class: each of
+  them kept `EntityRef` inline inside a `flex-wrap`/prose row exactly as the
+  `Link` it replaced was, with no block/`flex-1`/`w-full` layout to carry.
+  Guard: `components/official/entity-ref/__tests__/full-row-fill.test.tsx`.
+
+- 2026-09-17 — **F-37: the client adopted the reviewed-send spine and STOPPED
+  writing the sent record.** The server now gates every recipient, sends, and
+  writes the `crm.interaction` row, its association edges and the
+  `crm.sending_event` (aidream `4dbffdffb`), so `features/crm/gmail/service.ts`
+  (`recordGmailSendInteraction`, `gmailInteractionRow`, `sendMetadata`,
+  `gmailWriteRefusalSentence`, `narrowGmailSendReceipt`) and
+  `features/crm/gmail/associations.ts` (`recordGmailSendAssociations`) are DELETED
+  — no shim, no fallback — and `GMAIL_SEND_ASSOCIATION_ROLE` moved to
+  `gmail/types.ts` beside the other reader constants. New:
+  `gmail/reviewed-send-contract.ts`, the wire contract (`organization_id` now
+  REQUIRED, plus the record, authorship and Cc-attribution fields; the response's
+  `interaction_id`, `record_failure`, `associations_written`,
+  `association_failures`, `sending_event_id`, `sending_event_gap`, `compliance`,
+  `warnings`, `audit_columns_written`), because `pnpm sync-types` cannot run
+  without database environment and a generated file is never hand-edited — the two
+  exact failures are in that module's header and
+  `reviewed-send-contract-is-the-servers.test.ts` measures every field this client
+  sends or reads against the server's own Pydantic models (and that `approved_by`
+  is still refused). `GmailReviewCard` gained a `plan` prop: the record context is
+  decided from the recipients on the card at the click (both send paths), and the
+  card raises every gap the answer reports — plus the 409 `gmail_send_refused`
+  sentence with its block fixes, where nothing was sent. Guards, each proven
+  failing-then-passing: `the-client-writes-no-sent-record.test.ts` (no Supabase
+  client, no association store, no `crm.interaction` insert anywhere in the folder,
+  and the two deleted filenames stay deleted), `reviewed-send-contract.test.ts`,
+  the four new card tests in
+  `features/google-workspace/agent/the-card-sends-and-reports-real-addresses.test.tsx`,
+  and `mailbox-agreement.test.ts` now drives the corpus through the REAL send path
+  (`recipientsOfSend`) and asserts the two-address `To` refusal carries the
+  server's own remedy. Also corrected the stale claim in `gmail/types.ts` and
+  `sent-record-facts.ts` that `types/database.types.ts` lacked the six audit
+  columns: it carries them, so the accessor reads them typed, with the jsonb copy
+  as the pre-column fallback. `npx jest features/crm/gmail features/approvals
+  features/google-workspace` = 38 suites / 297 tests green; `pnpm check:parse`,
+  `pnpm check:kind-marker-law` and a scoped `tsc --noEmit` clean.
+- 2026-09-17 — **Bugbot round 16, PR 228 (review 5242015393, comment
+  4041900049, Medium), fixed: preflight no longer bolts a second, contradicting
+  remedy onto the parser's own refusal.** `parseToField`
+  (`gmail/mailbox.ts`) already refused a multi-address `To` with its own
+  remedy ("one recipient in To; add others in Cc") — but
+  `preflightGmailRecipients` (`gmail/preflight.ts`) treated EVERY `!ok` parse
+  as unreadable syntax and appended "…and separate them with commas" to all
+  of them, so the send was blocked (correctly) while the screen told the
+  person to do the opposite of the parser's own fix at the same time. The
+  class fix: a parse refusal's `reason` now carries its own remedy, once, at
+  the source (`parseMailboxField`'s unreadable-syntax case in `mailbox.ts`
+  gained the comma remedy it was missing; `parseToField`'s multi-address case
+  already had its own), and `preflightGmailRecipients` prints that sentence
+  VERBATIM — it never composes a second one. Census of every caller that
+  built a refusal sentence from a parse result
+  (`grep -rn "separate them with commas\|not an email address" features/`):
+  only `preflight.ts` composed one; `recipient-integrity.ts`'s
+  `addressesOf` reads a parse result but never turns a refusal into copy.
+  Guard: `send-authority.test.ts` — every corpus-style refusal case now
+  asserts the on-screen sentence equals `recipientsOfSend`'s own `reason`
+  (via `This message was not sent: ${reason}`) and that exactly one of the
+  two named remedy markers appears (`remedyCount`); RED before the fix (the
+  multi-address case carried both markers at once).
+
+- 2026-09-17 — **F-30: two of the four VERIFY-B1-B2-R4 findings, fixed**
+  (`common-docs/projects/google-native/VERIFY-B1-B2-R4.md` V1/V6/V7). **The
+  recipient parser now agrees with the server on the `To` field.** Until this
+  fix `gmail/mailbox.ts` treated `To` as an ordinary address LIST, so
+  `a@x.com, b@y.com` was ACCEPTED here and sent to `sendReviewedGmail`, which
+  the server then refused, one round-trip later, about a field this parser
+  had already waved through (R4 V1). `To` now carries exactly ONE mailbox
+  (`parseToField`, `gmail/mailbox.ts`), refused by name with the server's own
+  remedy ("one recipient in To; add others in Cc"); `Cc` still carries as many
+  as a person writes — `preflight.ts`'s `recipientsOfSend` parses the two
+  fields under their own rules and merges, deduplicated. Also closed the same
+  drift the server just fixed on its side (rule 4, "every domain label is
+  real" — a trailing or doubled dot leaves an empty domain label):
+  `hasRealDomain()` in `mailbox.ts`. **The agreement guard**
+  (`gmail/mailbox-agreement.test.ts`) reads aidream's own
+  `services/google_workspace/mailbox_corpus.json` (lane B-14's file, generated
+  from `mailbox_corpus.py` — never edited here) and drives the client parser
+  over every one of the server's own cases; it fails UNMEASURED, never a
+  quiet pass, when the sibling checkout is absent, and it would have failed on
+  the multi-address-To and trailing-dot cases before this fix (proved by
+  reverting the code under the same test). **The older-server stand-in now
+  announces itself on screen.** `GmailReviewCard.send()`'s fallback to the
+  typed field — when `/gmail/send-reviewed` answers no `to`/`cc` — used to
+  reach only `console.warn` (R4 V6); it now raises `toast.warning(...)` with
+  the remedy ("The server did not confirm the delivered address; recorded the
+  address as typed — refresh after the next server release"), through the
+  app's one toast module, which also feeds the Error Inspector. Both fixes
+  are red-then-green (`send-authority.test.ts`, `the-card-sends-and-reports-
+  real-addresses.test.tsx`). Left open for the round's owner: V2 (the agent's
+  contact import is a second, review-free path) and V4 (the reviewed-send
+  endpoint asks no send authority) — neither is `features/crm/gmail/`'s file.
+- 2026-09-17 — **F-20: round 2's Gmail findings, fixed**
+  (`common-docs/projects/google-native/VERIFY-B1-B2-R2.md` N2/N7/N8/N9/N10, A1,
+  A5/D7, breaks A/B/C/D/I). **The disqualifying one:** every recipient field now
+  goes through ONE RFC 5322 parser (`gmail/mailbox.ts`) BEFORE the send authority
+  judges anything, so `Ada Lovelace <ada@example.com>` is Ada's address — it was
+  a string nothing could normalise, the lookup answered "no row", the preflight
+  read that as "no suppression can exist" and SENT, and the same input lost the
+  record. A field the parser cannot read is refused with the form to use; a
+  two-address To is checked address by address; `findMediumIdsForAddress`
+  replaced `findMediumIdForAddress` and returns EVERY medium row for an address
+  (the `.limit(1)` ignored `platform_slug`, N10); an unnormalisable value now
+  THROWS so the caller fails closed. Cc is attributed on the row
+  (`metadata.cc_attribution`) and printed on the timeline. The chat has its
+  entrance: the conversation's own menu offers "Send email to <Person>" for every
+  Person the conversation is associated with, through the same opener (A1).
+  Openers pass the project they are standing in, the compose panel names it
+  before the send, and the association write goes through the cache-aware store
+  `add` so the record's own associations panel refreshes (N8). A failed
+  "Associated with" edge is recorded ON the row and shown with a retry instead of
+  a toast nobody keeps (N7); "Associated with" prints what the edges actually
+  say. Migration written, not applied:
+  `migrations/crm_interaction_association_types.sql`.
+
+- 2026-09-17 — **The first hostile verification's Gmail findings, fixed**
+  (`common-docs/projects/google-native/VERIFY-B1-B2.md` A1/A4/A5/D1/D2/D6/D7/D8/D9).
+  ONE recipient-integrity primitive (`gmail/recipient-integrity.ts`) now decides
+  whose timeline a send may land on, consumed by BOTH the compose panel and the
+  approvals `gmail_send` kind (the kind's private copy is deleted; a test scans
+  both consumers for the shared import) — a message to an address the record does
+  not hold is recorded on NO Person and the toast says so with the address. The
+  Send-time gate asks about EVERY recipient, resolving an unheld address against
+  the organization's own contact mediums (`findMediumIdForAddress`) and failing
+  closed. The sent row's facts are rendered on the timeline —
+  provider, recipient, "Associated with" doors, drafted-by, approved-by — through
+  the ONE accessor `gmail/sent-record-facts.ts`, which reads the live audit COLUMN
+  when a row carries one and the jsonb copy until `pnpm db-types` runs. The
+  "Associated with" EDGES are actually written now (`gmail/associations.ts` →
+  `assoc_add`, role `gmail_send`, Person + deal + project). "Send email" is a
+  first-class action on the Person and deal headers instead of hiding behind the
+  Email chip. The deal page passes the PARTY's organization, and every database
+  refusal is a sentence with the "log it by hand" remedy (raw text goes to the
+  Error Inspector). Three false claims in `gmail/service.ts` and `gmail/types.ts`
+  corrected: the migration IS applied, two triggers DO have an opinion about the
+  organization, and the association write now exists.
+
+- 2026-09-17 — **Import from Google Contacts, on the People list.** The CRM
+  header opens `googleContactsImportWindow` in place
+  (`features/connectors/import/GoogleContactsImportPanel`; Google-native PLAN
+  §4.5): a searchable list of the person's Google contacts with
+  already-imported badges, the field map showing which Google value lands in
+  which Person field and what the write will do, the mapping editable before
+  saving, and the save through the SAME governed resolver
+  (`resolve_party`) — no second contact-creation rule. A Person value that no
+  longer equals what the last import wrote is reported as edited here and is
+  never overwritten; "Update from Google" is the same call with the diff shown.
+  Per-value provenance lands in `crm.party.field_provenance` (aidream migration
+  0778); until it is applied the write is skipped WITH its remedy, never
+  silently. Nothing is ever written back to Google.
+- 2026-09-17 — **CRM stamps the org the user CHOSE, never a substitute.** `CrmListPage` and `DealsPage` read `selectOrganizationId` instead of the legacy `selectEffectiveOrganizationId` (`organization_id ?? personal_organization_id`), and `DealsPage` also drops its `?? list.ctx.orgIds[0]` fallback — an arbitrary membership standing in for a choice. `ImportWizard` seeds its own "Into organization" picker from the explicit org, and `OutreachListCreateDialog` resolves through the bounded workspace wait. With no organization selected: the create form refuses with the sentence `PartyCreateForm` already uses, the deal dialog refuses by name, Save view is disabled with its reason, and nothing is written.
 
 - 2026-09-13 — **A customer row says who made it, and the grid has ONE chip for
   it** (DD-131 slice 3). `crm.party` gained `created_by_tier` /

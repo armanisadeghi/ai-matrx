@@ -64,7 +64,6 @@ function present(
     // never a second line beside it.
     explain: supplied.explain ?? meta?.description ?? undefined,
     floor: supplied.floor,
-    scopes: supplied.scopes,
     options: supplied.options ?? optionsFromAllowedValues(meta?.allowed_values),
   };
 
@@ -75,7 +74,7 @@ function present(
  * Read every HR configuration key for one employer.
  *
  * `presentation` lets a panel add what only it knows — the sentence explaining WHY
- * a key exists, a statutory floor with its citation, the scope rungs. It is keyed by
+ * a key exists, a statutory floor with its citation. It is keyed by
  * `full_key` (`hr.employees.directory_shows_manager`).
  */
 export function useHrKnobs(args: {

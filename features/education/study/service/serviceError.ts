@@ -6,6 +6,7 @@
 // "Unknown error" (see project memory: Supabase message-less errors).
 
 import type { StudyResult } from "../types";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 
 /**
  * Surface PostgREST/DB errors loudly (message + details + hint + code), never a
@@ -61,6 +62,18 @@ export function isPostgrestResultError(error: unknown): boolean {
 
 /** Return the failure; log only errors the structured Supabase adapter did not capture. */
 export function fail<T>(context: string, error: unknown): StudyResult<T> {
+  // A missing organization is a REFUSAL the person can fix, not a service
+  // failure to log and hide: the transport's own sentence ("Select an
+  // organization before sending this request.") is an instruction to a
+  // programmer, so the remedy sentence replaces it and the console noise is
+  // dropped. Law: common-docs/policies/context-is-carried-never-rebuilt.md.
+  if (isOrganizationRequiredError(error)) {
+    return {
+      data: null,
+      error:
+        "Select an organization before saving \u2014 every record is filed under one organization. Pick yours from the avatar menu.",
+    };
+  }
   const message = describeError(error);
   if (!isPostgrestResultError(error)) {
     console.error(`[study] ${context}: ${message}`, error);

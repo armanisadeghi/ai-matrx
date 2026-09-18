@@ -29,6 +29,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 import type { Database, Json } from "@/types/database.types";
 import {
   ALL_MANIFESTS,
@@ -318,7 +319,7 @@ function dbRowToSurfaceAgentRole(row: UiSurfaceAgentRoleRow): SurfaceAgentRole {
       ? (row.kind as DbRoleKind)
       : "single") as SurfaceAgentRole["kind"],
     defaultAgentId: row.default_agent_id,
-    mandateKey: row.mandate_key,
+    mandateKey: row.mandate_key ? storedMandateKey(row.mandate_key) : null,
     maxAgents: row.max_agents,
     allowCustom: row.allow_custom,
     autoRun: (AUTO_RUN_MODES.includes(row.auto_run as DbAutoRun)
@@ -427,7 +428,8 @@ function diffSurfaceWriteTarget(
   // row that correctly stores "manual").
   const mPolicy = manifest.applyPolicy ?? "manual";
   const dPolicy = db.applyPolicy ?? "manual";
-  if (mPolicy !== dPolicy) diff.applyPolicy = { manifest: mPolicy, db: dPolicy };
+  if (mPolicy !== dPolicy)
+    diff.applyPolicy = { manifest: mPolicy, db: dPolicy };
   // `updatesValue` is `undefined` in code / `null` in the DB when absent.
   const mUpdates = manifest.updatesValue ?? null;
   const dUpdates = db.updatesValue ?? null;
@@ -492,7 +494,9 @@ function canonicalJson(input: unknown): string {
   return JSON.stringify(canonicalize(input) ?? null);
 }
 
-function dbRowToSurfaceClientTool(row: UiSurfaceClientToolRow): SurfaceClientTool {
+function dbRowToSurfaceClientTool(
+  row: UiSurfaceClientToolRow,
+): SurfaceClientTool {
   return {
     name: row.name,
     label: row.label,
@@ -924,9 +928,7 @@ export async function computeDriftReport(sb: Sb): Promise<SurfaceDriftReport> {
       }
     }
   }
-  const dbNamespaces = new Set(
-    configNamespaceRows.map((r) => r.namespace),
-  );
+  const dbNamespaces = new Set(configNamespaceRows.map((r) => r.namespace));
   for (const namespace of [...dbNamespaces].sort()) {
     if (!registeredNamespaces.has(namespace)) {
       unknownNamespaces.push({ namespace, source: "db" });
@@ -1107,7 +1109,7 @@ function collectBrokenMappings(
 export interface ApplyManifestSyncOptions {
   /** When true, deletes `db_only` rows. Defaults to false — admins opt in. */
   deleteStale?: boolean;
-  /** When false, skips registering manifests for surfaces not present in `ui_surface`. Defaults to false (no implicit surface creation). */
+  /** Defaults to true: code manifests own registration. Explicit false refuses missing registrations before any writes. */
   createMissingSurfaces?: boolean;
   /**
    * THE RECENCY GUARD ON THE GLOBAL SWEEP. `deleteStale: true` used to delete
@@ -1518,7 +1520,7 @@ export async function applyManifestSync(
 ): Promise<ApplyManifestSyncResult> {
   const {
     deleteStale = false,
-    createMissingSurfaces = false,
+    createMissingSurfaces = true,
     includeRecent = false,
     provenance = { syncedBy: null, syncedFrom: apiSyncedFrom() },
   } = opts;
@@ -1543,14 +1545,17 @@ export async function applyManifestSync(
   const existingSurfaces = new Set(existingSurfaceRows.map((r) => r.name));
 
   const skippedMissingSurface: string[] = [];
-  const targetManifests = ALL_MANIFESTS.filter((m) => {
-    if (existingSurfaces.has(m.surfaceName)) return true;
-    if (createMissingSurfaces) return true;
-    skippedMissingSurface.push(m.surfaceName);
-    return false;
-  });
+  const targetManifests = ALL_MANIFESTS;
+  const missingNames = targetManifests
+    .filter((m) => !existingSurfaces.has(m.surfaceName))
+    .map((m) => m.surfaceName);
+  if (!createMissingSurfaces && missingNames.length > 0) {
+    throw new Error(
+      `Surface sync refused before writing: missing registrations: ${missingNames.join(", ")}. Enable Create missing surfaces and sync again.`,
+    );
+  }
 
-  // 2. Optionally create missing surfaces (default OFF).
+  // 2. Register missing code-owned surfaces before their mirror children.
   if (createMissingSurfaces) {
     const missing = targetManifests
       .filter((m) => !existingSurfaces.has(m.surfaceName))
@@ -1563,13 +1568,16 @@ export async function applyManifestSync(
           client_name: clientName ?? "matrx-user",
           description: "",
           label: m.label,
-          value_groups: (m.groups ?? []),
+          value_groups: m.groups ?? [],
           ...(urlPattern ? { url_pattern: urlPattern } : {}),
           ...(m.intro?.trim() ? { intro: m.intro.trim() } : {}),
         };
       });
     if (missing.length > 0) {
-      const ins = await sb.schema("ui").from("ui_surface").insert(missing);
+      const ins = await sb
+        .schema("ui")
+        .from("ui_surface")
+        .upsert(missing, { onConflict: "name", ignoreDuplicates: true });
       if (ins.error) throw ins.error;
     }
   }
@@ -1579,7 +1587,12 @@ export async function applyManifestSync(
   for (const manifest of targetManifests) {
     for (const v of manifest.values) {
       upsertRows.push(
-        manifestRowFor(manifest.surfaceName, v, provenance, systemOrganizationId),
+        manifestRowFor(
+          manifest.surfaceName,
+          v,
+          provenance,
+          systemOrganizationId,
+        ),
       );
     }
   }
@@ -1638,7 +1651,8 @@ export async function applyManifestSync(
       );
     }
   }
-  const writeTargetUpserted: ApplyManifestSyncResult["writeTargetUpserted"] = [];
+  const writeTargetUpserted: ApplyManifestSyncResult["writeTargetUpserted"] =
+    [];
   if (writeTargetRows.length > 0) {
     const wtRes = await sb
       .schema("ui")
@@ -1701,7 +1715,7 @@ export async function applyManifestSync(
       .from("ui_surface")
       .update({
         label: manifest.label,
-        value_groups: (manifest.groups ?? []),
+        value_groups: manifest.groups ?? [],
         readiness: manifest.readiness,
         readiness_note: manifest.readinessNote ?? null,
         ...(manifest.overlayId ? { overlay_id: manifest.overlayId } : {}),
@@ -1872,7 +1886,11 @@ export async function applyManifestSync(
         !manifestRoleKeys.has(`${r.surface_name}::${r.name}`),
     );
     const { toDelete: rolesToDelete, skipped: skippedRoles } =
-      partitionStaleByRecency("ui_surface_agent_role", staleRoles, includeRecent);
+      partitionStaleByRecency(
+        "ui_surface_agent_role",
+        staleRoles,
+        includeRecent,
+      );
     skippedRecentRows.push(...skippedRoles);
     for (const row of rolesToDelete) {
       const prefCount = await sb
@@ -1914,7 +1932,9 @@ export async function applyManifestSync(
       { label: "ui.ui_surface_write_target" },
     );
 
-    const managedForTargets = new Set(targetManifests.map((m) => m.surfaceName));
+    const managedForTargets = new Set(
+      targetManifests.map((m) => m.surfaceName),
+    );
     const manifestTargetKeys = new Set(
       targetManifests.flatMap((m) =>
         (m.writeTargets ?? []).map((t) => `${m.surfaceName}::${t.name}`),
@@ -1977,7 +1997,11 @@ export async function applyManifestSync(
         !manifestToolKeys.has(`${t.surface_name}::${t.name}`),
     );
     const { toDelete: toolsToDelete, skipped: skippedTools } =
-      partitionStaleByRecency("ui_surface_client_tool", staleTools, includeRecent);
+      partitionStaleByRecency(
+        "ui_surface_client_tool",
+        staleTools,
+        includeRecent,
+      );
     skippedRecentRows.push(...skippedTools);
     for (const row of toolsToDelete) {
       const del = await sb

@@ -129,15 +129,32 @@ const actions: MediaHostPorts["actions"] = {
  */
 const diagnostics = {
   capture(info: MediaFailureInfo): void {
+    // The heal ladder's rows (media 0.6): `code` carries the NAMED root cause
+    // (the row's error_type column), prefixed `healed:` when a lane served the
+    // user anyway — so "errors that fix themselves" are counted, filtered and
+    // burned down in the same catcher as dead renders, never silently normal.
+    // `durable: true` pins them into the DB regardless of any future tier rule.
+    const code =
+      info.diagnosis !== undefined
+        ? `${info.healed ? "healed:" : ""}${info.diagnosis}`
+        : undefined;
     captureError({
-      source: "media",
+      source: info.healed ? "media-healed" : "media",
       relation: info.mediaRef,
       message: info.message,
       details: `phase=${info.phase}${
         info.retryOutcome ? ` retry=${info.retryOutcome}` : ""
-      }${info.terminal ? "" : " (warning)"}`,
+      }${info.healed ? ` HEALED via ${info.healedBy ?? "?"}` : ""}${
+        info.attempts
+          ? ` lanes=${info.attempts
+              .map((a) => `${a.lane}:${a.outcome}${a.status ? ` ${a.status}` : ""} ${a.ms}ms`)
+              .join(" | ")}`
+          : ""
+      }${info.terminal || info.healed ? "" : " (warning)"}`,
       recoverable: !info.terminal,
       raw: info,
+      ...(code !== undefined ? { code } : {}),
+      ...(info.phase === "heal" ? { durable: true } : {}),
       ...(info.status !== undefined ? { status: info.status } : {}),
     });
   },

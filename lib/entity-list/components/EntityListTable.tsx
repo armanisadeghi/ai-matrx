@@ -21,6 +21,8 @@ import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
   ColumnFiltersState,
   MatrxColumnDef,
+  MatrxDataTableMobileCardControls,
+  MatrxDataTableSelectionConfig,
 } from "@ai-matrx/design-system/data-table/types";
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { cn } from "@/lib/utils";
@@ -28,6 +30,7 @@ import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
 import type { EntityListConfig, EntityRowActions } from "../config";
 import { entityColumnSortable } from "../columns";
 import { entityListDoorColumnId, entityListRowHref } from "../doors";
+import { EntityPhoneCard, resolvePhoneCardLayout } from "../phoneCards";
 import { NONE_VALUE, type EntityFacets, type EntityFilters } from "../types";
 
 interface Props<TRow> {
@@ -47,6 +50,17 @@ interface Props<TRow> {
   showSharedColumns: boolean;
   hiddenColumns: string[];
   onSaveEdits: (edits: Record<string, Partial<TRow>>) => Promise<void>;
+  /**
+   * BULK SELECTION, or nothing at all.
+   *
+   * 🚨 `undefined` IS THE CONTRACT FOR EVERY SURFACE THAT DID NOT OPT IN. The
+   * prop is spread conditionally below, so the table receives no `selection`
+   * key whatsoever and renders exactly what it rendered before this capability
+   * existed — no leading column, no bulk bar, no `data-matrx-table-selection-*`
+   * node. Passing a zero-state selection object instead would add a checkbox
+   * column to eighteen list surfaces on the strength of a default.
+   */
+  selection?: MatrxDataTableSelectionConfig<TRow>;
   onQueryChange: (next: {
     page: number;
     pageSize: number;
@@ -123,6 +137,7 @@ export function EntityListTable<TRow>({
   onQueryChange,
   emptyAction,
   emptyState,
+  selection,
 }: Props<TRow>) {
   const { favorite } = config;
 
@@ -160,6 +175,27 @@ export function EntityListTable<TRow>({
   // config's entity token. A column that declares its own `href` keeps it.
   const doorColumn = entityListDoorColumnId(config);
 
+  // The phone card's layout is derived from the SAME visibility inputs the
+  // grid uses, so a column the user turned off stays off on both widths.
+  const phoneLayout = resolvePhoneCardLayout(config.columns, {
+    doorColumn,
+    hiddenColumns,
+    showSharedColumns,
+  });
+
+  const defaultMobileCards = (
+    row: TRow,
+    _index: number,
+    controls: MatrxDataTableMobileCardControls,
+  ) => (
+    <EntityPhoneCard
+      layout={phoneLayout}
+      controls={controls}
+      rowId={config.getRowId(row)}
+      rowName={config.getRowName(row)}
+    />
+  );
+
   const columns: MatrxColumnDef<TRow>[] = config.columns
     .filter(
       (spec) =>
@@ -170,6 +206,7 @@ export function EntityListTable<TRow>({
       const facetOptions = spec.facet ? facets.byKind[spec.facet] : undefined;
       return {
         ...spec.column,
+        label: spec.column.label ?? spec.label,
         cell:
           spec.id === "favorite" && favorite ? favoriteCell : spec.column.cell,
         href:
@@ -264,7 +301,15 @@ export function EntityListTable<TRow>({
         </ItemMenu>
       )}
       copy={config.copy}
-      mobileCards={config.mobileCards}
+      // THE NARROW LAYOUT IS THE PRIMITIVE'S, NOT THE FEATURE'S. A surface may
+      // still hand-write its phone card; when it does not, the shell renders
+      // the canonical stacked card from the columns the surface already
+      // declared, so every list route inherits a phone layout instead of a
+      // 3,000px table in a 364px box. See ../phoneCards.tsx.
+      mobileCards={config.mobileCards ?? defaultMobileCards}
+      // Spread, never `selection={selection}`: a surface that declared no
+      // `bulkActions` must reach the table with the key absent (see Props).
+      {...(selection ? { selection } : {})}
       emptyState={emptyState ?? { ...config.emptyState, action: emptyAction }}
     />
   );

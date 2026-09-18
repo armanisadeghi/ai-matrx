@@ -1,9 +1,14 @@
 import { createClient } from "@/utils/supabase/server";
+import {
+  PC_ARTICLE_PUBLIC_SELECT,
+  PC_EPISODE_WITH_SHOW_PUBLIC_SELECT,
+} from "@/features/podcasts/publicColumns";
+import { publiclyServableEpisodes } from "@/features/podcasts/publicGate";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import type { Metadata } from "next";
 import { PodcastBlogPage } from "@/features/podcasts/components/player/PodcastBlogPage";
-import type { PcArticle, PcEpisodeWithShow } from "@/features/podcasts/types";
+import type { PcArticleDisplayRow, PcEpisodeWithShow } from "@/features/podcasts/types";
 import { mapPcEpisodeWithShowRow } from "@/features/podcasts/types";
 
 export const revalidate = 3600;
@@ -23,12 +28,15 @@ function isUUID(str: string): boolean {
 // episode (by slug or UUID) and its PUBLISHED blog article.
 const resolveBlog = cache(async (slug: string) => {
   const supabase = await createClient();
-  const episodeQuery = supabase
-    .schema("podcast").from("pc_episodes")
-    .select(
-      "*, show:pc_shows(id, slug, title, description, image_url, og_image_url, thumbnail_url, author, is_published, created_at, updated_at)",
-    )
-    .is("deleted_at", null);
+  // THE ONE ROW GATE (features/podcasts/publicGate.ts) — same reason as the
+  // episode page: an unpublished episode's companion article was reachable to
+  // anyone with the slug, because `pub_read` carries no `is_published` term.
+  const episodeQuery = publiclyServableEpisodes(
+    supabase
+      .schema("podcast").from("pc_episodes")
+      // Signed-out visitors run as `anon`, a COLUMN grant: `*` is 42501 (DD-230).
+      .select(PC_EPISODE_WITH_SHOW_PUBLIC_SELECT),
+  );
   const { data: episode } = isUUID(slug)
     ? await episodeQuery.eq("id", slug).single()
     : await episodeQuery.eq("slug", slug).single();
@@ -38,7 +46,7 @@ const resolveBlog = cache(async (slug: string) => {
 
   const { data: article } = await supabase
     .schema("podcast").from("pc_articles")
-    .select("*")
+    .select(PC_ARTICLE_PUBLIC_SELECT)
     .is("deleted_at", null)
     .eq("episode_id", mappedEpisode.id)
     .eq("kind", "blog")
@@ -46,7 +54,7 @@ const resolveBlog = cache(async (slug: string) => {
     .maybeSingle();
   if (!article) return null;
 
-  return { episode: mappedEpisode, article: article as PcArticle };
+  return { episode: mappedEpisode, article: article as PcArticleDisplayRow };
 });
 
 export async function generateMetadata({

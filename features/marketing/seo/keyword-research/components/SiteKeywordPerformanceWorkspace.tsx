@@ -725,10 +725,7 @@ export function SiteKeywordPerformanceWorkspace() {
             }),
           }}
           rowActions={(row) => (
-            <div
-              className="flex items-center gap-0.5"
-              onClick={(event) => event.stopPropagation()}
-            >
+            <>
               <Button
                 type="button"
                 variant="ghost"
@@ -759,7 +756,7 @@ export function SiteKeywordPerformanceWorkspace() {
                   <MoreVertical className="h-3.5 w-3.5" />
                 </Button>
               </ItemMenu>
-            </div>
+            </>
           )}
           /*
            * NO DEAD ENDS + THE MISMATCH RULE. A row click used to open the

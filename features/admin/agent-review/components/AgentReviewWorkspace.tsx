@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  Flag,
   MessageSquareText,
   RotateCcw,
 } from "lucide-react";
@@ -16,9 +17,12 @@ import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MediumComponentLoading } from "@/components/matrx/LoadingComponents";
 import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
+import { ContentTransferMenu } from "@ai-matrx/alchemy/react";
+import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { ConversationPane } from "@/features/messaging/components/ConversationPane";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUser } from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
 import {
   useSurfaceRuntimeRegistration,
@@ -34,6 +38,13 @@ import {
   loadReviewQueueItem,
   recordHumanReviewAction,
 } from "@/features/admin/agent-review/service";
+import {
+  approveAndRaise,
+  type ApproveAndRaiseResult,
+} from "@/features/admin/agent-review/approve-and-raise";
+import { getFeedbackRaisedFromReviewRow } from "@/actions/feedback.actions";
+import { feedbackHref } from "@/features/admin/feedback/doors";
+import type { UserFeedback } from "@/types/feedback.types";
 import {
   EMPTY_REVIEW_REGISTRY,
   loadReviewRegistry,
@@ -73,6 +84,9 @@ export default function AgentReviewWorkspace({
 }) {
   const router = useRouter();
   const user = useAppSelector(selectUser);
+  // The organization the reviewer is acting in — carried into "Approve and
+  // raise", whose feedback item is filed under one organization.
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
   const [row, setRow] = useState<ReviewQueueRow | null>(null);
   const [registry, setRegistry] = useState<ReviewRegistry>(
     EMPTY_REVIEW_REGISTRY,
@@ -80,6 +94,29 @@ export default function AgentReviewWorkspace({
   const [feedback, setFeedback] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // "Approve and raise" spans two systems (the queue + the feedback console),
+  // so its outcome is held explicitly and shown as two facts. A toast alone
+  // would let a half-success — approved, note lost — scroll away unseen.
+  const [raiseOutcome, setRaiseOutcome] = useState<ApproveAndRaiseResult | null>(
+    null,
+  );
+  /** The note kept for a retry after `approved_not_raised`. */
+  const [noteAwaitingRaise, setNoteAwaitingRaise] = useState("");
+  const [raised, setRaised] = useState<UserFeedback[]>([]);
+  const [raisedError, setRaisedError] = useState<string | null>(null);
+
+  /** Everything ever raised from this row — durable proof, not a toast. */
+  async function refreshRaised() {
+    const result = await getFeedbackRaisedFromReviewRow(reviewId);
+    if (result.success && result.data) {
+      setRaised(result.data);
+      setRaisedError(null);
+      return;
+    }
+    setRaisedError(
+      result.error ?? "Notes raised from this review could not be read.",
+    );
+  }
 
   async function refresh() {
     try {
@@ -122,6 +159,33 @@ export default function AgentReviewWorkspace({
     };
   }, [reviewId]);
 
+  useEffect(() => {
+    let active = true;
+    getFeedbackRaisedFromReviewRow(reviewId)
+      .then((result) => {
+        if (!active) return;
+        if (result.success && result.data) {
+          setRaised(result.data);
+          setRaisedError(null);
+          return;
+        }
+        setRaisedError(
+          result.error ?? "Notes raised from this review could not be read.",
+        );
+      })
+      .catch((readError: unknown) => {
+        if (!active) return;
+        setRaisedError(
+          readError instanceof Error
+            ? readError.message
+            : "Notes raised from this review could not be read.",
+        );
+      });
+    return () => {
+      active = false;
+    };
+  }, [reviewId]);
+
   // The surface emits only once the row is loaded: this page has early
   // returns for loading and error, and an unregistered surface is honest
   // where a scope of empty strings would be a lie. `useSurfaceRuntimeRegistration`
@@ -140,13 +204,23 @@ export default function AgentReviewWorkspace({
           review_feature: names.feature,
           review_created_at: row.created_at,
           review_updated_at: row.updated_at,
+          review_source: row.source,
           review_instructions: row.instructions,
+          review_domain_id: row.domain_id,
+          review_metadata:
+            typeof row.metadata === "object" &&
+            row.metadata !== null &&
+            !Array.isArray(row.metadata)
+              ? Object.fromEntries(Object.entries(row.metadata))
+              : { value: row.metadata },
           can_act: row.status === "ready_for_human" && Boolean(user?.id),
           ...(feedback ? { feedback_draft: feedback } : {}),
           ...(row.feedback ? { review_feedback: row.feedback } : {}),
           ...(row.conversation_id
             ? { review_conversation_id: row.conversation_id }
             : {}),
+          ...(row.feature_id ? { review_feature_id: row.feature_id } : {}),
+          ...(row.feedback_at ? { review_feedback_at: row.feedback_at } : {}),
           ...(triage.state === "ready" ? { review_triage: triage.triage } : {}),
         });
       }
@@ -230,53 +304,114 @@ export default function AgentReviewWorkspace({
     }
   }
 
+  /**
+   * THE ONE ACTION. `alreadyApproved` is the retry lane: the row is already
+   * approved and its conversation already carries the note, so only the filing
+   * runs again — a retry can never approve twice or post the note twice.
+   */
+  async function onApproveAndRaise(alreadyApproved: boolean) {
+    if (!user?.id || !row) return;
+    const note = alreadyApproved ? noteAwaitingRaise : feedback;
+    setSaving(true);
+    try {
+      const result = await approveAndRaise({
+        row,
+        userId: user.id,
+        note,
+        organizationId: selectedOrganizationId,
+        alreadyApproved,
+      });
+      setRaiseOutcome(result);
+      if (result.status === "approved_and_raised") {
+        setNoteAwaitingRaise("");
+        setFeedback("");
+        toast.success("Approved, and your note was raised.");
+      } else if (result.status === "approved_not_raised") {
+        setNoteAwaitingRaise(note.trim());
+        setFeedback("");
+        toast.error(`Approved, but the note was not raised: ${result.reason}`);
+      } else {
+        toast.error(result.reason);
+      }
+      await refresh();
+      await refreshRaised();
+    } catch (actionError) {
+      const reason =
+        actionError instanceof Error
+          ? actionError.message
+          : "Approve and raise failed.";
+      setRaiseOutcome({ status: "not_approved", reason });
+      toast.error(reason);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const content = (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <header className="shrink-0 border-b bg-card px-4 py-3 lg:px-6">
-        <div className="flex min-w-0 items-center gap-3">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-11 w-11 shrink-0 sm:h-9 sm:w-9"
-            aria-label="Back to reviews"
-            title="Back to reviews"
-            onClick={() => router.back()}
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-
-          <div className="min-w-0 flex-1">
-            <h1
-              className="truncate text-base font-semibold sm:text-lg"
-              title={row.title}
+      <NonEditableContextMenu
+        sourceFeature="admin"
+        surfaceName={ADMIN_AGENT_REVIEW_ITEM_SURFACE_NAME}
+        {...(getReviewScope ? { getApplicationScope: getReviewScope } : {})}
+        contentSource={{ type: "raw" }}
+        contextData={{
+          content: `${row.title}\n${REVIEW_STATUS_LABELS[status]}\n${row.instructions}`,
+        }}
+      >
+        <header className="shrink-0 border-b bg-card px-4 py-3 lg:px-6">
+          <div className="flex min-w-0 items-center gap-3">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-11 w-11 shrink-0 sm:h-9 sm:w-9"
+              aria-label="Back to reviews"
+              title="Back to reviews"
+              onClick={() => router.back()}
             >
-              {row.title}
-            </h1>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+
+            <div className="min-w-0 flex-1">
+              <h1
+                className="truncate text-base font-semibold sm:text-lg"
+                title={row.title}
+              >
+                {row.title}
+              </h1>
+            </div>
+
+            <Button
+              asChild
+              size="sm"
+              variant="outline"
+              className="h-11 shrink-0 sm:h-9"
+            >
+              <AppLink href={row.url} target="_blank" rel="noreferrer">
+                <ExternalLink className="mr-1.5 h-4 w-4" /> Open page
+              </AppLink>
+            </Button>
+            {surfaceHandle ? (
+              <ContentTransferMenu
+                surface={surfaceHandle}
+                label={row.title}
+                triggerVariant="transparent"
+                triggerSize="compact"
+              />
+            ) : null}
           </div>
 
-          <Button
-            asChild
-            size="sm"
-            variant="outline"
-            className="h-11 shrink-0 sm:h-9"
+          <nav
+            aria-label="Review classification"
+            className="mt-2 flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
           >
-            <AppLink href={row.url} target="_blank" rel="noreferrer">
-              <ExternalLink className="mr-1.5 h-4 w-4" /> Open page
-            </AppLink>
-          </Button>
-        </div>
-
-        <nav
-          aria-label="Review classification"
-          className="mt-2 flex min-w-0 items-center gap-1 text-xs text-muted-foreground"
-        >
-          <span className="min-w-0 truncate">{row.repo_slug}</span>
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <span className="min-w-0 truncate">{names.domain}</span>
-          <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-          <span className="min-w-0 truncate">{names.feature}</span>
-        </nav>
-      </header>
+            <span className="min-w-0 truncate">{row.repo_slug}</span>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 truncate">{names.domain}</span>
+            <ChevronRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            <span className="min-w-0 truncate">{names.feature}</span>
+          </nav>
+        </header>
+      </NonEditableContextMenu>
 
       <nav
         aria-label="Review progress"
@@ -390,6 +525,21 @@ export default function AgentReviewWorkspace({
             </Button>
             <Button
               className="h-11 sm:h-9"
+              variant="outline"
+              disabled={
+                saving || status !== "ready_for_human" || !feedback.trim()
+              }
+              title="Approve this review and raise your note as a new feedback item"
+              onClick={() => void onApproveAndRaise(false)}
+            >
+              <Flag className="mr-1.5 h-4 w-4" /> Approve and raise
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Approves this review and files your note as a new feedback item,
+              so a problem this review exposed gets its own thread.
+            </p>
+            <Button
+              className="h-11 sm:h-9"
               variant="ghost"
               disabled={saving || status === "archived"}
               onClick={() =>
@@ -413,6 +563,79 @@ export default function AgentReviewWorkspace({
               </Button>
             ) : null}
           </div>
+
+          {raiseOutcome ? (
+            raiseOutcome.status === "approved_and_raised" ? (
+              <div className="mt-4 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+                <p className="flex items-start gap-1.5 font-medium">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  Approved, and your note was raised as a new feedback item.
+                </p>
+                <AppLink
+                  href={raiseOutcome.feedbackHref}
+                  className="mt-2 inline-flex items-start gap-1.5 text-primary hover:underline"
+                >
+                  <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  Open the feedback item
+                </AppLink>
+              </div>
+            ) : raiseOutcome.status === "approved_not_raised" ? (
+              <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                <p className="font-medium">
+                  Approved — but your note was NOT raised.
+                </p>
+                <p className="mt-1">{raiseOutcome.reason}</p>
+                <p className="mt-1 text-xs">
+                  The review is approved and your note is in the discussion
+                  above. Only the new feedback item is missing — retry it here.
+                </p>
+                <Button
+                  className="mt-2 h-9"
+                  size="sm"
+                  variant="outline"
+                  disabled={saving}
+                  onClick={() => void onApproveAndRaise(true)}
+                >
+                  Raise the note again
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                <p className="font-medium">
+                  Nothing was approved and nothing was raised.
+                </p>
+                <p className="mt-1">{raiseOutcome.reason}</p>
+              </div>
+            )
+          ) : null}
+
+          {raised.length > 0 ? (
+            <div className="mt-6 border-t pt-4">
+              <h2 className="text-sm font-semibold">Raised from this review</h2>
+              <ul className="mt-2 space-y-2.5">
+                {raised.map((item) => (
+                  <li key={item.id}>
+                    <AppLink
+                      href={feedbackHref(item.id)}
+                      className="flex items-start gap-1.5 text-sm text-primary hover:underline"
+                    >
+                      <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      <span className="line-clamp-3">{item.description}</span>
+                    </AppLink>
+                    <p className="ml-5 text-xs text-muted-foreground">
+                      {item.feedback_type} · {item.status}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {raisedError ? (
+            <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              Notes raised from this review could not be read: {raisedError}
+            </div>
+          ) : null}
 
           <div className="mt-6 border-t pt-4">
             <h2 className="text-sm font-semibold">Original target</h2>

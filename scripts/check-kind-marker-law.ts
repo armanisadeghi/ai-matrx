@@ -46,6 +46,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import path from "node:path";
 import { KIND_KEY } from "@ai-matrx/content-ir";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = path.resolve(__dirname, "..");
 
@@ -196,7 +197,7 @@ function main(): void {
       "declare it on the model) — never delete a payload's identity to suit a reader.\n" +
       "Run `pnpm check:kind-marker-law --list` for the doors that ARE lawful.\n",
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 main();

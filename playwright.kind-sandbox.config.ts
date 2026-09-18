@@ -16,7 +16,7 @@
  */
 import { defineConfig, devices } from "@playwright/test";
 
-import { NO_APP_SENTENCE, resolveBaseURL } from "./features/content-ir/sandbox/browser/base-url";
+import { noAppSentence, resolveBaseURL } from "./features/content-ir/sandbox/browser/base-url";
 
 /**
  * Refuse here rather than inside a test. A missing app is not a failing
@@ -24,7 +24,7 @@ import { NO_APP_SENTENCE, resolveBaseURL } from "./features/content-ir/sandbox/b
  * browser launches is the difference between a remedy and a stack trace.
  */
 const baseURL = resolveBaseURL();
-if (!baseURL) throw new Error(NO_APP_SENTENCE);
+if (!baseURL) throw new Error(noAppSentence());
 // eslint-disable-next-line no-console
 console.log(`[kind-sandbox gate] driving ${baseURL}`);
 

@@ -182,8 +182,8 @@ function SavingsBand({
             value={fmtUsd(savings.savedUsd)}
             sub={
               savings.savedPct === null
-                ? "no live-cost estimate recorded"
-                : `${fmtPct(savings.savedPct)} off the live price`
+                ? "no live price recorded"
+                : `${fmtPct(savings.savedPct)} below the same tokens at the live price`
             }
             emphasis="success"
           />
@@ -194,8 +194,8 @@ function SavingsBand({
           />
           <Figure
             label="Live-equivalent"
-            value={fmtUsd(savings.estLiveUsd)}
-            sub="what the same work would have cost instantly"
+            value={fmtUsd(savings.liveEquivalentUsd)}
+            sub="the same actual tokens at the model's live catalog rate"
           />
           <Figure
             label="Cached input tokens"
@@ -212,6 +212,21 @@ function SavingsBand({
             muted={savings.cacheReadTokens === 0}
           />
         </div>
+      )}
+
+      {savings && savings.items > 0 && (
+        <p className="border-t border-border px-4 py-2 text-[11px] text-muted-foreground">
+          Pre-submission estimate for these items: {fmtUsd(savings.preSubmissionEstimateUsd)} — an
+          estimate from guessed tokens, never the saving basis.
+          {savings.unpricedItems > 0
+            ? ` ${fmtInt(savings.unpricedItems)} completed ${savings.unpricedItems === 1 ? "item has" : "items have"} no catalog price and ${savings.unpricedItems === 1 ? "is" : "are"} left out of these numbers.`
+            : ""}{" "}
+          The same figures lead the{" "}
+          <AppLink href="/administration/billing/spend" className="underline">
+            platform spend dashboard
+          </AppLink>
+          .
+        </p>
       )}
 
       {savings && savings.undeliveredItems > 0 && (

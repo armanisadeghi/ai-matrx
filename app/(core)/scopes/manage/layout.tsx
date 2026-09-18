@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/scopes", {
   titlePrefix: "Manage",
   title: "Scopes",
   description: "Redirect to the scopes hub.",
-  letter: "S",
+  letter: "SPM",
 });
 
 export default function ScopesManageRedirectLayout({

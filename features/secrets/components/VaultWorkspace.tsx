@@ -14,6 +14,7 @@ import { useState } from "react";
 import {
   AlertCircle,
   Building2,
+  Download,
   KeyRound,
   List,
   Plus,
@@ -31,6 +32,9 @@ import { Input } from "@ai-matrx/design-system";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useUserOrganizations } from "@/features/organizations/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { toast } from "@/lib/toast";
 import {
   Select,
   SelectContent,
@@ -71,6 +75,7 @@ import { VaultContextMenu } from "./VaultContextMenu";
 import { VaultCreateDialog } from "./VaultCreateDialog";
 import { VaultEnvImportDialog } from "./VaultEnvImportDialog";
 import { VaultCsvImportDialog } from "./VaultCsvImportDialog";
+import { VaultLoginExportDialog } from "./VaultLoginExportDialog";
 import { VaultItemDetail } from "./VaultItemDetail";
 
 export interface VaultWorkspaceProps {
@@ -99,6 +104,25 @@ export function VaultWorkspace({
 }: VaultWorkspaceProps) {
   const { organizations } = useUserOrganizations();
   const availableOrganizations = organizations.filter((org) => !org.isPersonal);
+  // Switching to the Organization tab acts in the organization the person
+  // SELECTED — never the first one they happen to belong to. A
+  // first-membership pick showed (and let them write) another tenant's
+  // credentials without anyone choosing it. With no selection the tab says so
+  // and changes nothing; the Select beside it stays the explicit picker.
+  // common-docs/policies/context-is-carried-never-rebuilt.md
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
+  const scopeSwitchOrganizationId =
+    availableOrganizations.find((org) => org.id === selectedOrganizationId)
+      ?.id ?? null;
+  const switchToOrganizationScope = (): string | null => {
+    if (!scopeSwitchOrganizationId) {
+      toast.error(
+        "No organization is selected, so there are no organization credentials to show. Choose the organization you are working in from the avatar menu and try again.",
+      );
+      return null;
+    }
+    return scopeSwitchOrganizationId;
+  };
   const [uncontrolledScope, setUncontrolledScope] = useState<VaultScope>({
     kind: "mine",
   });
@@ -146,6 +170,7 @@ export function VaultWorkspace({
   const [createOpen, setCreateOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [csvImportOpen, setCsvImportOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [uncontrolledSelectedId, setUncontrolledSelectedId] = useState<
     string | null
   >(null);
@@ -158,6 +183,9 @@ export function VaultWorkspace({
   // Creating is meaningless in "Shared with me" — those items are owned by
   // someone else.
   const canCreate = orgAdmin && !isShared;
+  // Export is deliberately narrower than the general item capabilities: only
+  // the currently loaded Mine scope can request a selected personal export.
+  const canExport = principal.type === "user" && scope.kind === "mine";
 
   const familiesPresent = (() => {
     const present = new Set<CredentialFamily>();
@@ -284,9 +312,7 @@ export function VaultWorkspace({
                             : null
                         }
                         onClick={() => {
-                          const organizationId =
-                            activeOrganization?.id ??
-                            availableOrganizations[0]?.id;
+                          const organizationId = switchToOrganizationScope();
                           if (!organizationId) return;
                           setUserScope({
                             kind: "organization",
@@ -415,9 +441,7 @@ export function VaultWorkspace({
                         role="tab"
                         aria-selected={scope.kind === "organization"}
                         onClick={() => {
-                          const organizationId =
-                            activeOrganization?.id ??
-                            availableOrganizations[0]?.id;
+                          const organizationId = switchToOrganizationScope();
                           if (!organizationId) return;
                           setUserScope({
                             kind: "organization",
@@ -533,7 +557,19 @@ export function VaultWorkspace({
                   credential{filtered.length === 1 ? "" : "s"}
                 </p>
                 {canCreate && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex min-w-0 flex-wrap items-center gap-1">
+                    {canExport && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs"
+                        onClick={() => setExportOpen(true)}
+                        disabled={vault.busy || vault.loading}
+                      >
+                        <Download className="mr-1.5 h-3.5 w-3.5" />
+                        Export selected logins
+                      </Button>
+                    )}
                     <Button
                       variant="ghost"
                       size="sm"
@@ -701,6 +737,13 @@ export function VaultWorkspace({
             onCommitted={vault.refresh}
           />
         )}
+        {canExport && (
+          <VaultLoginExportDialog
+            open={exportOpen}
+            onOpenChange={setExportOpen}
+            items={vault.items}
+          />
+        )}
       </div>,
     );
   }
@@ -755,8 +798,7 @@ export function VaultWorkspace({
                 role="tab"
                 aria-selected={scope.kind === "organization"}
                 onClick={() => {
-                  const organizationId =
-                    activeOrganization?.id ?? availableOrganizations[0]?.id;
+                  const organizationId = switchToOrganizationScope();
                   if (!organizationId) return;
                   setUserScope({ kind: "organization", organizationId });
                   setSelectedId(null);
@@ -844,6 +886,18 @@ export function VaultWorkspace({
 
         {canCreate && (
           <>
+            {canExport && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 shrink-0"
+                onClick={() => setExportOpen(true)}
+                disabled={vault.busy || vault.loading}
+              >
+                <Download className="mr-1.5 h-4 w-4" />
+                Export selected logins
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -995,6 +1049,13 @@ export function VaultWorkspace({
             loginUrls: item.login_urls,
           }))}
           onCommitted={vault.refresh}
+        />
+      )}
+      {canExport && (
+        <VaultLoginExportDialog
+          open={exportOpen}
+          onOpenChange={setExportOpen}
+          items={vault.items}
         />
       )}
     </div>,

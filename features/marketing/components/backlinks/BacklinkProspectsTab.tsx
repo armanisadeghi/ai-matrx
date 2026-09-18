@@ -736,7 +736,7 @@ export function BacklinkProspectsTab({
               ),
             }}
             rowActions={(row) => (
-              <div className="flex items-center gap-1">
+              <>
                 {row.review_status === "approved" ? (
                   <Button
                     size="sm"
@@ -766,7 +766,7 @@ export function BacklinkProspectsTab({
                 >
                   Reject
                 </Button>
-              </div>
+              </>
             )}
             detail={{
               title: (row) => row.display_domain,

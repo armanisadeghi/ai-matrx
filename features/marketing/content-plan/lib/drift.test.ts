@@ -22,6 +22,7 @@ const node = (overrides: Partial<PlanNodeRow> = {}): PlanNodeRow => ({
   parent_id: null,
   pillar_label: null,
   primary_keyword_id: null,
+    topic_id: null,
   priority: null,
   route: "/",
   site_id: "site-1",

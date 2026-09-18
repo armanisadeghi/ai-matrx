@@ -13,6 +13,7 @@
 
 import { ALL_MANIFESTS } from "@/features/surfaces/manifests/registry";
 import { OVERLAY_CATALOGUE } from "@/features/overlays/catalogue";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const manifestsByOverlay = new Map<string, string[]>();
 
@@ -65,4 +66,4 @@ if (duplicates.length > 0) {
   }
 }
 
-process.exit(unknown.length > 0 || duplicates.length > 0 ? 1 : 0);
+exitAfterDrain(unknown.length > 0 || duplicates.length > 0 ? 1 : 0);

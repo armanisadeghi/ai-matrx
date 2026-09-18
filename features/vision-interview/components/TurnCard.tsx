@@ -20,6 +20,7 @@ import { RichDocument } from "@/features/rich-document/RichDocument";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { ROLES, type InterviewTurnRow, type RoleKey } from "../types";
 import { RoleAvatar } from "./RoleAvatar";
+import { stripControlLines } from "@/lib/control-tokens/stripControlLines";
 
 function turnTime(iso: string): string {
   const d = new Date(iso);
@@ -45,7 +46,10 @@ function prettifyKey(key: string): string {
  * content (never stream parsing); anything unrecognized renders as-is.
  */
 function displayContent(turn: InterviewTurnRow): string {
-  const raw = (turn.content ?? "").trim();
+  // A declared machine line never reaches the reader, not even out of a row
+  // written before the emitter learned to strip it (jobs-bar-2026-09-16,
+  // item 10 — a live transcript still ended "WRAP_RATING: 4").
+  const raw = stripControlLines((turn.content ?? "").trim()).trim();
   if (!raw.startsWith("{")) return raw;
   try {
     const parsed = JSON.parse(raw) as {

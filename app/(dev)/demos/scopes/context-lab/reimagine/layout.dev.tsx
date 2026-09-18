@@ -7,7 +7,7 @@ export const metadata = createRouteMetadata(
     title: "Demo",
     description:
       "ui-reimagine bakeoff — trigger and picker-body variations for context selection.",
-    letter: "Dx",
+    letter: "DXR",
   },
 );
 

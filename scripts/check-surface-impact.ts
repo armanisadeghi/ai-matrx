@@ -60,6 +60,7 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(__dirname, "..");
 
@@ -319,7 +320,7 @@ async function main() {
         `  This check is the ONLY thing that sees who is mapped to a value. Running without it\n` +
         `  means you are changing surface vocabulary blind. Set the env and re-run.`,
     );
-    process.exit(3);
+    exitAfterDrain(3);
   }
 
   const [surfaces, dbValues, writeTargets, assocs, shortcuts] = await Promise.all([
@@ -769,7 +770,7 @@ async function main() {
     const manifest = codeBySurface.get(focusSurface);
     if (!manifest) {
       console.error(`${C.red}No manifest for "${focusSurface}".${C.reset}`);
-      process.exit(2);
+      exitAfterDrain(2);
     }
     const kids = descendantsOf(focusSurface);
     console.log(
@@ -854,5 +855,5 @@ async function main() {
 
 main().catch((err) => {
   console.error("Unexpected error:", err);
-  process.exit(2);
+  exitAfterDrain(2);
 });

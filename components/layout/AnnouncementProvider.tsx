@@ -6,7 +6,7 @@
  * Gates on `shellDataLoaded` (already part of the page's static graph
  * via the user slice). The body — server-action call to
  * `getActiveAnnouncements`, `SystemAnnouncement` types, and the
- * `SystemAnnouncementModal` markup — lives in
+ * `SystemAnnouncementBanner` markup — lives in
  * `AnnouncementProviderImpl.tsx` and is `next/dynamic`-loaded only after
  * shell data finishes hydrating, so its dep graph never enters the
  * static graph of any route.

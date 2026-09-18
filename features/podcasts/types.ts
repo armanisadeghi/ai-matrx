@@ -56,7 +56,8 @@ export type PcEpisodeSpeaker = {
 };
 
 /** One auto-generated chapter marker (podcast.chapter_marker agent output),
- *  persisted under `pc_episodes.metadata.chapters` for the player/RSS layer. */
+ *  persisted in the `pc_episodes.chapters` column for the player/RSS layer
+ *  (DD-234 — it lived in `metadata.chapters` until 2026-09-14). */
 export type PcEpisodeChapter = MediaChapterData;
 
 export type PcEpisode = {
@@ -80,9 +81,11 @@ export type PcEpisode = {
   /** Full generated dialogue script (migration pc_episodes_script) — null on
    *  older rows / uploaded episodes. Source for transcript + article gen. */
   script: string | null;
-  /** Auto-generated chapter markers (stored in metadata.chapters) — null until
-   *  generated. Write via podcastService.saveEpisodeChapters, never
-   *  updateEpisode (it is not a column). */
+  /** Auto-generated chapter markers — the `pc_episodes.chapters` COLUMN since
+   *  DD-234 (2026-09-14), and part of the signed-out bound, which is what lets
+   *  /podcast/[slug]/chapters.json serve a listener with no account. Null until
+   *  generated. Write via podcastService.saveEpisodeChapters, which replaces the
+   *  whole list — the only writer there has ever been. */
   chapters: PcEpisodeChapter[] | null;
   is_published: boolean;
   created_at: string;
@@ -205,16 +208,40 @@ function parseSpeakers(raw: Json | null): PcEpisodeSpeaker[] | null {
 }
 
 /**
- * Read `{ chapters: [...] }` (episode `metadata` or an agent's
- * `media_chapters` payload) into the persisted chapter list. Thin wrapper over
- * `readChapterList` — the `media_chapters` kind bridge's reader, THE one
- * canonical chapter reader (a duplicate copy here drifted; collapsed
- * 2026-08-23). `MediaChapterData` is field-identical to `PcEpisodeChapter`.
- * Returns null (not []) when nothing usable is present, for the row mappers.
+ * Read `{ chapters: [...] }` (an agent's `media_chapters` payload, or the
+ * `episode_chapters` write target's wire value) into the persisted chapter
+ * list. Thin wrapper over `readChapterList` — the `media_chapters` kind
+ * bridge's reader, THE one canonical chapter reader (a duplicate copy here
+ * drifted; collapsed 2026-08-23). `MediaChapterData` is field-identical to
+ * `PcEpisodeChapter`. Returns null (not []) when nothing usable is present.
+ *
+ * NOTE (DD-234, 2026-09-14): this reads an ENVELOPE `{ chapters: [...] }`. The
+ * persisted column is the bare ARRAY — `parseChaptersColumn` below.
  */
 export function parseChapters(raw: unknown): PcEpisodeChapter[] | null {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
   const list = readChapterList((raw as { chapters?: unknown }).chapters);
+  return list.length ? list : null;
+}
+
+/**
+ * Read `pc_episodes.chapters` — the COLUMN (DD-234, 2026-09-14), a bare JSON
+ * array of `{start_hint, title, summary}`.
+ *
+ * Until DD-234 this list lived in `metadata->'chapters'`, and `metadata` is a
+ * column `anon` may never read (DD-186). So `/podcast/<slug>/chapters.json`
+ * answered 404 "No chapters for this episode" to every signed-out listener, and
+ * feed.xml emitted no `<podcast:chapters>` element for any of them. Chapters are
+ * podcast CONTENT — public exactly when the episode is — so they now have a
+ * public-class column of their own, in the episode's declared signed-out bound
+ * (`PC_EPISODE_PUBLIC_COLUMNS` / `ANON_COLUMN_SURFACE`). `metadata` is unchanged
+ * and still withheld.
+ *
+ * Returns null (not []) when the column is null or holds nothing usable, so the
+ * mappers keep distinguishing "never generated" from "generated and empty".
+ */
+export function parseChaptersColumn(raw: unknown): PcEpisodeChapter[] | null {
+  const list = readChapterList(raw);
   return list.length ? list : null;
 }
 
@@ -223,10 +250,49 @@ function parseRssSettings(raw: Json | null): PcShowRssSettings | null {
   return raw as PcShowRssSettings;
 }
 
+/**
+ * THE SIGNED-OUT ROW SHAPE (DD-230, 2026-09-14).
+ *
+ * `anon` holds a COLUMN grant on the podcast tables, and the five columns it
+ * never holds are always the same: `created_by`, `updated_by`,
+ * `organization_id`, `version`, `metadata` (DD-186 — identity, bookkeeping and
+ * metadata leave regardless). A public reader therefore hands the display
+ * mappers a row that genuinely does not carry them, and a type that REQUIRES
+ * them makes the only correct query un-typable — which is exactly the pressure
+ * that kept `select("*")` in these routes until /podcast was telling four
+ * published shows they did not exist.
+ *
+ * So the mappers take this shape: the table's row with those five optional.
+ * Present for a signed-in reader, absent for a guest, never silently wrong.
+ */
+type SignedOutReadable<T> = Omit<
+  T,
+  "created_by" | "updated_by" | "organization_id" | "version" | "metadata"
+> &
+  Partial<
+    Pick<
+      T,
+      Extract<
+        keyof T,
+        "created_by" | "updated_by" | "organization_id" | "version" | "metadata"
+      >
+    >
+  >;
+
+/** `podcast.pc_articles` as a signed-out reader sees it. */
+export type PcArticleDisplayRow = SignedOutReadable<PcArticle>;
+
 // Accepts the display-column subset (the embed `show:pc_shows(...)` selects a
 // partial pick; the canonical base columns added in the podcast-schema move are
 // not needed for display mapping).
-type PcShowDisplayRow = Pick<
+//
+// DD-230: `created_by` is OPTIONAL here, and that is the type system finally
+// stating the signed-out bound. `anon` may not read identity columns, so every
+// public reader (/podcast, /podcast/[slug], feed.xml, chapters.json, /blog)
+// hands this mapper a row that genuinely does not carry one. Requiring it made
+// the narrowed selects un-typable and was the last thing standing between the
+// public podcast surfaces and a working `select`.
+type PcShowDisplayRow = SignedOutReadable<Pick<
   PcShowRow,
   | "id"
   | "slug"
@@ -237,11 +303,11 @@ type PcShowDisplayRow = Pick<
   | "thumbnail_url"
   | "author"
   | "is_published"
-  | "created_by"
   | "rss_settings"
   | "created_at"
   | "updated_at"
->;
+  | "created_by"
+>>;
 
 export function mapPcShowRow(row: PcShowDisplayRow): PcShow {
   return {
@@ -254,19 +320,31 @@ export function mapPcShowRow(row: PcShowDisplayRow): PcShow {
     thumbnail_url: row.thumbnail_url,
     author: row.author,
     is_published: row.is_published,
-    created_by: row.created_by,
+    // Absent for a signed-out reader by design (DD-230), never a lost value.
+    created_by: row.created_by ?? null,
     rss_settings: parseRssSettings(row.rss_settings),
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
 }
 
-export function mapPcEpisodeRow(row: PcEpisodeRow): PcEpisode {
+/**
+ * The episode columns the display mapper reads. `created_by` and `metadata` are
+ * OPTIONAL for the same reason as on the show above (DD-230): `anon` holds
+ * neither, so a public reader's row has neither.
+ *
+ * DD-234 (2026-09-14): `chapters` is NOT one of them any more. It is a real
+ * column in the signed-out bound, so a public reader's row carries it and
+ * `chapters.json` serves a listener with no account.
+ */
+export type PcEpisodeDisplayRow = SignedOutReadable<PcEpisodeRow>;
+
+export function mapPcEpisodeRow(row: PcEpisodeDisplayRow): PcEpisode {
   return {
     id: row.id,
     slug: row.slug,
     show_id: row.show_id,
-    created_by: row.created_by,
+    created_by: row.created_by ?? null,
     title: row.title,
     description: row.description,
     audio_url: row.audio_url,
@@ -282,7 +360,8 @@ export function mapPcEpisodeRow(row: PcEpisodeRow): PcEpisode {
     host_count: row.host_count,
     speakers: parseSpeakers(row.speakers),
     script: row.script,
-    chapters: parseChapters(row.metadata),
+    // DD-234: the column, never `metadata`. A signed-out reader holds this one.
+    chapters: parseChaptersColumn(row.chapters ?? null),
     is_published: row.is_published,
     created_at: row.created_at,
     updated_at: row.updated_at,
@@ -290,7 +369,7 @@ export function mapPcEpisodeRow(row: PcEpisodeRow): PcEpisode {
 }
 
 /** Supabase join row — `show` may be required with a partial column pick. */
-export type PcEpisodeWithShowRowInput = PcEpisodeRow & {
+export type PcEpisodeWithShowRowInput = PcEpisodeDisplayRow & {
   show?: Partial<PcShowRow> | null;
 };
 

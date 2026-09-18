@@ -85,6 +85,23 @@ export function QuestionScreen({ question, onReanswer }: QuestionScreenProps) {
           <b className="mb-1.5 block font-mono text-[10px] font-medium tracking-[0.1em] uppercase text-success">
             Answered · {verdictWords}
           </b>
+          {/* The answer's follow-through, on the answer itself (V3 N2): the
+              server's note ("recording…", "recorded", "confirmed — stands",
+              "recording failed — …") and, once recorded, where it landed. */}
+          {question.status_note ? (
+            <span
+              className="mb-1.5 block font-mono text-[10.5px] text-muted-foreground"
+              aria-live="polite"
+            >
+              {question.status_note}
+              {question.recorded_in ? (
+                <>
+                  {" · "}
+                  <span className="text-foreground/70">{question.recorded_in}</span>
+                </>
+              ) : null}
+            </span>
+          ) : null}
           {question.answer_text ? (
             // Verbatim: `whitespace-pre-wrap` so the spacing he typed is the
             // spacing he sees. Never trimmed, never re-flowed.

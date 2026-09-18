@@ -26,6 +26,7 @@
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = path.resolve(__dirname, "..");
 
@@ -257,7 +258,7 @@ function isTerminal(status: WorkflowRunStatus | null) {
     console.error(
       "\n🚨 self-test FAILED — fix scripts/check-run-is-over.ts before trusting a green run.\n",
     );
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log(
     "\n✅ self-test: RED on the hand-rolled union, on a private terminal set under any\n" +
@@ -300,7 +301,7 @@ function main(): void {
       "\nIf your site genuinely asks the ENGINE's question, add it to ENGINE_SITES in\n" +
       "scripts/check-run-is-over.ts WITH the question it asks — not as a silencer.\n",
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 main();

@@ -32,6 +32,9 @@ import type {
 import { selectCategoryById } from "./selectors";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { resolveShortcutWriteScope } from "@/features/agent-shortcuts/resolveShortcutWriteScope";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
+import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 
 type ThunkApi = { dispatch: AppDispatch; state: RootState };
 
@@ -111,10 +114,15 @@ export const createCategory = createAsyncThunk<
     ...categoryDefToRowPatch(rest as Partial<AgentShortcutCategoryDef>),
     organization_id: scopeFields.organizationId,
   };
+  // The route admits the organization from the header (the body value is only
+  // the confirming claim), stamped through the sanctioned kernel.
   const response = await fetch("/api/agent-shortcut-categories", {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: applyOrganizationContextHeader(
+      { "Content-Type": "application/json" },
+      scopeFields.organizationId,
+    ),
     body: JSON.stringify(body),
   });
   const result = await parseJsonOrThrow<{ data: CategoryApiRow }>(response);
@@ -140,9 +148,11 @@ export interface DuplicateCategoryInput {
 
 /**
  * Duplicates a category row. Ownership (`user_id`/`organization_id`/
- * `project_id`/`task_id`) on the copy exactly matches the source row, so
- * admins duplicating global categories get global copies and users stay in
- * their own scope.
+ * `project_id`/`task_id`) on the copy matches the source row, EXCEPT that a
+ * platform-global (system-org) source duplicated by a non-super-admin lands in
+ * the caller's admitted organization as their own row — minting a second
+ * global row is admin-only, the same rule `applyScopeToInsertPayload` enforces
+ * on create. Admins duplicating global categories still get global copies.
  */
 export const duplicateCategory = createAsyncThunk<
   AgentShortcutCategoryDef,
@@ -150,6 +160,17 @@ export const duplicateCategory = createAsyncThunk<
   ThunkApi
 >("agentShortcutCategory/duplicate", async (input, { dispatch }) => {
   const { id, label, placementType, parentCategoryId, sortOrder } = input;
+  // The route ADMITS the organization from the header and refuses without
+  // one, so the selection is required here — the same way `createCategory`
+  // carries `scopeFields.organizationId` — never a header with nothing in it.
+  // Spoken to the person and RETHROWN: the six dispatchers of this thunk
+  // show no refusal of their own, and a duplicate that quietly never appears
+  // is the silence this guard exists to stop.
+  const organizationId = await withOrganizationRefusalShown(
+    "duplicated",
+    async () => requireSelectedOrgId(),
+    { subject: "The category" },
+  );
 
   const body: Record<string, unknown> = {};
   if (typeof label === "string") body.label = label;
@@ -164,7 +185,14 @@ export const duplicateCategory = createAsyncThunk<
     {
       method: "POST",
       credentials: "include",
-      headers: { "Content-Type": "application/json" },
+      // The route ADMITS the organization from this header. A non-admin
+      // duplicating a platform-global category gets the copy in the
+      // organization they are working in, so the header is required, not
+      // decorative (app/api/agent-shortcut-categories/[id]/duplicate/route.ts).
+      headers: applyOrganizationContextHeader(
+        { "Content-Type": "application/json" },
+        organizationId,
+      ),
       body: JSON.stringify(body),
     },
   );

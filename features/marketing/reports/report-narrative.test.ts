@@ -1,4 +1,7 @@
-import { buildReportFindings } from "./report-narrative";
+import {
+  buildReportFindings,
+  type ReportSummaryRow,
+} from "./report-narrative";
 
 describe("buildReportFindings", () => {
   it("leads with a plain-language verdict before the metric evidence", () => {
@@ -28,6 +31,25 @@ describe("buildReportFindings", () => {
     expect(findings[0]?.finding).toContain("sent more people");
     expect(findings[0]?.evidence).toContain("120 visits");
     expect(findings[1]?.finding).toContain("High-value searches");
-    expect(findings[2]?.evidence).toContain("visits per 100");
+    expect(findings[2]?.evidence).toContain("4.80% click-through rate");
+  });
+
+  it("reports missing click-through and placement data without inventing zeroes", () => {
+    const summary = {
+      avg_position: null,
+      clicks: 0,
+      cmp_avg_position: 12.4,
+      cmp_clicks: 2,
+      cmp_ctr: 0.02,
+      cmp_impressions: 100,
+      ctr: null,
+      impressions: 0,
+    } satisfies ReportSummaryRow;
+
+    const visibility = buildReportFindings(summary, [])[2];
+    expect(visibility?.finding).toContain("without enough click-through data");
+    expect(visibility?.evidence).toBe(
+      "— click-through rate · placement unavailable",
+    );
   });
 });

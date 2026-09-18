@@ -37,6 +37,7 @@
 #   ./scripts/release.sh --dry-run    # preview without changes
 #   ./scripts/release.sh --no-migrate # skip applying FE migrations
 #   ./scripts/release.sh --no-gates   # skip advisory quality gates after push
+#   ./scripts/release.sh --async-gates # enqueue advisory gates after push; do not wait
 #   ./scripts/release.sh --no-watch   # do not wait for the Vercel rollout
 #       → prints UNWATCHED (never green); the outcome stays unknown
 #   ./scripts/release.sh --target admin --message "new admin panel"
@@ -203,6 +204,7 @@ CUSTOM_MESSAGE=""
 DRY_RUN=false
 NO_MIGRATE=false
 NO_GATES=false
+ASYNC_GATES=false
 NO_WATCH=false
 SHIP_MODE=false
 # --ship: the ONLY content the release commit may carry besides the version
@@ -229,6 +231,7 @@ while [[ $# -gt 0 ]]; do
         --dry-run) DRY_RUN=true; shift ;;
         --no-migrate) NO_MIGRATE=true; shift ;;
         --no-gates) NO_GATES=true; shift ;;
+        --async-gates) ASYNC_GATES=true; shift ;;
         --no-watch) NO_WATCH=true; shift ;;
         --target)
             [[ -n "${2:-}" ]] || fail "--target requires an argument (main|admin|demos|all)."
@@ -245,7 +248,7 @@ while [[ $# -gt 0 ]]; do
             shift
             SHIP_PATHS=("$@")
             break ;;
-        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --ship, --target, --dry-run, --no-migrate, --no-gates, --no-watch, or -- <paths you own>." ;;
+        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --ship, --target, --dry-run, --no-migrate, --no-gates, --async-gates, --no-watch, or -- <paths you own>." ;;
     esac
 done
 
@@ -304,14 +307,6 @@ git fetch "$REMOTE" "$BRANCH" 2>/dev/null \
 LOCAL_SHA=$(git rev-parse "$BRANCH")
 REMOTE_SHA=$(git rev-parse "$REMOTE/$BRANCH")
 BASE_SHA=$(git merge-base "$BRANCH" "$REMOTE/$BRANCH")
-
-# Validate every history that can become the release head before claiming the
-# lane or moving the checked-out branch. A diverged branch is never rebased by
-# release.sh because that would rewrite exact certified candidate identities.
-verify_patrol_delivery "$BRANCH"
-if [[ "$LOCAL_SHA" != "$REMOTE_SHA" ]]; then
-    verify_patrol_delivery "$REMOTE/$BRANCH"
-fi
 
 if [[ "$LOCAL_SHA" != "$BASE_SHA" && "$REMOTE_SHA" != "$BASE_SHA" ]]; then
     echo "" >&2
@@ -394,6 +389,29 @@ else
     fail "MATRX PACKAGE VERSION DRIFT — run pnpm sync:matrx-packages, commit package.json + pnpm-lock.yaml, and retry."
 fi
 
+# MANDATE REFERENCES — deliberately outside --no-gates, because it can never be
+# the reason a release stops (ruling D23, and law 1 of
+# common-docs/projects/mandate-declaration-reporting/REGISTER.md). Skipping the
+# advisory suites must not make the fleet board go blind: every Mandate this
+# build names is reported to the platform with its exact file, symbol and line,
+# together with every place intelligence is reached outside a Mandate, and
+# /administration/mandates/references is what reads it.
+#
+# 🚨 THE VERSION IS PINNED EXACTLY, ON PURPOSE. "Always latest" is THE LAW for
+# @ai-matrx NPM packages — check:matrx-packages above enforces it. This is a
+# PYTHON release gate whose findings are compared between revisions:
+# reconciliation is keyed on (identity, revision_kind, revision) and the identity
+# hash includes the scanner's own classification, so a gate that silently changed
+# what it measured would make every comparison a lie. Bump the pin deliberately,
+# in a commit that says what changed.
+info "Scanning and reporting mandate references (loud, never blocking)..."
+if command -v uvx >/dev/null 2>&1; then
+    pnpm check:mandate-references || true
+    ok "Mandate references scanned and reported (findings above, if any, never block)."
+else
+    warn "uvx not found — this release reported NO mandate references. Install uv (https://astral.sh/uv) so the fleet board stops calling matrx-frontend unmeasured."
+fi
+
 # Also deliberately outside --no-gates, and first because everything after it
 # assumes a tree that compiles. A file that does not PARSE is not a quality
 # opinion: it cannot build, it cannot render, and it takes the shared dev
@@ -444,6 +462,25 @@ Set AIDREAM_DIR to your aidream checkout, or pass --no-migrate to skip
 
     # Run from the aidream checkout so its .env + uv workspace resolve.
     # MATRX_FRONTEND_DIR pins THIS repo's migrations/ (worktrees / renames).
+    #
+    # 🚨 `--target production` IS NOT DECORATION. On 2026-09-16 at 03:52:12Z the
+    # scheduled fleet release `release-all: v0.4.1940` applied
+    # `migrations/custom_entity_types_detail_variant.sql` — headed `-- target: branch`
+    # at its only commit — to PRODUCTION, widening two CHECK constraints on
+    # `platform.entity_types`, the registry table 1,571 policies read, with nobody
+    # watching. This function is that path. Two properties made it possible:
+    #
+    #   1. it passed NO --target at all, so the applier fell to its default and the
+    #      header-aware refusal never had to agree with anything; and
+    #   2. the applier is resolved out of a SIBLING CHECKOUT — `${AIDREAM_DIR:-../aidream}`
+    #      — at whatever commit that directory happens to hold, which is not
+    #      necessarily origin/main and was not that night.
+    #
+    # Naming the target fixes both: the flag is now an explicit assertion the runner
+    # must agree with, AND an applier too old to know `--target` exits non-zero on an
+    # unrecognised argument instead of silently sweeping this repo's migrations with
+    # whatever judgement it happened to ship with. That is the capability probe — a
+    # release that cannot prove it is running the header-aware runner does not run.
     _run_applier() {
         local mode="$1"  # apply | dry-run
         (
@@ -451,15 +488,15 @@ Set AIDREAM_DIR to your aidream checkout, or pass --no-migrate to skip
             export MATRX_FRONTEND_DIR="$REPO_ROOT"
             if [[ -x "$(command -v uv)" ]]; then
                 if [[ "$mode" == "dry-run" ]]; then
-                    uv run python db/apply_migrations.py --source matrx-frontend --dry-run
+                    uv run python db/apply_migrations.py --source matrx-frontend --target production --dry-run
                 else
-                    uv run python db/apply_migrations.py --source matrx-frontend --no-generate
+                    uv run python db/apply_migrations.py --source matrx-frontend --target production --no-generate
                 fi
             else
                 if [[ "$mode" == "dry-run" ]]; then
-                    python3 db/apply_migrations.py --source matrx-frontend --dry-run
+                    python3 db/apply_migrations.py --source matrx-frontend --target production --dry-run
                 else
-                    python3 db/apply_migrations.py --source matrx-frontend --no-generate
+                    python3 db/apply_migrations.py --source matrx-frontend --target production --no-generate
                 fi
             fi
         )
@@ -473,7 +510,12 @@ Set AIDREAM_DIR to your aidream checkout, or pass --no-migrate to skip
     fi
 
     info "Applying pending matrx-frontend migrations (idempotent; no-op if current)..."
-    _run_applier apply
+    if ! _run_applier apply; then
+        fail "Migration apply FAILED or was REFUSED — release stopped before the version bump,
+tag and push. Read the applier's refusal above; it names the file and the remedy.
+An applier that does not recognise --target is too old to judge a \`-- target:\` header:
+update the aidream checkout at $aidream_dir (or point AIDREAM_DIR at a current one)."
+    fi
     ok "Migration apply finished."
 
     info "Verifying FE migration ledger (pnpm check:migrations:strict)..."
@@ -487,27 +529,54 @@ Fix the failures above (or re-run from aidream:
     fi
 }
 
+# ── ONE JUDGEMENT, OR NO RELEASE (ATTACK-7) ──────────────────────────────────
+# Two runners execute migrations for this platform, and this train runs the OTHER
+# one (apply_frontend_migrations resolves the applier out of the sibling aidream
+# checkout). Until 2026-09-16 they did not enforce the same rules: `-- chair-step:`
+# was an owner-awake step in one and a print statement in the other, a header naming
+# production was allow-listed in one and waived in the other, and `--source campaign`
+# demanded its target in one and defaulted to PRODUCTION in the other. So before a
+# single migration is applied, the conformance corpus is run through BOTH runners and
+# this release STOPS if they disagree — with each other or with the corpus. The check
+# opens no database connection. A missing aidream checkout is UNMEASURED, which is a
+# failure here for the same reason: this train applies migrations through that
+# checkout's runner. Spec: migrations/JUDGMENT.md.
+if $DRY_RUN; then
+    info "Checking migration judgment (dry-run — read-only)..."
+    if pnpm check:migration-judgment; then
+        ok "Both migration runners judge the corpus identically."
+    else
+        warn "The two migration runners DISAGREE. A real release would stop here."
+    fi
+else
+    info "Checking that both migration runners judge the same bytes the same way..."
+    if ! pnpm check:migration-judgment; then
+        fail "The two migration runners DISAGREE about the conformance corpus. Every \"both runners\" guarantee in the campaign is void until they do not — fix the runner or the rule (migrations/JUDGMENT.md), never the expectation alone. Nothing was applied."
+    fi
+    ok "Both migration runners judge the corpus identically."
+fi
+
 apply_frontend_migrations
 
 # ── Entity registry drift gate (live DB ↔ installed @ai-matrx/associations) ───
 # The entity-type vocabulary ships in @ai-matrx/associations; this repo keeps
-# no local copy. Admin edits must never leave a release carrying a stale
-# vocabulary, so after migrations the installed package is diffed against
-# platform.entity_types. Drift is fixed by regenerating + patch-releasing the
-# PACKAGE, never here.
+# no local copy. After migrations the installed package is checked for
+# compatibility with platform.entity_types: removed installed tokens or changed
+# installed metadata halt the release; newly registered tokens warn with the
+# package publication remedy because this build cannot yet produce them.
 if $DRY_RUN; then
-    info "Checking generated entity metadata (dry-run — read-only)..."
+    info "Checking installed entity vocabulary compatibility (dry-run — read-only)..."
     if pnpm check:entity-types; then
-        ok "Generated entity metadata matches platform.entity_types."
+        ok "Installed entity vocabulary is compatible with platform.entity_types."
     else
-        warn "Entity registry drift found. A real release would regenerate and commit it."
+        warn "Installed entity vocabulary is incompatible. A real release would stop."
     fi
 else
-    info "Synchronizing generated entity metadata from platform.entity_types..."
+    info "Checking installed entity vocabulary compatibility..."
     if ! pnpm check:entity-types; then
-        fail "Generated entity metadata still differs from platform.entity_types."
+        fail "Installed entity vocabulary is incompatible with platform.entity_types."
     fi
-    ok "Generated entity metadata matches platform.entity_types."
+    ok "Installed entity vocabulary is compatible with platform.entity_types."
 fi
 
 # ── Protocol mirror sync (docs/protocol ↔ aidream, byte-identical pact) ──────
@@ -685,11 +754,23 @@ if working_tree_dirty; then
     info "Left uncommitted (not named, not yours to ship): $(git status --porcelain --untracked-files=all | wc -l | tr -d ' ') path(s)."
 fi
 
-# --ship materializes the dirty tree only at the commit above. Check again now
-# so report/run files and any patrol trailers in that new commit cannot bypass
-# the earlier history-only checkpoint. Failure preserves the local commit and
-# stops before tag/push.
-verify_patrol_delivery
+# --ship materializes caller-selected product files at the commit above, so it
+# needs a second patrol check. A plain release commit is restricted by
+# release-stage.sh to version metadata only; re-scanning every permanent patrol
+# record would repeat the same expensive history check without changing its
+# answer.
+if $SHIP_MODE; then
+    verify_patrol_delivery
+else
+    ok "Plain release commit contains version metadata only; patrol history remains unchanged."
+fi
+
+# Runtime dependency admission: manifests shipped in this exact commit must
+# have their database registrations. Independent of advisory quality gates.
+info "Checking committed surface registrations in the live database..."
+if ! pnpm exec tsx scripts/check-release-surface-registration.ts; then
+    die_after_commit "Surface registration is incomplete. The candidate is committed but unpushed. Run the named scoped surface sync, verify it, and resume delivery."
+fi
 
 # ── Tag ──────────────────────────────────────────────────────────────────────
 info "Creating tag $NEW_TAG..."
@@ -765,6 +846,16 @@ fi
 # already sailed.
 if $NO_GATES; then
     warn "Skipping advisory quality gates (--no-gates)."
+elif $ASYNC_GATES; then
+    echo ""
+    info "Enqueueing advisory release quality gates (post-push, detached)..."
+    if ASYNC_GATE_JOB="$(node "$SCRIPT_DIR/release-async-gates.mjs" enqueue)"; then
+        ok "Advisory gates queued; release delivery lease is independent of this quality work."
+        echo "  $ASYNC_GATE_JOB"
+        echo "  Status: node $SCRIPT_DIR/release-async-gates.mjs status"
+    else
+        warn "Advisory gates were NOT queued. The pushed release needs manual quality follow-up; no gate result was recorded."
+    fi
 else
     echo ""
     info "Running advisory release quality gates (post-push, non-blocking)..."

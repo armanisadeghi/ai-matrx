@@ -29,15 +29,20 @@ import {
   hydrateConversation,
   setConversationLabel,
 } from "../conversations/conversations.slice";
-import { hydrateMessages } from "../messages/messages.slice";
+import {
+  hydrateMessages,
+  setMessagesHydrationFailure,
+} from "../messages/messages.slice";
 import { reconcileMessagesArtifacts } from "@/features/canvas/materialization/reconcileArtifacts";
+import { conversationSandboxBindingFromRow } from "@/lib/sandbox/conversation-binding-row";
 import { hydrateObservability } from "../observability/observability.slice";
 import { hydrateRequestsFromObservability } from "../active-requests/active-requests.slice";
 import { hydrateInbox } from "../inbox/inbox.thunks";
 import {
   initInstanceVariables,
-  setUserVariableValues,
+  restoreVariableValues,
 } from "../instance-variable-values/instance-variable-values.slice";
+import { parsePersistedHostValueNames } from "../instance-variable-values/instance-variable-values.persistence";
 import {
   initInstanceOverrides,
   setOverrides,
@@ -74,6 +79,15 @@ import {
 // Thunk
 // =============================================================================
 
+/**
+ * The `detail` a failed transcript read shows under the honest empty state.
+ * Plain English, no table or endpoint names — the reader is a subject-matter
+ * expert, not an engineer. The surrounding sentence and the "Try again" button
+ * come from `StaleDataNotice`.
+ */
+const NOT_READABLE_DETAIL =
+  "it may have been removed, or your sign-in lost access to it";
+
 export interface LoadConversationArgs {
   conversationId: string;
   /** Optional — surface key to set focus on after rehydration. */
@@ -96,6 +110,22 @@ export interface LoadConversationArgs {
    * this conversation after the user already moved on (e.g. clicked `+`).
    */
   signal?: AbortSignal;
+  /**
+   * The caller is REOPENING a conversation it believes the server already has
+   * (a resume from a URL, a history row, a saved binding) rather than touching
+   * one this client just minted.
+   *
+   * It changes exactly one thing: what a bundle with no conversation row
+   * MEANS. For a locally-minted conversation it is benign — the row appears on
+   * the first turn. For a reopen it is a failed read (RLS denied it because the
+   * session was not hydrated yet, the RPC failed, the id is wrong), and a
+   * failed read that renders as an empty room is a screen that lies. When this
+   * is true, such a read records `hydrationFailure` on the transcript so the UI
+   * can say so and offer a retry (law 4 — nothing fails silently).
+   *
+   * Nothing about the RPC call itself changes.
+   */
+  expectMaterialized?: boolean;
 }
 
 interface ThunkApi {
@@ -122,7 +152,14 @@ export const loadConversation = createAsyncThunk<
 >(
   "conversations/load",
   async (
-    { conversationId, surfaceKey, messageLimit, beforePosition, signal },
+    {
+      conversationId,
+      surfaceKey,
+      messageLimit,
+      beforePosition,
+      signal,
+      expectMaterialized = false,
+    },
     { dispatch },
   ) => {
     // Auth diagnostics — RLS-denied reads return as `PGRST116` with
@@ -132,14 +169,13 @@ export const loadConversation = createAsyncThunk<
     try {
       const { data: authData } = await supabase.auth.getUser();
       authedUserId = authData?.user?.id ?? null;
-       
+
       console.log(
         "[loadConversation] auth at fetch time: userId=%s conversationId=%s",
         authedUserId ?? "(none)",
         conversationId,
       );
     } catch (authErr) {
-       
       console.warn(
         "[loadConversation] auth.getUser() threw:",
         describeSupabaseError(authErr),
@@ -163,25 +199,48 @@ export const loadConversation = createAsyncThunk<
       // creates it on the first turn) — nothing to hydrate, not a failure.
       // The local instance already holds the correct (empty) state.
       if (
-        (err as { code?: string } | null)?.code === CONVERSATION_NOT_MATERIALIZED
+        (err as { code?: string } | null)?.code ===
+        CONVERSATION_NOT_MATERIALIZED
       ) {
         void historyPromise.catch?.(() => undefined);
+        // Benign only for a conversation this client minted. For a REOPEN the
+        // server was supposed to have this row, so an empty transcript would be
+        // a claim about the database nobody is entitled to make — say the read
+        // failed instead, and carry a retry.
+        if (expectMaterialized) {
+          dispatch(
+            setMessagesHydrationFailure({
+              conversationId,
+              failure: NOT_READABLE_DETAIL,
+            }),
+          );
+        }
         return { conversationId };
       }
-       
+
       console.error(
         "[loadConversation] fetchConversationBundle failed:",
         describeSupabaseError(err),
       );
       // Don't leave the history fetch dangling on a bundle failure.
       void historyPromise;
+      // The transcript must never present a failed read as an empty room.
+      dispatch(
+        setMessagesHydrationFailure({
+          conversationId,
+          failure:
+            err instanceof Error && err.message
+              ? err.message
+              : NOT_READABLE_DETAIL,
+        }),
+      );
       throw err;
     }
     // Surface a single dev-only warning if the history fetch fails
     // separately from the bundle — never block hydration on it.
     void historyPromise.catch?.(() => undefined);
     const conv = bundle.conversation;
-     
+
     // console.log(
     //   "[loadConversation] bundle received: conv=%s messages=%d toolCalls=%d",
     //   conv?.id ?? "(none)",
@@ -233,29 +292,10 @@ export const loadConversation = createAsyncThunk<
         // proxyUrl / tier / name come off the metadata cache when present — but
         // are NEVER required: a binding written by aidream's own bind endpoint
         // sets only the column, and must still resolve (the turn-time resolver
-        // fetches what it's missing).
-        sandboxBinding: (() => {
-          const sandboxRowId = conv.sandbox_instance_id;
-          const localPcRowId = conv.app_instance_id;
-          const rowId = sandboxRowId ?? localPcRowId;
-          if (!rowId) return null;
-          const meta =
-            typeof conv.metadata === "object" && conv.metadata !== null
-              ? (conv.metadata as Record<string, unknown>)
-              : {};
-          const str = (key: string): string | undefined => {
-            const value = meta[key];
-            return typeof value === "string" && value ? value : undefined;
-          };
-          const tier = str("sandbox_override_tier");
-          return {
-            rowId,
-            proxyUrl: str("sandbox_override_proxy_url") ?? "",
-            tier: tier === "ec2" || tier === "hosted" ? tier : undefined,
-            kind: localPcRowId ? ("local-pc" as const) : undefined,
-            name: str("sandbox_override_name"),
-          };
-        })(),
+        // fetches what it's missing). ONE derivation, shared with the SSR seed
+        // and the mid-session refresh (`conversationSandboxBindingFromRow`), so
+        // no two readers of the same row can disagree.
+        sandboxBinding: conversationSandboxBindingFromRow(conv),
         // It came FROM the DB, so it is by definition already written to it.
         sandboxBindingPersisted: !!(
           conv.sandbox_instance_id ?? conv.app_instance_id
@@ -320,11 +360,18 @@ export const loadConversation = createAsyncThunk<
       });
     }
 
-    // ── 3. Variables — stamp the DB `variables` JSON into userValues so the
-    // user picks up right where they left off. A future pass can introduce a
-    // dedicated `persistedValues` field on the entry to distinguish "server
-    // said this was last-set" from "user just typed it"; today they're the
-    // same on the reload path by construction.
+    // ── 3. Variables — stamp the DB `variables` JSON back into userValues so
+    // the user picks up right where they left off, WITH THE AUTHORSHIP THE ROW
+    // CARRIES.
+    //
+    // 🚨 `variables` is the MERGED payload and says nothing about who supplied
+    // what, so until `host_value_names` existed this path replayed the whole
+    // dict through the user action — which both claimed the host's launch
+    // values as the person's words ("Expert Goal: …", "Rulebook: …" inside her
+    // own bubble on every reopen) and RELEASED the authorship the launcher had
+    // recorded. `restoreVariableValues` takes both halves together; a row with
+    // no authorship recorded behaves exactly as before, as a value with no
+    // claim attached.
     dispatch(
       initInstanceVariables({
         conversationId,
@@ -338,9 +385,10 @@ export const loadConversation = createAsyncThunk<
         : {};
     if (Object.keys(persistedVariables).length > 0) {
       dispatch(
-        setUserVariableValues({
+        restoreVariableValues({
           conversationId,
           values: persistedVariables,
+          hostValueNames: parsePersistedHostValueNames(conv),
         }),
       );
     }
@@ -426,9 +474,7 @@ export const loadConversation = createAsyncThunk<
     // window both reflect the server-confirmed state the moment a past
     // conversation is reopened.
     const memoryMeta = metaObj.observational_memory as
-      | ObservationalMemoryMetadata
-      | undefined
-      | null;
+      ObservationalMemoryMetadata | undefined | null;
     if (memoryMeta && typeof memoryMeta === "object") {
       dispatch(
         setMemoryMetadata({
@@ -461,7 +507,7 @@ export const loadConversation = createAsyncThunk<
       // server-side fetch problem (RPC missing the join, RLS hiding
       // rows, or field-name drift). Surface it loudly so we don't
       // silently render empty tool cards.
-       
+
       console.warn(
         "[loadConversation] cid=%s has tool messages but bundle.tool_calls is empty — check RPC return shape",
         conversationId,
@@ -535,7 +581,6 @@ export const loadConversation = createAsyncThunk<
       dispatch(setFocus({ surfaceKey, conversationId }));
     }
 
-     
     // console.log(
     //   "[loadConversation] DONE cid=%s — all 7 dimensions hydrated",
     //   conversationId,

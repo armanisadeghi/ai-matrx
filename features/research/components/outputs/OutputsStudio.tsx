@@ -63,7 +63,7 @@ import {
 import {
   DOMAIN_OUTPUTS,
   REPORT_ONLY_BUNDLE_SLUG,
-  contextBuilderHref,
+  domainOutputHref,
 } from "./outputDefinitions";
 import { getBundleBySlug, getResourceManifest } from "../../service/resources";
 import { resolveBundle } from "../../resources/resolve";
@@ -348,7 +348,7 @@ function DomainReportsCard({
             >
               <div className="flex items-center gap-2">
                 <Link
-                  href={contextBuilderHref(topicId, def.bundleSlug)}
+                  href={domainOutputHref(def, topicId)}
                   className="flex min-w-0 flex-1 items-center gap-2"
                 >
                   <div className="min-w-0 flex-1">

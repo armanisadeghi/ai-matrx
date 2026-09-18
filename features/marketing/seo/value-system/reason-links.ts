@@ -12,7 +12,9 @@
  * editor gains it here.
  *
  * Every target screen reads the query params this file writes:
- *   /value/offerings  ?topic=<id>[&worth=1]        (TopicTreeWorkbench)
+ *   /value/offerings  ?offering=<id>[&worth=1]     (OfferingsWorkbench; a legacy
+ *                      ?topic=<id> still lands on the brand's copy of that
+ *                      suggestion)
  *   /value/dimensions ?dimension=<slug>&value=<id>[&matcher=<id>]  (DimensionManager
  *                      — `matcher` opens THE MATCHER EDITOR, KI-008, straight
  *                      onto that value; any truthy value works, the matcher's
@@ -47,6 +49,7 @@ export interface ReasonLinkContext {
 }
 
 const VALUE_QUERY_KEYS = {
+  offering: "offering",
   topic: "topic",
   worth: "worth",
   dimension: "dimension",
@@ -75,6 +78,23 @@ function valuePath(
 export function levelVocabularyHref(ctx: ReasonLinkContext): string {
   return valuePath(ctx, "/value/rules", {
     [VALUE_QUERY_KEYS.bands]: "value_band",
+  });
+}
+
+/**
+ * The Offerings screen, opened AT one brand offering (optionally with its worth
+ * editor open). The screen also still resolves a legacy `?topic=<id>` link — a
+ * product/service topic id is its offering template id — onto the brand's copy
+ * of that template, so a saved link keeps landing on the same offering.
+ */
+export function offeringNodeHref(
+  ctx: ReasonLinkContext,
+  offeringId: string | null | undefined,
+  openWorth = false,
+): string {
+  return valuePath(ctx, "/value/offerings", {
+    [VALUE_QUERY_KEYS.offering]: offeringId ?? undefined,
+    [VALUE_QUERY_KEYS.worth]: openWorth ? "1" : undefined,
   });
 }
 
@@ -177,6 +197,11 @@ export function reasonEditorLink(
           [VALUE_QUERY_KEYS.keyword]: ctx.keyword ?? undefined,
         }),
         label: "Change or clear your ruling",
+      };
+    case "offering":
+      return {
+        href: offeringNodeHref(ctx, reason.offering_id, true),
+        label: `Change what “${reason.offering}” is worth`,
       };
     case "topic":
       return {

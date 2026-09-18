@@ -27,17 +27,74 @@ const PROJECT_ROOT = resolve(__dirname, '..');
 export const AIDREAM_ROOT = resolve(PROJECT_ROOT, '../aidream');
 const CONTRACT_PIN_PATH = resolve(__dirname, 'aidream-contract-pin.json');
 
-export function readContractPin() {
-    return JSON.parse(readFileSync(CONTRACT_PIN_PATH, 'utf-8'));
+export function readContractPin(path = CONTRACT_PIN_PATH) {
+    return JSON.parse(readFileSync(path, 'utf-8'));
 }
 
-function commitKnown(sha) {
+function commitKnown(sha, aidreamRoot = AIDREAM_ROOT) {
     try {
-        execFileSync('git', ['cat-file', '-e', `${sha}^{commit}`], { cwd: AIDREAM_ROOT, stdio: 'ignore' });
+        execFileSync('git', ['cat-file', '-e', `${sha}^{commit}`], { cwd: aidreamRoot, stdio: 'ignore' });
         return true;
     } catch {
         return false;
     }
+}
+
+/**
+ * A checkout is a safe schema source only when its checked-out commit contains
+ * the frontend's pinned contract floor. This catches stale release clones
+ * before generation turns their age into a misleading field-drop report.
+ */
+export function checkCheckoutMeetsContractPin(aidreamRoot = AIDREAM_ROOT, pin = readContractPin()) {
+    const minimum = pin.minimum_aidream_sha;
+    const base = { minimum, reason: pin.reason, checkoutSha: null, ok: false };
+
+    if (!existsSync(aidreamRoot)) {
+        return { ...base, message: `The aidream checkout is not at ${aidreamRoot}.` };
+    }
+    if (!commitKnown(minimum, aidreamRoot)) {
+        return { ...base, message:
+            `The pinned minimum commit ${minimum} is not in the aidream checkout at ${aidreamRoot}. ` +
+            'Run `git fetch` there, or fix scripts/aidream-contract-pin.json.' };
+    }
+
+    let checkoutSha;
+    try {
+        checkoutSha = execFileSync('git', ['rev-parse', 'HEAD'], {
+            cwd: aidreamRoot,
+            encoding: 'utf-8',
+        }).trim();
+    } catch (error) {
+        return { ...base, message:
+            `Could not read the checked-out aidream commit at ${aidreamRoot} ` +
+            `(${error instanceof Error ? error.message : String(error)}).` };
+    }
+
+    try {
+        execFileSync('git', ['merge-base', '--is-ancestor', minimum, checkoutSha], {
+            cwd: aidreamRoot,
+            stdio: 'ignore',
+        });
+    } catch {
+        return { ...base, checkoutSha, message:
+            `The aidream checkout at ${aidreamRoot} IS BEHIND THE CONTRACT THIS REPO IS WRITTEN AGAINST. ` +
+            `It is at ${checkoutSha}, which does not contain ${minimum}. Why that commit is the floor: ${pin.reason}` };
+    }
+
+    return { ok: true, checkoutSha, minimum, reason: pin.reason, message:
+        `The aidream checkout is at ${checkoutSha}, which contains the pinned ${minimum}.` };
+}
+
+export function assertCheckoutMeetsContractPin(aidreamRoot = AIDREAM_ROOT, pin = readContractPin()) {
+    const result = checkCheckoutMeetsContractPin(aidreamRoot, pin);
+    if (result.ok) {
+        console.log(`  ✓ ${result.message}\n`);
+        return result;
+    }
+    console.error(`\n  ✗ ${result.message}`);
+    console.error('\n    Generating from this checkout would make committed API fields look deleted.');
+    console.error('    Refresh the dedicated checkout to origin/main, then re-run sync-types.\n');
+    process.exit(1);
 }
 
 /**

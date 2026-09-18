@@ -30,6 +30,7 @@
 // "running" rather than triggering a second one.
 
 import { postJson } from "@/lib/python-client";
+import type { PodcastRunState } from "@/features/podcasts/generator/types";
 
 export type ReconcileOutcome = "running" | "completed" | "resumed" | "failed";
 export type EssentialStatus = "completed" | "pending" | "failed";
@@ -101,6 +102,60 @@ export function hasDeliverableEpisode(r: ReconcileResult): boolean {
  */
 export function isEpisodeSettled(r: ReconcileResult): boolean {
   return r.essential.episode === "completed" || Boolean(r.episode_id);
+}
+
+const LOW_INFORMATION_RUN_ERRORS = new Set([
+  "This run was interrupted before finishing.",
+  "Generation failed",
+  "Stream error",
+]);
+
+/**
+ * Reconcile classifies liveness; it must not erase a more specific durable
+ * failure (provider detail, content gate, quota, and so on) with its generic
+ * terminal summary. It may replace only an empty/known-fallback client error.
+ */
+export function bestRunFailureReason(
+  existing: string | null | undefined,
+  reconcileReason: string,
+): string {
+  const durable = existing?.trim();
+  return durable && !LOW_INFORMATION_RUN_ERRORS.has(durable)
+    ? durable
+    : reconcileReason;
+}
+
+/** Pure page-state transition for one reconcile answer. */
+export function reconcileRunState(
+  state: PodcastRunState,
+  rec: ReconcileResult,
+): PodcastRunState {
+  const deliverable = hasDeliverableEpisode(rec);
+  return {
+    ...state,
+    images: mergeAncillarySlots(state.images, rec.ancillary_pending, "image"),
+    videos: mergeAncillarySlots(state.videos, rec.ancillary_pending, "video"),
+    status: deliverable
+      ? "done"
+      : rec.outcome === "failed"
+        ? "error"
+        : state.status,
+    progress: deliverable ? 100 : state.progress,
+    currentLabel: deliverable
+      ? "Episode ready"
+      : rec.outcome === "failed"
+        ? "Finished with errors"
+        : state.currentLabel,
+    audioUrl: rec.audio_url ?? state.audioUrl,
+    script: rec.script ?? state.script,
+    episodeId: rec.episode_id ?? state.episodeId,
+    episodeSlug: rec.episode_slug ?? state.episodeSlug,
+    error: deliverable
+      ? null
+      : rec.outcome === "failed"
+        ? bestRunFailureReason(state.error, rec.reason)
+        : state.error,
+  };
 }
 
 /**

@@ -4,16 +4,17 @@ import { useRouter } from "next/navigation";
 import { ArrowUp, ArrowUpRight, Mic, Plus } from "lucide-react";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectActiveUserName } from "@/lib/redux/selectors/userSelectors";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import {
   PRIMARY_QUICK_ACTIONS,
   SECONDARY_QUICK_ACTIONS,
   type ChatQuickAction,
 } from "./chat-quick-actions.config";
 import { useMandateSet } from "@/features/mandates/useMandateSet";
-import { stashChatDraftTransfer } from "./chat-draft-transfer";
+import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
+import { stageChatAgentSwitch } from "./begin-fresh-chat";
 import { NewChatLandingInput } from "./NewChatLandingInput";
 import { ChatConnectorStrip } from "@/features/connectors/ChatConnectorStrip";
+import { ConnectorPromptHost } from "@/features/connectors/ConnectorPromptHost";
 import { cn } from "@/lib/utils";
 
 interface NewChatGreetingProps {
@@ -35,7 +36,7 @@ interface NewChatGreetingProps {
  *
  * Every chip is a MANDATE (`chat.quick_*`), resolved for this user in one pass
  * by `useMandateSet` (system default → their own binding). Clicking a chip
- * carries any in-progress draft to the RESOLVED agent via sessionStorage and
+ * carries the complete in-progress request to the resolved agent in memory and
  * routes to `/chat/a/[agentId]` — a navigation to the agent's fresh-chat
  * route, never a launch with a resolved id. A chip whose mandate cannot
  * resolve renders disabled with the reason as its title (the unresolved
@@ -44,12 +45,14 @@ interface NewChatGreetingProps {
  * Chip catalog lives in `chat-quick-actions.config.ts`.
  */
 
-const ALL_QUICK_ACTION_KEYS: readonly string[] = [
+const ALL_QUICK_ACTION_KEYS: readonly MandateKey[] = [
   ...PRIMARY_QUICK_ACTIONS,
   ...SECONDARY_QUICK_ACTIONS,
 ].map((action) => action.mandateKey);
 
-const OPTIONAL_QUICK_ACTION_KEYS: readonly string[] = ["chat.quick_org_chart"];
+const OPTIONAL_QUICK_ACTION_KEYS: readonly MandateKey[] = [
+  MANDATE_KEYS.chat__quick_org_chart,
+];
 
 export function NewChatGreeting({
   sourceConversationId,
@@ -79,15 +82,13 @@ export function NewChatGreeting({
   };
 
   const handleChipClick = (agentId: string) => {
-    // Snapshot the draft at click time via getState — no per-keystroke
-    // subscription, so typing never re-renders the chips.
-    const draftText = sourceConversationId
-      ? selectUserInputText(sourceConversationId)(store.getState())
-      : "";
-    if (draftText && draftText.trim().length > 0) {
-      stashChatDraftTransfer({ text: draftText, targetAgentId: agentId });
-    }
-    router.push(`/chat/a/${encodeURIComponent(agentId)}`);
+    stageChatAgentSwitch({
+      dispatch: store.dispatch,
+      router,
+      getState: store.getState,
+      targetAgentId: agentId,
+      sourceConversationId,
+    });
   };
 
   return (
@@ -137,6 +138,15 @@ export function NewChatGreeting({
             );
           })}
         </section>
+
+        {/* The first Google moment (PLAN §2): a dismissible card ABOVE the
+            composer and above the 16px connector strip, whose geometry it must
+            not touch. It removes itself once anything is connected, and after a
+            dismissal it never comes back unless an organization sets
+            `connectors.prompt.resurface_days`. */}
+        <div className="w-full">
+          <ConnectorPromptHost />
+        </div>
 
         {/* Hero input */}
         {sourceConversationId && (

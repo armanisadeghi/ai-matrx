@@ -3,7 +3,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { checkIsUserAdmin } from "@/utils/supabase/userSessionData";
-import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { notifyFeedbackAssigned } from "@/lib/services/feedback-assignment-notifier";
 import type { Database } from "@/types/database.types";
@@ -77,6 +76,44 @@ export async function submitFeedback(
       return { success: false, error: "User not authenticated" };
     }
 
+    const organizationId = input.organization_id?.trim() ?? "";
+    if (organizationId.length === 0) {
+      return {
+        success: false,
+        error:
+          "Select an organization before sending feedback \u2014 every report is filed under one organization. Pick yours from the avatar menu.",
+      };
+    }
+
+    const admin = createAdminClient();
+
+    // The insert below runs through the admin client, so RLS never asks
+    // whether the submitter belongs to the organization they named. Ask the
+    // ONE membership predicate ourselves (`iam.has_org_access_for` — every
+    // `is_org_member` wrapper delegates to it, and its EXECUTE is revoked from
+    // `authenticated`, so only this client can reach it). Without this a
+    // crafted request could file a report into any tenant's queue.
+    const { data: isMember, error: membershipError } = await admin
+      .schema("iam")
+      .rpc("has_org_access_for", { p_org: organizationId, p_user_id: user.id });
+    if (membershipError) {
+      console.error(
+        "Error checking organization membership for feedback:",
+        membershipError,
+      );
+      return {
+        success: false,
+        error: `Could not confirm your membership in that organization: ${membershipError.message}`,
+      };
+    }
+    if (isMember !== true) {
+      return {
+        success: false,
+        error:
+          "You are not a member of the organization this feedback names \u2014 pick one of yours from the avatar menu and send it again.",
+      };
+    }
+
     // Get user metadata for username
     const username = user.user_metadata?.username || user.email || "Anonymous";
 
@@ -85,12 +122,13 @@ export async function submitFeedback(
     const categoryId = isAdmin && input.category_id ? input.category_id : null;
     const assignedTo = isAdmin && input.assigned_to ? input.assigned_to : null;
 
-    const admin = createAdminClient();
     const { data, error } = await admin
       .schema("users")
       .from("user_feedback")
       .insert({
-        organization_id: await ensureOrgIdServer(supabase, undefined),
+        // The organization the submitter is acting in, carried from the
+        // surface — never the personal one this used to resolve.
+        organization_id: organizationId,
         user_id: user.id,
         // RLS owner branch keys on created_by — without it the submitter
         // can't see their own report (this insert uses the admin client, so
@@ -104,6 +142,10 @@ export async function submitFeedback(
         status: "new",
         category_id: categoryId,
         assigned_to: assignedTo,
+        // Provenance the caller declared (e.g. `raised_from_review_row`).
+        // `metadata` is NOT NULL with a `{}` default, so an absent input
+        // writes the same empty object the column would have defaulted to.
+        metadata: input.metadata ?? {},
       })
       .select()
       .single();
@@ -832,6 +874,46 @@ export async function getFeedbackById(
 }
 
 /**
+ * Every feedback item raised from ONE agent review row (admin only).
+ *
+ * "Approve and raise" stamps `metadata.raised_from_review_row` with the
+ * `agent.review_queue` id, so the review workspace can show — on every later
+ * visit, not only in the seconds after the click — that the row was approved
+ * AND what was raised from it, with a door to each item. Without this the link
+ * would exist in the database and nowhere a person can see it.
+ */
+export async function getFeedbackRaisedFromReviewRow(
+  reviewRowId: string,
+): Promise<{ success: boolean; error?: string; data?: UserFeedback[] }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "User not authenticated" };
+
+    if (!(await checkIsUserAdmin(supabase, user.id))) {
+      return { success: false, error: "Admin access required" };
+    }
+
+    const { data, error } = await supabase
+      .schema("users")
+      .from("user_feedback")
+      .select("*")
+      .is("deleted_at", null)
+      .eq("metadata->>raised_from_review_row", reviewRowId)
+      .order("created_at", { ascending: false });
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: mapUserFeedbackRows(data ?? []) };
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "An unexpected error occurred";
+    return { success: false, error: message };
+  }
+}
+
+/**
  * Get feedback items by status (admin only)
  */
 export async function getFeedbackByStatus(
@@ -1115,6 +1197,10 @@ export async function createAnnouncement(
       .from("system_announcements")
       .insert({
         ...input,
+        // org-fallback-deliberate: a system announcement is platform-wide content
+        //   with no tenant — it is shown to every organization, so the global system
+        //   org IS its home; the create surface is the admin-gated
+        //   CreateAnnouncementDialog
         organization_id: await resolveSystemOrgId(supabase),
         visibility: "internal",
         created_by: user.id,

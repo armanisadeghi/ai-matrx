@@ -7,8 +7,9 @@
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Ban, Hourglass, Wrench } from "lucide-react";
+import { AlertTriangle, Ban, Hourglass } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { CopyExportConfig } from "@ai-matrx/design-system/data-table/copy-types";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { CxFiltersBar } from "@/features/cx-dashboard/components/CxFiltersBar";
 import { CxEmptyState } from "@/features/cx-dashboard/components/CxEmptyState";
@@ -25,7 +26,7 @@ import {
   formatTokens,
   formatDuration,
 } from "@/features/cx-dashboard/utils/format";
-import { exportToJSON } from "@/features/cx-dashboard/utils/export";
+import { buildCxJsonExport } from "@/features/cx-dashboard/utils/export";
 import type {
   CxUserRequest,
   CxToolCall,
@@ -145,8 +146,9 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
         header: "Out tokens",
         align: "right",
         width: 100,
+        className: "whitespace-nowrap",
         cell: (r) => (
-          <span className="font-mono">
+          <span className="font-mono whitespace-nowrap">
             {formatTokens(r.total_output_tokens)}
           </span>
         ),
@@ -156,9 +158,12 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
         header: "Cost",
         accessorFn: (r) => Number(r.total_cost ?? 0),
         align: "right",
-        width: 90,
+        width: 110,
+        className: "whitespace-nowrap",
         cell: (r) => (
-          <span className="font-mono">{formatCost(Number(r.total_cost))}</span>
+          <span className="font-mono whitespace-nowrap">
+            {formatCost(Number(r.total_cost))}
+          </span>
         ),
       },
       {
@@ -235,8 +240,9 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
         header: "Duration",
         align: "right",
         width: 90,
+        className: "whitespace-nowrap",
         cell: (r) => (
-          <span className="text-muted-foreground">
+          <span className="whitespace-nowrap text-muted-foreground">
             {formatDuration(r.duration_ms)}
           </span>
         ),
@@ -271,6 +277,22 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
       },
     ];
   }, []);
+
+  // Preserve the existing combined download, independent of either local table view.
+  const allIssuesExport: CopyExportConfig = {
+    items: allIssues > 0 ? [{
+      id: "all-source-issues-json",
+      label: "JSON (all loaded issues)",
+      build: () => {
+        const file = buildCxJsonExport(
+          [...errors.error_requests, ...errors.error_tool_calls],
+          "errors",
+        );
+        if (!file) throw new Error("There are no loaded issues to export.");
+        return file;
+      },
+    }] : [],
+  };
 
   return (
     <SurfaceRuntimeProvider
@@ -315,12 +337,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
           showSearch={false}
           showStatusFilter={false}
           onRefresh={() => router.refresh()}
-          onExportJSON={() =>
-            exportToJSON(
-              [...errors.error_requests, ...errors.error_tool_calls],
-              "errors",
-            )
-          }
+
         />
 
         {/* Summary cards */}
@@ -353,10 +370,6 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
         {/* Problem requests */}
         {errors.error_requests.length > 0 && (
           <section className="space-y-2">
-            <h3 className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              Problem Requests ({errors.error_requests.length})
-            </h3>
             <NonEditableContextMenu
               sourceFeature="admin"
               contentSource={{ type: "raw" }}
@@ -371,8 +384,14 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
               getRowId={(r) => r.id}
               pageSize={25}
               emptyState={{ title: "No problem requests" }}
-              toolbar={{ search: true, searchPlaceholder: "Search requests…" }}
+              toolbar={{
+                title: "Problem Requests",
+                search: true,
+                searchPlaceholder: "Search requests…",
+                refresh: { onRefresh: () => router.refresh() },
+              }}
               copy={{
+                export: () => allIssuesExport,
                 label: "Problem request",
                 listLabel: "Problem requests (this view)",
                 location: "/administration/chat/cx-dashboard/errors",
@@ -424,10 +443,6 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
         {/* Tool call errors */}
         {errors.error_tool_calls.length > 0 && (
           <section className="space-y-2">
-            <h3 className="flex items-center gap-2 text-xs font-medium text-red-500">
-              <Wrench className="h-3.5 w-3.5" />
-              Tool Call Errors ({errors.error_tool_calls.length})
-            </h3>
             <NonEditableContextMenu
               sourceFeature="admin"
               contentSource={{ type: "raw" }}
@@ -443,10 +458,13 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
               pageSize={25}
               emptyState={{ title: "No tool call errors" }}
               toolbar={{
+                title: "Tool Call Errors",
                 search: true,
                 searchPlaceholder: "Search tool calls…",
+                refresh: { onRefresh: () => router.refresh() },
               }}
               copy={{
+                export: () => allIssuesExport,
                 label: "Tool call error",
                 listLabel: "Tool call errors (this view)",
                 location: "/administration/chat/cx-dashboard/errors",

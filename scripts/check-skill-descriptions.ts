@@ -19,6 +19,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const BUNDLE =
   process.env.MATRX_COMMON_DOCS ??
@@ -31,11 +32,11 @@ if (!existsSync(script)) {
       "   This repo's skill descriptions could be over budget and nothing here can tell.\n" +
       "   Clone it as a sibling: git clone https://github.com/AI-Matrix-Engine/matrx-common-docs.git ../common-docs\n",
   );
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 const args = process.argv.includes("--self-test")
   ? ["lint", "--self-test"]
   : ["lint", "--repo", process.cwd()];
 const result = spawnSync("python3", [script, ...args], { stdio: "inherit" });
-process.exit(result.status ?? 1);
+exitAfterDrain(result.status ?? 1);

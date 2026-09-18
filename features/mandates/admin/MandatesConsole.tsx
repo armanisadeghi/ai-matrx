@@ -26,11 +26,16 @@ import React, {
 } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { useRouter, useSearchParams } from "next/navigation";
-import { stringUrlCodec, useUrlState } from "@ai-matrx/kit/url-state";
+import {
+  booleanUrlCodec,
+  stringUrlCodec,
+  useUrlState,
+} from "@ai-matrx/kit/url-state";
 import {
   AlertTriangle,
   Copy,
   ExternalLink,
+  BrainCircuit,
   History,
   Loader2,
   Link2,
@@ -139,6 +144,36 @@ import {
   type MandateCodeTruth,
   type MandateConsoleData,
 } from "./service";
+import {
+  BLOCKER_META,
+  GRADE_META,
+  IMPACT_GRADE_ORDER,
+  batchEligibilityOf,
+  blockerKeyOf,
+  fetchStandingImpact,
+  groupImpactByMandate,
+  isBehindLatest,
+  isSafeGreen,
+  type ImpactBlocker,
+  type ImpactGrade,
+  rungIdentityOf,
+  type ImpactVerdict,
+  type StandingImpact,
+} from "./impact";
+import { useImpactAdvance } from "./impact-advance";
+import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
+import {
+  filterMandateConsoleRows,
+  mandateConsoleSearchText,
+} from "./mandate-console-discovery";
+import {
+  AdvanceResultsCard,
+  ImpactBlockerCell,
+  ImpactGradeCell,
+  ImpactLegend,
+  StandingImpactStrip,
+  type UngradedReason,
+} from "./impact-cells";
 
 /** MandateRow → the manifest's summary shape (surface scope + agent context). */
 function toMandateSummary(r: MandateRow): MandateSummary {
@@ -166,6 +201,7 @@ function toMandateSummary(r: MandateRow): MandateSummary {
 function toMandateDetail(
   row: MandateRow,
   data: MandateConsoleData,
+  newestSnapshotByAgent: Record<string, number | null>,
 ): MandateDetail {
   const holder = holderOfMandate(row.mandate);
   const pinnedVersion = holder.versionId
@@ -179,7 +215,9 @@ function toMandateDetail(
     agent_type: agent?.agentType ?? null,
     use_latest: isFloatingMandate(row.mandate),
     pinned_version: pinnedVersion?.versionNumber ?? null,
-    latest_version: agent?.version ?? null,
+    // The newest SAVED snapshot from the impact read — never `agent.version`,
+    // which is the optimistic-concurrency counter and not a version (R7/D10).
+    latest_version: agentId ? (newestSnapshotByAgent[agentId] ?? null) : null,
   };
 }
 
@@ -194,6 +232,19 @@ export interface ConsoleRow extends MandateRow {
   coverage: MandateCoverageBucket;
   /** Coverage tooltip: the leader carrying it, or why nothing does. */
   coverageDetail: string | null;
+  /**
+   * THE SERVER'S VERDICT on this mandate's own default rung (`POST
+   * /mandates/impact`) — the one grader (R12). Null with `ungraded` saying why.
+   */
+  defaultVerdict: ImpactVerdict | null;
+  /** The mandate's binding rungs, graded separately by the same read. */
+  bindingVerdicts: ImpactVerdict[];
+  ungraded: UngradedReason | null;
+  /** Filter/sort values — "ungraded" is its own honest bucket, never clean. */
+  impactGrade: ImpactGrade | "ungraded";
+  impactBlocker: ImpactBlocker | "none" | "ungraded";
+  /** The default rung — or any binding rung — trails the newest saved version. */
+  behindLatest: boolean;
 }
 
 /**
@@ -310,6 +361,8 @@ export function MandatesConsole() {
   // link lands on the same UI as a new one rather than on a highlighted row.
   const searchParams = useSearchParams();
   const deepLinkKey = searchParams.get("mandate");
+  const tableSearchQuery =
+    searchParams.get(`table.${MANDATES_TABLE_ID}.q`) ?? "";
   const deepLinkedRef = useRef<string | null>(null);
 
   // Canonical agent listing: the Redux agent-definition slice, filtered to
@@ -484,6 +537,73 @@ export function MandatesConsole() {
     [coverage],
   );
 
+  // ── THE ONE GRADER (Agent Change Impact I4, R12) ──────────────────────────
+  // Every agent that holds a default or a binding on this console's mandates
+  // is sent to `POST /mandates/impact`; the server grades every rung and says
+  // what it withheld. A failed read makes every row UNKNOWN, never clean.
+  const [impact, setImpact] = useState<StandingImpact | null>(null);
+  const [impactError, setImpactError] = useState<string | null>(null);
+  // Bumped after every write so the grades are re-read from the server — a
+  // moved pin is never shown as still behind on the strength of a local edit.
+  const [impactEpoch, setImpactEpoch] = useState(0);
+  const holderAgentIds = useMemo((): string[] => {
+    if (!data) return [];
+    const ids = new Set<string>();
+    for (const mandate of data.mandates) {
+      const holder = holderOfMandate(mandate);
+      const agentId =
+        holder.holderId ??
+        (holder.versionId
+          ? data.versionsById[holder.versionId]?.agentId
+          : null);
+      if (agentId) ids.add(agentId);
+      for (const binding of data.bindingsByMandateId[mandate.id] ?? []) {
+        const bindingHolder = agentHolderOfBinding(binding);
+        const bindingAgent =
+          bindingHolder.holderId ??
+          (bindingHolder.versionId
+            ? data.versionsById[bindingHolder.versionId]?.agentId
+            : null);
+        if (bindingAgent) ids.add(bindingAgent);
+      }
+    }
+    return Array.from(ids).sort();
+  }, [data]);
+  useEffect(() => {
+    if (holderAgentIds.length === 0) return;
+    let cancelled = false;
+    // `impactEpoch` is a deliberate re-read trigger, not a data input.
+    void impactEpoch;
+    fetchStandingImpact(dispatch, holderAgentIds)
+      .then((report) => {
+        if (cancelled) return;
+        setImpact(report);
+        setImpactError(null);
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setImpactError(describe(error));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, holderAgentIds, impactEpoch]);
+  const impactByMandate = useMemo(
+    () => (impact ? groupImpactByMandate(impact.verdicts) : null),
+    [impact],
+  );
+  // The newest SAVED snapshot per agent, from the read — the only "latest"
+  // a row may print (D10). Unknown agents stay absent, never "current".
+  const newestSnapshotByAgent = useMemo(() => {
+    const out: Record<string, number | null> = {};
+    for (const verdict of impact?.verdicts ?? []) {
+      if (verdict.latest_version_number != null) {
+        out[verdict.agent_id] = verdict.latest_version_number;
+      }
+    }
+    return out;
+  }, [impact]);
+
   const allRows = useMemo((): ConsoleRow[] => {
     if (!data) return [];
     return data.mandates
@@ -492,9 +612,46 @@ export function MandatesConsole() {
           mandate,
           data,
           codeTruthByMandateKey[mandate.mandate_key],
+          undefined,
+          newestSnapshotByAgent,
         );
         const entry = coverageIndex[base.mandateKey];
+        const grouped = impactByMandate?.get(base.mandateKey);
+        const defaultVerdict = grouped?.defaultVerdict ?? null;
+        const bindingVerdicts = grouped?.bindingVerdicts ?? [];
+        const ungraded: UngradedReason | null = defaultVerdict
+          ? null
+          : !base.agentId
+            ? "no_agent"
+            : impactError
+              ? "read_failed"
+              : impactByMandate
+                ? "not_returned"
+                : "loading";
+        // Behind latest is the SERVER's pin-vs-newest. An agent-held row the
+        // read could not grade stays in the "behind" view whenever the local
+        // pin says it drifts or the read failed — an unknown row is never
+        // hidden as current.
+        const behindLatest = defaultVerdict
+          ? isBehindLatest(defaultVerdict) ||
+            bindingVerdicts.some(isBehindLatest)
+          : base.agentId != null &&
+            (base.drift != null ||
+              ungraded === "read_failed" ||
+              ungraded === "not_returned");
+        const impactGrade: ConsoleRow["impactGrade"] = defaultVerdict
+          ? defaultVerdict.grade
+          : "ungraded";
+        const impactBlocker: ConsoleRow["impactBlocker"] = defaultVerdict
+          ? blockerKeyOf(defaultVerdict)
+          : "ungraded";
         return {
+          defaultVerdict,
+          bindingVerdicts,
+          ungraded,
+          impactGrade,
+          impactBlocker,
+          behindLatest,
           ...base,
           // THE ONE READER (`features/mandates/goal`): stored goal first, the
           // code catalogue as the fallback for rows the DB read missed. This
@@ -517,7 +674,15 @@ export function MandatesConsole() {
           HEALTH_PRIORITY[left.health] - HEALTH_PRIORITY[right.health] ||
           left.mandateKey.localeCompare(right.mandateKey),
       );
-  }, [catalogue, codeTruthByMandateKey, coverageIndex, data]);
+  }, [
+    catalogue,
+    codeTruthByMandateKey,
+    coverageIndex,
+    data,
+    impactByMandate,
+    impactError,
+    newestSnapshotByAgent,
+  ]);
 
   // 🚨 THE BOARD COUNTS THIS CONSOLE'S OWN ROWS. `GET /mandates/coverage`
   // classifies the WHOLE mandate corpus — every organization's — while this
@@ -543,13 +708,37 @@ export function MandatesConsole() {
   // A coverage tile narrows the table's DATA (the tiles are the filter, the
   // Coverage column filters further). Same idiom as the surfaces readiness
   // rollup: the scoreboard IS the work order.
+  // "Behind latest" is the default VIEW (Arman: "any of my mandates that
+  // aren't running on the latest version"). It lives in the URL so a refresh
+  // or a shared link keeps it; turning it off shows every mandate.
+  const [behindOnly, setBehindOnly] = useUrlState(
+    `table.${MANDATES_TABLE_ID}.behind`,
+    booleanUrlCodec(true),
+  );
   const rows = useMemo(
     () =>
-      coverageFilter === null
-        ? allRows
-        : allRows.filter((row) => row.coverage === coverageFilter),
-    [allRows, coverageFilter],
+      filterMandateConsoleRows(allRows, {
+        coverageFilter,
+        behindOnly,
+        searchQuery: tableSearchQuery,
+      }),
+    [allRows, behindOnly, coverageFilter, tableSearchQuery],
   );
+
+  // The success measure and the grade counts, over EVERY row (not the view).
+  const impactCounts = useMemo(() => {
+    const behindCounts: Record<string, number> = {};
+    let staleSafe = 0;
+    let blockedBehind = 0;
+    for (const row of allRows) {
+      const verdict = row.defaultVerdict;
+      if (!verdict || !isBehindLatest(verdict)) continue;
+      behindCounts[verdict.grade] = (behindCounts[verdict.grade] ?? 0) + 1;
+      if (verdict.blocker) blockedBehind += 1;
+      if (isSafeGreen(verdict)) staleSafe += 1;
+    }
+    return { behindCounts, staleSafe, blockedBehind };
+  }, [allRows]);
 
   // THE PROVISION IS THE INPUT DECLARATION. `required_variables` is stripped
   // for every provisioned mandate, so the Inputs column has to read the offer
@@ -735,7 +924,7 @@ export function MandatesConsole() {
     const summaries = rows.map(toMandateSummary);
     const health: MandatesHealthSummary = {
       ok: 0,
-      version_drift: 0,
+      behind_latest: 0,
       agent_archived: 0,
       not_a_system_agent: 0,
       unresolved_pin: 0,
@@ -745,6 +934,7 @@ export function MandatesConsole() {
       no_holder_yet: 0,
     };
     for (const r of rows) {
+      if (r.behindLatest) health.behind_latest += 1;
       if (r.health === "ok") health.ok += 1;
       else if (r.health === "no holder yet") health.no_holder_yet += 1;
       else if (r.health === "code ↔ agent drift") health.code_agent_drift += 1;
@@ -752,7 +942,6 @@ export function MandatesConsole() {
         health.code_contract_drift += 1;
       else if (r.health === "code truth import failed")
         health.code_truth_import_failed += 1;
-      else if (r.health === "version drift") health.version_drift += 1;
       else if (r.health === "agent archived") health.agent_archived += 1;
       else if (r.health === "unresolved pin") health.unresolved_pin += 1;
       else health.not_a_system_agent += 1;
@@ -820,7 +1009,9 @@ export function MandatesConsole() {
       system_agent_count: agentOptions.length,
       selected_mandate_id: selectedRow?.id,
       selected_mandate:
-        selectedRow && data ? toMandateDetail(selectedRow, data) : undefined,
+        selectedRow && data
+          ? toMandateDetail(selectedRow, data, newestSnapshotByAgent)
+          : undefined,
       selected_mandate_health: selectedRow?.health,
       selected_mandate_overrides: overrides,
       selected_mandate_contract: contract,
@@ -913,6 +1104,83 @@ export function MandatesConsole() {
     },
   });
 
+  // ── Batch selection + the advance (R8, R9, R17) ───────────────────────────
+  // Only rows whose DEFAULT rung is advanceable render a checkbox; a blocked
+  // row keeps its per-row door and never rides a batch.
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
+  /**
+   * THE write door (I3, I8) through the one shared hook: consequence dialog
+   * naming every pin from → to and the undo window, then
+   * `POST /mandates/impact/advance`, then the server's per-row sentences and
+   * the revert door. After any write the grades are re-read.
+   */
+  const verdictByRung = useMemo(() => {
+    const out = new Map<string, ImpactVerdict>();
+    for (const verdict of impact?.verdicts ?? []) {
+      out.set(rungIdentityOf(verdict.apply_token), verdict);
+    }
+    return out;
+  }, [impact]);
+  const writes = useImpactAdvance({
+    verdictByRung,
+    onWritten: () => {
+      setSelectedIds([]);
+      setImpactEpoch((epoch) => epoch + 1);
+      reload();
+    },
+  });
+  const advancing = writes.busy !== null;
+  const advanceVerdicts = (verdicts: ImpactVerdict[], batchLabel: string) =>
+    writes.advance(verdicts, batchLabel);
+
+  // The batch panel (I5) over the selection: the same three-pile body the
+  // deprecated-models sweep ends in, scoped to the agents these rows pin and
+  // walking their duplicates (R4), with the selected rungs pre-selected.
+  const openImpactBatchWindow = useOpenImpactBatchWindow();
+  const reviewSelectedAsBatch = (selected: ConsoleRow[]) => {
+    const agentIds = Array.from(
+      new Set(
+        selected
+          .map((row) => row.defaultVerdict?.agent_id ?? row.agentId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    );
+    openImpactBatchWindow({
+      agentIds,
+      mode: "post_batch",
+      batchLabel: "Standing table",
+      sourceSentence: `${selected.length} mandate${selected.length === 1 ? "" : "s"} selected on the standing table`,
+      preselectedRungIds: selected
+        .map((row) => row.defaultVerdict)
+        .filter((v): v is ImpactVerdict => v !== null)
+        .map((v) => rungIdentityOf(v.apply_token)),
+      surfaceName: "administration-mandates",
+    });
+  };
+
+  const advanceSelected = (selected: ConsoleRow[]) =>
+    void advanceVerdicts(
+      selected
+        .map((row) => row.defaultVerdict)
+        .filter(
+          (v): v is ImpactVerdict =>
+            v !== null && batchEligibilityOf(v).batchable,
+        ),
+      `Standing table: ${selected.length} selected`,
+    );
+
+  const advanceAllGreen = () =>
+    void advanceVerdicts(
+      allRows
+        .map((row) => row.defaultVerdict)
+        .filter((v): v is ImpactVerdict => v !== null && isSafeGreen(v)),
+      "Standing table: all green",
+    );
+
+  const advanceOneAnyway = (verdict: ImpactVerdict) =>
+    void advanceVerdicts([verdict], `Standing table: ${verdict.mandate_key}`);
+
   const columns = useMemo((): MatrxColumnDef<ConsoleRow>[] => {
     return [
       {
@@ -948,7 +1216,13 @@ export function MandatesConsole() {
           </div>
         ),
       },
-      { id: "label", accessorKey: "label", header: "Label", width: 180 },
+      {
+        id: "label",
+        accessorKey: "label",
+        header: "Label",
+        width: 180,
+        href: (r) => adminMandateHref(r.mandateKey),
+      },
       {
         // THE GOAL — what this Mandate is FOR, in the words the declaration
         // uses. It is code, not a row: absent means the catalogue could not be
@@ -1051,6 +1325,56 @@ export function MandatesConsole() {
         ),
       },
       {
+        // GRADE — the server's verdict on what changed between the pinned
+        // version and the newest (R3, R12). Findings on hover, in the
+        // server's own sentences.
+        id: "impactGrade",
+        accessorKey: "impactGrade",
+        header: "Grade",
+        filter: "select",
+        filterOptions: [
+          ...IMPACT_GRADE_ORDER.slice()
+            .reverse()
+            .map((grade) => ({ value: grade, label: GRADE_META[grade].label })),
+          { value: "ungraded", label: "Not graded" },
+        ],
+        sortValue: (r) =>
+          r.impactGrade === "ungraded"
+            ? -1
+            : IMPACT_GRADE_ORDER.indexOf(r.impactGrade),
+        defaultSortDirection: "desc",
+        width: 130,
+        cell: (r) => (
+          <ImpactGradeCell
+            mandateKey={r.mandateKey}
+            defaultVerdict={r.defaultVerdict}
+            bindingVerdicts={r.bindingVerdicts}
+            ungraded={r.ungraded}
+          />
+        ),
+      },
+      {
+        // BLOCKER — can this pin move at all (R28), with its per-row door.
+        id: "impactBlocker",
+        accessorKey: "impactBlocker",
+        header: "Blocker",
+        filter: "select",
+        filterOptions: [
+          ...(Object.keys(BLOCKER_META) as Array<ImpactBlocker | "none">).map(
+            (key) => ({ value: key, label: BLOCKER_META[key].label }),
+          ),
+          { value: "ungraded", label: "Not graded" },
+        ],
+        width: 210,
+        cell: (r) => (
+          <ImpactBlockerCell
+            verdict={r.defaultVerdict}
+            busy={advancing}
+            onAdvanceAnyway={advanceOneAnyway}
+          />
+        ),
+      },
+      {
         id: "health",
         accessorKey: "health",
         header: "Health",
@@ -1079,16 +1403,6 @@ export function MandatesConsole() {
                   {r.codeTruth.bound_agent?.declared_variables.join(", ") ||
                     "none"}
                 </span>
-              )}
-              {/* Drift always names both numbers — "version drift" without
-                  saying WHICH versions was the console's top complaint. */}
-              {r.drift && (
-                <Badge
-                  variant="outline"
-                  className={HEALTH_CLASS["version drift"]}
-                >
-                  {r.drift}
-                </Badge>
               )}
               {r.health === "not a system agent" && twin && (
                 <>
@@ -1198,7 +1512,15 @@ export function MandatesConsole() {
         width: 110,
       },
     ];
-  }, [toggleEnabled, lineageIndex, reload, catalogue, offersByProvision]);
+  }, [
+    toggleEnabled,
+    lineageIndex,
+    reload,
+    catalogue,
+    offersByProvision,
+    advancing,
+    advanceOneAnyway,
+  ]);
 
   // The coverage board's named rows open the mandate PAGE — the same
   // destination as a row click, the right-click menu and `?mandate=`. The
@@ -1263,6 +1585,23 @@ export function MandatesConsole() {
             setCoverageFilter((current) => (current === bucket ? null : bucket))
           }
           onOpenMandate={openMandateByKey}
+        />
+        <StandingImpactStrip
+          impact={impact}
+          error={impactError}
+          loading={loading || (!impact && holderAgentIds.length > 0)}
+          staleSafeCount={impactCounts.staleSafe}
+          behindCounts={impactCounts.behindCounts}
+          blockedBehind={impactCounts.blockedBehind}
+          onAdvanceAllGreen={advanceAllGreen}
+          busy={advancing}
+        />
+        <AdvanceResultsCard
+          batches={writes.batches}
+          verdictsOf={writes.verdictsOf}
+          busy={writes.busy}
+          onRevert={(batch, rowId) => void writes.revert(batch, rowId)}
+          onDismiss={writes.clear}
         />
         {catalogueError && (
           <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
@@ -1337,7 +1676,7 @@ export function MandatesConsole() {
               data={rows}
               columns={columns}
               getRowId={(r) => r.id}
-              searchText={(r) => r.mandateKey}
+              searchText={mandateConsoleSearchText}
               isLoading={loading}
               isFetching={fetching}
               pageSize={50}
@@ -1351,6 +1690,22 @@ export function MandatesConsole() {
                 searchPlaceholder: "Search mandates, agents…",
                 actions: (
                   <>
+                    <Button
+                      size="sm"
+                      variant={behindOnly ? "secondary" : "outline"}
+                      aria-pressed={behindOnly}
+                      className="h-8 gap-1 text-xs"
+                      onClick={() => setBehindOnly(!behindOnly)}
+                      title={
+                        behindOnly
+                          ? "Showing only mandates not running the newest saved version — click to show every mandate"
+                          : "Showing every mandate — click to show only those behind latest"
+                      }
+                    >
+                      <History className="h-3.5 w-3.5" />
+                      {behindOnly ? "Behind latest" : "All mandates"}
+                    </Button>
+                    <ImpactLegend />
                     {/* Declaring a job is admin work, so the New button lives
                       here — the user route has none. */}
                     <Button asChild size="sm">
@@ -1399,10 +1754,47 @@ export function MandatesConsole() {
               detail={{ enabled: false }}
               window={{
                 enabled: true,
+                // The inspection window remains available as an explicit row
+                // action; the ordinary row click opens the management page.
+                openOnRowClick: false,
                 title: (r) => `Inspect ${r.label || r.mandateKey}`,
                 onOpen: () => {},
               }}
               onRowOpen={(r) => openMandatePage(r.mandateKey)}
+              selection={{
+                selectedIds,
+                onSelectedIdsChange: setSelectedIds,
+                noun: "mandate",
+                isRowSelectable: (r) =>
+                  r.defaultVerdict !== null &&
+                  batchEligibilityOf(r.defaultVerdict).batchable,
+                actions: (selected) => (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 gap-1 text-xs"
+                      disabled={selected.length === 0}
+                      title="Open the batch panel over these rows: every rung their agents hold, in three piles, with per-row grades."
+                      onClick={() => reviewSelectedAsBatch(selected)}
+                    >
+                      <BrainCircuit className="h-3 w-3" />
+                      Review as batch
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-7 gap-1 text-xs"
+                      disabled={advancing || selected.length === 0}
+                      onClick={() => advanceSelected(selected)}
+                    >
+                      {advancing ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : null}
+                      Advance selected ({selected.length})
+                    </Button>
+                  </>
+                ),
+              }}
             />
           </NonEditableContextMenu>
         </div>

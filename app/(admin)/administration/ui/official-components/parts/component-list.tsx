@@ -150,6 +150,23 @@ export const categoryIcons: Record<ComponentCategory, React.ReactNode> = {
 
 export const componentList: ComponentEntry[] = [
   {
+    id: "alchemy",
+    name: "Alchemy Content Transfer",
+    path: "app/(admin)/administration/ui/official-components/alchemy/page.tsx",
+    description:
+      "The package-owned menu for copying, preparing, and exporting text, Markdown, structured data, table views, and declared surface context.",
+    categories: ["ai-helpers", "buttons", "data-display", "utilities"],
+    tags: [
+      "alchemy",
+      "content transfer",
+      "copy",
+      "export",
+      "surface",
+      "table",
+      "portal",
+    ],
+  },
+  {
     id: "citation-chip",
     name: "Citation Chip",
     path: "components/official/citation-chip/CitationChip.tsx",

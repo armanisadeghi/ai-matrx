@@ -63,6 +63,11 @@ jest.mock("../useTriageRun", () => ({
     result: null,
     start: jest.fn(),
     reset: jest.fn(),
+    // The dialog's latch asks `surfacing`, never `running` — a live run the
+    // Expert has not closed away from (cold walk 7, finding 3). Nothing in
+    // this suite dismisses anything, so the two agree here.
+    surfacing: runningFor === rulebookId,
+    dismiss: jest.fn(),
   }),
 }));
 
@@ -242,10 +247,27 @@ describe("RulebookDetailPage's triage door", () => {
     ).toEqual([]);
   });
 
-  it("remounts the sort dialog per Rulebook", () => {
-    const dialogAt = code.findIndex((l) => l.includes("<TriageDraftsDialog"));
+  /**
+   * THE ASSERTION IS "KEYED ON THE RULEBOOK", NOT ONE EXACT STRING.
+   *
+   * It read `toContain("key={rulebook.id}")` until 2026-09-15, when the dialogs
+   * on this page were given per-dialog key namespaces
+   * (`key={`triage-${rulebook.id}`}`, 6d424b231d) so that two dialogs sharing
+   * one host could never share a mount. That change satisfies everything this
+   * guard exists to prove and still broke it, and a guard that fails on a
+   * correct change teaches people to delete guards. What matters — and what is
+   * checked — is that the key VARIES WITH THE RULEBOOK.
+   */
+  function keyedOnRulebook(code: string[], tag: string): void {
+    const dialogAt = code.findIndex((l) => l.includes(tag));
     expect(dialogAt).toBeGreaterThan(-1);
-    expect(code.slice(dialogAt, dialogAt + 8)).toContain("key={rulebook.id}");
+    const props = code.slice(dialogAt, dialogAt + 8);
+    const key = props.find((l) => l.startsWith("key="));
+    expect({ tag, key }).toEqual({ tag, key: expect.stringContaining("rulebook.id") });
+  }
+
+  it("remounts the sort dialog per Rulebook", () => {
+    keyedOnRulebook(code, "<TriageDraftsDialog");
   });
 
   /**
@@ -272,8 +294,6 @@ describe("RulebookDetailPage's triage door", () => {
   });
 
   it("remounts the unfolding dialog per Rulebook", () => {
-    const dialogAt = code.findIndex((l) => l.includes("<IngestTimelineDialog"));
-    expect(dialogAt).toBeGreaterThan(-1);
-    expect(code.slice(dialogAt, dialogAt + 8)).toContain("key={rulebook.id}");
+    keyedOnRulebook(code, "<IngestTimelineDialog");
   });
 });

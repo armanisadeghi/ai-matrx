@@ -8,6 +8,7 @@
  */
 import { spawnSync } from "node:child_process";
 import process from "node:process";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const GUARDS = [
   "check:settings-orphans",
@@ -26,4 +27,4 @@ for (const g of GUARDS) {
   summary.push(`${code === 0 ? "✓" : code === 1 ? "✗" : "?"} ${g} (exit ${code}${code === 2 ? " UNMEASURED" : ""})`);
 }
 console.log(`\n\x1b[1mcheck:settings\x1b[0m\n  ${summary.join("\n  ")}\n`);
-process.exit(worst);
+exitAfterDrain(worst);

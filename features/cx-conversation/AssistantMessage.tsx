@@ -112,13 +112,17 @@ export function AssistantMessage({
   ).audioMimeType;
   // A TTS audio response is one of our own files — on a load failure the
   // primitive refreshes the file-session cookie and retries the durable URL.
-  const audioSrc = audioUrl ?? "";
   const {
     retryKey: audioRetryKey,
     onLoadError: handleAudioError,
+    healedSrc: healedAudioSrc,
   } = useMediaLoadRecovery(audioUrl ?? null, {
     recoverable: !!audioUrl && recognizeOurFileUrl(audioUrl) !== null,
+    // The ref the heal ladder heals BY (bearer byte fetch on our file id).
+    failureRef: audioUrl ? { url: audioUrl } : null,
   });
+  // A healed (bearer-lane) object URL replaces a dead element src.
+  const audioSrc = healedAudioSrc ?? audioUrl ?? "";
 
   const handleDownloadAudio = async () => {
     if (!audioUrl || isDownloading) return;
@@ -155,7 +159,7 @@ export function AssistantMessage({
 
   return (
     <div
-      className={`flex min-w-0 overflow-x-hidden ${isAppearing ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}
+      className={`group/assistant-msg flex min-w-0 overflow-x-hidden ${isAppearing ? "opacity-0" : "opacity-100"} transition-opacity duration-300`}
     >
       <div className="max-w-full min-w-0 w-full relative overflow-x-hidden">
         {showLoading && (
@@ -287,6 +291,7 @@ export function AssistantMessage({
                     onQuickSave={handleQuickSave}
                     onFullPrint={handleFullPrint}
                     isCapturing={isCapturing}
+                    timestamp={message.createdAt ?? message.timestamp}
                   />
                 </div>
               )}

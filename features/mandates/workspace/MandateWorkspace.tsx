@@ -1,4 +1,5 @@
 "use client";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 // features/mandates/workspace/MandateWorkspace.tsx
 //
@@ -387,7 +388,9 @@ function OneMandateWorkspace({
   // for me". Asking would be worse than useless: it is the wrong answer,
   // rendered as if it were this page's subject.
   const personalKey =
-    perspective === "person" && data ? data.mandate.mandate_key : "";
+    perspective === "person" && data
+      ? storedMandateKey(data.mandate.mandate_key)
+      : "";
   const verdict = useMandate(personalKey);
   /**
    * 🚨 ONE DOOR, TWO QUESTIONS — and the SYSTEM host asks only one of them.

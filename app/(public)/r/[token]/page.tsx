@@ -25,13 +25,15 @@ interface PageProps {
 }
 
 export default async function ShortLinkPage({ params }: PageProps) {
-  const { token: raw } = await params;
+  // The App Router already decodes dynamic segment params — decoding again
+  // double-decodes a literal `%` in the token and throws URIError.
+  const { token } = await params;
   const supabase = await createClient();
   // The whole resolve contract — token normalization, the anon RPC, and the
   // same-app-path re-assertion (the redirect can never leave the app even if
   // a row were tampered with) — is @ai-matrx/kit's resolveShortLinkPath.
   // This file is Next glue only.
-  const result = await resolveShortLinkPath(supabase, decodeURIComponent(raw));
+  const result = await resolveShortLinkPath(supabase, token);
   if (!result.ok) {
     if (result.transportError) {
       // A gateway/transport failure is not "this link is gone" — surface the

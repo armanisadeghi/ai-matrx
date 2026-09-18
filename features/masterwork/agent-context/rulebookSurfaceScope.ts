@@ -81,6 +81,25 @@ export interface BuildRulebookSurfaceScopeArgs {
   workspaceState?: RulebookWorkspaceState;
   /** Lane slug (`conduct`, `interview`, `sources`, …) when not the detail page. */
   lane?: string;
+  /**
+   * 🚨 WITHHOLD EVERY CONTENT-BEARING FIELD (the blank-slate interview).
+   *
+   * Found live on 2026-09-15: a blank-slate interview is launched with an
+   * empty application scope and a payload proven to carry no source text — and
+   * then this surface re-attached the ENTIRE rendered Rulebook to the
+   * conversation as `content` on the very next turn, because a mounted
+   * `<SurfaceRuntimeProvider>` publishes its scope per turn, not once at
+   * launch. The interviewer opened by reciting the Rulebook's own description
+   * back to the Expert, one second after the card promised her it knew nothing
+   * about her.
+   *
+   * With this set, the surface still answers WHO and WHETHER — the id, the
+   * lane, the permission, the version, the tenancy — so client tools and write
+   * targets keep working, and NOTHING that says what the Rulebook contains
+   * goes out: no document, no description, no sections, no rules, no source,
+   * no Masterworks, no counts. An identity is not source text; a rule is.
+   */
+  withholdContent?: boolean;
 }
 
 export function buildRulebookSurfaceScope({
@@ -93,7 +112,32 @@ export function buildRulebookSurfaceScope({
   activeRuleDraft = null,
   workspaceState = CLOSED_RULEBOOK_WORKSPACE_STATE,
   lane,
+  withholdContent = false,
 }: BuildRulebookSurfaceScopeArgs): SurfaceScopePayload {
+  if (withholdContent) {
+    // Deliberately built by hand rather than by deleting keys from the full
+    // payload: a field added below must be CHOSEN into the blank-slate scope,
+    // never inherited into it by forgetting to exclude it.
+    return {
+      selection: "",
+      text_before: "",
+      text_after: "",
+      content: "",
+      context: {
+        surface: "masterwork_rulebook",
+        rulebook_id: rulebook.id,
+        current_filter: "",
+        lane: lane ?? "rulebook",
+      },
+      rulebook_id: rulebook.id,
+      rulebook_status: rulebook.status,
+      rulebook_version: rulebook.version,
+      rulebook_visibility: rulebook.visibility,
+      rulebook_organization_id: rulebook.organization_id,
+      can_edit: canEdit,
+      workspace_state: workspaceState,
+    };
+  }
   const approvedRules = rulebook.rules.filter(
     (rule) => ruleState(rule) === "approved",
   );

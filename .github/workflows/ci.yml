@@ -95,7 +95,7 @@ jobs:
         run: |
           if [ -n "$SUPABASE_SECRET_KEY" ] && [ -n "$NEXT_PUBLIC_SUPABASE_URL" ]; then
             echo "supabase=true" >> "$GITHUB_OUTPUT"
-            echo "measured: the live Supabase gates (kind registry freshness, hr.punch write path, migration slot guard, soft-delete cascade, realtime publication)"
+            echo "measured: the live Supabase gates (kind registry freshness, hr.punch write path, migration slot guard, soft-delete cascade, realtime publication, the Shape sandbox browser boundary)"
           else
             echo "supabase=false" >> "$GITHUB_OUTPUT"
             echo "::warning title=UNMEASURED — the live Supabase gates did NOT run::NEXT_PUBLIC_SUPABASE_URL and/or SUPABASE_SECRET_KEY are not configured for this repository, so four gates are SKIPPED, not passed: generated kind types may be stale against content_ir.kind_definition; a client-direct insert path into hr.punch may exist unnoticed; the BEFORE INSERT trigger on public._schema_migrations may be dropped or disabled; and soft-deleting a parent may again leave its bindings, treatments, exemplars and notes alive underneath it. Nothing was checked — that is NOT a pass. Fix: add the NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY repository secrets."
@@ -130,6 +130,16 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Measured production build-cache contract
         run: node --test scripts/build-lab/config-contract.test.mjs
+      - name: The Ignored Build Step sees releases that arrive behind a merge commit
+        # 2026-09-14: the step read the HEAD commit message only, so the shared
+        # checkout's mandatory commit → `git pull --no-rebase` → push routine
+        # stranded every release it pushed under a merge head — f2386f68f0
+        # (`release: a chat that was on a sandbox opens back on that sandbox`)
+        # rode in under 12ef018999 and Vercel CANCELED the deployment. The
+        # guard drives the real script over real throwaway repos; case (b) is
+        # red against the old script, (c)/(d) hold the other half of the law:
+        # a push with no NEW release commit never starts a production build.
+        run: pnpm test:vercel-ignore
       - name: Matrx-owned packages are declared and installed at npm latest
         run: pnpm check:matrx-packages
       - name: EVERY TYPESCRIPT FILE PARSES
@@ -205,6 +215,17 @@ jobs:
         # "control" is a comment — and asserts all three are reported, while a
         # service layer, a single-record read and a reasoned exemption are not.
         run: pnpm check:archived-items-law:self-test
+      - name: A SIGN-OUT ENDS ONLY THE DEVICE THAT ASKED — every signOut( names a literal scope
+        # supabase-js `signOut()` defaults to scope "global": it deletes EVERY
+        # session the account holds, including the OAuth-client session Claude
+        # Code / claude.ai / Codex use for the AI Dream MCP. Browser tests
+        # signing admin@admin.com out ~30×/day (2026-09-15) killed that MCP
+        # sign-in each time ("requires authentication"). The gate existed only
+        # in run-release-gates.sh — by hand — so it never ran on a push. Pure
+        # static scan over tracked .ts/.tsx, ~1s.
+        run: pnpm check:signout-scope
+      - name: the sign-out scope guard can still fail (self-test)
+        run: pnpm check:signout-scope:self-test
       - name: NO HAND-TYPED MANDATE KEYS — the vocabulary is the authority
         # @ai-matrx/agents 0.10.0 publishes the declared mandate key set,
         # emitted by THE ONE GENERATOR from aidream's own declared_mandates().
@@ -308,6 +329,60 @@ jobs:
       # preflight stamps the UNMEASURED warning. No silent degradation.
       - name: Generated kind types vs content_ir.kind_definition
         run: pnpm check:kind-types
+
+  # ---------------------------------------------------------------------------
+  # kind-sandbox-boundary — THE SHAPE SANDBOX'S REAL-BROWSER PROOF (DD-242).
+  #
+  # Organization-authored component bodies execute in the viewer's browser. The
+  # only evidence that one of them reaches NOTHING on the network, that every
+  # attempt is refused BY NAME as a CSP violation, and that the frame's origin is
+  # opaque, is a real-Chromium spec — and until 2026-09-14 that spec ran in NO
+  # gate, NO CI job and NO hook. It needed a running app, so it only ever ran when
+  # someone typed it on a machine that happened to hold the single shared
+  # dev-server lease; that is why the DD-123 rollout's step-2 parity witness is
+  # UNKNOWN to this day.
+  #
+  # `pnpm check:kind-sandbox-gate` closed that: it boots its OWN server on a port
+  # the OS hands out, serving the real `app/kind-sandbox/route.ts`, regenerates the
+  # witness from live `content_ir` rows, and drives the spec. 13.4 s locally; the
+  # browser download is the only added cost here.
+  #
+  # A SIGNAL, NEVER A GATE (Arman's standing ruling — CI must never slow a
+  # deployment), so the proof step is `continue-on-error` and announces itself. The
+  # surface that actually screams before a release builds is the release-gate entry
+  # "The Shape sandbox boundary, in a real browser (DD-242)" in
+  # scripts/run-release-gates.sh. Credential-gated like the other live jobs: with no
+  # secret the whole job is SKIPPED and the preflight stamps UNMEASURED — the
+  # witness reads live rows, and a witness built from a fixture would prove nothing.
+  # ---------------------------------------------------------------------------
+  kind-sandbox-boundary:
+    name: "[signal] the Shape sandbox boundary in a real browser (UNMEASURED without the secret)"
+    runs-on: ubuntu-latest
+    needs: secrets-preflight
+    if: needs.secrets-preflight.outputs.supabase == 'true'
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: The gate's own comparison logic can still fail (self-test)
+        run: pnpm check:kind-sandbox-gate:self-test
+      - name: Install the browser the proof runs in
+        # The CSP behaviour under test is an engine's, so it is the bundled
+        # Chromium or nothing — never whatever the runner happens to have.
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Build the sandbox bundle the frame loads
+        run: pnpm build:kind-sandbox
+      - name: "[signal] A live component in the frame reaches nothing and is refused by name"
+        continue-on-error: true
+        run: pnpm check:kind-sandbox-gate
 
   # ---------------------------------------------------------------------------
   # hr-punch — the STRICT lane of the HR punch write-path conformance gate.
@@ -686,6 +761,64 @@ jobs:
         run: pnpm check:realtime-publication
 
   # ---------------------------------------------------------------------------
+  # migration-judgment — ONE JUDGEMENT, OR THE CAMPAIGN HAS TWO (ATTACK-7).
+  #
+  # Two runners execute migrations for this platform: `pnpm db:apply` here and
+  # `uv run python db/apply_migrations.py` in aidream — and THAT is the one both
+  # release trains execute, including this repo's (release.sh resolves the applier
+  # out of the sibling aidream checkout). On 2026-09-16 they did not enforce the
+  # same rules: `-- chair-step:` was an owner-awake step here and a print statement
+  # there; a header naming production was judged by the allow-list here and waived
+  # by one comment line there, so the abort checklist's only production undo ran on
+  # one command and was refused by the other; `--source campaign` demanded its
+  # target there and silently defaulted to PRODUCTION here.
+  #
+  # This job runs migrations/judgment-corpus/ through BOTH runners' read-only
+  # `--judge-only` mode and fails on any disagreement — with each other or with the
+  # fixture's own `-- expect:` line. It opens NO database connection and needs no
+  # Supabase secret; it needs the aidream checkout, which lives in a DIFFERENT
+  # GitHub org, so it is gated on AIDREAM_REPO_TOKEN exactly like
+  # realtime-publication and SKIPS as UNMEASURED rather than reporting green.
+  # Spec: migrations/JUDGMENT.md. The blocking copy is in both release scripts.
+  # ---------------------------------------------------------------------------
+  migration-judgment:
+    name: both migration runners judge the same bytes the same way (UNMEASURED without the token)
+    runs-on: ubuntu-latest
+    needs: secrets-preflight
+    if: needs.secrets-preflight.outputs.aidream_repo == 'true'
+    env:
+      AIDREAM_DIR: ${{ github.workspace }}/aidream
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out aidream's migration runner
+        uses: actions/checkout@v4
+        with:
+          repository: AI-Matrix-Engine/aidream
+          path: aidream
+          token: ${{ secrets.AIDREAM_REPO_TOKEN }}
+          sparse-checkout: |
+            db
+            scripts
+            pyproject.toml
+            uv.lock
+          sparse-checkout-cone-mode: false
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+      - name: Install the Python runner's dependencies
+        working-directory: aidream
+        run: uv sync --frozen --no-install-project
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: The corpus, through both runners, verdict for verdict
+        run: pnpm check:migration-judgment
+
+  # ---------------------------------------------------------------------------
   # settings-guards — all five Unified Settings Platform guards
   # (common-docs/projects/unified-settings-platform/EXECUTION.md § LANE C).
   # `check:settings-env-toggles` is static: a behavioural env var read in a
@@ -798,6 +931,43 @@ jobs:
         # Matches the ceiling `pnpm dev` uses; tsc over this repo outgrew the
         # default heap once already.
         run: NODE_OPTIONS='--max-old-space-size=6144' pnpm type-check
+
+  # ---------------------------------------------------------------------------
+  # mandate-references — every Mandate this build names, and every place
+  # intelligence is reached outside a Mandate, found with its exact file, symbol
+  # and line. NON-BLOCKING BY LAW (ruling D23): a reference check may never be
+  # the reason a push to main goes red, so the whole job is continue-on-error and
+  # it is not a required check.
+  #
+  # The scanner version is pinned EXACTLY. The "always latest" law governs
+  # @ai-matrx npm packages; this is a python release gate whose findings are
+  # compared between revisions, so what it measures may not drift underneath the
+  # comparison.
+  #
+  # CI carries no SUPABASE_SECRET_KEY, so this job SCANS and prints and says
+  # UNMEASURED-for-report — loudly, never silently. release.sh (outside
+  # --no-gates) and the scheduled remediation task are what submit.
+  # ---------------------------------------------------------------------------
+  mandate-references:
+    name: mandate references (non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      # The installed @ai-matrx/agents is what carries the per-version key
+      # SNAPSHOT the scanner resolves this build's keys against, so the install
+      # is not optional: without it every TypeScript key is UNMEASURED.
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - uses: astral-sh/setup-uv@v5
+      - name: Mandate references (scan only in CI)
+        continue-on-error: true
+        run: uvx --from matrx-mandate-scan==0.2.2 matrx-mandate-scan check
 
   # ---------------------------------------------------------------------------
   # organization-context — every migrated first-party API call must fail before

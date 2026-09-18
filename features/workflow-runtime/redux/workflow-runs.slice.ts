@@ -219,6 +219,24 @@ export interface WorkflowRunState {
   parentRunId: string | null;
   definitionId: string | null;
   status: WorkflowRunStatus;
+  /**
+   * 🚨 HAS ANYBODY ACTUALLY TOLD US THIS RUN'S STATUS? (cold walk 7, finding
+   * 5, 2026-09-17.)
+   *
+   * `status` is non-nullable and every new run is born `"pending"`, so a run
+   * this tab has merely ATTACHED to is indistinguishable from a run the server
+   * says is about to start. Every surface reading `status` therefore narrated
+   * "GETTING READY" over whatever it was pointed at, for as long as the read
+   * took — including a run that finished twenty minutes ago. Cold walk 7 read
+   * that on a finished Masterwork's permalink, concluded a click meant to READ
+   * a paid result had started a second paid run, and pressed "Cancel now".
+   *
+   * False until a status arrives from the server (an event through
+   * `stampStatus`, or the run row through `seedRunRow`). A surface that says
+   * anything about the RUN's state consumes `selectRunStatusKnown` first and
+   * talks about ITSELF ("Opening this run") until this is true.
+   */
+  statusKnown: boolean;
   statusTs: string | null;
   error: Record<string, unknown> | null;
   /**
@@ -368,6 +386,7 @@ function makeRunState(
     parentRunId,
     definitionId,
     status: "pending",
+    statusKnown: false,
     statusTs: null,
     result: null,
     error: null,
@@ -650,6 +669,7 @@ function stampStatus(
   ts: string,
 ): void {
   run.status = status;
+  run.statusKnown = true;
   run.statusTs = ts;
 }
 
@@ -1077,6 +1097,7 @@ const workflowRunsSlice = createSlice({
         rowTerminal && !TERMINAL_RUN_STATUSES.has(run.status);
       if (run.statusTs === null || adoptTerminalRow) {
         run.status = row.status;
+        run.statusKnown = true;
         // Give the elapsed clock an honest end. The sweeper writes no
         // completed_at, so this stays null there and the clock simply freezes.
         if (rowTerminal && row.completed_at) run.statusTs = row.completed_at;

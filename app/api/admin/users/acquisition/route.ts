@@ -7,6 +7,7 @@ import {
   describeAcquisitionClient,
 } from "@/lib/product-analytics/user-acquisition";
 import { normalizeUsageOrigins } from "@/features/admin/users/lib/usageOrigins";
+import { guestAccessFromRow } from "@/features/admin/users/lib/guestAccess";
 import type {
   AdminUserAcquisitionRow,
   AdminUserUsageRow,
@@ -150,6 +151,7 @@ export async function GET(request: NextRequest) {
       acquisitionByGuestFingerprint.set(observedFingerprint, guest);
   }
 
+  const now = new Date();
   const includedGuestIds = new Set<string>();
   const rows: AdminUserAcquisitionRow[] = [];
   for (const user of authUsers) {
@@ -215,6 +217,8 @@ export async function GET(request: NextRequest) {
       ),
       client_description: describeAcquisitionClient(userAgent),
       last_sign_in_at: user.last_sign_in_at ?? null,
+      guest_access: guest ? guestAccessFromRow(guest, now) : null,
+      guest_fingerprint_hint: guest ? guest.fingerprint.slice(0, 8) : null,
     });
   }
 
@@ -269,6 +273,8 @@ export async function GET(request: NextRequest) {
       ),
       client_description: describeAcquisitionClient(userAgent),
       last_sign_in_at: null,
+      guest_access: guestAccessFromRow(guest, now),
+      guest_fingerprint_hint: guest.fingerprint.slice(0, 8),
     });
   }
 

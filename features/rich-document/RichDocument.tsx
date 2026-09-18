@@ -41,6 +41,12 @@ import { buildMenuTree } from "./variants/shared/menuStructure";
 // The UNIVERSAL context menu (v3) — the light shell; MenuContent stays lazy
 // inside it, so this static import costs nothing until the user right-clicks.
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
+import {
+  SpecimenProvider,
+  SpecimenBanner,
+  resolveSpecimenMode,
+  type SpecimenMode,
+} from "@/components/mardown-display/specimen/SpecimenContext";
 import type {
   ContextMenuExtraItem,
   ContextMenuExtraSection,
@@ -97,6 +103,16 @@ export interface RichDocumentProps {
   /** Required when actionsVariant === "remote". */
   actionsSurfaceId?: string;
   /**
+   * DECLARE that this content is a specimen — generated work that is meant to
+   * look right and be wrong (the Bad Example probe, a wrong explanation, a
+   * decoy option). Suppresses every action surface, the right-click menu, and
+   * the actions inside the content itself (table export / workbook / Google
+   * Sheet / edit / open-in-window), and prints the specimen banner in their
+   * place. Pass `true` for the default wording, or override the two lines.
+   * See components/mardown-display/specimen/SpecimenContext.tsx.
+   */
+  specimen?: boolean | Partial<SpecimenMode>;
+  /**
    * Enable a right-click context menu over the content. Lazy-loaded (the
    * menu chunk only ships after the first right-click) and streaming-safe
    * (yields to the native browser menu while isStreamActive). Pass an object
@@ -135,6 +151,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
     actionsPosition = "below",
     actionsBehavior = "always",
     actionsSurfaceId,
+    specimen,
     enableContextMenu,
     className,
     contentClassName,
@@ -158,6 +175,15 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
     strictServerData,
   } = props;
 
+  // A DECLARED SPECIMEN CARRIES NO ACTIONS. Resolved before anything else so
+  // the action surface is never built, never registered remotely, and the
+  // right-click menu never mounts — the banner stands in its place, and the
+  // provider below reaches the actions buried inside the content (tables).
+  const specimenMode = resolveSpecimenMode(specimen);
+  const effectiveActionsVariant: RichDocumentActionsVariant = specimenMode
+    ? "none"
+    : actionsVariant;
+
   // All provider/bridge registration + the live action context live in the
   // shared hook (reused headless by RichDocumentActionProvider). `ctx` is the
   // render-time context (safe during render); `getCtx` is the ref-based
@@ -166,7 +192,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
     content,
     source,
     actions: actionsProp,
-    actionsVariant,
+    actionsVariant: effectiveActionsVariant,
     actionsSurfaceId,
   });
 
@@ -174,7 +200,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
   // surface renders the actions elsewhere via the bridge; "none" hides
   // them entirely. "icon-only" and "menu" share the MenuVariant renderer.
   let variantNode: React.ReactNode = null;
-  switch (actionsVariant) {
+  switch (effectiveActionsVariant) {
     case "bar":
       variantNode = (
         <ActionBar
@@ -285,7 +311,7 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
   // forwarded. `suppressed` keeps the native browser menu during streaming
   // without unmounting the content.
   let engine: React.ReactNode = engineInner;
-  if (enableContextMenu) {
+  if (enableContextMenu && !specimenMode) {
     const cmOptions =
       typeof enableContextMenu === "object" ? enableContextMenu : {};
     // v3's engine renders copy/export/convert(save) from the registry itself;
@@ -371,6 +397,15 @@ export function RichDocument(props: RichDocumentProps): React.ReactElement {
       >
         {engineInner}
       </NonEditableContextMenu>
+    );
+  }
+
+  if (specimenMode) {
+    return (
+      <div className={rootClassName}>
+        <SpecimenBanner mode={specimenMode} />
+        <SpecimenProvider value={specimenMode}>{engine}</SpecimenProvider>
+      </div>
     );
   }
 

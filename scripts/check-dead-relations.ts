@@ -21,8 +21,9 @@
  * See scripts/schema-check/FEATURE.md.
  */
 import { main } from "./schema-check/check-schema";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
-process.exit(
+exitAfterDrain(
   main({
     only: [
       "dead-relations",

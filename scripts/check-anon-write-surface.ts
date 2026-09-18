@@ -50,6 +50,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
   ANON_WRITE_RELATION_QUERY,
   ANON_WRITE_SEQUENCE_QUERY,
@@ -119,7 +120,7 @@ function resolveDbEnv(): Record<string, string> {
     `${C.r}FAIL${C.x} the anon write surface could not be MEASURED - unmeasured is a failure, never a pass.\n` +
       `     Wanted ${DB_VARS.join(", ")} in the environment or in: ${looked.join(", ") || "(no env file found)"}, ../aidream/.env`,
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 async function connect() {
@@ -214,7 +215,7 @@ async function red(client: any, label: string, setup: string[], state: { reds: n
     const n = report(await measure(client));
     if (n === 0) {
       console.error(`\n${C.r}FAIL${C.x} ${label} did NOT fail the guard. That arm cannot see its own defect.`);
-      process.exit(1);
+      exitAfterDrain(1);
     }
     state.reds++;
     console.log(`${C.g}RED proven${C.x} ${C.d}(${label} -> ${n} finding(s))${C.x}\n`);
@@ -223,11 +224,20 @@ async function red(client: any, label: string, setup: string[], state: { reds: n
   }
 }
 
+/**
+ * B-110 measured this class here first (2026-09-14): piped, this guard printed
+ * THREE FAIL lines and only ONE arrived, because `process.exit()` ends the
+ * process with whatever is still in the stdout pipe buffer. The local copy of
+ * the remedy that lived here is gone — every `scripts/check-*.ts` now exits
+ * through the ONE helper, `scripts/lib/exit-after-drain.ts` (DD-232), which
+ * carries the measurements and both belts. Do not re-grow a local one.
+ */
+
 async function main() {
   const client = await connect();
   try {
     if (!SELF_TEST) {
-      process.exit(report(await measure(client)) ? 1 : 0);
+      exitAfterDrain(report(await measure(client)) ? 1 : 0);
     }
 
     // -- THE SELF-TEST: a guard nobody has seen fail is not a guard. ----------
@@ -241,7 +251,7 @@ async function main() {
         `\n${C.r}FAIL${C.x} the self-test needs a GREEN starting point and the live surface already drifts (above).\n` +
           `     Fix the drift first; a RED proof on top of a RED baseline proves nothing.`,
       );
-      process.exit(1);
+      exitAfterDrain(1);
     }
     console.log(`${C.g}GREEN${C.x} baseline: no signed-out caller can write anything.\n`);
 
@@ -312,10 +322,10 @@ async function main() {
       console.error(
         `\n${C.r}FAIL${C.x} the self-test did not restore the live state. THIS IS A LIVE DEFECT - fix it by hand now.`,
       );
-      process.exit(1);
+      exitAfterDrain(1);
     }
     console.log(`${C.g}GREEN${C.x} teardown verified: ${state.reds} RED proof(s), live grants, policies and doors unchanged.`);
-    process.exit(0);
+    exitAfterDrain(0);
   } finally {
     await client.end();
   }
@@ -323,5 +333,5 @@ async function main() {
 
 main().catch((e) => {
   console.error(e);
-  process.exit(1);
+  exitAfterDrain(1);
 });

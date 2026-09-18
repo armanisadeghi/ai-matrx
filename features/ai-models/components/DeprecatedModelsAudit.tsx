@@ -39,6 +39,12 @@ import {
 import { aiModelService } from "../service";
 import type { AiModel, ModelUsageResult } from "../types";
 import { ModelSettingsReviewDialog } from "./ModelSettingsReviewDialog";
+import {
+  ImpactBatchPanel,
+  type ImpactBatchScope,
+} from "@/features/mandates/admin/ImpactBatchPanel";
+import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
+import { toast } from "@/lib/toast";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
 import { cn } from "@/lib/utils";
 import {
@@ -123,12 +129,54 @@ function Th({
   );
 }
 
+/** The agent.definition ids a model's usage names — the dry-run scope (I5). */
+function agentIdsOf(entry: DeprecatedEntry): string[] {
+  const usage = entry.usage;
+  if (!usage) return [];
+  return Array.from(
+    new Set([
+      ...usage.promptBuiltins.map((item) => item.id),
+      ...usage.agents.map((item) => item.id),
+    ]),
+  );
+}
+
 export default function DeprecatedModelsAudit({
   allModels,
   onClose,
   onModelsChanged,
 }: DeprecatedModelsAuditProps) {
   const [entries, setEntries] = useState<DeprecatedEntry[]>([]);
+  // ── Agent Change Impact (I5): every model swap ends in the batch panel ──
+  // Before the write the confirm step shows a DRY RUN of the swap (graded as
+  // if applied); the pins chosen there carry into the post-batch window,
+  // which opens scoped to exactly the agents the writer touched.
+  const openImpactBatchWindow = useOpenImpactBatchWindow();
+  const [dryRunSelection, setDryRunSelection] = useState<string[]>([]);
+  const modelLabel = (id: string): string => {
+    const model = allModels.find((m) => m.id === id);
+    return model?.common_name || model?.name || id;
+  };
+  const openPostBatch = (
+    agentIds: string[],
+    sentence: string,
+    preselected: string[],
+  ) => {
+    if (agentIds.length === 0) {
+      toast.info(
+        `${sentence} — no agent definitions were rewritten, so there are no mandate pins to grade.`,
+      );
+      return;
+    }
+    openImpactBatchWindow({
+      agentIds,
+      mode: "post_batch",
+      batchLabel: sentence,
+      sourceSentence: sentence,
+      preselectedRungIds: preselected,
+      surfaceName: "deprecated-models-audit",
+    });
+  };
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
   const [bulkReplacing, setBulkReplacing] = useState(false);
   const [settingsTarget, setSettingsTarget] =
@@ -351,12 +399,17 @@ export default function DeprecatedModelsAudit({
     if (!entry.replacementId) return;
     updateEntry(entry.model.id, { replacing: true, error: null });
     try {
-      await aiModelService.replaceModelReferences(
+      const result = await aiModelService.replaceModelReferences(
         entry.model.id,
         entry.replacementId,
       );
       updateEntry(entry.model.id, { replacing: false, replaced: true });
       onModelsChanged();
+      openPostBatch(
+        result.agent_ids,
+        `Replaced ${modelLabel(entry.model.id)} with ${modelLabel(entry.replacementId)}`,
+        [],
+      );
     } catch (err) {
       updateEntry(entry.model.id, {
         replacing: false,
@@ -375,13 +428,18 @@ export default function DeprecatedModelsAudit({
     updateEntry(entry.model.id, { replacing: true, error: null });
     setSettingsTarget(null);
     try {
-      await aiModelService.replaceModelReferences(
+      const result = await aiModelService.replaceModelReferences(
         entry.model.id,
         entry.replacementId,
         settings,
       );
       updateEntry(entry.model.id, { replacing: false, replaced: true });
       onModelsChanged();
+      openPostBatch(
+        result.agent_ids,
+        `Replaced ${modelLabel(entry.model.id)} with ${modelLabel(entry.replacementId)} (settings reviewed)`,
+        [],
+      );
     } catch (err) {
       updateEntry(entry.model.id, {
         replacing: false,
@@ -394,17 +452,48 @@ export default function DeprecatedModelsAudit({
     setBulkConfirmOpen(false);
     setBulkReplacing(true);
     setGlobalError(null);
+    const batch = entriesReadyForBulk;
+    const preselected = dryRunSelection;
     try {
-      await Promise.all(
-        entriesReadyForBulk.map((entry) =>
+      // Per model, never all-or-nothing: a failed swap never hides the ones
+      // that landed, and the panel opens for exactly the agents rewritten.
+      const settled = await Promise.allSettled(
+        batch.map((entry) =>
           aiModelService
             .replaceModelReferences(entry.model.id, entry.replacementId!)
-            .then(() => {
+            .then((result) => {
               updateEntry(entry.model.id, { replaced: true });
+              return result;
             }),
         ),
       );
       onModelsChanged();
+      const touched = new Set<string>();
+      const failures: string[] = [];
+      settled.forEach((outcome, index) => {
+        if (outcome.status === "fulfilled") {
+          for (const id of outcome.value.agent_ids) touched.add(id);
+        } else {
+          const entry = batch[index];
+          const message =
+            outcome.reason instanceof Error
+              ? outcome.reason.message
+              : String(outcome.reason);
+          updateEntry(entry.model.id, { error: message });
+          failures.push(`${modelLabel(entry.model.id)}: ${message}`);
+        }
+      });
+      if (failures.length > 0) {
+        setGlobalError(
+          `${failures.length} of ${batch.length} replacements failed — ${failures.join("; ")}`,
+        );
+      }
+      const landed = batch.length - failures.length;
+      openPostBatch(
+        Array.from(touched),
+        `Replaced ${landed} deprecated model${landed === 1 ? "" : "s"} in ${touched.size} agent${touched.size === 1 ? "" : "s"}`,
+        preselected,
+      );
     } catch (err) {
       setGlobalError(
         err instanceof Error ? err.message : "Bulk replace failed",
@@ -413,6 +502,14 @@ export default function DeprecatedModelsAudit({
       setBulkReplacing(false);
     }
   };
+
+  const dryRunScopes: ImpactBatchScope[] = entriesReadyForBulk.map((entry) => ({
+    agentIds: agentIdsOf(entry),
+    delta: { model_id: entry.replacementId },
+  }));
+  const dryRunAgentIds = Array.from(
+    new Set(dryRunScopes.flatMap((scope) => scope.agentIds)),
+  );
 
   return (
     <div className="flex flex-col h-full min-h-0">
@@ -863,8 +960,14 @@ export default function DeprecatedModelsAudit({
       </div>
 
       {/* ── Bulk replace confirm ────────────────────────────────────────── */}
-      <AlertDialog open={bulkConfirmOpen} onOpenChange={setBulkConfirmOpen}>
-        <AlertDialogContent>
+      <AlertDialog
+        open={bulkConfirmOpen}
+        onOpenChange={(open) => {
+          setBulkConfirmOpen(open);
+          if (open) setDryRunSelection([]);
+        }}
+      >
+        <AlertDialogContent className="flex max-h-[90dvh] w-[min(72rem,96vw)] max-w-none flex-col overflow-hidden">
           <AlertDialogHeader>
             <AlertDialogTitle>
               Bulk Replace {entriesReadyForBulk.length} Deprecated Models
@@ -905,12 +1008,33 @@ export default function DeprecatedModelsAudit({
                   })}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Settings will not be reviewed — only model IDs will be
-                  updated. This cannot be undone.
+                  Settings are not reviewed here — only model ids change. Every
+                  agent rewritten gets a new saved version; the mandate pins
+                  below keep running the OLD version until you advance them.
+                  Rewriting an agent is not undone by this screen; a pin you
+                  advance afterwards can be reverted within the revert window.
                 </p>
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {/* THE DRY RUN (I5): the same panel the post-batch window shows,
+              graded as if the swap had landed. Pins picked here are
+              pre-selected after the write. */}
+          {bulkConfirmOpen ? (
+            <div className="flex min-h-[40vh] flex-1 flex-col overflow-hidden rounded-md border border-border">
+              <ImpactBatchPanel
+                agentIds={dryRunAgentIds}
+                mode="dry_run"
+                scopes={dryRunScopes}
+                batchLabel="Deprecated models: bulk replace"
+                sourceSentence={`Replacing ${entriesReadyForBulk.length} deprecated model${entriesReadyForBulk.length === 1 ? "" : "s"} in ${dryRunAgentIds.length} agent${dryRunAgentIds.length === 1 ? "" : "s"}`}
+                selectedRungIds={dryRunSelection}
+                onSelectedRungIdsChange={setDryRunSelection}
+                surfaceName="deprecated-models-audit"
+                compact
+              />
+            </div>
+          ) : null}
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction

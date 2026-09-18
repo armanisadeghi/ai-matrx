@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/administration", {
   title: "Preview",
   description:
     "Review non-functional administration concepts before they become live management surfaces.",
-  letter: "PV",
+  letter: "PVW",
   canonicalPath: "/administration/preview",
 });
 

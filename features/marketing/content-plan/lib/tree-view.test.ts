@@ -31,6 +31,7 @@ function planNode(
     parent_id: parentId,
     pillar_label: null,
     primary_keyword_id: null,
+    topic_id: null,
     priority: null,
     route: id === "home" ? "/" : `/${id}`,
     site_id: "site",

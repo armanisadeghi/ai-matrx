@@ -1,11 +1,13 @@
 import { createClient } from "@/utils/supabase/client";
 import { BackendApiError, parseHttpError } from "@/lib/api/errors";
+import type { Database } from "@/types/database.types";
 import type {
   GoogleConnectionResource,
   GoogleConnectionSummary,
   GoogleConnectionInventory,
   GoogleConnectionOwner,
   GoogleConnectionResult,
+  GoogleCapabilityMetadata,
   YouTubeChannelPreview,
   GoogleAdsCustomerInventory,
   GoogleAdsReport,
@@ -14,6 +16,13 @@ import type {
   TagManagerInventory,
   YouTubeAnalyticsPreview,
 } from "@/features/marketing/google/types";
+import { isGoogleConnectionResourceType } from "@/features/marketing/google/types";
+import { readConnectionStatus } from "@/features/connectors/connection-status";
+import {
+  googleAccountFault,
+  googleFaultBlocksEverything,
+} from "@/features/marketing/google/health";
+import { readAllRows } from "@ai-matrx/data/db";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -30,7 +39,70 @@ export type GoogleConnectionPurpose =
   | "general"
   | "google_ads_isolated"
   | "read_only_sweep"
-  | "contacts_import";
+  | "contacts_import"
+  | "google_capability"
+  // The multi-product consent behind the connector primitive's one button:
+  // `capability_keys` names every switched-on product, the hub creates the
+  // connection on a first connect and adds only those products' scopes to an
+  // existing one, refusing by name any scope outside the selection and any
+  // request that would drop a scope the connection already holds.
+  // Contract: common-docs/projects/google-native/PLAN.md §2 + §5.2.
+  | "google_products";
+
+export type GoogleCapabilityKey =
+  "contacts" | "calendar" | "tasks" | "tag_manager" | "youtube_analytics";
+
+/** Preserve every existing grant while an explicit feature adds its own scope. */
+export function cumulativeGoogleReconnectScopes(
+  existingScopes: readonly string[],
+  requestedFeatureScopes: readonly string[],
+): string[] {
+  return [...new Set([...existingScopes, ...requestedFeatureScopes])];
+}
+
+export function buildGoogleReconnectRequest(
+  connection: GoogleConnectionSummary,
+  requestedFeatureScopes: readonly string[] = [],
+  capabilityKey?: GoogleCapabilityKey,
+): {
+  scopes: string[];
+  loginHint: string | undefined;
+  owner: GoogleConnectionOwner;
+  options: { targetConnectionId: string; capabilityKey?: GoogleCapabilityKey };
+} {
+  const options = {
+    targetConnectionId: connection.id,
+    ...(capabilityKey ? { capabilityKey } : {}),
+  };
+  if (connection.owner_type === "organization") {
+    if (!connection.organization_id) {
+      throw new Error(
+        "This shared Google connection no longer names its organization.",
+      );
+    }
+    return {
+      scopes: cumulativeGoogleReconnectScopes(
+        connection.scopes,
+        requestedFeatureScopes,
+      ),
+      loginHint: connection.account_email ?? undefined,
+      owner: {
+        type: "organization",
+        organizationId: connection.organization_id,
+      },
+      options,
+    };
+  }
+  return {
+    scopes: cumulativeGoogleReconnectScopes(
+      connection.scopes,
+      requestedFeatureScopes,
+    ),
+    loginHint: connection.account_email ?? undefined,
+    owner: { type: "user" },
+    options,
+  };
+}
 
 /**
  * A connection/resource can disappear between the RLS-scoped inventory read
@@ -60,7 +132,7 @@ export function isGoogleConnectionReachableByUser(
   if (connection.owner_user_id === userId) return true;
   return Boolean(
     connection.organization_id &&
-      organizationIds.includes(connection.organization_id),
+    organizationIds.includes(connection.organization_id),
   );
 }
 
@@ -91,7 +163,8 @@ export function filterGoogleConnectionInventoryForUser(
 // generated facts let the UI report connection health without disclosing a
 // credential item id or vault key name.
 const CONNECTION_SELECT =
-  "id, owner_type, owner_user_id, organization_id, provider, provider_subject, account_email, account_name, scopes, status, last_verified_at, last_error, created_at, updated_at, metadata, credential_present, credential_stable";
+  "id, owner_type, owner_user_id, organization_id, provider, provider_subject, account_email, account_name, scopes, status, last_verified_at, last_error, created_at, updated_at, metadata, credential_present, credential_stable, capability_health";
+
 const RESOURCE_SELECT =
   "id, connection_id, resource_type, resource_ref, display_name, permission_level, discovered_at, metadata";
 
@@ -101,25 +174,36 @@ function recordValue(value: unknown): Record<string, unknown> {
     : {};
 }
 
-type ConnectionRow = {
-  id: string;
-  owner_type: string;
-  owner_user_id: string | null;
-  organization_id: string | null;
-  provider: string;
-  provider_subject: string;
-  account_email: string | null;
-  account_name: string | null;
-  scopes: string[];
-  status: string;
-  last_verified_at: string | null;
-  last_error: string | null;
-  created_at: string;
-  updated_at: string;
-  metadata: unknown;
-  credential_present: boolean | null;
-  credential_stable: boolean | null;
-};
+type GeneratedConnectionRow =
+  Database["users"]["Tables"]["integration_connections"]["Row"];
+
+/**
+ * The row shape this query selects, taken from the generated
+ * `integration_connections` row now that `capability_health` is part of it —
+ * `CONNECTION_SELECT` names every field below and postgrest-js infers the
+ * result directly, no `.returns<>()` needed.
+ */
+export type ConnectionRow = Pick<
+  GeneratedConnectionRow,
+  | "id"
+  | "owner_type"
+  | "owner_user_id"
+  | "organization_id"
+  | "provider"
+  | "provider_subject"
+  | "account_email"
+  | "account_name"
+  | "scopes"
+  | "status"
+  | "last_verified_at"
+  | "last_error"
+  | "created_at"
+  | "updated_at"
+  | "metadata"
+  | "credential_present"
+  | "credential_stable"
+  | "capability_health"
+>;
 
 export type GoogleConnectionResourceRow = {
   id: string;
@@ -132,41 +216,79 @@ export type GoogleConnectionResourceRow = {
   metadata: unknown;
 };
 
-function connectionSummary(row: ConnectionRow): GoogleConnectionSummary {
-  const status =
-    row.status === "needs_attention" || row.status === "revoked"
-      ? row.status
-      : "connected";
+/**
+ * The ONE reader of a connection row. Exported because the derivation IS the
+ * thing under test in `features/connectors/__tests__/
+ * a-blocked-configuration-is-never-connected.test.tsx`: a test that hand-set
+ * `health` would prove nothing about the status word it is judging (V17-1).
+ */
+export function connectionSummary(row: ConnectionRow): GoogleConnectionSummary {
+  // 🚨 EVERY WORD THIS DOES NOT RECOGNISE USED TO BECOME `connected` (V17-1).
+  // The column is written by aidream and the two repos deploy independently, so
+  // the day the server gained `unavailable` — "the provider or our own platform
+  // configuration blocks every call" — this function would have painted the
+  // green badge over it. The vocabulary is shared and read once
+  // (`features/connectors/connection-status.ts`); a word we have no branch for
+  // is `unrecognized`, which is never usable.
+  const reading = readConnectionStatus(row.status);
+  const status = reading.status ?? "unrecognized";
   const credentialPresent = row.credential_present === true;
-  return {
+  const metadata = recordValue(row.metadata);
+  const summary: GoogleConnectionSummary = {
     ...row,
     owner_type: row.owner_type === "organization" ? "organization" : "user",
     provider: "google",
     status,
-    metadata: recordValue(row.metadata),
+    status_as_read: reading.asRead,
+    metadata,
     credential_present: credentialPresent,
     credential_stable: row.credential_stable === true,
-    // A row whose credential reference is gone CANNOT authorize anything, no
-    // matter what `status` claims — parity with aidream's precondition.
-    health:
-      status === "revoked"
-        ? "revoked"
-        : credentialPresent && status === "connected"
-          ? "connected"
-          : "needs_reauth",
+    health: "needs_reauth",
   };
+  return { ...summary, health: derivedHealth(summary) };
+}
+
+/**
+ * DERIVED truth, never the stored word — the same principle that has always
+ * made a credential-less row `needs_reauth` however loudly `status` said
+ * `connected` (the silent GSC failures of 2026-07-25).
+ *
+ * The blocked reading is the V17-1 fix: Google rejecting AI Matrx's own OAuth
+ * client configuration is deliberately NOT a credential failure, so the row stays
+ * `connected` today, and the card printed "Connected" ten times and "9 of 9
+ * products in use" directly above its own sentence saying no Google account
+ * could be used. A fault the vocabulary declares remedy-less means nothing the
+ * person can press repairs it, which IS `unavailable` — so the row is read that
+ * way whether or not the server has restamped it (lane B-23 makes `status_for`
+ * write the word; this does not wait for it and does not disagree with it).
+ */
+function derivedHealth(
+  summary: GoogleConnectionSummary,
+): GoogleConnectionSummary["health"] {
+  if (summary.status === "unrecognized") return "unrecognized";
+  if (summary.status === "unavailable") return "unavailable";
+  if (summary.status === "revoked" || summary.status === "disconnected") {
+    return "revoked";
+  }
+  if (googleFaultBlocksEverything(googleAccountFault(summary))) {
+    return "unavailable";
+  }
+  // A row whose credential reference is gone CANNOT authorize anything, no
+  // matter what `status` claims — parity with aidream's precondition.
+  return summary.credential_present && summary.status === "connected"
+    ? "connected"
+    : "needs_reauth";
 }
 
 export function connectionResource(
   row: GoogleConnectionResourceRow,
 ): GoogleConnectionResource {
-  if (
-    row.resource_type !== "search_console_property" &&
-    row.resource_type !== "analytics_property" &&
-    row.resource_type !== "youtube_channel" &&
-    row.resource_type !== "google_document" &&
-    row.resource_type !== "google_spreadsheet"
-  ) {
+  // The set is DERIVED (`GOOGLE_CONNECTION_RESOURCE_TYPES`), never re-typed
+  // here: this guard hand-listed five types, so the `google_presentation` row
+  // the server registers threw and one deck emptied every Google surface in the
+  // app. It still throws on a genuinely unknown type — that is a row shape we
+  // cannot render, and a silent drop would hide the connected resource.
+  if (!isGoogleConnectionResourceType(row.resource_type)) {
     throw new Error(
       `Unknown Google connection resource type: ${row.resource_type}`,
     );
@@ -187,39 +309,67 @@ export async function listGoogleConnectionInventory(
   } = await supabase.auth.getSession();
   if (!session?.access_token) return { connections: [], resources: [] };
 
-  const connections = await supabase
-    .schema("users")
-    .from("integration_connections")
-    .select(CONNECTION_SELECT)
-    .eq("provider", "google")
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false })
-    .abortSignal(signal ?? new AbortController().signal);
-  if (connections.error) {
-    throw operationFailed("load your Google connections", connections.error);
+  // 🚨 BOTH READS ARE TREATED AS COMPLETE, SO BOTH PAGE (CLAUDE.md § readAllRows,
+  // and VERIFY-U-P2-R5 V17-7). PostgREST caps a response at 1000 rows without
+  // erroring, and these two arrays are not merely rendered: the connection ids
+  // become the resource filter, the resources are COUNTED per account, and that
+  // count is the consequence a person weighs a Disconnect against
+  // ("The N items you picked with this account stop resolving…" —
+  // `revokeConsequence`). At 313 undeleted resource rows today it is latent; the
+  // first account to cross the cap would have quietly under-stated what a
+  // destructive press destroys, and the attach and review lists would have been
+  // short with nothing saying so.
+  const abortSignal = signal ?? new AbortController().signal;
+  let connections: ConnectionRow[];
+  try {
+    connections = await readAllRows<ConnectionRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("users")
+          .from("integration_connections")
+          .select(CONNECTION_SELECT, { count: "exact" })
+          .eq("provider", "google")
+          .is("deleted_at", null)
+          .order("updated_at", { ascending: false })
+          // A stable total order, required by the pager: `updated_at` is not
+          // unique, so the id breaks every tie.
+          .order("id", { ascending: true })
+          .range(from, to)
+          .abortSignal(abortSignal)
+          .returns<ConnectionRow[]>(),
+      { label: "users.integration_connections (google)" },
+    );
+  } catch (error) {
+    throw operationFailed("load your Google connections", error);
   }
 
-  const ids = connections.data.map((connection) => connection.id);
+  const ids = connections.map((connection) => connection.id);
   if (!ids.length) return { connections: [], resources: [] };
-  const resources = await supabase
-    .schema("users")
-    .from("integration_connection_resources")
-    .select(RESOURCE_SELECT)
-    .in("connection_id", ids)
-    .is("deleted_at", null)
-    .order("resource_type", { ascending: true })
-    .order("display_name", { ascending: true })
-    .abortSignal(signal ?? new AbortController().signal);
-  if (resources.error) {
-    throw operationFailed(
-      "load your Google connection details",
-      resources.error,
+  let resourceRows: GoogleConnectionResourceRow[];
+  try {
+    resourceRows = await readAllRows<GoogleConnectionResourceRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("users")
+          .from("integration_connection_resources")
+          .select(RESOURCE_SELECT, { count: "exact" })
+          .in("connection_id", ids)
+          .is("deleted_at", null)
+          .order("resource_type", { ascending: true })
+          .order("display_name", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to)
+          .abortSignal(abortSignal)
+          .returns<GoogleConnectionResourceRow[]>(),
+      { label: "users.integration_connection_resources (google)" },
     );
+  } catch (error) {
+    throw operationFailed("load your Google connection details", error);
   }
 
   return {
-    connections: connections.data.map(connectionSummary),
-    resources: resources.data.map(connectionResource),
+    connections: connections.map(connectionSummary),
+    resources: resourceRows.map(connectionResource),
   };
 }
 
@@ -292,6 +442,43 @@ export async function postGoogleBackend(
   return response;
 }
 
+export async function getGoogleBackend(
+  path: string,
+  fallback: string,
+  signal?: AbortSignal,
+): Promise<Response> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Sign in to manage Google.");
+  const response = await fetch(`${backendBase()}${path}`, {
+    method: "GET",
+    headers: organizationContextHeaders({
+      Authorization: `Bearer ${session.access_token}`,
+    }),
+    signal,
+  });
+  if (!response.ok) {
+    const error = await parseHttpError(response);
+    throw error.message === `Request failed (${response.status})`
+      ? new Error(fallback, { cause: error })
+      : error;
+  }
+  return response;
+}
+
+export async function listGoogleCapabilities(
+  signal?: AbortSignal,
+): Promise<GoogleCapabilityMetadata[]> {
+  const response = await getGoogleBackend(
+    "/api/google-integrations/capabilities",
+    "Unable to load Google capability availability.",
+    signal,
+  );
+  return (await response.json()) as GoogleCapabilityMetadata[];
+}
+
 export async function connectGoogle(
   code: string,
   owner: GoogleConnectionOwner,
@@ -300,6 +487,10 @@ export async function connectGoogle(
     redirectUri?: string;
     organizationContextId?: string;
     expectedUserId?: string;
+    targetConnectionId?: string;
+    capabilityKey?: GoogleCapabilityKey;
+    /** `google_products` only: every catalog key the person switched on. */
+    capabilityKeys?: readonly string[];
   },
 ): Promise<GoogleConnectionResult> {
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
@@ -316,6 +507,11 @@ export async function connectGoogle(
         owner.type === "organization" ? owner.organizationId : null,
       redirect_uri: options?.redirectUri ?? window.location.origin,
       connection_purpose: connectionPurpose,
+      target_connection_id: options?.targetConnectionId,
+      capability_key: options?.capabilityKey,
+      capability_keys: options?.capabilityKeys
+        ? [...options.capabilityKeys]
+        : undefined,
     },
     "Unable to connect Google.",
     options?.organizationContextId,

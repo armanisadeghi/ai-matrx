@@ -66,12 +66,17 @@
  * that were applied via MCP is exempt via `migrations/DB_TRANSITION_DRIFT_OK.txt`
  * (delete that file when the transition completes and ledger checksums reconcile).
  */
+import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { tryReadAllRowsRest } from "@ai-matrx/data/db";
+import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { readHeader } from "./lib/migration-target";
+import { basedOnCheck, findReplaceOccurrences, type Query } from "./migration-based-on";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE = "matrx-frontend";
@@ -115,6 +120,29 @@ function skipReason(sql: string): string | null {
 
 function sha256(s: string): string {
   return createHash("sha256").update(s, "utf8").digest("hex");
+}
+
+/**
+ * THE LEDGER HOLDS ONE OF **TWO** HASHES OF THE SAME BYTES, and a checker that
+ * knows only one of them invents drift (measured 2026-09-17, CS-30).
+ *
+ * `scripts/apply-migration.ts` writes `sha256(sql)` — the raw bytes. Since
+ * 2026-09-15 `../aidream/db/apply_migrations.py` writes `_checksum(sql)`, which
+ * is `sha256(sql.rstrip())`: a file's trailing newline executes nothing, and
+ * hashing it made an editor that trims one produce permanent, meaningless drift
+ * (seven rows carried exactly that). That runner then compares through
+ * `_checksum_matches`, which accepts EITHER form. This checker did not, so every
+ * file applied from the aidream runner — the ONLY runner that can apply an
+ * autocommit file, so every `CREATE INDEX CONCURRENTLY` migration — reported as
+ * DRIFTED forever. Three of the 68 findings on 2026-09-17 were three migrations
+ * applied ninety minutes earlier and untouched since.
+ *
+ * So the comparison accepts exactly the two forms the two runners write, and
+ * nothing looser. That the two WRITE different forms for the same bytes is the
+ * real defect underneath and is filed, not papered over here.
+ */
+function checksumMatches(sql: string, recorded: string): boolean {
+  return recorded === sha256(sql) || recorded === sha256(sql.replace(/\s+$/, ""));
 }
 
 /** Remove non-executable SQL comments before validating proof structure. */
@@ -450,6 +478,87 @@ function loadDriftOkSet(): Set<string> {
   return ok;
 }
 
+
+/**
+ * ── DD-220: an UNAPPLIED file that would overwrite a live function body ───────
+ *
+ * `pnpm db:apply` refuses these at the door. This is the cheap pre-apply
+ * companion — the half that can see a file still sitting on someone's disk, the
+ * same division of labour as the slot-collision arm above.
+ *
+ * THE CUT. This law shipped 2026-09-14. A migration file that was authored
+ * BEFORE that date was written under no such rule, and a repo check that turned
+ * every one of them into a blocking failure would be punishing history — so
+ * those are ADVISORY. A file first committed on or after the cut, or not yet
+ * committed at all, is BLOCKING under `--strict`: it is being written now, and
+ * `pnpm db:apply` will refuse it anyway, so the only thing a green check here
+ * would buy is a later surprise.
+ *
+ * The date comes from the file's first commit (`git log --diff-filter=A`), never
+ * from its mtime: in a shared checkout a `git checkout` resets every mtime, so
+ * an mtime cut would silently reclassify the whole backlog.
+ */
+const BASED_ON_LAW_CUT = "2026-09-14";
+
+function firstCommitDate(filename: string): string | null {
+  try {
+    const out = execFileSync(
+      "git",
+      ["log", "--diff-filter=A", "--follow", "--format=%cs", "-1", "--", `migrations/${filename}`],
+      { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"], timeout: 20_000 },
+    ).trim();
+    return out || null;
+  } catch {
+    return null;
+  }
+}
+
+interface BasedOnGap {
+  readonly filename: string;
+  readonly blocking: boolean;
+  readonly authored: string;
+  readonly messages: string[];
+}
+
+async function basedOnArm(pending: string[]): Promise<{ gaps: BasedOnGap[]; skipped: string | null }> {
+  const candidates = pending.filter(
+    (f) => findReplaceOccurrences(readFileSync(resolve(MIGRATIONS_DIR, f), "utf8")).length > 0,
+  );
+  if (candidates.length === 0) return { gaps: [], skipped: null };
+
+  const env = loadDbEnv();
+  if ("missing" in env)
+    return {
+      gaps: [],
+      skipped:
+        `${candidates.length} unapplied file(s) replace a function body, but the five ` +
+        `SUPABASE_MATRIX_* variables are absent, so what they would OVERWRITE could not be read. ` +
+        `Not a pass — an unmeasured check.`,
+    };
+
+  const client = await connectDirect(env, "matrx-frontend check:migrations (DD-220)");
+  const q: Query = async (sql, params) =>
+    (await client.query(sql, (params ?? []) as never[])).rows as Record<string, unknown>[];
+  const gaps: BasedOnGap[] = [];
+  try {
+    for (const f of candidates) {
+      const sql = readFileSync(resolve(MIGRATIONS_DIR, f), "utf8");
+      const { findings } = await basedOnCheck(q, sql);
+      if (findings.length === 0) continue;
+      const authored = firstCommitDate(f);
+      gaps.push({
+        filename: f,
+        authored: authored ?? "not committed yet",
+        blocking: authored === null || authored >= BASED_ON_LAW_CUT,
+        messages: findings.map((x) => x.message),
+      });
+    }
+  } finally {
+    await client.end().catch(() => undefined);
+  }
+  return { gaps, skipped: null };
+}
+
 async function main(): Promise<number> {
   const strict = process.argv.includes("--strict");
 
@@ -472,7 +581,17 @@ async function main(): Promise<number> {
 
   // Classify local files: skip-marked vs trackable, with checksums.
   const skipped: string[] = [];
+  const branchOnly: string[] = [];
+  // Set when a `-- target: branch` file is found at the TOP LEVEL of migrations/ —
+  // i.e. inside the directory every release path sweeps. Always an error.
+  let branchOnlyInSweptDir = 0;
+  // Set when a CAMPAIGN file (a header naming production plus `-- additive: yes` /
+  // `-- guard:` / `-- seeds-guards:`) is found at the TOP LEVEL of migrations/.
+  const campaignInSweptDir: string[] = [];
   const local = new Map<string, string>(); // filename -> checksum
+  // The bytes themselves, kept because the drift comparison must be able to
+  // hash them BOTH ways the two runners do (see checksumMatches).
+  const localSql = new Map<string, string>();
   const selfLedgering: string[] = []; // files that write the ledger themselves
   for (const f of files) {
     const sql = readFileSync(resolve(MIGRATIONS_DIR, f), "utf8");
@@ -480,8 +599,82 @@ async function main(): Promise<number> {
       skipped.push(f);
       continue;
     }
+    // ── `-- target: branch` is not pending on PRODUCTION ─────────────────────
+    // This check reads production's ledger. A file headed `-- target: branch`
+    // is rehearsal-only by construction — `db:apply --target production`
+    // refuses it by name — so reporting it as UNAPPLIED would mean this gate
+    // could never go green again while a rehearsal file sat in migrations/,
+    // and the honest reading of "unapplied" (a file that was meant to run here
+    // and did not) would be lost in a permanent false positive. It is listed
+    // separately instead, so it is visible and not silent.
+    // (`-- target: branch,production` files ARE pending here: they land on both.)
+    const hdr = readHeader(sql);
+    if (hdr.targets?.join(",") === "branch") {
+      branchOnly.push(f);
+      continue;
+    }
+    // ATTACK-6 finding 1 - the CAMPAIGN's own contract shape, in the swept
+    // directory. `-- target: branch,production` + `-- additive: yes` + `-- guard:` is
+    // what every DDL lane writes, and it is exactly the shape both 30-minute release
+    // crons are built to APPLY: they carried it to production before the lane's branch
+    // exit, outside its object lock, and even for a lane that had failed. A campaign
+    // file belongs in `migrations/campaign/`, which nothing scans.
+    if (
+      hdr.targets !== null &&
+      hdr.targets.includes("production") &&
+      (hdr.additive || hdr.guard !== null || hdr.seedsGuards)
+    ) {
+      campaignInSweptDir.push(f);
+      continue;
+    }
     if (SELF_LEDGER_RE.test(stripForDetection(sql))) selfLedgering.push(f);
     local.set(f, sha256(sql));
+    localSql.set(f, sql);
+  }
+
+  // 🚨 ATTACK-5 finding 1. A rehearsal-only file at the TOP LEVEL of migrations/ is
+  // now an error, not a note. `scripts/release.sh` sweeps `migrations/*.sql` through
+  // an applier it resolves out of a sibling aidream checkout — whatever commit that
+  // directory happens to sit at — so a refusal inside the runner protects nothing
+  // against an applier that predates it. On 2026-09-16 03:52:12Z exactly that
+  // applied `custom_entity_types_detail_variant.sql` (headed `-- target: branch`) to
+  // production, widening two CHECK constraints on `platform.entity_types`. The file
+  // must not be in the swept directory at all: `migrations/rehearsal/` is not
+  // globbed by any release path, because every glob over it is non-recursive.
+  if (branchOnly.length) {
+    console.log();
+    console.error(
+      `${TAG.fail}${branchOnly.length} rehearsal-only file(s) sit in migrations/, which EVERY ` +
+        `release sweeps:`,
+    );
+    for (const f of branchOnly)
+      console.error(`  ${C.white}- ${f}${C.reset} ${C.dim}[BRANCH-ONLY, IN THE SWEPT DIRECTORY]${C.reset}`);
+    console.error(
+      `  ${C.dim}Move each to migrations/rehearsal/ — no release path scans that directory — and\n` +
+        `  apply it with \`pnpm db:apply migrations/rehearsal/<file> --target branch\`.\n` +
+        `  A refusal in the runner is not enough on its own: the release resolves its applier\n` +
+        `  from a sibling checkout at whatever commit that directory holds.${C.reset}`,
+    );
+    branchOnlyInSweptDir = branchOnly.length;
+  }
+
+  if (campaignInSweptDir.length) {
+    console.log();
+    console.error(
+      `${TAG.fail}${campaignInSweptDir.length} CAMPAIGN file(s) sit in migrations/, which EVERY ` +
+        `release sweeps:`,
+    );
+    for (const f of campaignInSweptDir)
+      console.error(
+        `  ${C.white}- ${f}${C.reset} ${C.dim}[CAMPAIGN CONTRACT, IN THE SWEPT DIRECTORY]${C.reset}`,
+      );
+    console.error(
+      `  ${C.dim}Move each to migrations/campaign/ - no release path, sweep, CI job or scheduled` +
+        `\n  job scans it - and apply it with` +
+        `\n    pnpm db:apply migrations/campaign/<file> --source campaign --target branch --lane <lane>` +
+        `\n  A campaign file reaches production only while its lane holds its build lock and after` +
+        `\n  its branch rehearsal is ledgered; an unattended 30-minute cron knows neither.${C.reset}`,
+    );
   }
 
   if (selfLedgering.length) {
@@ -525,7 +718,43 @@ async function main(): Promise<number> {
     const recorded = ledger.get(f);
     if (recorded === undefined) pending.push(f);
     else if (!SHA256_RE.test(recorded)) unverifiable.push(f);
-    else if (recorded !== sum && !driftOk.has(f)) drifted.push(f);
+    else if (!checksumMatches(localSql.get(f) ?? "", recorded) && !driftOk.has(f)) drifted.push(f);
+  }
+
+  // ── DD-220: unapplied files that would overwrite a live function body ──────
+  let basedOnBlocking = 0;
+  {
+    const { gaps, skipped } = await basedOnArm(pending).catch((err: unknown) => {
+      console.log(
+        `${TAG.warn}MIGRATION BASED-ON UNMEASURED — could not read the live function catalogue: ` +
+          `${err instanceof Error ? err.message : String(err)}`,
+      );
+      return { gaps: [] as BasedOnGap[], skipped: null };
+    });
+    if (skipped) console.log(`${TAG.warn}MIGRATION BASED-ON UNMEASURED — ${skipped}`);
+    if (gaps.length) {
+      basedOnBlocking = gaps.filter((g) => g.blocking).length;
+      console.log();
+      console.log(
+        `${TAG.fail}MIGRATION BASED-ON MISSING — ${gaps.length} unapplied file(s) would overwrite a ` +
+          `function body they never say they read (DD-220). ` +
+          `${basedOnBlocking} blocking${strict ? "" : " (non-blocking in this mode)"}, ` +
+          `${gaps.length - basedOnBlocking} advisory (authored before the ${BASED_ON_LAW_CUT} cut).`,
+      );
+      for (const g of gaps) {
+        console.log(
+          `  ${C.white}- ${g.filename}${C.reset} ` +
+            `${g.blocking ? `${C.red}[BLOCKING]${C.reset}` : `${C.yellow}[ADVISORY]${C.reset}`} ` +
+            `${C.dim}(authored ${g.authored})${C.reset}`,
+        );
+        for (const m of g.messages) console.log(`      ${C.dim}${m.split("\n")[0]}${C.reset}`);
+      }
+      console.log(
+        `  ${C.white}Fix: pnpm db:based-on migrations/<file>.sql${C.reset} ` +
+          `${C.dim}— it prints the header line(s) that file is missing, read from the live catalogue. ` +
+          `pnpm db:apply refuses every one of these at the door regardless of the cut.${C.reset}`,
+      );
+    }
   }
 
   // ── Numeric-slot collisions ────────────────────────────────────────────────
@@ -594,8 +823,16 @@ async function main(): Promise<number> {
   }
 
   // Clean: every tracked migration is recorded and unchanged. Stay quiet.
+  // A rehearsal-only file in the swept directory fails in EVERY mode, strict or
+  // not: it is the exact shape that reached production unattended on 2026-09-16.
+  if (branchOnlyInSweptDir) return 1;
+  if (campaignInSweptDir.length) return 1;
+
   if (pending.length === 0 && drifted.length === 0 && unverifiable.length === 0)
-    return (actionable.length || selfLedgering.length || dd137b13Errors.length) && strict ? 1 : 0;
+    return (actionable.length || selfLedgering.length || dd137b13Errors.length || basedOnBlocking) &&
+      strict
+      ? 1
+      : 0;
 
   // ONE fix for BOTH states below. White, not dim — it's an instruction the user
   // acts on, not a footnote. Never suggest hand-applying and self-ledgering: that
@@ -666,18 +903,22 @@ async function main(): Promise<number> {
     );
   }
 
-  return (pending.length || actionable.length || selfLedgering.length || dd137b13Errors.length) && strict
+  return (pending.length ||
+    actionable.length ||
+    selfLedgering.length ||
+    dd137b13Errors.length ||
+    basedOnBlocking) && strict
     ? 1
     : 0;
 }
 
 main().then(
-  (code) => process.exit(code),
+  (code) => exitAfterDrain(code),
   (err) => {
     console.error(
       `${C.red}check:migrations — unexpected error:${C.reset}`,
       err,
     );
-    process.exit(2);
+    exitAfterDrain(2);
   },
 );

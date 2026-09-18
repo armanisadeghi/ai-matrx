@@ -78,13 +78,21 @@ export function usePlaceOffers(
     for (const place of places) {
       const key = place.mandate_key;
       if (startedRef.current.has(key)) continue;
+      // A record of a STARTED fetch, so it must be released on every exit that
+      // did not deliver an offer — the effect's cleanup abandons the in-flight
+      // run via `live = false`, and a latch left behind would strand this place
+      // on "loading" forever with no retry path (same class as the chat resume
+      // latch fixed 2026-09-13 in useConversationResume).
       startedRef.current.add(key);
       void (async () => {
         try {
           const wave1 = parseMandateWave1(place);
           if (wave1.provisionKey) {
             const offer = await fetchProvision(wave1.provisionKey);
-            if (!live) return;
+            if (!live) {
+              startedRef.current.delete(key);
+              return;
+            }
             setByKey((prev) => ({
               ...prev,
               [key]: offer
@@ -103,7 +111,10 @@ export function usePlaceOffers(
               pathParams: { mandate_key: key },
             }),
           );
-          if (!live) return;
+          if (!live) {
+            startedRef.current.delete(key);
+            return;
+          }
           if (result.error) {
             setByKey((prev) => ({
               ...prev,
@@ -129,7 +140,10 @@ export function usePlaceOffers(
             [key]: { status: "ready", offered: offer?.values ?? [] },
           }));
         } catch (err) {
-          if (!live) return;
+          if (!live) {
+            startedRef.current.delete(key);
+            return;
+          }
           setByKey((prev) => ({
             ...prev,
             [key]: {

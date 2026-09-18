@@ -22,6 +22,7 @@
 
 import { useEffect, useState } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   Dialog,
   DialogContent,
@@ -135,12 +136,18 @@ export function InboxReplyDialog({ row, onClose, onSent }: InboxReplyDialogProps
               {error}
             </p>
             {row.party_id && (
-              <a
-                className="mt-2 inline-block pl-6 text-sm text-primary underline-offset-2 hover:underline"
-                href={`/crm/${row.party_id}`}
-              >
-                Open the contact record
-              </a>
+              <div className="mt-2 pl-6">
+                <EntityRef
+                  token="party"
+                  id={row.party_id}
+                  name={row.party_name ?? "this contact"}
+                  openInNewTab
+                  showIcon={false}
+                  labelClassName="text-sm text-primary underline-offset-2 hover:underline"
+                >
+                  Open the contact record
+                </EntityRef>
+              </div>
             )}
           </div>
         ) : (

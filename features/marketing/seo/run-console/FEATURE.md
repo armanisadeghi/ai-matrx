@@ -264,8 +264,53 @@ do".
 
 ---
 
+## Run history — findable by design
+
+- 🚨 **Never a fixed-size, unfiltered list.** `admin_list_run_history` is a
+  cursor page ordered `sort_at DESC, execution_kind DESC, execution_id DESC`
+  (the ORDER BY ends in the unique pair — stable paging), sized by the knob
+  `marketing.run_console/run_history_page_size` (resolved in the function,
+  never a client constant). A 20-second heartbeat writes ~4,000 runs a day.
+- **Default view = runs that made AI calls + every SEO command run.** Scheduled
+  runs that view leaves out are GROUPED, never hidden: `admin_run_history_facets`
+  gives each task's quiet count, rendered as one row ("×86,555 Keep live cloud
+  browsers connected") that expands into exactly those runs. A task filter or a
+  run-id search is never narrowed by the default view.
+- **Filters:** kind, task (scheduled) / operation (SEO command), status group
+  (`succeeded`/`failed`/`interrupted`/`running`), inclusive local-day range,
+  partial run id (≥4 hex chars). **All of it, plus the open run, lives in
+  `rh_*` URL params** (`runHistoryFilters.ts`, the one codec); a link carrying
+  them opens the Run history tab even on the unrouted admin mount.
+- Who we followed: Stripe list cursors, Temporal UI / GitHub Actions
+  filter-first run lists with the query in the URL, Sentry / browser-console
+  repeated-row grouping with a count.
+
 ## Change log
 
+- `2026-09-14` — **Run history is paged, filtered and findable (KI-049).** The
+  old `admin_list_run_history(p_limit)` read 50 rows with no filter; "Keep live
+  cloud browsers connected" (every 20s, 86,555 runs) filled all 50, covered ~12
+  minutes and made every SEO run unreachable. `migrations/run_console_run_history_paged_filtered.sql`
+  drops that signature and its door row, adds the paged/filtered read, the
+  facets read (both doors declared, anon revoked) and the page-size knob.
+  Measured live as admin: default page 92 ms, every-run page 85 ms, cursor page 2
+  87 ms, run-id search 55 ms, all-time facets 380 ms (233k scheduler rows).
+  Panel: filter bar, grouped quiet rows, Load more, URL state, an honest
+  `interrupted` badge (it used to spin like a live run).
+
+- `2026-09-14` — **Run history shows every AI answer in full, once, and says
+  plainly when it cannot (KI-049 follow-up).** Measured live: the empty
+  structured-output defect was already fixed on 2026-08-25 (3 empty calls in 30
+  days, all failures), but 78 of 415 outputs were 595-character fragments —
+  matrx-ai's snapshot redactor cut every string over 64 KB, including the
+  keyword classifier's ~73 KB answers. aidream `4572257f1` keeps assistant text
+  in full (knob `agents.request_snapshot.assistant_text_announce_bytes`).
+  `migrations/run_console_ai_calls_one_terminal_snapshot.sql`: one row per call
+  (terminal snapshot: response over error, latest attempt, `id` tie-break),
+  where a retried call used to render three times. `RunHistoryPanel.tsx`: a
+  failed call says it failed and points at its reason; an answer carrying the
+  redaction marker says the rest was not kept and cannot be recovered, instead
+  of passing a fragment off as the whole answer.
 - `2026-09-11` — **Manual runs carry the selected brand's organization through
   launch and rejoin.** Production reproduced `organization_forbidden` when the
   system console stamped Matrx System for a Data Destruction run even though

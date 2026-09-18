@@ -63,7 +63,11 @@ describe("renderRulebookDocument", () => {
     ).toEqual([]);
   });
 
-  it("breaks out the Expert's open review feedback so it cannot be missed", () => {
+  // 2026-09-15: the same block is now NAMED what doctrine CORE.md §5 calls it —
+  // the next session's agenda, in the "mine / not mine / mine but wrong" words
+  // the Expert saw. The two conditions are unchanged; a renamed heading that
+  // lost a row, or a row that lost the Expert's words, still fails here.
+  it("hands the interviewer the next session's agenda, in the Expert's words", () => {
     const doc = renderRulebookDocument(
       rulebook({
         rules: [
@@ -72,9 +76,13 @@ describe("renderRulebookDocument", () => {
         ],
       }),
     );
-    expect(doc).toContain("OPEN REVIEW FEEDBACK");
-    expect(doc).toContain("REJECTED · Never open with an apology [r1] — Too absolute.");
-    expect(doc).toContain("CHANGE REQUESTED · Cite the source [r2] — Add detection.");
+    expect(doc).toContain("THE NEXT SESSION'S AGENDA");
+    expect(doc).toContain(
+      "NOT MINE (rejected) · Never open with an apology [r1] — Too absolute.",
+    );
+    expect(doc).toContain(
+      "MINE BUT WRONG (change requested) · Cite the source [r2] — Add detection.",
+    );
   });
 
   it("never drops a rule whose section is not declared", () => {

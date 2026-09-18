@@ -61,6 +61,8 @@ type ReplaceModelReferencesResult = {
   agents: number;
   builtins: number;
   templates: number;
+  /** Every agent.definition id the write touched — the post-batch impact scope (I5). */
+  agent_ids: string[];
 };
 
 function boundaryError(path: string, expected: string): Error {
@@ -75,6 +77,13 @@ function requireJsonObject(value: unknown, path: string): JsonObject {
 function requireString(value: unknown, path: string): string {
   if (typeof value !== "string") throw boundaryError(path, "a string");
   return value;
+}
+
+function requireStringArray(value: unknown, path: string): string[] {
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
+    throw boundaryError(path, "an array of strings");
+  }
+  return value as string[];
 }
 
 function requireFiniteNumber(value: unknown, path: string): number {
@@ -113,6 +122,10 @@ function parseReplaceModelReferencesResult(
     templates: requireFiniteNumber(
       record.templates,
       "replace-references response.templates",
+    ),
+    agent_ids: requireStringArray(
+      record.agent_ids,
+      "replace-references response.agent_ids",
     ),
   };
 }
@@ -613,16 +626,20 @@ export const aiModelService = {
     // Resolve `maker` from the provider_id FK (ai.provider.name). The old
     // free-text `provider` column is dropping — never read it. Fetch providers
     // alongside models and map by id so every row carries a display brand.
-    const [modelsRes, providers, adminCatalogRes] = await Promise.all([
-      supabase
-        .schema("ai")
-        .from("model_definition")
-        .select("*")
-        .order("common_name", { ascending: true, nullsFirst: false }),
+    const [models, providers, adminCatalogRes] = await Promise.all([
+      readAllRows<AiModelRow>(
+        ({ from, to }) => supabase
+          .schema("ai")
+          .from("model_definition")
+          .select("*", { count: "exact" })
+          .order("common_name", { ascending: true, nullsFirst: false })
+          .order("id", { ascending: true })
+          .range(from, to),
+        { label: "ai.model_definition" },
+      ),
       this.fetchProviders(),
       supabase.rpc("admin_model_catalog"),
     ]);
-    if (modelsRes.error) throw modelsRes.error;
     if (adminCatalogRes.error) throw adminCatalogRes.error;
     const makerById = new Map(providers.map((p) => [p.id, p.name ?? null]));
     const comparisonById = new Map<string, ModelPriceSummary | null>();
@@ -630,7 +647,7 @@ export const aiModelService = {
       if (typeof row.id !== "string") continue;
       comparisonById.set(row.id, preferredPrice(row.pricing, row.usage_basis));
     }
-    return (modelsRes.data ?? []).map((row): AiModel => ({
+    return models.map((row): AiModel => ({
       ...withValidatedCapabilities(row),
       maker: row.provider_id ? (makerById.get(row.provider_id) ?? null) : null,
       preferred_pricing: comparisonById.get(row.id) ?? null,
@@ -899,14 +916,19 @@ export const aiModelService = {
   // ── Offering CRUD (ai.offering — model × endpoint × api, per-offering pricing/overrides) ──
 
   async fetchOfferings(): Promise<AiOffering[]> {
-    const { data, error } = await supabase
-      .schema("ai")
-      .from("offering")
-      .select("*")
-      .is("deleted_at", null)
-      .order("priority", { ascending: true });
-    if (error) throw error;
-    return data.map(parseOffering);
+    const rows = await readAllRows<AiOfferingRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("ai")
+          .from("offering")
+          .select("*", { count: "exact" })
+          .is("deleted_at", null)
+          .order("priority", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to),
+      { label: "ai.offering" },
+    );
+    return rows.map(parseOffering);
   },
 
   /** The live offerings of one model. `token_billed` — the fact that a media

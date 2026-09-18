@@ -63,6 +63,8 @@ import {
   useKeywordMenuSection,
 } from "@/features/marketing/seo/keyword/keyword-actions";
 import { buildPageMenuSection } from "@/features/marketing/search-console/components/insights/insight-row-menu";
+import { MapThesePagesLink } from "@/features/marketing/seo/topical-map/linkins/MapThesePagesLink";
+import { useSiteTopicalMapLink } from "@/features/marketing/seo/topical-map/linkins/useSiteTopicalMapLink";
 import { LocationPanel } from "@/features/marketing/seo/value-system/locations/LocationPanel";
 import type {
   GscCannibalizationRow,
@@ -233,6 +235,9 @@ export function InsightsTab({
             ))}
           </div>
         ) : null}
+        {showsDimensionToggle && dimension === "page" ? (
+          <MapThesePagesLink siteId={siteId} brandSeg={brandId} />
+        ) : null}
         {showsThreshold ? (
           <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
             {active === "juice"
@@ -385,6 +390,8 @@ function useInsightRowMenu<
   const { siteId, siteName, brandId, organizationId, dimension, rows } = opts;
   const openDrilldown = useOpenGscDrilldownWindow();
   const [contextRow, setContextRow] = useState<T | null>(null);
+  // The site's topical map, for a page row's "decide its place" door.
+  const mapLink = useSiteTopicalMapLink(siteId, brandId);
   const surfaces = useKeywordAssignSurfaces({ siteId });
   const keywordSection = useKeywordMenuSection({
     siteId,
@@ -407,6 +414,7 @@ function useInsightRowMenu<
             url: contextRow.key,
             pageId: contextRow.page_id,
             openDrilldown,
+            mapPagesHref: mapLink.status === "ready" ? mapLink.href("pages") : null,
           }),
         ]
       : contextRow.keyword_id

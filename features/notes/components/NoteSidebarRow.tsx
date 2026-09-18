@@ -14,14 +14,8 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { ItemRow } from "@/components/official/item/ItemRow";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { cn } from "@/lib/utils";
-import { CopyButtons } from "@/components/agent-copy/CopyButtons";
-import {
-  noteLocation,
-  noteRowData,
-  noteRowSummary,
-} from "@/features/notes/format";
 import type { ContentSource } from "@/features/rich-document/types";
-import { saveNoteField } from "../redux/thunks";
+import { saveNoteField, ensureNoteBodiesLoaded } from "../redux/thunks";
 import {
   buildNoteMenu,
   buildNoteContextSections,
@@ -39,8 +33,6 @@ interface NoteSidebarRowProps {
   allFolders: FolderReference[];
   openKnowledge: (opts: { noteId: string; title?: string }) => void;
   formatTime: (dateStr: string | null | undefined) => string;
-  /** Shows the note's folder name/"Draft" as a secondary label (recent/default modes). */
-  showFolderTag?: boolean;
   draggable?: boolean;
   isDragging?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
@@ -61,7 +53,6 @@ export function NoteSidebarRow({
   allFolders,
   openKnowledge,
   formatTime,
-  showFolderTag = false,
   draggable = false,
   isDragging = false,
   onDragStart,
@@ -92,10 +83,13 @@ export function NoteSidebarRow({
       draggable={draggable && !selectionMode}
       onDragStart={draggable ? onDragStart : undefined}
       onDragEnd={draggable ? onDragEnd : undefined}
-      className={cn(
-        "group/note-row flex items-center gap-0.5",
-        isDragging && "opacity-40",
-      )}
+      // A list row carries only a preview (audit N-24). The right-click menu's
+      // copy / export / agent-context actions need the BODY, so the moment the
+      // menu is asked for, the body is read.
+      onContextMenuCapture={() => {
+        if (note._fetchStatus !== "full") void dispatch(ensureNoteBodiesLoaded([note.id]));
+      }}
+      className={cn("flex items-center gap-0.5", isDragging && "opacity-40")}
     >
       {/*
        * Rendered as a SIBLING of ItemRow, not passed via `leading` — ItemRow's
@@ -129,9 +123,6 @@ export function NoteSidebarRow({
           }}
           size="sm"
           label={note.label}
-          secondaryLabel={
-            showFolderTag ? note.folder_name || "Draft" : undefined
-          }
           leading={
             selectionMode ? undefined : (
               <FileText className="w-3.5 h-3.5 shrink-0 opacity-50" />
@@ -182,34 +173,6 @@ export function NoteSidebarRow({
           menu={selectionMode ? undefined : () => buildNoteMenu(menuCtx)}
         />
       </div>
-      {/*
-       * SIBLING of ItemRow for the same reason the checkbox above is: ItemRow
-       * renders `trailing` INSIDE its primary <button>, and CopyButtons is
-       * itself a pair of buttons — nesting would be invalid HTML.
-       * Hover-revealed so a dense sidebar stays calm.
-       */}
-      {!selectionMode && (
-        <CopyButtons
-          size="xs"
-          label={`Note "${displayLabel(note.label)}"`}
-          className="mr-1 shrink-0 opacity-0 transition-opacity group-hover/note-row:opacity-100 focus-within:opacity-100"
-          human={() => noteRowSummary(note)}
-          json={() => noteRowData(note)}
-          agent={() => ({
-            kind: "note",
-            location: noteLocation("Sidebar list"),
-            description:
-              "One note as listed in the notes sidebar (metadata only — the body is not included from a list row).",
-            data: noteRowData(note),
-            summary: noteRowSummary(note),
-            attributes: {
-              id: note.id,
-              label: displayLabel(note.label),
-              folder: note.folder_name ?? undefined,
-            },
-          })}
-        />
-      )}
     </div>
   );
 
@@ -222,7 +185,11 @@ export function NoteSidebarRow({
   return (
     <NonEditableContextMenu
       sourceFeature="notes"
-      contextData={{ content: note.content ?? "" }}
+      // Only a fully read note has a body to hand the menu. A preview-only row
+      // passes nothing, so an agent is never told "" IS the note; the body is
+      // loaded the moment the menu is requested (onContextMenuCapture above)
+      // and this re-renders with it (audit N-24, reviewer finding).
+      contextData={note._fetchStatus === "full" ? { content: note.content ?? "" } : {}}
       contentSource={noteIdentityContentSource(note.id, `sidebar:${instanceId}:${note.id}`)}
       entity={{
         type: "note",

@@ -1,4 +1,5 @@
 "use client";
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 
 import React, { useRef, useState, useEffect } from "react";
 import { extractErrorMessage } from "@/utils/errors";
@@ -33,7 +34,7 @@ const SyntaxHighlighter = SyntaxHighlighterBase as any;
 
 type AIModalConfig = {
   /** The editing job (mandate key) — the DB decides which agent runs it. */
-  mandateKey: string;
+  mandateKey: MandateKey;
   title: string;
 };
 

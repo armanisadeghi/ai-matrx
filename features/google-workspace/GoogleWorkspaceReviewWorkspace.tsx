@@ -2,12 +2,12 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   CheckCircle2,
   ChevronDown,
   CircleAlert,
   ExternalLink,
-  FileSpreadsheet,
   FileText,
   Loader2,
   LockKeyhole,
@@ -45,16 +45,24 @@ import type {
   GoogleConnectionResource,
   GoogleConnectionSummary,
 } from "@/features/marketing/google/types";
+import { isGoogleWorkspaceFileRow } from "@/features/marketing/google/types";
+import {
+  googleWorkspaceFileType,
+  googleWorkspacePickLabel,
+  googleWorkspacePickScopeSentence,
+  type GoogleWorkspaceResourceType,
+} from "@/features/google-workspace/resource-types";
 import {
   DEFAULT_GOOGLE_SHEET_RANGE,
-  appendGoogleDocument,
+  SENT_FOR_APPROVAL_MESSAGE,
+  approvalQueueHref,
   isGoogleWorkspaceInputError,
-  readGoogleDocument,
   readGoogleSheet,
   registerSelectedGoogleFile,
   sendReviewedGmail,
   writeGoogleSheet,
 } from "@/features/google-workspace/service";
+import { reviewedSendNotices } from "@/features/crm/gmail/reviewed-send-contract";
 import {
   GOOGLE_SCOPE,
   GOOGLE_WORKSPACE_FILE_SCOPES,
@@ -71,6 +79,13 @@ import {
 } from "@/features/google-workspace/connection";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { getGoogleDrivePickerToken } from "@/features/google-workspace/drivePickerToken";
+import {
+  OPEN_GOOGLE_RECORD_CONSEQUENCE,
+  OpenGoogleDocumentRecordButton,
+  hasGoogleDocumentRecord,
+  pickedGoogleRecordResource,
+} from "@/features/google-workspace/documents/openRecord";
+import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
 
 type BusyAction =
   | "connect-files"
@@ -90,14 +105,23 @@ function hasScope(connection: GoogleConnectionSummary, scope: string): boolean {
   return connection.scopes.includes(scope);
 }
 
-function workspaceResource(
-  resource: GoogleConnectionResource,
-): resource is GoogleConnectionResource & {
-  resource_type: "google_document" | "google_spreadsheet";
-} {
+/**
+ * THE PREDICATE IS SHARED (`isGoogleWorkspaceFileRow`). It used to be a local
+ * hand-typed pair here, which is how a Slides deck the server had already
+ * registered was filtered out of this list — a connected, named file with no
+ * row and no door (V13-3).
+ */
+/** The door at Google: the row's own stored link, or the type's canonical URL. */
+function resourceDoor(
+  resource: GoogleConnectionResource & {
+    resource_type: GoogleWorkspaceResourceType;
+  },
+): string {
   return (
-    resource.resource_type === "google_document" ||
-    resource.resource_type === "google_spreadsheet"
+    metadataLink(resource) ??
+    googleWorkspaceFileType(resource.resource_type).hrefFor(
+      resource.resource_ref,
+    )
   );
 }
 
@@ -125,7 +149,11 @@ interface GoogleWorkspaceReviewWorkspaceProps {
 export function GoogleWorkspaceReviewWorkspace({
   pickerInitialQuery,
 }: GoogleWorkspaceReviewWorkspaceProps) {
+  const router = useRouter();
   const google = useGoogleAPI();
+  // 🚨 ONE Google authorization window per PERSON — never a per-component
+  // lock, never the raw provider primitive (V-23 NEW-3, lane F-103).
+  const googleAuth = useGoogleAuthorizationWindow();
   const inventory = useGoogleConnectionInventory();
   const connectGoogle = useConnectGoogle();
   const disconnectGoogle = useDisconnectGoogle();
@@ -137,8 +165,6 @@ export function GoogleWorkspaceReviewWorkspace({
   );
   const [busy, setBusy] = useState<BusyAction>(null);
   const [error, setError] = useState<string | null>(null);
-  const [documentText, setDocumentText] = useState("");
-  const [documentAppend, setDocumentAppend] = useState("");
   const [sheetRange, setSheetRange] = useState(DEFAULT_GOOGLE_SHEET_RANGE);
   const [sheetValues, setSheetValues] = useState("");
   const [emailTo, setEmailTo] = useState("");
@@ -149,6 +175,35 @@ export function GoogleWorkspaceReviewWorkspace({
   const [pickerSessionConnectionId, setPickerSessionConnectionId] = useState<
     string | null
   >(null);
+  /**
+   * 🚨 F-74 — a fresh pick hands its Record straight to the open control (F-69,
+   * `openRecord.tsx`). `selectedResources` renders from the inventory read
+   * (`users.integration_connection_resources`), which has never carried
+   * `record_id` — that field lives only on the registration response
+   * (`SelectedGoogleFile.recordId`, aidream F-57/R29) — so without this every
+   * file on this bench, including one picked seconds ago, takes the slower
+   * read-then-refresh leg `useOpenGoogleDocumentRecord` falls back to. Keyed by
+   * the picked-resource id, which is stable across the `inventory.refetch()`
+   * that follows registration.
+   *
+   * 🚨 F-77 (V-21 N1) — THE SERVER'S TWO REASONS RIDE ALONG TOO. See the same
+   * note in `GoogleWorkspaceConnectBody.tsx`: a registration that could not
+   * write the Record answers `record_id: null` plus a plain
+   * `record_absent_reason` sentence; one that could still answers an optional
+   * `record_sync_status_reason` when the kept status is not the healthy one.
+   * Both used to be parsed and thrown away here.
+   */
+  const [freshRecords, setFreshRecords] = useState<
+    Record<
+      string,
+      {
+        record_id: string | null;
+        record_sync_status: string | null;
+        record_sync_status_reason: string | null;
+        record_absent_reason: string | null;
+      }
+    >
+  >({});
 
   const personalConnections = useMemo(
     () =>
@@ -180,11 +235,9 @@ export function GoogleWorkspaceReviewWorkspace({
   };
   const selectedResources = useMemo(
     () =>
-      (inventory.data?.resources ?? []).filter(
-        (resource) =>
-          resource.connection_id === effectiveConnectionId &&
-          workspaceResource(resource),
-      ),
+      (inventory.data?.resources ?? [])
+        .filter((resource) => resource.connection_id === effectiveConnectionId)
+        .filter(isGoogleWorkspaceFileRow),
     [effectiveConnectionId, inventory.data?.resources],
   );
   const selectedResource = useMemo(
@@ -219,7 +272,7 @@ export function GoogleWorkspaceReviewWorkspace({
 
   const connectFiles = () =>
     run("connect-files", async () => {
-      const code = await google.requestAuthorizationCode([
+      const code = await googleAuth.openAuthorizationWindow([
         ...GOOGLE_WORKSPACE_FILE_SCOPES,
       ]);
       const result = await connectGoogle.mutateAsync({
@@ -233,7 +286,7 @@ export function GoogleWorkspaceReviewWorkspace({
   const enableGmail = () => {
     if (!activeConnection) return;
     void run("enable-gmail", async () => {
-      const code = await google.requestAuthorizationCode(
+      const code = await googleAuth.openAuthorizationWindow(
         [...GOOGLE_WORKSPACE_SEND_SCOPES],
         activeConnection.account_email ?? undefined,
       );
@@ -260,31 +313,79 @@ export function GoogleWorkspaceReviewWorkspace({
         activeConnection.id,
         picked.id,
       );
+      setFreshRecords((prev) => ({
+        ...prev,
+        [registered.id]: {
+          record_id: registered.recordId,
+          record_sync_status: registered.recordSyncStatus,
+          record_sync_status_reason: registered.recordSyncStatusReason,
+          record_absent_reason: registered.recordAbsentReason,
+        },
+      }));
       await inventory.refetch();
       setSelectedResourceId(registered.id);
-      recordToast.success(
-        {
-          type: "google_workspace_resource",
-          id: registered.id,
-          title: registered.name,
-        },
-        `${registered.name} is ready.`,
-      );
+      const recordRef = {
+        type: "google_workspace_resource",
+        id: registered.id,
+        title: registered.name,
+      };
+      // 🚨 F-77 (V-21 N1) — a Record that could not be written is never called
+      // "ready": the file is still picked and usable (its Google link stays),
+      // but the door to a Record that does not exist is not offered, and the
+      // server's own sentence — never a paraphrase — says why.
+      //
+      // F-83 (Bugbot LOW on 80c8027b): a Slides deck (or any file type with no
+      // Record table) having no Record is an EXPECTED outcome of a pick, not
+      // a fault — this is `recordToast.info`, never `toast.warning`, so it
+      // (a) never feeds the Error Inspector (only `error`/`warning` do, per
+      // lib/toast.ts's own doc comment) and (b) carries the SAME picked-file
+      // identity the success toast below uses, so it is dismissed the instant
+      // this file leaves the screen instead of possibly outliving it.
+      if (!registered.recordId) {
+        recordToast.info(
+          recordRef,
+          `${registered.name} is picked and usable, but its record could not be created.`,
+          {
+            description:
+              registered.recordAbsentReason ??
+              "AI Matrx did not say why. Try picking it again; if it keeps happening, tell us.",
+          },
+        );
+        return;
+      }
+      recordToast.success(recordRef, `${registered.name} is ready.`);
+      if (
+        registered.recordSyncStatus &&
+        registered.recordSyncStatus !== "available" &&
+        registered.recordSyncStatusReason
+      ) {
+        // Same identity, same reasoning as above: an unhealthy sync status is
+        // information about this file, not an error, and follows the file.
+        recordToast.info(recordRef, registered.recordSyncStatusReason);
+      }
     });
   };
 
-  const readSelected = () => {
+  /**
+   * The Sheets range read — the ONLY read left on this bench. A Doc is not read
+   * here at all any more: it opens as its Record in the Detail primitive, which
+   * owns the body, the refresh and the append (F-58).
+   *
+   * The reader is still gated on the ONE file-type record rather than assuming
+   * "not a Doc means a Sheet": that fall-through is what the old
+   * `if (Doc) … else sheet` did to a Slides deck — it asked the Sheets API for a
+   * presentation id and showed Google's error as if the deck were broken.
+   */
+  const readSelectedRange = () => {
     if (!activeConnection || !selectedResource) return;
+    const fileType = googleWorkspaceFileType(selectedResource.resource_type);
+    if (fileType.clientRead !== "sheet") {
+      toast.info(`${fileType.label}s are not read on this screen.`, {
+        description: fileType.readOnlyNote ?? undefined,
+      });
+      return;
+    }
     void run("read-file", async () => {
-      if (selectedResource.resource_type === "google_document") {
-        const result = await readGoogleDocument(
-          activeConnection.id,
-          selectedResource.resource_ref,
-        );
-        setDocumentText(result.text);
-        toast.success("Google Doc loaded.");
-        return;
-      }
       const result = await readGoogleSheet(
         activeConnection.id,
         selectedResource.resource_ref,
@@ -295,29 +396,58 @@ export function GoogleWorkspaceReviewWorkspace({
     });
   };
 
-  const writeSelected = () => {
+  /**
+   * 🚨 THE WRITE MAY HAVE BECOME A PROPOSAL. When the organization's autonomy
+   * mode for this capability requires review, the server writes NOTHING and
+   * answers 202 having filed the change in the ONE approval queue
+   * (`hitl.google.attended_file_write`; round-2 verification § A-vii — the knob
+   * governed the agent path only and a person's own click ignored it). Saying
+   * "appended" or "updated" over that would be the screen claiming a change that
+   * has not happened, so it says what did happen and opens the queue row.
+   */
+  const sentForApproval = (assistId: string) => {
+    toast.info(SENT_FOR_APPROVAL_MESSAGE, {
+      description:
+        "Your organization asks a person to review this kind of change before it is written. Nothing in Google has changed yet.",
+      action: {
+        label: "Open the approval",
+        onClick: () => router.push(approvalQueueHref(assistId)),
+      },
+    });
+  };
+
+  /**
+   * The Sheets range write. THE DOC APPEND IS NOT HERE — the composer that
+   * writes to a Doc lives once, in the Record's Detail panel, where the exact
+   * block is shown before anything reaches Google and the dated heading comes
+   * from `google.docs.append_heading`. A second append path on this bench sent
+   * different bytes to a customer's document (VERIFY-U-W1-U-W2 N2).
+   */
+  const writeSelectedRange = () => {
     if (!activeConnection || !selectedResource) return;
+    const fileType = googleWorkspaceFileType(selectedResource.resource_type);
+    if (fileType.clientRead !== "sheet" || !fileType.writable) {
+      toast.info(`AI Matrx does not write to ${fileType.label}s on this screen.`, {
+        description: fileType.readOnlyNote ?? undefined,
+      });
+      return;
+    }
     void run("write-file", async () => {
-      if (selectedResource.resource_type === "google_document") {
-        const result = await appendGoogleDocument(
-          activeConnection.id,
-          selectedResource.resource_ref,
-          documentAppend,
-        );
-        setDocumentText(result.text);
-        setDocumentAppend("");
-        toast.success("Text appended to the selected Google Doc.");
-        return;
-      }
       const values = sheetValues.split("\n").map((row) => row.split("\t"));
-      const result = await writeGoogleSheet(
+      const outcome = await writeGoogleSheet(
         activeConnection.id,
         selectedResource.resource_ref,
         sheetRange.trim(),
         values,
       );
-      setSheetValues(result.values.map((row) => row.join("\t")).join("\n"));
-      toast.success(`Updated ${result.range}.`);
+      if (outcome.proposed) {
+        sentForApproval(outcome.assistId);
+        return;
+      }
+      setSheetValues(
+        outcome.result.values.map((row) => row.join("\t")).join("\n"),
+      );
+      toast.success(`Updated ${outcome.result.range}.`);
     });
   };
 
@@ -325,7 +455,7 @@ export function GoogleWorkspaceReviewWorkspace({
     if (!activeConnection || !emailConfirmed) return;
     void run("send-email", async () => {
       rememberGoogleConnection("gmail-send", activeConnection.id);
-      const messageId = await sendReviewedGmail({
+      const outcome = await sendReviewedGmail({
         connectionId: activeConnection.id,
         to: emailTo,
         cc: emailCc
@@ -334,9 +464,24 @@ export function GoogleWorkspaceReviewWorkspace({
           .filter(Boolean),
         subject: emailSubject,
         body: emailBody,
+        // This bench is not a CRM record: it names no party, so the server files
+        // no timeline row and says so in `record_failure` below. The organization
+        // is the viewer's own context, resolved by the transport through the ONE
+        // fail-closed kernel — this bench never picks one.
+        context: { organizationId: null },
       });
       setEmailConfirmed(false);
-      toast.success(`Gmail sent (message ${messageId}).`);
+      // The server says who it reached; this bench shows it, because "sent" with
+      // no recipient is exactly the claim lane B-10 made checkable.
+      const reached = outcome.to ?? emailTo;
+      toast.success(`Gmail sent to ${reached} (message ${outcome.messageId}).`);
+      // 🚨 AND EVERY GAP IT REPORTED, on the bench too: this surface exists to
+      // show what the send path actually did, so a row that was not written or a
+      // sending event that does not exist is shown, never swallowed.
+      for (const notice of reviewedSendNotices(outcome)) {
+        if (notice.level === "error") toast.error(notice.sentence);
+        else toast.warning(notice.sentence);
+      }
     });
   };
 
@@ -592,7 +737,7 @@ export function GoogleWorkspaceReviewWorkspace({
                     Test the file connection
                   </span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
-                    Choose one Doc or Sheet, then try a read or update.
+                    Choose a file, then try a read or update.
                   </span>
                 </span>
                 <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180" />
@@ -602,8 +747,7 @@ export function GoogleWorkspaceReviewWorkspace({
               <CardContent className="space-y-4 border-t p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/30 p-3">
                   <p className="text-xs text-muted-foreground">
-                    Picker can access only Docs and Sheets you explicitly
-                    select.
+                    {googleWorkspacePickScopeSentence()}
                   </p>
                   <Button
                     type="button"
@@ -615,7 +759,7 @@ export function GoogleWorkspaceReviewWorkspace({
                     {busy === "pick-file" && (
                       <Loader2 className="animate-spin" />
                     )}
-                    Choose a Doc or Sheet
+                    {googleWorkspacePickLabel()}
                   </Button>
                 </div>
                 {selectedResources.length === 0 ? (
@@ -624,117 +768,117 @@ export function GoogleWorkspaceReviewWorkspace({
                   </div>
                 ) : (
                   <>
+                    <p className="text-xs text-muted-foreground">
+                      {OPEN_GOOGLE_RECORD_CONSEQUENCE}
+                    </p>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {selectedResources.map((resource) => {
-                        const link = metadataLink(resource);
+                        const fileType = googleWorkspaceFileType(
+                          resource.resource_type,
+                        );
+                        const FileIcon = fileType.icon;
+                        // Never conditional: a named file always opens. The row
+                        // used to hide this link whenever the stored
+                        // `web_view_link` was absent, which is a dead end on a
+                        // record we can address by id.
+                        const link = resourceDoor(resource);
                         const selected = resource.id === selectedResourceId;
+                        // 🚨 F-77 (V-21 N1) — a fresh pick that could not
+                        // write a Record is never offered the door to one
+                        // that does not exist; the plain sentence the server
+                        // composed is shown instead, and the sync reason
+                        // rides beside a Record that was kept but is not in
+                        // the healthy state.
+                        const fresh = freshRecords[resource.id];
+                        const recordAbsent = fresh
+                          ? fresh.record_id === null
+                          : false;
+                        const showRecordDoor =
+                          hasGoogleDocumentRecord(resource.resource_type) &&
+                          !recordAbsent;
+                        const syncReason =
+                          fresh?.record_id &&
+                          fresh.record_sync_status &&
+                          fresh.record_sync_status !== "available"
+                            ? fresh.record_sync_status_reason
+                            : null;
                         return (
                           <div
                             key={resource.id}
-                            className={`flex items-center rounded-lg border transition-colors ${
+                            className={`rounded-lg border transition-colors ${
                               selected
                                 ? "border-primary bg-primary/5"
                                 : "hover:bg-muted/50"
                             }`}
                           >
-                            <button
-                              type="button"
-                              onClick={() => setSelectedResourceId(resource.id)}
-                              className="flex min-w-0 flex-1 items-start gap-3 p-3 text-left"
-                            >
-                              {resource.resource_type === "google_document" ? (
-                                <FileText className="mt-0.5 h-5 w-5 text-blue-600" />
-                              ) : (
-                                <FileSpreadsheet className="mt-0.5 h-5 w-5 text-emerald-600" />
-                              )}
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate text-sm font-medium">
-                                  {resource.display_name}
-                                </span>
-                                <span className="block text-xs text-muted-foreground">
-                                  {resource.resource_type === "google_document"
-                                    ? "Google Doc"
-                                    : "Google Sheet"}
-                                </span>
-                              </span>
-                            </button>
-                            {link && (
-                              <a
-                                href={link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mr-3 inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
-                                aria-label={`Open ${resource.display_name} in Google`}
+                            <div className="flex items-center">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSelectedResourceId(resource.id)
+                                }
+                                className="flex min-w-0 flex-1 items-start gap-3 p-3 text-left"
                               >
-                                Open in Google
-                                <ExternalLink className="h-3.5 w-3.5" />
-                              </a>
-                            )}
+                                <FileIcon
+                                  className={`mt-0.5 h-5 w-5 ${fileType.iconClassName}`}
+                                />
+                                <span className="min-w-0 flex-1">
+                                  <span className="block truncate text-sm font-medium">
+                                    {resource.display_name}
+                                  </span>
+                                  <span className="block text-xs text-muted-foreground">
+                                    {fileType.label}
+                                  </span>
+                                </span>
+                              </button>
+                              <div className="mr-3 flex shrink-0 items-center gap-1">
+                                {/*
+                                  🚨 ONE ACTION PER FILE, AND IT IS THE RECORD.
+                                  Before F-58 a picked Doc's only in-app surface was
+                                  a read-only textarea and a raw append box on this
+                                  bench; the Record it should have opened could
+                                  never be born. This control IS that birth door.
+                                */}
+                                {showRecordDoor && (
+                                  <OpenGoogleDocumentRecordButton
+                                    resource={pickedGoogleRecordResource({ ...resource, ...freshRecords[resource.id] })}
+                                    variant="ghost"
+                                  />
+                                )}
+                                <a
+                                  href={link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
+                                  aria-label={`Open ${resource.display_name} in Google`}
+                                >
+                                  Open in Google
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </a>
+                              </div>
+                            </div>
+                            {recordAbsent && fresh?.record_absent_reason ? (
+                              <p className="flex items-start gap-1.5 px-3 pb-2 text-xs text-muted-foreground">
+                                <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                                <span className="min-w-0 flex-1">
+                                  {resource.display_name} is picked and
+                                  usable, but its record could not be
+                                  created: {fresh.record_absent_reason}
+                                </span>
+                              </p>
+                            ) : null}
+                            {syncReason ? (
+                              <p className="flex items-start gap-1.5 px-3 pb-2 text-xs text-muted-foreground">
+                                <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                                <span className="min-w-0 flex-1">
+                                  {syncReason}
+                                </span>
+                              </p>
+                            ) : null}
                           </div>
                         );
                       })}
                     </div>
-
-                    {selectedResource?.resource_type === "google_document" && (
-                      <div className="space-y-4 rounded-lg border p-4">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div>
-                            <p className="font-medium">
-                              {selectedResource.display_name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Read the document or append text at its end.
-                            </p>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={readSelected}
-                            disabled={busy !== null}
-                          >
-                            {busy === "read-file" && (
-                              <Loader2 className="animate-spin" />
-                            )}
-                            Read selected Doc
-                          </Button>
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="document-content">
-                            Document content
-                          </Label>
-                          <Textarea
-                            id="document-content"
-                            value={documentText}
-                            readOnly
-                            placeholder="The selected document content appears here."
-                            className="min-h-40"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="document-append">
-                            Text to append
-                          </Label>
-                          <ProTextarea
-                            id="document-append"
-                            value={documentAppend}
-                            onChange={(event) =>
-                              setDocumentAppend(event.currentTarget.value)
-                            }
-                            placeholder="Enter the exact text to add to this Doc."
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          onClick={writeSelected}
-                          disabled={!documentAppend.trim() || busy !== null}
-                        >
-                          {busy === "write-file" && (
-                            <Loader2 className="animate-spin" />
-                          )}
-                          Append this text
-                        </Button>
-                      </div>
-                    )}
 
                     {selectedResource?.resource_type ===
                       "google_spreadsheet" && (
@@ -775,7 +919,7 @@ export function GoogleWorkspaceReviewWorkspace({
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={readSelected}
+                            onClick={readSelectedRange}
                             disabled={!sheetRange.trim() || busy !== null}
                           >
                             {busy === "read-file" && (
@@ -785,7 +929,7 @@ export function GoogleWorkspaceReviewWorkspace({
                           </Button>
                           <Button
                             type="button"
-                            onClick={writeSelected}
+                            onClick={writeSelectedRange}
                             disabled={
                               !sheetRange.trim() ||
                               !sheetValues.trim() ||
@@ -800,6 +944,12 @@ export function GoogleWorkspaceReviewWorkspace({
                         </div>
                       </div>
                     )}
+
+                    {selectedResource &&
+                      googleWorkspaceFileType(selectedResource.resource_type)
+                        .clientRead === null && (
+                        <ReadOnlyFileDetail resource={selectedResource} />
+                      )}
                   </>
                 )}
               </CardContent>
@@ -935,6 +1085,88 @@ export function GoogleWorkspaceReviewWorkspace({
           </Card>
         </Collapsible>
       )}
+    </div>
+  );
+}
+
+/**
+ * A connected file this client has no reader for — today, a Google Slides deck.
+ *
+ * It is NOT a blank panel and NOT a disabled-looking one: it shows every fact
+ * the registered row actually holds (name, what it is, when Google last saw it
+ * edited, how it entered AI Matrx, when it was connected) and opens the door.
+ * Nothing here is invented — there is no owner field on the row, so no owner is
+ * claimed — and it says in one sentence why the slides themselves are not on
+ * this screen, which is the difference between an honest surface and a dead end.
+ */
+function ReadOnlyFileDetail({
+  resource,
+}: {
+  resource: GoogleConnectionResource & {
+    resource_type: GoogleWorkspaceResourceType;
+  };
+}) {
+  const fileType = googleWorkspaceFileType(resource.resource_type);
+  const FileIcon = fileType.icon;
+  const modified = resource.metadata.modified_time;
+  const source = resource.metadata.selection_source;
+  const facts: { label: string; value: string }[] = [
+    { label: "What it is", value: fileType.label },
+    ...(typeof modified === "string" && modified
+      ? [
+          {
+            label: "Last edited in Google",
+            value: new Date(modified).toLocaleString(),
+          },
+        ]
+      : []),
+    {
+      label: "How it got here",
+      value:
+        source === "matrx_created"
+          ? "AI Matrx created it for you"
+          : "You chose it in Google Picker",
+    },
+    {
+      label: "Connected",
+      value: new Date(resource.discovered_at).toLocaleString(),
+    },
+  ];
+  return (
+    <div className="space-y-4 rounded-lg border p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <FileIcon
+            className={`mt-0.5 h-5 w-5 shrink-0 ${fileType.iconClassName}`}
+          />
+          <div className="min-w-0">
+            <p className="truncate font-medium">{resource.display_name}</p>
+            <p className="text-xs text-muted-foreground">
+              {fileType.readOnlyNote}
+            </p>
+          </div>
+        </div>
+        <Button asChild type="button" variant="outline" size="sm">
+          <a
+            href={resourceDoor(resource)}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open in Google
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+        </Button>
+      </div>
+      <dl className="grid gap-x-6 gap-y-2 text-xs sm:grid-cols-2">
+        {facts.map((fact) => (
+          <div key={fact.label} className="flex min-w-0 justify-between gap-3">
+            <dt className="text-muted-foreground">{fact.label}</dt>
+            <dd className="truncate text-right text-foreground">
+              {fact.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
     </div>
   );
 }

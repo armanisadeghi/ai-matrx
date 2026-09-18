@@ -191,6 +191,18 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
     });
   }
 
+  // The topical map's id door. Unlike the legacy shims below it is not only a
+  // redirect: a viewer who can read the map but not its brand is SHOWN the map
+  // here, so "Opening…" would be wrong for them.
+  if (first === "topical-maps") {
+    return createMarketingMetadata(normalizedPath, {
+      titlePrefix: "Topical Map",
+      description:
+        "One topical map by its own address — opened in its brand's workspace, or read-only when that is all you can reach.",
+      letter: "Md",
+    });
+  }
+
   // Legacy shapes still resolve to a redirect page; give them honest identity.
   if (MARKETING_RESERVED_SEGMENTS.has(first)) {
     return createMarketingMetadata(normalizedPath, OPENING);
@@ -261,6 +273,64 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
       description:
         "Manage canonical location profiles, directory listings, and NAP consistency.",
       letter: "Ll",
+    });
+  }
+
+  // The Content section's home IS the topical map (placement 2026-09-16), at
+  // `/content` and at `/content/map` — the second address exists because the
+  // first answered with a cached HTTP 308 until today.
+  if (section === "content" && (!segments[3] || segments[3] === "map")) {
+    if (segments[4]) {
+      const screen = segments[5];
+      const byScreen: Record<string, MarketingRouteIdentity> = {
+        table: {
+          titlePrefix: "Map Table",
+          description:
+            "Every topic as a sortable, filterable row — counts, status, facets and page intents.",
+          letter: "Mt",
+        },
+        graph: {
+          titlePrefix: "Map Graph",
+          description:
+            "The topical map drawn as a graph, sized and coloured by what each topic carries.",
+          letter: "Mg",
+        },
+        text: {
+          titlePrefix: "Map Text",
+          description:
+            "The map exactly as an agent receives it, copyable and read-only.",
+          letter: "Mx",
+        },
+        pages: {
+          titlePrefix: "Map Pages",
+          description:
+            "Where every existing page sits today and where each one is going — keep, move, merge, redirect, rewrite or delete.",
+          letter: "Mp",
+        },
+        history: {
+          titlePrefix: "Map History",
+          description:
+            "Every proposal this map has seen — accepted, rejected, restored — and every retired topic.",
+          letter: "Mh",
+        },
+      };
+      return createMarketingMetadata(
+        normalizedPath,
+        (screen ? byScreen[screen] : undefined) ?? {
+          titlePrefix: "Topical Map",
+          description:
+            "The tree of subjects this brand should cover, and the plan for getting its site there.",
+          // "Mo" belongs to Monitoring (brand-sections.ts); every Marketing
+          // leaf carries a badge nothing else in the fleet wears.
+          letter: "Mv",
+        },
+      );
+    }
+    return createMarketingMetadata(normalizedPath, {
+      titlePrefix: "Content",
+      description:
+        "This brand's topical maps — which pages it should have and where they live.",
+      letter: "Tm",
     });
   }
 

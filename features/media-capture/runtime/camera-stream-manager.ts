@@ -63,6 +63,8 @@ import {
 import {
   adoptWarmMicStream,
   buildWarmMicConstraints,
+  prepareAudioSessionForCapture,
+  releaseAudioSessionForCapture,
 } from "@ai-matrx/browser-audio/core";
 import type { CaptureQualityProfile } from "@/features/media-capture/core/capture-types";
 import {
@@ -394,6 +396,14 @@ async function performGetUserMedia(
     // chokepoint selector still matches both — never teach an evading shape.
     let stream: MediaStream;
     if (includeMic) {
+      // WebKit refuses audio capture while the page's audio session category
+      // is "playback" (the TTS unlock declares it). The mic singleton owns the
+      // category and switches it before ITS getUserMedia; this combined prompt
+      // is the one audio capture the singleton does not perform, so it asks
+      // first. The adopted tracks' stop restores the host's category; every
+      // path where no track is ever adopted (denied, threw, no audio tracks)
+      // hands it back through releaseAudioSessionForCapture() below.
+      prepareAudioSessionForCapture();
       stream = await navigator.mediaDevices.getUserMedia({
         // eslint-disable-next-line no-restricted-syntax -- this IS the camera-stream-manager chokepoint the ban protects (combined camera+mic prompt)
         video: constraints,
@@ -415,10 +425,19 @@ async function performGetUserMedia(
       if (audioTracks.length > 0) {
         for (const t of audioTracks) stream.removeTrack(t);
         adoptWarmMicStream(new MediaStream(audioTracks));
+      } else {
+        // Granted without a microphone track: nothing to adopt, nothing that
+        // will ever stop — give the page its playback category back now.
+        releaseAudioSessionForCapture();
       }
     }
     return stream;
   } catch (err) {
+    if (includeMic) {
+      // The combined prompt failed before any audio track existed; the
+      // capture category prepared for it must not outlive the failure.
+      releaseAudioSessionForCapture();
+    }
     if (includeMic && isDenialError(err)) {
       // Ambiguous denial of the combined call. Retry ONCE video-only: if the
       // camera half succeeds, the denial was the mic's — record that so no

@@ -45,6 +45,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const require_ = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -186,8 +187,8 @@ async function main(): Promise<number> {
 }
 
 main()
-  .then((code) => process.exit(code))
+  .then((code) => exitAfterDrain(code))
   .catch((err) => {
     console.error(`${C.r}[FAIL]${C.x} check:stale-rowtype-triggers errored, so it measured NOTHING:\n  ${String(err?.message ?? err)}`);
-    process.exit(1);
+    exitAfterDrain(1);
   });

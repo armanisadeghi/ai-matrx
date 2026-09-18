@@ -138,8 +138,8 @@ export function DuplicateClustersPanel({ crawlId }: { crawlId: string }) {
               siteId={site.id}
             />
             <ClusterSection
-              title={`Near duplicates (≥ ${similarity}% similar)`}
-              description="Clusters of pages whose content fingerprints agree above the threshold. Exact-duplicate groups count as one member."
+              title={`Near duplicates (linked at ≥ ${similarity}%)`}
+              description="Each page is at least this similar to one other page in its cluster, so a chain of close pairs can join pages that differ more — each cluster shows its weakest pair. Exact-duplicate groups count as one member."
               clusters={report.near}
               brandId={brandId}
               siteId={site.id}
@@ -220,7 +220,7 @@ function ClusterCard({
         >
           {cluster.kind === "exact"
             ? "100% identical"
-            : `≥ ${cluster.similarity.toFixed(1)}% similar`}
+            : `weakest pair ${cluster.similarity.toFixed(1)}%`}
         </span>
       </div>
       <ul className="divide-y divide-border">

@@ -18,13 +18,35 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Rules an agent editing this directory must obey
 
+0. **A run that added nothing NEVER wears the success box, and `run.stages` is never dropped**
+   (cold walk 8, 2026-09-17). Every lane's outcome goes through `components/RunStages.tsx`:
+   `<IngestOutcome>` heads a zero with "Nothing was added to your Rulebook" in its own tone and
+   prints the sentence from `describeIngest` — the ONE honest summary, never a second one — and
+   `<RunStages>` keeps the server's whole account on screen (the `nothing_found` step, the filter
+   census, the already-distilled note) instead of the latest line only. Seven dialogs rendered no
+   stages at all and the Daily Drip hand-rolled "0 new rules added. 0 quotes checked…"; both are
+   closed. Guards: `__tests__/a-run-that-found-nothing-never-reads-as-success.test.tsx`,
+   `__tests__/zero-is-never-a-clean-success.test.ts`.
+0b. **An error path calls `sitting.keepNow()` BEFORE it reports the error.** `useDialogSitting`
+   debounces its write by 400ms, so work entered and submitted inside that window was never
+   written — a refusal that also costs the person their paste is two failures, not one. A lane
+   whose step is part of the work (the Meeting Scavenger's three tabs) also keeps that step in its
+   sitting, or the work comes back onto a step that is no longer on screen and reads as discarded.
+   Guard: `__tests__/a-refused-paste-is-still-on-screen.test.tsx`.
+
 1. **Human-first.** Anything machine-generated lands as `draft: true` rules or a `status='draft'`
    Rulebook. Never auto-activate.
-2. **`saveRules` is the ONE write path**, and it is a CAS on `version`. Never write
-   `platform.rulebook.rules` beside it; never build a second improve/apply funnel. Metadata-only
-   writes (`metadata.checkup`, `metadata.coherence`, `metadata.expert_corpus`,
-   `metadata.elicitation`) CAS-guard on `version` but must **never bump it** — `version` is the
-   RULES version a Masterwork drifts against.
+2. **`saveRules` is the ONE write path**, and it is a CAS on `version` that ALWAYS carries the
+   base it edited from (`base: Rulebook` — the row the surface read). Never write
+   `platform.rulebook.rules` beside it; never build a second improve/apply funnel.
+   🚨 **`version` moves on EVERY update of this row, not only on rules.** The line that used to
+   stand here — "metadata-only writes must never bump it" — is not what the database does and
+   never was: `platform._touch_row` bumps `version` on every UPDATE of any column,
+   unconditionally (verified against the live function, 2026-09-15). So `metadata.coherence`,
+   written back by the server's Coherence Partner that OUR OWN save woke, silently ages out the
+   version the page is holding. That is a phantom conflict, not a conflict, and `saveRules`
+   classifies it with `rulebookRebase.ts` — which is why the base is mandatory. Read that file
+   before touching this path (wall W12).
 3. **Saving an edit is NEVER approving.** `applyManualRuleEdit` in `types.ts` is the one merge;
    `ruleState()` is the one precedence. Approve is only ever the explicit Approve action.
 4. **The four verbs are ONE primitive.** Render them through `review/RuleDecisionActions.tsx`
@@ -41,7 +63,10 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 7. **Every `/masterwork/[id]/*` lane route renders inside `components/RulebookLaneRoute.tsx`** —
    it owns `SurfaceRuntimeProvider`, `buildRulebookSurfaceScope`, the
    `masterwork_refresh_rulebook` client tool, and `<AccessGate token="rulebook" id/>`. Never
-   hand-roll any of the four, and never swallow a denial in a `.catch`.
+   hand-roll any of the four, and never swallow a denial in a `.catch`. It also mounts its
+   instance **keyed by the rulebook id** (as `RulebookDetailPage` does): a different Rulebook is
+   a different page, so no lane may carry state derived from the previous record. Never add a
+   per-lane id reset instead.
 8. **`getExpertCorpus` assembles NOTHING** — it calls `GET /masterworks/{rulebook_id}/corpus`.
    A second corpus assembly in any repo is a defect. Any surface showing the corpus **must
    render `limits`**; a partial record presented as complete is the failure that contract exists
@@ -141,6 +166,71 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Files
 
+- `kept-sources/` — **WHAT THE RULEBOOK KEPT: the Expert's own words, still readable.**
+  Until 2026-09-17 every capture lane parsed its source in memory, wrote draft rules and threw
+  the source away, so a rule could quote a sentence with nowhere on the platform to read the
+  paragraph it came from. The server now keeps one `platform.masterwork_source` row per captured
+  source (aidream `raw_material.py`), and this is its screen: the list
+  (`/masterwork/[id]/sources/kept`, `EntityListPage` + `listConfig.tsx`) and the reader
+  (`/masterwork/[id]/sources/kept/[sourceKey]`, `KeptSourcePanel` -> `KeptSourceReader`).
+  🚨 **It is NOT `components/detail/RulebookSourcesPanel.tsx`** — that panel is the dump lane's
+  capture desk (what is ABOUT to be read); this is the record of what WAS read. Keeping them
+  separate is why "12 sources" means one thing per screen.
+  **THE JOIN** is `source_ref.source` == `masterwork_source.source_key`, counted in exactly one
+  place (`sourceSections.ts::countRulesForSource`, which the capture panel now also calls, so the
+  two screens cannot disagree). **THE JUMP** is `RulePassageLink` on an expanded rule ->
+  `…/kept/<source_key>?rule=<rule_id>`, which lights the rule's own quotes with
+  `components/text/HighlightedText` (THE one matcher) — no new anchoring, because the server
+  verifies every quote verbatim against the stored material at ingestion. The link renders only
+  when the material was really kept; every rule older than this system points at discarded words,
+  and the reader says so in those words rather than showing an empty panel.
+
+- `capture-plan/` — **THE CAPTURE PLAN** (`capture_plan`, `?plan=1`, page
+  `/masterwork/[id]/plan`). A PROGRAM over the other Approaches: the Expert says what they want
+  covered and how much time they can give, and the planner picks the next method from the LIVE
+  lanes, sizes each session, measures what it produced and re-plans. Cross-repo SoR:
+  `../../../common-docs/systems/masterwork/distillation-contract.md` § THE CAPTURE PLAN.
+  🚨 **No capture surface of its own** — `SessionHost.tsx` mounts the lane's OWN dialog in place
+  or navigates to its OWN page, so there is never a second version of a lane to keep in step.
+  🚨 **Yield is the DIFF of the Rulebook's rule ids across a session**, so no lane knows it is
+  inside a plan and a lane shipped tomorrow is measured identically. `planner.ts` is pure
+  arithmetic (no agent, no network) and carries the four guards — a method that is not live is
+  never scheduled, an empty session lowers its weight and two in a row drop it, the plan ends
+  itself on its stop rule, and a plan with no allowed method refuses BY NAME. `methods.ts` gives
+  every Approach in the catalog a posture (plannable with a session length and an ask, or excluded
+  with a reason a person reads); `__tests__/registry-posture.test.ts` reads the LIVE registry and
+  fails on a row nobody has decided about — three lanes went live during the build. The plan,
+  its sessions and the per-method yield ledger live on `rulebook.metadata.capture_plan`, written
+  by the same CAS-without-bumping-`version` the Prediction Ledger uses, RAW FACTS ONLY (how many
+  rules the Expert kept is derived on read). Knobs: feature `masterwork.capture_plan`, twelve of
+  them, no code fallback. Server half (the ONE thing the browser cannot do — telling someone it is
+  time): `aidream/aidream/services/capture_plan/`, which creates no schedule because
+  `notify(deliver_at=…)` parks the notice for the approved dispatcher.
+- `prediction/` — **THE PREDICTION LEDGER** Approach (`prediction_ledger`, `?predictions=1`).
+  The Expert calls live cases in her own work before the answer is known — the call, how sure she
+  is, ONE line of why, and a due date — and enters the outcome when it lands.
+  `scoring.ts` is the pure arithmetic and is the TWIN of
+  `aidream/aidream/services/distillation/prediction_ledger.py`: change one, change the other in the
+  same session, or the screen and the distiller score the same call differently. The ledger lives
+  on `platform.rulebook.metadata.prediction_ledger` and stores RAW FACTS ONLY — `correct`, the
+  Brier score and every calibration bucket are derived on read, so the data can never disagree with
+  itself. `service.ts` writes it with a compare-and-swap on `version` that deliberately does NOT
+  bump it (a call on an open case is not a change to the rules). `PredictionLedgerDialog.tsx` is
+  the one door — "Call it" and "What happened" side by side, voice on both free-text fields under
+  knob `masterwork_prediction_ledger.voice_default_on` — and "Turn the answered ones into rules"
+  posts to `POST /masterworks/ingest-predictions`, whose "not enough outcomes yet" refusal is shown
+  verbatim rather than as a generic failure. `CalibrationReadout.tsx` draws predicted-vs-realized
+  through `components/ui/chart.tsx` and, with ZERO resolved entries, draws no chart at all: it says
+  how many calls are waiting and when the first is due, because an empty plot reads as "you are
+  calibrated at nothing" and a Brier score of 0 reads as perfect. Knobs (feature
+  `masterwork_prediction_ledger`, seeded by the server half): `reminder_cadence_hours` — also the
+  width of "coming up" on the open list, `min_resolved_to_distill` (5), `voice_default_on` (true);
+  a missing knob row is announced in place with its remedy, never swallowed. Guards:
+  `prediction/__tests__/scoring.test.ts` (the `>=` boundary at 0.5, the Brier table, the deciles),
+  `prediction/__tests__/zeroResolved.test.tsx` (the honest empty state), and the new second half of
+  `browse/__tests__/approachLaneCoverage.test.ts` — every `ApproachLane` variant has a `case` in
+  `RulebookDetailPage`'s `launchApproach`, which is the half of the `timeline` dead end that
+  resolving a lane never covered.
 - `sourceSections.ts` — WHAT EACH PART OF A SOURCE PRODUCED, read off the live rules
   (`source_ref.section_index` / `section_label` / `section_words`, stamped by aidream's
   `services/distillation/source_structure.py`). Mirrors the server's source identities
@@ -148,6 +238,34 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   median, never below a number somebody picked. `RulebookSourcesPanel` renders the rows and the
   per-part "Read again", which posts `only_section` + `redistill: "replace"` to the dump lane so
   only that part's drafts are replaced. Guard: `__tests__/source-section-yields.test.ts`.
+- `review/vocabulary.ts` — THE EXPERT'S OWN WORDS for the review: "Mine / Mine but wrong / Not
+  mine" beside the neutral "Approve / Request changes / Reject". Wording ONLY — every verb, every
+  handler and every status it writes is unchanged, which is leg 1 of
+  `review/__tests__/ownership-review.test.tsx`. Knob `masterwork.review.vocabulary`
+  (`auto` | `standard` | `ownership`, default `auto`, org+user rungs, read through
+  `knob_resolve`): `auto` gives the ownership words to a Rulebook whose expertise comes from a
+  PERSON (their own intake answer about where the knowledge lives, else whether any rule came
+  from an interview, a recording, a chat import or an Oracle tap) and the neutral words to one
+  distilled from somebody else's book — because "is this rule yours?" is a question a reader
+  cannot answer.
+- `review/agenda.ts` + `review/NextSessionAgenda.tsx` — THE NEXT SESSION'S AGENDA (doctrine
+  CORE.md §5): every rule marked not-mine or mine-but-wrong, with the Expert's own words, not-mine
+  first. A reading of state that already exists, never a second store — the SAME two conditions
+  feed `agent-context/rulebookDocument.ts` (the bound document the interviewer gets before its
+  first turn) and aidream's `rulebook action=read` → `open_feedback`. Panel knob
+  `masterwork.review.agenda_panel` (boolean, default on) hides the panel only; the interviewer
+  keeps receiving the agenda, because that is a provision and not a panel.
+- `review/signature.ts` + `review/ExpertSignOff.tsx` — THE EXPERT'S SIGNATURE ON A RESULT, the
+  single most important signal we have (Arman, 2026-09-15). One tap on a finished Masterwork run
+  writes `verdict = positive` into `platform.output_feedback` through the existing
+  `upsert_output_feedback` RPC, stamped `surface_name = masterwork.expert_signature` — **no new
+  table, no new verdict word, no migration**, so the hindsight/replay loop reads a signed output
+  as a positive example with no wiring. A thumbs-down writes `negative`, captures the Expert's
+  own version as `corrected_content` on the same row, and hands it to the existing Oracle-tap
+  dialog as a rule candidate. The Conductor's answers are COUNTED, not re-instrumented: they are
+  ordinary chat messages whose column already carries the platform thumbs, so a second control
+  beside them would be the duplicate-affordance defect. The Rulebook page shows
+  "N outputs signed by the expert" beside the quick-check line.
 - `service.ts` — detail reads/writes (getRulebook, saveRules, createDraftRulebook,
   updateRulebookMeta, softDeleteRulebook, listMasterworksForRulebook). Direct supabase-js,
   RLS live, THE VIEW LAW respected.
@@ -196,6 +314,21 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   `LiveRunProgress`; result carries doors + `TryMasterworkBox`). Openers:
   `features/overlays/openers/masterworkBuildWindow.tsx`; run + progress
   translation: `build/useBuildRun.ts`; page callbacks: `build/callbacks.ts`.
+- `components/detail/RedPenDialog.tsx` — THE RED-PEN LANE (`red_pen`, live
+  2026-09-15). Somebody else's work goes in (paste, or a plain-text/Markdown
+  upload read in the browser — a PDF or a recording is the file card's job and
+  the door says so); the Expert highlights a passage and says what is wrong and
+  what they would do instead, TYPED OR SPOKEN through `ProTextarea`'s microphone
+  (the platform's one dictation primitive). Each correction is span + words +
+  moment, and all three land on every rule's `source_ref.span`. Posts to
+  `/masterworks/ingest-markup`; own run surface `red_pen` and own pointer — a
+  review is not a source ingest. The work piece is kept as a source the same way
+  every paste lane keeps one (`record/pastedSource.ts`, approach `red_pen`), so
+  the note the rules cite is listed in Resources. Two KNOB MIRRORS at the top of
+  the file (`min_corrections_before_distilling` 3, `markup_voice_default_on`
+  true); the server is the authority on the minimum and refuses a short run by
+  name before spending. Guard: the card-is-a-real-door case in
+  `browse/__tests__/approachLaneCoverage.test.ts`.
 - `components/detail/IngestSourceDialog.tsx` — "From a source" (paste →
   `POST /masterworks/ingest`; upload → `POST /masterworks/ingest-file`).
 - `components/detail/IngestTimelineDialog.tsx` — "From a case that unfolded", the TIMELINE
@@ -219,6 +352,63 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   2026-09-12: the picker advertised `.txt,.md,.rtf,.epub,.doc` and the server
   read none of them, so a person's own 599-byte `.txt` was invited by the file
   dialog and refused by the backend. Never hand-type an accept string here.
+- `probe/` — **THE BAD EXAMPLE PROBE** (`bad_example_probe`), boundary hunting on its own page
+  `/masterwork/[id]/probe`. The system writes a version of the Expert's own work that looks right
+  and is not; they say what is wrong with it; their answer becomes draft rules AND steers the next
+  variant. `service.ts` holds the wire shape, the ONE request builder, the terminal parser and the
+  sentences; `BadExampleProbe.tsx` is the screen, on `RulebookLaneRoute`, with `ProTextarea` for
+  the catch. Server half: `aidream/services/distillation/probe.py`.
+  🚨 **THE SESSION LIVES ON THE CLIENT.** One HTTP call per round, carrying the rounds so far,
+  because the screen is the only thing that knows what the Expert has actually seen — which is what
+  makes a probe resumable through the ordinary durable-run pointer rather than a bespoke session
+  row nothing else in Masterwork has.
+  🚨 **THE CASE BRIEF RIDES ON THE RUN'S RECEIPT** (`launch(..., { memo: { case_brief } })` →
+  `run.memo`). The rounds are restored by the pointer and the brief is mount-local state, so
+  without the memo a restored round is a round about nothing: never rebuild the request from
+  `caseBrief` alone, and never lock the case box while the brief is missing.
+  🚨 **`probe_label` IS NEVER RENDERED.** The generator names the boundary it probed so the next
+  round cannot re-probe covered ground; it rides the wire as session state and is not a caption. A
+  probe whose answer is on the screen is not a probe. The example is labelled as OURS above the
+  work itself, and "Round 3 of 5" is the server's own `round_index`/`round_count` — the cap is the
+  org knob (`masterwork.bad_example_probe.rounds`) and the screen has no opinion about it.
+  🚨 **The funnel's deep link is a lane of its own.** `launchApproach` only runs when the Expert
+  picks an Approach ON the Rulebook page; a Rulebook the guided start created arrives at
+  `?probe=1` with nobody having picked anything, so `RulebookDetailPage` carries a `probeDeepLink`
+  effect that routes to the page. Without it the card was a real door all the way through and the
+  Expert still landed on a bare Rulebook — the `timeline` census-row-3 defect, one step further in
+  (found by driving the funnel end to end, 2026-09-15).
+- `teach-back/` — **THE TEACH-BACK** (`teach_back`), the system explains and the Expert corrects, on
+  its own page `/masterwork/[id]/teach-back`. We read everything the Rulebook holds and say their
+  method back to them in about a minute of plain spoken words — a bright new hire at the end of
+  their first week, confident and therefore correctable — and they interrupt: "no, not like that",
+  "you missed the part where…", "that's right but only when…". Each interruption becomes draft
+  rules whose `detection` names what the explanation actually got wrong (the Feynman move) AND
+  steers the next explanation. `service.ts` holds the wire shape, the ONE request builder, the
+  terminal parser and the sentences; `TeachBack.tsx` is the screen, on `RulebookLaneRoute`. Server
+  half: `aidream/services/distillation/teach_back.py`.
+  🚨 **THE SESSION LIVES ON THE CLIENT**, as on the probe and for the same reason — and here the
+  screen is also the only thing that knows what was said OUT LOUD.
+  🚨 **WHOSE JUDGMENT IS ON SCREEN IS SAID IN WORDS, EVERY ROUND.** This is the one lane that needs
+  no material: with an empty Rulebook the explanation is what a competent generalist would do, and
+  the banner says so ("You haven't given us anything yet… not you"). `basis` is decided on the
+  server from the digest, never from the model's claim, and `describeBasis` refuses to pick the
+  flattering half when it is unreadable. Presenting a generalist's guess as "what we learned from
+  you" would be the platform lying about the one thing it sells (CORE.md §2).
+  🚨 **IT IS SPOKEN THROUGH THE ONE `speak()` ENTRY POINT** (`useSpeech`), with `primeAudioOutput()`
+  inside the click that STARTS a round — WebKit plays silence for audio begun outside a gesture,
+  and every phone browser is WebKit. The text is always on screen too, so the voice is a speed-up
+  and never the only channel, and the play control is absent or honest, never dead.
+  🚨 **"Yes, that's it" IS A SIGNATURE, NOT A STOP BUTTON** (CORE.md §7's release gate). It writes
+  the verdict through the EXISTING expert-signature path — `saveOutputFeedback` →
+  `platform.upsert_output_feedback`, `surface_name = masterwork.expert_signature`, subject the
+  durable `platform.masterwork_run` of the round being signed (`MASTERWORK_DISTILLATION_RUN_SUBJECT_TYPE`,
+  NOT the `workflow_run` token a built desk's output uses) — and only then closes the session,
+  carrying the same run id so the server stamps `signed_teach_back` on the rules that explanation
+  cited. **If the verdict write fails the session does not finish** and the screen says so; a
+  "signed" over a failed write is the lie this lane's whole value depends on not telling. Guard:
+  `teach-back/__tests__/teach-back-signs-and-tells-the-truth.test.tsx`.
+  The funnel's `?teachBack=1` deep link has its own effect in `RulebookDetailPage`, for the reason
+  the probe's does.
 - `components/detail/ScoutInterviewPanel.tsx` — the Scout interview Approach (side sheet).
 - `components/masterworks/MasterworksPage.tsx` — Masterworks list, run links into
   workflows.aimatrx.com, recent-run history, and the owner-only Audition + feedback doors. Its
@@ -242,6 +432,22 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   surface `audition_unfolding` so a tab never rejoins the other tab's run), and the per-case table
   shows each arm's diagnosis / dangerous branch / steps / cost / risk beside the headline.
   Parsing + the past-score read: `audition/unfoldingRuns.ts`.
+- `triad/` — THE TRIAD GAME's client half (`triad_game`, its own route
+  `/masterwork/[id]/triad` on `RulebookLaneRoute`, rule 7). We deal three real options from the
+  Expert's own craft; she taps one and says why in a line — out loud is fine — and that line is
+  the rule candidate while the three items are the evidence. `service.ts` holds the two calls
+  (`POST /masterworks/triads` deals and writes NOTHING; `POST /masterworks/ingest-triad` distils
+  ONE answered card, submitted the moment she swipes, so rules appear while she is still playing);
+  neither is a durable run and the file says why. `types.ts::parseDeck` is the ONE narrowing, and
+  it DROPS a card that is not exactly three known items rather than drawing a two-item "triad".
+  `TriadGamePage.tsx` is phone-first (dvh, `pb-safe`, sticky footer, 44pt targets, `text-base`,
+  one scroll area); the horizontal swipe means SKIP and only skip, because choosing between three
+  stacked options by swipe would be guessing which one the thumb meant. Every answered card
+  carries its OWN save status, and every prompt played goes back with the next deal so the game
+  never asks the same thing twice in one sitting. 🚨 Its `?triad=1` deep link is handled in
+  `RulebookDetailPage` by FORWARDING to the route — a query param this page swallowed silently is
+  how the live `timeline` card used to land Experts on a bare Rulebook (census row 3).
+  Guard: `triad/__tests__/triad-door.test.ts`.
 - `unfolding/` — the sealed-case lane's client half (contract:
   `../../../common-docs/systems/masterwork/unfolding-case-contract.md` §3/§5).
   `sealedCases.ts` detects the `masterwork.case.disclose` node in a definition (reading BOTH
@@ -257,8 +463,549 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   surface that shows a ledger or a ruling renders through them.
 - `components/masterworks/MasterworkDriftDialog.tsx` — the rule-level drift answer over
   `public.rulebook_snapshot` + `rulebookDiff.ts`.
+- `encore/RunTheBench.tsx` — **the Trial Bench's door in the product**, beside the quick check on
+  the Encore run page. The form the server sent (`form` on `GET /masterworks/{rulebook_id}/bench`)
+  drives it: task brief, optional case input, the expert's real answer, the budget multiple with
+  the server's own sentence for where that number came from (plus `corpus_note` always, and a
+  source count only when `corpus_sources` is not null), and a read-only line naming the judge
+  model, the frontier and cheap arms and the Masterwork arm C will run. Streams
+  `POST /masterworks/{rulebook_id}/bench/runs` on its own durable-run surface `bench`
+  (terminal event `masterwork_bench_verdict`). `encore/benchFacts.ts` builds the panel/cost/void
+  sentence used BOTH here and by `AuditionProof`'s banked-record line, so one fact is never said
+  two ways.
 
 ## Change Log
+
+- 2026-09-17 — **Removed a double `decodeURIComponent` on `sourceKey`** in `masterwork/[id]/sources/kept/[sourceKey]/page.tsx` — the App Router already decodes the value React's `use(params)` returns, so a source key carrying a literal `%` threw `URIError` on the second decode. Part of the repo-wide `pnpm check:route-param-decode` census/guard; see `lib/detail/FEATURE.md` Change Log.
+- 2026-09-18 (a pile launches whole, or not at all) — **THE FIFTEEN FILES THAT
+  WERE NEVER SUBMITTED.** `common-docs/projects/acquisition-frontier/own-files/
+  VERIFICATION.md` §9.1/§9.6: an Expert dropped seventeen files on a Rulebook
+  and pressed "Turn this into rules"; two became rules. The edges were written
+  ~0.3 s apart by the shared capture toolbar's serial `for … await attach(...)`
+  loop, the run started 0.9 s into that loop, and
+  `jsonb_array_length(settings->'resources')` on run `937c0db3` is **2**.
+  `launchDump` built its payload from `sourceLinks` at click time with no gate
+  and nothing said. Three repairs, all of them the class rather than the
+  instance:
+  1. `lib/launch-gate/useLaunchGate.ts` (new platform primitive) — every write
+     that shapes a launcher's payload runs through the gate; a launch is
+     refused, by name, while any is in flight OR while one that has landed is
+     not yet in the rendered list, and the button WEARS `Attaching 14 sources…`
+     rather than sitting live. `RulebookSourcesPanel` routes attach, detach and
+     the staged-URL CAS write through it, `launchDump` re-checks at the click,
+     and the payload is now built by one exported `dumpResources` beside the
+     one exported `visibleLaunchKeys` — "the run launches with the set on
+     screen" is only checkable while both come out of one definition. The
+     census found this launcher is the only one of 27 `useMasterworkRun`
+     call sites whose resources come from asynchronous attaches; every other
+     awaits its uploads inside the same handler before launching.
+  2. `lib/progress/honestSummary.ts` gains a REQUIRED `RunShape`. The primitive
+     printed *"Stopped — 'Untitled File' failed. Nothing after it will run."*
+     over a seventeen-source run that ran all seventeen and completed: right
+     for a Build's ordered milestones, false for every fan-out. `RunStages`
+     declares `fan_out`; the flashcard illustration pass and the AI-visibility
+     report (both piles) were quietly making the same claim and now declare it
+     too; `useBuildRun`, `useDurableRun`'s narration ladder and
+     `reattachStudioRun` declare `sequence`. There is no default — the required
+     field is what found the last two producers.
+  3. Every outcome the server sends gets a row. `parseDumpSummary` had a closed
+     three-status union and DROPPED anything else, so `already_distilled` rows
+     had been vanishing for weeks and the new honest-empty outcome would have
+     vanished the day it shipped. It now keeps every row, carries `note` and
+     `already_distilled`, and `DumpOutcomes` says which of the three a source
+     got — `3 rules` / `read — no rules in it` / `refused` — with the server's
+     own sentence rendered WHOLE beneath it. The copy-protection refusal
+     (aidream `1c9edb934c`) names the scheme and the four lawful routes; it was
+     an inline tail on a truncating row in the progress panel, which is a dead
+     end wearing an ellipsis, and neither line truncates now.
+  Guard: `__tests__/a-pile-launches-whole-or-not-at-all.test.tsx` — 8 legs over
+  the real gate, the real `reduceIngestProgress` transcript and the real
+  `DumpOutcomes`; each proven red by reverting its own half (removing the gate
+  reproduces the production symptom exactly: 3 resources of 17).
+
+- `2026-09-17` — `NewRulebookFlow` reads the EXPLICIT active organization instead of the legacy `selectEffectiveOrganizationId` (`organization_id ?? personal_organization_id`). Behaviour on Start is unchanged in the normal case; with no organization the bounded W39 wait settles and the page says so inline, with the remedy, and no Rulebook is created. The three intake tests mock `selectOrganizationId` accordingly.
+- 2026-09-17 (the registry learns about doors) — **A LANE REGISTRY CANNOT SEE A
+  DOOR OUT OF ITSELF.** Cold walk 8 typed several paragraphs of real expert
+  material into the Rulebook's "New document" resource and found a blank page
+  after a reload; the document row it created has ZERO rows in
+  `udt_document_snapshots`, so not one save was ever attempted. The lane
+  registry (`sitting/lanePersistence.ts`) could never have caught it — that
+  door leaves masterwork entirely for the platform document editor at
+  `/documents/<id>`. So there is now a second registry keyed by FILE rather
+  than by lane: `sitting/textEntrySurfaces.ts`, whose guard
+  (`sitting/__tests__/every-text-entry-surface-keeps-its-work.test.ts`) walks
+  `features/masterwork/**` itself and fails on any `.tsx` that renders a text
+  field and has no answer — including a `door` answer, which must name the
+  module it opens and is checked against THAT module's source. The census it
+  forced found four more surfaces an Expert pastes real work into that kept
+  nothing at all: the Audition dialog, Compare Two, Run the Bench (three long
+  fields retyped immediately before a run that spends real money across six
+  arms) and the Build window. The document editor itself
+  (`features/data-tables/components/DocumentEditor.tsx`) now flushes its 2.5s
+  autosave debounce on `pagehide`/`visibilitychange` and on unmount, warns
+  before an unload that would outrun the flush, and — where it used to return
+  silently twice when the Univer facade was gone, swallowing every save while
+  the page still said "Editing" and took keystrokes — says so out loud with the
+  only remedy that saves the words.
+- 2026-09-17 (kept material) — **THE RAW MATERIAL IS READABLE.** New `kept-sources/` feature,
+  two routes under `/masterwork/[id]/sources/kept`, a door to them from the capture panel's
+  header, and `RulePassageLink` on every expanded rule whose source was kept. Three honest
+  states are stated on the reader's face rather than implied: a capped copy says so and names
+  where the rest is, an upload whose text was never extracted says so and opens the file, and a
+  rule whose source predates the Source system says the words are not recoverable — never an
+  empty panel and never a dead link. `RulebookSourcesPanel` changed in exactly one way: its
+  per-source rule count now calls the shared `countRulesForSource` instead of its own inline
+  filter. Read direct from `platform.masterwork_source` under RLS (viewer access on the parent
+  Rulebook via `iam.accessible_entity_ids`); adopted `@ai-matrx/associations` 0.9.23, which
+  carries the new `masterwork_source` entity token.
+- 2026-09-17 (sitting adoption) — the census's four remaining surfaces (the Audition
+  dialog, Compare Two, Run the Bench, and the Build window) now call the shared
+  `createSittingStore`/`useDialogSitting` primitive (`features/masterwork/sitting/`) and
+  render `SittingResumed`, closing the class the census in the entry above named.
+
+- 2026-09-17 (doors to Libraries) — **A WHOLE YOUTUBE CHANNEL IS NOW REACHABLE
+  FROM MASTERWORK.** The Media Source Catalog (`/libraries`) catalogues a whole
+  channel/playlist into a Library of Sources, and Masterwork had no door to it:
+  the Sources panel offered one link at a time, and step 2 of `/masterwork/new`
+  offered only registry Approaches. Two doors added, both plain navigation, no
+  new capture flow: `components/detail/RulebookSourcesPanel.tsx` gains a third
+  sibling in the capture toolbar's `extraActions` — "Bring a whole channel"
+  (`Library` icon), linking to `/libraries?from=rulebook&rulebook_id=<id>`,
+  deliberately WITHOUT `aria-expanded`/`aria-pressed` since nothing opens below
+  the row; and `intake/NewRulebookFlow.tsx` step 2 gains a dashed panel beside
+  the Approach cards ("Already have a YouTube channel in mind?") linking to
+  `/libraries?from=rulebook` — no id, because nothing is created until Start,
+  and the wizard draft restores the typed answers on return. It is NOT an
+  Approach card: the cards stay the registry's rows. The receiving end
+  (`features/source-library/components/LibrariesFrontDoor.tsx`) reads
+  `?from=rulebook` and says in one sentence that the channel is catalogued
+  first and its videos can then be sent to the Rulebook, with a "Back to the
+  Rulebook" door when a valid id came along.
+
+- 2026-09-17 (phone width, the class) — **EVERY MASTERWORK SURFACE AND LANE
+  CARRIES THE 44px TOUCH FLOOR.** Measured at 390×844 as `admin@admin.com`:
+  `/masterwork/<rulebook>` rendered 84 controls, 59 of them under the floor, and
+  only seven of those were design-system `Button`s (already lifted in
+  `@ai-matrx/design-system` 0.21.0). The rest were raw `<button>`/`<a>`
+  inheriting no primitive at all. The fix is the platform's ONE coarse-pointer
+  hit-area utility, `.matrx-touch-targets`, declared once at the route root
+  (`app/(core)/masterwork/layout.tsx`, `display: contents` so the `(core)`
+  scroll chain is untouched) and once on each of the 24 lane `DialogContent`s,
+  which portal out of that subtree. The ten rule checkboxes — which the floor
+  deliberately refuses to GROW, since a 44px tick box is an empty square —
+  got the new `.matrx-tap-area` ring on their labels instead: 16px tick,
+  44×44 finger, proven live by hit-testing 18px off-centre in all four
+  directions. After: 2 controls under the floor on that page, both
+  `Button asChild` links waiting only on the 0.21.0 publish. At 1440 with a
+  fine pointer nothing in this tree changed — neither rule's media query
+  matches. Guard: `__tests__/every-lane-carries-the-touch-floor.test.ts`
+  (2 of 3 RED before).
+
+- 2026-09-17 (sixth cold walk, the class) — **IN-PROGRESS WORK SURVIVES A
+  RELOAD IN EVERY CAPTURE LANE, AND THE REGISTRY NOW FORCES THE QUESTION.**
+  Walk 4 found the Triad erasing an answered round; walk 5 found it on the
+  Sorting Table; walk 6 found it on the Red-Pen lane and the Daily Drip. Each
+  was fixed where it was found, so the census walk 6 triggered asked every lane
+  the same question by driving it — type a real sentence, reload — and the
+  answer was the same everywhere: Red-Pen, the Prediction Ledger, all five
+  ingest lanes, "Everything you've published", the chat import, the Meeting
+  Scavenger, the unfolding case, Shadow-the-inbox and the Capture Plan's setup
+  form ALL swallowed the sentence and said nothing.
+  Two root causes, both closed as classes.
+  *Nothing kept the lane's working state.* The round-shaped `createSittingStore`
+  existed but had no shape a dialog could adopt, and `lib/drafts/useTextDraft`
+  covers ONE field with a 40-character floor — so a source's title and every
+  saved correction were never kept at all.
+  [`sitting/useDialogSitting.ts`](./sitting/useDialogSitting.ts) +
+  [`sitting/SittingResumed.tsx`](./sitting/SittingResumed.tsx) are that shape:
+  one call keeps the whole lane, puts it back, and SAYS SO with a "Start again"
+  beside it. Every lane above is on it.
+  *Seventeen deep links held a `useRef(false)` latch,* and `/masterwork/[id]` is
+  ONE component instance across client-side navigation — so a second visit to
+  `?drip=1` or `?red_pen=1` opened nothing and said nothing (walk 6 finding 5).
+  [`lib/deep-link/useDeepLinkArrival.ts`](../../lib/deep-link/useDeepLinkArrival.ts)
+  treats a deep link as an arrival that re-arms when the URL stops asking.
+  🚨 **A NEW LANE MUST ANSWER "what happens when she reloads?"**
+  [`sitting/lanePersistence.ts`](./sitting/lanePersistence.ts) holds the answer
+  per lane, and
+  [`sitting/__tests__/every-lane-keeps-its-work.test.ts`](./sitting/__tests__/every-lane-keeps-its-work.test.ts)
+  reads the live `platform.approach` registry, fails on any promised lane with
+  no answer, and reads each declared module from disk so a declaration cannot be
+  a sticker over a lane that keeps nothing. Both guards proven failing-then-
+  passing. NOT closed, and recorded in `FOUND_DEFECTS.md` with its reason: a
+  typed-but-unsent message in the interview and Conductor rooms, which lives in
+  the shared chat composer and is a platform-wide gap, not a Masterwork one.
+
+- 2026-09-17 (sixth cold walk, findings 3 / 6 / 7) — **A RESTORE THAT
+  CONTRADICTED ITSELF, TWO MOTIONLESS WAITS, AND A LANE WITH NO SECOND GO.**
+  *The probe's restore:* `restoring` on the shared durable-run handle was
+  cleared in the rejoin request's `.finally`, which is not the moment the mount
+  can describe what it holds — a rejoin routed to any worker but the executing
+  one answers at once with the durable ROW (`processing`) and hands the screen
+  nothing, and a rejoin that does not land answers even faster. Either way the
+  Bad Example Probe went back to offering "Write the first one" over a live,
+  paid round. Measured on a brand-new Rulebook (2026-09-17): 87 seconds of a
+  start button over round 2 being written, with the receipt itself deleted, so
+  no later reload could find the run again. Fixed in the PRIMITIVE
+  (`lib/durable-run/useDurableRun.ts`): `restoring` now ends only on a terminal
+  status, a fresh launch, or a pointer that turned out to be nothing; and an
+  unreachable rejoin for an unfinished run keeps its receipt and enters the
+  honest reconnect loop instead of resetting the surface. The probe's rounds
+  already answered now ride on the run's own receipt (`memo.prior_rounds`), so
+  the restored screen shows round 1's example and the Expert's own words rather
+  than a blank page. Guards: three new cases in
+  `__tests__/a-restoring-probe-never-offers-to-start.test.tsx`, red against the
+  pre-fix hook. *The motionless waits:* "Writing round N…" and "Writing your
+  cards…" were the same pixels at second 1 and second 61 (measured: 61 and 18
+  unbroken identical seconds). Both lanes now render `<WorkingNotice>`
+  (`lib/progress/`), which keeps the server's own sentence and adds a clock
+  that moves every second plus what this kind of work usually takes — never a
+  fabricated percentage. Guard:
+  `lib/progress/__tests__/a-waiting-screen-is-never-motionless.test.tsx`.
+  *The dead end:* Shadow-the-inbox's result screen offered only ways out, on a
+  lane whose own doors expect many threads over time. `DurableRunAgain` is the
+  shared affordance and every repeatable source lane now carries it. Guard:
+  `__tests__/a-finished-lane-offers-another-go.test.tsx`.
+- 2026-09-17 (eighth cold walk) — **SHADOW-THE-INBOX ASKS WHICH VOICE IS YOU
+  INSTEAD OF REFUSING.** A walker pasted a thread the way Outlook hands it over
+  — a `From:/Sent:/To:/Subject:` block, then the reply labelled `My reply:` /
+  `From: me` — and the lane answered "you never replied in it", about a paste
+  whose second half was visibly her own answer. The parser half is fixed on the
+  server (`aidream/services/distillation/FEATURE.md`, same date). The screen
+  half was this: the only control the dialog offered was a free-text "Which
+  address is yours? (optional)", which cannot help at all when a mail client
+  copies your own message labelled "me" with no address on it anywhere. That
+  field is GONE. The preview now returns the VOICES in each thread and says when
+  it could not tell which is the Expert's (`needs_voice_pick`), and the dialog
+  asks with the Meeting Scavenger's own picker — lifted into
+  `components/detail/VoicePicker.tsx` so the two lanes ask one question one way
+  (the Meeting Scavenger's inline copy should be repointed at it by whoever next
+  touches that file). Answering re-reads the threads with `voice_keys`, so the
+  row that said "we can't tell which of these is you" becomes the row with your
+  reply in it — a control that changes nothing on screen is the refusal wearing a
+  checkbox. Guard: `__tests__/the-inbox-asks-which-voice-is-you.test.tsx`, which
+  drives the real dialog and was red against the pre-fix tree.
+- 2026-09-17 (sixth cold walk) — **TWO SCREENS THAT PUT SOMETHING BACK WITHOUT
+  SAYING SO.** *The guided start's tripled goal:* an Expert typed her goal on
+  `/masterwork/new`, went to look at the catalog and came back; the textarea
+  already held the old sentence with nothing on screen admitting it, so she
+  read it as the blank page, clicked where her eye landed and typed her
+  sentence into the middle of the old one — `platform.rulebook.description`
+  and `metadata.intake.goal` got `prefix + whole sentence + suffix`, 286
+  characters from a 143-character sentence, and the Capture Plan faithfully
+  displayed the mess. Fixed in the PRIMITIVE: `useWizardDraft` now applies a
+  restored draft through `applyOnce`, which cannot run without raising
+  `didRestore`, and `<WizardDraftRestored>` says it in plain words with a
+  "Start fresh" that empties the form. Adopted by every consumer — the guided
+  start, the rule editor and the Research init wizard. (A successful Start was
+  checked live too: `clearDraft()` durably reaches storage even when the
+  navigation follows immediately, so a started Rulebook never resurrects its
+  draft.) *The teach-back's "You corrected 0 rounds":* the session's rounds
+  lived only in mount-time React state, so a rejoin rebuilt it from the durable
+  run's LAST round and the request went out with no correction in it at all —
+  the server counts the corrections in the request, so it counted zero, and the
+  explainer had lost her corrections with them. The whole session is persisted
+  through the same wizard-draft primitive now, and the sign-off counts the
+  rounds it actually holds; when this device does not hold the whole session it
+  says so instead of printing a number. Guards, both proven failing then
+  passing: `lib/wizard-draft/__tests__/restored-draft-is-announced.test.tsx`
+  (plus a census so the next wizard cannot repeat it) and
+  `teach-back/__tests__/teach-back-remembers-the-corrections.test.tsx`.
+
+- 2026-09-17 (later) — **FOUR SCREENS THAT CONTRADICTED THEMSELVES** (fifth cold
+  walk, findings 3, 4, 6 and 6b), each fixed at the layer that owns the class.
+  *The probe's two states at once:* a reload mid-round painted the SETUP screen
+  ("Write the first one", "Up to 5 rounds…") over a live "Writing round 2…" row
+  for ~9s, because `started` is answered by restored CONTENT while `running` is
+  true from the first paint. The missing third answer — "there is a run here and
+  this mount cannot describe it yet" — is now `restoring` on the shared
+  `useDurableRun` handle, so every durable surface has it; the probe and the
+  Teach-Back (the same shape, one grep away) both use it. Verified live on a
+  brand-new Rulebook: the reload now shows only "Reading what you said about
+  round 1 and turning it into rules…" with its Stop. Guard:
+  `__tests__/a-restoring-probe-never-offers-to-start.test.tsx`.
+  *The paste box's untrue instruction:* see the aidream half — the placeholder
+  now teaches the shape the parser can honour, and
+  `__tests__/the-paste-box-teaches-a-shape-that-parses.test.ts` keeps the copy
+  from drifting back.
+  *"0 Built" about a Masterwork it just watched being built:* the Build's
+  terminal event fires before the `workflow.definition` row is readable;
+  `listMasterworksAfterBuild` waits for the id the Build announced and SAYS so
+  when it never appears. Guard:
+  `__tests__/a-built-masterwork-is-counted-not-guessed.test.ts`.
+  *A chip that filled a box you then could not send from:* a native button takes
+  the caret, so Enter went to the chip. `ComposerChip` (in `features/agents`)
+  refuses the focus and puts it back; verified live — chip click leaves the
+  caret in the composer and Enter sends. Guard:
+  `features/agents/__tests__/a-chip-that-fills-the-box-leaves-you-able-to-send.test.tsx`.
+  *And a scope badge reading `0` over a populated list:* `EntityScopeTabs` could
+  not tell "not counted yet" from "counted, and zero" — an unmeasured count now
+  renders nothing at all. Guard:
+  `lib/entity-list/__tests__/a-scope-badge-never-says-zero-before-it-counted.test.tsx`.
+
+- 2026-09-17 — **THE SORTING TABLE NEVER ERASES A SITTING EITHER, AND THE
+  MECHANISM IS NOW SHARED** (fifth cold walk, finding 2). A day after the Triad
+  game's sitting was made durable, the fifth cold walk found the identical
+  defect on the Sorting Table — the Triad game's own named sibling. Reproduced
+  live on 2026-09-17 against `origin/main`, on a brand-new Rulebook: twenty real
+  e-waste cases dealt into three named piles, five sorted on the keyboard
+  (1/2/1/3/2) to "Case 6 of 20", reload → back to "Sort the pile, then we'll
+  find the line" with the pile picker and "Start sorting", zero trace of the
+  five placements, no resume banner of any kind. The root cause was not the
+  Sorting Table: it was that the Triad fix had been written BY HAND inside
+  `TriadGamePage`, so there was no primitive for the sibling lane to inherit —
+  the instance was fixed and the class was left open. The sitting mechanism now
+  lives once, in [`sitting/sitting.ts`](./sitting/sitting.ts) (`createSittingStore`,
+  `describeResumedSitting`, `settleInFlightSaves`, `countInFlight`); the Triad
+  game was moved onto it with its sentence unchanged, and the Sorting Table now
+  restores the phase, the piles she named, the dealt cases, every placement, the
+  boundary questions and each answer's own status, and says so in one sentence.
+  An answer mid-save when the tab went away is reported as landed-with-nothing-
+  countable plus the true remedy, never as saved-with-a-count and never as lost.
+  Verified live on brand-new Rulebook `0d0befe0`: the same sequence now returns
+  to "You were on case 6 of 20, after sorting 5. Picked up where you left off."
+  over case 6 of the same pile. Guard:
+  `__tests__/a-sorted-case-survives-a-reload.test.tsx`, proven RED against the
+  pre-fix component (second mount rendered the setup screen) and green after.
+
+- 2026-09-16 (later) — **THE TRIAD GAME NEVER ERASES A SITTING, AND THE PROBE'S
+  COUNTER NEVER GOES BACKWARDS** (fourth cold walk, findings 2 and 3).
+  *Triad:* the whole sitting — deck, index, answered cards, what each answer
+  returned — lived in React state and nowhere else. Reproduced live: two cards
+  answered, "Save and next" succeeded both times, a reload landed back on "Deal
+  me in" with no card state and no banner; the rules DID land about a minute
+  later (the server detaches on disconnect), so the only conclusion the screen
+  supported was "nothing saved" and the natural next move was to replay the same
+  cards. The sitting is now written to this browser as it is played and picked
+  up on the next load, saying so — including that an answer still in flight when
+  you left carried on without you. The server half gives each answer a durable
+  run row before the paid call (aidream `/masterworks/ingest-triad` and
+  `/masterworks/ingest-sort`, the only two rule-writing lanes that had none),
+  which is also what restores the source claim that refuses a double submit.
+  Verified live on brand-new Rulebook `5d8f9b4f`: reload → "Card 3 of 10" with
+  the resume sentence, 2 `triad` runs `completed`, 2 triad-sourced rules, both
+  carrying a `run_id`. Guard:
+  `__tests__/an-answered-triad-card-survives-a-reload.test.tsx`.
+  *Probe:* rule 3 ("never invent the count") came back one press later.
+  `run.launch` wipes `run.result` synchronously before the network call, so from
+  the press of Send until the next result lands the counter fell back to
+  `rounds.length` — 1 on any restored mount. Reproduced live: a probe restored
+  at "Round 2 of 5" read "Round 1 of 5" over round 2's own memo the instant Send
+  was pressed. `serverRound` remembers the last index the server reported, so
+  the number can only move forward. Verified live on brand-new Rulebook
+  `c60885c6`: same sequence, the label stays "Round 2 of 5". Guard: the new case
+  in `__tests__/a-restored-probe-round-can-still-be-sent.test.tsx`.
+
+- `2026-09-17` — 🚨 **The probe stopped inventing the round number.** Found on the live
+  surface while verifying the restore fix below: the counter read `rounds.length`, which is
+  the number of rounds THIS MOUNT has seen, so a person who came back to round 3 of their
+  probe was told "Round 1 of 5" over round 3's own example — exactly what
+  `BadExampleProbe`'s own rule 3 forbids ("Never invent the count. 'Round 3 of 5' comes from
+  the server's own `round_index` / `round_count`"). The server sends `round_index` on every
+  round and it survives the durable restore, so that is now the only number on screen, with
+  the length as the fallback before any result has landed. Guard: a third case in
+  `__tests__/a-restored-probe-round-can-still-be-sent.test.tsx`, red the moment the counter
+  goes back to the length. **Left behind, NOT fixed:** a restore brings back only the LAST
+  round, so "Earlier in this probe" is empty after a reload even when several rounds were
+  answered — the durable pointer carries one result, not the session. Nothing is lost (every
+  answered round's rules are on the Rulebook) and nothing on screen lies about it now, but
+  the history the person had is not restored with the round.
+
+- `2026-09-16` — 🚨 **A restored probe round had the answer and not the question, and both its
+  buttons died in silence** (jobs-bar cold walk 3, finding #1, live-confirmed by a first-time
+  Expert). `rounds` come back from the durable-run pointer; `caseBrief` is mount-local
+  `useState("")` and did not. So after a refresh — or a navigation away and back, or a later
+  session — the example, "Round 1 of 5" and the answer box were all on screen while the case box
+  was empty AND disabled under "Locked for this probe", and `send()`'s opening
+  `if (caseBriefProblem) return;` swallowed every press of "Send this and show me the next one"
+  and "I'd never see that — stop here": no request, no error, no spinner, and the critique the
+  Expert had just typed was gone. Three halves, root first. (1) THE PLATFORM PRIMITIVE: a durable
+  run now carries a `memo` — the few input strings the NEXT request needs and the answer cannot
+  rebuild — passed as `launch(body, target, { memo })`, written onto the run's own receipt beside
+  `scopeOverrides`, and handed back as `run.memo` on a rejoin or a settled restore
+  (`lib/durable-run/useDurableRun.ts`). It restores from what the run ALREADY stores; no second
+  store, and no server change (the probe response does not echo `case_brief`, and aidream was out
+  of scope for this fix). The probe launches with `{ case_brief }` and reads it back. (2) NOTHING
+  FAILS SILENTLY: the guard no longer returns void — a press that cannot proceed says why and what
+  to do, in the same place `run.error` renders, and the case box is locked only while we still
+  HOLD a case, so a restore that genuinely lost it can take it again instead of locking the Expert
+  out of their own session. (3) The heading fallback `A ${caseBrief || "work"} that looks right`
+  rendered "A work that looks right" — a sentence built from empty state — and now names the
+  example honestly when the brief is missing. Guard:
+  `__tests__/a-restored-probe-round-can-still-be-sent.test.tsx` drives the REAL screen over the
+  REAL durable-run hook, launching and settling a round in one mount and rejoining it in a second
+  off the pointer the first one really wrote (only the transport is faked). Three cases, two
+  expected values: the restored round SENDS with that exact brief and critique (and the stop
+  button too), and a receipt with no memo sends NOTHING and says so on screen. All proven RED on
+  the pre-fix code and against three separate mutations (memo dropped from the receipt, restore
+  removed, guard back to a bare `return`). Census of the sibling lanes (every early-return click
+  handler under `features/masterwork/`, 24 handlers): no other offender — each one's condition is
+  either checked verbatim in its button's `reason`/`disabled` or structurally impossible while
+  that button renders. Left behind, deliberately: the Teach-Back's `topic` is also mount-local and
+  is not yet carried in a memo — nothing there goes inert (it gates no control and the server
+  picks its own subject when it is empty), so a restored teach-back sends an empty topic rather
+  than the Expert's.
+
+- `2026-09-16` — 🚨 **A Rulebook page carried the PREVIOUS Rulebook's words** (jobs-bar cold
+  walk 2, finding #1's closing lead). Both rulebook-scoped page scaffolds are one element
+  position, so a Rulebook→Rulebook navigation changed a prop and React kept the mounted
+  instance: `CapturePlanPage` seeds its goal from `rulebook.description` in a `useState`
+  initialiser, so Rulebook B's plan form opened holding Rulebook A's sentence — which from the
+  Expert's seat is indistinguishable from the cross-record WRITE the walk thought it saw (that
+  write was clean). `RulebookLaneRoute` also kept the previous Rulebook in state while the next
+  loaded, so the old row really did render under the new URL. Fixed at the class, one line each
+  and no lane edits: `RulebookLaneRoute` (all 14 lanes) and `RulebookDetailPage` now mount their
+  instance keyed by the rulebook id — a different Rulebook is a different page, so every derived
+  `useState`, open dialog, staged draft and in-flight load starts fresh. Guard:
+  `__tests__/a-rulebook-page-never-carries-the-previous-rulebooks-words.test.tsx` — the real lane
+  → real page → real read, two Rulebooks in ONE mounted app; 3 cases, proven RED with the key
+  removed (B's form showed A's sentence, verbatim as photographed) and green restored. The
+  wire is shared with the sibling write guard at `__tests__/rulebookWire.tsx`.
+
+- `2026-09-16` — **"Your recent runs" on the Encore run page tells one run from another
+  (jobs-bar-2026-09-16, item 18).** It listed eight runs of the same Masterwork as eight
+  identical lines — "Finished · 1d ago", eight times — because Encore had its OWN recent-runs
+  reader (five columns, no preview, no cost) and its OWN row, while the Masterworks lane over
+  the same table already showed the first line of what each run handed over. One question, two
+  implementations. `listRecentRunsForMasterworks` is now the only reader (it takes
+  `perMasterwork` and `onlyCreatedBy`; the scope WORD is still declared at the call site), and
+  `EncoreRun` is `MasterworkRun`. `MasterworkRunRow` is now the only row — it grew a `trailing`
+  slot for Encore's "That's mine" sign-off, it stacks below `sm` so that ~230px control can
+  never squeeze the run's line to one character per row again, its open-door arrow is visible on
+  touch, and the Operator status words ("Finished", "Didn't finish") moved into it from Encore's
+  copy so both doors stop printing `errored` and `abandoned` at people. Guard:
+  `encore/__tests__/encore-history-says-what-each-run-said.test.tsx`, over the same verbatim
+  `workflow.node_events` fixtures the lane's own guard uses.
+
+- `2026-09-16` — **The Jobs bar, lanes A: the five capture lanes walked as a first-timer, at
+  desktop and phone width.** Twenty-two findings, fixed at the place each one belongs. The Capture
+  Plan opens with the Expert's own description in the goal box instead of an empty field behind a
+  placeholder about somebody else's job; its three settings pickers finally have labels a screen
+  reader can hear and triggers that wrap instead of cutting a sentence mid-word; its two number
+  fields dropped `FancyInput`'s always-on "Copy to clipboard" button, which copied "30" and sat in
+  the tab order between every field; and its schedule prints each session's own one-line ask —
+  already authored in `methods.ts` and never shown — in place of the same "you have not tried this
+  one yet" sentence repeated on all thirty-two rows. The Teach-Back stops promising it reads out
+  loud before the button exists, states its locked topic as a sentence instead of leaving a
+  white textarea nobody can type in, drops the decorative microphone glyph that was not a control,
+  and says why "Send this and try again" is grey. The Sorting Table wraps its pile-count control
+  (at 390px the "4" was off the right edge of a screen that does not scroll sideways), puts the
+  case on a card, makes its progress bar a real `progressbar`, takes `1`–`4`/`S`/`U` from the
+  keyboard, and stops printing the word "pasted" under every pasted case. The Daily Drip's
+  never-started state is a card like its three siblings with the terms stated before the opt-in
+  rather than after it, the lane is titled for what it is rather than for a question three of its
+  four states do not have, the scoreboard no longer prints "Nothing has been asked yet" above the
+  heading that invites you to start, and the hour list no longer skips 1pm and 3pm. The interview
+  start screen pins its Start button instead of burying it under nine probe cards, says how long a
+  session runs and that stopping is safe, and stops jolting card titles sideways on select; the
+  interview session itself no longer opens on the generic agent hero ("Ready to run — fill in any
+  variables below", on a screen with no variables for the Expert) — and the override only lands
+  because it waits for the instance row, since the three `instanceUIState` display setters discard
+  a write aimed at a conversation whose row has not been created yet (`FOUND_DEFECTS.md` D326,
+  which also disables the Conductor lane's identical fix). Evidence, before and after:
+  `common-docs/projects/masterwork-methods-census/jobs-bar-2026-09-16/lanes-a/`.
+
+- `2026-09-15` — **THE PREDICTION LEDGER — calling it before you know.** A new Approach and a new
+  door (`features/masterwork/prediction/`): the Expert records predictions on real open cases in
+  her own work with a confidence, a one-line why and a due date, by voice or typing, and enters
+  the outcome when it arrives. The whys behind well-called predictions become rule candidates; the
+  whys behind the misses are boundary findings. The ledger is raw facts on
+  `metadata.prediction_ledger` with every score derived on read; the on-page readout plots what she
+  said against what happened, and renders an honest waiting state instead of a chart until at
+  least one outcome exists. `resolveApproachLane` grew `{kind:"prediction"}` from
+  `intake_query.predictions === "1"` — deliberately NOT an ingest-dialog lane, because every ingest
+  lane reads expertise out of something that already exists while this one CREATES the record over
+  weeks in two sittings. The registry row was flipped live by the server half the same day.
+- `2026-09-15` — **"YES, THAT'S MINE" — the ownership review, the agenda it produces, and the
+  signature on a result.** Three things, one derivation each, no parallel system. (1) The rule
+  review speaks the Expert's words under knob `masterwork.review.vocabulary`; mine→approved,
+  not-mine→rejected (reason "Not mine." when they say nothing more), mine-but-wrong→change
+  requested, and the statuses are byte-identical to the neutral wording. "Not mine" is a complete
+  answer with no sentence — one tap. (2) Every rule in those last two states is listed on the page
+  as **Next session starts here** (knob `masterwork.review.agenda_panel`), and the SAME list is
+  named THE NEXT SESSION'S AGENDA in the bound Rulebook document and in the server's
+  `open_feedback`, so Expert and interviewer read one agenda. (3) Every rule row now carries its
+  provenance MOMENT in the row itself, through the same `formatTimeAnchor` the expanded row uses —
+  an Expert asked "is this yours?" could previously not see where it came from without opening it.
+  (4) A finished Masterwork run carries the thumbs: "Yes, that's mine" signs it, "Not right" opens
+  the correction flow whose result becomes a rule candidate. Signing lives on the Try box the
+  moment a run ends AND on every finished run in "Your recent runs", because the Try box forgets a
+  finished run on purpose and the signature must outlive a page reload.
+  Guards: `review/__tests__/ownership-review.test.tsx` (the wording maps to the same handlers; the
+  agenda is exactly the two states; a thumbs-up reaches `upsert_output_feedback` and never a
+  table) — all three proven failing on a planted break.
+  **Also fixed here, at the class:** every Supabase call in this feature rethrew the raw PostgREST
+  error object, which is not an Error and stringifies to "[object Object]" — the sentence a user
+  actually saw when Approve failed. All of them now throw `operationFailed(action, cause)`;
+  `__tests__/errors-are-sentences.test.ts` proves a refused read comes out as a sentence with the
+  raw response preserved as `cause`, and censuses the feature for the old shape.
+
+- `2026-09-15` — **THE BENCH HAS A DOOR (`encore/RunTheBench.tsx`).** The proof existed and could
+  only be started from a command line, so the product could report a trial and never run one. The
+  door sits beside the quick check on the Encore run page and is governed by the server's answer,
+  not by the client's guess: `can_run_here` true (and a `form` actually present) renders a "Run the
+  Bench" button; false renders the server's own REASON sentence and **no control at all** — never a
+  greyed button, never one that does nothing. Starting is a destructive/expensive click: the
+  consequence (real paid calls across all six arms plus the judges and the blind panel) is named
+  above the button AND in the canonical `confirm()` before anything fires. Live, each
+  `masterwork_bench_arm` lands as its own row — the arm letter, what it is in plain words, its
+  model, cost and seconds, or "did not run" with the server's error — over the server's
+  `masterwork_bench_progress` stage line, with the running total visible. 🚨 **A BENCH RUN IS NOT
+  ALWAYS DURABLE:** `bench_trial` is still outside the `platform.masterwork_run.operation`
+  vocabulary, so when `form.durable` is false there is no run row, no `masterwork_run` receipt and
+  therefore nothing to rejoin — `useDurableRun` degrades cleanly (stages and the terminal event
+  still work, only the pointer is absent) and `form.durable_note` is rendered BEFORE the start
+  control, because a person is owed that before they spend. On the verdict the server's own
+  `headline` is rendered, never re-written; a **void** trial says it proves nothing and renders NO
+  win, and a **not scored** trial says the panel was not calibrated and that this is neither a pass
+  nor a fail. Then the panel re-reads `GET .../bench` so the banked record replaces the live one.
+  🚨 **THE CORPUS COUNT IS NOT TAKEN ON THE READ** (aidream 864b37a49): assembling a Rulebook's
+  pre-engagement corpus scrapes pages and reads documents, so counting it every time the Encore run
+  page loads would make LOOKING at a Masterwork cost money. `form.corpus_sources` is therefore
+  `number | null` and comes back null from `GET .../bench`, with `corpus_note` carrying the rule
+  instead; the real count arrives in the `masterwork_bench_progress` stage line at stage `corpus`
+  once a trial starts. The form renders the note always and a count only when one exists — a null
+  printed as "0 sources" is a fabricated fact.
+  Guard: `encore/__tests__/RunTheBench.honest-states.test.tsx` — six legs (cannot-run reason
+  verbatim with zero controls · the not-rejoinable sentence positioned above the start control ·
+  an uncounted corpus never printed as zero · per-arm cost and seconds · void renders no win ·
+  not-scored never reads as a fail), each proven
+  red against a mutated component and green against the real one.
+
+- `2026-09-15` — 🚨 **A TWO-ARM COMPARISON IS NEVER THE PROOF.** `encore/AuditionProof.tsx` rendered
+  "Expert match {N}/100", called itself THE PROOF in its own header and described the vanilla arm as
+  "the head-to-head against a plain AI"; the Encore run page and the browse list carried the same
+  words. Under the doctrine (`common-docs/systems/masterwork/doctrine/CORE.md` §6, and §9's standing
+  verdict of 2026-09-14 that the shipped Audition's score is *not* proof and is replaced by the
+  bench) proof is a logged five-arm Bench run — A0/A1/A2/B/C/GT, a blind panel the expert's own
+  withheld work must win, dollars and seconds per arm, and a claim naming the arm and the budget.
+  Now: the score reads **"Quick check: N/100 against the expert's published work"** everywhere
+  (panel, card, browse column header), and beside it the component renders the Bench answer — the
+  record's own headline with the arm, the budget multiple, the blind-panel result, our arm's cost
+  and seconds and the report path when one exists, or a plain **"No bench proof yet"** with what a
+  proof is and where the Bench runs when none does. A viewer who cannot read the Rulebook is told
+  "can't tell from here" rather than a false no. NO DEAD CONTROL: the Bench has no screen yet, so
+  the panel says it runs from the command line instead of showing a button that would do nothing.
+  Server half: `GET /masterworks/{rulebook_id}/bench` (aidream
+  `services/masterworks/bench_proof.py`, reading the bench row when the operation vocabulary admits
+  one and the Bench's own file index until then), and every Audition sentence now ends "Not a proof;
+  run the Bench." Guards: `encore/AuditionProof.test.tsx` (five legs, proven red against the pre-fix
+  component) and aidream's `masterworks/tests/test_audition_claims_honest.py`.
+
+- `2026-09-14` — **The `rule_draft` write target has a REGISTERED value contract.** `masterwork_rule_draft`
+  (`content_ir.kind_definition` `fc6eba46-709b-4cfd-bde2-a264420f18a8`, active) is registered from the
+  ONE shared validator `agent-context/ruleDraftInput.ts` — same single required field (`mode`), same
+  optional fields, same `RULE_ACTION_KINDS` / `RULE_POLICY_LEVELS` enums — and the manifest target now
+  names it (`valueKind`). Nothing about what the page accepts changed; what changed is that the contract
+  is now PUBLISHED (the `apply_surface_write` spec prints `[kind=masterwork_rule_draft {…}]`) and
+  ENFORCED at the seam before the Expert is asked to approve, instead of living only in the handler's
+  throw. Two consequences to know: an agent's value must now carry `__kind: "masterwork_rule_draft"`
+  (the schema requires the marker, as `media_chapters` does — the target description says so), and the
+  description's `actionKind` list was wrong, naming six of the nine legal values; it now names all nine.
+  `rule_id`-must-exist and `section`-must-be-a-code stay with the validator: they are facts about the
+  OPEN Rulebook, not about the shape. Schema source: `features/content-ir/kinds/masterwork-rule-draft.ts`.
+  This closes the last residue of wall W49; its handoff is deleted and its census now lives in
+  `features/agents/FEATURE.md` § Invariants & gotchas.
 
 - `2026-09-13` — **The frontend half of the convergence landed: BOTH decision halves render, from
   ONE form.** Merging `main` (trial 8) into this branch, the ruling already applied on the server
@@ -386,7 +1133,9 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   own answers still arrive through the ONE existing interrupt path; no spinner-only state). The
   desk's terminal `unfolding_ruling` has its own component. The Audition gained the "A case it has
   never seen" tab: desks × sealed cases × an optional vanilla arm told everything at once, scored
-  into a per-case table plus the desk-beats-vanilla headline. Guards: `TryMasterworkBox.test.tsx`
+  into a per-case table plus a desk-vs-plain-model headline (which since 2026-09-15 states that a
+  two- or three-arm comparison is a quick check, never proof — see the entry at the top of this
+  list). Guards: `TryMasterworkBox.test.tsx`
   (the picker appears with the node and never without it; the W15 and W33 tests stay green).
 
 - `2026-09-13` — 🚨 **A triage session belongs to ONE Rulebook (Bugbot MEDIUM).** `RulebookDetailPage` is a single component instance reused as the route param changes — which is exactly why the ingest session drops on an id change — but the sort door kept a bare `useState(false)`, and `TriageDraftsDialog` kept `keep` / `set aside` / the preview switch in its own state at a stable position in the tree. So opening "Sort the drafts" on one Rulebook and moving to another left the dialog on screen holding the purpose she had typed for the Rulebook she left, and starting it there would have sorted THESE drafts against THAT purpose. Two halves. (1) The open flag now lives in `triage/triageSession.ts` (`useTriageDialogSession`), the same shape as `useIngestDialogSession`: stored WITH the id it was opened for and dropped during render the instant they differ — not merely filtered, or coming back would match again and reopen an empty dialog by itself. (2) The dialog is mounted `key={rulebook.id}`. A remount rather than an in-dialog reset, because the form fields are not the only state that carries: `useTriageRun` → `useDurableRun` reads its pointer ONCE per mount (`rejoinedRef`) and never re-reads it when the key changes, so without the remount a sort running on the Rulebook she left kept showing on the one she arrived at while that Rulebook's own run stayed invisible. The pointer key itself was already correct (`triage:<rulebookId>`). Tests in `triage/__tests__/triage-session-per-rulebook.test.tsx`: a purpose typed on Rulebook A is gone (replaced by B's own intake goal) when the sort is reopened on B, the dialog does not reopen itself on returning to A, a live sort shows only on the Rulebook it runs for, plus source-level guards that the page holds no bare boolean and does key the dialog. All five proven RED against the pre-fix shape.
@@ -443,6 +1192,8 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   exceptions.
 
 - `2026-09-12` — 🚨 **THE EVIDENCE STANDING: the counters stopped asking for 416 decisions.** The body-of-work lane produced 416 per-piece drafts plus 4 synthesized rules on one Rulebook and the KPI strip counted all 420 as "Waiting on you"; the Expert pressed Approve-all. Per-piece rules now carry `standing: "evidence"` from the server and are a review state of their own (`ruleState` → `"evidence"`), excluded from Rules / Approved / Waiting on you, from the review wizard and Approve-all, and from the journey headline — and shown behind the synthesized rule that cites their piece via the new `RuleEvidenceDisclosure`, with a one-click "Make it a rule" per item (`promoteEvidenceRule` raises standing only; saving is still not approving). Guard: `__tests__/evidence-standing.test.ts`, proven failing then passing. Server half + the org knob that promotes a recurring observation: `../../../common-docs/systems/masterwork/distillation-contract.md` § THE EVIDENCE STANDING.
+
+- `2026-09-15` — 🚨 **The Reject dialog refused the Expert's reason, and nobody else had touched the Rulebook.** Trial `teach-recent-interview`, first scored run: reviewing 34 drafts, she could reject some rules and not others — six refused 6–8 times each with "This Rulebook changed while you were editing (someone else saved a newer version)". The other writer was us. Every rules save fires `pokeUnderstudy`, whose server hook (`rulebook_writes._poke_understudy` → `_poke_coherence`) wakes the Coherence Partner; its batch scan writes `metadata.coherence` back onto the SAME `platform.rulebook` row up to a minute later, and `platform._touch_row` bumps `version` on that write like it does on every UPDATE. The version her own save had just returned was therefore stale by the time she finished reading the next rule and typing a reason — so whether the next decision landed was pure timing, which is exactly the some-yes-some-no signature. Evidence: `metadata.coherence.last_scan.at = 2026-09-15T12:50:02Z`, `lane: batch`, `rules_read: 57`, landing mid-review. `saveRules` now takes `base: Rulebook` (the row the edit was made against) and hands `guardedUpdate` the platform's own `rebase.isPhantom` — if `rules` as the server holds them still equal that base, the write is retried once against the live version instead of refused. A real edit to the rules, and a whole-`metadata` write (the Final Checkup) when metadata moved, are still refused exactly as before, so a rebase can never overwrite someone's work. Every review surface inherits it through the one funnel: Reject, Request changes, Improve, Edit, Approve, Approve-all, the review wizard, the Final Checkup apply/undo, the Oracle tap, the Add-rule window. The dialog also stopped relabelling itself "Request changes" on its way out after a successful Reject. Guard: `__tests__/reject-survives-the-coherence-bump.test.ts` (3 cases, proven failing then passing). Verified live on the preview as the Expert, before/after: `../../../common-docs/projects/teach-recent-interview/fix-evidence/w12-before-reject-2.png` vs `w12-after-reject-2.png`.
 
 - `2026-09-13` — 🚨 **The stand-in's banner stopped lying after a rebuild that worked, and overlapping rebuilds stopped clobbering each other.** Two defects in the staleness ledger shipped the day before: a successful `pokeUnderstudy` never reloaded the workflow row, so `behind` kept comparing the CACHED `rulebook_version` with the bumped Rulebook version and the amber "this stand-in is behind your rules" banner stayed up after a rebuild that actually landed (only the manual retry cleared it, because that path calls `onCreated`); and the ledger wrote pending/success/failure with no generation token, so two in-flight pokes — the normal case, the review wizard saves once per rule — could settle out of order and let an older failure bury a newer success, or an older success hide a newer failure. Now `readUnderstudyStandIn` derives the version, counts and rebuild time from whichever account is newer (the row, or the last successful refresh payload — which already returns `rulebook_version`, `approved_rules` and `unconfirmed_rules`, so no round trip is needed), and every ledger write is gated on a per-Rulebook generation token. Guard: `__tests__/understudy-refresh.test.ts` (4 cases, proven failing then passing). Found by Cursor Bugbot on PR #222.
 
@@ -519,3 +1270,20 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
   reach is not a control, and replaced code gets deleted (`no-legacy`). The `/masterwork/admin`
   map, which still described the deleted home as the live authed landing, now describes the
   redirect.
+
+- 2026-09-17 — Cold walk 7's fix round, four Masterwork halves, each closed at the layer that
+  owns it. **The Approach card**: `inert` meant "cannot be the lane Start begins with" and was
+  read as "has nowhere to go", so the Vision Interview and the Oracle tap — built lanes whose
+  door is their own `launch_href` page — rendered as `aria-disabled` divs among twenty-one
+  clickable cards, with the only live target a small inline link. Inert + a door of its own is
+  now a whole-card `<Link>`. **The reopen latch**: every durable-run dialog asks
+  `run.surfacing`, never `run.running` — the dismissal lives on the run's RECEIPT
+  (`DurableRunHandle.dismiss`), not in a per-mount ref, so a completed sitting no longer reopens
+  itself over later, unrelated visits; `shouldReopenForRun` is retired and
+  `TriageDraftsDialog`'s dead `if (run.running) return;` close went with it. **The Build**:
+  `getBuildInFlight` reads `platform.masterwork_run` so a live build is visible on mount in any
+  browser, with no receipt — "0 Built" over a running build is not a count — and a run whose
+  heartbeat has gone quiet is reported as stalled, never as progress. **Red-Pen**: a selection
+  boundary is MEASURED with a Range and the selection is clamped to the work, because a
+  triple-click ends outside it; it used to record a correction against the wrong passage, or
+  drop the gesture in silence.

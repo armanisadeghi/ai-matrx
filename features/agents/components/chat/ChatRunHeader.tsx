@@ -8,16 +8,17 @@
 import { useRouter } from "next/navigation";
 import { useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
-import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
 import { ChatCanvasButton } from "./ChatCanvasButton";
-import { ChatSandboxToggleButton } from "./sandbox-insight/ChatSandboxToggleButton";
 import { ConversationRecordsChip } from "./ConversationRecordsChip";
+import { ConversationAttachmentsChip } from "./ConversationAttachmentsChip";
 import { ConversationRoomNotice } from "./ConversationRoomNotice";
 import { ConversationPageMenu } from "./ConversationPageMenu";
-import { stashChatDraftTransfer } from "./chat-draft-transfer";
-import { chatRouteSurfaceKey } from "./begin-fresh-chat";
+import {
+  interceptChatAgentLink,
+  stageChatAgentSwitch,
+} from "./begin-fresh-chat";
 
 interface ChatRunHeaderProps {
   /**
@@ -58,44 +59,17 @@ export function ChatRunHeader({
   const label =
     liveName?.trim() || initialAgentName?.trim() || "Select an agent";
 
-  // On `/chat/a/[agentId]` the page has no conversation id to give us — the
-  // launcher mints one in the room below. The Sandbox toggle still has to
-  // find it, or a user who closes the panel on that route has no way to
-  // reopen it (the panel's own X would be a one-way door). The room registers
-  // its conversation under the chat surface key, so read it from there.
-  const focusedConversationId = useAppSelector((state) =>
-    activeAgentId
-      ? (state.conversationFocus.bySurface[chatRouteSurfaceKey(activeAgentId)]
-          ?.display ??
-        state.conversationFocus.bySurface[chatRouteSurfaceKey(activeAgentId)]
-          ?.input ??
-        null)
-      : null,
-  );
-  const sandboxConversationId = conversationId ?? focusedConversationId ?? undefined;
-
   const handleAgentSelect = (id: string) => {
     if (id === activeAgentId) return;
-    // Carry any in-progress draft over to the newly-selected agent so switching
-    // agents never destroys what the user has typed. Mirrors the chip path in
-    // NewChatGreeting: snapshot the current surface's draft via getState (no
-    // per-keystroke subscription) and stash it for the destination route's
-    // consumeChatDraftTransfer in ChatRoomClient.
-    if (activeAgentId) {
-      const state = store.getState();
-      const sourceSurfaceKey = chatRouteSurfaceKey(activeAgentId);
-      const sourceConversationId =
-        state.conversationFocus.bySurface[sourceSurfaceKey]?.input ??
-        state.conversationFocus.bySurface[sourceSurfaceKey]?.display ??
-        null;
-      const draftText = sourceConversationId
-        ? selectUserInputText(sourceConversationId)(state)
-        : "";
-      if (draftText && draftText.trim().length > 0) {
-        stashChatDraftTransfer({ text: draftText, targetAgentId: id });
-      }
-    }
-    router.push(buildAgentHref(id));
+    stageChatAgentSwitch({
+      dispatch: store.dispatch,
+      router,
+      getState: store.getState,
+      targetAgentId: id,
+      sourceAgentId: activeAgentId,
+      sourceConversationId: conversationId,
+      href: buildAgentHref(id),
+    });
   };
 
   // Full-width bar with a hard left/right split at every breakpoint: agent +
@@ -104,7 +78,18 @@ export function ChatRunHeader({
   // shrink-wrapped cluster on mobile/tablet, which pushed controls into the
   // avatar and broke the layout.)
   return (
-    <div className="flex w-full min-w-0 items-center justify-between gap-2">
+    <div
+      className="flex w-full min-w-0 items-center justify-between gap-2"
+      onClickCapture={(event) =>
+        interceptChatAgentLink(event, {
+          dispatch: store.dispatch,
+          router,
+          getState: store.getState,
+          sourceAgentId: activeAgentId,
+          sourceConversationId: conversationId,
+        })
+      }
+    >
       <div className="flex min-w-0 items-center gap-1 overflow-hidden">
         <div
           data-chat-agent-picker-trigger
@@ -142,10 +127,14 @@ export function ChatRunHeader({
         {conversationId && (
           <ConversationRecordsChip conversationId={conversationId} />
         )}
-        {/* The bound SANDBOX — terminal, files and this conversation's sandbox
-            work, one click away. Absent entirely when nothing is bound, so the
-            header never carries a control with nothing behind it. */}
-        <ChatSandboxToggleButton conversationId={sandboxConversationId} />
+        {/* WHAT this chat is pointed at — which repositories, files and sheets
+            ride it. The composer rail has one 16px line for a count; twenty
+            turns later the question is "which repos?", and the answer belongs
+            where it costs no vertical space and every item opens
+            (Arman, 2026-09-15). Silent until something is attached. */}
+        {conversationId && (
+          <ConversationAttachmentsChip conversationId={conversationId} />
+        )}
         {/* Canvas — the unified live workspace, one click away at the top. */}
         <ChatCanvasButton conversationId={conversationId} />
         {/* DD-179 — the conversation's own menu: rename, archive, delete (soft

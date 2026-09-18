@@ -36,8 +36,8 @@ import {
 
 import {
   getMediaDevicesSnapshot,
-  listDevices,
   queryCameraPermission,
+  refreshDevicesAfterCameraLease,
   subscribeMediaDevices,
 } from "@/features/media-devices/deviceManager";
 import { useAudioDevices } from "@/features/audio/useAudioDevices";
@@ -121,6 +121,25 @@ export interface CameraCaptureHost {
   qaQrOnly: boolean;
 }
 
+/**
+ * A stale global device snapshot is not a capability. The camera lease is the
+ * permission-unlocking boundary, so wait for its following enumeration before
+ * offering a flip control.
+ */
+export function canOfferCameraFlip({
+  inventoryReady,
+  cameraCount,
+  cameraBlocked,
+  recording,
+}: {
+  inventoryReady: boolean;
+  cameraCount: number;
+  cameraBlocked: boolean;
+  recording: boolean;
+}): boolean {
+  return inventoryReady && cameraCount > 1 && !cameraBlocked && !recording;
+}
+
 export function useCameraCaptureHost(
   options: CameraCaptureHostOptions,
 ): CameraCaptureHost {
@@ -142,6 +161,8 @@ export function useCameraCaptureHost(
   const [flash, setFlash] = useState(false);
   const [recording, setRecording] = useState(false);
   const [recordElapsed, setRecordElapsed] = useState(0);
+  const [cameraInventoryConfirmed, setCameraInventoryConfirmed] =
+    useState(false);
 
   const leaseRef = useRef<CameraLease | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -164,6 +185,7 @@ export function useCameraCaptureHost(
     let unsubscribe: (() => void) | null = null;
 
     void (async () => {
+      setCameraInventoryConfirmed(false);
       if (qaPermissionDenied) {
         setStream(null);
         setPermissionDenied(true);
@@ -221,7 +243,12 @@ export function useCameraCaptureHost(
         setPermissionDenied(false);
         setNotSupported(false);
         unsubscribe = lease.on("reconfigured", (next) => setStream(next));
-        void listDevices();
+        // A normal enumeration can be a coalesced pre-permission read, or it
+        // can retain stale devices after failure. Only a successful forced
+        // browser enumeration AFTER this lease establishes Flip capability.
+        void refreshDevicesAfterCameraLease().then((inventory) => {
+          if (!cancelled) setCameraInventoryConfirmed(inventory.success);
+        });
       } catch (err: unknown) {
         if (cancelled) return;
         // Classification is the PACKAGE's branch — never re-implemented here.
@@ -419,8 +446,14 @@ export function useCameraCaptureHost(
     onUpload,
     // Hidden while recording: a flip reacquires the lease, which would kill
     // the recording mid-take.
-    onFlipCamera:
-      numberOfCameras > 1 && !cameraBlocked && !recording ? switchCamera : null,
+    onFlipCamera: canOfferCameraFlip({
+      inventoryReady: cameraInventoryConfirmed,
+      cameraCount: numberOfCameras,
+      cameraBlocked,
+      recording,
+    })
+      ? switchCamera
+      : null,
   };
 
   return {

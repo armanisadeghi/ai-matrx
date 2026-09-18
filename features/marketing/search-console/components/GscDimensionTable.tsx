@@ -59,11 +59,19 @@ import {
 import { useGscBreakdown } from "@/features/marketing/search-console/hooks/useGscQuery";
 import { getGscKeywordValueFor } from "@/features/marketing/search-console/data-insights";
 import {
-  getKeywordServices,
-  setKeywordService,
+  getKeywordOfferings,
+  KEYWORD_OFFERINGS_KEY,
+  setKeywordOffering,
 } from "@/features/marketing/seo/keyword-workbench/data";
-import { useSiteServices } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteServices";
-import { buildKeywordOfferingColumn } from "@/features/marketing/seo/keyword-table/columns";
+import {
+  requireOfferingOrganization,
+  SITE_OFFERINGS_KEY,
+  useSiteOfferings,
+} from "@/features/marketing/seo/keyword-workbench/hooks/useSiteOfferings";
+import {
+  buildKeywordOfferingColumn,
+  OFFERING_COLUMN_ID,
+} from "@/features/marketing/seo/keyword-table/columns";
 import { getValueVocabulary } from "@/features/marketing/seo/value-system/data";
 import { useRowWatch } from "@/features/marketing/search-console/hooks/useWatchState";
 import { WatchButton } from "@/features/marketing/search-console/components/watch/WatchButton";
@@ -106,9 +114,10 @@ const SORTABLE: ReadonlySet<string> = new Set([
   "ctr",
   "position",
   "delta_clicks",
-  // MSR-06 — the Offering column sorts by topic name in the RPC
-  // (`p_sort: 'topic'`), query dimension only. Sorting the fifty rows the
-  // browser is holding would be a lie about 112,681 keywords.
+  // MSR-06 — the Offering column (id `topic`, see `OFFERING_COLUMN_ID`) sorts by
+  // this site's offering name in the RPC (`p_sort: 'offering'`), query dimension
+  // only. Sorting the fifty rows the browser is holding would be a lie about
+  // 112,681 keywords.
   "topic",
   // MSR-03/04 — server-side sort added to `gsc_perf_breakdown`
   // (`seo_gsc_breakdown_value_sort_filter.sql`), query dimension only.
@@ -186,8 +195,10 @@ export function GscDimensionTable({
     sort: { id: "clicks", direction: "desc" },
   });
 
-  const sortId = query.sort?.id && SORTABLE.has(query.sort.id)
-    ? (query.sort.id as GscSortKey)
+  const sortId: GscSortKey = query.sort?.id && SORTABLE.has(query.sort.id)
+    ? query.sort.id === OFFERING_COLUMN_ID
+      ? "offering"
+      : (query.sort.id as GscSortKey)
     : "clicks";
   // MSR-03/04 — the Key column's own header filter drives the SAME search
   // the toolbar box does (one truth, two entry points); when it's set it
@@ -230,11 +241,11 @@ export function GscDimensionTable({
       if (position.max !== undefined) out.position_max = String(position.max);
     }
     if (dimension === "query") {
-      // MSR-06 — the Offering filter: a topic id (that offering and everything
-      // under it) or `none` for the keywords nobody has mapped yet, which is
-      // the workflow the column exists for.
-      const offering = selectFilterValues(cf.topic)[0];
-      if (offering) out.topic = offering;
+      // MSR-06 — the Offering filter: an offering id (that offering and
+      // everything under it on this site) or `none` for the keywords nobody has
+      // mapped yet, which is the workflow the column exists for.
+      const offering = selectFilterValues(cf[OFFERING_COLUMN_ID])[0];
+      if (offering) out.offering = offering;
       const classValues = selectFilterValues(cf.traffic_class);
       if (classValues.length > 0)
         out.traffic_classes = classValues.join("|");
@@ -283,57 +294,62 @@ export function GscDimensionTable({
    * critical thing to put here would be the one where you map it to an
    * offering."
    *
-   * Both halves are the keyword system's own, never a second copy: the site's
-   * offering catalog is the topic tree (`useSiteServices`, same query keys as
-   * the tree screen) and the per-row placement comes from
-   * `gsc_keyword_topics_for` scoped to the rows on screen — THE SCOPE RULE,
-   * exactly like the Class/Score/Level read above it.
+   * Both halves are the keyword system's own, never a second copy: this site's
+   * offerings (`useSiteOfferings`, same query keys as every offering surface)
+   * and the per-row placement from `gsc_keyword_offerings_for` scoped to the
+   * rows on screen — THE SCOPE RULE, exactly like the Class/Score/Level read
+   * above it.
    */
-  const services = useSiteServices(
+  const offerings = useSiteOfferings(
     siteId,
     periods.current.start,
     periods.current.end,
     dimension === "query",
   );
   const placements = useQuery({
-    queryKey: ["marketing", "seo", "keyword-services", siteId, rowKeywordIds],
-    queryFn: ({ signal }) => getKeywordServices(siteId, rowKeywordIds, signal),
+    queryKey: [...KEYWORD_OFFERINGS_KEY, siteId, rowKeywordIds],
+    queryFn: ({ signal }) => getKeywordOfferings(siteId, rowKeywordIds, signal),
     enabled: dimension === "query" && rowKeywordIds.length > 0,
     staleTime: 60_000,
   });
-  const serviceFor = (row: GscBreakdownRow) =>
+  const offeringFor = (row: GscBreakdownRow) =>
     row.keyword_id ? placements.data?.get(row.keyword_id) : undefined;
 
   const queryClient = useQueryClient();
 
   /**
-   * THE ONE PLACEMENT WRITE (`setKeywordService` → `seo.gsc_set_keyword_topic`),
-   * the same call the keyword workbench, the ruling session and the topic tree
-   * make. Unlike the Class cell — whose draft rides the table's Save pill —
-   * placing an offering commits on pick, because that is how the canonical
-   * offering control behaves on every other surface, and two gestures for one
-   * ruling would be the drift.
+   * THE ONE PLACEMENT WRITE (`setKeywordOffering` → `seo.gsc_set_keyword_offering`),
+   * the same call the keyword workbench, the ruling session and the approval
+   * queue make. Unlike the Class cell — whose draft rides the table's Save pill
+   * — placing an offering commits on pick, because that is how the canonical
+   * offering control behaves on every other surface.
    */
   const placeService = async (
     keywordId: string,
-    topicId: string | null,
+    offeringId: string | null,
     keyword: string,
   ) => {
     try {
-      await setKeywordService({ siteId, keywordIds: [keywordId], topicId });
+      await setKeywordOffering({
+        organizationId: requireOfferingOrganization(offerings),
+        siteId,
+        keywordIds: [keywordId],
+        offeringId,
+      });
       await queryClient.invalidateQueries({
-        queryKey: ["marketing", "seo", "keyword-services", siteId],
+        queryKey: [...KEYWORD_OFFERINGS_KEY, siteId],
       });
       // The placement is what the value resolver scores from, so Level and
       // Score are stale the moment it changes.
       await queryClient.invalidateQueries({
         queryKey: ["marketing", "gsc", "keyword-value-for", siteId],
       });
-      const name = topicId ? services.byId.get(topicId)?.name : null;
+      await queryClient.invalidateQueries({ queryKey: SITE_OFFERINGS_KEY });
+      const name = offeringId ? offerings.byId.get(offeringId)?.name : null;
       toast.success(
         name
           ? `“${keyword}” maps to ${name}.`
-          : `“${keyword}” is off the tree — it maps to no offering now.`,
+          : `“${keyword}” maps to no offering now.`,
       );
     } catch (error) {
       toast.error(
@@ -605,19 +621,19 @@ export function GscDimensionTable({
   // here than there, but wide enough to read both the offering and its root.
   const offeringCol = buildKeywordOfferingColumn({
     siteId,
-    services,
-    serviceFor,
-    onPlace: (keywordId, topicId, keyword) =>
-      void placeService(keywordId, topicId, keyword),
+    offerings,
+    offeringFor,
+    onPlace: (keywordId, offeringId, keyword) =>
+      void placeService(keywordId, offeringId, keyword),
     // "Show me everything that maps to this offering" — the same server-side
     // filter the column header offers, reached from the row you are reading.
-    onFilter: (topicId) =>
+    onFilter: (offeringId) =>
       setQuery((prev) => ({
         ...prev,
         page: 1,
         columnFilters: {
           ...prev.columnFilters,
-          topic: { kind: "select", value: topicId },
+          [OFFERING_COLUMN_ID]: { kind: "select", value: offeringId },
         },
       })),
     // No "this isn't something we offer" door here: that ruling is the

@@ -31,10 +31,12 @@
 import { useMemo } from "react";
 import type { MediaRefLike } from "@ai-matrx/media";
 import {
+  useMediaBlob,
   useMediaLoadRecovery,
   useMediaResolution,
 } from "@ai-matrx/media/core";
 import { classifyMediaUrl } from "@/lib/media/durability";
+import { fileIdFromFileEndpointUrl } from "@/lib/media/our-file-sources";
 import type { ImageBlock, VideoBlock } from "./types";
 
 export type MediaSourceBlock = ImageBlock | VideoBlock;
@@ -44,9 +46,22 @@ export type MediaSourceBlock = ImageBlock | VideoBlock;
  * Old stored rows can carry an expiring signed URL in the `cdnUrl` slot;
  * treating that as permanent skips durable resolution and the media dies on
  * expiry — so we re-check here before shortcutting past the client.
+ *
+ * It is also never OUR OWN authenticated `/files/{id}/download` endpoint.
+ * Adapters file the block's durable `url` into this slot when no real CDN
+ * URL exists; binding that endpoint to an `<img>` as if it were public
+ * skips the client's bearer-authenticated blob lane and rides the
+ * third-party-cookie lane instead — "Image unavailable" forever in any
+ * browser that blocks third-party cookies (2026-09-16). The package client
+ * (`permanentPublicUrl`) already refuses exactly this; the shortcut here must
+ * refuse it too, or the guard only covers the door the client remembered.
  */
 function isPermanentCdn(cdnUrl: string | null | undefined): cdnUrl is string {
-  return !!cdnUrl && classifyMediaUrl(cdnUrl) !== "expiring";
+  return (
+    !!cdnUrl &&
+    classifyMediaUrl(cdnUrl) !== "expiring" &&
+    fileIdFromFileEndpointUrl(cdnUrl) === null
+  );
 }
 
 export interface BlockMediaSourceResult {
@@ -93,6 +108,12 @@ export function useBlockMediaSource(
   }, [block]);
 
   const { resolution, status: resolutionStatus } = useMediaResolution(mediaRef);
+  // A durable file endpoint is an identity, not a browser-ready source. The
+  // client marks private/unknown images as `blob` so its authenticated fetch
+  // supplies the bytes. Binding `resolution.src` directly bypassed that
+  // decision and made session refresh retry the same failing element request.
+  const needsBlob = resolution?.transport === "blob";
+  const blob = useMediaBlob(needsBlob ? mediaRef : null);
 
   const resolved = useMemo<{
     src: string | null;
@@ -102,6 +123,15 @@ export function useBlockMediaSource(
     if (!block) return { src: null, status: "loading", isPlaceholder: false };
 
     if (resolution) {
+      if (needsBlob) {
+        if (blob.error) {
+          return { src: null, status: "error", isPlaceholder: false };
+        }
+        if (blob.url) {
+          return { src: blob.url, status: "ready", isPlaceholder: false };
+        }
+        return { src: null, status: "loading", isPlaceholder: false };
+      }
       return { src: resolution.src, status: "ready", isPlaceholder: false };
     }
 
@@ -122,18 +152,25 @@ export function useBlockMediaSource(
 
     // Empty ref with nothing inline to show.
     return { src: null, status: "error", isPlaceholder: false };
-  }, [block, resolution, resolutionStatus]);
+  }, [blob.error, blob.url, block, needsBlob, resolution, resolutionStatus]);
 
   // The ONE retry contract (session refresh → same-URL retry → terminal)
   // lives behind `MediaClient.recoverLoadError`. Placeholder data URIs and
   // foreign URLs come through `recoverable: false` and fail straight.
+  // `failureRef` is what the heal ladder heals BY (bearer byte fetch by file
+  // id); without it the package can only report, never heal.
   const recovery = useMediaLoadRecovery(
-    resolution ? resolution.src : null,
-    { recoverable: resolution?.recoverable },
+    needsBlob ? null : (resolution?.src ?? null),
+    { recoverable: resolution?.recoverable, failureRef: mediaRef },
   );
 
   return {
     ...resolved,
+    // A healed (bearer-lane) object URL replaces a dead element src: the
+    // user sees the media, the incident row is written either way.
+    ...(recovery.healedSrc && resolved.status !== "loading"
+      ? { src: recovery.healedSrc, status: "ready" as const, isPlaceholder: false }
+      : {}),
     fileId: block?.origin === "matrx" ? block.fileId : null,
     posterUrl:
       block && block.kind === "video" ? (block.posterUrl ?? null) : null,

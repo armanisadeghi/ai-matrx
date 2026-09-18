@@ -88,6 +88,7 @@ import { createMarketingSiteScope } from "@/features/surfaces/manifests/marketin
 import { useMarketingSiteSurfaceBase } from "@/features/marketing/lib/scopes/site-surface-base";
 import { buildSiteContextXml } from "@/features/marketing/lib/surface-context";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { SiteTopicalMapButton } from "@/features/marketing/seo/topical-map/linkins/SiteTopicalMapButton";
 import {
   parseInitialization,
   siteConnectionStatuses,
@@ -1133,6 +1134,12 @@ function QuickWorkCard({
             Coverage matrix
           </Link>
         </Button>
+        {/* Placement §7 #3 — the map, the moment there are pages to place. */}
+        <SiteTopicalMapButton
+          siteId={webSiteId}
+          brandSeg={brandId}
+          className="h-9 justify-start gap-2"
+        />
         <Button asChild variant="outline" className="h-9 justify-start gap-2">
           <Link
             href={marketingRoutes.siteSettings(
@@ -1242,7 +1249,9 @@ function WorkspaceDirectory({
     {
       name: "Digital PR & Reputation",
       detail: "Publication opportunities & response decisions",
-      href: marketingRoutes.site(brandId, siteId, "/reputation"),
+      href: brandId
+        ? marketingRoutes.brandReputation(brandId, siteId)
+        : marketingRoutes.site(null, siteId, "/reputation"),
       icon: <Newspaper className="h-4 w-4" />,
     },
     {

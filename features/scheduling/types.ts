@@ -55,7 +55,10 @@ export type RunStatus =
   | "success"
   | "failed"
   | "cancelled"
-  | "skipped";
+  | "skipped"
+  // The server running it was restarted mid-run; the run is closed and a
+  // continuation picks the work back up (aidream matrx-scheduler continuation.py).
+  | "interrupted";
 
 export type AuthMode = "ask" | "auto";
 
@@ -73,6 +76,8 @@ export interface AutoSuspendedBlock {
   at?: string;
   run_id?: string;
   failure_signature?: string;
+  /** Repeat-guard verdict recorded with an auto-suspension history entry. */
+  verdict?: string;
   consecutive_failures?: number;
   reason?: string;
   /** Present when the guard overrode a human approval — in those words. */
@@ -92,9 +97,30 @@ export interface AutoSuspendedBlock {
  * (common-docs/policies/no-unapproved-schedules.md); the rest is the guard's
  * suspension record and its history.
  */
+/**
+ * A super-admin's "this one is supposed to be off, for now" — written from the
+ * attention dock onto the row (`metadata.alarm_mute`), read by
+ * `scheduler.system_schedule_alarms`. Always timed.
+ */
+export interface AlarmMuteBlock {
+  until: string;
+  reason?: string;
+  by?: string;
+  at?: string;
+}
+
+/** One product page this job feeds — see `SystemTaskImpact` in service/queries.ts. */
+export interface TaskImpactEntry {
+  href: string;
+  label: string;
+  what?: string;
+}
+
 export interface SchTaskMetadata {
   auto_suspended?: AutoSuspendedBlock;
   auto_suspended_history?: AutoSuspendedBlock[];
+  alarm_mute?: AlarmMuteBlock;
+  impact?: TaskImpactEntry[];
   approval?: string;
   approved_by?: string;
   approved_at?: string;

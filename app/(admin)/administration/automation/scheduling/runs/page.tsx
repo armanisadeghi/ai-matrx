@@ -197,6 +197,13 @@ export default function AdminRunsPage() {
               {
                 type: "custom",
                 id: "server-filters",
+                filter: {
+                  active: status !== "__all__" || surface !== "__all__",
+                  onReset: () => {
+                    setStatus("__all__");
+                    setSurface("__all__");
+                  },
+                },
                 render: () => (
                   <div className="flex items-center gap-2">
                     <div data-surface-value="run_status_filter">

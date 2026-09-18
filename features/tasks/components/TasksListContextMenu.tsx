@@ -24,8 +24,9 @@ import {
 import type { Project, TaskWithProject } from "@/features/tasks/types";
 import { toast } from "@/lib/toast";
 
-/** The one delegated task identity anchor every desktop list renderer emits. */
+/** The one delegated task identity anchor every Tasks list renderer emits. */
 export const TASK_ROW_DOM_ATTR = "data-task-row-id";
+export const TASK_TITLE_DOM_ATTR = "data-task-title-id";
 
 type TasksListContextMenuProps = {
   tasks: TaskWithProject[];
@@ -54,7 +55,12 @@ export function TasksListContextMenu({
     const taskId =
       target
         ?.closest?.(`[${TASK_ROW_DOM_ATTR}]`)
-        ?.getAttribute(TASK_ROW_DOM_ATTR) ?? null;
+        ?.getAttribute(TASK_ROW_DOM_ATTR) ??
+      target
+        ?.closest?.(`[${TASK_TITLE_DOM_ATTR}]`)
+        ?.getAttribute(TASK_TITLE_DOM_ATTR) ??
+      target?.closest?.("[data-task-id]")?.getAttribute("data-task-id") ??
+      null;
     const next = taskId
       ? (tasks.find((task) => task.id === taskId) ?? null)
       : null;

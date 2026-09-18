@@ -10,6 +10,10 @@ import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink"
 import { HrTasksDoor } from "@/features/hr/entry-points/HrTasksDoor";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectSelectedTaskId } from "@/features/tasks/redux/taskUiSlice";
+import { useOrganizationGatedControl } from "@/features/organizations/useOrganizationGatedControl";
+import { useOpenGoogleTasksImport } from "@/features/overlays/openers/googleImportWindows";
+import { Button } from "@/components/ui/button";
+import { CalendarCheck } from "lucide-react";
 
 /**
  * Header controls for the /tasks route. Lives inside the shell glass header
@@ -25,6 +29,17 @@ import { selectSelectedTaskId } from "@/features/tasks/redux/taskUiSlice";
 export function TasksHeaderControls() {
   const { toggle, isCollapsed } = usePanelControls();
   const selectedTaskId = useAppSelector(selectSelectedTaskId);
+  // The organization the import writes into is the one the person selected —
+  // never a personal-workspace fallback. FOUR states, not two: while boot is
+  // still resolving the control waits and says it is checking; once boot has
+  // SETTLED with nothing selected it refuses honestly with the remedy; when the
+  // READ ITSELF FAILED it stays pressable and the press asks again; only with
+  // an organization does it open the import. Reading the bare id told a person who HAS an
+  // organization to "Select an organization" for thirteen seconds of every cold
+  // load (VERIFY-R7-FIX-WAVE NEW-1, seat-proven 2026-09-18) — the exact class
+  // the three-state hook exists to kill, re-armed in this file.
+  const importGate = useOrganizationGatedControl("importing Google Tasks");
+  const openGoogleTasksImport = useOpenGoogleTasksImport();
   const sidebarCollapsed = isCollapsed("sidebar");
   const listCollapsed = isCollapsed("list");
 
@@ -66,6 +81,26 @@ export function TasksHeaderControls() {
       <span className="ml-1 shrink-0">
         <HrTasksDoor />
       </span>
+      {/* Google-native PLAN §4.7 — the import opens IN PLACE as a window, so
+          the list stays where it was. Read-only toward Google. */}
+      <Button
+        size="sm"
+        variant="ghost"
+        className="ml-1 h-11 shrink-0 gap-1 px-2 text-xs lg:h-7"
+        disabled={importGate.disabled}
+        title={importGate.title}
+        // THE REMEDY IS THE PRESS (V-24 NEW-3). The gate's own handler opens the
+        // import when the organization is known and, when the READ FAILED, runs
+        // the read again — so the posture's "Press to try again." names this
+        // button and not the task list's Try again, which is the only other one
+        // on this page and does nothing for the organization.
+        onClick={importGate.press((organizationId) =>
+          openGoogleTasksImport({ organizationId }),
+        )}
+      >
+        <CalendarCheck className="h-3.5 w-3.5" />
+        <span className="max-sm:sr-only">Import from Google Tasks</span>
+      </Button>
       <MandateDoorLink feature="tasks" label="Task agents" className="ml-auto" />
     </div>
   );

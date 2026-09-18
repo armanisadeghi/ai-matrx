@@ -22,6 +22,7 @@ import { supabase } from '@/utils/supabase/client';
 import { addColumn, VALID_DATA_TYPES } from '@/utils/user-table-utls/table-utils';
 import { sanitizeFieldName } from '@/utils/user-table-utls/field-name-sanitizer';
 import { setFieldFormat } from '@/features/data-tables/service';
+import { FormulaExpressionEditor } from '@/features/data-tables/components/FormulaExpressionEditor';
 import { isServiceFailure } from '@/features/data-tables/types';
 import { FieldFormatPicker } from '@/lib/field-formats/FieldFormatPicker';
 import { defaultFormatForBase } from '@/lib/field-formats/registry';
@@ -32,9 +33,17 @@ interface AddColumnModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  /**
+   * Insert the new column at this `field_order` instead of appending — the
+   * right-click "Insert column left / right". The caller shifts the columns
+   * at and after this order by one once the column exists.
+   */
+  insertAtOrder?: number;
+  /** The table's existing columns — offered as references by the formula editor. */
+  siblingFields?: { field_name: string; display_name: string }[];
 }
 
-export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess }: AddColumnModalProps) {
+export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess, insertAtOrder, siblingFields = [] }: AddColumnModalProps) {
   const [displayName, setDisplayName] = useState('');
   const [fieldName, setFieldName] = useState('');
   const [dataType, setDataType] = useState('string');
@@ -83,8 +92,9 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess }: 
         fieldName,
         displayName,
         dataType,
-        isRequired,
-        defaultValue: defaultValue || null
+        isRequired: format.id === 'formula' ? false : isRequired,
+        defaultValue: format.id === 'formula' ? null : defaultValue || null,
+        ...(typeof insertAtOrder === "number" ? { fieldOrder: insertAtOrder } : {}),
       });
       
       if (!result.success) {
@@ -193,11 +203,27 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess }: 
               onChange={setFormat}
               triggerClassName="h-9 w-full text-sm"
             />
+            {format.id === "formula" && (
+              <FormulaExpressionEditor
+                value={format}
+                onChange={setFormat}
+                siblingFields={siblingFields}
+                disabled={loading}
+              />
+            )}
             <p className="text-xs text-muted-foreground">
               How this column is displayed and edited. The stored data type stays exactly as chosen above.
             </p>
           </div>
 
+          {/* A formula column stores nothing, so "required" and "default" have
+              no meaning for it; the two controls are absent rather than dead. */}
+          {format.id === 'formula' ? (
+            <p className="text-xs text-muted-foreground">
+              A formula column is calculated for every row, so it has no default and is never required.
+            </p>
+          ) : (
+          <>
           <div className="flex items-center space-x-2">
             <Switch
               id="isRequired"
@@ -224,6 +250,8 @@ export default function AddColumnModal({ tableId, isOpen, onClose, onSuccess }: 
               }`}
             />
           </div>
+          </>
+          )}
           
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>

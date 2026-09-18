@@ -512,11 +512,10 @@ export function hrStructureFocusHref(focusId: string, org: HrOrgRef): string {
 
 // ── Doors OUT of HR, into surfaces HR does not own (§4.5) ───────────────────
 // Built here so the profile never hand-assembles a foreign URL either.
-
-/** The CRM party this employee is 1:1 with. */
-export function hrPartyHref(partyId: string): string {
-  return `/crm/${partyId}`;
-}
+//
+// The CRM party this employee is 1:1 with is opened via
+// `resolveEntityDoors("party", partyId).href` — the entity registry's own
+// `hrefFor` — never a second HR-local builder for the same route.
 
 /** The linked org member / auth user. An employee is NOT required to have a login. */
 export function hrOrgMemberHref(orgSlugOrId: string, userId: string): string {

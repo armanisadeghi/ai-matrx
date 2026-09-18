@@ -59,12 +59,27 @@ const SORT_COLUMNS = {
 
 /** Narrow rows, screaming (never silently dropping) on an unaddressable one. */
 export function narrowRows(rows: AssistRow[]): Assist[] {
+  return narrowRowsCounted(rows).rows;
+}
+
+/**
+ * The same narrowing, plus HOW MANY IT REFUSED. Callers that print a count a
+ * person reads need that number: the server's `count` includes rows nothing can
+ * render, so a header built on it claims work nobody can see (round-2
+ * verification of the approval queue, § A-ii).
+ */
+export function narrowRowsCounted(rows: AssistRow[]): {
+  rows: Assist[];
+  unreadable: number;
+} {
   const assists: Assist[] = [];
+  let unreadable = 0;
   for (const row of rows) {
     const assist = toAssist(row);
     if (assist) {
       assists.push(assist);
     } else {
+      unreadable += 1;
       // Invalid/stale ledger data is expected validation fallout: keep it loud
       // for developers without turning a safely skipped row into a durable
       // application incident through the global console.error capture.
@@ -73,7 +88,7 @@ export function narrowRows(rows: AssistRow[]): Assist[] {
       );
     }
   }
-  return assists;
+  return { rows: assists, unreadable };
 }
 
 function nowIso(): string {
@@ -337,7 +352,41 @@ export async function queryAssists(
   if (response.error) {
     throw new Error(`[assists] query failed: ${response.error.message}`);
   }
-  return { rows: narrowRows(response.data ?? []), total: response.count ?? 0 };
+  const narrowed = narrowRowsCounted(response.data ?? []);
+  return {
+    rows: narrowed.rows,
+    total: response.count ?? 0,
+    unreadable: narrowed.unreadable,
+  };
+}
+
+/**
+ * ONE assist of mine, by id — the row a deep link names.
+ *
+ * Mine-scoped like every read here (THE VIEW LAW), and `null` when there is no
+ * such live row of mine. Every status is in range on purpose: the caller asks
+ * precisely because it needs to know whether the row was already decided.
+ */
+export async function getAssistById(
+  userId: string,
+  id: string,
+): Promise<Assist | null> {
+  if (!userId) throw new Error("[assists] read requires a user id");
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("platform")
+    .from(TABLE)
+    .select("*")
+    .eq("user_id", userId)
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (error) {
+    if (isMissingSessionError(error)) throw new SessionUnavailableError();
+    throw new Error(`[assists] read failed: ${error.message}`);
+  }
+  if (!data) return null;
+  return toAssist(data as AssistRow);
 }
 
 /**

@@ -49,6 +49,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatDurationMs } from "@ai-matrx/kit/format";
 
+import { ELAPSED_TICK_MS, formatElapsed } from "@/lib/progress/elapsed";
+
 import { removeRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.slice";
 import { adoptForeignStream } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
 import type { ForeignStreamConsumer } from "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream";
@@ -130,6 +132,13 @@ const RECONNECT_MAX_DELAY_MS = 15_000;
 const RECONNECT_GIVE_UP_MS = 15 * 60 * 1000;
 /** Consecutive rejoins that could not even reach the run before we give up. */
 const RECONNECT_MAX_UNREACHABLE = 5;
+/**
+ * How many times a rejoin may come back SUCCESSFUL BUT NOT LIVE before this
+ * loop stops claiming it is reconnecting. Five at 1.5s→15s backoff is about a
+ * minute of honest trying — long enough to ride out a worker restart, short
+ * enough that nobody watches a lie for five minutes.
+ */
+const RECONNECT_MAX_NOT_LIVE = 5;
 
 /**
  * 🚨 A WORKING SCREEN MAY NEVER KEEP A PROMISE IT HAS ALREADY BROKEN.
@@ -149,10 +158,6 @@ const RECONNECT_MAX_UNREACHABLE = 5;
  * the row's job alone (see STREAM_LOST_MESSAGE).
  */
 const OVERDUE_FACTOR = 3;
-/** How often the elapsed clock moves while a run is in flight. */
-// KNOB MIRROR of platform.feature_knob "durable_run" "elapsed_tick_ms" — armed synchronously inside a React effect.
-// Change the row, then re-mirror this literal; the value has no sync read path.
-const ELAPSED_TICK_MS = 1_000;
 /**
  * A caller that states no expectation still may not promise forever. One minute
  * is what every one of these dialogs already told the user out loud.
@@ -181,10 +186,15 @@ export function describeExpected(ms: number): string {
   return `about ${formatDurationMs(ms, { style: "long", round: "nearest" })}`;
 }
 
-/** "2m 57s" / "48s" — the honest clock a stuck-looking screen owes the reader. */
-export function formatElapsed(ms: number): string {
-  return formatDurationMs(ms, { style: "compact", round: "down" });
-}
+/**
+ * "2m 57s" / "48s" — the honest clock a stuck-looking screen owes the reader.
+ *
+ * It lives in `lib/progress/elapsed.ts` with the tick it moves on, so a durable
+ * run and a plain in-tab await (the Triad's deal) format and advance the same
+ * clock. Re-exported here because every consumer of this hook already imports
+ * from it.
+ */
+export { formatElapsed } from "@/lib/progress/elapsed";
 
 /** Durable-row statuses that mean the work is still in flight. */
 const IN_FLIGHT_STATUSES = new Set([
@@ -349,6 +359,23 @@ export interface DurableRunState<TResult> {
    * or the surface owns its display (`live.surfaceOwnsDisplay`).
    */
   requestId: string | null;
+  /**
+   * WHAT THE RUN WAS LAUNCHED WITH that the answer cannot rebuild.
+   *
+   * A durable run restores its ANSWER on a reload — but a surface whose next
+   * request needs the ORIGINAL input had nothing to restore it from, because
+   * that input lives in mount-local `useState` the reload threw away. The Bad
+   * Example Probe is the proven case: its rounds came back from the durable
+   * row while the case brief they were about came back empty, so the button
+   * that sends the next round could not build a request at all and the
+   * Expert's typing vanished (cold walk 3, 2026-09-16).
+   *
+   * So a launch may hand over the few strings the NEXT request will need
+   * (`launch(body, target, { memo })`); they ride on the run's own receipt and
+   * come back here on a rejoin or a settled restore. Small and string-only on
+   * purpose — it is a memo, not a second copy of the request.
+   */
+  memo: Record<string, string> | null;
 }
 
 interface RunPointer {
@@ -358,12 +385,47 @@ interface RunPointer {
   /** Exact request tenancy used by this launch. A rejoin is the same run. */
   scopeOverrides?: Record<string, string>;
   /**
+   * The launch's memo — the few input strings the NEXT request needs and the
+   * answer cannot rebuild. See `DurableRunState.memo`.
+   */
+  memo?: Record<string, string>;
+  /**
    * The run reached a good terminal state here. The pointer is KEPT so a
    * reload re-reads the finished result off the durable row — losing an answer
    * to a refresh is the same defect as losing the run. Only a fresh launch, a
    * failure, or age retires a pointer.
    */
   settled?: boolean;
+  /**
+   * When the live view was FIRST lost for this run, in epoch ms.
+   *
+   * The give-up clock used to be a local in each `startReconnect` call, so a
+   * page reload reset it to zero and the loop could never age out — which is
+   * exactly what "Reconnecting… forever, even after a reload" was. Carried on
+   * the pointer, the ceiling is real wall-clock time.
+   */
+  lostLiveViewAt?: number;
+  /**
+   * 🚨 THE PERSON CLOSED THE SURFACE THAT WAS FOLLOWING THIS RUN, and does not
+   * want it dragged back open (cold walk 7, finding 3, 2026-09-17).
+   *
+   * Every durable-run dialog carries an auto-reopen latch so a live run
+   * started elsewhere surfaces instead of hiding behind an armed Start button.
+   * The "I closed it" half of that lived in a `useRef` at the call site —
+   * per MOUNT. `/masterwork/[id]` is one component instance across client-side
+   * navigation, and a plain later visit is a fresh mount either way, so the
+   * dismissal was forgotten every time while the RECEIPT survived in
+   * localStorage for an hour. The walk closed a completed Shadow-the-inbox
+   * sitting and had it reopen on top of the Rulebook page three separate
+   * times on later, unrelated visits with no query param — once claiming a
+   * finished run was "still going on the server. Reconnecting…" — each time
+   * blocking a real control underneath it.
+   *
+   * A dismissal is a fact about the RUN, so it lives on the run's receipt
+   * beside every other fact about it. The next run still surfaces: a fresh
+   * launch writes a fresh pointer with no dismissal on it.
+   */
+  dismissed?: boolean;
 }
 
 function pointerKey(wire: DurableRunWire, key: string): string {
@@ -383,21 +445,28 @@ function readPointer(wire: DurableRunWire, key: string): RunPointer | null {
       window.localStorage.removeItem(pointerKey(wire, key));
       return null;
     }
-    const rawScopeOverrides = parsed.scopeOverrides;
-    const scopeOverrides =
-      rawScopeOverrides &&
-      typeof rawScopeOverrides === "object" &&
-      Object.values(rawScopeOverrides).every(
+    const stringMap = (raw: unknown): Record<string, string> | undefined =>
+      raw &&
+      typeof raw === "object" &&
+      !Array.isArray(raw) &&
+      Object.values(raw as Record<string, unknown>).every(
         (value) => typeof value === "string",
       )
-        ? (rawScopeOverrides as Record<string, string>)
+        ? (raw as Record<string, string>)
         : undefined;
+    const scopeOverrides = stringMap(parsed.scopeOverrides);
+    const memo = stringMap(parsed.memo);
     return {
       runId: parsed.runId,
       startedAt,
       target: typeof parsed.target === "string" ? parsed.target : null,
       settled: parsed.settled === true,
+      dismissed: parsed.dismissed === true,
+      ...(typeof parsed.lostLiveViewAt === "number"
+        ? { lostLiveViewAt: parsed.lostLiveViewAt }
+        : {}),
       ...(scopeOverrides ? { scopeOverrides } : {}),
+      ...(memo ? { memo } : {}),
     };
   } catch {
     // A corrupt pointer must never break the tool it belongs to.
@@ -421,13 +490,20 @@ function readPointer(wire: DurableRunWire, key: string): RunPointer | null {
 export function peekDurableRun(
   wire: DurableRunWire,
   key: string,
-): { runId: string; startedAt: number; live: boolean } | null {
+): {
+  runId: string;
+  startedAt: number;
+  live: boolean;
+  /** The person already closed the surface following this run. */
+  dismissed: boolean;
+} | null {
   const pointer = readPointer(wire, key);
   if (!pointer) return null;
   return {
     runId: pointer.runId,
     startedAt: pointer.startedAt,
     live: pointer.settled !== true,
+    dismissed: pointer.dismissed === true,
   };
 }
 
@@ -532,6 +608,14 @@ export interface UseDurableRunOptions<TResult> {
   path: keyof paths;
   /** The event carrying the finished result, e.g. `seo.page_audit_result`. */
   finalEvent: string;
+  /**
+   * Keep the finished run's pointer so a return to this lane re-reads its
+   * answer (default). Pass `false` when the answer lives somewhere durable
+   * the surface already reads — then a finished run must NOT re-float its
+   * "Done" window on every later visit (the strategy brief: the document IS
+   * the answer, and the window covered it on a phone).
+   */
+  keepFinished?: boolean;
   /** Wire event name → the sentence a human reads. */
   stageLabels: Record<string, string>;
   /**
@@ -612,6 +696,14 @@ export interface UseDurableRunOptions<TResult> {
 export interface DurableRunHandle<TResult> extends DurableRunState<TResult> {
   /** True while the run is working — launched here or rejoined. */
   running: boolean;
+  /**
+   * True from the first paint of a mount that found a durable pointer until
+   * that rejoin resolves: there IS a run here and this mount cannot yet say
+   * what it holds. A surface must not offer to START anything while it is
+   * true — that is how a probe rendered its setup screen and a live round at
+   * the same time (cold walk 5, finding 3).
+   */
+  restoring: boolean;
   /** Start it. Per-launch scope wins and is retained for rejoin. */
   launch: (
     body: Record<string, unknown>,
@@ -644,6 +736,15 @@ export interface DurableRunHandle<TResult> extends DurableRunState<TResult> {
   retry: (() => Promise<void>) | null;
   /** Milliseconds since this run began. 0 when nothing is in flight. */
   elapsedMs: number;
+  /**
+   * WHEN the run in flight began, epoch ms — the launch instant, or the
+   * instant on the receipt for a run this tab only rejoined. Null when nothing
+   * is in flight. Surfaces hand it straight to `<WorkingNotice>` so the clock
+   * a person watches survives a reload with the run.
+   */
+  startedAt: number | null;
+  /** How long a run of this kind usually takes — the measured expectation. */
+  expectedMs: number;
   /** The run has been working longer than `expectedMs * OVERDUE_FACTOR`. */
   overdue: boolean;
   /**
@@ -652,11 +753,40 @@ export interface DurableRunHandle<TResult> extends DurableRunState<TResult> {
    * Null when nothing is in flight. A surface must never hardcode its own.
    */
   waitMessage: string | null;
+  /**
+   * SHOULD A SURFACE PULL ITSELF OPEN FOR THIS RUN?
+   *
+   * True only when there is a run in flight under this key that the person has
+   * not already closed away from. Every durable-run dialog's auto-reopen latch
+   * asks this instead of `running` (cold walk 7, finding 3): `running` is also
+   * true for `"rejoining"`, which is the state a restored receipt sits in, so
+   * latching on it reopened completed sittings on unrelated later visits.
+   */
+  surfacing: boolean;
+  /**
+   * The person closed the surface that was following this run — remember it on
+   * the RECEIPT, not in this mount, so a later visit does not drag the same
+   * finished sitting back onto the screen. The next run still surfaces.
+   */
+  dismiss: () => void;
 }
 
 export interface DurableRunLaunchOptions {
   /** Exact request context for this target; persisted with the run receipt. */
   scopeOverrides?: Record<string, string>;
+  /**
+   * Values for the `{param}` placeholders in `path` (e.g. `{brand_id}`).
+   * Without this a parameterised command path was sent LITERALLY — the
+   * server received "/seo/brands/{brand_id}/…" and answered with a uuid cast
+   * error (2026-09-14). Persisted with the launch so `retry` replays it.
+   */
+  pathParams?: Record<string, string>;
+  /**
+   * The few input strings the NEXT request will need and this run's answer
+   * cannot rebuild — carried on the run's own receipt and handed back as
+   * `memo` after a rejoin or a settled restore. See `DurableRunState.memo`.
+   */
+  memo?: Record<string, string>;
 }
 
 function initialState<TResult>(): DurableRunState<TResult> {
@@ -671,6 +801,7 @@ function initialState<TResult>(): DurableRunState<TResult> {
     rejoinedTarget: null,
     interruption: null,
     requestId: null,
+    memo: null,
   };
 }
 
@@ -718,6 +849,46 @@ export function useDurableRun<TResult>(
     initialState<TResult>,
   );
 
+  /**
+   * 🚨 THIS MOUNT HAS A POINTER AND DOES NOT YET KNOW WHAT IT HOLDS.
+   *
+   * Cold walk 5, finding 3 (2026-09-16): a Bad Example probe reloaded mid-round
+   * rendered its SETUP screen — a spinning, disabled "Write the first one" over
+   * "Up to 5 rounds…" — at the same time as an in-progress row reading "Writing
+   * round 2 — a version of this work that looks right and is not." with a Stop
+   * button, for about nine seconds. Two contradictory states, in one paint, on
+   * one screen. A surface decides "has this started?" from its own restored
+   * CONTENT, which arrives only when the rejoin resolves, while `running` is
+   * true from the first paint — so the two answers disagree for exactly as long
+   * as the rejoin takes.
+   *
+   * This is the missing third answer, and it belongs to every durable surface,
+   * not to the probe: there IS a run here, and this mount cannot describe it
+   * yet. A surface must not offer to START anything while it is true. Computed
+   * before the first paint from the same pointer the rejoin effect reads, so
+   * there is no frame in which it is wrong.
+   *
+   * 🚨 AND IT ENDS WHEN THE RUN CAN BE DESCRIBED, NOT WHEN THE REJOIN REQUEST
+   * RETURNS (cold walk 6, finding 3, 2026-09-17). The first cut cleared this in
+   * the rejoin's `.finally`, which is a different moment entirely: a rejoin
+   * routed to any worker but the one executing the run answers immediately with
+   * the durable ROW saying `processing` and hands back nothing to render, and a
+   * rejoin whose socket never lands answers with an error. Either way the
+   * request was over in a second or two while the run had a minute left to go —
+   * so `restoring` went false, the surface still held no content, `running` was
+   * still true, and the probe painted its setup screen over a live round for a
+   * second time. Reproduced live 2026-09-17 on a brand-new Rulebook by dropping
+   * the first rejoin after a reload: "Write the first one" sat on screen for
+   * 87 seconds while round 2 was being written and paid for.
+   *
+   * So it is cleared by exactly three things, all of them answers: this mount
+   * LAUNCHED something, the run reached a terminal state (done / error /
+   * stopped — see the effect below), or there turned out to be no run here.
+   */
+  const [restoring, setRestoring] = useState<boolean>(
+    () => peekDurableRun(options.wire, options.key) !== null,
+  );
+
   // Latest-value refs so the stream handler never closes over stale options
   // and the mount effect never re-runs because a parent re-rendered.
   const optionsRef = useRef(options);
@@ -731,6 +902,8 @@ export function useDurableRun<TResult>(
   const pendingScopeOverridesRef = useRef<Record<string, string> | undefined>(
     undefined,
   );
+  /** The memo of the launch in flight, written onto the receipt with it. */
+  const pendingMemoRef = useRef<Record<string, string> | undefined>(undefined);
 
   /**
    * When the run in flight began — the launch instant, or, for a run this tab
@@ -773,6 +946,25 @@ export function useDurableRun<TResult>(
   useEffect(() => {
     statusRef.current = state.status;
   });
+
+  /**
+   * A TERMINAL RUN CAN BE DESCRIBED — so the restore is over, whatever the
+   * rejoin request did. `done` carries the answer, `error` and `stopped` carry
+   * the sentence; all three are something the surface can render honestly. This
+   * is the ONLY place a resolved run clears it, so every settle path — the live
+   * terminal event, the durable snapshot, a stop from another tab, the
+   * reconnect loop giving up — is covered by one rule rather than by a
+   * `setRestoring` sprinkled through each of them.
+   */
+  useEffect(() => {
+    if (
+      state.status === "done" ||
+      state.status === "error" ||
+      state.status === "stopped"
+    ) {
+      setRestoring(false);
+    }
+  }, [state.status]);
 
   // ── Live adoption plumbing (only used when `live` is set) ────────────────
   // Retention discipline (/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/LIVE-RUN-RETENTION.md): the
@@ -897,6 +1089,11 @@ export function useDurableRun<TResult>(
             ...(pendingScopeOverridesRef.current
               ? { scopeOverrides: pendingScopeOverridesRef.current }
               : {}),
+            // The memo rides with the receipt, so the input this run was
+            // launched with survives everything the answer survives.
+            ...(pendingMemoRef.current
+              ? { memo: pendingMemoRef.current }
+              : {}),
           });
         }
         return;
@@ -927,7 +1124,11 @@ export function useDurableRun<TResult>(
         // Keep the pointer on success (see `RunPointer.settled`): the answer
         // must survive a refresh, not just the run that produced it.
         const pointer = readPointer(wire, key);
-        if (pointer) writePointer(wire, key, { ...pointer, settled: true });
+        if (pointer && optionsRef.current.keepFinished !== false) {
+          writePointer(wire, key, { ...pointer, settled: true });
+        } else {
+          clearPointer(wire, key);
+        }
         if (parsed === null || parsed === undefined) {
           clearPointer(wire, key);
           statusRef.current = "error";
@@ -1109,10 +1310,33 @@ export function useDurableRun<TResult>(
             : [...prev.stages, STREAM_LOST_MESSAGE],
       }));
 
+      // THE GIVE-UP CLOCK IS WALL TIME, NOT PER-ATTEMPT TIME.
+      //
+      // This deadline used to be `Date.now() + RECONNECT_GIVE_UP_MS` computed
+      // inside each `startReconnect`, so every page reload — and every
+      // snapshot that re-entered this function — started the fifteen minutes
+      // over. A user watched "Reconnecting…" for five minutes, reloaded the
+      // page, and watched it forever (2026-09-15). The moment the view was
+      // first lost is now carried on the run pointer, so the ceiling is real.
+      const lostAt = (() => {
+        const existing = readPointer(wire, key);
+        if (existing?.lostLiveViewAt) return existing.lostLiveViewAt;
+        const now = Date.now();
+        if (existing) writePointer(wire, key, { ...existing, lostLiveViewAt: now });
+        return now;
+      })();
+
       void (async () => {
-        const deadline = Date.now() + RECONNECT_GIVE_UP_MS;
+        const deadline = lostAt + RECONNECT_GIVE_UP_MS;
         let delayMs = RECONNECT_BASE_DELAY_MS;
         let unreachable = 0;
+        // A rejoin that SUCCEEDS but hands back a one-shot `processing`
+        // snapshot instead of a live follow is a failure to reconnect, and it
+        // is the common one: the live channel is a process-local dict on the
+        // server, so any worker but the executing one can only ever answer
+        // with the row. Counting only transport errors (`unreachable`) meant
+        // this loop could re-ask for ever without the ceiling moving.
+        let notLive = 0;
         try {
           while (!signal.aborted && mountedRef.current) {
             await waitFor(delayMs, signal);
@@ -1123,19 +1347,34 @@ export function useDurableRun<TResult>(
               wire,
               ...(scopeOverrides ? { scopeOverrides } : {}),
               runId,
-              streamOptions: streamOptions((event) =>
-                handleEvent(event, { rejoin: true }),
-              ),
+              // A STOP MUST STICK.
+              //
+              // `stopReconnect` aborts this controller, but the rejoin request
+              // already in flight is not cancelled by that — its response was
+              // read from the row BEFORE the cancel landed, so it arrives
+              // afterwards still saying `processing`, and the snapshot branch
+              // calls `startReconnect` again. The user saw "Stopping…" flicker
+              // and "Lost the live view … Reconnecting…" come straight back.
+              // Events from an aborted attempt are no longer anybody's truth.
+              streamOptions: streamOptions((event) => {
+                if (signal.aborted || !mountedRef.current) return;
+                handleEvent(event, { rejoin: true });
+              }),
               onUnreachable: (_message, error) => {
                 failure = error ?? null;
               },
             });
             if (signal.aborted || !mountedRef.current) return;
             const now = currentStatus();
-            if (now === "done" || now === "error") return;
+            // "stopped" belongs here: a user who stopped their own run must
+            // not have this loop put "Reconnecting…" back on their screen.
+            if (now === "done" || now === "error" || now === "stopped") return;
             unreachable = failure ? unreachable + 1 : 0;
+            notLive = failure ? notLive : notLive + 1;
             const giveUp =
-              unreachable >= RECONNECT_MAX_UNREACHABLE || Date.now() > deadline;
+              unreachable >= RECONNECT_MAX_UNREACHABLE ||
+              notLive >= RECONNECT_MAX_NOT_LIVE ||
+              Date.now() > deadline;
             if (giveUp) {
               // Loud, and still never a lie: we do not know that it failed, so
               // we do not say it did.
@@ -1152,7 +1391,7 @@ export function useDurableRun<TResult>(
                 status: "error",
                 stage: null,
                 error:
-                  "Lost contact with this run. It may still be finishing on the server — reload this page to pick it up before starting another one.",
+                  "We have lost the live view of this run and cannot get it back. The run itself is recorded on the server and may well have finished — reopen this Rulebook to see where it got to, and stop it here if you would rather start over. Do not start a second one until you have looked.",
               }));
               return;
             }
@@ -1188,6 +1427,7 @@ export function useDurableRun<TResult>(
         launchOptions?.scopeOverrides ?? defaultScopeOverrides;
       pendingTargetRef.current = target ?? null;
       pendingScopeOverridesRef.current = scopeOverrides;
+      pendingMemoRef.current = launchOptions?.memo;
       lastLaunchRef.current = { body, target, options: launchOptions };
       startedAtRef.current = Date.now();
       setElapsedMs(0);
@@ -1195,12 +1435,19 @@ export function useDurableRun<TResult>(
       // new run's id.
       stopReconnect();
       clearPointer(wire, key);
+      // A NEW run was never dismissed. The receipt is gone, so the dismissal
+      // that rode on it is gone with it — this only catches the mount up.
+      dismissedRunIdRef.current = null;
+      setDismissed(false);
+      // A deliberate launch answers the "what is here?" question outright.
+      setRestoring(false);
       runIdRef.current = null;
       statusRef.current = "running";
       setState({
         ...initialState<TResult>(),
         status: "running",
         stage: "Connecting",
+        memo: launchOptions?.memo ?? null,
       });
       try {
         const response = await dispatch(
@@ -1208,6 +1455,9 @@ export function useDurableRun<TResult>(
             path,
             method: "POST",
             body: body as never,
+            ...(launchOptions?.pathParams
+              ? { pathParams: launchOptions.pathParams }
+              : {}),
             ...(scopeOverrides ? { scopeOverrides } : {}),
             stream: true,
             ...streamOptions((event) => handleEvent(event, { rejoin: false })),
@@ -1260,6 +1510,33 @@ export function useDurableRun<TResult>(
   );
 
   // ── The durable half: rejoin whatever was still running when we arrived ──
+  /**
+   * Has the person closed the surface following the run on this receipt?
+   * Seeded from the receipt on mount, so it survives navigation exactly as the
+   * receipt does. A fresh launch clears it.
+   */
+  const [dismissed, setDismissed] = useState(false);
+  const dismissedRunIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    const { wire, key } = optionsRef.current;
+    const pointer = readPointer(wire, key);
+    if (pointer?.dismissed) {
+      dismissedRunIdRef.current = pointer.runId;
+      setDismissed(true);
+    }
+    // Once per mount, against the same receipt the rejoin reads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const dismiss = useCallback(() => {
+    const { wire, key } = optionsRef.current;
+    const pointer = readPointer(wire, key);
+    if (!pointer) return;
+    dismissedRunIdRef.current = pointer.runId;
+    writePointer(wire, key, { ...pointer, dismissed: true });
+    setDismissed(true);
+  }, []);
+
   const rejoinedRef = useRef(false);
   useEffect(() => {
     if (rejoinedRef.current) return;
@@ -1270,7 +1547,12 @@ export function useDurableRun<TResult>(
       scopeOverrides: defaultScopeOverrides,
     } = optionsRef.current;
     const pointer = readPointer(wire, key);
-    if (!pointer) return;
+    if (!pointer) {
+      // Nothing to pick up — say so before anyone paints a restoring state.
+      setRestoring(false);
+      return;
+    }
+    setRestoring(true);
     // A settled pointer is a finished ANSWER being restored, not a run being
     // rejoined: the form stays usable while its result comes back, and the
     // user never sees a spinner for work that is already done.
@@ -1284,6 +1566,10 @@ export function useDurableRun<TResult>(
       stage: pointer.settled ? null : "Picking up where you left off",
       runId: pointer.runId,
       rejoinedTarget: pointer.target,
+      // WHAT THIS RUN WAS LAUNCHED WITH comes back with it. Without this a
+      // restored surface holds the answer and not the question, and its next
+      // request cannot be built at all (`DurableRunState.memo`).
+      memo: pointer.memo ?? null,
     });
     void rejoinDurableRun({
       dispatch,
@@ -1294,25 +1580,65 @@ export function useDurableRun<TResult>(
         handleEvent(event, { rejoin: true }),
       ),
       onUnreachable: (message, error) => {
-        // A dropped socket while picking an UNFINISHED run back up is delivery
-        // failing again, not the run failing. Keep asking.
-        if (!pointer.settled && isStreamTransportLost(error)) {
-          startReconnectRef.current?.(pointer.runId);
-          return;
-        }
-        clearPointer(wire, key);
-        statusRef.current = "idle";
-        setState(initialState<TResult>());
-        // Loud, but not in the user's face: nothing was lost that they can act
-        // on, and a tool that opens with a red error nobody caused is worse.
+        // 🚨 AN UNREACHABLE REJOIN IS NEVER A FINISHED RUN (cold walk 6,
+        // finding 3, 2026-09-17). This used to keep asking only when
+        // `isStreamTransportLost` recognised the failure, and threw the
+        // RECEIPT AWAY otherwise — so one dropped rejoin request after a
+        // reload deleted the pointer to a live, paid run, reset the surface to
+        // empty, and left the Bad Example probe offering "Write the first one"
+        // while round 2 was still being written on the server. Nothing on
+        // screen said a word, and no later reload could find the run again
+        // because the only receipt had been erased. Measured on a brand-new
+        // Rulebook: 87 seconds of a start button over a live round.
+        //
+        // An unfinished run's receipt is the only way back to it, so it is
+        // kept and the honest reconnect loop takes over — that loop has its
+        // own wall-clock ceiling and says out loud when it truly gives up
+        // (see STREAM_LOST_MESSAGE and the give-up branch).
         captureError({
           source: "durable-run",
           relation: wire.relation,
           message,
-          userMessage: "Could not pick up a background run.",
-          raw: { runId: pointer.runId, key },
+          userMessage: pointer.settled
+            ? "Could not pick up a background run."
+            : "Lost the live view of a background run — still asking.",
+          raw: {
+            runId: pointer.runId,
+            key,
+            settled: pointer.settled === true,
+            transportLost: isStreamTransportLost(error),
+          },
         });
+        if (!pointer.settled) {
+          startReconnectRef.current?.(pointer.runId);
+          return;
+        }
+        // A FINISHED run whose answer we cannot re-read is a different thing:
+        // there is nothing still happening, so the surface goes back to idle
+        // rather than opening with a red error nobody caused.
+        clearPointer(wire, key);
+        statusRef.current = "idle";
+        setState(initialState<TResult>());
+        setRestoring(false);
       },
+    }).finally(() => {
+      // THE REQUEST RETURNING IS NOT AN ANSWER. A rejoin that handed back a
+      // one-shot `processing` snapshot, or that failed and handed the run to
+      // the reconnect loop, is still in flight — and `restoring` means "this
+      // mount cannot describe what it holds", which is exactly still true. The
+      // terminal-status effect above ends it; this only covers the case where
+      // the pointer turned out to be nothing at all.
+      if (!mountedRef.current) return;
+      if (statusRef.current === "rejoining" || statusRef.current === "running") {
+        // A stream that ended with neither a terminal event nor an error left
+        // nothing watching the run at all. `startReconnect` is a no-op while
+        // its loop is already going, so this only ever adds the missing
+        // watcher — and that loop is the thing that eventually ends this state
+        // one way or the other.
+        startReconnectRef.current?.(pointer.runId);
+        return;
+      }
+      setRestoring(false);
     });
   }, [dispatch, handleEvent, streamOptions]);
 
@@ -1322,6 +1648,7 @@ export function useDurableRun<TResult>(
     startedAtRef.current = null;
     setElapsedMs(0);
     statusRef.current = "idle";
+    setRestoring(false);
     setState(initialState<TResult>());
   }, [stopReconnect]);
 
@@ -1485,6 +1812,11 @@ export function useDurableRun<TResult>(
     }
     return {
       title: options.live.label ?? "AI is working",
+      // The generic narration is the run's own stage LADDER — connecting, then
+      // each server stage in the order it arrived, then done or failed. A
+      // surface whose rows are a pile rather than a ladder renders its own
+      // progress (see `RunStages`) and declares `fan_out` there.
+      shape: "sequence" as const,
       ...(state.rejoinedTarget ? { description: state.rejoinedTarget } : {}),
       items,
     };
@@ -1547,6 +1879,7 @@ export function useDurableRun<TResult>(
   return {
     ...state,
     running,
+    restoring,
     launch,
     reset,
     fail,
@@ -1554,8 +1887,15 @@ export function useDurableRun<TResult>(
     cancel: options.wire.cancelPath && running && state.runId ? cancel : null,
     cancelling,
     elapsedMs: running ? elapsedMs : 0,
+    startedAt: running ? startedAtRef.current : null,
+    expectedMs,
     overdue,
     waitMessage,
+    surfacing:
+      running &&
+      Boolean(state.runId) &&
+      !(dismissed && state.runId === dismissedRunIdRef.current),
+    dismiss,
   };
 }
 

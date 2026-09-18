@@ -31,7 +31,15 @@ import { resolveBlockDispatch } from "@/components/mardown-display/chat-markdown
 import { RENDER_PATHS, type RenderPathId } from "../paths";
 import { routeBlock, runRenderPath } from "../run-path";
 
+// 🚨 A PARTIAL MOCK OF A REAL MODULE IS A SUITE THAT DIES ON THE NEXT EXPORT
+// (DD-239). This used to replace the whole capture store with `{ captureError }`.
+// When the session barrier started calling `setSessionStateProbe` from the same
+// module at client-construction time, the mock no longer satisfied it and THIS
+// SUITE DIED AT IMPORT — no test ran, for days, while the file still looked
+// green in a list. Spread the real module: only the export this suite needs to
+// observe is replaced, and a new export can never silently take the suite down.
 jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
   captureError: jest.fn(),
 }));
 

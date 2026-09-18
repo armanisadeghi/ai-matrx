@@ -172,7 +172,9 @@ export function AccountAddonsPanel() {
     [orgs],
   );
   const planById = useMemo(
-    () => new Map(plans.map((plan) => [plan.id, plan])),
+    // Keyed by the plan SLUG — `org_plan.plan_id` and `plan_limit.plan_id` both hold it
+    // (DD-173 moved that value off `billing.plan.id` to `plan_key`; the uuid keys nothing here).
+    () => new Map(plans.map((plan) => [plan.plan_key, plan])),
     [plans],
   );
   const capabilityByName = useMemo(
@@ -196,7 +198,7 @@ export function AccountAddonsPanel() {
       if (!plan) return { kind: "no_plan" };
       const limit =
         planLimits.find(
-          (row) => row.plan_id === plan.id && row.capability === capability,
+          (row) => row.plan_id === plan.plan_key && row.capability === capability,
         ) ?? null;
       return { kind: "known", plan, limit };
     },

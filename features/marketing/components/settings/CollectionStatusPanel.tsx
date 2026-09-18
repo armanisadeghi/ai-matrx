@@ -285,7 +285,7 @@ export function CollectionStatusPanel({
             }),
           }}
           rowActions={(row) => (
-            <div className="flex items-center justify-end gap-1">
+            <>
               {row.runnable ? (
                 <Button
                   size="sm"
@@ -348,7 +348,7 @@ export function CollectionStatusPanel({
                   </Link>
                 </Button>
               ) : null}
-            </div>
+            </>
           )}
           emptyState={{
             title: "No data sources reported",

@@ -5,14 +5,17 @@
 // 🚨 THE ANSWER IS SACRED. `answer_text` is written EXACTLY as it was given:
 // no trim, no collapse, no "helpful" normalisation. A leading space, a trailing
 // newline and a run of blank lines are part of what he said. The DB backs this
-// up (`decision_question_answer_words_ck` refuses an empty own-words answer),
-// and this module never calls `.trim()` on anything it stores.
+// up (`decision_question_answer_words_ck` refuses an own-words or overturn
+// answer with no non-whitespace character — `qd_005`), and this module never
+// calls `.trim()` on anything it stores. Whether an answer HAS WORDS is asked
+// in exactly one place, `../answerWords.ts`, by every box on this surface.
 //
 // Every write is a `guardedUpdate` compare-and-swap on the canonical `version`
 // column, so an answer typed against a stale row reports a conflict instead of
 // silently overwriting whatever an agent wrote through MCP in the meantime.
 
 import { guardedUpdate } from "@ai-matrx/data/db";
+import { NO_WORDS_MESSAGE, hasWords } from "../answerWords";
 import type {
   AnswerSource,
   DecisionQuestionRow,
@@ -69,7 +72,25 @@ export async function loadQuestion(
 export type SaveOutcome =
   | { status: "saved"; row: DecisionQuestionRow }
   | { status: "conflict"; currentRow: DecisionQuestionRow; message: string }
+  /**
+   * THE REFUSAL. The database answered the write with zero rows while the
+   * row is still readable at the very version we wrote against — Postgres
+   * row-level security declined the UPDATE for the signed-in account. Nothing
+   * changed, and nothing "moved somewhere else": this is an access refusal
+   * and the screen must say so in those words (2026-09-13: a refused save
+   * that wears a "changed elsewhere" or "no longer exists" sentence is how an
+   * answer looks lost instead of refused).
+   */
+  | { status: "refused"; currentRow: DecisionQuestionRow; message: string }
   | { status: "failed"; message: string };
+
+/**
+ * The sentence a refused write shows. Exported so the screen and the test
+ * agree on the words; the screen appends WHO is signed in and WHO the
+ * interview was addressed to, which this module cannot know.
+ */
+export const REFUSED_SAVE_MESSAGE =
+  "NOT SAVED — the database refused this write for the account you are signed in as. Nothing was recorded.";
 
 export interface SaveAnswerArgs {
   question: DecisionQuestionRow;
@@ -90,14 +111,12 @@ export interface SaveAnswerArgs {
  */
 export async function saveAnswer(args: SaveAnswerArgs): Promise<SaveOutcome> {
   const { question, verdict, answerText, source, answeredBy, audioFileId } = args;
-  if (
-    (verdict === "own_words" || verdict === "overturn") &&
-    (answerText === null || answerText.length === 0)
-  ) {
-    return {
-      status: "failed",
-      message: "Write something first, or use one of the buttons.",
-    };
+  // ONE PREDICATE, and this is its last line of defence: whatever box the
+  // words came from, an own-words or overturn answer that carries no
+  // non-whitespace character never reaches Postgres (which refuses it too
+  // since `qd_005` — the CHECK and this guard say the same thing).
+  if ((verdict === "own_words" || verdict === "overturn") && !hasWords(answerText)) {
+    return { status: "failed", message: NO_WORDS_MESSAGE };
   }
 
   const patch: DecisionQuestionUpdate = {
@@ -167,6 +186,18 @@ async function applyGuarded(
     });
     if (result.status === "saved") return { status: "saved", row: result.row };
     if (result.status === "conflict") {
+      // PostgREST reports an RLS-refused UPDATE as "0 rows, no error" — the
+      // same shape as a genuine version race. The two are told apart by the
+      // row itself: a race moved the version on; a refusal left it exactly
+      // where we read it. Only a refusal may be called a refusal, and a
+      // refusal may never be called anything else.
+      if (result.currentRow.version === question.version) {
+        return {
+          status: "refused",
+          currentRow: result.currentRow,
+          message: REFUSED_SAVE_MESSAGE,
+        };
+      }
       return {
         status: "conflict",
         currentRow: result.currentRow,
@@ -176,7 +207,8 @@ async function applyGuarded(
     }
     return {
       status: "failed",
-      message: "This question no longer exists. Your words are still on screen.",
+      message:
+        "NOT SAVED — this question cannot be read back by the account you are signed in as (it was deleted, or this account has no access to it). Your words are still on screen.",
     };
   } catch (error) {
     const reason = error instanceof Error ? error.message : String(error);

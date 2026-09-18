@@ -26,6 +26,10 @@ import type {
 import type { EntityColumnSpec } from "./columns";
 import type { EntityListFailure } from "./failure";
 import type {
+  EntityBulkAction,
+  EntityBulkSelectionConfig,
+} from "./selection";
+import type {
   ArchivedFilter,
   ArchivedProbe,
   EntityFacets,
@@ -279,6 +283,21 @@ export interface EntityListConfig<TRow> {
   defaultFilters?: EntityFilters;
 
   /**
+   * A search typed over the UNTOUCHED `defaultFilters` runs over the whole
+   * corpus, and the surface reads the lifted bag back (a bucket control shows
+   * "All"). A filter the person set themselves is honoured exactly. Full rule
+   * and the why: `useEntityList` → `searchSpansDefaultFilters`. Off by default.
+   */
+  searchSpansDefaultFilters?: boolean;
+
+  /**
+   * The search box's placeholder. Default `Search <plural>…`. Name what the
+   * box actually finds when that is more than titles — ids, session ids,
+   * commits — so nobody has to guess whether a pasted identifier will work.
+   */
+  searchPlaceholder?: string;
+
+  /**
    * Put the query in the URL: scope, search, filters, archived, deep, page,
    * plus sort/direction. Off by default so existing surfaces are untouched.
    *
@@ -316,6 +335,33 @@ export interface EntityListConfig<TRow> {
 
   /** Deep-search toggle beside the search box. Absent → no toggle. */
   deepSearch?: { label: string };
+
+  /**
+   * BULK SELECTION — the whole opt-in, and the only switch that turns it on.
+   *
+   * ABSENT OR EMPTY MEANS NOTHING CHANGES. No `selection` prop reaches
+   * `MatrxDataTable`, so there is no checkbox column, no header select-all, no
+   * bulk bar, no banner and no keyboard handler — byte-for-byte the list every
+   * surface renders today. That is deliberate: acting on many rows at once is a
+   * capability a surface has to be ready for (its verbs must be safe to repeat,
+   * and anything destructive owes a named consequence), never something a
+   * shared shell switches on for eighteen pages at once.
+   *
+   * ON, the shell owns every mechanic — checkbox per row with a 44px touch hit
+   * area, shift-click range, header select-all over the page, the honest
+   * "everything matching" escalation, selection that survives sort/filter/
+   * paging, keyboard (x, cmd/ctrl-A, Escape), the phone card's checkbox, the
+   * bar, the confirms, the toasts — and the surface owns only what each verb
+   * DOES. See ../selection.ts for the vocabulary and the three-way meaning.
+   */
+  bulkActions?: EntityBulkAction<TRow>[];
+
+  /**
+   * Modifiers for `bulkActions`: the noun the count uses, which rows may be
+   * ticked at all, and whether "select all M matching this filter" is offered.
+   * Meaningless without `bulkActions`.
+   */
+  bulkSelection?: EntityBulkSelectionConfig<TRow>;
 
   /**
    * Whether this surface has an archived axis (an `is_archived` flag its RPC

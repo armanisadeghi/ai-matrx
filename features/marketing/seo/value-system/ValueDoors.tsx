@@ -24,7 +24,8 @@
 
 import AppLink from "@/components/navigation/AppLink";
 import { useQuery } from "@tanstack/react-query";
-import { BadgeCheck, BookOpenCheck, Library } from "lucide-react";
+import { BadgeCheck, BookOpenCheck, Library, ScanSearch } from "lucide-react";
+import { useOpenSiteDiscoveryWindow } from "@/features/overlays/openers/siteDiscoveryWindow";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { Button } from "@/components/ui/button";
@@ -35,11 +36,19 @@ import { dimensionValueHref } from "@/features/marketing/seo/value-system/reason
 export function ValueDoors({
   brandId,
   siteId,
+  organizationId,
+  siteLabel,
+  showDiscovery = true,
 }: {
   brandId: string | null | undefined;
   siteId: string;
+  organizationId?: string | null;
+  siteLabel?: string | null;
+  /** Off on the discovery surface itself — a door to where you already are. */
+  showDiscovery?: boolean;
 }) {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  const openDiscovery = useOpenSiteDiscoveryWindow();
 
   // Same query key DimensionManager uses — the catalog is almost always
   // already cached by the time either screen mounts.
@@ -54,6 +63,20 @@ export function ValueDoors({
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
+      {showDiscovery ? (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-8 gap-1.5 text-xs"
+          title="Let AI read this site cold and propose what it offers and what each offering is worth — in a panel beside this screen."
+          onClick={() =>
+            openDiscovery({ siteId, brandId, organizationId, siteLabel })
+          }
+        >
+          <ScanSearch className="h-3.5 w-3.5" />
+          Business discovery
+        </Button>
+      ) : null}
       <Button
         asChild
         size="sm"

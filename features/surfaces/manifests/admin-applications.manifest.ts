@@ -7,7 +7,7 @@
  * configuration, remote catalogs, the installed fleet, and one unified audit
  * history. "Applications" here NEVER means user-created agent apps.
  *
- * Five route-tabbed pages share one shell (`ApplicationsAdminLayoutClient.tsx`):
+ * Six route-tabbed pages share one shell (`ApplicationsAdminLayoutClient.tsx`):
  *
  *   - Overview       `page.tsx` → `ApplicationsOverview.tsx` — per-application
  *     cards summarising config / catalogs / fleet, with a loud banner when any
@@ -20,6 +20,9 @@
  *   - Installations   `installations/page.tsx` → `InstallationsClient.tsx` —
  *     the installed fleet via `admin_list_app_instances`, each row compared
  *     against the live `min_supported_app_version`.
+ *   - Packages        `packages/page.tsx` → `PackagesCatalogClient.tsx` —
+ *     the exact public `@ai-matrx/*` npm scope, with live versions, registry
+ *     lifecycle, deprecation, and registry-declared source locations.
  *   - History        `history/page.tsx` → `ApplicationsHistoryClient.tsx` — one
  *     merged audit timeline over `app_config_history` + `catalog_entries_history`.
  *
@@ -38,6 +41,7 @@
  *   - Configuration→ `config/components/AppConfigClient.tsx`
  *   - Catalogs     → `catalogs/components/CatalogsClient.tsx`
  *   - Installations→ `installations/components/InstallationsClient.tsx`
+ *   - Packages     → `packages/components/PackagesCatalogClient.tsx`
  *   - History      → `history/components/ApplicationsHistoryClient.tsx`
  */
 
@@ -98,6 +102,13 @@ const groups: SurfaceValueGroup[] = [
     description:
       "The merged configuration + catalog audit timeline and how far back it currently loads.",
   },
+  {
+    key: "packages",
+    label: "npm packages",
+    sortOrder: 550,
+    description:
+      "The live public npm inventory for the exact @ai-matrx scope, including published and reserved names.",
+  },
 ];
 
 const surfaceSpecific: SurfaceValue[] = [
@@ -106,7 +117,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "active_tab",
     label: "Active tab",
     description:
-      'Which tab of the Applications hub is showing: "overview", "configuration", "catalogs", "installations", or "history". Derived from the pathname under /administration/applications. Always present.',
+      'Which tab of the Applications hub is showing: "overview", "configuration", "catalogs", "installations", "packages", or "history". Derived from the pathname under /administration/applications. Always present.',
     valueType: "string",
     alwaysAvailable: true,
     typicalCharCount: 14,
@@ -346,6 +357,84 @@ const surfaceSpecific: SurfaceValue[] = [
     sortOrder: 610,
     group: "history",
   },
+  {
+    name: "npm_package_load_state",
+    label: "npm package load state",
+    description:
+      'Whether the live npm registry inventory is "ready" or "error". Counts and summaries are absent on error so an outage can never look like an empty scope. Absent outside the Packages tab.',
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 5,
+    sortOrder: 545,
+    group: "packages",
+  },
+  {
+    name: "npm_package_error",
+    label: "npm package load error",
+    description:
+      "The public npm registry load failure shown to the admin. Present only when npm_package_load_state is error; counts and summaries are then absent.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 120,
+    sortOrder: 546,
+    group: "packages",
+  },
+  {
+    name: "npm_package_count",
+    label: "npm package count",
+    description:
+      "Number of exact @ai-matrx/* packages returned by the fully exhausted live npm registry search. Absent outside the Packages tab.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 3,
+    sortOrder: 550,
+    group: "packages",
+  },
+  {
+    name: "npm_package_published_count",
+    label: "Published package count",
+    description:
+      "Count of exact-scope packages whose current registry version is not the 0.0.0 reservation marker. This does not claim source adoption or trusted-publisher configuration. Absent outside the Packages tab.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 3,
+    sortOrder: 560,
+    group: "packages",
+  },
+  {
+    name: "npm_package_reserved_count",
+    label: "Reserved package count",
+    description:
+      "Count of exact-scope packages whose current registry version is 0.0.0, meaning the name is reserved without asserting live source. Absent outside the Packages tab.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 3,
+    sortOrder: 570,
+    group: "packages",
+  },
+  {
+    name: "npm_package_deprecated_count",
+    label: "Deprecated package count",
+    description:
+      "Count of exact-scope latest versions carrying npm deprecation metadata, independent of published/reserved lifecycle. Absent outside the Packages tab.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 3,
+    sortOrder: 580,
+    group: "packages",
+  },
+  {
+    name: "npm_packages_summary",
+    label: "npm package summary",
+    description:
+      "One row per exact-scope npm package: name, latest version, published/reserved lifecycle, deprecation state, and registry-declared source directory. It never infers trusted-publisher state from public metadata. Absent outside the Packages tab.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 4000,
+    autoContext: false,
+    sortOrder: 590,
+    group: "packages",
+  },
 ];
 
 /**
@@ -387,9 +476,9 @@ export const adminApplicationsManifest: SurfaceManifest = {
   label: "Applications",
   urlPattern: "/administration/applications",
   intro: `<surface_intro>
-This is an ADMIN surface: the Applications hub at /administration/applications — the console governing every shipped Matrx CLIENT (desktop, browser extension, mobile), not user-created agent apps. Five tabs: Overview, Configuration, Catalogs, Installations, History.
+This is an ADMIN surface: the Applications hub at /administration/applications — the console governing every shipped Matrx CLIENT (desktop, browser extension, mobile), not user-created agent apps. Six tabs: Overview, Configuration, Catalogs, Installations, Packages, History.
 
-active_tab tells you which tab the admin is on right now and is always present. On Overview, applications_overview_summary and fleet_below_minimum_total describe every known application's config/catalog/fleet standing. On Configuration, config_rows_summary lists the remote runtime config for each application and config_editor_view/config_editor_app say whether one is open for editing. On Catalogs, catalog_kind_summary breaks down remote catalog entries by kind for catalog_selected_app, and catalog_view/catalog_selected_kind/catalog_selected_entry_id track the drill-down. On Installations, the fleet is compared against installation_min_supported_version, with installation_below_min_count naming instances running unsupported builds. On History, history_entry_count and history_fetch_limit describe the merged audit timeline window.
+active_tab tells you which tab the admin is on right now and is always present. On Overview, applications_overview_summary and fleet_below_minimum_total describe every known application's config/catalog/fleet standing. On Configuration, config_rows_summary lists the remote runtime config for each application and config_editor_view/config_editor_app say whether one is open for editing. On Catalogs, catalog_kind_summary breaks down remote catalog entries by kind for catalog_selected_app, and catalog_view/catalog_selected_kind/catalog_selected_entry_id track the drill-down. On Installations, the fleet is compared against installation_min_supported_version, with installation_below_min_count naming instances running unsupported builds. On Packages, npm_packages_summary reports the exact live @ai-matrx npm scope without inferring private trusted-publisher settings. On History, history_entry_count and history_fetch_limit describe the merged audit timeline window.
 
 Only the values matching active_tab are populated — each tab mounts its own nested emitter, so everything belonging to another tab is absent, not stale.
 
@@ -414,6 +503,7 @@ export function createAdminApplicationsScope(values: {
     | "configuration"
     | "catalogs"
     | "installations"
+    | "packages"
     | "history";
   // alwaysAvailable: false → optional
   selection?: string;
@@ -436,6 +526,13 @@ export function createAdminApplicationsScope(values: {
   installation_count?: number;
   installation_below_min_count?: number;
   installation_min_supported_version?: string | null;
+  npm_package_count?: number;
+  npm_package_load_state?: "ready" | "error";
+  npm_package_error?: string;
+  npm_package_published_count?: number;
+  npm_package_reserved_count?: number;
+  npm_package_deprecated_count?: number;
+  npm_packages_summary?: unknown[];
   history_entry_count?: number;
   history_fetch_limit?: number;
 }): SurfaceScopePayload {

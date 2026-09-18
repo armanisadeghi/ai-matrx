@@ -23,7 +23,7 @@ export interface OpenGoogleConnectOptions extends GoogleConnectWindowHandlers {
   /** One line saying why, e.g. "to attach a doc to this message". */
   reason?: string;
   /** Workspace keeps live Docs/Sheets; import returns ordinary browser Files. */
-  mode?: "workspace" | "drive-import";
+  mode?: "overview" | "workspace" | "drive-import";
   /** Seed the account chooser from the invoking Google surface. */
   initialConnectionId?: string;
 }

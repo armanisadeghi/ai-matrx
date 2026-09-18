@@ -70,6 +70,9 @@ import FlowStepResultBlock from "@/components/mardown-display/blocks/result-kind
 import CollectionResultBlock from "@/components/mardown-display/blocks/result-kinds/CollectionResultBlock";
 import FileOperationResultBlock from "@/components/mardown-display/blocks/result-kinds/FileOperationResultBlock";
 import ValueResultBlock from "@/components/mardown-display/blocks/result-kinds/ValueResultBlock";
+import GoogleWorkspaceResultBlock from "@/components/mardown-display/blocks/google-kinds/GoogleWorkspaceResultBlock";
+import GoogleMarketingResultBlock from "@/components/mardown-display/blocks/google-kinds/GoogleMarketingResultBlock";
+import PlatformRecordBlock from "@/components/mardown-display/blocks/result-kinds/PlatformRecordBlock";
 import MarkdownKindBlock from "@/components/mardown-display/blocks/markdown/MarkdownKindBlock";
 // Lazy shell (next/dynamic ssr:false inside) — Babel/compiler weight ships in
 // its own chunk, fetched only when a block actually routed to a db component.
@@ -79,6 +82,11 @@ import { isMaterializedArtifactId } from "@/features/canvas/artifact-types/artif
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import MatrxMiniLoader from "@/components/loaders/MatrxMiniLoader";
 import { readEnvelope } from "@/features/content-ir/redux/render-block-envelope";
+import {
+  isRenderableStructuredAgentAnswer,
+  parseStructuredAgentAnswer,
+  StructuredAgentAnswerBlock,
+} from "@/components/mardown-display/blocks/json/StructuredAgentAnswerBlock";
 
 // ── The flat render-block shape ──────────────────────────────────────────────
 
@@ -143,6 +151,8 @@ export interface BlockDispatchContext {
   replaceBlockContent: (original: string, replacement: string) => void;
   /** The shared BasicMarkdownContent renderer, pre-wired with edit/diagnostic props. */
   renderBasicMarkdown: (content: string) => React.ReactElement;
+  /** Bound agent's declared output schema; absent/loading deliberately fails closed. */
+  outputSchema?: unknown | null;
 }
 
 export type BlockRenderFn = (
@@ -153,6 +163,7 @@ export type BlockRenderFn = (
 
 /** Language for ``` fences with no info string (plain text / notes / prose). */
 export const DEFAULT_UNLABELED_FENCE_LANGUAGE = "markdown";
+const JSON_CODE_LANGUAGES = new Set(["json"]);
 
 /**
  * Best-effort MIME type for an audio URL parsed from a markdown link, derived
@@ -260,6 +271,18 @@ export function isBlockLoading(block: {
  *    `kind_component` row per kind, on exactly the `web_analysis_item` model:
  *    one shared reader question per family, the platform's value renderer
  *    underneath. Reached ONLY via applyIrKindRoute's resolver-only path.
+ *  - `google_workspace_result` / `google_marketing_result` — the two GOOGLE
+ *    tool-result renderers. One union kind per tool (fifteen Workspace actions,
+ *    six marketing reads), so one component each, reached through that kind's
+ *    `kind_component` row on the resolver-only path. Never emitted upstream.
+ *  - `platform_record` — the ONE renderer for the `platform_record` kind, the
+ *    shape `data.read_record` ("Read a Record", matrx-graph) answers with: one
+ *    platform row of ANY registered entity type, read as the run's operator.
+ *    One Record shape for every type by ruling, so one component: the row's
+ *    identity and its door lead, `hidden_fields` are named, and the columns go
+ *    to the platform's value viewer. Reached ONLY via applyIrKindRoute's
+ *    resolver-only path, from that kind's `kind_component` row; never emitted
+ *    upstream, so it has no vocabulary row. Shape-classified by construction.
  *  - `web_analysis_item` — the ONE renderer for the `web_analysis_item`
  *    kind family (the 83 registered `web_*_v1` site-audit checks, which share
  *    one verified shape). Produced ONLY by `applyIrKindRoute`'s resolver-only
@@ -412,6 +435,8 @@ export type FeSynthesizedBlockType =
   | "directive_receipt"
   | "media_block"
   | "video_prompt_options"
+  | "map_topic_proposal"
+  | "list_change_proposal"
   | "keyword_research"
   | "keyword_classification_batch"
   | "keyword_serp_intent_analysis"
@@ -510,6 +535,9 @@ export type FeSynthesizedBlockType =
   | "collection_result"
   | "file_operation_result"
   | "value_result"
+  | "google_workspace_result"
+  | "google_marketing_result"
+  | "platform_record"
   | "markdown_stream"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
@@ -582,6 +610,8 @@ export type ShapeBlockType =
   | "structured_info"
   | "item_presentation"
   | "video_prompt_options"
+  | "map_topic_proposal"
+  | "list_change_proposal"
   | "keyword_research"
   | "keyword_classification_batch"
   | "keyword_serp_intent_analysis"
@@ -684,6 +714,9 @@ export type ShapeBlockType =
   | "collection_result"
   | "file_operation_result"
   | "value_result"
+  | "google_workspace_result"
+  | "google_marketing_result"
+  | "platform_record"
   | "markdown_stream"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
@@ -1361,6 +1394,31 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
 
   code: (ctx) => {
     const { block, index, isStreamActive, conversationId, messageId } = ctx;
+    const lang = block.language?.toLowerCase();
+
+    // Complete, schema-bound assistant answers are prose, not generic code.
+    // This sits below kind routing and refuses any unknown/incomplete shape.
+    if (
+      lang &&
+      JSON_CODE_LANGUAGES.has(lang) &&
+      !isStreamActive &&
+      !isBlockLoading(block)
+    ) {
+      const structured = parseStructuredAgentAnswer(
+        block.content,
+        ctx.outputSchema,
+      );
+      if (structured && isRenderableStructuredAgentAnswer(structured)) {
+        return (
+          <StructuredAgentAnswerBlock
+            key={index}
+            value={structured}
+            rawContent={block.content}
+            renderMarkdown={ctx.renderBasicMarkdown}
+          />
+        );
+      }
+    }
 
     // Special handling for diff blocks
     if (block.language === "diff" && looksLikeDiff(block.content)) {
@@ -1376,7 +1434,6 @@ const SCALAR_GENERIC_BLOCK_DISPATCH = {
     }
 
     // Custom renderers for specific languages — the code-language sub-table.
-    const lang = block.language?.toLowerCase();
     const languageRenderer = lang ? CODE_LANGUAGE_DISPATCH[lang] : undefined;
     if (languageRenderer) {
       return languageRenderer(ctx);
@@ -1651,6 +1708,49 @@ const SHAPE_BLOCK_DISPATCH = {
         <BlockComponents.VideoPromptOptionsBlock
           key={index}
           serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return renderJsonFallback(block, index);
+  },
+
+  // Kind-routed (map_topic_proposal_v1 — the tree the topical-map author
+  // proposes, Lane G / R12): same complete-only bridge shape as above. The
+  // block renders THE ONE proposal component (`MapTopicProposalView`) over the
+  // shared `TopicTree`; a complete block with no serverData falls through to
+  // readable JSON (never hidden).
+  map_topic_proposal: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.MapTopicProposalBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return renderJsonFallback(block, index);
+  },
+
+  // Kind-routed (list_change_proposal_v1 — THE PRIMITIVE: an agent proposes
+  // changes to a list and the person accepts or rejects them right here).
+  // Complete-only, like the proposal above: deciding on a half-parsed list
+  // would write a row the model had not finished. `messageId` is passed
+  // through because that is where the decisions are remembered
+  // (chat.message.metadata); without it the component says so instead of
+  // offering controls whose result would evaporate.
+  list_change_proposal: ({ block, index, messageId }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.ListChangeProposalBlock
+          key={index}
+          serverData={block.serverData}
+          messageId={messageId}
         />
       );
     }
@@ -2480,6 +2580,46 @@ const SHAPE_BLOCK_DISPATCH = {
   ),
   value_result: ({ block, index }) => (
     <ValueResultBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+
+  // The two GOOGLE tool-result routes (features/content-ir/react/kind-route.ts
+  // resolver-only path): `google_workspace_result` and `google_marketing_result`
+  // are ONE union kind per tool — fifteen Workspace actions and six marketing
+  // reads — so each gets ONE component that branches on the shape of the data,
+  // pointed at by that kind's `kind_component` row. Before these rows existed
+  // every Google answer reached the reader through the generic floor, which
+  // cannot tell a dry-run PREVIEW from a receipt or a capped window from a
+  // total. Reached ONLY via applyIrKindRoute.
+  google_workspace_result: ({ block, index }) => (
+    <GoogleWorkspaceResultBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  google_marketing_result: ({ block, index }) => (
+    <GoogleMarketingResultBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+
+  // The `platform_record` route (features/content-ir/react/kind-route.ts
+  // resolver-only path): `data.read_record` reads ONE platform row of any
+  // registered entity type and answers in one generic Record shape, so ONE
+  // component serves every type — the row's identity and its door lead, the
+  // withheld columns are named, and `fields` goes to the platform's value
+  // viewer. The kind was published INACTIVE with no component row while the
+  // engine ignores `is_active`, so until this route existed a Record a workflow
+  // read reached the reader through the generic floor. Reached ONLY via
+  // applyIrKindRoute.
+  platform_record: ({ block, index }) => (
+    <PlatformRecordBlock
       key={index}
       content={block.content}
       metadata={block.metadata}

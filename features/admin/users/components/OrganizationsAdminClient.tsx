@@ -148,15 +148,22 @@ export function OrganizationsAdminClient() {
       !focusedUserId || membershipOrganizationIds.has(organization.id),
   );
 
-  const effectiveSelectedOrganizationId =
-    visibleOrganizations.find(
-      (organization) => organization.id === requestedOrganizationId,
-    )?.id ??
-    visibleOrganizations.find(
-      (organization) => organization.id === selectedOrganizationId,
-    )?.id ??
-    visibleOrganizations[0]?.id ??
-    null;
+  // The organization shown is the one the admin PICKED — from the URL (`?org=`)
+  // or by opening a row in the table beside this panel. Nothing pre-picks the
+  // first organization in the list: a first-membership pick puts an admin in
+  // front of a tenant they never chose, and every action in this panel acts on
+  // it. With nothing picked the panel says "Select an organization".
+  // common-docs/policies/context-is-carried-never-rebuilt.md
+  const isVisibleOrganization = (id: string | null): boolean =>
+    Boolean(id) &&
+    visibleOrganizations.some((organization) => organization.id === id);
+  const effectiveSelectedOrganizationId = isVisibleOrganization(
+    requestedOrganizationId,
+  )
+    ? requestedOrganizationId
+    : isVisibleOrganization(selectedOrganizationId)
+      ? selectedOrganizationId
+      : null;
 
   const userById = new Map(users.map((user) => [user.id, user]));
   const focusedUser = focusedUserId ? userById.get(focusedUserId) : undefined;
@@ -745,7 +752,7 @@ export function OrganizationsAdminClient() {
                   : undefined
               }
               rowActions={(member) => (
-                <div className="flex items-center gap-1">
+                <>
                   <Button
                     size="icon"
                     variant="ghost"
@@ -773,7 +780,7 @@ export function OrganizationsAdminClient() {
                       <Trash2 className="h-4 w-4" />
                     )}
                   </Button>
-                </div>
+                </>
               )}
               emptyState={{
                 title: selectedOrganization
@@ -790,6 +797,7 @@ export function OrganizationsAdminClient() {
       </div>
 
       <Dialog
+        modal={false}
         open={addOpen}
         onOpenChange={(open) => {
           setAddOpen(open);
@@ -799,7 +807,7 @@ export function OrganizationsAdminClient() {
           }
         }}
       >
-        <DialogContent>
+        <DialogContent onInteractOutside={(event) => event.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Add organization member</DialogTitle>
             <DialogDescription>

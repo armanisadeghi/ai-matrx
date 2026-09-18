@@ -50,19 +50,25 @@ import type {
 import { supabase } from "@/utils/supabase/client";
 import type { RootState } from "@/lib/redux/rootReducer";
 import {
+  canonicalRevision,
   currentRealtimeManager,
   defineChannelNamespace,
+  realtimeDiagnostics,
   subscribeToRealtimeManager,
+  type RealtimeStatus,
   type WriteLedger,
 } from "@ai-matrx/realtime";
 import {
   upsertNoteFromServer,
   removeNote,
-  setRealtimeConnected,
+  setRealtimeSyncStatus,
   setNoteEditor,
   clearNoteEditor,
 } from "./slice";
+import { NOTE_ROW_KEYS } from "./notes.types";
+import type { Note } from "../types";
 import { fetchNotesList, fetchSharedNotesList } from "./thunks";
+import { captureNoteDrafts } from "../utils/notesDrafts";
 
 /** Thunk-aware dispatch — this middleware refreshes lists via async thunks. */
 type NotesDispatch = ThunkDispatch<RootState, unknown, UnknownAction>;
@@ -76,25 +82,31 @@ const notesChannel = defineChannelNamespace({
 
 const NOTES_TABLE = "workbench.notes";
 
-/** Postgres change payloads are usually full rows, but that is transport
- * behavior, not a reducer contract. A partial event may advance version
- * evidence while it must never be used as a complete conflict comparison. */
+/** Postgres change payloads are usually full rows (REPLICA IDENTITY FULL),
+ * but that is transport behavior, not a reducer contract. A partial event may
+ * advance version evidence while it must never become an edit base or a
+ * complete conflict comparison. Completeness is judged against the ONE row
+ * key list the reducer's edit-base check reads, so the two can never drift. */
 function isCompleteNotePayload(row: Record<string, unknown>): boolean {
-  return [
-    "id",
-    "organization_id",
-    "label",
-    "content",
-    "folder_name",
-    "tags",
-    "metadata",
-    "visibility",
-    "position",
-    "version",
-    "updated_at",
-    "created_at",
-    "created_by",
-  ].every((field) => Object.hasOwn(row, field));
+  return NOTE_ROW_KEYS.every((field) => Object.hasOwn(row, field));
+}
+
+/**
+ * Project a realtime row onto the client's `Note` shape — every column the
+ * client models and nothing else (a table can carry search vectors and
+ * embeddings the client never stores). Passing the WHOLE row, not a
+ * hand-picked subset, is what lets the reducer (a) compare every user-edited
+ * field against the edit base — `folder_id` and `visibility` were missing
+ * from the old subset, so no realtime row could ever match a base — and (b)
+ * advance the base itself when the row is complete.
+ */
+function projectNoteRow(row: Record<string, unknown>, noteId: string): Partial<Note> & { id: string } {
+  const projected: Record<string, unknown> = {};
+  for (const key of NOTE_ROW_KEYS) {
+    if (Object.hasOwn(row, key)) projected[key] = row[key];
+  }
+  projected.id = noteId;
+  return projected as Partial<Note> & { id: string };
 }
 
 /** Ledger tickets for saves currently in flight, keyed by note id. */
@@ -109,11 +121,16 @@ let subscribedUserId: string | null = null;
  * every field the autosave path writes and nothing volatile.
  */
 function noteFingerprint(row: Record<string, unknown>): string {
+  // Every user-edited field (NOTE_EDITED_FIELDS). folder_id and visibility
+  // were missing: a collaborator changing only those matched our pending
+  // write's fingerprint and was dropped as our echo (review, 2026-09-13).
   return JSON.stringify([
     row.label ?? null,
     row.content ?? null,
     row.folder_name ?? null,
+    row.folder_id ?? null,
     row.tags ?? null,
+    row.visibility ?? null,
   ]);
 }
 
@@ -239,19 +256,7 @@ export const notesRealtimeMiddleware: Middleware<
       console.log("[Notes RT] UPDATE", noteId);
       storeApi.dispatch(
         upsertNoteFromServer({
-          note: {
-            id: noteId,
-            label: newRecord.label as string,
-            content: newRecord.content as string,
-            folder_name: newRecord.folder_name as string,
-            tags: newRecord.tags as string[],
-            metadata: newRecord.metadata as Record<string, unknown>,
-            organization_id: newRecord.organization_id as string,
-            updated_at: newRecord.updated_at as string,
-            created_at: newRecord.created_at as string | undefined,
-            created_by: newRecord.created_by as string | undefined,
-            version: newRecord.version as number | undefined,
-          },
+          note: projectNoteRow(newRecord, noteId),
           fetchStatus: isCompleteNotePayload(newRecord) ? "full" : "list",
         }),
       );
@@ -267,20 +272,16 @@ export const notesRealtimeMiddleware: Middleware<
       if (newRecord.deleted_at) return;
       const noteId = newRecord.id as string;
       console.log("[Notes RT] INSERT", noteId);
+      const projected = projectNoteRow(newRecord, noteId);
       storeApi.dispatch(
         upsertNoteFromServer({
           note: {
-            id: noteId,
-            label: (newRecord.label as string) ?? "New Note",
-            content: (newRecord.content as string) ?? "",
-            folder_name: (newRecord.folder_name as string) ?? "Draft",
-            tags: (newRecord.tags as string[]) ?? [],
-            organization_id: newRecord.organization_id as string,
-            updated_at:
-              (newRecord.updated_at as string) ?? new Date().toISOString(),
-            created_at: newRecord.created_at as string | undefined,
-            created_by: newRecord.created_by as string | undefined,
-            version: newRecord.version as number | undefined,
+            ...projected,
+            label: projected.label ?? "New Note",
+            content: projected.content ?? "",
+            folder_name: projected.folder_name ?? "Draft",
+            tags: projected.tags ?? [],
+            updated_at: projected.updated_at ?? new Date().toISOString(),
           },
           fetchStatus: isCompleteNotePayload(newRecord) ? "full" : "list",
         }),
@@ -305,6 +306,68 @@ export const notesRealtimeMiddleware: Middleware<
         new CustomEvent("notes:deleted", { detail: { noteId } }),
       );
     }
+  }
+
+  // ── THE SYNC-STATUS DOOR (audit N-05, connection half) ────────────────
+  //
+  // A screen that says "live" while the socket is gone is the lying-screen
+  // defect, so the status has to reach Redux with enough detail to tell
+  // "still retrying" from "given up". The package pushes only the status
+  // string, and `onStatusChange` is EDGE-triggered: the whole backoff ladder
+  // sits on one "reconnecting" value, so the callback fires once and the
+  // attempt count never arrives that way. The count IS published, per channel,
+  // on the diagnostics snapshot (`failedAttempts`), and the alarm threshold is
+  // exported (`RECONNECT_ALARM_ATTEMPTS`) — so we read the snapshot at each
+  // transition and, while the channel is down, poll it until the number moves.
+  // (If the package ever pushes attempts/alarm through `onStatusChange`, delete
+  // this poll and take them from the callback.)
+  const ATTEMPT_POLL_MS = 2_000;
+  let attemptPoll: ReturnType<typeof setInterval> | null = null;
+  let lastStatus: RealtimeStatus | null = null;
+  let lastAttempts = 0;
+
+  /** The package's own count of consecutive failed joins for OUR channel. */
+  function currentFailedAttempts(): number {
+    if (!subscribedUserId) return 0;
+    const topic = notesChannel.topic({ userId: subscribedUserId });
+    const channel = realtimeDiagnostics().channels.find(
+      (entry) => entry.topic === topic,
+    );
+    return channel?.failedAttempts ?? 0;
+  }
+
+  function stopAttemptPoll() {
+    if (attemptPoll === null) return;
+    clearInterval(attemptPoll);
+    attemptPoll = null;
+  }
+
+  function publishStatus(status: RealtimeStatus) {
+    const failedAttempts = status === "connected" ? 0 : currentFailedAttempts();
+    lastStatus = status;
+    lastAttempts = failedAttempts;
+    storeApi.dispatch(setRealtimeSyncStatus({ status, failedAttempts }));
+
+    if (status === "connected" || status === "disconnected") {
+      stopAttemptPoll();
+      return;
+    }
+    if (attemptPoll !== null) return;
+    // Down and retrying: the attempt number is the only thing that still
+    // changes, and nothing will push it. Poll until it crosses the alarm — the
+    // difference between "wait a moment" and "reload to see other devices".
+    attemptPoll = setInterval(() => {
+      if (lastStatus === null || lastStatus === "connected") {
+        stopAttemptPoll();
+        return;
+      }
+      const attempts = currentFailedAttempts();
+      if (attempts === lastAttempts) return;
+      lastAttempts = attempts;
+      storeApi.dispatch(
+        setRealtimeSyncStatus({ status: lastStatus, failedAttempts: attempts }),
+      );
+    }, ATTEMPT_POLL_MS);
   }
 
   function subscribe(userId: string) {
@@ -337,7 +400,7 @@ export const notesRealtimeMiddleware: Middleware<
         },
       ],
       onStatusChange: (status) => {
-        storeApi.dispatch(setRealtimeConnected(status === "connected"));
+        publishStatus(status);
       },
       // THE CATCH-UP READ. Realtime has no replay, and this now fires on tab
       // wake, network restore and queue overflow as well as reconnect — the
@@ -354,10 +417,16 @@ export const notesRealtimeMiddleware: Middleware<
   function unsubscribe() {
     subscribedUserId = null;
     clearAllEditorTimers();
+    stopAttemptPoll();
     if (stopChannel) {
       stopChannel();
       stopChannel = null;
-      storeApi.dispatch(setRealtimeConnected(false));
+      // Back to `idle`, not `disconnected`: we closed the channel on purpose
+      // (logout, account switch), and a screen must never accuse the network
+      // of a teardown we asked for.
+      storeApi.dispatch(
+        setRealtimeSyncStatus({ status: "idle", failedAttempts: 0 }),
+      );
     }
   }
 
@@ -380,10 +449,15 @@ export const notesRealtimeMiddleware: Middleware<
       if (typeof id !== "string") return;
       const local = (storeApi.getState() as RootState).notes.notes[id];
       if (!local) return;
+      // The revision this write PRODUCES: the CAS bumps `version` by one. The
+      // ledger recognizes our echo by that number (even when it beats the REST
+      // response) and refuses to call anything ABOVE it an echo.
+      const producedRevision = canonicalRevision(local.version);
       const ticket = manager.ledger.begin({
         table: NOTES_TABLE,
         id,
         fingerprint: noteFingerprint(local as unknown as Record<string, unknown>),
+        ...(producedRevision !== undefined ? { revision: producedRevision + 1 } : {}),
       });
       openWrites.set(id, ticket);
       return;
@@ -391,7 +465,7 @@ export const notesRealtimeMiddleware: Middleware<
 
     if (type === "notes/markNoteSaved") {
       const payload = (action as {
-        payload?: { id?: string; updatedAt?: string };
+        payload?: { id?: string; updatedAt?: string; version?: number };
       }).payload;
       const id = payload?.id;
       if (typeof id !== "string") return;
@@ -410,6 +484,11 @@ export const notesRealtimeMiddleware: Middleware<
             ? { updatedAt: payload.updatedAt }
             : {}),
           ...(fingerprint !== undefined ? { fingerprint } : {}),
+          // The number the server actually stamped — after a phantom-conflict
+          // rebase it is higher than the one `begin` expected.
+          ...(canonicalRevision(payload?.version) !== undefined
+            ? { revision: payload?.version }
+            : {}),
         });
         return;
       }
@@ -420,11 +499,22 @@ export const notesRealtimeMiddleware: Middleware<
         id,
         updatedAt: payload?.updatedAt ?? null,
         ...(fingerprint !== undefined ? { fingerprint } : {}),
+        ...(canonicalRevision(payload?.version) !== undefined
+          ? { revision: payload?.version }
+          : {}),
       });
     }
   }
 
   return (next) => (action) => {
+    // `resetNotesState` wipes every dirty buffer. Snapshot unsaved work into
+    // the browser-local draft store FIRST (one place, for every dispatcher:
+    // account switch, sign-out, the hook's own reset) so the text is offered
+    // back instead of vanishing (audit N-02, 2026-09-14).
+    if ((action as { type?: string }).type === "notes/resetNotesState") {
+      captureNoteDrafts("signed-out");
+    }
+
     // The reducer must run FIRST for markNoteSaved (we read the settled state),
     // and for markNoteSaving the pre-save content is what we want — both are
     // satisfied by registering after `next`.

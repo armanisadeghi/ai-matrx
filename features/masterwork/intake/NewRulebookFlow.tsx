@@ -28,6 +28,7 @@
 // on create.
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { nameFromSentence } from "@/lib/text/nameFromSentence";
 import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import {
@@ -48,6 +49,7 @@ import {
   MessagesSquare,
   Lightbulb,
   Inbox,
+  Library,
   Video,
   Network,
   Puzzle,
@@ -60,22 +62,27 @@ import {
 } from "lucide-react";
 import { recordToast, toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { ProInput } from "@/components/official/ProInput";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
 import { resolveWizardStep } from "@/lib/wizard-draft/resolveWizardStep";
 import { WizardAnswersLost } from "@/lib/wizard-draft/WizardAnswersLost";
+import { WizardDraftRestored } from "@/lib/wizard-draft/WizardDraftRestored";
 import { createDraftRulebook } from "../service";
 import {
-  fetchDistillationApproaches,
   startableApproaches,
   type DistillationApproach,
 } from "../browse/approaches";
+import { useApproachRegistry } from "../browse/useApproachRegistry";
 import { ApproachCard, ACCENT } from "../browse/ApproachCard";
 import { relevantApproachKeys } from "./approachRelevance";
 
@@ -265,15 +272,18 @@ function suggestedApproachKey(knowledge: string): string {
 }
 
 /**
- * Derive a Rulebook name from the goal: at most `max` characters, truncated on
- * a word boundary so the name never ends mid-word.
+ * Derive a Rulebook name from the goal.
+ *
+ * 🚨 This used to cut at 60 characters on a word boundary and say NOTHING
+ * about it. Cold walk, 2026-09-16: a typed goal of "How I decide which
+ * incoming e-waste pallets need a manual sort instead of going straight to the
+ * shredder." became the header "How I decide which incoming e-waste pallets
+ * need a manual" — ending on a dangling adjective, which a first-timer reads
+ * as a typo rather than as a decision. Same bug the Vision Interview's own
+ * titles had. The rule lives once now: `lib/text/nameFromSentence.ts`.
  */
-function nameFromGoal(goal: string, max = 60): string {
-  const clean = goal.trim().replace(/[.!?]+$/, "");
-  if (clean.length <= max) return clean;
-  const cut = clean.slice(0, max);
-  const lastSpace = cut.lastIndexOf(" ");
-  return (lastSpace > 0 ? cut.slice(0, lastSpace) : cut).replace(/[.!?,;:]+$/, "");
+function nameFromGoal(goal: string): string {
+  return nameFromSentence(goal, { fallback: "" });
 }
 
 function StepDots({ step }: { step: 1 | 2 }) {
@@ -375,10 +385,17 @@ export function NewRulebookFlow() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // The EXPLICIT active org — never the personal workspace standing in for
+  // one. When there is none the bounded wait below settles and the page says
+  // so inline, with the remedy; no Rulebook is created.
+  const organizationId = useAppSelector(selectOrganizationId);
   const {
     status: draftStatus,
     restored,
+    applyOnce: applyDraftOnce,
+    didRestore: draftRestored,
+    acknowledge: acknowledgeDraft,
+    discard: discardDraft,
     patch: patchDraft,
     clear: clearDraft,
   } = useWizardDraft<NewRulebookDraftValues>(WIZARD_ID, {
@@ -393,8 +410,10 @@ export function NewRulebookFlow() {
   const [answers, setAnswers] = useState<Record<string, string>>(
     defaultIntakeAnswers,
   );
-  const [approaches, setApproaches] = useState<DistillationApproach[] | null>(null);
-  const [approachError, setApproachError] = useState<string | null>(null);
+  // ONE loader, shared by every Approach surface (wall W2). It owns the read,
+  // the Expert-readable sentence, and a retry that actually re-reads.
+  const registry = useApproachRegistry();
+  const approaches = registry.approaches;
   // null = follow the suggestion; a string = the Expert's explicit pick.
   const [selectedKey, setSelectedKey] = useState<string | null>(
     searchParams.get("approach"),
@@ -449,45 +468,39 @@ export function NewRulebookFlow() {
 
   // One-time draft recovery — fill only what the Expert hasn't typed here.
   // `restored` settles exactly once, when the persisted read comes back.
-  const draftApplied = useRef(false);
+  //
+  // AND IT IS SAID OUT LOUD (cold walk 6, 2026-09-17). This used to put the
+  // old goal back with nothing on screen admitting it. The Expert read the
+  // pre-filled textarea as the page she still had to fill in, clicked where
+  // her eye landed and typed her sentence into the middle of the old one —
+  // the Rulebook was created with `prefix + sentence + suffix` as its goal and
+  // the Capture Plan faithfully showed the mess. `applyOnce` owns the
+  // once-ness now and raises `didRestore`, which draws the notice below.
   useEffect(() => {
-    if (draftApplied.current || !restored?.values) return;
-    draftApplied.current = true;
-    const v = restored.values;
-    if (v.goal) setGoal((current) => current || v.goal);
-    if (v.name) setName((current) => current || v.name);
-    setAnswers(v.answers);
-  }, [restored]);
+    applyDraftOnce((v) => {
+      if (v.goal) setGoal((current) => current || v.goal);
+      if (v.name) setName((current) => current || v.name);
+      setAnswers(v.answers);
+    });
+  }, [applyDraftOnce, restored]);
 
-  // Load the registry on mount so the cards are there the moment the Expert
-  // reaches step 2.
-  useEffect(() => {
-    if (approaches !== null) return;
-    let cancelled = false;
-    setApproachError(null);
-    fetchDistillationApproaches()
-      .then((rows) => {
-        if (cancelled) return;
-        if (startableApproaches(rows).length === 0) {
-          setApproachError(
-            "No ways to get started are available right now — please try again shortly.",
-          );
-          return;
-        }
-        setApproaches(rows);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setApproachError(
-          err instanceof Error
-            ? err.message
-            : "Could not load the ways to get started.",
-        );
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [approaches]);
+  /** "Start fresh": the saved draft goes, and so does everything it put on
+   *  screen — a notice that leaves the old words in the field is no notice. */
+  const startFresh = () => {
+    discardDraft();
+    setGoal("");
+    setName("");
+    setAnswers(defaultIntakeAnswers);
+  };
+
+  // A registry that read cleanly but offers nothing startable is not an error
+  // the loader can name — it is this wizard's own problem, so this wizard says
+  // it, in the same slot and with the same working retry.
+  const approachError =
+    registry.error ??
+    (approaches !== null && startableApproaches(approaches).length === 0
+      ? "No ways to get started are available right now — please try again shortly."
+      : null);
 
   const suggested = suggestedApproachKey(answers.knowledge);
   // The registry read returns the WHOLE catalog now (that is the point — Arman
@@ -564,19 +577,19 @@ export function NewRulebookFlow() {
   };
 
   const handleContinue = () => {
-    if (!goal.trim()) {
-      toast.error("Tell us what you're trying to build first.");
-      return;
-    }
+    // Gated on the Continue button, which already carries this sentence as
+    // its muted reason. A goal nobody has typed yet is a PROMPT, not an
+    // alarm, so it never becomes a red toast (class sweep, 2026-09-16).
+    if (!goal.trim()) return;
     toStep(2);
   };
 
   const create = async () => {
     const approach = startable?.find((a) => a.key === effectiveKey);
-    if (!approach) {
-      toast.error("Pick how you'd like to do this first.");
-      return;
-    }
+    // The sticky bar already says "Pick how you'd like to do this" in muted
+    // words beside a dark Start; saying it again in red after the press would
+    // dress a normal first paint as a failure (class sweep, 2026-09-16).
+    if (!approach) return;
     // THE ACTION WAITS FOR THE WORKSPACE (wall W39). Pressing Start used to
     // read the workspace once and refuse with "still loading — try again in a
     // moment": wrong while the bootstrap was milliseconds from landing, and a
@@ -673,11 +686,30 @@ export function NewRulebookFlow() {
             <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
               New Masterwork
             </h1>
+            {/* THE SCREEN COUNTED WRONG AND PROMISED WHAT IT DID NOT DELIVER
+                (jobs-bar-2026-09-16, items 8 and 9). It said "Four quick
+                answers" over FIVE questions and a name field, and it said
+                "Everything is pre-filled" directly above the one field that is
+                empty AND required — which is why the very first thing a
+                first-timer saw was the Continue button refusing to move. Say
+                the true shape: one sentence from you, the rest already
+                answered. */}
             <p className="text-muted-foreground">
-              Four quick answers so we can show you the right way to build it.
-              Everything is pre-filled — change only what&apos;s wrong.
+              Tell us in one sentence what you want to build. The rest is
+              already answered the way most people answer it — change anything
+              that isn&apos;t true for you, or leave it and keep going.
             </p>
           </div>
+
+          {/* NOTHING FAILS SILENTLY — including a kindness. The fields below
+              may already hold what this person started last time; if they do,
+              they are told, and "Start fresh" empties them in one click. */}
+          {draftRestored ? (
+            <WizardDraftRestored
+              onStartFresh={startFresh}
+              onDismiss={acknowledgeDraft}
+            />
+          ) : null}
 
           <section className="space-y-2.5">
             <h2 className="text-sm font-semibold text-foreground">
@@ -761,14 +793,20 @@ export function NewRulebookFlow() {
                 Back
               </Link>
             </Button>
-            <Button
+            {/* A DISABLED PRIMARY ACTION SAYS WHY (`teach-recent-practitioner` W2, 2026-09-15). */}
+            <GatedActionButton
               onClick={handleContinue}
-              disabled={!goal.trim()}
+              reason={firstBlockingReason([
+                {
+                  when: !goal.trim(),
+                  reason: "Say what you're trying to build to continue",
+                },
+              ])}
               className="min-h-[44px] gap-2 px-6"
             >
               Continue
               <ArrowRight className="h-4 w-4" />
-            </Button>
+            </GatedActionButton>
           </div>
         </div>
       ) : (
@@ -789,15 +827,14 @@ export function NewRulebookFlow() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => {
-                  setApproaches(null);
-                  setApproachError(null);
-                }}
+                onClick={registry.reload}
               >
                 Try again
               </Button>
             </div>
-          ) : approaches === null ? (
+          ) : registry.loading || approaches === null ? (
+            // Reached ONLY while a read is outstanding. A failed read sets the
+            // error above, so "Try again" can never land back here (W2).
             <div className="grid gap-4 sm:grid-cols-2" aria-busy="true">
               {[0, 1, 2, 3].map((i) => (
                 <div
@@ -814,10 +851,10 @@ export function NewRulebookFlow() {
               {bestForYou.length > 0 ? (
                 <div className="space-y-3">
                   <div>
-                    <h2 className="text-sm font-semibold text-foreground">
+                    <h2 className="text-lg font-semibold text-foreground">
                       Best for what you described
                     </h2>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-sm text-muted-foreground">
                       Based on where you said your knowledge lives. Anything
                       below works too — this is a shortcut, not a limit.
                     </p>
@@ -844,7 +881,11 @@ export function NewRulebookFlow() {
               {/* EVERYTHING ELSE — same screen, one section down. Never a gate. */}
               {everythingElse.length > 0 ? (
                 <div className="space-y-3">
-                  <h2 className="text-sm font-semibold text-foreground">
+                  {/* The section headings were SMALLER than the card titles
+                      they introduced, so the page had no hierarchy and matched
+                      neither the catalog nor step 1
+                      (jobs-bar-2026-09-16, item 10). */}
+                  <h2 className="text-lg font-semibold text-foreground">
                     Every other way
                   </h2>
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -915,6 +956,33 @@ export function NewRulebookFlow() {
             </div>
           )}
 
+          {/* A WHOLE CHANNEL IS A WAY TO START TOO — AND IT HAS A DOOR.
+              Step 2 is where the Expert says what this Rulebook will learn
+              from, and for a creator that answer is often "everything on my
+              channel". No Approach carries a channel, so without this the only
+              honest move was to start the Rulebook, find the Sources panel and
+              discover Libraries there. This is not an Approach card (the cards
+              are the registry's rows, never a hardcoded one) — it is a plain
+              door beside them. Nothing is created yet, so it carries no
+              rulebook id; the answers typed above are kept in the saved draft
+              and restored when the Expert comes back. */}
+          <div className="rounded-xl border border-dashed border-border bg-card/50 p-4">
+            <h2 className="text-sm font-semibold text-foreground">
+              Already have a YouTube channel in mind?
+            </h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Catalogue the whole channel first — every video becomes a Source
+              you can hand to this Rulebook once you start it. Your answers are
+              saved; come straight back.
+            </p>
+            <Button asChild variant="outline" className="mt-3 min-h-[44px] gap-2">
+              <Link href="/libraries?from=rulebook">
+                <Library className="h-4 w-4" />
+                Bring a whole YouTube channel
+              </Link>
+            </Button>
+          </div>
+
           {/* THE ACTION IS ALWAYS ON SCREEN (census defect D1, fixed
               2026-09-12). Start used to be the LAST element on the page,
               below every card including the eight unbuilt ones — about two
@@ -945,6 +1013,11 @@ export function NewRulebookFlow() {
               <p className="min-w-0 truncate text-right text-xs text-muted-foreground sm:text-sm">
                 {waitingForWorkspace ? (
                   "Getting your workspace ready…"
+                ) : approachError ? (
+                  // NOTHING FAILS SILENTLY: with no list, "Pick how you'd like
+                  // to do this" is an instruction the Expert cannot follow. Say
+                  // why the button is dark instead (W2).
+                  "Nothing to start until the ways to get started load"
                 ) : selectedApproach ? (
                   <>
                     Starting with{" "}

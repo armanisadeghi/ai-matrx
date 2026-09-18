@@ -3,7 +3,7 @@
  *
  * SUT: `WebpageResourcePickerCore`'s failure state. It OWNS: naming what
  * happened in plain words, offering an in-place way out (paste the text), and
- * keeping the stage/stack/Diagnostics JSON behind a "Details" disclosure.
+ * keeping the stage/stack/Diagnostics JSON behind a "Technical details" disclosure.
  *
  * Real here: `classifyScrapeFailure` (the hook's own derivation — the mocked
  * hook returns exactly what the live one computes) and the picker's render.
@@ -107,7 +107,7 @@ function renderPicker(onSelect = jest.fn()) {
   return onSelect;
 }
 
-/** Everything the person reads before opening "Details". */
+/** Everything the person reads before opening "Technical details". */
 function primaryText(): string {
   return container.textContent ?? "";
 }
@@ -169,10 +169,10 @@ it("offers an in-place remedy that reveals a paste box and adds the text", () =>
   );
 });
 
-it("keeps the diagnostics — behind Details, never as the body", () => {
+it("keeps the diagnostics — behind Technical details, never as the body", () => {
   renderPicker();
   const details = Array.from(container.querySelectorAll("button")).find(
-    (b) => (b.textContent ?? "").trim() === "Details",
+    (b) => (b.textContent ?? "").trim() === "Technical details",
   );
   expect(details).toBeDefined();
 

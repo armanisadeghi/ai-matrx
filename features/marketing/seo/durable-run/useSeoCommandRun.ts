@@ -77,6 +77,8 @@ export interface UseSeoCommandRunOptions<TResult> {
   onResult?: (result: TResult) => void;
   /** Extra body fields every launch and rejoin needs (e.g. `scopeOverrides`). */
   scopeOverrides?: Record<string, string>;
+  /** See `useDurableRun` — `false` when the answer lives in a durable row the surface reads. */
+  keepFinished?: boolean;
   /**
    * Adopt the stream and float it. Pass this when the command runs an agent
    * whose OUTPUT is the point — the run then renders token by token in
@@ -106,6 +108,7 @@ export function useSeoCommandRun<TResult>(
     ...(options.scopeOverrides
       ? { scopeOverrides: options.scopeOverrides }
       : {}),
+    ...(options.keepFinished === false ? { keepFinished: false } : {}),
     ...(options.live
       ? {
           live: {

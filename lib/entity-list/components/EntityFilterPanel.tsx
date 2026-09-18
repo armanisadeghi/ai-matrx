@@ -15,6 +15,7 @@
 // lie that trains people to ignore the number.
 
 import { useState } from "react";
+import { resolveColumnMarker } from "@ai-matrx/design-system/data-table";
 import { useScrollFade } from "@ai-matrx/design-system";
 import { SlidersHorizontal, RotateCcw, Star, ArrowUpDown } from "lucide-react";
 import {
@@ -32,7 +33,11 @@ import {
 } from "@/components/official/filter-panel/parts";
 import { cn } from "@/lib/utils";
 import type { ListViewPrefs } from "@/lib/redux/preferences/userPreferencesSlice";
-import type { EntityColumnSpec } from "../columns";
+import {
+  DATE_FILTER_OPTIONS,
+  DATE_SORT_WORDS,
+  type EntityColumnSpec,
+} from "../columns";
 import type { EntityFacetSection, EntityScopeFacetSection } from "../config";
 import {
   makeScope,
@@ -57,6 +62,24 @@ const EXTRA_SORTS: { value: SortKey; label: string }[] = [
   { value: "updated-desc", label: "Recently updated" },
   { value: "created-desc", label: "Recently created" },
 ];
+
+/**
+ * "A→Z" is a lie on a date column. A column declares its own words with
+ * `sortWords`; a date column is recognised by its filter options and needs no
+ * declaration (jobs-bar-2026-09-16, item 8).
+ */
+function sortWordsFor<TRow>(c: EntityColumnSpec<TRow>): {
+  asc: string;
+  desc: string;
+} {
+  if (c.sortWords) return c.sortWords;
+  const marker = resolveColumnMarker(c.column);
+  if (marker === "favorite")
+    return { asc: "Favorites last", desc: "Favorites first" };
+  if (marker === "pin") return { asc: "Pins last", desc: "Pins first" };
+  if (c.column.filterOptions === DATE_FILTER_OPTIONS) return DATE_SORT_WORDS;
+  return { asc: "A→Z", desc: "Z→A" };
+}
 
 const FAV_OPTIONS = [
   { value: "all", label: "All" },
@@ -140,10 +163,19 @@ export function EntityFilterPanel<TRow>({
     ...EXTRA_SORTS,
     ...columns
       .filter((c) => c.id !== "updated" && c.id !== "created")
-      .flatMap((c) => [
-        { value: `${c.id}-asc` as SortKey, label: `${c.label} (A→Z)` },
-        { value: `${c.id}-desc` as SortKey, label: `${c.label} (Z→A)` },
-      ])
+      .flatMap((c) => {
+        const words = sortWordsFor(c);
+        return [
+          {
+            value: `${c.id}-asc` as SortKey,
+            label: `${c.label} (${words.asc})`,
+          },
+          {
+            value: `${c.id}-desc` as SortKey,
+            label: `${c.label} (${words.desc})`,
+          },
+        ];
+      })
       .slice(0, 12),
   ];
   const sortLabel =

@@ -59,6 +59,15 @@ interface Props {
   /** Which of the fixed five this surface supports, in display order. */
   scopes: ListScopeKind[];
   counts: EntityScopeCounts;
+  /**
+   * 🚨 "NOT COUNTED YET" IS NOT "ZERO" (Masterwork cold walk 5, finding 6).
+   * The rows and the scope counts are fetched by two independent effects, so a
+   * list that paints before its counts land showed a populated shelf under a
+   * tab whose own badge read `0` — the screen contradicting itself, in the same
+   * paint, over the same records. A count this component has not been given is
+   * shown as nothing at all, never as a number nobody measured.
+   */
+  countsLoading?: boolean;
   onChange: (scope: ListScope) => void;
 }
 
@@ -95,7 +104,9 @@ const SCOPE_META: Record<
   },
 };
 
-function CountPill({ n, active }: { n: number; active: boolean }) {
+function CountPill({ n, active }: { n: number | null; active: boolean }) {
+  // Absent, never dishonest: no pill at all until the number is real.
+  if (n === null) return null;
   return (
     <span
       className={cn(
@@ -108,7 +119,13 @@ function CountPill({ n, active }: { n: number; active: boolean }) {
   );
 }
 
-export function EntityScopeTabs({ scope, scopes, counts, onChange }: Props) {
+export function EntityScopeTabs({
+  scope,
+  scopes,
+  counts,
+  countsLoading,
+  onChange,
+}: Props) {
   return (
     <div
       className="inline-flex min-w-0 items-center gap-0.5 rounded-lg border border-border bg-card p-0.5 sm:gap-1 sm:p-1"
@@ -136,7 +153,9 @@ export function EntityScopeTabs({ scope, scopes, counts, onChange }: Props) {
           ? options.find((o) => o.id === narrowedId)
           : undefined;
 
-        const count = narrowed?.count ?? counts.byKind[kind] ?? 0;
+        const measured = narrowed?.count ?? counts.byKind[kind];
+        const count =
+          typeof measured === "number" ? measured : countsLoading ? null : 0;
 
         const tab = (
           <button

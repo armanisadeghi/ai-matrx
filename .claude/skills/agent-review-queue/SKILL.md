@@ -152,6 +152,16 @@ raw REST calls require both `Content-Profile: public` and `Accept-Profile: publi
 `api` profile produces `PGRST202` even when this RPC exists. This SQL path does not replace
 `schedule_claim` for schedule ownership.
 
+🚨 **A direct asyncpg/pgbouncer connection can return a silently EMPTY read.**
+Measured 2026-09-14 while closing a queue row: with `statement_cache_size=0` already
+set (the documented mitigation for the duplicate-prepared-statement failure), a
+`select … where id = '<queue row uuid>'` on a row that demonstrably existed returned
+`0 rows` with a success exit, and the next query hung until killed — no error, just a
+wrong answer that reads as "the row is gone". `pnpm admin-query` answered the same
+queries correctly and fast. **Never conclude a row is missing, unclaimed, or already
+handled from a direct-connection read**; confirm through the stable operator above
+before acting on it.
+
 **Re-read every mutation.** The admin-query RPC can execute a data-modifying CTE yet return only
 `{"result":{"message":"Query executed successfully"}}`. Missing returned rows is not proof
 nothing changed. After claim, query the exact unique assignment owner and confirm exactly one

@@ -21,7 +21,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { supabase } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 import type { components } from "@/types/python-generated/api-types";
@@ -323,7 +323,13 @@ export function useLibrarySummary(
   const { refreshKey = 0, pollMs = 0 } = opts;
 
   const userId = useAppSelector(selectUserId);
-  const orgId = useAppSelector(selectEffectiveOrganizationId);
+  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE. This read
+  // `organization_id ?? personal_organization_id`, so an unselected picker
+  // silently reported the PERSONAL workspace's totals as the organization's.
+  // The RPC is keyed on auth.uid() and `p_organization_id` only NARROWS it:
+  // with nothing selected we send nothing and the totals honestly cover the
+  // caller's own documents — no tenant is substituted.
+  const orgId = useAppSelector(selectOrganizationId);
   const [summary, setSummary] = useState<LibrarySummary | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

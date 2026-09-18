@@ -5,7 +5,13 @@ jest.mock("@/utils/supabase/client", () => ({
     schema: () => ({
       from: () => ({
         select: () => ({
-          is: () => ({ order: (...args: unknown[]) => mockOrder(...args) }),
+          is: () => ({
+            order: () => ({
+              order: () => ({
+                range: (...args: unknown[]) => mockOrder(...args),
+              }),
+            }),
+          }),
         }),
       }),
     }),

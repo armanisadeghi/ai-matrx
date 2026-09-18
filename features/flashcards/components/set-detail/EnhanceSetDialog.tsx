@@ -13,7 +13,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Lightbulb, GitBranch, Loader2, Check, X, BrainCircuit } from "lucide-react";
+import {
+  Lightbulb,
+  GitBranch,
+  Loader2,
+  Check,
+  X,
+  BrainCircuit,
+} from "lucide-react";
 import { toast } from "@/lib/toast";
 import {
   Dialog,
@@ -44,6 +51,7 @@ import KindInstanceRender from "@/features/content-ir/studio/components/KindInst
 import type { Depth } from "@/features/education/assessment/data/types";
 import { fcService } from "../../data/fcService";
 import type { CardWithDetails } from "../../data/types";
+import { useFlashcardMandates } from "../../data/mandate-disclosure";
 import {
   DEPTH_TIERS,
   enrichCard,
@@ -103,6 +111,10 @@ export function EnhanceSetDialog({
   /** Called after a card is enriched/deepened so the parent can refetch. */
   onChanged: () => void;
 }) {
+  useFlashcardMandates([
+    ...(modes.includes("enrich") ? (["enrichCard"] as const) : []),
+    ...(modes.includes("deepen") ? (["expandCard"] as const) : []),
+  ]);
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
   const enrichGuard = useEntitlementGuard("education.card_enrichment");
@@ -187,7 +199,10 @@ export function EnhanceSetDialog({
         patchWork(card.id, { running: null });
         return;
       }
-      patchWork(card.id, { running: null, preview: { mode: "enrich", details } });
+      patchWork(card.id, {
+        running: null,
+        preview: { mode: "enrich", details },
+      });
       // Metered action SUCCEEDED (one model call for this card) — record real
       // usage regardless of whether the user later saves or discards the
       // preview; the AI call already happened. Failed/empty branches above
@@ -274,68 +289,66 @@ export function EnhanceSetDialog({
   const body = (
     <>
       {/* Depth tier selector — shared vocabulary with quizzes (P1). */}
-        <div className="flex items-center gap-2 border-b border-border px-5 py-3">
-          <span className="text-xs font-medium text-muted-foreground">
-            Depth
-          </span>
-          <div className="flex items-stretch gap-1">
-            {DEPTH_TIERS.map((tier) => (
-              <button
-                key={tier.value}
-                type="button"
-                onClick={() => setDepth(tier.value)}
-                title={tier.blurb}
-                className={cn(
-                  "rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
-                  depth === tier.value
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:bg-muted",
-                )}
-              >
-                {tier.label}
-              </button>
-            ))}
-          </div>
-          {/* Limit shown BEFORE the action (TRUST mandate). */}
-          <coppa.Gate />
-          <EntitlementMeter
-            capability="education.card_enrichment"
-            className="ml-auto"
-          />
+      <div className="flex items-center gap-2 border-b border-border px-5 py-3">
+        <span className="text-xs font-medium text-muted-foreground">Depth</span>
+        <div className="flex items-stretch gap-1">
+          {DEPTH_TIERS.map((tier) => (
+            <button
+              key={tier.value}
+              type="button"
+              onClick={() => setDepth(tier.value)}
+              title={tier.blurb}
+              className={cn(
+                "rounded-md border px-2.5 py-1 text-xs font-medium transition-colors",
+                depth === tier.value
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:bg-muted",
+              )}
+            >
+              {tier.label}
+            </button>
+          ))}
         </div>
+        {/* Limit shown BEFORE the action (TRUST mandate). */}
+        <coppa.Gate />
+        <EntitlementMeter
+          capability="education.card_enrichment"
+          className="ml-auto"
+        />
+      </div>
 
-        <ScrollArea className="max-h-[55dvh]">
-          <div className="space-y-2.5 px-5 py-4">
-            {cards.length === 0 ? (
-              <p className="py-6 text-center text-sm text-muted-foreground">
-                This set has no cards to enhance yet.
-              </p>
-            ) : (
-              cards.map((card, i) => {
-                const w = workFor(card.id);
-                const preview = previewFor(card);
-                const busy = w.running !== null || w.saving;
-                return (
-                  <div
-                    key={card.id}
-                    className="rounded-lg border border-border bg-card p-3"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
-                          Card {i + 1}
-                          {card.details.length > 0
-                            ? ` · ${card.details.length} detail${
-                                card.details.length === 1 ? "" : "s"
-                              }`
-                            : ""}
-                        </span>
-                        <p className="mt-0.5 line-clamp-2 text-sm font-medium text-foreground">
-                          {card.front}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-1">
-                        {modes.includes("enrich") && (
+      <ScrollArea className="max-h-[55dvh]">
+        <div className="space-y-2.5 px-5 py-4">
+          {cards.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted-foreground">
+              This set has no cards to enhance yet.
+            </p>
+          ) : (
+            cards.map((card, i) => {
+              const w = workFor(card.id);
+              const preview = previewFor(card);
+              const busy = w.running !== null || w.saving;
+              return (
+                <div
+                  key={card.id}
+                  className="rounded-lg border border-border bg-card p-3"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                        Card {i + 1}
+                        {card.details.length > 0
+                          ? ` · ${card.details.length} detail${
+                              card.details.length === 1 ? "" : "s"
+                            }`
+                          : ""}
+                      </span>
+                      <p className="mt-0.5 line-clamp-2 text-sm font-medium text-foreground">
+                        {card.front}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-1">
+                      {modes.includes("enrich") && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -350,8 +363,8 @@ export function EnhanceSetDialog({
                           )}
                           Enrich
                         </Button>
-                        )}
-                        {modes.includes("deepen") && (
+                      )}
+                      {modes.includes("deepen") && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -366,132 +379,134 @@ export function EnhanceSetDialog({
                           )}
                           Deepen
                         </Button>
-                        )}
-                      </div>
+                      )}
                     </div>
+                  </div>
 
-                    {/* No spinner while AI works: the run streams right here,
+                  {/* No spinner while AI works: the run streams right here,
                         under the card it belongs to, growing downward.
                         It is shown WHILE the run is in flight only — the
                         moment the preview below exists, that preview is the
                         better surface for the same content, and leaving the
                         stream up would show the agent's raw payload above a
                         rendered copy of itself. */}
-                    <LiveRunDisplay
-                      conversationId={w.running !== null ? w.conversationId : null}
-                      pending={w.running !== null}
-                      label={
-                        w.running === "deepen"
-                          ? "Splitting this card into sub-cards"
-                          : w.running === "enrich"
-                            ? "Writing new detail layers"
-                            : undefined
-                      }
-                      className="mt-3"
-                      bodyClassName="max-h-64"
-                    />
+                  <LiveRunDisplay
+                    conversationId={
+                      w.running !== null ? w.conversationId : null
+                    }
+                    pending={w.running !== null}
+                    label={
+                      w.running === "deepen"
+                        ? "Splitting this card into sub-cards"
+                        : w.running === "enrich"
+                          ? "Writing new detail layers"
+                          : undefined
+                    }
+                    className="mt-3"
+                    bodyClassName="max-h-64"
+                  />
 
-                    {/* Preview + confirm — nothing becomes a real detail/sub-card
+                  {/* Preview + confirm — nothing becomes a real detail/sub-card
                         row until Save; the proposal itself is durable (D151). */}
-                    {preview && (
-                      <div className="mt-3 rounded-md border border-border bg-muted/40 p-2.5">
-                        <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                          {preview.mode === "enrich"
-                            ? "New detail layers"
-                            : "New sub-cards"}
-                        </div>
-                        {/* The proposal renders through its registered kind
+                  {preview && (
+                    <div className="mt-3 rounded-md border border-border bg-muted/40 p-2.5">
+                      <div className="mb-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                        {preview.mode === "enrich"
+                          ? "New detail layers"
+                          : "New sub-cards"}
+                      </div>
+                      {/* The proposal renders through its registered kind
                             component (`card_enrichment` / `card_expansion`),
                             rebuilt from the persist-ready preview so a stored
                             proposal and a live one render identically. */}
-                        {preview.mode === "enrich" ? (
-                          <KindInstanceRender
-                            kind="card_enrichment"
-                            value={{
-                              __kind: "card_enrichment",
-                              details: preview.details.map((d) => ({
-                                __kind: "card_detail",
-                                kind: d.kind,
-                                text: d.text,
-                              })),
-                            }}
-                            variant="bare"
-                            showRoutingNote={false}
-                          />
-                        ) : (
-                          <KindInstanceRender
-                            kind="card_expansion"
-                            value={{
-                              __kind: "card_expansion",
-                              sub_cards: preview.subCards.map((s) => ({
-                                __kind: "sub_card",
-                                front: s.front,
-                                back: s.back,
-                                relation: "expands_into",
-                              })),
-                            }}
-                            variant="bare"
-                            showRoutingNote={false}
-                          />
-                        )}
-                        <div className="mt-2 flex items-center justify-end gap-1.5">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="h-7 gap-1 px-2 text-xs"
-                            disabled={w.saving}
-                            onClick={async () => {
-                              // This preview is AI work that already ran and
-                              // was already billed — discarding it throws that
-                              // away, so the click names what is lost.
-                              const count =
-                                preview.mode === "enrich"
-                                  ? preview.details.length
-                                  : preview.subCards.length;
-                              const what =
-                                preview.mode === "enrich"
-                                  ? `${count} detail layer${count === 1 ? "" : "s"}`
-                                  : `${count} sub-card${count === 1 ? "" : "s"}`;
-                              const ok = await confirm({
-                                title: "Discard what was just generated?",
-                                description: `The ${what} the AI just generated for “${card.front}” are thrown away and never saved. This generation has already been run and billed — getting them back means paying to generate again.`,
-                                confirmLabel: "Discard",
-                                variant: "destructive",
-                              });
-                              if (!ok) return;
-                              void writePendingEnhancement(card.id, null);
-                              releaseRun(card.id);
-                              patchWork(card.id, {
-                                preview: null,
-                                conversationId: null,
-                              });
-                            }}
-                          >
-                            <X className="h-3.5 w-3.5" />
-                            Discard
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="h-7 gap-1 px-2 text-xs"
-                            disabled={w.saving}
-                            onClick={() => void save(card)}
-                          >
-                            {w.saving ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Check className="h-3.5 w-3.5" />
-                            )}
-                            Save
-                          </Button>
-                        </div>
+                      {preview.mode === "enrich" ? (
+                        <KindInstanceRender
+                          kind="card_enrichment"
+                          value={{
+                            __kind: "card_enrichment",
+                            details: preview.details.map((d) => ({
+                              __kind: "card_detail",
+                              kind: d.kind,
+                              text: d.text,
+                            })),
+                          }}
+                          variant="bare"
+                          showRoutingNote={false}
+                        />
+                      ) : (
+                        <KindInstanceRender
+                          kind="card_expansion"
+                          value={{
+                            __kind: "card_expansion",
+                            sub_cards: preview.subCards.map((s) => ({
+                              __kind: "sub_card",
+                              front: s.front,
+                              back: s.back,
+                              relation: "expands_into",
+                            })),
+                          }}
+                          variant="bare"
+                          showRoutingNote={false}
+                        />
+                      )}
+                      <div className="mt-2 flex items-center justify-end gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 gap-1 px-2 text-xs"
+                          disabled={w.saving}
+                          onClick={async () => {
+                            // This preview is AI work that already ran and
+                            // was already billed — discarding it throws that
+                            // away, so the click names what is lost.
+                            const count =
+                              preview.mode === "enrich"
+                                ? preview.details.length
+                                : preview.subCards.length;
+                            const what =
+                              preview.mode === "enrich"
+                                ? `${count} detail layer${count === 1 ? "" : "s"}`
+                                : `${count} sub-card${count === 1 ? "" : "s"}`;
+                            const ok = await confirm({
+                              title: "Discard what was just generated?",
+                              description: `The ${what} the AI just generated for “${card.front}” are thrown away and never saved. This generation has already been run and billed — getting them back means paying to generate again.`,
+                              confirmLabel: "Discard",
+                              variant: "destructive",
+                            });
+                            if (!ok) return;
+                            void writePendingEnhancement(card.id, null);
+                            releaseRun(card.id);
+                            patchWork(card.id, {
+                              preview: null,
+                              conversationId: null,
+                            });
+                          }}
+                        >
+                          <X className="h-3.5 w-3.5" />
+                          Discard
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-7 gap-1 px-2 text-xs"
+                          disabled={w.saving}
+                          onClick={() => void save(card)}
+                        >
+                          {w.saving ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Check className="h-3.5 w-3.5" />
+                          )}
+                          Save
+                        </Button>
                       </div>
-                    )}
-                  </div>
-                );
-              })
-            )}
-          </div>
-        </ScrollArea>
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      </ScrollArea>
       {/* Respectful paywall — opens only on a real cap; self-controls visibility. */}
       <enrichGuard.Paywall />
     </>

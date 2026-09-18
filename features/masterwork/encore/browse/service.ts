@@ -7,6 +7,7 @@ import {
   type EntityScopeCounts,
 } from "@/lib/entity-list/types";
 import { listEncoreShelves } from "../service";
+import { operationFailed } from "@/utils/errors";
 import type { EncoreListRow } from "./types";
 
 const DATE_BUCKET_MS: Record<string, number> = {
@@ -21,6 +22,17 @@ const DATE_BUCKET_MS: Record<string, number> = {
 let cachedRows: Promise<EncoreListRow[]> | null = null;
 let cacheUntil = 0;
 
+/**
+ * Drop the 3-second row cache. Releasing or un-releasing a Masterwork from the
+ * shelf changes what the shelf says about it, and a `refresh()` inside the
+ * cache window would re-serve the row we just changed — a screen that lies for
+ * three seconds is still a screen that lies.
+ */
+export function invalidateEncoreRows(): void {
+  cachedRows = null;
+  cacheUntil = 0;
+}
+
 function loadRows(): Promise<EncoreListRow[]> {
   if (cachedRows && Date.now() < cacheUntil) return cachedRows;
   cacheUntil = Date.now() + 3_000;
@@ -33,9 +45,14 @@ function loadRows(): Promise<EncoreListRow[]> {
         })),
       ),
     )
-    .catch((error) => {
+    .catch((error: unknown) => {
       cachedRows = null;
-      throw error;
+      // The shelves loader already threw a sentence (`operationFailed`); this
+      // only drops the cache. Anything that is NOT an Error would reach a
+      // person as "[object Object]", so it is given a sentence here too.
+      throw error instanceof Error
+        ? error
+        : operationFailed("load the Encore shelf", error);
     });
   return cachedRows;
 }

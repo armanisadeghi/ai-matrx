@@ -10,6 +10,7 @@
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const PRODUCT_ROOTS = ["app", "components", "features", "lib"] as const;
@@ -92,7 +93,7 @@ if (fsViolations.length > 0 || typescriptViolations.length > 0) {
     );
   }
   console.error(parts.join("\n"));
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 console.log(

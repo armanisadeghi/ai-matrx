@@ -55,7 +55,7 @@ Read it before touching the brief, the ruling record, or the axes.
 implements THE STAGED-CONFIDENCE PATTERN in the real product rather than in a separate admin
 harness — his rulings are collected as a side effect of using the tool.
 
-**The brief first, the rulings second.** `LandscapeBriefCard` shows what stage 1 established: what
+**The brief first, the rulings second.** `LandscapeBriefCard` mounts THE canonical site brief (`features/marketing/strategy/` — the brand strategy + site brief, 2026-09-14; it used to be a second UI with its own browser write path). It shows what stage 1 established: what
 the business is, the analyst's OWN 1-5 certainty, and the SERVICE LINES with a footprint each.
 That last part is the load-bearing one — market overlap is a property of (service line ×
 geography), so a national rival in one service line is not a competitor in another. The correction

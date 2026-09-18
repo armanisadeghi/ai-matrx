@@ -17,12 +17,18 @@
 
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { formatRelativeTime } from "@ai-matrx/kit/format";
+import type { EntityPhoneRole } from "./phoneCards";
 
 /**
  * A date column's finite value set is "how recently", not "which exact
  * timestamp" — Updated / Created filter by relative bucket, served by
  * `<feature>_since_bucket` in SQL. No column is exempt from filtering.
  */
+export const DATE_SORT_WORDS = {
+  asc: "oldest first",
+  desc: "newest first",
+} as const;
+
 export const DATE_FILTER_OPTIONS = [
   { value: "1h", label: "Last hour" },
   { value: "24h", label: "Last 24 hours" },
@@ -44,12 +50,30 @@ export interface EntityColumnSpec<TRow> {
   /** Facet kind that supplies this column's filter options, when finite. */
   facet?: string;
   /**
+   * What ascending and descending MEAN for this column, in the reader's words.
+   * The sort menu defaults to "A→Z"/"Z→A", which is nonsense on a date or a
+   * count — the Encore shelf offered "Updated (Z→A)" for "newest first"
+   * (jobs-bar-2026-09-16, item 8). A column whose filter options are
+   * `DATE_FILTER_OPTIONS` gets the date words automatically; anything else
+   * that is not alphabetical says so here.
+   */
+  sortWords?: { asc: string; desc: string };
+  /**
    * Human label for one raw facet VALUE, when the stored value is not what a
    * person should read. `conversation_type='subagent'` filters correctly and
    * means nothing to our user; "Subagent run" means something. The count is
    * still appended by the shell, so this never costs the option its number.
    */
   formatFacetValue?: (value: string) => string;
+  /**
+   * Where this column belongs on the PHONE CARD, below `sm`, where the shell
+   * renders a stacked record card instead of a horizontal table (see
+   * ./phoneCards.tsx for the layout and the derivation). Optional: a surface
+   * that declares nothing gets a sensible default from the door column, the
+   * date columns and declaration order. Declare it when the default promotes
+   * the wrong field to the card face.
+   */
+  phone?: EntityPhoneRole;
   column: MatrxColumnDef<TRow>;
 }
 
@@ -73,6 +97,46 @@ export function defaultHiddenColumns<TRow>(
 
 export function Muted({ children }: { children: React.ReactNode }) {
   return <span className="text-muted-foreground">{children}</span>;
+}
+
+/**
+ * A text cell that STAYS INSIDE ITS COLUMN.
+ *
+ * `truncate` is `overflow:hidden; text-overflow:ellipsis; white-space:nowrap`,
+ * and none of the three do anything to an inline `<span>` — so every list cell
+ * written as `<span className="truncate">{row.name}</span>` overflowed its
+ * column and printed straight over the next one. On 2026-09-16 the Encore
+ * shelf rendered "Gio Valiante Performance Coach Masterwork" on top of the
+ * Expert column's "Gio Valiante Performance Coach", two strings sharing the
+ * same pixels. `block` is what makes the three properties apply.
+ *
+ * The full value is always reachable: it rides in `title`.
+ */
+export function TextCell({
+  value,
+  className,
+  muted = false,
+}: {
+  value: string | null | undefined;
+  className?: string;
+  muted?: boolean;
+}) {
+  const text = value?.trim();
+  if (!text) return <Muted>—</Muted>;
+  return (
+    <span
+      title={text}
+      className={[
+        "block truncate",
+        muted ? "text-muted-foreground" : "",
+        className ?? "",
+      ]
+        .filter(Boolean)
+        .join(" ")}
+    >
+      {text}
+    </span>
+  );
 }
 
 export function timeCell(iso: string | null) {

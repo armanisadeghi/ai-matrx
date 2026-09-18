@@ -56,70 +56,22 @@
  *   pnpm check:knob-resolve-callers --self-test  # RED then GREEN against the real database
  */
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { resolve, dirname, relative, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { createRequire } from "node:module";
-
-const require_ = createRequire(import.meta.url);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const pg: any = require_("pg");
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WORKSPACE = resolve(ROOT, "..");
 const SELF_TEST = process.argv.includes("--self-test");
 const C = { b: "\x1b[1m", d: "\x1b[2m", r: "\x1b[31m", g: "\x1b[32m", y: "\x1b[33m", x: "\x1b[0m" };
 
-const DB_VARS = [
-  "SUPABASE_MATRIX_USER",
-  "SUPABASE_MATRIX_PASSWORD",
-  "SUPABASE_MATRIX_HOST",
-  "SUPABASE_MATRIX_PORT",
-  "SUPABASE_MATRIX_DATABASE_NAME",
-] as const;
-
-function parseEnvFile(path: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const raw of readFileSync(path, "utf8").split("\n")) {
-    const line = raw.trim();
-    if (!line || line.startsWith("#")) continue;
-    const eq = line.indexOf("=");
-    if (eq < 1) continue;
-    let v = line.slice(eq + 1).trim();
-    if ((v.startsWith('"') && v.endsWith('"')) || (v.startsWith("'") && v.endsWith("'"))) v = v.slice(1, -1);
-    out[line.slice(0, eq).trim()] = v;
-  }
-  return out;
-}
-
-interface DbEnv { user: string; password: string; host: string; port: number; database: string; from: string }
-
-function loadDbEnv(): DbEnv | { missing: readonly string[]; looked: string[] } {
-  const looked: string[] = [];
-  const tryBag = (bag: Record<string, string | undefined>, from: string): DbEnv | null => {
-    if (DB_VARS.some((k) => !bag[k])) return null;
-    return {
-      user: bag.SUPABASE_MATRIX_USER!, password: bag.SUPABASE_MATRIX_PASSWORD!,
-      host: bag.SUPABASE_MATRIX_HOST!, port: Number(bag.SUPABASE_MATRIX_PORT!),
-      database: bag.SUPABASE_MATRIX_DATABASE_NAME!, from,
-    };
-  };
-  const fromProcess = tryBag(process.env, "the environment");
-  if (fromProcess) return fromProcess;
-  for (const path of [
-    resolve(ROOT, ".env.local"), resolve(ROOT, ".env.production.local"),
-    resolve(ROOT, ".env.production"), resolve(ROOT, ".env"),
-    resolve(process.env.AIDREAM_DIR ?? resolve(ROOT, "..", "aidream"), ".env"),
-  ]) {
-    if (!existsSync(path)) continue;
-    looked.push(relative(ROOT, path));
-    const hit = tryBag(parseEnvFile(path), relative(ROOT, path));
-    if (hit) return hit;
-  }
-  return { missing: DB_VARS, looked };
-}
-
+// ONE credential loader and ONE catalog query, shared with
+// check:knob-database-consumers (DD-211) so the two guards can never disagree
+// about where the database is or which bodies count as callers.
+import { CATALOG_SQL, DB_VARS, client as dbClient, loadDbEnv } from "./knob-resolve-callers/db";
 import { classify, knobResolveCalls, scopesArgumentOf } from "./knob-resolve-callers/core";
 import type { Verdict } from "./knob-resolve-callers/core";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 interface Finding { where: string; arg: string; verdict: Verdict }
 
@@ -160,6 +112,47 @@ function walk(dir: string, out: string[], depth = 0): void {
   }
 }
 
+/**
+ * SOURCE means SOURCE: a git-ignored file is not a caller.
+ *
+ * matrx-local mirrors coding-session artifacts into its gitignored runtime data directory
+ * (`system/data/coding-sessions/…`), so a lane's own scratch SQL — including the deliberately
+ * broken RED variants written to prove a guard fires — lands inside a scanned repo minutes
+ * later and is not code anybody runs. The same is true of any build output or cache a future
+ * `.gitignore` covers. Asking git is the durable rule; hardcoding one path is not.
+ *
+ * If git cannot answer (no repo, no binary), NOTHING is skipped and the script SAYS SO — a
+ * silent widening would be a stand-in that never announces itself.
+ */
+function ignoredIn(root: string, files: string[]): Set<string> {
+  const out = new Set<string>();
+  // In CHUNKS: `git check-ignore --stdin` writes its answers while it is still reading, so a
+  // single write of every path in a repo fills the pipe and the child is gone before we finish
+  // writing (spawnSync EPIPE, measured on all four repos). Only the handful of files that
+  // actually mention knob_resolve are ever asked about, so one chunk is normally enough.
+  const CHUNK = 200;
+  for (let i = 0; i < files.length; i += CHUNK) {
+    const batch = files.slice(i, i + CHUNK);
+    let answer: string;
+    try {
+      answer = execFileSync("git", ["-C", root, "check-ignore", "--stdin", "-z"], {
+        input: batch.map((f) => relative(root, f)).join("\0"),
+        encoding: "utf8", maxBuffer: 16 * 1024 * 1024, stdio: ["pipe", "pipe", "pipe"],
+      });
+    } catch (e: unknown) {
+      // `git check-ignore` exits 1 when it matched NOTHING — a clean answer, not an error.
+      const err = e as { status?: number; stdout?: string; message?: string };
+      if (err.status === 1) { answer = String(err.stdout ?? ""); }
+      else {
+        console.log(`${C.y}[NOTE]${C.x} git could not tell this guard what is ignored in ${relative(WORKSPACE, root)} — every file there is being read, build output and mirrors included. (${err.message?.slice(0, 120)})`);
+        return new Set();
+      }
+    }
+    for (const r of answer.split("\0")) if (r) out.add(resolve(root, r));
+  }
+  return out;
+}
+
 function scanRepos(): Finding[] {
   const findings: Finding[] = [];
   for (const repo of SOURCE_ROOTS) {
@@ -167,25 +160,27 @@ function scanRepos(): Finding[] {
     if (!existsSync(root)) continue;
     const files: string[] = [];
     walk(root, files);
+    // Narrow to the files that actually mention it BEFORE asking git — that keeps the
+    // ignore question to a handful of paths instead of every file in the repo.
+    const candidates: { path: string; text: string }[] = [];
     for (const f of files) {
+      // Generated database types name the function; they never call it.
+      if (/database\.types\.ts$/.test(f) || SKIP_FILE.test(f)) continue;
       let text: string;
       try { text = readFileSync(f, "utf8"); } catch { continue; }
       if (!text.includes("knob_resolve")) continue;
-      // Generated database types name the function; they never call it.
-      if (/database\.types\.ts$/.test(f)) continue;
-      if (SKIP_FILE.test(f)) continue;
-      findings.push(...scan(relative(WORKSPACE, f), strip(text)));
+      candidates.push({ path: f, text });
+    }
+    const ignored = ignoredIn(root, candidates.map((c) => c.path));
+    for (const c of candidates) {
+      if (ignored.has(c.path)) continue;
+      findings.push(...scan(relative(WORKSPACE, c.path), strip(c.text)));
     }
   }
   return findings;
 }
 
-const CATALOG_SQL = `
-  select n.nspname || '.' || p.proname as fn, p.prosrc as body
-    from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-   where strpos(lower(p.prosrc), 'knob_resolve') > 0
-     and not (n.nspname = 'platform' and p.proname = 'knob_resolve')
-   order by 1`;
+
 
 /** A function the self-test plants, to prove the rule can say no. */
 const PLANT_SQL = `
@@ -207,11 +202,7 @@ async function main(): Promise<number> {
     return 1;
   }
 
-  const client = new pg.Client({
-    host: env.host, port: env.port, user: env.user, password: env.password, database: env.database,
-    ssl: { rejectUnauthorized: false }, application_name: "check:knob-resolve-callers",
-    connectionTimeoutMillis: 20_000,
-  });
+  const client = dbClient(env, "check:knob-resolve-callers");
   await client.connect();
   console.log(`${C.d}${env.user}@${env.host}:${env.port}/${env.database} (credentials from ${env.from})${C.x}`);
 
@@ -275,8 +266,8 @@ async function main(): Promise<number> {
 }
 
 main()
-  .then((code) => process.exit(code))
+  .then((code) => exitAfterDrain(code))
   .catch((err) => {
     console.error(`${C.r}[FAIL]${C.x} check:knob-resolve-callers errored, so it measured NOTHING:\n  ${String(err?.message ?? err)}`);
-    process.exit(1);
+    exitAfterDrain(1);
   });

@@ -26,7 +26,13 @@ finds you when a provider is down and you do not yet suspect anything.
 
 - `SystemErrorsPanel.tsx` — the ledger reader: filter by `kind`, by window, by
   unresolved; expand a row for its traceback; Copy for AI.
-- `PlatformOutageBanner.tsx` — the global outage notice. Mounted ONCE, in
+- ~~`PlatformOutageBanner.tsx`~~ — DELETED 2026-09-14: open outages are now one
+  SOURCE of the super-admin attention dock (`features/admin/attention/FEATURE.md`),
+  which renders them with the schedule alarms in one card, one snooze, one
+  per-item timed mute. `open-outages.ts` (the read + `describeOutage`) stays here
+  and is what the source consumes. What follows describes the deleted banner
+  and is kept for the history of the rulings it encoded.
+- `PlatformOutageBanner.tsx` — WAS the global outage notice. Mounted ONCE, in
   `app/DeferredSingletonCore.tsx` (the singleton body under `Providers`, which
   `AppShell` renders for both `(core)` and `(admin)` — the one shell slot both
   route groups share).
@@ -35,7 +41,8 @@ finds you when a provider is down and you do not yet suspect anything.
 
 - `open-outages.ts` — the read (`GET /admin/system-errors/open-outages`) plus the
   pure sentence builder (`describeOutage`, `buildOutageNotice`).
-- `outage-mute.ts` — per-outage, one-hour, `localStorage` mute.
+- ~~`outage-mute.ts`~~ — DELETED 2026-09-14; the dock's `item-mute.ts` is the
+  local store (1 hour … 30 days, keyed `provider-outages:<id>`).
 
 **API endpoints**
 
@@ -66,6 +73,14 @@ links to — is already declared in the admin navigation registry.
 
 ## Invariants
 
+- **Healed is still an error.** A media render whose primary lane died and
+  was served by the heal ladder lands here as its own kind `media-healed`
+  (chip), `error_type = healed:<diagnosis>` (badge — the NAMED root cause,
+  e.g. `healed:cookie-not-sent-by-browser`), the whole lane ladder in the
+  payload. It is written `durable` from the client so no tier rule can quiet
+  it: "errors that fix themselves" are counted and burned down, never the
+  norm (Arman, 2026-09-16). A dead ladder stays kind `media` with the
+  diagnosis as `error_type`.
 - **A notice never modifies the page underneath it** (Arman, 2026-09-12). The
   outage notice FLOATS: fixed, movable (`useDraggableFloat`), mutable. It
   publishes no height, measures nothing, and reserves no layout — a full-width
@@ -73,8 +88,9 @@ links to — is already declared in the admin navigation registry.
   shape that was ruled out after the schedule alarm shipped it. Guard:
   `styles/__tests__/no-overlay-layout-reservation.test.ts`; the deleted
   reservation is documented in `styles/shell.css` § NO GLOBAL BANNER CLEARANCE.
-- **Super-admin only, gated BEFORE the read.** Everyone else renders null and
-  issues no request, so an admin endpoint is never polled by a normal user.
+- **Super-admin and explicit-organization only, gated BEFORE the read.** Everyone
+  else renders null and issues no request; shell startup therefore never polls
+  an admin endpoint before its fail-closed transport has a selected scope.
 - **Nothing to report renders NOTHING.** Never an "all providers healthy" strip
   — wallpaper is how the next outage gets missed.
 - **A failed poll is not an outage.** It renders nothing loud; the failure is
@@ -103,6 +119,13 @@ links to — is already declared in the admin navigation registry.
 
 ## Change Log
 
+- **2026-09-14** — `PlatformOutageBanner`, `outage-mute.ts` and their test
+  deleted; outages became a source of `features/admin/attention` (one card with
+  the schedule alarms, per-item mute 1h–30d, whole-dock snooze). Knob
+  `platform.system_errors.outage_poll_ms` replaced by `platform.attention.poll_ms`.
+  Every invariant below (mute keyed by server outage id, expired mute never
+  honoured, failed poll silent, non-admin issues no request) is re-proven in
+  `features/admin/attention/__tests__/AdminAttentionDock.test.tsx`.
 - **2026-09-13** — 🚨 **A mute that has run out is not a mute (Bugbot).** The banner read the mute store once, on mount, and it is a session-long singleton — so an expired one-hour mute never left React state and a provider that was still down stayed hidden until a full page reload, while the poll reported it open every minute. The visible set is now derived from the outages AND the mute store on every poll result (`dataUpdatedAt` moves on each successful fetch even when the rows are identical), the nearest expiry among the outages on screen arms a timer that re-reads at that moment, and the render-time filter compares the expiry again so state holding a dead mute can never hide a live outage. `outage-mute.ts` exports `readMuteMap` (id -> wake-up time, expired entries pruned as they are read); `readMutedIds` is now a thin wrapper on it. Tests: two more in `__tests__/PlatformOutageBanner.test.tsx` — a stored expiry already in the past is never honoured, and a live mute returns the outage by itself on a frozen clock (proven RED against the mount-only read).
 
 - **2026-09-13** — Added `PlatformOutageBanner`, `open-outages.ts`,

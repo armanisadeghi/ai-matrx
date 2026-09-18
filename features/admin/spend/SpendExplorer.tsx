@@ -20,16 +20,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import {
-  Compass,
-  ListOrdered,
-  Percent,
-  RefreshCw,
-  Search,
-  Table2,
-} from "lucide-react";
-
-import { Button } from "@ai-matrx/design-system";
+import { Compass, Percent } from "lucide-react";
 
 import { useIsMounted } from "@/hooks/use-is-mounted";
 
@@ -41,17 +32,20 @@ import { SeriesBars } from "./explorer/SeriesBars";
 import { TopRequestsTable } from "./explorer/TopRequestsTable";
 import { TotalsStrip } from "./explorer/TotalsStrip";
 import { WindowPicker } from "./explorer/WindowPicker";
-import { zoneLabel } from "./format";
 import { fetchSpendBreakdown, viewerTimezone } from "./service";
 import type { SpendBreakdown, SpendDimension, SpendFilters } from "./types";
 import { useSpendExplorerKnobs } from "./useSpendExplorerKnobs";
 import {
-  describeWindow,
   readExplorerUrlState,
   resolveWindow,
+  WINDOW_PRESETS,
   writeExplorerUrlState,
   type ExplorerUrlState,
 } from "./windows";
+import { BatchSavingsPanel } from "@/features/batch-savings/BatchSavingsPanel";
+import { ADMIN_BILLING_SPEND_SURFACE_NAME } from "@/features/surfaces/manifests/admin-billing-spend.manifest";
+import { useSurfaceScopeContribution } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { buildBillingSpendExplorerScope } from "./spend-surface-scope";
 
 /** Mirrors the database's cap in `admin_spend_breakdown`. */
 const DATABASE_WINDOW_DAY_CAP = 92;
@@ -79,7 +73,7 @@ function Section({
   );
 }
 
-export function SpendExplorer() {
+export function SpendExplorer({ refreshKey = 0 }: { refreshKey?: number }) {
   // The explorer derives its default window and its IANA timezone from the
   // viewer's browser. Rendering either on the server creates text that can
   // differ from the browser's first render (for example around midnight or
@@ -87,10 +81,10 @@ export function SpendExplorer() {
   // hydration. Keep this browser-derived surface out of the server paint.
   const mounted = useIsMounted();
 
-  return mounted ? <MountedSpendExplorer /> : null;
+  return mounted ? <MountedSpendExplorer refreshKey={refreshKey} /> : null;
 }
 
-function MountedSpendExplorer() {
+function MountedSpendExplorer({ refreshKey }: { refreshKey: number }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -107,6 +101,11 @@ function MountedSpendExplorer() {
     urlState.toDay,
   );
   const filters = urlState.filters;
+  const windowLabel =
+    urlState.preset === "custom"
+      ? `${urlState.fromDay ?? "?"} to ${urlState.toDay ?? "?"}`
+      : (WINDOW_PRESETS.find((p) => p.value === urlState.preset)?.label ??
+        "Selected window");
   // The database caps a window at 92 days; say so here in words rather than
   // surfacing its refusal as a raw error after a round trip.
   const windowDays = (window.to.getTime() - window.from.getTime()) / 86_400_000;
@@ -115,7 +114,22 @@ function MountedSpendExplorer() {
   const [data, setData] = useState<SpendBreakdown | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const [reloadTick, setReloadTick] = useState(0);
+
+  useSurfaceScopeContribution(
+    ADMIN_BILLING_SPEND_SURFACE_NAME,
+    "SpendExplorer",
+    () =>
+      buildBillingSpendExplorerScope({
+        urlState,
+        window,
+        windowLabel,
+        windowTooWide,
+        knobs,
+        loading,
+        error,
+        data,
+      }),
+  );
 
   // The identity of a read: window instants + filters + thresholds. Anything
   // else changing must not refetch (the URL carries table sort state too).
@@ -124,7 +138,7 @@ function MountedSpendExplorer() {
     to: window.to.toISOString(),
     filters,
     thresholds: knobs.thresholds,
-    reloadTick,
+    refreshKey,
   });
 
   useEffect(() => {
@@ -136,8 +150,10 @@ function MountedSpendExplorer() {
       filters: SpendFilters;
     };
     let cancelled = false;
-    setLoading(true);
     void (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setLoading(true);
       try {
         const next = await fetchSpendBreakdown({
           from: new Date(parsed.from),
@@ -196,41 +212,13 @@ function MountedSpendExplorer() {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex min-w-0 items-center">
         <WindowPicker
           preset={urlState.preset}
           fromDay={urlState.fromDay}
           toDay={urlState.toDay}
           onChange={(next) => pushState({ ...urlState, ...next })}
         />
-        <span
-          className="text-xs tabular-nums text-muted-foreground"
-          title={`Day boundaries use ${zoneLabel(data?.timezone ?? timezone)}.`}
-        >
-          {describeWindow(window)}
-        </span>
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-[11px] text-muted-foreground">
-            {data
-              ? `Updated ${new Date(data.generatedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
-              : loading
-                ? "Loading"
-                : "Not loaded"}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 gap-1.5 text-xs"
-            onClick={() => setReloadTick((t) => t + 1)}
-            disabled={loading}
-          >
-            <RefreshCw
-              className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
-              aria-hidden
-            />
-            {loading ? "Reading…" : "Refresh"}
-          </Button>
-        </div>
       </div>
 
       <FilterChips
@@ -239,6 +227,23 @@ function MountedSpendExplorer() {
         onRemove={removeFilter}
         onClear={clearFilters}
       />
+
+      {windowTooWide ? null : (
+        <BatchSavingsPanel
+          from={window.from}
+          to={window.to}
+          windowLabel={windowLabel}
+          organizationId={
+            filters.organization && filters.organization !== "(none)"
+              ? filters.organization
+              : null
+          }
+          ignoredFilters={Object.entries(filters)
+            .filter(([key, value]) => key !== "organization" && Boolean(value))
+            .map(([key]) => key)}
+          refreshKey={refreshKey}
+        />
+      )}
 
       {knobs.error ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
@@ -252,7 +257,8 @@ function MountedSpendExplorer() {
 
       {windowTooWide ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-xs text-destructive">
-          Max {DATABASE_WINDOW_DAY_CAP} days — this range is {Math.round(windowDays)}.
+          Max {DATABASE_WINDOW_DAY_CAP} days — this range is{" "}
+          {Math.round(windowDays)}.
         </div>
       ) : null}
 
@@ -286,21 +292,19 @@ function MountedSpendExplorer() {
               onPickDay={(day) => drill("day", day)}
             />
 
-            <Section icon={Search} title="Dig here">
-              <DigHerePanel data={data} onDrill={drill} />
-            </Section>
+            <DigHerePanel data={data} onDrill={drill} />
 
             <Section icon={Percent} title="80% of spend">
-              <ParetoPanel data={data} onDrill={drill} />
+              <ParetoPanel
+                data={data}
+                windowLabel={windowLabel}
+                onDrill={drill}
+              />
             </Section>
 
-            <Section icon={Table2} title="Every dimension">
-              <DimensionTables data={data} onDrill={drill} />
-            </Section>
+            <DimensionTables data={data} onDrill={drill} />
 
-            <Section icon={ListOrdered} title="Costliest requests">
-              <TopRequestsTable rows={data.topRequests} onDrill={drill} />
-            </Section>
+            <TopRequestsTable rows={data.topRequests} onDrill={drill} />
           </div>
         </div>
       ) : loading && !error && !knobs.error ? (

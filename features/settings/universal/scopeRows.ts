@@ -17,74 +17,23 @@
 // `platform.knob_scope_kind`'s own `scope_schema`/`scope_table`, so a new rung
 // needs no new code here — only the noun a person reads.
 
+import { scopeKindNoun, type SubOrgScopeKind } from "./rungRules";
 import { createClient } from "@/utils/supabase/client";
-import type { KnobScopeKindName } from "@/lib/scoped-config/types";
 
-export type SubOrgScopeKind = Exclude<KnobScopeKindName, "organization" | "user" | "device">;
-
-/**
- * Every sub-org rung the universal UI offers a picker for, with where its rows
- * live and what to call one (mirrors platform.knob_scope_kind). This list IS
- * the surface's promise: a rung listed here is addressed on the read and
- * offered as a picker; `check:settings-ladder-ui` reads it from disk.
- */
-export const SUB_ORG_SCOPE_SOURCES = [
-  { kind: "employer_profile", noun: "Employer profile" },
-  { kind: "brand", noun: "Brand" },
-  { kind: "pay_group", noun: "Pay group" },
-  { kind: "site", noun: "Site" },
-  { kind: "location", noun: "Location" },
-  // DD-131: `platform.knob_scope_kind` names `table` (scope_schema/scope_table
-  // = platform.entity_types) and `agent` (agent.definition). DD-166 (closed
-  // 2026-09-13, aidream 0642 + 0672): `platform.knob_scope_rows` no longer
-  // assumes every rung is a per-org row set — it branches on
-  // `knob_scope_kind.scope_row_identity`. `table` is `platform_taxonomy`:
-  // `platform.entity_types` has no `organization_id` (it is the platform-wide
-  // table catalog, not a tenant row set), so its branch lists every ACTIVE
-  // registered token with no organization filter — deliberately unfiltered by
-  // `confirmation_enabled`, because table-scoped knobs are not all
-  // confirmation knobs (e.g. `records.children.fan_out_ceiling` applies to
-  // any table). `agent` is `tenant_row` (`agent.definition.organization_id`
-  // is real) and needed no change. Live-verified both ways from this repo.
-  { kind: "table", noun: "Table" },
-  { kind: "agent", noun: "Agent" },
-] as const satisfies readonly {
-  kind: SubOrgScopeKind;
-  noun: string;
-}[];
-
-export const SUB_ORG_SCOPE_KINDS: readonly SubOrgScopeKind[] = SUB_ORG_SCOPE_SOURCES.map(
-  (source) => source.kind,
-);
-
-export function isSubOrgScopeKind(kind: string): kind is SubOrgScopeKind {
-  return (SUB_ORG_SCOPE_KINDS as readonly string[]).includes(kind);
-}
-
-/**
- * The rungs of ONE key that a person picks a ROW for — its `overridable_by`
- * narrowed to the rungs this surface offers a picker for, in ladder order.
- * `organization`, `user` and `device` are excluded because they are not
- * picked: the screen already knows which organization, which person and which
- * browser it is standing in.
- */
-export function pickableRungsFor(
-  overridableBy: readonly string[],
-): SubOrgScopeKind[] {
-  return SUB_ORG_SCOPE_SOURCES.map((source) => source.kind).filter((kind) =>
-    overridableBy.includes(kind),
-  );
-}
-
-function sourceFor(kind: SubOrgScopeKind) {
-  const source = SUB_ORG_SCOPE_SOURCES.find((entry) => entry.kind === kind);
-  if (!source) throw new Error(`No scope source for rung ${kind}`);
-  return source;
-}
-
-export function scopeKindNoun(kind: SubOrgScopeKind): string {
-  return sourceFor(kind).noun;
-}
+// The rung vocabulary and the "which rungs may this key offer" rule live in
+// `./rungRules` so a guard can import them without a Next.js environment
+// (see that file's header). They are re-exported here, so `scopeRows` remains
+// the one place a surface imports from.
+export {
+  SUB_ORG_SCOPE_SOURCES,
+  SUB_ORG_SCOPE_KINDS,
+  STRICT_RUNG_FEATURE_PREFIXES,
+  isStrictRungFeature,
+  isSubOrgScopeKind,
+  pickableRungsFor,
+  scopeKindNoun,
+} from "./rungRules";
+export type { SubOrgScopeKind } from "./rungRules";
 
 export type ScopeRow = { id: string; label: string };
 

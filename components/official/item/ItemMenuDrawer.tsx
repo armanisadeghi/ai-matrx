@@ -26,6 +26,7 @@ import {
   type ItemMenuConfig,
   type ItemMenuEntry,
   type ItemMenuSection,
+  type ItemMenuSubmenu,
 } from "./types";
 
 interface ItemMenuDrawerProps {
@@ -42,9 +43,10 @@ interface ItemMenuDrawerProps {
 function resolveSections(
   config: ItemMenuConfig,
   path: string[],
-): { sections: ItemMenuSection[]; title: string | null } {
+): { sections: ItemMenuSection[]; title: string | null; renderContent?: ItemMenuSubmenu["renderContent"] } {
   let sections = config.sections;
   let title: string | null = null;
+  let renderContent: ItemMenuSubmenu["renderContent"];
   for (const id of path) {
     const found = sections
       .flatMap((s) => s.items)
@@ -52,12 +54,13 @@ function resolveSections(
     if (found && isSubmenu(found)) {
       sections = found.sections;
       title = found.label;
+      renderContent = found.renderContent;
     } else {
       // Unknown id — defensively reset to root.
       return { sections: config.sections, title: null };
     }
   }
-  return { sections, title };
+  return { sections, title, renderContent };
 }
 
 export function ItemMenuDrawer({
@@ -70,7 +73,7 @@ export function ItemMenuDrawer({
   const [path, setPath] = useState<string[]>([]);
   const [direction, setDirection] = useState<"push" | "pop">("push");
 
-  const { sections, title } = resolveSections(config, path);
+  const { sections, title, renderContent } = resolveSections(config, path);
   const atRoot = path.length === 0;
   const headerTitle = atRoot ? config.header?.title : title;
 
@@ -133,6 +136,7 @@ export function ItemMenuDrawer({
               : "animate-in fade-in slide-in-from-left-8 duration-200",
           )}
         >
+          {renderContent?.(() => handleOpenChange(false))}
           {sections.map((section, sIdx) => {
             const visible = section.items.filter((e) => !e.hidden);
             if (visible.length === 0) return null;

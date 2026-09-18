@@ -1,0 +1,57 @@
+{
+  "$comment": [
+    "THE PORT MAP for the unified-data campaign's concurrent builder lanes.",
+    "",
+    "WHY. ATTACK-9 finding 26: the build book's peak is seven concurrent builders,",
+    "each of which §5.9 gives 'per-process overrides on this lane's own dev server',",
+    "in ONE shared working tree, with no port allocation anywhere in the plan. Two",
+    "lanes that both reach for the default port do not fail loudly: the second one",
+    "either binds a port Next.js picked for it and the lane then drives a browser at",
+    "the address it THINKS it owns, or it attaches to the first lane's server and",
+    "verifies the first lane's environment overrides while believing they are its",
+    "own. Both produce a green screenshot of the wrong system.",
+    "",
+    "THE RULE. A lane never runs a bare `pnpm dev` and never guesses a port. It reads",
+    "its port from this file and passes it explicitly. Prove the machine is ready:",
+    "  pnpm check:campaign-ports              (whole map: duplicates, range, occupancy)",
+    "  pnpm check:campaign-ports --lane W6-CHAT   (just mine: is my port free right now)",
+    "",
+    "3001 IS NOT A LANE PORT. CLAUDE.md § Dev server makes 3001 the ONE dev server",
+    "machine-wide (`pnpm preview:start`), shared by every non-campaign agent in this",
+    "checkout. A lane that took 3001 would evict them. It is listed here anyway so",
+    "the duplicate check covers it and nobody re-allocates it by accident.",
+    "",
+    "ONE HOST PER LANE, TOO. Cookies are per host, not per port, so a lane also opens",
+    "its own `http://<lane>.localhost:<port>` hostname — see CLAUDE.md § Dev server.",
+    "Two lanes on two ports but one `localhost` host still share one session and one",
+    "dev-login will evict the other."
+  ],
+  "portRange": { "min": 3001, "max": 3013 },
+  "reserved": [
+    {
+      "holder": "preview:start",
+      "port": 3001,
+      "why": "The one machine-wide dev server every non-campaign agent in this shared checkout uses. Never allocated to a lane."
+    }
+  ],
+  "lanes": {
+    "W4-DOOR": 3002,
+    "W5-AGENT": 3003,
+    "W5-MERGE": 3004,
+    "W6-GRID": 3005,
+    "W6-PRIM": 3006,
+    "W6-FORMS": 3007,
+    "W6-DASH": 3008,
+    "W6-ACTIONS": 3009,
+    "W6-PORTAL": 3010,
+    "W6-CHAT": 3011,
+    "W6-BOOK": 3012,
+    "W6-HISTORY": 3013
+  },
+  "noDevServer": {
+    "W6-DOCS": "Proves its contract through the document pipeline, not a browser.",
+    "W6-EXT": "Drives the Chrome extension harness, which brings its own host.",
+    "W6-LOCAL": "Drives matrx-local (Tauri + Python sidecar); its own ports, not Next.js.",
+    "V6": "Verifier. §2's peak is seven builders AND NO VERIFIER, so V6 borrows the port of whichever lane it is re-verifying, which is finished by then."
+  }
+}

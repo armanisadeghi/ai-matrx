@@ -1,11 +1,11 @@
 // features/administration/canonicalization/service/canonicalizationService.ts
 //
-// SERVER ONLY — uses createAdminClient() (service-role secret key). Never
+// SERVER ONLY — uses the database surface's super-admin-gated service client. Never
 // import this from a client component; it is consumed exclusively by the
 // app/api/admin/canonicalization/** route handlers. Same admin-SQL path as
 // lib/integrity/server.ts and the SQL Workbench: `execute_admin_query`.
 
-import { createAdminClient } from "@/utils/supabase/adminClient";
+import { requireSuperAdminDatabaseClient } from "@/features/administration/database-hub/require-super-admin-database-client";
 import { operationFailed } from "@/utils/errors";
 import { unwrapRows } from "@/lib/integrity/unwrap";
 import {
@@ -41,7 +41,7 @@ import type {
 } from "../types";
 
 async function runQuery<T>(query: string): Promise<T[]> {
-  const admin = createAdminClient();
+  const admin = await requireSuperAdminDatabaseClient();
   const { data, error } = await admin.rpc("execute_admin_query", { query });
   if (error) throw operationFailed("run that canonicalization query", error);
   return unwrapRows(data) as T[];
@@ -58,24 +58,27 @@ type DatasetRowMap = {
   "refresh-log": RefreshLogRow;
 };
 
-export async function fetchDatasetRows<D extends Exclude<CanonicalizationDataset, "overview">>(
-  dataset: D,
-): Promise<DatasetRowMap[D][]> {
+export async function fetchDatasetRows<
+  D extends Exclude<CanonicalizationDataset, "overview">,
+>(dataset: D): Promise<DatasetRowMap[D][]> {
   const query = DATASET_QUERIES[dataset];
   if (!query) throw new Error(`Unknown dataset: ${dataset}`);
   return runQuery<DatasetRowMap[D]>(query);
 }
 
 export async function fetchOverview(): Promise<CanonicalizationOverview> {
-  const [summary, brokenFns, m2m, unregistered, stale, refreshLog, ddlGuard] = await Promise.all([
-    runQuery<AuditSummaryRow>(DATASET_QUERIES.summary),
-    runQuery<BrokenFunctionRow>(DATASET_QUERIES["broken-functions"]),
-    runQuery<M2mCandidateRow>(DATASET_QUERIES["m2m-candidates"]),
-    runQuery<UnregisteredCandidateRow>(DATASET_QUERIES["unregistered-candidates"]),
-    runQuery<StaleRegistryRow>(DATASET_QUERIES["stale-registry"]),
-    runQuery<RefreshLogRow>(DATASET_QUERIES["refresh-log"]),
-    runQuery<DdlGuardUnackedRow>(DDL_GUARD_UNACKED_QUERY),
-  ]);
+  const [summary, brokenFns, m2m, unregistered, stale, refreshLog, ddlGuard] =
+    await Promise.all([
+      runQuery<AuditSummaryRow>(DATASET_QUERIES.summary),
+      runQuery<BrokenFunctionRow>(DATASET_QUERIES["broken-functions"]),
+      runQuery<M2mCandidateRow>(DATASET_QUERIES["m2m-candidates"]),
+      runQuery<UnregisteredCandidateRow>(
+        DATASET_QUERIES["unregistered-candidates"],
+      ),
+      runQuery<StaleRegistryRow>(DATASET_QUERIES["stale-registry"]),
+      runQuery<RefreshLogRow>(DATASET_QUERIES["refresh-log"]),
+      runQuery<DdlGuardUnackedRow>(DDL_GUARD_UNACKED_QUERY),
+    ]);
 
   // The broken-function headline is the REAL count, not the row count. Showing
   // the row count next to refresh_log.broken_fn (distinct real signatures) is the
@@ -136,12 +139,20 @@ export async function runAuditRefresh(): Promise<{ note: string }> {
   return { note: rows[0]?.note ?? "" };
 }
 
-export async function runTableImpact(schema: string, table: string): Promise<TableImpactRow[]> {
+export async function runTableImpact(
+  schema: string,
+  table: string,
+): Promise<TableImpactRow[]> {
   return runQuery<TableImpactRow>(buildTableImpactQuery(schema, table));
 }
 
-export async function lookupEntityToken(schema: string, table: string): Promise<string | null> {
-  const rows = await runQuery<{ token: string }>(buildEntityTokenLookupQuery(schema, table));
+export async function lookupEntityToken(
+  schema: string,
+  table: string,
+): Promise<string | null> {
+  const rows = await runQuery<{ token: string }>(
+    buildEntityTokenLookupQuery(schema, table),
+  );
   return rows[0]?.token ?? null;
 }
 
@@ -156,10 +167,18 @@ export async function runVerifyCanonical(
   variant?: string | null,
 ): Promise<VerifyCanonicalResult> {
   const [checks, okRows, certifyRows, certifyOkRows] = await Promise.all([
-    runQuery<VerifyCanonicalRow>(buildVerifyCanonicalQuery(schema, table, token, variant)),
-    runQuery<{ ok: boolean }>(buildVerifyCanonicalOkQuery(schema, table, token, variant)),
-    runQuery<CanonicalCertifyRow>(buildCanonicalCertifyQuery(schema, table, token)),
-    runQuery<{ ok: boolean }>(buildCanonicalCertifyOkQuery(schema, table, token)),
+    runQuery<VerifyCanonicalRow>(
+      buildVerifyCanonicalQuery(schema, table, token, variant),
+    ),
+    runQuery<{ ok: boolean }>(
+      buildVerifyCanonicalOkQuery(schema, table, token, variant),
+    ),
+    runQuery<CanonicalCertifyRow>(
+      buildCanonicalCertifyQuery(schema, table, token),
+    ),
+    runQuery<{ ok: boolean }>(
+      buildCanonicalCertifyOkQuery(schema, table, token),
+    ),
   ]);
 
   // `iam.canonical_certify` emits one non-blocking INFO row reporting which of

@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import {
   MoreVertical,
   Plus,
@@ -36,6 +37,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useOpenGoogleContactsImport } from "@/features/overlays/openers/googleImportWindows";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type {
   ColumnFiltersState,
@@ -46,7 +48,7 @@ import type { ItemMenuConfig } from "@/components/official/item/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { EntityScopeTabs } from "@/lib/entity-list/components/EntityScopeTabs";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
 import { cn } from "@/lib/utils";
@@ -540,10 +542,17 @@ export function CrmListPage({
     direction: prefs.direction,
     pageSize: prefs.pageSize,
   });
-  // New records land in the active org (falls back to the personal org while
-  // none is explicitly selected). Access never depends on it — only stamping.
-  const effectiveOrgId = useAppSelector(selectEffectiveOrganizationId);
-  const openRow = (row: PartyListRow) => router.push(`/crm/${row.id}`);
+  // New records land in the EXPLICIT active org — never a personal-workspace
+  // fallback (a record silently stamped personal is the incident documented in
+  // PartyCreateForm). With none selected the create form refuses and says so,
+  // and Save view is disabled with its reason. Access never depends on this —
+  // only stamping.
+  const activeOrgId = useAppSelector(selectOrganizationId);
+  const openGoogleContactsImport = useOpenGoogleContactsImport();
+  const openRow = (row: PartyListRow) => {
+    const href = resolveEntityDoors("party", row.id).href;
+    if (href) router.push(href);
+  };
 
   // Duplicates indicator — a true pending-pair count behind the header door.
   // The assist-strip sweep refreshes it after detection runs.
@@ -588,7 +597,7 @@ export function CrmListPage({
   const savedViewOrgId =
     list.query.scope.kind === "orgs" && list.query.scope.organizationId
       ? list.query.scope.organizationId
-      : effectiveOrgId;
+      : activeOrgId;
 
   /** One bulk write + one refresh, with the selection cleared on success. */
   const runBulk = async (
@@ -804,13 +813,13 @@ export function CrmListPage({
         {
           id: "open",
           items: [
-            { id: "open", kind: "link", label: "Open", href: `/crm/${row.id}` },
+            { id: "open", kind: "link", label: "Open", href: resolveEntityDoors("party", row.id).href ?? "" },
             {
               id: "copy-link",
               label: "Copy link",
               onSelect: () =>
                 navigator.clipboard.writeText(
-                  `${window.location.origin}/crm/${row.id}`,
+                  `${window.location.origin}${resolveEntityDoors("party", row.id).href ?? ""}`,
                 ),
               toast: {
                 loading: "Copying…",
@@ -1037,6 +1046,26 @@ export function CrmListPage({
           <span className="max-sm:sr-only">Import</span>
         </Link>
       </Button>
+      {/* Google-native PLAN §4.5: the contact import opens IN PLACE as a
+          window — a route would lose the list behind it, and the panel is the
+          window presentation of the same body on every surface. */}
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-11 gap-1 px-2 text-xs lg:h-7"
+        onClick={() =>
+          openGoogleContactsImport({
+            organizationId:
+              list.query.scope.kind === "orgs" &&
+              list.query.scope.organizationId
+                ? list.query.scope.organizationId
+                : activeOrgId,
+          })
+        }
+      >
+        <Contact className="h-3.5 w-3.5" />
+        <span className="max-sm:sr-only">Import from Google Contacts</span>
+      </Button>
       <Button
         size="sm"
         variant="outline"
@@ -1048,7 +1077,7 @@ export function CrmListPage({
               list.query.scope.kind === "orgs" &&
               list.query.scope.organizationId
                 ? list.query.scope.organizationId
-                : effectiveOrgId,
+                : activeOrgId,
           });
         }}
       >
@@ -1065,7 +1094,7 @@ export function CrmListPage({
               list.query.scope.kind === "orgs" &&
               list.query.scope.organizationId
                 ? list.query.scope.organizationId
-                : effectiveOrgId,
+                : activeOrgId,
           });
         }}
       >
@@ -1102,6 +1131,7 @@ export function CrmListPage({
                 scope={list.query.scope}
                 scopes={CRM_LIST_SCOPES}
                 counts={list.counts}
+                countsLoading={list.countsLoading}
                 onChange={(scope) => list.setQuery({ scope })}
               />
             </div>

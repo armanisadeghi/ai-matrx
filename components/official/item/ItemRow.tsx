@@ -185,7 +185,7 @@ export function ItemRow({
     sz.row,
     sz.text,
     "outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring",
-    active ? "text-foreground" : "text-foreground/90",
+    active ? "font-medium text-primary" : "text-foreground/90",
   );
 
   const indentStyle =
@@ -256,7 +256,7 @@ export function ItemRow({
       className={cn(
         "item-row group/item relative rounded-lg transition-colors",
         !active && "hover:bg-accent/60",
-        active && "bg-accent",
+        active && "bg-primary/10 text-primary",
         className,
       )}
     >

@@ -36,9 +36,7 @@ import {
 export function formatNumber(n: number | null | undefined): string {
   if (!isKnownNumber(n)) return UNKNOWN_DISPLAY;
   if (n <= 0) return String(n);
-  if (n < 1000) return String(n);
-  if (n < 1_000_000) return `${(n / 1000).toFixed(n < 10_000 ? 1 : 0)}k`;
-  return `${(n / 1_000_000).toFixed(1)}m`;
+  return formatCount(n, { style: "compact" });
 }
 
 /** Locale date+time string, tolerant of bad/missing ISO input. */

@@ -69,7 +69,7 @@ This directory **owns the declarations**. The DB is a synced reflection. Admin U
 
 3. **Register it.** Edit `registry.ts`, import the manifest, and add it to `RAW_MANIFESTS`. `ALL_MANIFESTS` is derived (inheritance resolved, baselines auto-injected, provenance + groupKey stamped, values sorted curated → inherited → baseline; opt out of baselines with `skipBaselineValues`) — never edit it directly.
 
-4. **Check + sync.** `pnpm check:surface-drift` (validates label presence/uniqueness, group rules, value invariants), then sync from the Surfaces admin page or `POST /api/admin/surfaces/sync-manifests`. Sync ALWAYS writes `ui_surface.label` + `value_groups`. Drift report: `GET /api/admin/surfaces/drift-report` (incl. `surfaceLabelDrifts` / `valueGroupsDrifts`).
+4. **Check + sync.** Run `pnpm check:surface-drift` (label presence/uniqueness, group rules, value invariants), then `pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface <client>/<local>` and repeat it with `--check`. The transaction creates or updates that surface and its declared mirror rows only; it neither creates a client nor deletes other mirror rows. The check verifies live metadata plus every declared value, role, write target, and client tool. Drift report: `GET /api/admin/surfaces/drift-report` (incl. `surfaceLabelDrifts` / `valueGroupsDrifts`).
 
 ## Conventions
 

@@ -28,6 +28,12 @@
 // shown here is preview only and is never persisted or sent.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/utils/supabase/client";
+import { readFileSizesByIds } from "@/features/files/filesDb";
+import {
+  fileSourceSizeLabel,
+  EMPTY_FILE_SIZE_LABEL,
+} from "./fileSourceSizeLabel";
 import Link from "next/link";
 import {
   ChevronDown,
@@ -36,6 +42,7 @@ import {
   Globe,
   Hammer,
   Layers,
+  Library,
   Link2,
   Loader2,
   Plus,
@@ -43,7 +50,10 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
-import LoadingSpinner from "@/components/ui/loading-spinner";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AssociationCaptureToolbar } from "@ai-matrx/associations/react";
 import {
@@ -51,6 +61,13 @@ import {
   attachedKey,
 } from "@ai-matrx/associations/react";
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
+import {
+  DUMP_ROLE,
+  DUMP_SOURCE_TOKENS,
+  tallyOf,
+  useKeptSourceCount,
+  type KeptSourceCount,
+} from "../../sourceLinks";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { WebpageResourcePickerCore } from "@/features/resource-manager/resource-picker/WebpageResourcePicker";
@@ -59,6 +76,7 @@ import type { paths } from "@/types/python-generated/api-types";
 import { cn } from "@/lib/utils";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import {
+  countRulesForSource,
   entitySourceKey,
   sourceSectionYields,
   urlSourceKey,
@@ -71,25 +89,17 @@ import type { PastedSourceMetadata } from "../../record/pastedSource";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { RunStages } from "../RunStages";
+import { useLaunchGate } from "@/lib/launch-gate/useLaunchGate";
 
 /**
- * The registered source→rulebook pairs (`platform.association_types`,
- * `container_side=none` — provenance only). Attach is open to ALL of them; the
- * tokens the server cannot distill YET are named in `UNSUPPORTED_TOKENS` and
- * their cards say so plainly — attached fine, never silently skipped.
+ * The registered source→rulebook pairs live in ONE place — `../../sourceLinks`
+ * — because the interview start screen asks the same question this panel
+ * answers ("does this Rulebook have anything written down?") to decide which
+ * interviewer the Expert gets. Attach is open to ALL of them; the tokens the
+ * server cannot distill YET are named in `UNSUPPORTED_TOKENS` below and their
+ * cards say so plainly — attached fine, never silently skipped.
  */
-const DUMP_SOURCE_TOKENS: EntityTypeToken[] = [
-  "note",
-  "transcript",
-  "studio_session",
-  "file",
-  "udt_document",
-  "fc_set",
-  "research_topic",
-  "pc_show",
-  "pc_episode",
-  "pc_studio_run",
-];
 
 /** Server-side distillation not built yet — honest cards, no silent skips. */
 const UNSUPPORTED_TOKENS = new Set<string>([
@@ -102,8 +112,6 @@ const UNSUPPORTED_TOKENS = new Set<string>([
 const UNSUPPORTED_NOTE =
   "Attached as a source — distillation for this type is coming.";
 
-/** The edge role every dump source carries. */
-const DUMP_ROLE = "distillation_source";
 
 // Endpoint being built in parallel in aidream. Cast pending the OpenAPI type
 // sync (precedent: features/marketing/FEATURE.md); until the server deploys it,
@@ -112,39 +120,74 @@ const INGEST_DUMP_PATH = "/masterworks/ingest-dump" as keyof paths;
 
 // ── Run result (per-resource outcomes) ──────────────────────────────────────
 
+/**
+ * 🚨 EVERY OUTCOME THE SERVER SENT GETS A ROW — including the ones this file
+ * had never heard of.
+ *
+ * `status` was a closed union of three, and `parseDumpSummary` DROPPED any row
+ * whose status was not one of them. `already_distilled` has been a real server
+ * status for weeks and vanished from every summary silently; the honest-empty
+ * outcome (`ok` + `note`, aidream 1c9edb934c) would have vanished the same way
+ * the moment it shipped. A row the screen cannot classify is still a row the
+ * person handed over, so it is rendered by name rather than deleted
+ * (VERIFICATION.md §9.6, 2026-09-18).
+ */
+type DumpOutcomeStatus =
+  | "ok"
+  | "failed"
+  | "unsupported"
+  | "already_distilled"
+  | (string & {});
+
 interface DumpResourceOutcome {
-  kind: "entity" | "url";
+  kind: "entity" | "url" | "kept_source" | (string & {});
   token?: string;
   id?: string;
   url?: string;
   title?: string;
-  status: "ok" | "failed" | "unsupported";
+  status: DumpOutcomeStatus;
   rules_added: number;
   duplicates: number;
   error?: string;
+  /**
+   * THE THIRD OUTCOME. A source that was read end to end and held nothing
+   * rule-worthy comes back `ok` with zero rules and the distiller's own
+   * sentence here — never `failed`, because it did not fail. Rendering "0
+   * rules" without this sentence leaves the person guessing which of the two
+   * it was, which is the whole of what this field is for.
+   */
+  note?: string;
+  /** The server's sentence for a source this Rulebook had already read. */
+  alreadyDistilled?: string;
 }
 
-interface DumpSummary {
+export interface DumpSummary {
   resources: DumpResourceOutcome[];
   added: number;
   duplicatesSkipped: number;
 }
 
-function parseDumpSummary(raw: unknown): DumpSummary | null {
+export function parseDumpSummary(raw: unknown): DumpSummary | null {
   if (!raw || typeof raw !== "object") return null;
   const data = raw as Record<string, unknown>;
   if (!Array.isArray(data.resources)) return null;
   const resources: DumpResourceOutcome[] = data.resources.flatMap((item) => {
     if (!item || typeof item !== "object" || Array.isArray(item)) return [];
     const rec = item as Record<string, unknown>;
-    const status =
-      rec.status === "ok" ||
-      rec.status === "failed" ||
-      rec.status === "unsupported"
-        ? rec.status
-        : null;
-    const kind = rec.kind === "entity" || rec.kind === "url" ? rec.kind : null;
+    // Any non-empty status and kind the server sent, whatever they are. The
+    // renderer below says what it knows and names what it does not; it never
+    // drops the row (see `DumpResourceOutcome`).
+    const status = typeof rec.status === "string" && rec.status ? rec.status : null;
+    const kind = typeof rec.kind === "string" && rec.kind ? rec.kind : null;
     if (!status || !kind) return [];
+    const already =
+      rec.already_distilled &&
+      typeof rec.already_distilled === "object" &&
+      !Array.isArray(rec.already_distilled) &&
+      typeof (rec.already_distilled as Record<string, unknown>).message ===
+        "string"
+        ? ((rec.already_distilled as Record<string, unknown>).message as string)
+        : null;
     return [
       {
         kind,
@@ -158,6 +201,8 @@ function parseDumpSummary(raw: unknown): DumpSummary | null {
         ...(typeof rec.error === "string" && rec.error
           ? { error: rec.error }
           : {}),
+        ...(typeof rec.note === "string" && rec.note ? { note: rec.note } : {}),
+        ...(already ? { alreadyDistilled: already } : {}),
       },
     ];
   });
@@ -170,6 +215,79 @@ function parseDumpSummary(raw: unknown): DumpSummary | null {
       ? data.duplicates_skipped
       : resources.reduce((n, r) => n + r.duplicates, 0);
   return { resources, added, duplicatesSkipped };
+}
+
+/**
+ * 🚨 THE ONE PLACE THE RUN'S PAYLOAD IS BUILT, and the one place the keys the
+ * person can SEE are named. They are the same function's two halves on
+ * purpose: "the run launches with the set on screen" is only checkable while
+ * both come out of one definition.
+ *
+ * `launchKey` is what `useLaunchGate` waits for. It is the ATTACHMENT's
+ * identity (token + resource id, or the staged URL), not the distillation
+ * source key — a link that has been written but has not reached this render is
+ * exactly the thing being detected.
+ */
+export function launchKeyForEntity(token: string, resourceId: string): string {
+  return attachedKey(token, resourceId);
+}
+
+export function launchKeyForUrl(url: string): string {
+  return `staged-url:${(url ?? "").trim()}`;
+}
+
+export interface DumpPayloadInput {
+  sourceLinks: readonly {
+    token: string;
+    resourceId: string;
+    label: string | null;
+  }[];
+  stagedUrls: readonly DumpUrlSource[];
+  keptRows: readonly { source_key: string; label?: string | null }[];
+  titleFor: (token: string, id: string, label: string | null) => string;
+}
+
+/** Every key the person can see on this panel right now. */
+export function visibleLaunchKeys(
+  input: Pick<DumpPayloadInput, "sourceLinks" | "stagedUrls">,
+): Set<string> {
+  return new Set<string>([
+    ...input.sourceLinks.map((l) => launchKeyForEntity(l.token, l.resourceId)),
+    ...input.stagedUrls.map((s) => launchKeyForUrl(s.url)),
+  ]);
+}
+
+/** The `resources` array `POST /masterworks/ingest-dump` is handed. */
+export function dumpResources(
+  input: DumpPayloadInput,
+): Record<string, unknown>[] {
+  return [
+    ...input.sourceLinks.map((l) => ({
+      kind: "entity",
+      token: l.token,
+      id: l.resourceId,
+      // Without this the server's progress line falls back to the
+      // raw entity_types token + id fragment (e.g. "udt_document
+      // 271abcae") for a pasted document — link resources never hit
+      // this because capture_page always returns a page title.
+      title: input.titleFor(l.token, l.resourceId, l.label),
+    })),
+    ...input.stagedUrls.map((s) => ({
+      kind: "url",
+      url: s.url,
+      ...(s.title ? { title: s.title } : {}),
+    })),
+    // Material we already hold needs no resolver — the server reads the
+    // row. `source_key` IS the rule identity, so a kept email distilled
+    // here and the same email distilled by any other door are ONE
+    // source: the re-distill guard fires and the rules point back to the
+    // stored passage.
+    ...input.keptRows.map((k) => ({
+      kind: "kept_source",
+      source_key: k.source_key,
+      ...(k.label ? { title: k.label } : {}),
+    })),
+  ];
 }
 
 // ── Component ───────────────────────────────────────────────────────────────
@@ -241,6 +359,17 @@ export function RulebookSourcesPanel({
     orgId: rulebook.organization_id,
   });
 
+  /**
+   * 🚨 THE FIFTEEN FILES THAT WERE NEVER SUBMITTED (VERIFICATION.md §9.1).
+   *
+   * Every write that shapes this panel's payload — an attach from the toolbar's
+   * serial upload loop, an attach from the workspace picker, a staged link's
+   * CAS write, a detach — runs through this gate, and the run button is gated
+   * on it. Before this, seventeen files attached ~0.3 s apart and a click
+   * 0.9 s into that loop launched with the three that had landed.
+   */
+  const gate = useLaunchGate();
+
   /** Attached dump sources: incoming edges of the registered tokens carrying
    *  the dump role. Other rulebook edges (Scout interviews…) stay invisible. */
   const sourceLinks = useMemo(
@@ -286,9 +415,13 @@ export function RulebookSourcesPanel({
       }
       if (meta.words) bits.push(`${meta.words.toLocaleString()} words`);
       if (meta.source_key) {
-        const produced = (rulebook.rules ?? []).filter(
-          (rule) => rule.source_ref?.source === meta.source_key,
-        ).length;
+        // THE ONE JOIN (../../sourceSections) — the same predicate the kept
+        // Sources list counts with, so two screens can never disagree about
+        // how many rules one source produced.
+        const produced = countRulesForSource(
+          rulebook.rules,
+          meta.source_key,
+        );
         bits.push(
           produced === 1 ? "1 rule so far" : `${produced} rules so far`,
         );
@@ -298,8 +431,74 @@ export function RulebookSourcesPanel({
     [rulebook.rules],
   );
 
+  /**
+   * File sizes for the Resources card (VERIFICATION.md §12, 2026-09-18): a
+   * zero-byte upload rendered identically to a real one — filename + bare
+   * "Files" subtitle, no size, no "(empty)". `readFileSizesByIds` is a
+   * direct RLS-authorized Supabase read (no server round trip needed for a
+   * handful of size_bytes columns); `fileSourceSizeLabel` turns a result
+   * into the honest subtitle, including calling out an empty file plainly.
+   */
+  const fileSourceIds = useMemo(
+    () =>
+      sourceLinks
+        .filter((l) => l.token === "file")
+        .map((l) => l.resourceId),
+    [sourceLinks],
+  );
+  const [fileSizesById, setFileSizesById] = useState<
+    Map<string, number | null>
+  >(new Map());
+  useEffect(() => {
+    if (fileSourceIds.length === 0) return;
+    // Only fetch ids we haven't resolved yet — sizes don't change once a
+    // file has landed, so this never re-fetches ids already in state.
+    const missing = fileSourceIds.filter((id) => !fileSizesById.has(id));
+    if (missing.length === 0) return;
+    let cancelled = false;
+    void readFileSizesByIds(supabase, missing).then((sizes) => {
+      if (cancelled) return;
+      setFileSizesById((prev) => {
+        const next = new Map(prev);
+        for (const id of missing) {
+          next.set(id, sizes.get(id) ?? null);
+        }
+        return next;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [fileSourceIds, fileSizesById]);
+  const sizeForLink = useCallback(
+    (token: string, resourceId: string): string | null => {
+      if (token !== "file") return null;
+      return fileSourceSizeLabel(fileSizesById.get(resourceId));
+    },
+    [fileSizesById],
+  );
+
   const stagedUrls = useMemo(() => dumpUrlSources(rulebook), [rulebook]);
-  const totalSources = sourceLinks.length + stagedUrls.length;
+
+  /**
+   * 🚨 THE OTHER HALF OF THIS RULEBOOK'S SOURCES (2026-09-18, D7).
+   *
+   * Attached edges and staged URLs are what somebody POINTED us at. Kept
+   * Sources are what we HAVE — everything that came through
+   * `raw_material.keep`: an export selection, a send from a Library, an
+   * extension capture, an interview's turns. This panel counted only the
+   * first half, so a Rulebook holding 50 of a person's own emails showed them
+   * "Add your first resource / Attach at least one source first" on both
+   * tabs. The addition happens in ONE place (`tallyOf`) that the interview
+   * start screen and the ingest gate share, so no two screens can disagree
+   * about whether this Rulebook has anything.
+   */
+  const kept = useKeptSourceCount(rulebook.id);
+  const keptRows = kept.state === "ready" ? kept.rows : [];
+  const { count: totalSources, tally } = tallyOf(
+    sourceLinks.length + stagedUrls.length,
+    kept.state === "ready" ? kept.count : 0,
+  );
   useEffect(() => {
     onCount?.(totalSources);
   }, [totalSources, onCount]);
@@ -311,10 +510,17 @@ export function RulebookSourcesPanel({
 
   const attachSource = useCallback(
     async (token: EntityTypeToken, resourceId: string, label?: string | null) =>
-      links.attach(token, resourceId, label ?? undefined, undefined, {
-        role: DUMP_ROLE,
-      }),
-    [links],
+      gate.track(
+        () =>
+          links.attach(token, resourceId, label ?? undefined, undefined, {
+            role: DUMP_ROLE,
+          }),
+        {
+          key: attachedKey(token, resourceId),
+          landed: (result) => result.ok,
+        },
+      ),
+    [links, gate],
   );
 
   /** The shared capture toolbar's callback shape (label rides in `opts`). */
@@ -328,17 +534,34 @@ export function RulebookSourcesPanel({
   );
 
   const detachSource = useCallback(
-    async (token: EntityTypeToken, resourceId: string) =>
-      links.detach(token, resourceId, DUMP_ROLE),
-    [links],
+    async (token: EntityTypeToken, resourceId: string) => {
+      const result = await gate.track(() =>
+        links.detach(token, resourceId, DUMP_ROLE),
+      );
+      // The person took it back off the pile — stop waiting for it to appear.
+      if (result.ok) gate.forget(attachedKey(token, resourceId));
+      return result;
+    },
+    [links, gate],
   );
 
   // ── Staged URLs (durable on rulebook.metadata, guarded CAS) ──────────────
 
   const writeUrls = useCallback(
-    async (urls: DumpUrlSource[], verb: "add" | "remove"): Promise<boolean> => {
+    async (
+      urls: DumpUrlSource[],
+      verb: "add" | "remove",
+      expectKey?: string,
+    ): Promise<boolean> => {
       try {
-        const result = await writeDumpUrlSources({ rulebook, urls });
+        // The staged-link CAS write shapes the SAME payload the run sends, so
+        // it closes the same gate an attach does.
+        const result = await gate.track(
+          () => writeDumpUrlSources({ rulebook, urls }),
+          expectKey
+            ? { key: expectKey, landed: (r) => r.status === "saved" }
+            : undefined,
+        );
         if (result.status === "saved") {
           onRulebookChanged(result.rulebook);
           return true;
@@ -364,7 +587,7 @@ export function RulebookSourcesPanel({
         return false;
       }
     },
-    [rulebook, onRulebookChanged],
+    [rulebook, onRulebookChanged, gate],
   );
 
   const stageUrl = useCallback(
@@ -381,7 +604,7 @@ export function RulebookSourcesPanel({
           added_at: new Date().toISOString(),
         },
       ];
-      const ok = await writeUrls(next, "add");
+      const ok = await writeUrls(next, "add", launchKeyForUrl(url));
       if (ok) {
         toast.success("Link attached as a source");
         setShowUrlAdd(false);
@@ -396,18 +619,55 @@ export function RulebookSourcesPanel({
         stagedUrls.filter((s) => s.url !== url),
         "remove",
       );
-      if (ok) toast.success("Link removed");
+      if (ok) {
+        gate.forget(launchKeyForUrl(url));
+        toast.success("Link removed");
+      }
     },
-    [stagedUrls, writeUrls],
+    [stagedUrls, writeUrls, gate],
   );
 
+  /**
+   * What the person can see right now, and what the gate is still waiting for.
+   * `missing` is the second half of the §9.1 repair: an attach can RESOLVE
+   * before its row reaches this render, and a launch in that window is the same
+   * silent prefix by another route. When it happens the panel re-reads the
+   * edges rather than sitting on a stale list.
+   */
+  const visibleKeys = useMemo(
+    () => visibleLaunchKeys({ sourceLinks, stagedUrls }),
+    [sourceLinks, stagedUrls],
+  );
+  const missingKeys = gate.missingFrom(visibleKeys);
+  const missingCount = missingKeys.length;
+  /** "Attaching 14 sources…" / "Catching up…" / null when the pile is whole. */
+  const attachingLabel = gate.busyLabel(visibleKeys);
+  useEffect(() => {
+    if (gate.pending > 0 || missingCount === 0) return;
+    const timer = window.setTimeout(() => void links.reload(), 250);
+    return () => window.clearTimeout(timer);
+    // `links.reload` is stable per container; re-running on every render would
+    // be a read loop rather than a reconcile.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gate.pending, missingCount, rulebook.id]);
+
   // ── The run: POST /masterworks/ingest-dump (durable, rejoinable) ─────────
+
+  // 🚨 THE PROMISE IS THIS PILE'S, NOT THE LANE'S.
+  //
+  // This is the exact screen the 2026-09-17 verification watched: one 558 KB
+  // EPUB and a pile of nineteen files were both told "this usually takes about
+  // 2 minutes" because the estimate was a per-lane constant. It is now the
+  // measured per-resource rate (`DUMP_INGEST_RATE`) applied to what is really
+  // attached, overlapped by the server's own `resource_fan_out` cap.
+  const dumpSize = useMemo(() => ({ items: totalSources }), [totalSources]);
 
   const run = useMasterworkRun<DumpSummary>({
     surface: "dump",
     rulebookId: rulebook.id,
     path: INGEST_DUMP_PATH,
     parseResult: parseDumpSummary,
+    size: dumpSize,
   });
 
   // Drafts that landed while the user was away still reach the page. Fired
@@ -431,33 +691,33 @@ export function RulebookSourcesPanel({
   }, [run.running]);
 
   const launchDump = async () => {
-    if (totalSources === 0) {
-      toast.error("Attach at least one source first.");
+    // Gated on the button, which names the missing precondition instead of
+    // sitting dark (it was `disabled` with nothing said) and instead of
+    // firing a red toast at a person who has simply not attached anything
+    // yet (class sweep, 2026-09-16).
+    if (totalSources === 0) return;
+    // 🚨 THE HARD GATE, not just the button's. A click that arrives in the
+    // same tick as the last attach must not squeeze past a re-render, and a
+    // keyboard activation reaches this function directly. It refuses out loud
+    // rather than distilling a prefix of the person's pile.
+    const blocked = gate.blockingReason(visibleKeys);
+    if (blocked) {
+      toast.info(blocked);
       return;
     }
+    const resources = dumpResources({
+      sourceLinks,
+      stagedUrls,
+      keptRows,
+      titleFor: (token, id, label) => titleFor({ token, id, label }),
+    });
     await run.launch(
       {
         rulebook_id: rulebook.id,
-        resources: [
-          ...sourceLinks.map((l) => ({
-            kind: "entity",
-            token: l.token,
-            id: l.resourceId,
-            // Without this the server's progress line falls back to the
-            // raw entity_types token + id fragment (e.g. "udt_document
-            // 271abcae") for a pasted document — link resources never hit
-            // this because capture_page always returns a page title.
-            title: titleFor({ token: l.token, id: l.resourceId, label: l.label }),
-          })),
-          ...stagedUrls.map((s) => ({
-            kind: "url",
-            url: s.url,
-            ...(s.title ? { title: s.title } : {}),
-          })),
-        ],
+        resources,
         mode: "instructional",
       },
-      totalSources === 1 ? "1 source" : `${totalSources} sources`,
+      resources.length === 1 ? "1 source" : `${resources.length} sources`,
     );
   };
 
@@ -546,11 +806,27 @@ export function RulebookSourcesPanel({
           {/* THE DOOR LAW — this working mode has its own URL. */}
           <Link
             href={`/masterwork/${rulebook.id}/sources`}
+            // A door, not prose: opt into the subtree touch floor (globals.css).
+            data-tap-target
             className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
             title="Open Sources as its own page"
           >
             <ExternalLink className="h-3 w-3" />
             Full page
+          </Link>
+          {/* The other half of this feature, and a different question: this
+              panel is what we are ABOUT to read; that page is what we KEPT —
+              the Expert's own words, still readable after the rules were drawn
+              out of them. Without this door the kept material is reachable only
+              by typing a URL. */}
+          <Link
+            href={`/masterwork/${rulebook.id}/sources/kept`}
+            data-tap-target
+            className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            title="Read the material this Rulebook kept"
+          >
+            <Library className="h-3 w-3" />
+            Kept material
           </Link>
         </div>
       ) : null}
@@ -573,10 +849,22 @@ export function RulebookSourcesPanel({
             </p>
           ) : null}
 
+          {/* ── what this Rulebook already HOLDS (D7) ────────────────────
+              Sources arrive here from doors that are not this panel: an export
+              selection, a send from a Library, an extension capture. They are
+              listed, not just counted, because a screen that holds 50 of a
+              person's own emails and shows them a number is still telling them
+              less than it knows. */}
+          <KeptMaterialSummary
+            kept={kept}
+            rulebookId={rulebook.id}
+            attached={tally.attached}
+          />
+
           {/* ── capture ──────────────────────────────────────────────── */}
           {canEdit && !captureVisible ? (
             <div className="pt-3">
-              {totalSources > 0 ? (
+              {tally.attached > 0 ? (
                 <div className="overflow-hidden rounded-md border border-border/70 bg-card">
                   <SourceRows
                     sourceLinks={sourceLinks}
@@ -585,6 +873,7 @@ export function RulebookSourcesPanel({
                       titleFor({ token, id, label })
                     }
                     detailFor={detailForLink}
+                    sizeFor={sizeForLink}
                     sectionsFor={sectionsFor}
                     onRedistillSection={(resource, section, label) =>
                       void redistillSection(resource, section, label)
@@ -607,6 +896,8 @@ export function RulebookSourcesPanel({
                   onClick={() => setCaptureVisible(true)}
                 >
                   <Plus className="h-3.5 w-3.5" />
+                  {/* `totalSources`, never `tally.attached`: a Rulebook holding
+                      50 kept emails is not being asked for its FIRST resource. */}
                   {totalSources === 0 ? "Add your first resource" : "Add more"}
                 </Button>
               </div>
@@ -632,6 +923,7 @@ export function RulebookSourcesPanel({
                   description:
                     "Pick existing files from your cloud storage — exports from other tools are perfect here.",
                 }}
+                organizationId={rulebook.organization_id}
                 openCreatedDocument
                 extraActions={
                   <>
@@ -681,6 +973,30 @@ export function RulebookSourcesPanel({
                       <Plus className="size-3.5" />
                       From your workspace
                     </Button>
+                    {/* A DOOR, NOT A THIRD CAPTURE FLOW. One link at a time is
+                        the wrong shape for someone whose method lives in a
+                        YouTube channel; the Media Source Catalog already
+                        catalogues a whole channel into a Library of Sources.
+                        So this sibling navigates there carrying where it came
+                        from — no `aria-expanded`/`aria-pressed`, because
+                        nothing opens below the row and a toggle that never
+                        toggles is exactly the lie the two buttons above were
+                        fixed for. */}
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 gap-1 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                    >
+                      <Link
+                        href={`/libraries?from=rulebook&rulebook_id=${rulebook.id}`}
+                        data-tap-target
+                        title="Catalogue a whole YouTube channel in Libraries"
+                      >
+                        <Library className="size-3.5" />
+                        Bring a whole channel
+                      </Link>
+                    </Button>
                   </>
                 }
               >
@@ -727,6 +1043,7 @@ export function RulebookSourcesPanel({
                     titleFor({ token, id, label })
                   }
                   detailFor={detailForLink}
+                    sizeFor={sizeForLink}
                   sectionsFor={sectionsFor}
                   onRedistillSection={(resource, section, label) =>
                     void redistillSection(resource, section, label)
@@ -749,6 +1066,7 @@ export function RulebookSourcesPanel({
                 stagedUrls={stagedUrls}
                 titleFor={(token, id, label) => titleFor({ token, id, label })}
                 detailFor={detailForLink}
+                    sizeFor={sizeForLink}
                 sectionsFor={sectionsFor}
                 status={links.status}
                 error={links.error}
@@ -766,25 +1084,14 @@ export function RulebookSourcesPanel({
           {/* ── the run ──────────────────────────────────────────────── */}
           {canEdit ? (
             <div className="mt-3 space-y-2">
-              {run.stages.length > 0 || run.running ? (
-                <div className="max-h-52 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/40 p-3">
-                  {run.stages.map((line, i) => (
-                    <p key={i} className="text-xs text-muted-foreground">
-                      {line}
-                    </p>
-                  ))}
-                  {run.running ? (
-                    <div className="flex items-start gap-2 pt-1">
-                      <LoadingSpinner size="sm" />
-                      <p className="text-xs text-muted-foreground">
-                        {run.waitMessage}
-                      </p>
-                    </div>
-                  ) : null}
-                  {run.running ? (
-                    <DurableRunInterruption interruption={run.interruption} />
-                  ) : null}
-                </div>
+              {/* 🚨 THE LANE THE 2026-09-17 VERIFICATION WATCHED FREEZE. It
+                  now shows a row per attached source with its own state, the
+                  counts the server sent, a clock that moves every second, and
+                  the server's labouring sentence when its heartbeat cannot
+                  land — never a motionless spinner. */}
+              <RunStages run={run} />
+              {run.running ? (
+                <DurableRunInterruption interruption={run.interruption} />
               ) : null}
 
               {/* The dump lane was the only one that kept its failure on screen
@@ -807,26 +1114,43 @@ export function RulebookSourcesPanel({
 
               {!run.result ? (
                 <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-end">
-                  <Button
+                  {/* 🚨 THE BUTTON SAYS WHAT IT IS WAITING FOR.
+                      It used to be gated on "is anything attached" alone, so
+                      one file into a seventeen-file drop it was live, and a
+                      press distilled whatever had landed (VERIFICATION.md
+                      §9.1). Now the pile still arriving is a named blocking
+                      reason, and the button WEARS the count while it waits —
+                      a control that is honest rather than one that is dark. */}
+                  <GatedActionButton
                     size="sm"
                     className="h-10 w-full shrink-0 sm:h-8 sm:w-auto"
+                    wrapperClassName="w-full sm:w-auto"
                     onClick={() => void launchDump()}
-                    disabled={run.running || totalSources === 0}
+                    disabled={run.running}
+                    reason={firstBlockingReason([
+                      {
+                        when: totalSources === 0,
+                        reason: "Attach at least one source first",
+                      },
+                      {
+                        when: attachingLabel !== null,
+                        reason:
+                          gate.blockingReason(visibleKeys) ??
+                          "The sources are still arriving",
+                      },
+                    ])}
                   >
-                    {run.running ? (
+                    {run.running || attachingLabel ? (
                       <Loader2 className="mr-1 h-4 w-4 animate-spin" />
                     ) : (
                       <Hammer className="mr-1 h-4 w-4" />
                     )}
-                    {run.running
-                      ? "Turning it into rules…"
-                      : "Turn this into rules"}
-                  </Button>
-                  {totalSources === 0 ? (
-                    <span className="text-xs text-muted-foreground">
-                      Attach at least one source first.
-                    </span>
-                  ) : null}
+                    {attachingLabel
+                      ? attachingLabel
+                      : run.running
+                        ? "Turning it into rules…"
+                        : "Turn this into rules"}
+                  </GatedActionButton>
                 </div>
               ) : null}
             </div>
@@ -844,6 +1168,7 @@ function SourceRows({
   stagedUrls,
   titleFor,
   detailFor,
+  sizeFor,
   sectionsFor,
   onRedistillSection,
   running,
@@ -864,6 +1189,14 @@ function SourceRows({
   titleFor: (token: string, id: string, label: string | null) => string;
   /** The second line of a row — what a pasted source says about itself. */
   detailFor?: (metadata: unknown) => string | null;
+  /**
+   * The file-size half of that second line: a real size ("1.5 KB") or, for
+   * a genuinely empty upload, a plain call-out — never a bare "Files" label
+   * that leaves an empty file indistinguishable from a real one
+   * (VERIFICATION.md §12, 2026-09-18). `null` while unresolved or for a
+   * non-file source, so it never displaces `info.labelPlural`.
+   */
+  sizeFor?: (token: string, resourceId: string) => string | null;
   /** What each part of this source produced — empty when it has no parts. */
   sectionsFor?: (sourceKey: string) => SourceSectionYield[];
   /** Read ONE part of this source again (canEdit only). */
@@ -911,6 +1244,8 @@ function SourceRows({
         const key = attachedKey(link.token, link.resourceId);
         const unsupported = UNSUPPORTED_TOKENS.has(link.token);
         const detail = detailFor?.(link.metadata) ?? null;
+        const size = sizeFor?.(link.token, link.resourceId) ?? null;
+        const empty = size === EMPTY_FILE_SIZE_LABEL;
         return (
           <li
             key={key}
@@ -939,8 +1274,16 @@ function SourceRows({
                     {detail}
                   </span>
                 ) : info ? (
-                  <span className="text-[10px] text-muted-foreground">
+                  <span
+                    className={cn(
+                      "text-[10px]",
+                      empty
+                        ? "text-amber-600 dark:text-amber-500"
+                        : "text-muted-foreground",
+                    )}
+                  >
                     {info.labelPlural}
+                    {size ? ` · ${size}` : ""}
                   </span>
                 ) : null}
                 {unsupported ? (
@@ -1146,13 +1489,71 @@ function SectionYields({
 
 // ── per-resource outcomes after a run ───────────────────────────────────────
 
-function DumpOutcomes({
+/**
+ * 🚨 THE THREE OUTCOMES A SOURCE CAN HAVE, SAID APART.
+ *
+ * `done` (rules), `no rules` (read, and honestly empty — the distiller's own
+ * sentence), and `refused` (a reason, and what does work instead). Before
+ * aidream 1c9edb934c the middle one arrived as `failed` and the batch read as
+ * stopped; before this file was changed it would have arrived as "0 rules"
+ * with the reason discarded, and a copy-protection refusal reached the person
+ * as `failed — “X” is copy-prot…`. Nothing here writes a sentence of its own:
+ * every explanation below is the server's, rendered whole.
+ */
+type OutcomeTone = "done" | "empty" | "refused" | "noted";
+
+function outcomeTone(res: DumpResourceOutcome): OutcomeTone {
+  if (res.status === "failed") return "refused";
+  if (res.status === "unsupported") return "noted";
+  if (res.status === "already_distilled") return "noted";
+  if (res.status === "ok") return res.rules_added > 0 ? "done" : "empty";
+  return "noted";
+}
+
+/** The state word on the row — never a number standing in for a state. */
+function outcomeState(res: DumpResourceOutcome): string {
+  switch (outcomeTone(res)) {
+    case "done":
+      return (
+        `${res.rules_added} ${res.rules_added === 1 ? "rule" : "rules"}` +
+        (res.duplicates ? `, ${res.duplicates} duplicates` : "")
+      );
+    case "empty":
+      return "read — no rules in it";
+    case "refused":
+      // 🚨 NOT "refused". The wire says `failed` and nothing more, so this
+      // screen cannot know whether we DECLINED to read the source (a
+      // copy-protected book, a site whose terms forbid it) or simply could not
+      // (a save collision, a provider timeout). "Refused" claims the first,
+      // and a live 17-file run on 2026-09-18 wore it over "The Rulebook kept
+      // changing while saving the drafts" — a sentence that is plainly not a
+      // refusal. The neutral word is true either way, and the server's own
+      // sentence directly beneath says which it was.
+      return "couldn’t be used";
+    default:
+      return res.status === "already_distilled"
+        ? "already read"
+        : res.status === "unsupported"
+          ? "not distilled yet"
+          : res.status;
+  }
+}
+
+/** The server's explanation for that state, whole, or null when it sent none. */
+function outcomeExplanation(res: DumpResourceOutcome): string | null {
+  return res.note ?? res.alreadyDistilled ?? res.error ?? null;
+}
+
+export function DumpOutcomes({
   summary,
   onDone,
 }: {
   summary: DumpSummary;
   onDone: () => void;
 }) {
+  const failed = summary.resources.filter(
+    (r) => outcomeTone(r) === "refused",
+  ).length;
   return (
     <div className="space-y-2 rounded-md border border-border bg-muted/30 p-3">
       <p className="text-sm text-foreground">
@@ -1163,6 +1564,17 @@ function DumpOutcomes({
           : ""}
         .
       </p>
+      {/* A FAN-OUT'S ACCOUNT OF ITSELF. Every source ran; this says how many
+          did not work, and never that the run stopped — the sentence that was
+          printed over fifteen files that had all been read (§9.1). */}
+      {failed > 0 ? (
+        <p className="text-xs text-muted-foreground">
+          {summary.resources.length} sources were read.{" "}
+          {failed === 1
+            ? "One of them could not be used — its reason is on its own row below."
+            : `${failed} of them could not be used — each reason is on its own row below.`}
+        </p>
+      ) : null}
       <ul className="space-y-1">
         {summary.resources.map((res, i) => {
           const name =
@@ -1174,9 +1586,9 @@ function DumpOutcomes({
               <span
                 className={cn(
                   "mt-1 size-1.5 shrink-0 rounded-full",
-                  res.status === "ok"
+                  outcomeTone(res) === "done"
                     ? "bg-emerald-500"
-                    : res.status === "failed"
+                    : outcomeTone(res) === "refused"
                       ? "bg-destructive"
                       : "bg-amber-500",
                 )}
@@ -1203,14 +1615,21 @@ function DumpOutcomes({
                 ) : (
                   <span className="text-foreground">{name}</span>
                 )}
-                <span className="ml-1.5 text-muted-foreground">
-                  {res.status === "ok"
-                    ? `${res.rules_added} ${res.rules_added === 1 ? "rule" : "rules"}` +
-                      (res.duplicates ? `, ${res.duplicates} duplicates` : "")
-                    : res.status === "unsupported"
-                      ? "not distilled — this type isn't supported yet"
-                      : `failed${res.error ? ` — ${res.error}` : ""}`}
+                {/* The state is two or four words; it belongs on one line.
+                    At 390 px "read — no rules in it" broke after "no" and read
+                    as two different things. */}
+                <span className="ml-1.5 whitespace-nowrap text-muted-foreground">
+                  {outcomeState(res)}
                 </span>
+                {/* THE SERVER'S SENTENCE, WHOLE AND ON ITS OWN LINE. The
+                    copy-protection refusal names the scheme and the four
+                    lawful ways in; as an inline tail on a truncating row it
+                    was a dead end wearing an ellipsis. */}
+                {outcomeExplanation(res) ? (
+                  <p className="mt-0.5 whitespace-pre-line break-words text-muted-foreground">
+                    {outcomeExplanation(res)}
+                  </p>
+                ) : null}
               </div>
             </li>
           );
@@ -1219,6 +1638,114 @@ function DumpOutcomes({
       <Button size="sm" onClick={onDone}>
         Review the drafts
       </Button>
+    </div>
+  );
+}
+
+/**
+ * What this Rulebook already HOLDS, said out loud.
+ *
+ * 🚨 THE SCREEN THAT LIED (2026-09-18, VERIFICATION.md D7). A Rulebook was
+ * given 50 Sources through the export flow — rows written, edges written, the
+ * send returning 200 — and this panel said "Add your first resource". It was
+ * reading the attachment edges only, and the kept store had no reader anywhere
+ * on the platform. A person who followed the dialog's own "Open the Rulebook"
+ * landed on a page telling them they had nothing, holding 50 of their own
+ * emails.
+ *
+ * Three states, all honest: a read still in flight says so (never "0"), a
+ * failed read says WHAT failed and offers a retry (never "0"), and a Rulebook
+ * with kept material lists it and links to the reader.
+ */
+function KeptMaterialSummary({
+  kept,
+  rulebookId,
+  attached,
+}: {
+  kept: KeptSourceCount;
+  rulebookId: string;
+  attached: number;
+}) {
+  if (kept.state === "loading") {
+    return (
+      <p className="pt-3 text-xs text-muted-foreground">
+        <Loader2 className="mr-1 inline h-3 w-3 animate-spin" />
+        Checking what this rulebook has already kept…
+      </p>
+    );
+  }
+  if (kept.state === "failed") {
+    // Never "no kept material" on a failed read — that is the exact sentence
+    // this whole fix exists to stop a screen from saying.
+    return (
+      <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
+        <p className="text-foreground">
+          We couldn&apos;t read the material this rulebook has kept, so the count
+          below may be short. {kept.reason}
+        </p>
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-2 h-7"
+          onClick={() => kept.retry()}
+        >
+          Try again
+        </Button>
+      </div>
+    );
+  }
+  if (kept.count === 0) return null;
+
+  const shown = kept.rows.slice(0, 5);
+  return (
+    <div className="mt-3 overflow-hidden rounded-md border border-border/70 bg-card">
+      <div className="flex items-center justify-between gap-2 border-b border-border/70 px-3 py-2">
+        <p className="text-xs font-medium text-foreground">
+          {kept.count === 1
+            ? "1 source is already here"
+            : `${kept.count.toLocaleString()} sources are already here`}
+          {attached > 0 ? (
+            <span className="font-normal text-muted-foreground">
+              {" "}
+              — besides the {attached === 1 ? "one" : attached} attached below
+            </span>
+          ) : null}
+        </p>
+        <Link
+          href={`/masterwork/${rulebookId}/sources/kept`}
+          data-tap-target
+          className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <Library className="h-3 w-3" />
+          Read them
+        </Link>
+      </div>
+      <ul className="divide-y divide-border/60">
+        {shown.map((row) => (
+          <li
+            key={row.source_key}
+            className="flex items-center justify-between gap-3 px-3 py-1.5 text-xs"
+          >
+            <span className="truncate text-foreground">
+              {row.label || "Untitled"}
+            </span>
+            <span className="shrink-0 text-muted-foreground">
+              {row.word_count
+                ? `${row.word_count.toLocaleString()} words`
+                : row.medium}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {kept.count > shown.length ? (
+        <p className="border-t border-border/60 px-3 py-1.5 text-xs text-muted-foreground">
+          {`and ${(kept.count - shown.length).toLocaleString()} more`}
+          {kept.more
+            ? ` — one run turns the most recent ${kept.rows.length.toLocaleString()} into rules, then press it again for the rest`
+            : ""}
+          .
+        </p>
+      ) : null}
     </div>
   );
 }

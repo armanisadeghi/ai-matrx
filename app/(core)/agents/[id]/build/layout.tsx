@@ -12,7 +12,7 @@ export async function generateMetadata({
     titlePrefix: "Build",
     title: agent.name,
     description: `Configure and build ${agent.name}.`,
-    letter: "AG",
+    letter: "AB",
   });
 }
 

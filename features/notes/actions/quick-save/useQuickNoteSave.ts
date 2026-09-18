@@ -80,7 +80,10 @@ export function useQuickNoteSave({
   const selectedOrganizationId = useAppSelector(selectOrganizationId);
 
   useEffect(() => {
-    if (listStatus === "idle" || listStatus === "error") {
+    // `idle` only. An `error` list already shows its reason and a Try again in
+    // the sidebar; re-dispatching on it here made every failure a retry loop
+    // (error → fetch → error …) with no cap.
+    if (listStatus === "idle") {
       dispatch(fetchNotesList());
     }
   }, [listStatus, dispatch]);

@@ -3,11 +3,11 @@
   "_why": "A rung a registry row names and no screen offers is a promise the product cannot keep. These pairs were unreachable while this guard still called them 'addressed', because ADDRESSED was measured by reading a constant in features/settings/universal/ rather than by what any surface renders (V-57, 2026-09-13). They are printed on every run as KNOWN DEBT, tolerated only so the guard can hold the line against NEW ones.",
   "_how": "`pnpm check:settings-ladder-ui --write` removes pairs that became reachable. It CANNOT add one.",
   "_baselined": "2026-09-13",
-  "_ratcheted": "2026-09-13",
+  "_ratcheted": "2026-09-14",
   "rungs": {
     "employer_profile": {
-      "owner": "HR settings (features/hr/settings/) \u2014 DD-183 tail",
-      "reason": "The only surface that mounts the per-rung override picker is the organization configuration page, and that page excludes every hr.* key by its own first line (\"HR settings live on their own page\"). /hr/settings' own editor (features/hr/settings/components/KnobPanel.tsx) deliberately cannot set a scope override at all \u2014 hr_knob_set takes an organization and no scope. So this rung is registered, resolves, and is offered nowhere. Closing it means either mounting KnobRungOverrides on the HR settings surface or opening hr_knob_set to a scope.",
+      "owner": "The HR lane that owns each key's reader (DD-203 tail; the screen is done, the readers are not)",
+      "reason": "DD-203 (2026-09-14) closed the SCREEN half of this: /hr/settings now mounts the same <KnobRungOverrides> picker the organization configuration page does, per key, through features/hr/settings/components/HrKnobExceptions.tsx. What is still owed is the READER half. Measured live from pg_proc: every hr.* knob is resolved through hr._knob(feature, key) or hr._hr_knob(feature, key, org, default), and neither takes a person, an employment or a location, so neither can name a row-keyed rung in p_scopes -- an override at this rung would be saved, listed back, and answer nothing. The picker therefore HIDES the rung for these keys (features/settings/universal/rungRules.ts, STRICT_RUNG_FEATURE_PREFIXES) rather than selling an exception nothing honours, which is why they are still unaddressed. The two keys whose readers hold a subject -- hr.employees.adjusted_service_date_rule (hr.rehire_service_dates) and hr.onboarding.access_shutoff_mode (hr.sync_membership_to_employment) -- now name all three rungs inline and left this list. Closing one of the remaining keys means giving its reader a subject and naming the rungs at the call site, exactly as migration dd203_hr_readers_name_the_rungs_hr_settings_offers.sql did for those two.",
       "keys": [
         "hr.access break_glass_grant_ttl_minutes",
         "hr.access comp_visibility_for_managers",
@@ -37,7 +37,6 @@
         "hr.domain_wide tasks_default_scope_hr",
         "hr.domain_wide tasks_default_scope_manager",
         "hr.employees activation_seeds",
-        "hr.employees adjusted_service_date_rule",
         "hr.employees blended_rate_min_cell",
         "hr.employees blended_rate_round_to",
         "hr.employees contractor_directory_visible",
@@ -95,7 +94,6 @@
         "hr.leave retroactive_request_max_days",
         "hr.leave who_is_out_shows_type",
         "hr.leave who_is_out_visible_to_peers",
-        "hr.onboarding access_shutoff_mode",
         "hr.onboarding exit_survey_due_days",
         "hr.onboarding exit_survey_enabled",
         "hr.onboarding i9_section2_due_business_days",
@@ -206,8 +204,8 @@
       ]
     },
     "pay_group": {
-      "owner": "HR settings (features/hr/settings/) \u2014 DD-183 tail",
-      "reason": "The only surface that mounts the per-rung override picker is the organization configuration page, and that page excludes every hr.* key by its own first line (\"HR settings live on their own page\"). /hr/settings' own editor (features/hr/settings/components/KnobPanel.tsx) deliberately cannot set a scope override at all \u2014 hr_knob_set takes an organization and no scope. So this rung is registered, resolves, and is offered nowhere. Closing it means either mounting KnobRungOverrides on the HR settings surface or opening hr_knob_set to a scope.",
+      "owner": "The HR lane that owns each key's reader (DD-203 tail; the screen is done, the readers are not)",
+      "reason": "DD-203 (2026-09-14) closed the SCREEN half of this: /hr/settings now mounts the same <KnobRungOverrides> picker the organization configuration page does, per key, through features/hr/settings/components/HrKnobExceptions.tsx. What is still owed is the READER half. Measured live from pg_proc: every hr.* knob is resolved through hr._knob(feature, key) or hr._hr_knob(feature, key, org, default), and neither takes a person, an employment or a location, so neither can name a row-keyed rung in p_scopes -- an override at this rung would be saved, listed back, and answer nothing. The picker therefore HIDES the rung for these keys (features/settings/universal/rungRules.ts, STRICT_RUNG_FEATURE_PREFIXES) rather than selling an exception nothing honours, which is why they are still unaddressed. The two keys whose readers hold a subject -- hr.employees.adjusted_service_date_rule (hr.rehire_service_dates) and hr.onboarding.access_shutoff_mode (hr.sync_membership_to_employment) -- now name all three rungs inline and left this list. Closing one of the remaining keys means giving its reader a subject and naming the rungs at the call site, exactly as migration dd203_hr_readers_name_the_rungs_hr_settings_offers.sql did for those two.",
       "keys": [
         "hr.access break_glass_grant_ttl_minutes",
         "hr.access comp_visibility_for_managers",
@@ -237,7 +235,6 @@
         "hr.domain_wide tasks_default_scope_hr",
         "hr.domain_wide tasks_default_scope_manager",
         "hr.employees activation_seeds",
-        "hr.employees adjusted_service_date_rule",
         "hr.employees blended_rate_min_cell",
         "hr.employees blended_rate_round_to",
         "hr.employees contractor_directory_visible",
@@ -295,7 +292,6 @@
         "hr.leave retroactive_request_max_days",
         "hr.leave who_is_out_shows_type",
         "hr.leave who_is_out_visible_to_peers",
-        "hr.onboarding access_shutoff_mode",
         "hr.onboarding exit_survey_due_days",
         "hr.onboarding exit_survey_enabled",
         "hr.onboarding i9_section2_due_business_days",
@@ -406,8 +402,8 @@
       ]
     },
     "location": {
-      "owner": "HR settings (features/hr/settings/) \u2014 DD-183 tail",
-      "reason": "The only surface that mounts the per-rung override picker is the organization configuration page, and that page excludes every hr.* key by its own first line (\"HR settings live on their own page\"). /hr/settings' own editor (features/hr/settings/components/KnobPanel.tsx) deliberately cannot set a scope override at all \u2014 hr_knob_set takes an organization and no scope. So this rung is registered, resolves, and is offered nowhere. Closing it means either mounting KnobRungOverrides on the HR settings surface or opening hr_knob_set to a scope.",
+      "owner": "The HR lane that owns each key's reader (DD-203 tail; the screen is done, the readers are not)",
+      "reason": "DD-203 (2026-09-14) closed the SCREEN half of this: /hr/settings now mounts the same <KnobRungOverrides> picker the organization configuration page does, per key, through features/hr/settings/components/HrKnobExceptions.tsx. What is still owed is the READER half. Measured live from pg_proc: every hr.* knob is resolved through hr._knob(feature, key) or hr._hr_knob(feature, key, org, default), and neither takes a person, an employment or a location, so neither can name a row-keyed rung in p_scopes -- an override at this rung would be saved, listed back, and answer nothing. The picker therefore HIDES the rung for these keys (features/settings/universal/rungRules.ts, STRICT_RUNG_FEATURE_PREFIXES) rather than selling an exception nothing honours, which is why they are still unaddressed. The two keys whose readers hold a subject -- hr.employees.adjusted_service_date_rule (hr.rehire_service_dates) and hr.onboarding.access_shutoff_mode (hr.sync_membership_to_employment) -- now name all three rungs inline and left this list. Closing one of the remaining keys means giving its reader a subject and naming the rungs at the call site, exactly as migration dd203_hr_readers_name_the_rungs_hr_settings_offers.sql did for those two.",
       "keys": [
         "hr.access break_glass_grant_ttl_minutes",
         "hr.access comp_visibility_for_managers",
@@ -437,7 +433,6 @@
         "hr.domain_wide tasks_default_scope_hr",
         "hr.domain_wide tasks_default_scope_manager",
         "hr.employees activation_seeds",
-        "hr.employees adjusted_service_date_rule",
         "hr.employees blended_rate_min_cell",
         "hr.employees blended_rate_round_to",
         "hr.employees contractor_directory_visible",
@@ -495,7 +490,6 @@
         "hr.leave retroactive_request_max_days",
         "hr.leave who_is_out_shows_type",
         "hr.leave who_is_out_visible_to_peers",
-        "hr.onboarding access_shutoff_mode",
         "hr.onboarding exit_survey_due_days",
         "hr.onboarding exit_survey_enabled",
         "hr.onboarding i9_section2_due_business_days",

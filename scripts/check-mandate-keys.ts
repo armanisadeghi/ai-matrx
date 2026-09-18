@@ -15,15 +15,40 @@
  * TYPE-CHECK. Sibling guards: check-hardcoded-agents.ts (raw agent UUIDs),
  * check-hardcoded-prompts.ts (prompts in code).
  *
- * WHAT THIS FLAGS: a string literal that looks like a mandate key
- * (`<family>.<name>`) sitting in a MANDATE-KEY POSITION — either
+ * WHAT THIS FLAGS — TWO RULES, ONE GUARD:
+ *
+ * RULE 1 — A HAND-TYPED KEY LITERAL: a string literal that looks like a mandate
+ * key (`<family>.<name>`) sitting in a MANDATE-KEY POSITION — either
  *   (a) the initializer of an identifier / property / JSX attribute whose name
  *       contains "mandate" (`mandateKey`, `FC_MANDATES`, `p_mandate_key`, …), or
  *   (b) the mandate-key argument of a mandate entry point (`resolveMandate`,
  *       `useMandate`, `useMandateSet`, `launchMandate`, `adminMandateHref`, …).
  * Position, not spelling, is the test: `education.spoken_practice` is BOTH a
  * mandate key and an entitlement meter id (features/entitlements/registry.ts),
- * and only one of those is this guard's business.
+ * and only one of those is this guard's business. The two TYPED DOORS
+ * (`dbAuthoredMandateKey`, `storedMandateKey` in features/mandates/mandate-key.ts)
+ * are walked THROUGH, not around: a literal inside one is still reported, so the
+ * allowlist keeps naming it with a reason. A typed door that hid its argument
+ * would be a laundering hole, not a fix.
+ *
+ * RULE 2 — A `string`-TYPED CARRIER (V-L6a, 2026-09-17). Rule 1 alone was proven
+ * insufficient: the verdict found the whole carrier chain (`useMandate`,
+ * `useAgentLauncher`'s `launchMandate`, the ambient ladder) declaring
+ * `mandateKey: string`, so adopting the vocabulary bought NO compile-time
+ * protection — a key threaded through a `string` parameter, a typo'd entry in a
+ * `Record<string, string>` ladder, or a value assembled at run time all
+ * type-checked cleanly and failed as a 404 nobody sees. So a carrier that
+ * declares its key `string` is itself a finding: any parameter, property or
+ * signature member named `mandateKey` / `mandateKeys` (camelCase — the key THIS
+ * repo chose) whose type is `string`, `string | null`, `string[]`,
+ * `readonly string[]` or the like must be `MandateKey`, `DynamicMandateKey` or
+ * `AnyMandateKey` instead.
+ *   - A snake_case `mandate_key` is NOT flagged: that spelling mirrors a
+ *     database column, where the row — not the code — is the authority, and the
+ *     typed boundary for it is `storedMandateKey()`.
+ *   - A narrowing door (`isMandateKey`, `assertMandateKey`, `splitMandateKey`)
+ *     is NOT flagged: taking an unknown `string` in order to ANSWER whether it
+ *     is a key is the opposite of a carrier that assumes one.
  *
  * WHAT IT DELIBERATELY DOES NOT FLAG:
  *   1. `MANDATE_KEYS.x` — that IS the fix, and it is not a string literal.
@@ -41,7 +66,16 @@
  *      union can contain those, so the allowlist NAMES them with the reason —
  *      it never hides them.
  *
- * HOW TO FIX A REAL ONE: import the member —
+ * HOW TO FIX A RULE-2 FINDING: type the key —
+ *   import type { MandateKey } from "@ai-matrx/agents/mandates";
+ *   // or AnyMandateKey when a DB-authored app.* / shortcut.* key is legitimate
+ * and type the SOURCE of the key rather than widening the carrier back. A value
+ * that genuinely arrives as an unknown string (a URL segment, a stored
+ * preference) is narrowed at its own boundary with `isMandateKey` /
+ * `assertMandateKey`, or typed with `storedMandateKey()` when the row is the
+ * authority.
+ *
+ * HOW TO FIX A RULE-1 FINDING: import the member —
  *   import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
  *   MANDATE_KEYS.seo__keyword_classifier   // "seo.keyword_classifier"
  * (THE IDENTIFIER RULE: `.` → `__`.) If the key is NOT in the vocabulary, that
@@ -63,6 +97,7 @@ import { join, resolve } from "node:path";
 import process from "node:process";
 import ts from "typescript";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 // `process.cwd()`, not `import.meta.url`: the jest self-test imports this
 // module, and jest transpiles it to CommonJS where `import.meta` is a syntax
@@ -93,6 +128,52 @@ const POSITIONAL_ENTRY_POINTS: Readonly<Record<string, number>> = {
   launchMandate: 0,
   runMandate: 0,
 };
+/**
+ * THE TYPED DOORS (features/mandates/mandate-key.ts). A literal inside one is
+ * still a literal: the scan walks THROUGH the call so the allowlist keeps
+ * naming it with a reason, instead of the door becoming a way to launder a
+ * hand-typed key past this guard.
+ */
+const TYPED_DOORS: ReadonlySet<string> = new Set([
+  "dbAuthoredMandateKey",
+  "storedMandateKey",
+]);
+
+/**
+ * RULE 2 — THE ENFORCED CARRIERS. A key reaches resolution or execution ONLY
+ * through one of these, so this is the set where a `string` parameter actually
+ * costs the compile-time guard (V-L6a). Every other member named `mandateKey`
+ * is reported as a CENSUS line, never as a failure — see `--census` and the
+ * header — because an admin console row, a draft the user is still typing and a
+ * `[mandateKey]` route segment are all legitimately unknown strings.
+ */
+const ENFORCED_CARRIERS: ReadonlySet<string> = new Set([
+  "useMandate",
+  "useMandateSet",
+  "useMandateChain",
+  "useMandateGoal",
+  "resolveMandate",
+  "resolveMandateServer",
+  "launchMandate",
+  "runMandate",
+  "mandateStart",
+  "mandateExecutePath",
+  "AmbientAssistantMandateChain",
+  "SurfaceMandateRef",
+]);
+
+/**
+ * RULE 2 — a name that means "a key THIS repo chose", so its type must be
+ * `MandateKey`. camelCase only: snake_case `mandate_key` mirrors a DB column
+ * whose authority is the row (see the header).
+ */
+const CARRIER_MEMBER_RE = /^(?:.*[a-z0-9])?[Mm]andateKeys?$/;
+/**
+ * A door whose JOB is to take an unknown string and answer/parse it. Taking
+ * `string` here is correct — it is the opposite of a carrier assuming a key.
+ */
+const NARROWING_OWNER_RE = /^(?:is|assert|parse|split|coerce|normalize)/;
+
 /** Shape of a mandate key: `<family>.<name>` — the canonical grammar. */
 const KEY_SHAPE_RE = /^[a-z][a-z0-9_]*\.[a-z0-9_]+(?:\.[a-z0-9_]+)*$/;
 /** Tests, fixtures and generated mirrors are out of scope (see the header). */
@@ -182,6 +263,16 @@ export function scanSource(rel: string, src: string): Site[] {
       collect(node.whenFalse, via);
       return;
     }
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      TYPED_DOORS.has(node.expression.text) &&
+      node.arguments[0]
+    ) {
+      // `dbAuthoredMandateKey("mandate.goal_writer")` — the literal is still
+      // the literal; the allowlist, not the door, is what excuses it.
+      return collect(node.arguments[0], via);
+    }
     if (ts.isObjectLiteralExpression(node)) {
       // A record whose VALUES are keys (`const FC_MANDATES = { grade: "…" }`).
       node.properties.forEach((p) => {
@@ -267,6 +358,149 @@ export function scanRepo(root: string): Site[] {
   return sites.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
 }
 
+// ── RULE 2: a carrier that declares its key `string` ────────────────────────
+//
+// The type-level half of the guard. Rule 1 proves no key was hand-TYPED; this
+// proves the compiler is actually holding the keys that were imported (V-L6a).
+
+export interface CarrierSite {
+  file: string;
+  line: number;
+  /** The parameter / property that should be `MandateKey`. */
+  member: string;
+  /** Where it sits — the function, method or interface that declares it. */
+  owner: string;
+  /** The offending type, as written. */
+  declared: string;
+  /**
+   * Is this one of the resolution/execution carriers the guard FAILS on? The
+   * rest are the census (see ENFORCED_CARRIERS).
+   */
+  enforced: boolean;
+}
+
+/**
+ * Is this type annotation a `string` in mandate-key clothing? `string`,
+ * `string | null`, `string[]`, `readonly string[]`, `Array<string>` and any
+ * union that still admits a bare `string` all answer yes — `MandateKey | ""`
+ * and `AnyMandateKey | null` answer no, because neither admits an arbitrary
+ * string.
+ */
+function isStringTyped(t: ts.TypeNode | undefined): boolean {
+  if (!t) return false;
+  if (t.kind === ts.SyntaxKind.StringKeyword) return true;
+  if (ts.isParenthesizedTypeNode(t)) return isStringTyped(t.type);
+  if (ts.isUnionTypeNode(t)) return t.types.some((m) => isStringTyped(m));
+  if (ts.isArrayTypeNode(t)) return isStringTyped(t.elementType);
+  if (ts.isTypeOperatorNode(t)) return isStringTyped(t.type);
+  if (ts.isTypeReferenceNode(t) && t.typeArguments?.length) {
+    const name = ts.isIdentifier(t.typeName) ? t.typeName.text : t.typeName.right.text;
+    // Array<string>, ReadonlyArray<string>, Readonly<string[]>, Record<string, string>
+    if (/^(?:Array|ReadonlyArray|Readonly|Record)$/.test(name)) {
+      const last = t.typeArguments[t.typeArguments.length - 1];
+      return isStringTyped(last);
+    }
+  }
+  return false;
+}
+
+/** The nearest named thing a parameter belongs to, for the report. */
+function ownerNameOf(node: ts.Node): string {
+  for (let n: ts.Node | undefined = node.parent; n; n = n.parent) {
+    if (
+      (ts.isFunctionDeclaration(n) ||
+        ts.isMethodDeclaration(n) ||
+        ts.isMethodSignature(n)) &&
+      n.name &&
+      ts.isIdentifier(n.name)
+    ) {
+      return n.name.text;
+    }
+    if (
+      (ts.isVariableDeclaration(n) ||
+        ts.isPropertySignature(n) ||
+        ts.isPropertyAssignment(n) ||
+        ts.isPropertyDeclaration(n)) &&
+      ts.isIdentifier(n.name)
+    ) {
+      return n.name.text;
+    }
+    if (ts.isInterfaceDeclaration(n) || ts.isTypeAliasDeclaration(n)) return n.name.text;
+  }
+  return "(anonymous)";
+}
+
+/**
+ * Every `string`-typed mandate-key carrier member in one file. Pure, like
+ * `scanSource`, so the jest self-test drives exactly what the CLI walks.
+ */
+export function scanCarrierTypes(rel: string, src: string): CarrierSite[] {
+  if (!/andateKeys?\b/.test(src)) return [];
+  const sf = ts.createSourceFile(
+    rel,
+    src,
+    ts.ScriptTarget.Latest,
+    true,
+    rel.endsWith("tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+  );
+  const sites: CarrierSite[] = [];
+
+  const push = (
+    node: ts.Node,
+    member: string,
+    owner: string,
+    type: ts.TypeNode,
+    enforcedName: string,
+  ) => {
+    sites.push({
+      file: rel,
+      line: sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1,
+      member,
+      owner,
+      declared: type.getText(sf),
+      enforced: ENFORCED_CARRIERS.has(enforcedName),
+    });
+  };
+
+  const visit = (n: ts.Node): void => {
+    if (ts.isParameter(n) && ts.isIdentifier(n.name) && CARRIER_MEMBER_RE.test(n.name.text)) {
+      const owner = ownerNameOf(n);
+      // A narrowing/parsing door legitimately takes an unknown string.
+      if (!NARROWING_OWNER_RE.test(owner) && isStringTyped(n.type)) {
+        push(n, n.name.text, `${owner}()`, n.type!, owner);
+      }
+    } else if (
+      (ts.isPropertySignature(n) || ts.isPropertyDeclaration(n)) &&
+      ts.isIdentifier(n.name) &&
+      CARRIER_MEMBER_RE.test(n.name.text) &&
+      isStringTyped(n.type)
+    ) {
+      // An interface field that FEEDS a carrier is a carrier: the key is typed
+      // where it is declared, or the typing stops there.
+      const owner = ownerNameOf(n);
+      push(n, n.name.text, owner, n.type!, owner);
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+
+  return sites;
+}
+
+export function scanRepoCarriers(root: string): CarrierSite[] {
+  const sites: CarrierSite[] = [];
+  for (const rel of inScopeFiles(root)) {
+    let src: string;
+    try {
+      src = readFileSync(join(root, rel), "utf8");
+    } catch {
+      continue;
+    }
+    sites.push(...scanCarrierTypes(rel, src));
+  }
+  return sites.sort((a, b) => a.file.localeCompare(b.file) || a.line - b.line);
+}
+
 // ── Allowlist ───────────────────────────────────────────────────────────────
 
 function loadAllowlist(): AllowEntry[] {
@@ -305,6 +539,10 @@ function main(): void {
 
   const scanned = inScopeFiles(root).length;
   const sites = scanRepo(root);
+  const carrierSites = scanRepoCarriers(root);
+  const carriers = carrierSites.filter((c) => c.enforced);
+  const census = carrierSites.filter((c) => !c.enforced);
+  const showCensus = argv.includes("--census");
   const allow = loadAllowlist();
   const allowed = new Set(allow.map((e) => `${e.file}::${e.key}`));
   const violations = sites.filter((s) => !allowed.has(`${s.file}::${s.key}`));
@@ -312,9 +550,13 @@ function main(): void {
   const matched = new Set(allowlisted.map((s) => `${s.file}::${s.key}`));
   const staleAllow = allow.filter((e) => !matched.has(`${e.file}::${e.key}`));
 
+  const failed = violations.length > 0 || carriers.length > 0;
+
   if (asJson) {
-    console.log(JSON.stringify({ scanned, violations, allowlisted, staleAllow }, null, 2));
-    process.exit(violations.length > 0 ? 1 : 0);
+    console.log(
+      JSON.stringify({ scanned, violations, allowlisted, staleAllow, carriers, census }, null, 2),
+    );
+    exitAfterDrain(failed ? 1 : 0);
   }
 
   console.log(
@@ -349,6 +591,50 @@ function main(): void {
     );
   }
 
+  if (carriers.length === 0) {
+    console.log(
+      `${C.green}✓ Every mandate-key carrier is typed.${C.reset} ${C.dim}(${ENFORCED_CARRIERS.size} resolution/execution carriers, none typed string)${C.reset}`,
+    );
+  } else {
+    console.log(
+      `\n${C.red}${C.bold}✗ ${carriers.length} string-typed mandate-key carrier(s)${C.reset}`,
+    );
+    console.log(
+      `${C.dim}A key the compiler does not hold is a 404 nobody sees (V-L6a, 2026-09-17).${C.reset}\n`,
+    );
+    for (const c of carriers) {
+      console.log(`  ${C.cyan}${c.file}:${c.line}${C.reset}  ${C.dim}${c.owner}${C.reset}`);
+      console.log(
+        `    ${c.member}: ${c.declared}  →  ${C.green}${c.member}: MandateKey${C.reset} ${C.dim}(or AnyMandateKey / DynamicMandateKey)${C.reset}`,
+      );
+    }
+    console.log(
+      `\n  ${C.yellow}Fix:${C.reset} import type { MandateKey } from "@ai-matrx/agents/mandates";`,
+    );
+    console.log(
+      `  ${C.dim}Type the SOURCE of the key, never widen the carrier back to string.${C.reset}`,
+    );
+    console.log(
+      `  ${C.dim}A value that truly arrives as an unknown string is narrowed at its boundary with isMandateKey/assertMandateKey, or typed with storedMandateKey() when the row is the authority.${C.reset}`,
+    );
+  }
+
+  if (census.length > 0) {
+    console.log(
+      `\n${C.yellow}${census.length} other member(s) named mandateKey are typed string${C.reset} ${C.dim}— the CENSUS, not a failure.${C.reset}`,
+    );
+    console.log(
+      `${C.dim}These are admin-console rows, drafts a user is still typing and [mandateKey] route segments, where an unknown string is honest. Narrowing them is the next wave; run --census to list them.${C.reset}`,
+    );
+    if (showCensus) {
+      for (const c of census) {
+        console.log(
+          `  ${C.dim}${c.file}:${c.line}  ${c.owner}  ${c.member}: ${c.declared}${C.reset}`,
+        );
+      }
+    }
+  }
+
   if (staleAllow.length > 0) {
     console.log(
       `\n${C.yellow}${staleAllow.length} stale allowlist entr${staleAllow.length === 1 ? "y" : "ies"}${C.reset} ${C.dim}(nothing matches). Remove by hand.${C.reset}`,
@@ -357,7 +643,7 @@ function main(): void {
   }
 
   console.log("");
-  process.exit(violations.length > 0 ? 1 : 0);
+  exitAfterDrain(failed ? 1 : 0);
 }
 
 if (require.main === module) main();

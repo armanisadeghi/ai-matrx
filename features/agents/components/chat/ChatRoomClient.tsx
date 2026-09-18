@@ -1,6 +1,9 @@
 "use client";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
+import { usePreparedResourceSeed } from "./usePreparedResourceSeed";
 import { Suspense, useEffect, useRef, useState } from "react";
+import { shallowEqual } from "react-redux";
 import { useRouter, useSearchParams } from "next/navigation";
 import { commitUrlParams } from "@ai-matrx/kit/url-state";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
@@ -21,6 +24,16 @@ import { consumeChatDraftTransfer } from "./chat-draft-transfer";
 import { chatRouteSurfaceKey } from "./begin-fresh-chat";
 import { selectChatIncognitoActive } from "@/features/agents/redux/chat/chat-incognito.slice";
 import { selectChatFreshSessionNonce } from "@/features/agents/redux/chat/chat-route.slice";
+import {
+  acknowledgeDraftHandoff,
+  selectChatDraftHandoff,
+} from "@/features/agents/redux/chat/chat-route.slice";
+import {
+  copyInstanceRequestDraft,
+  syncInstanceRequestDraftResources,
+} from "@/features/agents/redux/execution-system/thunks/copy-instance-request-draft.thunk";
+import { syncHandoffPendingAttachments } from "@/features/connectors/redux/attachments.slice";
+import { attachmentKey } from "@/features/connectors/attachable-resources";
 import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import { linkConversationDocumentThunk } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
 import { useOpenWorkingDocumentPanel } from "@/features/overlays/openers/workingDocumentPanel";
@@ -31,8 +44,12 @@ import {
   clearPendingNavigation,
 } from "@/features/agents/redux/surfaces/surfaces.slice";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
+import type { TranscriptAudience } from "@/features/agents/components/shared/transcript-audience";
 import { ChatRoomSkeleton } from "./ChatRoomSkeleton";
-import { ChatSandboxDock } from "./sandbox-insight/ChatSandboxDock";
+import { SandboxCanvasOpener } from "./sandbox-insight/SandboxCanvasOpener";
+import { ToolResultCanvasOpener } from "@/features/canvas/tool-results/ToolResultCanvasOpener";
+import { useConversationSandboxBindingSync } from "@/features/agents/hooks/useConversationSandboxBindingSync";
+import type { ConversationSandboxBinding } from "@/lib/sandbox/conversation-binding-row";
 import {
   buildChatContextData,
   CHAT_CONTEXT_MENU_PROPS,
@@ -63,6 +80,10 @@ import { selectIsStreaming } from "@/features/agents/redux/execution-system/sele
 import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
 import { selectCurrentSettings } from "@/features/agents/redux/execution-system/instance-model-overrides/instance-model-overrides.selectors";
 import { selectInstanceResources } from "@/features/agents/redux/execution-system/instance-resources/instance-resources.selectors";
+import { useAttachResource } from "@/features/agents/components/inputs/resources/attach-resource";
+import { selectUserId } from "@/lib/redux/slices/userSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { toast } from "@/lib/toast";
 import { selectResolvedVariables } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import {
   selectActiveScratchpadId,
@@ -73,6 +94,13 @@ import type { VariablesPanelStyle } from "@/features/agents/components/inputs/va
 
 interface ChatRoomClientProps {
   agentId: string;
+  /**
+   * Who is reading this room's transcript. Default "builder" = /chat and every
+   * other room, unchanged. A room hosting a non-technical Subject Matter
+   * Expert passes "expert" and the machine frames stand down. Law:
+   * `features/agents/components/shared/transcript-audience.tsx`.
+   */
+  audience?: TranscriptAudience;
   /** When provided, loads this existing conversation. Mounted by
    *  `/chat/[conversationId]`. When absent (mounted by `/chat/a/[agentId]`),
    *  the launcher creates a fresh instance. */
@@ -84,8 +112,7 @@ interface ChatRoomClientProps {
    * quick-action chips before the user submits their first message.
    */
   landingContent?:
-    | React.ReactNode
-    | ((conversationId: string) => React.ReactNode);
+    React.ReactNode | ((conversationId: string) => React.ReactNode);
   /**
    * Optional control pinned directly ABOVE the composer, receiving this
    * room's own conversation id. The voice route mounts its panel here so the
@@ -93,9 +120,7 @@ interface ChatRoomClientProps {
    * second launcher for the same agent would mean two conversations, and the
    * user would watch one answer render in two places.
    */
-  aboveInput?:
-    | React.ReactNode
-    | ((conversationId: string) => React.ReactNode);
+  aboveInput?: React.ReactNode | ((conversationId: string) => React.ReactNode);
   /**
    * Where this room promotes its URL once the conversation persists, and
    * where fork/retry/delete navigate. Defaults to `/chat/<id>`.
@@ -119,9 +144,32 @@ interface ChatRoomClientProps {
    * Omit it on rooms that are genuinely agent-addressed (`/chat/a/[agentId]`,
    * where the user picked THAT agent).
    */
-  mandateKey?: string;
+  mandateKey?: AnyMandateKey;
   /** Surface-owned presentation for variables bound outside the composer. */
   variablesPanelStyle?: VariablesPanelStyle;
+  /**
+   * The compute binding the ROW already carries, read at SSR by
+   * `/chat/[conversationId]`. Applied to the record as soon as the instance
+   * exists — before the bundle RPC — so a chat that was on a sandbox opens back
+   * on that sandbox instead of looking unbound (or looking like it is on the
+   * user's shared default) while two round-trips land.
+   */
+  sandboxBinding?: ConversationSandboxBinding | null;
+  /**
+   * What `conversationId` IS, when the host knows:
+   *
+   *  - `"existing"` (default) — a conversation the server already holds. An
+   *    empty read is a failed read and the transcript says so.
+   *  - `"reserved"` — an id the server minted for this room whose row is
+   *    written lazily by the first turn (the vision interview's per-role
+   *    bindings). An empty read is simply an empty room.
+   *
+   * Without it the room has to guess, and the guess ("not in memory ⇒ the
+   * server has it") put a permanent "Couldn't load this conversation" banner,
+   * plus a Try-again that could never succeed, on every freshly opened vision
+   * interview (census W1, 2026-09-15).
+   */
+  conversationMaterialization?: "existing" | "reserved";
 }
 
 const defaultConversationHref = (conversationId: string) =>
@@ -146,12 +194,15 @@ const CHAT_INITIAL_MESSAGE_LIMIT = 12;
  */
 export function ChatRoomClient({
   agentId,
+  audience = "builder",
   conversationId: conversationIdProp,
   landingContent,
   aboveInput,
   buildConversationHref = defaultConversationHref,
   mandateKey,
   variablesPanelStyle,
+  sandboxBinding = null,
+  conversationMaterialization = "existing",
 }: ChatRoomClientProps) {
   const dispatch = useAppDispatch();
   const store = useAppStore();
@@ -162,6 +213,8 @@ export function ChatRoomClient({
   // agent switch, `/chat/new`, `beginFreshChat` — must derive the same key.
   const surfaceKey = chatRouteSurfaceKey(agentId);
   const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
+  const organizationId = useAppSelector(selectOrganizationId);
   const isIncognito = useAppSelector(selectChatIncognitoActive);
   const freshSessionKey = useAppSelector(selectChatFreshSessionNonce);
   const isFreshRoute = !conversationIdProp;
@@ -269,7 +322,6 @@ export function ChatRoomClient({
     );
   }, [conversationIdProp, dispatch, isIncognito, liveConversationId]);
 
-
   // ── Existing-conversation load (only on /chat/[conversationId]) ──────────
   // THE canonical resume sequence lives in `useConversationResume` — the same
   // hook every other surface uses to continue a conversation (Masterwork's
@@ -280,7 +332,18 @@ export function ChatRoomClient({
     surfaceKey,
     enabled: !isInitializing && authReady,
     messageLimit: CHAT_INITIAL_MESSAGE_LIMIT,
+    sandboxSeed: sandboxBinding,
+    // A reservation has no row until the first turn writes one, so an empty
+    // bundle is the truth about it, not a failure to read it.
+    expectMaterialized:
+      conversationMaterialization === "reserved" ? false : undefined,
   });
+
+  // The other direction: a run can bind a box SERVER-side (aidream's
+  // `persist_conversation_binding`) — from an MCP run, the extension, the
+  // desktop app or a second tab. Re-read the one column when a turn finishes
+  // and when the tab comes back, so the control learns it with no reload.
+  useConversationSandboxBindingSync(conversationIdProp ?? null);
 
   // ── Pending navigation → router.replace ─────────────────────────────────
   // Fork / retry / delete actions set pendingNavigation with the target
@@ -295,11 +358,11 @@ export function ChatRoomClient({
     dispatch(clearPendingNavigation({ surfaceKey }));
   }, [pendingNavigation, router, dispatch, surfaceKey, buildConversationHref]);
 
-  // ── Draft transfer from /chat/new chip click ────────────────────────────
-  // When a chip on /chat/new is clicked, the source page stashes the user's
-  // in-progress draft in sessionStorage keyed to this agent's id. We apply it
-  // once the launcher has created the instance entry — `setUserInputText`
-  // requires `state.instanceUserInput.byConversationId[cid]` to exist.
+  // ── Fresh-instance transfer readiness ───────────────────────────────────
+  // Same-tab agent switches copy the live Redux request below. External
+  // prepared-content doors still use the identity-bound sessionStorage bridge
+  // farther down. Both must wait for the launcher-created input/resource
+  // entries before applying anything.
   // GOTCHA (fixed 2026-07-17): `liveConversationId` is a client UUID set
   // immediately, but the input ENTRY is created by `createInstanceFull` only
   // after the launcher's async agent fetch — and `setUserInputText` used to
@@ -312,17 +375,179 @@ export function ChatRoomClient({
       ? selectUserInputEntryExists(liveConversationId)(state)
       : false,
   );
+  const resourcesEntryReady = useAppSelector((state) =>
+    liveConversationId
+      ? Object.prototype.hasOwnProperty.call(
+          state.instanceResources.byConversationId,
+          liveConversationId,
+        )
+      : false,
+  );
+  const draftHandoff = useAppSelector(selectChatDraftHandoff);
+  const handoffResourceSources = useAppSelector(
+    (state) =>
+      draftHandoff
+        ? draftHandoff.pinnedSourceConversationIds.map(
+            (conversationId) =>
+              state.instanceResources.byConversationId[conversationId] ?? {},
+          )
+        : [],
+    shallowEqual,
+  );
+  const draftSourceAttachments = useAppSelector((state) =>
+    draftHandoff
+      ? state.conversationAttachments.byConversationId[
+          draftHandoff.sourceConversationId
+        ]
+      : undefined,
+  );
+  const connectorSourceAttachments = useAppSelector((state) =>
+    draftHandoff
+      ? state.conversationAttachments.byConversationId[
+          draftHandoff.connectorSourceConversationId
+        ]
+      : undefined,
+  );
+  const handoffAppliedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (
+      conversationIdProp ||
+      !liveConversationId ||
+      !draftInputEntryReady ||
+      !resourcesEntryReady
+    )
+      return;
+    if (!draftHandoff || draftHandoff.targetAgentId !== agentId) return;
+    const transactionKey = `${draftHandoff.sourceConversationId}:${liveConversationId}`;
+    if (handoffAppliedRef.current === transactionKey) return;
+    handoffAppliedRef.current = transactionKey;
+    dispatch(
+      copyInstanceRequestDraft({
+        sourceConversationId: draftHandoff.sourceConversationId,
+        targetConversationId: liveConversationId,
+        chatSemantics: true,
+      }),
+    );
+  }, [
+    agentId,
+    conversationIdProp,
+    dispatch,
+    draftHandoff,
+    draftInputEntryReady,
+    liveConversationId,
+    resourcesEntryReady,
+  ]);
+
+  useEffect(() => {
+    if (
+      !draftHandoff ||
+      draftHandoff.targetAgentId !== agentId ||
+      !liveConversationId
+    )
+      return;
+    const transactionKey = `${draftHandoff.sourceConversationId}:${liveConversationId}`;
+    if (handoffAppliedRef.current !== transactionKey) return;
+    // Subsequent source completions are keyed resource upserts only. They never
+    // re-run the full copy, so typing/adding on the destination cannot be lost.
+    dispatch(
+      syncInstanceRequestDraftResources({
+        sourceConversationId: draftHandoff.resourceSourceConversationId,
+        draftSourceConversationId: draftHandoff.sourceConversationId,
+        targetConversationId: liveConversationId,
+      }),
+    );
+    const currentPicks = [
+      ...(draftSourceAttachments?.pending ?? []),
+      ...(draftSourceAttachments?.rows ?? []).map(
+        ({ association_id: _associationId, ...pick }) => pick,
+      ),
+    ];
+    const rootPicks = [
+      ...(connectorSourceAttachments?.pending ?? []),
+      ...(connectorSourceAttachments?.rows ?? []).map(
+        ({ association_id: _associationId, ...pick }) => pick,
+      ),
+    ];
+    const inheritedKeys = new Set(
+      draftSourceAttachments?.handoffInheritedKeys ?? [],
+    );
+    const currentKeys = new Set(currentPicks.map(attachmentKey));
+    const removedInheritedKeys = new Set(
+      [...inheritedKeys].filter((key) => !currentKeys.has(key)),
+    );
+    const desiredPicks = new Map(
+      rootPicks
+        .filter((pick) => !removedInheritedKeys.has(attachmentKey(pick)))
+        .map((pick) => [attachmentKey(pick), pick]),
+    );
+    for (const pick of currentPicks) {
+      if (!inheritedKeys.has(attachmentKey(pick))) {
+        desiredPicks.set(attachmentKey(pick), pick);
+      }
+    }
+    dispatch(
+      syncHandoffPendingAttachments({
+        conversationId: liveConversationId,
+        picks: [...desiredPicks.values()],
+      }),
+    );
+    const resourcesSettled = handoffResourceSources.every((resources) =>
+      Object.values(resources).every(
+        (resource) =>
+          resource.status === "ready" || resource.status === "error",
+      ),
+    );
+    const connectorSettled = [
+      draftSourceAttachments,
+      connectorSourceAttachments,
+    ].every(
+      (entry) =>
+        !entry || (entry.status !== "loading" && entry.busyKeys.length === 0),
+    );
+    if (resourcesSettled && connectorSettled) {
+      dispatch(acknowledgeDraftHandoff({ targetAgentId: agentId }));
+    }
+  }, [
+    agentId,
+    dispatch,
+    draftHandoff,
+    liveConversationId,
+    connectorSourceAttachments,
+    draftSourceAttachments,
+    handoffResourceSources,
+  ]);
+  const attachResource = useAttachResource(liveConversationId ?? "");
   const draftAppliedRef = useRef<string | null>(null);
+  const [pendingTransfer, setPendingTransfer] = useState<
+    | (NonNullable<ReturnType<typeof consumeChatDraftTransfer>> & {
+        conversationId: string;
+      })
+    | null
+  >(null);
   useEffect(() => {
     if (conversationIdProp) return; // existing conversation, not a chip target
     if (!liveConversationId || !draftInputEntryReady) return;
     if (draftAppliedRef.current === liveConversationId) return;
-    const transfer = consumeChatDraftTransfer(agentId);
+    let transfer;
+    try {
+      transfer = consumeChatDraftTransfer(agentId, { userId, organizationId });
+    } catch (error) {
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Prepared chat content could not be attached.",
+      );
+      draftAppliedRef.current = liveConversationId;
+      return;
+    }
     if (!transfer) {
       draftAppliedRef.current = liveConversationId;
       return;
     }
     draftAppliedRef.current = liveConversationId;
+    // Session storage is an external navigation handoff; publishing its consumed value wakes the resource-readiness hook.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPendingTransfer({ ...transfer, conversationId: liveConversationId });
     dispatch(
       setUserInputText({
         conversationId: liveConversationId,
@@ -335,7 +560,30 @@ export function ChatRoomClient({
     draftInputEntryReady,
     agentId,
     dispatch,
+    userId,
+    organizationId,
   ]);
+
+  // Recheck capture identity at attachment readiness, not only at storage consumption.
+  usePreparedResourceSeed({
+    conversationId:
+      !conversationIdProp &&
+      pendingTransfer?.conversationId === liveConversationId
+        ? liveConversationId
+        : null,
+    ready: resourcesEntryReady,
+    resources: pendingTransfer?.resources,
+    expectedIdentity:
+      pendingTransfer?.userId && pendingTransfer.organizationId
+        ? {
+            userId: pendingTransfer.userId,
+            organizationId: pendingTransfer.organizationId,
+          }
+        : null,
+    currentIdentity: { userId, organizationId },
+    attach: attachResource,
+    reportError: toast.error,
+  });
 
   // ── Post-submit URL promotion (only on /chat/new + /chat/a/[agentId]) ─────
   // The launcher pre-creates an instance with a client UUID, but the
@@ -475,18 +723,21 @@ export function ChatRoomClient({
     // Composer attachments, resolved variables, effective model, and lean
     // context-document refs — all plain ref-reads off the store at trigger
     // time (no subscriptions; this fn only runs when a launch is assembled).
-    const attachedResources = selectInstanceResources(conversationId)(state).map(
-      (r) => ({
-        id: r.resourceId,
-        block_type: r.blockType,
-        status: r.status,
-      }),
-    );
+    const attachedResources = selectInstanceResources(conversationId)(
+      state,
+    ).map((r) => ({
+      id: r.resourceId,
+      block_type: r.blockType,
+      status: r.status,
+    }));
     const variableValues = selectResolvedVariables(conversationId)(state);
     const settings = selectCurrentSettings(conversationId)(state);
     const model = typeof settings?.model === "string" ? settings.model : null;
 
-    const workingEntry = selectWorkingDocEntry(conversationId, "working")(state);
+    const workingEntry = selectWorkingDocEntry(
+      conversationId,
+      "working",
+    )(state);
     const workingDocument = workingEntry
       ? {
           enabled: workingEntry.enabled,
@@ -497,7 +748,10 @@ export function ChatRoomClient({
         }
       : null;
 
-    const scratchEntry = selectWorkingDocEntry(conversationId, "scratch")(state);
+    const scratchEntry = selectWorkingDocEntry(
+      conversationId,
+      "scratch",
+    )(state);
     const activeScratchpadId = selectActiveScratchpadId(state);
     const attachedScratchpadIds =
       selectAttachedScratchpadIds(conversationId)(state);
@@ -625,7 +879,8 @@ export function ChatRoomClient({
         throw new Error(
           `input_draft \`mode\` must be ${modes} when present, got ${JSON.stringify(writeMode)}.`,
         );
-      const current = selectUserInputText(conversationId)(store.getState()) ?? "";
+      const current =
+        selectUserInputText(conversationId)(store.getState()) ?? "";
       const next =
         writeMode === "append" && current.trim()
           ? `${current.trimEnd()}\n${text}`
@@ -645,37 +900,54 @@ export function ChatRoomClient({
       isEditable
     >
       <div className="flex h-full flex-col overflow-hidden bg-textured">
+        {/* THE CHAT ROUTE HAS NO CANVAS PRESENTATION OF ITS OWN. The canvas is
+            the global `CanvasSideSheet` every other route uses (documents,
+            artifacts, the browser) — mounted once by the shell. A parallel
+            docked column lived here from 2026-09-14 to 2026-09-17 and was
+            rejected by the owner: "The canvas system set up for the sandboxes
+            completely breaks the core systems for how these canvases work. It
+            adds an unnecessary layer… FOLLOW established patterns." A route
+            that wants something the canvas cannot do extends the canonical
+            canvas for EVERY route; it never forks a presentation here. */}
         <div className="flex-1 min-h-0 overflow-hidden flex">
           <div className="flex-1 min-w-0 min-h-0 overflow-hidden flex justify-center">
-          <AgentConversationColumn
-            conversationId={conversationId}
-            surfaceKey={surfaceKey}
-            constrainWidth
-            edgeToEdgeScroll
-            deferColdMarkdown={!!conversationIdProp}
-            smartInputProps={{
-              sendButtonVariant: "blue",
-              // Lives in the Chat Options (+) → Preferences tab now.
-              showSubmitOnEnterToggle: false,
-              variablesPanelStyle,
-            }}
-            landingContent={
-              typeof landingContent === "function"
-                ? landingContent(conversationId)
-                : landingContent
-            }
-            aboveInput={
-              typeof aboveInput === "function"
-                ? aboveInput(conversationId)
-                : aboveInput
-            }
-          />
+            <AgentConversationColumn
+              conversationId={conversationId}
+              surfaceKey={surfaceKey}
+              audience={audience}
+              constrainWidth
+              edgeToEdgeScroll
+              deferColdMarkdown={!!conversationIdProp}
+              smartInputProps={{
+                sendButtonVariant: "blue",
+                // Lives in the Chat Options (+) → Preferences tab now.
+                showSubmitOnEnterToggle: false,
+                variablesPanelStyle,
+              }}
+              landingContent={
+                typeof landingContent === "function"
+                  ? landingContent(conversationId)
+                  : landingContent
+              }
+              aboveInput={
+                typeof aboveInput === "function"
+                  ? aboveInput(conversationId)
+                  : aboveInput
+              }
+            />
           </div>
-          {/* The bound sandbox, live. Renders nothing when no box is bound or
-              the user has the panel closed; a bottom sheet on a phone. */}
-          <ChatSandboxDock conversationId={conversationId} />
         </div>
       </div>
+      {/* The bound sandbox reaches the CANVAS, not a panel of its own: this
+          headless watcher opens the Sandbox pane the first time the agent
+          works in the box, and merely offers it when the canvas is already
+          showing a document or the browser. Renders nothing. */}
+      <SandboxCanvasOpener conversationId={conversationId} />
+      {/* THE DOOR LAW: every record the UI names opens. When a tool creates a
+          document (or any other canvas-renderable record), this headless
+          watcher offers it in the canvas switcher and opens it only into a
+          canvas that is showing nothing else. Renders nothing. */}
+      <ToolResultCanvasOpener conversationId={conversationId} />
       {/* ?attachDoc= deep link (fresh routes only) — the working document's
           registry share URL is /chat/new?attachDoc={id}. Own local Suspense:
           useSearchParams requires a boundary, and neither chat page provides

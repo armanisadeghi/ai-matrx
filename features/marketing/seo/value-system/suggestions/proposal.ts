@@ -104,11 +104,44 @@ export interface GuidelineEditProposal {
   summary: string;
 }
 
+/** The only two things an Offering can be (`web.brand_offering.kind`). */
+export const OFFERING_KINDS = ["product", "service"] as const;
+export type OfferingKind = (typeof OFFERING_KINDS)[number];
+
+/**
+ * An Offering the Business Discovery Ladder proposes (KI-040 step 6): named in
+ * step 4, valued in step 5. Worth is POINTS from the 100 baseline (KI-001,
+ * cutover ruling D9), or `null` when step 5 did not value it — never a
+ * made-up 0. Approving it replays the canonical offering writers (`apply.ts`).
+ *
+ * The same shape carries an agent's request to OFFER a platform suggestion on
+ * this site (brand-offerings cutover D2): the Offering assigner or the site
+ * valuer wanted an offering the site does not offer, so instead of adding it
+ * they propose it (`seo.propose_site_offering_from_template`). Such a proposal
+ * names its `templateId` (Approve adopts it, copy-on-adopt, D6) and the
+ * keywords the assigner would have placed on it.
+ */
+export interface OfferingProposal {
+  proposal: "offering";
+  name: string;
+  offeringKind: OfferingKind;
+  description: string | null;
+  aliases: string[];
+  valueAdd: number | null;
+  /** The platform suggestion to adopt; `null` = a new offering by name. */
+  templateId: string | null;
+  /** Keywords an agent would have placed on it; placed on Approve. */
+  keywordIds: string[];
+  /** Up to five of those keywords' phrases, for the row's doors. */
+  keywordPhrases: string[];
+}
+
 export type KeywordMeaningProposal =
   | MatcherProposal
   | WorthProposal
   | StampProposal
-  | GuidelineEditProposal;
+  | GuidelineEditProposal
+  | OfferingProposal;
 
 export type KeywordMeaningProposalKind = KeywordMeaningProposal["proposal"];
 
@@ -214,6 +247,28 @@ export function toKeywordMeaningProposal(
         summary: str(obj.summary) ?? "Update the keyword guidelines",
       };
     }
+    case "offering": {
+      const name = str(obj.name)?.trim();
+      const offeringKind = OFFERING_KINDS.find((k) => k === obj.offeringKind);
+      if (!name || !offeringKind) return null;
+      return {
+        proposal: "offering",
+        name,
+        offeringKind,
+        description: str(obj.description) ?? null,
+        aliases: Array.isArray(obj.aliases)
+          ? obj.aliases.filter((a): a is string => typeof a === "string")
+          : [],
+        valueAdd: typeof obj.valueAdd === "number" ? obj.valueAdd : null,
+        templateId: str(obj.templateId) ?? null,
+        keywordIds: Array.isArray(obj.keywordIds)
+          ? obj.keywordIds.filter((k): k is string => typeof k === "string")
+          : [],
+        keywordPhrases: Array.isArray(obj.keywordPhrases)
+          ? obj.keywordPhrases.filter((k): k is string => typeof k === "string")
+          : [],
+      };
+    }
     default:
       return null;
   }
@@ -307,6 +362,27 @@ export function describeKeywordMeaningProposal(
             : `Stamps ${p.dimensionLabel} → ${p.valueLabel} on ${n} keyword${n === 1 ? "" : "s"} as your own ruling.`,
       };
     }
+    case "offering": {
+      const points =
+        p.valueAdd === null
+          ? null
+          : `${p.valueAdd >= 0 ? "+" : ""}${p.valueAdd} points`;
+      const n = p.keywordIds.length;
+      const keywords =
+        n > 0
+          ? `, then places the ${n} keyword${n === 1 ? "" : "s"} the Offering assigner chose on it as your ruling (a keyword already placed on another offering stays where it is)`
+          : "";
+      if (p.templateId) {
+        return {
+          headline: `Offer the ${p.offeringKind} "${p.name}" on this site${n > 0 ? ` and place ${n} keyword${n === 1 ? "" : "s"} on it` : ""}${points ? `, worth ${points}` : ""}`,
+          writePath: `Copies the suggestion "${p.name}" into this brand's offerings (or reuses the brand's copy), makes it available on this site${keywords}${points ? `, and sets its worth to ${points} from the baseline` : ""}.`,
+        };
+      }
+      return {
+        headline: `Add the ${p.offeringKind} "${p.name}"${points ? `, worth ${points}` : ""}`,
+        writePath: `Adds "${p.name}" to this brand's offerings (or reuses it if the site already offers it), makes it available on this site${keywords}${points ? ` and sets its worth to ${points} from the baseline` : ""}.`,
+      };
+    }
     case "guideline_edit":
       return {
         headline: p.summary,
@@ -322,4 +398,5 @@ export const PROPOSAL_KIND_LABEL: Record<KeywordMeaningProposalKind, string> = {
   worth: "Worth",
   stamp: "Stamps",
   guideline_edit: "Guidelines",
+  offering: "Offerings",
 };

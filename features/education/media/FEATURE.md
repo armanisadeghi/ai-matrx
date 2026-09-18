@@ -6,7 +6,7 @@ since, so the old "~86% failure" number describes a pipeline that has since been
 is **not a current measurement**. Mind maps / summaries / memory aids generate fine. WP8 of the
 education-platform program owns this — `common-docs/systems/education/`)
 **Tier:** `2`
-**Last updated:** `2026-08-17`
+**Last updated:** `2026-09-14`
 
 ---
 
@@ -72,7 +72,8 @@ Both tools persist to ONE canonical registry table, `education.study_media` (`me
 
 - One table (`education.study_media`), one service (`studyMediaService`). No parallel store.
 - Audio never persists an expiring URL: it stores a re-mintable `audio_file_id` **or** a durable
-  `episode_id` (recovery path). Playback via `InlineMediaRef` / episode `audio_url`, never a raw
+  `episode_id` (recovery path). `AudioPlayback` resolves that identity through the media client,
+  then renders the shared `PodcastAudioPlayer` transport — never browser-native controls or a raw
   signed URL (see `features/files/handler`).
 - `InteractiveDiagramBlock.onNodeClick` is **opt-in** — never make node clicks a required behavior
   of the shared block.
@@ -144,6 +145,13 @@ is the defect, not a deferral.
 
 ## Change log
 
+- **2026-09-14** — **Audio Study now uses the canonical podcast transport.** `AudioPlayback`
+  resolves both new `audio_file_id` studies and recovered `episode_id` studies through the media
+  client before mounting `PodcastAudioPlayer`, so listeners receive the same waveform, speed,
+  skip, retry, and app-wide playback-session behavior as a podcast. The ready-state composition
+  now gives that player the full card instead of wrapping browser-native controls; the regenerate
+  door remains below it. The shared kit-lineage chips also now constrain both their title and
+  generated detail text, preventing a long detail from escaping the source card.
 - **2026-08-18** — all AI steps resolve through mandates (IC-1); UUID registry deleted
   (`mindmap/agents.ts` → `mindmap/mandates.ts`, `education.mindmap_generate`).
 - **2026-08-17** — **Status header corrected (WP12, education-platform program):** "blocked by a

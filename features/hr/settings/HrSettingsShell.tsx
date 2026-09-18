@@ -30,6 +30,8 @@
 import { useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
+import { UniversalSettingsProvider } from "@/features/settings/universal/UniversalSettingsContext";
+
 import { HrSubShell, type HrRouteTab } from "../shared/HrSubShell";
 import {
   HrEmployerPicker,
@@ -156,7 +158,33 @@ export function HrSettingsChrome({ children }: { children: ReactNode }) {
       );
     }
 
-    return children;
+    // 🚨 DD-203 — the per-rung override picker needs the registry read it is
+    // built on. `<KnobRungOverrides>` (mounted per key by `<KnobRow>`) resolves
+    // its ladder from `platform.knob_index`, not from `hr_knob_index`: the HR
+    // door answers the ORGANIZATION rung and nothing below it, which is exactly
+    // why HR exceptions had nowhere to live. The provider is mounted ONCE here,
+    // around every `/hr/settings/*` panel, so that read happens once for the
+    // whole surface rather than per panel with two chances to disagree.
+    //
+    // The destination is this employer's organization and it is FIXED — settings
+    // never select an acting-as context — and `canManageOrganization` is the
+    // owner/admin test `platform.knob_override_set` itself applies, so a person
+    // the door would refuse sees the standing exceptions read-only and no Add
+    // control at all, rather than a button that fails.
+    return (
+      <UniversalSettingsProvider
+        target="organization"
+        organizationId={context.active.organization_id}
+        canManageOrganization={isOrgSteward(context.active.org_role)}
+        organizationName={
+          context.employers.find(
+            (employer) => employer.organization_id === context.active?.organization_id,
+          )?.name ?? null
+        }
+      >
+        {children}
+      </UniversalSettingsProvider>
+    );
   })();
 
   return (

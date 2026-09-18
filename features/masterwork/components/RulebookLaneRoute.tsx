@@ -33,6 +33,7 @@ import {
   useMemo,
   useState,
   type ReactNode,
+  useSyncExternalStore,
 } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -50,6 +51,7 @@ import {
 } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import { MASTERWORK_RULEBOOK_SURFACE_NAME } from "@/features/surfaces/manifests/masterwork-rulebook.manifest";
 import { useAdoptRecordOrganization } from "@/features/organizations/useAdoptRecordOrganization";
+import { isBlankSlateInterview, subscribeBlankSlate } from "@/features/masterwork/record/blankSlateLane";
 import {
   buildRulebookSurfaceScope,
   CLOSED_RULEBOOK_WORKSPACE_STATE,
@@ -73,15 +75,36 @@ export interface RulebookLaneRenderArgs {
   reload: () => void;
 }
 
-export function RulebookLaneRoute({
-  rulebookId,
-  lane,
-  title,
-  requireOwner = false,
-  ownerMessage,
-  body = "scroll",
-  children,
-}: {
+/**
+ * 🚨 A RULEBOOK PAGE NEVER CARRIES THE PREVIOUS RULEBOOK'S WORDS
+ * (jobs-bar-2026-09-16 cold walk 2, finding #1's strongest remaining lead).
+ *
+ * Every lane route under `/masterwork/[id]/<lane>` is the SAME React element
+ * position, so a Rulebook→Rulebook navigation changes a prop and nothing else:
+ * React keeps the mounted instance, and every `useState` initialiser in the
+ * scaffold AND in the lane body keeps whatever it computed from the FIRST
+ * Rulebook. The live instance of that: `CapturePlanPage` seeds its goal field
+ * from `rulebook.description` in a `useState` initialiser, so opening Rulebook
+ * B's plan form after Rulebook A's showed A's sentence in B's form — a
+ * first-timer reads that as their work landing on the wrong record, and there
+ * is no way on screen to tell the two apart. The scaffold also kept the
+ * previous Rulebook in state while the next one loaded, so children briefly
+ * rendered the old row's name, rules and organization for real.
+ *
+ * ONE line closes the whole class for all 14 lanes at once: the identity of a
+ * record-scoped page IS the record, so the mount is keyed by it. A different
+ * Rulebook is a different page — fresh state everywhere below, and the load
+ * starts from `loading` instead of from the last Rulebook's row. Fix the
+ * class, never the instance: no lane may hand-roll a per-id reset, and a new
+ * lane inherits this without knowing it exists.
+ *
+ * Guard: `features/masterwork/__tests__/a-rulebook-page-never-carries-the-previous-rulebooks-words.test.tsx`.
+ */
+export function RulebookLaneRoute(props: RulebookLaneRouteProps) {
+  return <RulebookLaneRouteInstance key={props.rulebookId} {...props} />;
+}
+
+interface RulebookLaneRouteProps {
   rulebookId: string;
   /** Lane slug published on the surface scope, e.g. "sources", "conduct". */
   lane: string;
@@ -101,7 +124,17 @@ export function RulebookLaneRoute({
    */
   body?: "scroll" | "fill" | "bare";
   children: (args: RulebookLaneRenderArgs) => ReactNode;
-}) {
+}
+
+function RulebookLaneRouteInstance({
+  rulebookId,
+  lane,
+  title,
+  requireOwner = false,
+  ownerMessage,
+  body = "scroll",
+  children,
+}: RulebookLaneRouteProps) {
   const userId = useAppSelector(selectUserId);
   const [rulebook, setRulebook] = useState<Rulebook | null>(null);
   const [masterworks, setMasterworks] = useState<Masterwork[]>([]);
@@ -229,6 +262,15 @@ export function RulebookLaneRoute({
   // live systems only, and an archived Masterwork is never handed to an agent
   // as something it can run or rebuild. The archived half is read and revealed
   // on the Masterworks lane and the Rulebook page, which carry the control.
+  // The blank-slate register is module-level (it crosses a file boundary the
+  // props cannot), so this subscription is what turns a declaration into a
+  // rebuilt scope callback.
+  const blankSlateEpoch = useSyncExternalStore(
+    subscribeBlankSlate,
+    () => isBlankSlateInterview(rulebookId),
+    () => false,
+  );
+
   const buildSurfaceScope = useCallback(() => {
     if (!rulebook) {
       throw new Error("The Rulebook surface is still loading.");
@@ -238,6 +280,13 @@ export function RulebookLaneRoute({
       canEdit,
       masterworks,
       lane,
+      // 🚨 A BLANK-SLATE INTERVIEW IS THE ONE CASE THIS SURFACE STAYS QUIET.
+      // The provider republishes its scope on every turn, so an interview
+      // launched with an empty scope got the whole Rulebook back one turn
+      // later and opened by reciting it (found live 2026-09-15). The panel
+      // declares the mode in `record/blankSlateLane.ts`; identity, permission
+      // and lane still go out, so client tools and write targets keep working.
+      withholdContent: isBlankSlateInterview(rulebookId),
       // The read twin of the `rule_draft` write target, and the honest
       // workspace state: an agent that staged a rule here can read back
       // exactly what is sitting in the editor.
@@ -247,13 +296,18 @@ export function RulebookLaneRoute({
         editor_open: editorOpen,
       },
     });
+    // `blankSlateEpoch` is not read inside — it is the register's change
+    // signal, so a mode declared after this callback was memoised rebuilds it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeRuleDraft,
+    blankSlateEpoch,
     canEdit,
     editorOpen,
     lane,
     masterworks,
     rulebook,
+    rulebookId,
   ]);
 
   // The one client tool every lane can honestly service: refetch this
@@ -287,10 +341,16 @@ export function RulebookLaneRoute({
             href={`/masterwork/${rulebookId}`}
             ariaLabel="Back to the Rulebook"
           />
-          <h1 className="ml-2 truncate text-sm font-medium text-foreground">
-            {title}
+          {/* PHONE FIRST: the lane's own name never truncates, the Rulebook's
+              always may. `truncate` on the <h1> alone did nothing here — the
+              name is an inline child, so at 375px it ran past the header's
+              `overflow-hidden` edge and was HARD CUT mid-word with no ellipsis
+              (jobs-bar-2026-09-16 lanes-b, item 2). A flex row with an explicit
+              `min-w-0` on the shrinking half is what actually ellipsises. */}
+          <h1 className="ml-2 flex min-w-0 items-baseline gap-2 text-sm font-medium text-foreground">
+            <span className="shrink-0">{title}</span>
             {rulebook ? (
-              <span className="ml-2 font-normal text-muted-foreground">
+              <span className="min-w-0 truncate font-normal text-muted-foreground">
                 {rulebook.name}
               </span>
             ) : null}
@@ -310,8 +370,14 @@ export function RulebookLaneRoute({
       <>
         {header}
         <div className={shellClass}>
-          <div className="flex h-full flex-1 items-center justify-center">
+          {/* A NAKED SPINNER SAYS NOTHING (P8). The other two waiting states on
+              this scaffold already name what they are doing; this one — the
+              first thing a first-timer sees on every lane route — did not. */}
+          <div className="flex h-full flex-1 flex-col items-center justify-center gap-3">
             <LoadingSpinner />
+            <p className="text-sm text-muted-foreground">
+              Opening {title.toLowerCase()}…
+            </p>
           </div>
         </div>
       </>

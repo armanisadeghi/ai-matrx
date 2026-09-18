@@ -137,11 +137,10 @@ sales page after signing in.
   seed the prior key only for one server validation, persists it only when
   East accepts it, then clears the superseded cookie. Every redirect after
   `getUser()` copies refreshed cookies from the canonical response.
-- **External app redirects are registered capabilities, not user input.**
-  [`trusted-app-redirect.ts`](./trusted-app-redirect.ts) requires an exact
-  first-party origin and the exact `/oauth/callback` path before any access or
-  refresh token may leave this app. Validate both before OAuth starts and in
-  the callback.
+- **External apps use the aidream handoff flow.** The frontend never emits an
+  access or refresh token in a redirect URL. `aidream /auth/aimatrx` validates
+  the registered callback and redirects only with a one-time handoff code;
+  the SPA exchanges it in a POST body.
 - **`x-pathname` + `x-search-params`** are set in
   [`utils/supabase/middleware.ts`](../supabase/middleware.ts) so server layouts
   can rebuild the destination. Both must be set — `app/(admin)/layout.tsx` read
@@ -174,6 +173,13 @@ the complete auth suite and is part of both release-gate modes.
 
 ## Change Log
 
+- **2026-09-17 — three-day follow-up on the sign-out fix + auth-server report triage.** Fix confirmed live (both Vercel projects) and effective: Arman's 2026-09-14 session still alive, zero logouts of his account in 24h, `session_not_found` from ~50/10min to ~0. Chrome guard hook denied one real agent attempt on 2026-09-15. Triage of a browser-agent report on auth-server health: 43k `GET /user`/day vs 350 refreshes is real (≈45% from Arman's own network); the 504/500 bursts track auth-DB load, not call volume, and never end a session (a failed proxy check renders that request as a guest); the ~300/day `bad_jwt` rows are an external Azure-hosted scanner (3 malformed + 1 forged token per IP, nothing else), not our code; no retired-project token anywhere in the live bundles. Settings changed: passkey relying party `www.aimatrx.com` → `aimatrx.com` with all four app origins (0 passkeys enrolled). Left alone on purpose: access-token lifetime (7d), IP forwarding (spoofable header; no 429s observed), AAL1 limit (0 MFA factors). Architectural remedy filed as `common-docs/projects/auth-check-once/HANDOFF.md`.
+- **2026-09-15 — removed the duplicate frontend admin OAuth redirect flow.**
+  Dashboard and Workflow Studio use aidream's registered one-time-handoff
+  contract; the retired frontend callback could place access and refresh tokens
+  in a redirect URL.
+
+- **2026-09-14 — sign-out is device-scoped and super admins are warned twice.** Investigation of Arman's recurring "Session Expired" overlay: nothing expired (7-day tokens, no rotation, no inactivity timeout); four `POST /logout` calls in 24h, each with the Supabase default scope `global`, deleted every session on every device — one was a scheduled-task subagent clicking Sign Out through his real Chrome. Now: `features/shell/auth/useSignOut.ts` is THE sign-out primitive (`scope: "local"`, two named warnings for a super admin) used by the header menu, both legacy layouts and `/sign-out`; `signOutAction` deleted; dev-login eviction and the admin-callback revoke are `local`; guard `pnpm check:signout-scope` (+ `:self-test`, in `check:release-gates`); user-level hook `~/.claude/hooks/matrx-chrome-auth-guard.sh` denies Claude-in-Chrome / computer-use sign-in or sign-out on Matrx hosts.
 - **2026-09-12** — Auth submit buttons now preserve their idle dimensions while
   pending, show one centered spinner instead of variable-length visible status
   copy, disable repeat submission, maintain a 44px touch target, and retain an

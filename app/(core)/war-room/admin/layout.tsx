@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/war-room", {
   titlePrefix: "Admin",
   title: "War Room",
   description: "War Room feature map, routes, and admin resources.",
-  letter: "WR",
+  letter: "WRA",
 });
 
 export default function WarRoomAdminLayout({

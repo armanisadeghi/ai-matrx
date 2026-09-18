@@ -14,18 +14,29 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Clock3, SquareArrowOutUpRight, Wrench } from "lucide-react";
+import { Clock3, Rocket, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import LoadingSpinner from "@/components/ui/loading-spinner";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { cn } from "@/lib/utils";
 import { formatAbsoluteDate, formatRelativeTime } from "@/utils/datetime";
-import { runHref } from "@/features/workflow-runtime/run-doors";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
+import { MasterworkRunRow } from "../components/masterworks/MasterworksPage";
 import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
 import { AuditionProof } from "./AuditionProof";
+import {
+  getBenchProof,
+  ORGANIZATION_REQUIRED,
+  UNAVAILABLE,
+  type BenchProofState,
+} from "./benchProof";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { ExpertSignOff } from "../review/ExpertSignOff";
+import { MASTERWORK_RUN_SUBJECT_TYPE } from "../review/signature";
+import { RunTheBench } from "./RunTheBench";
+import { setMasterworkReleased } from "../service";
+import { toast } from "@/lib/toast";
 import {
   getEncoreMasterwork,
   listMyEncoreRuns,
@@ -33,34 +44,17 @@ import {
   type EncoreRun,
 } from "./service";
 
-function runWhen(run: EncoreRun): string {
-  return formatRelativeTime(run.created_at, { style: "short" });
-}
-
-const RUN_STATUS_STYLES: Record<string, string> = {
-  completed: "bg-primary",
-  failed: "bg-destructive",
-  errored: "bg-destructive",
-  abandoned: "bg-destructive",
-  cancelled: "bg-muted-foreground",
-};
-
-const RUN_STATUS_LABELS: Record<string, string> = {
-  completed: "Finished",
-  failed: "Didn't finish",
-  errored: "Didn't finish",
-  abandoned: "Didn't finish",
-  cancelled: "Stopped",
-  running: "Working",
-  pending: "Starting",
-};
-
 export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
   const userId = useAppSelector(selectUserId);
   const [masterwork, setMasterwork] = useState<EncoreMasterwork | null>(null);
   const [runs, setRuns] = useState<EncoreRun[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
+  // THE PROOF is a separate question from the quick check, and it is asked out
+  // loud: the panel shows the bench verdict, or says plainly there is none.
+  const [bench, setBench] = useState<BenchProofState>({ status: "loading" });
+
+  const [releasing, setReleasing] = useState(false);
 
   const refreshRuns = useCallback(() => {
     listMyEncoreRuns(masterworkId)
@@ -98,6 +92,68 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
     refreshRuns();
   }, [refreshRuns]);
 
+  // The Bench is asked for by RULEBOOK, so it can only be asked once the
+  // Masterwork has loaded. A viewer who cannot read the Rulebook gets the
+  // "can't tell from here" sentence rather than a false "no proof".
+  //
+  // 🚨 AND IT WAITS FOR THE ORGANIZATION (production walk 4, wall W3). Every
+  // Matrx transport refuses BEFORE networking when no organization is selected
+  // ("Select an organization before sending this request." — the production
+  // error row this wall left behind, 9ce676a8 at 02:58:27Z). This effect used
+  // to fire on `rulebookId` alone, so on a fresh load it raced the boot that
+  // selects the organization, ate that refusal, and rendered it as a PERMISSION
+  // message to the admin reloading mid-trial. `useOrganizationRequired` is the
+  // platform's one reading of that state: hold the skeleton while it resolves,
+  // ask only once a request can actually be sent, and say the honest thing when
+  // boot settles with no organization at all.
+  const rulebookId = masterwork?.rulebook?.id ?? null;
+  const { canLoad, organizationRequired, resolving } = useOrganizationRequired();
+  const refreshBench = useCallback(() => {
+    if (!rulebookId || !canLoad) return;
+    void getBenchProof(rulebookId).then(setBench);
+  }, [rulebookId, canLoad]);
+  useEffect(() => {
+    let cancelled = false;
+    if (!rulebookId) {
+      setBench(UNAVAILABLE);
+      return;
+    }
+    if (organizationRequired) {
+      setBench(ORGANIZATION_REQUIRED);
+      return;
+    }
+    setBench({ status: "loading" });
+    if (resolving) return; // still booting — the skeleton is the honest screen
+    void getBenchProof(rulebookId).then((state) => {
+      if (!cancelled) setBench(state);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [rulebookId, organizationRequired, resolving]);
+
+  const releaseThis = async () => {
+    if (!masterwork) return;
+    setReleasing(true);
+    try {
+      const updated = await setMasterworkReleased({
+        masterworkId: masterwork.id,
+        expectedVersion: masterwork.version,
+        released: true,
+      });
+      setMasterwork((prev) =>
+        prev ? { ...prev, ...updated, rulebook: prev.rulebook } : prev,
+      );
+      toast.success("Released — anyone you share it with can run it now.");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Could not release this one.",
+      );
+    } finally {
+      setReleasing(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-full flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
@@ -128,26 +184,22 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
     userId !== null &&
     masterwork.rulebook.created_by === userId;
 
-  if (masterwork.released_at === null) {
-    // A draft never runs from Encore — the Expert finishes it in the Studio.
+  const isDraft = masterwork.released_at === null;
+
+  if (isDraft && !ownsRulebook) {
+    // Someone ELSE's draft never runs from here — release is what makes a
+    // Masterwork other people's to run. The Expert's own draft does run (see
+    // the draft notice below): sending her away from her own work is exactly
+    // the dead end the cold walk hit.
     return (
       <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         <p className="text-sm text-muted-foreground">
           This one isn&apos;t ready to run yet — the expert behind it
           hasn&apos;t released it.
         </p>
-        {ownsRulebook && masterwork.rulebook ? (
-          <Button asChild variant="outline" size="sm">
-            <Link href={`/masterwork/${masterwork.rulebook.id}/masterworks`}>
-              <Wrench className="mr-1 h-4 w-4" />
-              Open in Studio
-            </Link>
-          </Button>
-        ) : (
-          <Button asChild variant="outline" size="sm">
-            <Link href="/masterwork/encore">Back to Encore</Link>
-          </Button>
-        )}
+        <Button asChild variant="outline" size="sm">
+          <Link href="/masterwork/encore">Back to Encore</Link>
+        </Button>
       </div>
     );
   }
@@ -209,12 +261,44 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
             {masterwork.deliverable}
           </p>
         ) : null}
+        {/* 🚨 YOUR OWN DRAFT RUNS, AND SAYS IT IS A DRAFT. Run it, check it,
+            sign off on what it said — then release it when you are ready.
+            The screen never pretends it is already shared. */}
+        {isDraft ? (
+          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+            <span className="text-xs text-muted-foreground">
+              Draft — only you can see this one. Run it as much as you like.
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              disabled={releasing}
+              onClick={() => void releaseThis()}
+            >
+              <Rocket className="mr-1 h-3.5 w-3.5" />
+              {releasing ? "Releasing…" : "Release it"}
+            </Button>
+          </div>
+        ) : null}
         <AuditionProof
           variant="panel"
           score={masterwork.auditionScore}
           verdict={masterwork.auditionVerdict}
           auditionedAt={masterwork.auditionedAt}
+          bench={bench}
         />
+        {/* THE PROOF HAS A DOOR. It sits beside the quick check because that
+            is the comparison being made: one is a two-arm check, the other is
+            the six-arm trial that can establish a win. When the server cannot
+            start one here, this renders its reason — never a dead button. */}
+        {rulebookId ? (
+          <RunTheBench
+            rulebookId={rulebookId}
+            bench={bench}
+            onVerdict={refreshBench}
+          />
+        ) : null}
 
         <div className="mt-4 border-t border-border pt-4">
           <TryMasterworkBox
@@ -235,26 +319,36 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
             <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Your recent runs
             </h3>
+            {/* ONE RUN ROW, NOT TWO (jobs-bar-2026-09-16, item 18). This list
+                used to print its own line — a dot, a status word and an age —
+                so eight runs of the same Masterwork read as eight copies of
+                "Finished · 1d ago" with nothing to tell them apart, while the
+                Masterworks lane, three clicks away, showed the first line of
+                what each run actually said. `MasterworkRunRow` is that row;
+                Encore mounts it and hangs its own sign-off off `trailing`. */}
             <div className="mt-2">
               {runs.map((run) => (
-                // THE DOOR IS IN THIS APP (wall W36): an Operator's finished
-                // run is read at its own permalink here, never in the author's
-                // Studio on another host.
-                <Link
+                <MasterworkRunRow
                   key={run.id}
-                  href={runHref(run.id)}
-                  className="group flex items-center gap-2 rounded px-1.5 py-1 text-xs text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                >
-                  <span
-                    className={cn(
-                      "h-1.5 w-1.5 shrink-0 rounded-full",
-                      RUN_STATUS_STYLES[run.status] ?? "bg-muted-foreground/50",
-                    )}
-                  />
-                  <span>{RUN_STATUS_LABELS[run.status] ?? run.status}</span>
-                  <span>· {runWhen(run)}</span>
-                  <SquareArrowOutUpRight className="ml-auto h-3 w-3 opacity-0 transition-opacity group-hover:opacity-100" />
-                </Link>
+                  run={run}
+                  trailing={
+                    /* 🚨 THE SIGNATURE OUTLIVES THE RUN BOX. The Try box shows
+                       the thumbs the moment a run ends, and then forgets the
+                       run on purpose — so without this, an Expert who came
+                       back an hour later had no way to say "yes, that one was
+                       mine" and the most important signal we have was lost to
+                       a page reload. Same control, same row in
+                       `platform.output_feedback`. Only a FINISHED run: there
+                       is nothing to sign on a run that failed. */
+                    run.status === "completed" ? (
+                      <ExpertSignOff
+                        subjectType={MASTERWORK_RUN_SUBJECT_TYPE}
+                        subjectId={run.id}
+                        showPrompt={false}
+                      />
+                    ) : null
+                  }
+                />
               ))}
             </div>
           </div>

@@ -35,14 +35,7 @@ import {
   selectOrganizationId,
   selectOrgBootstrapResolved,
 } from "@/lib/redux/slices/appContextSlice";
-import {
-  SINGLE_SITE_SENTENCE,
-  fetchMandateReferences,
-  formatRepoList,
-  unreportedSentence,
-  type MandateReferenceReport,
-  type MandateReferenceRow,
-} from "./references";
+import { SINGLE_SITE_SENTENCE, fetchMandateReferences, formatRepoList, unreportedSentence, type MandateReferenceReport, type MandateReferenceRow } from "./references";
 
 export interface SourceUsageFallback {
   /** The code-truth declaration string, when discovery found one. */

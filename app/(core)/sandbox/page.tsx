@@ -67,9 +67,7 @@ export default function SandboxListPage() {
   const [deleteTarget, setDeleteTarget] = useState<SandboxInstance | null>(
     null,
   );
-  const [deleting, setDeleting] = useState(false);
-  const [deleteSuccess, setDeleteSuccess] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [stoppingIds, setStoppingIds] = useState<Set<string>>(new Set());
   const [ttlHours, setTtlHours] = useState(2);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -200,23 +198,19 @@ export default function SandboxListPage() {
     });
   };
 
-  const handleDelete = async () => {
-    if (!deleteTarget || deleting) return;
-    const sandboxId = deleteTarget.sandbox_id;
-    setDeleting(true);
-    setDeleteError(null);
-    const ok = await deleteInstance(deleteTarget.id);
-    setDeleting(false);
-    if (ok) {
-      setDeleteSuccess(true);
-      toast.success(`Sandbox ${sandboxId} deleted`);
-      setTimeout(() => {
-        setDeleteTarget(null);
-        setDeleteSuccess(false);
-      }, 700);
+  const handleDelete = async (target: SandboxInstance) => {
+    const sandboxId = target.sandbox_id;
+    setDeletingIds((previous) => new Set(previous).add(target.id));
+    const ok = await deleteInstance(target.id);
+    setDeletingIds((previous) => {
+      const next = new Set(previous);
+      next.delete(target.id);
+      return next;
+    });
+    if (ok === "queued") {
+      toast.warning(`Deletion requested for ${sandboxId}. It will disappear after confirmed completion.`);
     } else {
       const msg = "Failed to delete sandbox. Please try again.";
-      setDeleteError(msg);
       toast.error(msg);
     }
   };
@@ -255,31 +249,30 @@ export default function SandboxListPage() {
     historyDeleteMode === "all"
       ? historicalInstances.length
       : selectedHistoryCount;
+  const deleteTargetBusy = !!deleteTarget && deletingIds.has(deleteTarget.id);
 
-  const handleHistoryBatchDelete = async () => {
-    if (!historyDeleteMode || historyDeleting) return;
-    const ids =
-      historyDeleteMode === "all"
-        ? historicalInstances.map((i) => i.id)
-        : Array.from(currentSelectedHistoryIds);
+  const handleHistoryBatchDelete = async (
+    mode: "selected" | "all",
+    ids: string[],
+  ) => {
+    if (historyDeleting) return;
     if (ids.length === 0) {
       setHistoryDeleteMode(null);
       return;
     }
 
     setHistoryDeleting(true);
-    const { deletedIds, failed } = await deleteInstances(ids);
+    const { queuedIds, failed, unknownIds } = await deleteInstances(ids);
     setHistoryDeleting(false);
-    setHistoryDeleteMode(null);
 
-    if (deletedIds.length > 0) {
+    if (queuedIds.length > 0) {
       setSelectedHistoryIds((prev) => {
         const next = new Set(prev);
-        for (const id of deletedIds) next.delete(id);
+        for (const id of queuedIds) next.delete(id);
         return next;
       });
       toast.success(
-        `Deleted ${deletedIds.length} sandbox record${deletedIds.length === 1 ? "" : "s"}`,
+        `Deletion requested for ${queuedIds.length} sandbox record${queuedIds.length === 1 ? "" : "s"}`,
       );
     }
     if (failed.length > 0) {
@@ -288,6 +281,12 @@ export default function SandboxListPage() {
           ? "Failed to delete sandbox history"
           : `${failed.length} record${failed.length === 1 ? "" : "s"} could not be deleted`,
       );
+    }
+    if (unknownIds.length > 0) {
+      toast.warning(
+        `${unknownIds.length} sandbox delete outcome${unknownIds.length === 1 ? " is" : "s are"} unknown. Refresh history while state is checked.`,
+      );
+      void fetchInstances();
     }
   };
 
@@ -392,6 +391,7 @@ export default function SandboxListPage() {
             onStop={handleStop}
             onDelete={setDeleteTarget}
             stoppingIds={stoppingIds}
+            busyIds={deletingIds}
             selection={
               historyOpen
                 ? {
@@ -518,47 +518,13 @@ export default function SandboxListPage() {
       <Dialog
         open={!!deleteTarget}
         onOpenChange={(open) => {
-          if (!open && !deleting && !deleteSuccess) {
+          if (!open && !deleteTargetBusy) {
             setDeleteTarget(null);
-            setDeleteError(null);
           }
         }}
       >
         <DialogContent>
-          {deleteSuccess ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-4">
-              <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <CheckCircle2 className="w-7 h-7 text-green-600 dark:text-green-400" />
-              </div>
-              <div className="text-center">
-                <h3 className="font-semibold text-lg">Sandbox Deleted</h3>
-                {deleteTarget && (
-                  <p className="text-xs text-muted-foreground mt-2 font-mono">
-                    {sandboxDisplayName(deleteTarget)}
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : deleting ? (
-            <div className="flex flex-col items-center justify-center py-12 gap-4">
-              <Loader2 className="w-10 h-10 animate-spin text-destructive" />
-              <div className="text-center">
-                <h3 className="font-semibold text-lg">Deleting Sandbox</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {deleteTarget &&
-                  ["ready", "running"].includes(deleteTarget.status)
-                    ? "Destroying the container and removing the record..."
-                    : "Removing the sandbox record..."}
-                </p>
-                {deleteTarget && (
-                  <p className="text-xs text-muted-foreground mt-2 font-mono">
-                    {sandboxDisplayName(deleteTarget)}
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : (
-            <>
+          <>
               <DialogHeader>
                 <DialogTitle>Delete Sandbox</DialogTitle>
                 <DialogDescription>
@@ -577,28 +543,25 @@ export default function SandboxListPage() {
                   Stop instead.
                 </DialogDescription>
               </DialogHeader>
-              {deleteError && (
-                <div className="px-1 text-sm text-destructive">
-                  {deleteError}
-                </div>
-              )}
               <DialogFooter>
                 <Button
                   variant="outline"
                   onClick={() => {
                     setDeleteTarget(null);
-                    setDeleteError(null);
                   }}
                 >
                   Cancel
                 </Button>
-                <Button variant="destructive" onClick={handleDelete}>
+                <Button variant="destructive" disabled={deleteTargetBusy} onClick={() => {
+                  const target = deleteTarget;
+                  setDeleteTarget(null);
+                  if (target) void handleDelete(target);
+                }}>
                   <Trash2 className="w-4 h-4 mr-2" />
                   Delete Sandbox
                 </Button>
               </DialogFooter>
-            </>
-          )}
+          </>
         </DialogContent>
       </Dialog>
 
@@ -628,7 +591,14 @@ export default function SandboxListPage() {
         }
         variant="destructive"
         busy={historyDeleting}
-        onConfirm={() => void handleHistoryBatchDelete()}
+        onConfirm={() => {
+          const mode = historyDeleteMode;
+          const ids = mode === "all"
+            ? historicalInstances.map((instance) => instance.id)
+            : Array.from(currentSelectedHistoryIds);
+          setHistoryDeleteMode(null);
+          if (mode) void handleHistoryBatchDelete(mode, ids);
+        }}
       />
     </SurfaceRuntimeProvider>
   );

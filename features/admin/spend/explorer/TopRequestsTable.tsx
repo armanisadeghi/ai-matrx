@@ -17,7 +17,8 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { timestamp, usd } from "../format";
 import type { SpendDimension, SpendRequestRow } from "../types";
-import { compactNumber, percent } from "./labels";
+import { compactNumber } from "./labels";
+import { formatPercentFromFraction } from "@ai-matrx/kit/format";
 
 function Drill({
   label,
@@ -57,7 +58,10 @@ export function TopRequestsTable({
       accessorFn: (r) => r.at,
       width: 160,
       cell: (r) => (
-        <span className="whitespace-nowrap tabular-nums text-muted-foreground">
+        <span
+          className="whitespace-nowrap tabular-nums text-muted-foreground"
+          style={{ whiteSpace: "nowrap" }}
+        >
           {timestamp(r.at)}
         </span>
       ),
@@ -66,6 +70,7 @@ export function TopRequestsTable({
       id: "cost",
       header: "Cost",
       accessorFn: (r) => r.cost,
+      filter: "number",
       defaultSortDirection: "desc",
       width: 90,
       align: "right",
@@ -73,7 +78,7 @@ export function TopRequestsTable({
         <span className="tabular-nums font-medium">
           {usd(r.cost)}
           <span className="ml-1 text-[10px] text-muted-foreground">
-            {percent(r.share)}
+            {formatPercentFromFraction(r.share)}
           </span>
         </span>
       ),
@@ -248,14 +253,20 @@ export function TopRequestsTable({
 
   return (
     <MatrxDataTable
-      urlState={{ id: "spend-requests" }}
+      urlState={{
+        id: "spend-requests",
+        defaultSort: { id: "cost", direction: "desc" },
+      }}
       data={rows}
       columns={columns}
       getRowId={(r) => r.executionId}
-      defaultSort={{ id: "cost", direction: "desc" }}
       pageSize={20}
       emptyState={{ title: "No requests in this window." }}
-      toolbar={{ search: true, searchPlaceholder: "Search requests…" }}
+      toolbar={{
+        title: "Costliest requests",
+        search: true,
+        searchPlaceholder: "Search requests…",
+      }}
     />
   );
 }

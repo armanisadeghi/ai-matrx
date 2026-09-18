@@ -31,6 +31,7 @@ import {
   DRILL_CONFIG_BOUNDS,
   type FastFireConfig,
 } from "@/features/flashcards/fast-fire/drill-config";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 const groups: SurfaceValueGroup[] = [
@@ -323,7 +324,7 @@ export const educationFastfireManifest: SurfaceManifest = {
   surfaceName: "matrx-user/education-fastfire",
   readiness: "partial",
   readinessNote:
-    "Manifest + emitter shipped for everything the drill state machine holds. Not yet stamped verified: a live non-matching-name binding test and the Matrx-vs-matrix context check have not been run, no agent roles are declared (the spoken grader + TTS agents resolve via Mandates, not surface roles), and no Locate anchors are tagged.",
+    "Manifest + emitter shipped for everything the drill state machine holds. Not yet stamped verified: a live non-matching-name binding test and the Matrx-vs-matrix context check have not been run, and no Locate anchors are tagged.",
   label: "FastFire",
   urlPattern: "/education/fastfire",
   intro: `<surface_intro>
@@ -332,8 +333,70 @@ Read drill_phase first — it decides what is true. In "setup" the learner is ch
 Grades stream in asynchronously, so absence of a grade means "not resolved yet", never "incorrect". The deck values name the set; per-card records live in card_grades (bindable-only).
 </surface_intro>`,
   groups,
-  values: mergeBaselineValues(pickBaseline("selection", "context"), surfaceSpecific),
+  values: mergeBaselineValues(
+    pickBaseline("selection", "context"),
+    surfaceSpecific,
+  ),
   writeTargets,
+  // These are the fixed mandate jobs FastFire launches. Registration is
+  // menu-only disclosure; it must not add page chrome or alter the drill.
+  agentRoles: [
+    {
+      name: "spoken_grader",
+      label: "Spoken answer grader",
+      description:
+        "Grades each recorded FastFire answer against its flashcard prompt and returns the learner's spoken-answer result.",
+      kind: "single",
+      mandateKey: MANDATE_KEYS.flashcards__grade_spoken,
+      defaultAgentId: null,
+      autoRun: "always",
+      sortOrder: 100,
+    },
+    {
+      name: "spoken_front_tts",
+      label: "Spoken question voice",
+      description:
+        "Creates the optional spoken FastFire question audio that is prepared and cached for the selected deck.",
+      kind: "single",
+      mandateKey: MANDATE_KEYS.flashcards__spoken_front_tts,
+      defaultAgentId: null,
+      autoRun: "never",
+      sortOrder: 110,
+    },
+    {
+      name: "helper_tts",
+      label: "Instant-help voice",
+      description:
+        "Creates the prepared, cached spoken explanations FastFire plays when a learner asks for instant help.",
+      kind: "single",
+      mandateKey: MANDATE_KEYS.flashcards__helper_tts,
+      defaultAgentId: null,
+      autoRun: "never",
+      sortOrder: 120,
+    },
+    {
+      name: "instant_help",
+      label: "Instant card help",
+      description:
+        "Explains the current card when the learner asks for help during a FastFire drill.",
+      kind: "single",
+      mandateKey: MANDATE_KEYS.flashcards__help_live,
+      defaultAgentId: null,
+      autoRun: "never",
+      sortOrder: 130,
+    },
+    {
+      name: "instant_help_writer",
+      label: "Instant-help writer",
+      description:
+        "Writes the short explanation that FastFire turns into prepared instant-help audio.",
+      kind: "single",
+      mandateKey: MANDATE_KEYS.flashcards__enrich_card,
+      defaultAgentId: null,
+      autoRun: "never",
+      sortOrder: 140,
+    },
+  ],
 };
 
 /** One entry in `drill_cards` / the `current_card` object. */

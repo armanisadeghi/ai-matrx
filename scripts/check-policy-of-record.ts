@@ -28,6 +28,33 @@
  * does not author. Generated names are excluded because their record IS the
  * generator: `iam.apply_rls` emits them from code that is itself in a migration.
  *
+ * 🚨 WITH ONE EXCEPTION, ADDED 2026-09-14 (DD-200 residue, found by V-65). That
+ * exemption is false on a MACHINERY table: `iam.apply_rls` refuses a machinery
+ * token by construction, so a class-regime policy there (`std_select`,
+ * `std_insert`, `std_update`, `std_delete`, `pub_read`) cannot have the generator
+ * as its record — whatever put it there, nothing will ever regenerate it, and the
+ * next lane that meets it needs the finding rather than a green line. On a
+ * machinery relation those names are reported outright. The corpus test cannot
+ * cover them — `std_select` occurs in 111 unrelated migration files, so "the name
+ * appears somewhere" is satisfied by doors that have nothing to do with the table.
+ * `svc_all` and `platform_admin_all` stay exempt everywhere: they are
+ * platform-wide lanes their own migrations put on hundreds of tables, machinery
+ * included, so they do have a record.
+ *
+ * 🚨 CORRECTION, 2026-09-14 (DD-204). This comment used to say the policy that
+ * prompted the exception — `std_select` on `platform.activity_log` — was "present
+ * in no migration in either repository" and "written by something else". Both are
+ * false, and two greps missed it because they looked for the literal string
+ * `std_select` near `activity` rather than for a generator CALL. Its record is
+ * `migrations/iam_hoist_has_org_access_set_wise_d146.sql` (applied 2026-08-15),
+ * which ends with `SELECT iam.apply_rls('platform','activity_log','activity',
+ * 'ledger')` and whose own comment names the `ledger` variant's `std_select` as
+ * the one shape the generator emits. It was a DELIBERATE generation nine days
+ * before the ruling that made `iam.apply_rls` refuse machinery — residue, not a
+ * hand-applied policy of unknown origin (the DD-113 class). The rule above is
+ * unchanged and right for the reason restated in it; the policy itself was
+ * superseded by `migrations/dd204_access_machinery_carries_no_unexplained_client_lane.sql`.
+ *
  * WHY THE TEST IS "THE NAME APPEARS SOMEWHERE"
  * --------------------------------------------
  * It is the same test B-54 and B-66 censused with, so the number this guard prints
@@ -124,14 +151,41 @@ function migrationCorpus(): { text: string; files: number; dirs: string[] } {
   return { text: parts.join("\n"), files, dirs };
 }
 
-interface LivePolicy { sch: string; tbl: string; pol: string }
+interface LivePolicy {
+  sch: string;
+  tbl: string;
+  pol: string;
+  /** the name is one iam.apply_rls authors */
+  generated?: boolean;
+  /** the relation's active registry token is audit_class='machinery' */
+  machinery?: boolean;
+}
+
+/**
+ * The CLASS-REGIME lanes — the policies `iam._apply_rls_unchecked` emits for a table's
+ * variant. On a machinery relation these are the names that cannot have a generator
+ * record, because `iam.apply_rls` refuses the token. `svc_all` and `platform_admin_all`
+ * are deliberately NOT here: they are platform-wide lanes their own migrations put on
+ * hundreds of tables, machinery included (access_gate_platform_admin_truth.sql states it
+ * — "a platform_admin_all policy ... on 888 tables"), so they DO have a record.
+ */
+const CLASS_REGIME_LANES: ReadonlySet<string> = new Set([
+  "std_select", "std_insert", "std_update", "std_delete", "pub_read",
+]);
 
 const CENSUS_SQL = `
-  select n.nspname as sch, c.relname as tbl, p.polname as pol
+  select n.nspname as sch, c.relname as tbl, p.polname as pol,
+         (p.polname = any (iam.generated_policy_names())) as generated,
+         exists (
+           select 1 from platform.entity_types et
+            where et.schema_name = n.nspname
+              and et.table_name = c.relname
+              and et.is_active
+              and et.audit_class = 'machinery'
+         ) as machinery
     from pg_policy p
     join pg_class c on c.oid = p.polrelid
     join pg_namespace n on n.oid = c.relnamespace
-   where p.polname <> all (iam.generated_policy_names())
    order by 1, 2, 3`;
 
 /**
@@ -140,7 +194,27 @@ const CENSUS_SQL = `
  * to say no.
  */
 export function withoutRecord(live: readonly LivePolicy[], corpus: string): LivePolicy[] {
-  return live.filter((p) => !corpus.includes(p.pol));
+  return live.filter((p) => {
+    if (p.generated) {
+      // 🚨 DD-200 RESIDUE (2026-09-14, found by V-65). The generated-name exemption rests on
+      // "their record IS the generator: iam.apply_rls emits them from code that is itself in a
+      // migration". That is TRUE for a table the generator can run on — and FALSE for a machinery
+      // table, which iam.apply_rls refuses by construction ("token X is access machinery; generic
+      // RLS is forbidden because machinery owns inputs consumed by the access resolver"). A
+      // class-regime policy there was written by something else, and no generator can be its
+      // record. Live example and the reason this line exists: `std_select` on
+      // platform.activity_log appears in NO migration in either repository, and this gate printed
+      // "Every live RLS policy has a migration of record" over it for as long as anyone looked.
+      //
+      // The corpus test cannot stand in for this one: `std_select` is a generic name that occurs
+      // in 111 unrelated migration files, so "the name appears somewhere" is satisfied by doors
+      // that have nothing to do with this table. On a machinery relation a class-regime lane is
+      // therefore reported OUTRIGHT — its presence is the finding.
+      if (p.machinery && CLASS_REGIME_LANES.has(p.pol)) return true;
+      return false;
+    }
+    return !corpus.includes(p.pol);
+  });
 }
 
 async function census(env: DbEnv): Promise<LivePolicy[]> {
@@ -174,6 +248,32 @@ function selfTest(): number {
     return 1;
   }
   console.log(`${C.g}[GREEN]${C.x} a policy whose name appears in a migration is not reported.`);
+
+  // DD-200 residue: the generated-name exemption must NOT hold on a machinery relation.
+  const genCorpus = "create policy std_select on x.y ...;";  // the name IS in the corpus
+  const machRed = withoutRecord(
+    [{ sch: "platform", tbl: "activity_log", pol: "std_select", generated: true, machinery: true }],
+    genCorpus,
+  );
+  if (machRed.length !== 1) {
+    console.error(`${C.r}[FAIL]${C.x} self-test RED: a class-regime policy on a machinery relation was exempted. iam.apply_rls refuses that token, so no generator can be its record.`);
+    return 1;
+  }
+  console.log(`${C.y}[RED ]${C.x} a class-regime policy on a machinery relation is reported even though its name is in the corpus: ${machRed[0].pol}`);
+
+  const machGreen = withoutRecord(
+    [
+      { sch: "x", tbl: "y", pol: "std_select", generated: true, machinery: false },
+      { sch: "platform", tbl: "activity_log", pol: "platform_admin_all", generated: true, machinery: true },
+      { sch: "platform", tbl: "activity_log", pol: "svc_all", generated: true, machinery: true },
+    ],
+    genCorpus,
+  );
+  if (machGreen.length !== 0) {
+    console.error(`${C.r}[FAIL]${C.x} self-test GREEN: ${JSON.stringify(machGreen)} was reported. A generated name on a generatable table, and the platform-wide svc_all/platform_admin_all lanes on machinery, all have a record.`);
+    return 1;
+  }
+  console.log(`${C.g}[GREEN]${C.x} a generated name on a generatable table, and svc_all/platform_admin_all on machinery, are not reported.`);
   return 0;
 }
 
@@ -198,8 +298,10 @@ async function main(): Promise<number> {
   const live = await census(env);
   const orphans = withoutRecord(live, text);
 
+  const bespoke = live.filter((p) => !p.generated).length;
+  const machineryClassLanes = live.filter((p) => p.machinery && p.generated && CLASS_REGIME_LANES.has(p.pol)).length;
   console.log(
-    `${C.d}${live.length} live policies iam.apply_rls does not author, checked against ${files} migration files in ${dirs.length} repositor${dirs.length === 1 ? "y" : "ies"} (credentials from ${env.from}).${C.x}`,
+    `${C.d}${bespoke} live policies iam.apply_rls does not author, plus ${machineryClassLanes} class-regime polic${machineryClassLanes === 1 ? "y" : "ies"} on machinery tables the generator refuses to run on, checked against ${files} migration files in ${dirs.length} repositor${dirs.length === 1 ? "y" : "ies"} (credentials from ${env.from}).${C.x}`,
   );
   if (orphans.length === 0) {
     console.log(`${C.g}[ OK ]${C.x} Every live RLS policy has a migration of record. ${C.d}(DD-172)${C.x}`);
@@ -210,6 +312,11 @@ async function main(): Promise<number> {
   console.error(
     `${C.d}Fix: read each one's USING/WITH CHECK against the table's class, then either record it with a reason in a migration (the shape of migrations/iam_bespoke_policies_of_record_dd172.sql) or remove it on purpose through iam.supersede_bespoke_policies(schema, table, names, reason).${C.x}`,
   );
+  if (orphans.some((o) => CLASS_REGIME_LANES.has(o.pol))) {
+    console.error(
+      `${C.d}A class-regime name above sits on a MACHINERY table. iam.apply_rls refuses that token, so nothing generated it and nothing certifies it except iam.verify_canonical's machinery_no_generated_policy. Fold it into the table's bespoke contract or drop it — do not "record" it to clear this line.${C.x}`,
+    );
+  }
   return 1;
 }
 

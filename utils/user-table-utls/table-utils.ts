@@ -74,6 +74,16 @@ export interface TableField extends FieldDefinition {
    * `@/lib/field-formats/format`, never by hand. See `lib/field-formats/FEATURE.md`.
    */
   metadata?: Record<string, unknown> | null;
+  /**
+   * The column's validation rules (min/max, lengths, pattern, allowed values,
+   * unique). `get_full_table` returns this column on every field row, so every
+   * surface that loads fields already holds it. Read it with
+   * `parseValidationRules` from `@/features/data-tables/validation`, never by
+   * hand — it is a jsonb column that predates the feature, and an import or an
+   * agent may have written something else into it. `required` is NOT in here:
+   * `is_required` above is that fact's one home.
+   */
+  validation_rules?: unknown;
 }
 
 export interface CreateTableParams {
@@ -97,6 +107,11 @@ export interface AddColumnParams {
   dataType: string;
   isRequired: boolean;
   defaultValue?: string | number | boolean | null;
+  /**
+   * Where the column lands. Omit to append at the end; pass an existing
+   * column's order to insert THERE (the caller renumbers the columns after it).
+   */
+  fieldOrder?: number;
 }
 
 export interface AddColumnResult {
@@ -302,6 +317,9 @@ export async function addColumn(
       p_data_type: normalizedDataType,
       p_is_required: isRequired,
       p_default_value: formattedDefaultValue,
+      ...(typeof params.fieldOrder === "number"
+        ? { p_field_order: params.fieldOrder }
+        : {}),
     });
 
     if (error) {

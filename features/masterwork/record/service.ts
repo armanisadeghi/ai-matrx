@@ -52,6 +52,15 @@
 import { supabase } from "@/utils/supabase/client";
 import { associationsService } from "@/features/scopes/service/associationsService";
 import { parseRecordingOrigin } from "@/features/audio/recordingOrigin";
+// THE AUTHORSHIP READER. `chat.message.content` on a user row is the whole
+// provider payload (agent-definition seed + resolved variables + typed words);
+// `user_content` is the pristine human half. Everything this file counts or
+// quotes as the Expert's own words goes through these.
+import {
+  HUMAN_AUTHORED_MESSAGE_COLUMNS,
+  messageContentToText,
+} from "@/features/agents/utils/human-authored-text";
+import { summariseExpertTurns } from "./format";
 import { callApi } from "@/lib/api/call-api";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import type { paths } from "@/types/python-generated/api-types";
@@ -223,38 +232,19 @@ export interface ExpertCorpus {
 // Message content → plain text
 // =============================================================================
 
-interface MessagePart {
-  type?: string;
-  text?: string;
-}
-
 /**
- * `chat.message.content` is a JSONB array of typed parts. The Expert's words
- * are the `text` parts, joined in order. Non-text parts (attachments) are
- * surfaced separately as `upload` contributions, never flattened into prose.
+ * `chat.message.content` is a JSONB array of typed parts. The text parts,
+ * joined in order. Non-text parts (attachments) are surfaced separately as
+ * `upload` contributions, never flattened into prose.
+ *
+ * 🚨 THIS IS NOT "WHAT THE EXPERT SAID". On a `role: 'user'` row, `content` is
+ * the complete provider payload — the agent definition's own seeded user turn
+ * and the resolved launch variables merged in with the human's typed words.
+ * Anything that COUNTS or QUOTES the Expert must go through
+ * `humanAuthoredText` / `humanAuthoredTurns` instead. Re-exported here only so
+ * the Record's existing callers keep one import site.
  */
-export function messageContentToText(content: unknown): string {
-  if (typeof content === "string") return content;
-  if (!Array.isArray(content)) return "";
-  return content
-    .map((part) => {
-      if (typeof part === "string") return part;
-      if (part && typeof part === "object") {
-        const p = part as MessagePart;
-        if (typeof p.text === "string") return p.text;
-      }
-      return "";
-    })
-    .filter(Boolean)
-    .join("\n\n")
-    .trim();
-}
-
-function firstLine(text: string, max = 140): string | null {
-  const line = text.split("\n").map((l) => l.trim()).find(Boolean);
-  if (!line) return null;
-  return line.length > max ? `${line.slice(0, max - 1)}…` : line;
-}
+export { messageContentToText };
 
 // =============================================================================
 // The relationship
@@ -420,7 +410,15 @@ interface UserMessageRow {
   id: string;
   conversation_id: string;
   position: number;
+  /** The complete provider payload. NEVER read directly — see `user_content`. */
   content: unknown;
+  /**
+   * `chat.message.user_content` — the pristine human-authored half of the row,
+   * written by the server at persist time. This is the authorship record that
+   * separates "the Expert said this" from "the agent definition seeded this".
+   * NULL means no authorship was recorded for the row.
+   */
+  user_content: unknown;
   created_at: string;
 }
 
@@ -432,7 +430,7 @@ async function readExpertMessages(
   const { data, error } = await supabase
     .schema("chat")
     .from("message")
-    .select("id, conversation_id, position, content, created_at")
+    .select(`id, conversation_id, position, ${HUMAN_AUTHORED_MESSAGE_COLUMNS}, created_at`)
     .in("conversation_id", conversationIds)
     .eq("role", "user")
     .is("deleted_at", null)
@@ -516,16 +514,30 @@ export async function listRulebookInterviewsWithAccess(
   const interviews = (convRows ?? [])
     .map((row) => {
       const mine = messages.filter((m) => m.conversation_id === row.id);
-      const texts = mine.map((m) => messageContentToText(m.content));
+      // 🚨 THE ONE DERIVATION of "what you said". Every number and every quote
+      // on every Record surface comes from THIS array and nothing else.
+      //
+      // A `role: 'user'` row is not automatically a turn the Expert took, and
+      // its `content` is not automatically her words: the Masterwork Scout's
+      // `agent.definition` carries its own seeded user message ("Let's get
+      // started. Follow the mode you were given above, then ask your first
+      // concrete question."), which the server merges into the SAME row as the
+      // Expert's typed answer. Read off `content`, that sentence became her
+      // opening quote on a card that lives on her Rulebook page forever, and
+      // its 16 words were added to her word count (cold walk 2026-09-16, #4).
+      //
+      // `summariseExpertTurns` reads the authorship the server recorded
+      // (`chat.message.user_content`) and drops any row with no human words in
+      // it at all — a seeded kickoff the Expert never answered is a row in the
+      // table, never a thing she said. It is shared with every other surface
+      // that renders one of these lines; a second derivation here is a defect.
       return {
         conversationId: row.id,
         title: row.title,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         messageCount: row.message_count ?? mine.length,
-        expertTurnCount: mine.length,
-        expertChars: texts.reduce((sum, t) => sum + t.length, 0),
-        firstExpertLine: texts.length > 0 ? firstLine(texts[0]) : null,
+        ...summariseExpertTurns(mine),
         rulesProduced: rulesByConversation.get(row.id) ?? 0,
       } satisfies RulebookInterview;
     })

@@ -139,7 +139,8 @@ function mapLegacySiteSub(brandSeg: string, siteSeg: string, sub: string): strin
   const suffix = query ? `?${query}` : "";
   if (!home) {
     // Unknown section: keep it under the inventory branch so nothing 404s.
-    return `/marketing/${brandSeg}/websites/${siteSeg}${path ? `/${path}` : ""}${suffix}`;
+    const normalizedPath = segments.join("/");
+    return `/marketing/${brandSeg}/websites/${siteSeg}${normalizedPath ? `/${normalizedPath}` : ""}${suffix}`;
   }
   const mapped = [home.slug, rest].filter(Boolean).join("/");
   const base = `/marketing/${brandSeg}/${home.branch}/${siteSeg}`;
@@ -345,6 +346,62 @@ export const marketingRoutes = {
     `/marketing/content-plan/${siteId}${view && view !== "tree" ? `?view=${view}` : ""}`,
   brandContentPlanSite: (brandId: string, siteId: string, view?: string) =>
     `/marketing/${brandId}/content/plan/${siteId}${view && view !== "tree" ? `/${view}` : ""}`,
+
+  // ── Topical map ───────────────────────────────────────────────────────
+  // The map is the Content section's HOME (placement decision 2026-09-16);
+  // the content plan above stays exactly where it is and becomes the map's
+  // production line.
+  /**
+   * The Content section's front door: this brand's maps.
+   *
+   * ⚠️ `/marketing/<brand>/content` was a `permanentRedirect` (HTTP 308) into
+   * the content plan until this screen shipped, and browsers cache a 308
+   * forever. Link the sidebar and every in-app entry point at
+   * {@link brandTopicalMapHome}'s `/content/map` form below so a stale cached
+   * redirect is never exercised.
+   */
+  brandContent: (brandId: string) => `/marketing/${brandId}/content`,
+  /** The same screen at an address no browser ever cached a 308 for. */
+  brandTopicalMapHome: (brandId: string) => `/marketing/${brandId}/content/map`,
+  /** One map's workspace — the outline view, which is the index. */
+  brandTopicalMap: (brandId: string, mapId: string) =>
+    `/marketing/${brandId}/content/map/${mapId}`,
+  /**
+   * One view of one map. Views are ROUTES, not tabs — the same shape the
+   * content plan uses — so selection and expansion must live in the topical-map
+   * Redux slice, never in component state.
+   */
+  brandTopicalMapView: (
+    brandId: string,
+    mapId: string,
+    view: "outline" | "table" | "graph" | "text" | "pages" | "history",
+    site?: string,
+  ) => {
+    const base = `/marketing/${brandId}/content/map/${mapId}`;
+    const path = view === "outline" ? base : `${base}/${view}`;
+    return site ? `${path}?site=${encodeURIComponent(site)}` : path;
+  },
+  /**
+   * The id door. Resolves the brand and redirects into the workspace; renders
+   * standalone read-only when the viewer can read the map but not its brand.
+   * This is the value of `platform.shareable_resource_registry.url_path_template`
+   * for `seo_topical_map`.
+   */
+  topicalMapDoor: (mapId: string) => `/marketing/topical-maps/${mapId}`,
+  /**
+   * The brand-free START door. A research topic belongs to an organization,
+   * never to a brand, and a site can lack a brand context at its call site, so
+   * this page picks the brand first and then lands on that brand's home in
+   * start mode. Every screen that needs it comes here (CONTRACTS §2) — never a
+   * hand-built literal.
+   */
+  topicalMapStart: (options: { source?: string; researchTopicId?: string | null } = {}) => {
+    const params = new URLSearchParams();
+    if (options.researchTopicId) params.set("research", options.researchTopicId);
+    if (options.source) params.set("source", options.source);
+    const query = params.toString();
+    return query ? `/marketing/topical-maps/start?${query}` : "/marketing/topical-maps/start";
+  },
 
   // ── Legacy shim addresses (resolve + redirect; builders keep them only
   //    where the call site lacks the context for a canonical address) ─────

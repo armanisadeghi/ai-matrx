@@ -1,7 +1,14 @@
-import type {
-  GscClassSummaryRow,
-  GscSummaryRow,
+import {
+  formatCtr,
+  type GscClassSummaryRow,
+  type GscSummaryRow,
 } from "@/features/marketing/search-console/types";
+import { reportPlacementSentence } from "./report-presentation";
+
+export type ReportSummaryRow = Omit<GscSummaryRow, "avg_position" | "ctr"> & {
+  avg_position: number | null;
+  ctr: number | null;
+};
 
 export interface ReportFinding {
   id: string;
@@ -21,7 +28,7 @@ function percentChange(current: number, previous: number): string {
 }
 
 export function buildReportFindings(
-  summary: GscSummaryRow,
+  summary: ReportSummaryRow,
   classes: readonly GscClassSummaryRow[],
 ): ReportFinding[] {
   const visitChange = summary.clicks - summary.cmp_clicks;
@@ -47,9 +54,11 @@ export function buildReportFindings(
         : businessClicks > 0
           ? "High-value search visits held steady while the rest of the traffic mix moved around them."
           : "No visits were classified as high-value in this period, so the traffic total should not be treated as business growth.";
-  const ctrPerHundred = summary.ctr * 100;
+  const ctrPerHundred = summary.ctr === null ? null : summary.ctr * 100;
   const visibilityFinding =
-    ctrPerHundred >= 5
+    ctrPerHundred === null
+      ? "Google reported appearances without enough click-through data to calculate a reliable visit rate."
+      : ctrPerHundred >= 5
       ? "The site is turning a healthy share of Google appearances into visits."
       : "The site appears in Google far more often than people choose it, leaving a clear click-through opportunity.";
 
@@ -75,8 +84,9 @@ export function buildReportFindings(
     {
       id: "visibility",
       finding: visibilityFinding,
-      evidence: `${ctrPerHundred.toFixed(1)} visits per 100 Google appearances · usually around result #${summary.avg_position.toFixed(1)}`,
-      tone: ctrPerHundred >= 5 ? "positive" : "warning",
+      evidence: `${formatCtr(summary.ctr)} click-through rate · ${reportPlacementSentence(summary.avg_position)}`,
+      tone:
+        ctrPerHundred !== null && ctrPerHundred >= 5 ? "positive" : "warning",
     },
   ];
 }

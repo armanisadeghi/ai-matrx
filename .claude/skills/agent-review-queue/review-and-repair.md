@@ -3,7 +3,7 @@ type: Reference
 title: "agent-review-queue — review, claim, and repair"
 description: "Browser isolation, the one-item-per-run review worker, atomic claim and ownership handoff SQL, and PASS/FAIL/repair evidence; the skill sends you here before reviewing, claiming, verifying, or repairing a review-queue row. Companion to the agent-review-queue skill."
 tags: [agent-review-queue, skills, review-worker]
-timestamp: 2026-09-10T00:00:00Z
+timestamp: 2026-09-15T00:00:00Z
 ---
 
 # agent-review-queue — review, claim, and repair
@@ -16,12 +16,21 @@ timestamp: 2026-09-10T00:00:00Z
 
 ## Codex Browser isolation — mandatory for every automated review
 
-**Use an isolated browser first**, preferably Codex's built-in Browser with its own
-signed-in profile. Computer Use and other browser tools are allowed. If the isolated
-browser cannot complete the task (for example, a required account is signed in only
-in Arman's browser, or no isolated browser is available), use Arman's browser in a
-**new tab**. This fallback is pre-authorized; do not ask again just to switch browsers.
-Never navigate, control, or close a tab Arman is using. Close only your own tabs/groups.
+**Use an isolated browser for every review**, preferably Codex's built-in Browser with
+its own signed-in profile. Computer Use and other browser tools may control that
+isolated browser. Never use Arman's browser as a testing or availability fallback: a
+matching URL, signed-in session, unavailable isolated browser, or convenience is not
+authorization. Use another agent-owned harness or report the blocker.
+
+Arman's browser is reserved for work that must be done **ON ARMAN'S BEHALF** in his
+personal identity, such as reading his email or managing an account specifically as
+him. Before using it even then, check whether approved access can be completed in the
+isolated browser through AI Matrx Vault values, a brokered integration, or other
+agent-owned credentials; prefer that route. Use his browser only when the current
+request explicitly or inherently places his personal identity/session in scope.
+Otherwise ask before opening it. Permission never carries between tasks, accounts,
+browsers, or tabs. When authorized and unavoidable, open a new tab, never touch a tab
+he is using, and close only the tabs/groups you created.
 
 - Read the available browser tool's documentation and explicitly select its isolated
   browser where supported. No particular tool name, skill, or API is required.
@@ -45,13 +54,13 @@ Never navigate, control, or close a tab Arman is using. Close only your own tabs
   on success, failure, or blockage. Never close a tab that predates the run.
 
 Production review does not require a localhost preview. Start or reuse the managed preview
-only when a repair needs local testing, after reading the repository's preview rules and
-checking its status. A running PID/root identifies a process, not its task owner. Coordinate
-with the active owner before reuse or restart; repair a proven orphan through the managed
-lifecycle. `preview:start` can reuse a same-root server and is not a task-level Browser lock.
-Never stop another task's preview. On exit close only this run's tabs, restore changed viewport
-settings, and stop a preview only if this run owns it; check cleanup without demanding another
-owner's preview disappear.
+only when a repair needs local testing, after checking its status and the repository's lifecycle.
+Routine managed stop/install/start is pre-authorized even when another task started the server;
+do it yourself without asking Arman or waking peer tasks. Preserve source edits and application
+data. Arman's 2026-09-15 ruling supersedes the former ban on restarting another task's preview:
+“you can always restart” and “Never do that again!!!!!!!!!!” about stopping work for permission.
+On exit close only this run's tabs and restore changed viewport settings. Do not stop a healthy
+shared preview merely for cleanup.
 
 Follow the browser selection rule above and prove the admin session before claiming a review row. While
 recovering access, continue safe prerequisite repair; do not label routine authentication
@@ -153,6 +162,9 @@ with candidate as materialized (
     and queue.metadata->'triage'->'required_tools' @> '["browser"]'::jsonb
     and not (queue.metadata->'triage'->'required_tools' @> '["human_input"]'::jsonb)
     and queue.metadata->'triage'->'assignment'->>'state' = 'ready'
+    -- A run never re-claims a row it just returned: FAIL leaves the owner in place and
+    -- changes-requested rows rank first, so without this line the next claim grabs it back.
+    and coalesce(queue.metadata->'triage'->'assignment'->>'owner', '') <> '<stable agent/task label>'
   order by
     case queue.status
       when 'human_changes_requested' then 1

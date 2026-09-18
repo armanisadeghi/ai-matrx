@@ -40,9 +40,14 @@ import type {
   SearchAndScrapeRequest,
   SearchAndScrapeLimitedRequest,
   ScrapedResult,
+  ScrapeEngine,
   SearchResult,
   SearchResultItem,
 } from "@/features/scraper/types/scraper-api";
+import { asScrapeEngine, asContentWarning } from "@/features/scraper/types/scraper-api";
+import type { ContentWarning } from "@/features/scraper/types/scraper-api";
+import { readLadderOutcome } from "@/features/capture-ladder/ladderOutcome";
+import type { LadderOutcome } from "@/features/capture-ladder/types";
 
 /** Standalone scraper service mounts the package router below `/api`. */
 export function scraperServiceEndpoint(endpoint: string): string {
@@ -95,6 +100,44 @@ export interface ScraperResult {
   mainImage: string | null;
   metadata: { execution_time_ms?: number; [key: string]: unknown };
   scrapedAt: string;
+  /**
+   * Which engine actually produced this content — `null` when the backend did
+   * not say (every response older than 2026-09-17). Never guessed: a surface
+   * shows the provenance line only when this is non-null.
+   */
+  engine: ScrapeEngine | null;
+  /**
+   * True when the plain HTTP fetch failed and the server browser was used
+   * instead. `null` when the backend did not say.
+   */
+  escalated: boolean | null;
+  /** The named reason we escalated (e.g. "cloudflare_block"), when given. */
+  escalationReason: string | null;
+  /**
+   * The escalation reason already worded as a plain sentence — preferred over
+   * `escalationSentence(escalationReason)` when the backend sent one. `null`
+   * when the backend did not say (every response older than 2026-09-17, and
+   * any row where `escalated` is not `true`).
+   */
+  escalationNote: string | null;
+  /** Set only when this row succeeded but its content is suspect. */
+  contentWarning: ContentWarning | null;
+  /** Character count the backend computed directly, when it sent one. */
+  contentChars: number | null;
+  /** True when a configured proxy was skipped/bypassed for this row. */
+  proxyBypassed: boolean | null;
+  /**
+   * THE CAPTURE LADDER's verdict on this row — which rungs ran, which one comes
+   * next and why, or why nothing does. `null` when the backend said nothing
+   * about the ladder at all, which is every response older than the ladder
+   * build. See `features/capture-ladder/ladderOutcome.ts` and
+   * `common-docs/projects/acquisition-frontier/extension-ladder/CONTRACT.md` §2.
+   *
+   * Never inferred from `escalated`/`escalationReason`: those describe rung 1 →
+   * rung 2 only, and guessing the rest on the client is exactly how a rung gets
+   * skipped.
+   */
+  ladder: LadderOutcome | null;
 }
 
 export interface ScraperApiState {
@@ -331,6 +374,20 @@ function createStreamCtx(): StreamCtx {
   };
 }
 
+/**
+ * One row of a batch (multi-URL) scrape — the shape the `/scraper/batch`
+ * surface renders one table row from. Unlike `scrapeUrls`, a batch NEVER
+ * throws on one bad URL and loses the rest: every row lands here, success or
+ * failure, in arrival order.
+ */
+export interface BatchScrapeRow {
+  url: string;
+  success: boolean;
+  result: ScraperResult | null;
+  /** Plain-English reason, present only when `success` is false. Never a stack trace or raw JSON. */
+  failureMessage: string | null;
+}
+
 export interface UseScraperApiReturn extends ScraperApiState {
   /** Structured failure report (JSON-serializable). Only set when hasError. */
   errorDiagnostics: ScraperApiErrorDiagnostics | null;
@@ -360,6 +417,18 @@ export interface UseScraperApiReturn extends ScraperApiState {
     urls: string[],
     options?: Partial<QuickScrapeRequest>,
   ) => Promise<ScraperResult[] | null>;
+  /**
+   * Batch scrape for a surface that renders one row per URL. ONE request
+   * carries the whole list (the backend streams one envelope per page); a
+   * bad row never aborts the others — `onRow` fires as each row lands, in
+   * arrival order, whether it succeeded or failed. Never touches the shared
+   * `data`/`error` state that `scrapeUrl` owns.
+   */
+  scrapeUrlsBatch: (
+    urls: string[],
+    onRow: (row: BatchScrapeRow) => void,
+    options?: Partial<QuickScrapeRequest>,
+  ) => Promise<BatchScrapeRow[]>;
   search: (
     request: SearchKeywordsRequest,
   ) => Promise<SearchResultItem[] | null>;
@@ -428,6 +497,12 @@ async function consumeScrapeStream(
     metadata: Record<string, unknown>;
   },
   signal?: AbortSignal,
+  /**
+   * Called with EXACTLY the rows newly appended by one `onData` event, in
+   * arrival order — the batch surface's per-URL progress. A page that only
+   * wants the final array (every other caller) leaves this unset.
+   */
+  onRowsAppended?: (newRows: Array<Record<string, unknown>>) => void,
 ): Promise<{
   results: Array<Record<string, unknown>>;
   metadata: Record<string, unknown>;
@@ -495,10 +570,14 @@ async function consumeScrapeStream(
       },
 
       onData: (data: TypedDataPayload | Record<string, unknown>) => {
+        const previousCount = results.length;
         const extracted = extractResultsFromData(data, results, metadata);
         results = extracted.results;
         metadata = extracted.metadata;
         syncPartial();
+        if (onRowsAppended && results.length > previousCount) {
+          onRowsAppended(results.slice(previousCount));
+        }
       },
 
       onError: (data: ErrorPayload) => {
@@ -663,6 +742,27 @@ function mapToScraperResult(
     mainImage: (raw.main_image as string) || null,
     metadata: resultMetadata,
     scrapedAt: (raw.scraped_at as string) || new Date().toISOString(),
+    // Provenance — read only what the backend actually sent. An absent or
+    // unrecognized value stays null so the UI can say nothing rather than
+    // claim an engine that never ran.
+    engine: asScrapeEngine(raw.engine),
+    escalated: typeof raw.escalated === "boolean" ? raw.escalated : null,
+    escalationReason:
+      typeof raw.escalation_reason === "string" && raw.escalation_reason.trim()
+        ? raw.escalation_reason.trim()
+        : null,
+    escalationNote:
+      typeof raw.escalation_note === "string" && raw.escalation_note.trim()
+        ? raw.escalation_note.trim()
+        : null,
+    contentWarning: asContentWarning(raw.content_warning),
+    contentChars:
+      typeof raw.content_chars === "number" && Number.isFinite(raw.content_chars)
+        ? raw.content_chars
+        : null,
+    proxyBypassed:
+      typeof raw.proxy_bypassed === "boolean" ? raw.proxy_bypassed : null,
+    ladder: readLadderOutcome(raw),
   };
 }
 
@@ -1108,6 +1208,139 @@ export function useScraperApi(): UseScraperApiReturn {
   );
 
   // --------------------------------------------------------------------------
+  // scrapeUrlsBatch — one row per URL, streamed in, never abandons the batch
+  // on one bad row. See BatchScrapeRow / UseScraperApiReturn.scrapeUrlsBatch.
+  // --------------------------------------------------------------------------
+  const scrapeUrlsBatch = useCallback(
+    async (
+      urls: string[],
+      onRow: (row: BatchScrapeRow) => void,
+      options: Partial<QuickScrapeRequest> = {},
+    ): Promise<BatchScrapeRow[]> => {
+      setIsLoading(true);
+      setStatusMessage(null);
+
+      const rows: BatchScrapeRow[] = [];
+      const toRow = (raw: Record<string, unknown>): BatchScrapeRow => {
+        const url =
+          (raw.url as string) || (raw.response_url as string) || "";
+        if (isRawScrapeRowFailed(raw)) {
+          const failureMessage =
+            typeof raw.failure_message === "string" &&
+            (raw.failure_message as string).trim()
+              ? (raw.failure_message as string).trim()
+              : classifyScrapeFailure({
+                  error: rawScrapeRowFailureMessage(raw),
+                  diagnostics: null,
+                }).title;
+          return { url, success: false, result: null, failureMessage };
+        }
+        try {
+          return {
+            url,
+            success: true,
+            result: mapToScraperResult(raw, url, {}),
+            failureMessage: null,
+          };
+        } catch (mapErr) {
+          return {
+            url,
+            success: false,
+            result: null,
+            failureMessage: classifyScrapeFailure({
+              error: extractErrorMessage(mapErr),
+              diagnostics: null,
+            }).title,
+          };
+        }
+      };
+
+      try {
+        const signal = newSignal();
+        const body: QuickScrapeRequest = {
+          urls,
+          use_cache: true,
+          get_text_data: true,
+          get_overview: true,
+          get_links: true,
+          get_main_image: true,
+          get_organized_data: false,
+          get_structured_data: false,
+          get_content_filter_removal_details: false,
+          include_highlighting_markers: false,
+          include_media: false,
+          include_media_links: false,
+          include_media_description: false,
+          include_anchors: false,
+          anchor_size: 100,
+          ...options,
+        };
+
+        await api.waitForAuth();
+        const response = await api.post(
+          scraperServiceEndpoint(ENDPOINTS.scraper.quickScrape),
+          body,
+          signal,
+        );
+        await consumeScrapeStream(
+          response,
+          onStatus,
+          undefined,
+          undefined,
+          signal,
+          (newRawRows) => {
+            for (const raw of newRawRows) {
+              const row = toRow(raw);
+              rows.push(row);
+              onRow(row);
+            }
+          },
+        );
+        return rows;
+      } catch (err) {
+        // The whole request failed before any row could be parsed (network
+        // down, auth refused, stream truncated with zero rows) — every
+        // requested URL becomes its own failed row rather than a page that
+        // silently shows nothing.
+        const failureMessage = classifyScrapeFailure({
+          error: err,
+          diagnostics: null,
+        }).title;
+        captureScraperError(
+          err,
+          makeScraperDiagnostics(
+            "scrapeUrls",
+            "api.post",
+            err,
+            snapshotReceived(
+              [],
+              { results: [], metadata: {} },
+              scraperServiceEndpoint(ENDPOINTS.scraper.quickScrape),
+              { requestedUrls: [...urls] },
+            ),
+          ),
+        );
+        const alreadyReported = new Set(rows.map((r) => r.url));
+        for (const url of urls) {
+          if (alreadyReported.has(url)) continue;
+          const row: BatchScrapeRow = {
+            url,
+            success: false,
+            result: null,
+            failureMessage,
+          };
+          rows.push(row);
+          onRow(row);
+        }
+        return rows;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [api, newSignal, onStatus],
+  );
+
+  // --------------------------------------------------------------------------
   // search — keyword search only, no scraping
   // --------------------------------------------------------------------------
   const search = useCallback(
@@ -1467,6 +1700,7 @@ export function useScraperApi(): UseScraperApiReturn {
     scrapeUrlSilent,
     scrapeUrlRaw,
     scrapeUrls,
+    scrapeUrlsBatch,
     search,
     searchAndScrape,
     searchAndScrapeLimited,

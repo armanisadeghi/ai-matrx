@@ -46,7 +46,6 @@ import {
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import LoadingSpinner from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { SERIAL_OBSERVATION_TIMELINE_KIND } from "@/features/content-ir/kinds/serial-observation-timeline";
@@ -54,6 +53,10 @@ import type { paths } from "@/types/python-generated/api-types";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
 import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
+import {
+  durableRunDialogOnOpenChange,
+} from "@/lib/durable-run/durableRunDialogClose";
+import { DurableRunAgain } from "@/lib/durable-run/DurableRunAgain";
 
 /**
  * Served by `aidream/services/distillation/unfolding_ingest.py`.
@@ -230,6 +233,25 @@ export function buildTimelineRequest(input: {
   };
 }
 
+import { createSittingStore, type SittingBase } from "../../sitting/sitting";
+import { useDialogSitting } from "../../sitting/useDialogSitting";
+import { SittingResumed } from "../../sitting/SittingResumed";
+import { RunStages } from "../RunStages";
+
+interface TimelineSitting extends SittingBase {
+  title: string;
+  text: string;
+  licence: string;
+  url: string;
+  published: string;
+  externalId: string;
+}
+
+const unfoldingSittings = createSittingStore<TimelineSitting>({
+  keyPrefix: "matrx.masterwork.unfolding.v1:",
+  isUsable: (sitting) => (sitting.text ?? "").trim().length > 0 || (sitting.title ?? "").trim().length > 0,
+});
+
 export function IngestTimelineDialog({
   open,
   onOpenChange,
@@ -248,6 +270,32 @@ export function IngestTimelineDialog({
   const [url, setUrl] = useState("");
   const [published, setPublished] = useState("");
   const [externalId, setExternalId] = useState("");
+  // A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17: every
+  // capture dialog on the Rulebook page lost typed work on a reload, silently).
+  const sitting = useDialogSitting<TimelineSitting>({
+    store: unfoldingSittings,
+    scopeId: rulebook.id,
+    active: open,
+    snapshot: { title, text, licence, url, published, externalId },
+    isWorthKeeping: (s) => (s.text ?? "").trim().length > 0 || (s.title ?? "").trim().length > 0,
+    apply: (kept) => {
+      setTitle(kept.title ?? "");
+      setText(kept.text ?? "");
+      setLicence(kept.licence ?? "");
+      setUrl(kept.url ?? "");
+      setPublished(kept.published ?? "");
+      setExternalId(kept.externalId ?? "");
+    },
+    clearScreen: () => {
+      setTitle("");
+      setText("");
+      setLicence("");
+      setUrl("");
+      setPublished("");
+      setExternalId("");
+    },
+  });
+
 
   const run = useMasterworkRun<TimelineIngestSummary>({
     // 🚨 `unfolding`, NOT `timeline` (Bugbot, 2026-09-13). `IngestSourceDialog`
@@ -271,7 +319,10 @@ export function IngestTimelineDialog({
   // reach the page behind this dialog — ONCE per completed run, never once per
   // render (the host passes a new inline callback every time, and the reload
   // it starts re-renders this dialog). See `useRunResultOnce`.
-  useRunResultOnce(run, onIngested);
+  useRunResultOnce(run, () => {
+    sitting.forget();
+    onIngested?.();
+  });
 
   useEffect(() => {
     if (run.error) toast.error(run.error);
@@ -285,18 +336,36 @@ export function IngestTimelineDialog({
   // latch would hide the next live run behind a closed dialog with Start still
   // armed, and the Expert would pay for the same unfold twice. The sibling
   // ingest dialogs already clear it on the same edge (Bugbot, 2026-09-13).
+  // 🚨 IT ASKS `run.surfacing`, NEVER `run.running` (cold walk 7, finding 3,
+  // 2026-09-17). `running` is also true for `"rejoining"` — the state a
+  // RESTORED receipt sits in — and the "I closed this" half used to be a
+  // per-MOUNT ref, so a completed sitting the Expert had closed reopened
+  // itself on later, unrelated visits to the Rulebook page, on top of real
+  // controls, once claiming a finished run was "still going… reconnecting".
+  // `surfacing` is false for a run whose receipt records the dismissal, and
+  // the receipt outlives the mount exactly as the run does.
   const reopenedRef = useRef(false);
   useEffect(() => {
-    if (!run.running) {
+    if (!run.surfacing) {
       reopenedRef.current = false;
       return;
     }
     if (reopenedRef.current || open) return;
     reopenedRef.current = true;
     onOpenChange(true);
-  }, [open, run.running, onOpenChange]);
+  }, [open, run.surfacing, onOpenChange]);
 
   const reset = () => run.reset();
+
+  /**
+   * Back to this lane's own first step for the NEXT case — see
+   * `DurableRunAgain` and cold walk 6, finding 7.
+   */
+  const again = () => {
+    reset();
+    setTitle("");
+    setText("");
+  };
 
   const launch = async () => {
     const built = buildTimelineRequest({
@@ -319,13 +388,24 @@ export function IngestTimelineDialog({
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (running) return;
-        if (!next) reset();
-        onOpenChange(next);
-      }}
+      // THE CLOSE ALWAYS CLOSES. This used to be `if (running) return;`,
+      // which made the X, Escape and an outside click all inert while a run
+      // was running OR rejoining — i.e. exactly when a user whose live view
+      // had been lost was trying to get out. The run is server-owned; closing
+      // never stopped it, so the guard bought nothing and cost the exit.
+      onOpenChange={durableRunDialogOnOpenChange({
+        running,
+        reset,
+        onOpenChange: (next) => {
+          // The Expert walked away from this run — recorded on the RECEIPT,
+        // so a later visit does not drag the same sitting back on screen.
+        if (!next) run.dismiss();
+          onOpenChange(next);
+        },
+        runLabel: "Reading your case",
+      })}
     >
-      <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="matrx-touch-targets max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Add a case that unfolded over time</DialogTitle>
           <DialogDescription>
@@ -335,6 +415,14 @@ export function IngestTimelineDialog({
             you did next. That order is the part the other ways throw away.
           </DialogDescription>
         </DialogHeader>
+
+        {sitting.resumed ? (
+          <SittingResumed
+            what="the case you were writing out"
+            onDiscard={sitting.discard}
+            onAcknowledge={sitting.acknowledge}
+          />
+        ) : null}
 
         {summary ? (
           <div className="space-y-3">
@@ -376,27 +464,25 @@ export function IngestTimelineDialog({
                   </Link>
                 </Button>
               )}
+              {/* 🚨 NO DEAD ENDS (cold walk 6, finding 7): every other
+                  control here LEAVES, and the likeliest next thing a person
+                  wants is another one. */}
+              <DurableRunAgain label="Add another case" onAgain={again} />
             </div>
           </div>
         ) : running || run.stages.length > 0 ? (
           <div className="space-y-2">
-            <div className="max-h-52 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/40 p-3">
-              {run.stages.map((line, i) => (
-                <p key={i} className="text-xs text-muted-foreground">
-                  {line}
-                </p>
-              ))}
-            </div>
-            {running ? (
-              <div className="flex items-start gap-2">
-                <LoadingSpinner size="sm" />
-                <p className="text-xs text-muted-foreground">
-                  {rejoining
-                    ? "Picking this back up — it kept reading while you were away."
-                    : "Reading the case step by step — this takes a minute."}
-                </p>
-              </div>
-            ) : null}
+            {/* The hand-written "this takes a minute" is gone: the promise is
+                now measured from the case this person actually handed over,
+                and it stops promising once overtaken. */}
+            <RunStages
+              run={{ ...run, running }}
+              waitingMessage={
+                rejoining
+                  ? "Picking this back up — it kept reading while you were away."
+                  : "Reading the case step by step…"
+              }
+            />
           </div>
         ) : (
           <div className="space-y-3">

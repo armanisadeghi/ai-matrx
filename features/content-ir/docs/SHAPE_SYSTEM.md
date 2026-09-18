@@ -66,8 +66,8 @@ Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/cont
 > stand as the 2026-07-15 record.
 
 - `NodeSpec.input_kind/output_kind` and per-node authored overrides `data.input_kind`/`data.output_kind` exist. As of 2026-07-15: 0/126 registered node types declare an input kind, 37/126 declare an output kind, 0/88 actions declare either, and no live workflow node has an authored override.
-- Scheduler behavior is implemented for declarations that exist: input kind gates pre-execute (fatal, per-field); output drift logs loudly and is non-fatal; kind and verdict fields are carried on completion events/outcomes. An undeclared or skipped check remains null, not passed.
-- Catalog runtime: `matrx_graph.kinds` (`get_kind`/`validate_against_kind`/`invalidate_kind_catalog_cache`, loud-fail-open). LLM binding: `matrx_ai.kinds.response_format_for_kind(slug)` (portable strict schema via the lint gate).
+- Scheduler behavior is implemented for declarations that exist: input kind gates pre-execute (fatal, per-field); output drift logged loudly and was non-fatal (*corrected 2026-09-15: since 2026-08-26 `workflow_io` enforcement fails the step on an output violation, `KindContractViolation`, and an unregistered or schema-less bound kind fails admission*); kind and verdict fields are carried on completion events/outcomes. An undeclared or skipped check remains null, not passed.
+- Catalog runtime: `matrx_graph.kinds` (`get_kind`/`validate_against_kind`/`invalidate_kind_catalog_cache`; fails open only when the catalog is unreachable). LLM binding: `matrx_ai.kinds.response_format_for_kind(slug)` (portable strict schema via the lint gate).
 - Authoring rule: **read `packages/matrx-graph/docs/node-authoring.md` §"Declare your I/O as platform kinds" before adding a node.**
 
 ## Input components (D1, live 2026-07-15)

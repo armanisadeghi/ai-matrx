@@ -183,8 +183,49 @@ the answer through `question_desk(action='list_answers')` on resume, or the boun
 `wait_for_answers` when it has nothing else to do; these are how it learns without the desk's
 SendMessage/resume step reaching it.
 
+**The answer already moved before you got here (2026-09-14).** Within one dispatcher sweep of any
+answer, the server's follow-through has acted and stamped the row's `status_note`: a confirmed
+review row reads "confirmed — stands" and is delivered; an overturned one reads "coming back as a
+question" — a real `mode=ask` question (`<slug>--overturned`, his words verbatim) was refiled
+into the same interview and a Work Loop item `qd:overturn:<id>` waits in the campaign
+`question-desk`; an own-words / recommendation / skip answer reads "recording…" with a Work Loop
+item `qd:record:<id>` carrying the verbatim ruling and the node, and flips to "recorded" when that
+item succeeds; a hand-back reads "handed back — the desk decides" with `qd:decide:<id>`.
+
+🚨 **THE CAMPAIGN IS THIS STEP'S WORK — the platform drains only the `qd:record` half.** Since
+2026-09-16 the server's `question_desk_drain` system task (knob-gated: `question_desk.drainer_enabled`,
+approved by Arman in the admin UI, not by any agent) claims every `qd:record:*` item itself — it
+writes the ruling verbatim into the owning node's DECISIONS.md, flips the row to "recorded", and
+answers the verifier — so a row saying "recording…" while that knob is off means the drainer is
+waiting for its approval, not that nobody exists. **`qd:overturn:*` and `qd:decide:*` are never
+claimed by the platform**: research and a decision need an agent with the repositories in front
+of it, and that agent is THIS run (or a Work Loop worker). Never create a schedule for this duty
+yourself ([no unapproved schedules](/policies/no-unapproved-schedules.md)) — measured 2026-09-14:
+ten `qd:*` items `pending`, `attempts = 0`, the oldest seven hours old, while every one of those
+rows told its person "recording…". Drain the agent half BEFORE round 1 and again before you
+close, with the `work_loop` MCP tool, item by item (claim by exact `canonical_key` — a generic
+claim may hand you a `qd:record` item the drainer would have closed for free):
+
+1. `work_loop(action='status')` → find the campaign under `campaigns`, slug `question-desk`; note
+   its `campaign_id` and how many items are claimable.
+2. `work_loop(action='claim', campaign_id=…)` → one item. The item carries everything it needs:
+   the verbatim ruling, the node, the question id, the target URL.
+3. Do it, for real: research the refiled question to `asked` (`question_desk(action='update_question')`
+   then `mark_asked`); write the ruling into the owning node's DECISIONS.md and commit it; decide
+   the handed-back one under the ask-the-boss law.
+4. `question_desk(action='mark_delivered')` on the question with `recorded_in` = the file path or
+   the new question id — this is the item's closing step, never a separate pass.
+5. `work_loop(action='complete', item_id=…)` with the evidence (the commit SHA and path, or the
+   `get_interview` output showing the researched row). The server's next sweep turns that row's
+   note from "recording…" to "recorded" on its own.
+6. Repeat until `status` shows no claimable item. An item you cannot finish is `fail`ed with the
+   reason, never left `pending` — a pending item is a person's answer sitting in a queue nobody
+   is watching, and the interview screen now SAYS so ("N answers are waiting for an agent to
+   record them"), so silence is not an option.
+
 Completion: every answered row is delivered or has a named hand-off line for Arman; the ledger
-holds only genuinely open rows.
+holds only genuinely open rows; **`work_loop(action='status')` on `question-desk` shows zero
+claimable items and the interview screen shows no "waiting for an agent" line.**
 
 ## Step 6 — close the session
 
@@ -206,6 +247,15 @@ the counts.
 - Create a schedule for this duty.
 
 ## Changelog
+
+- **2026-09-16 (the platform records rulings)** — `qd:record` items are closed by the server's
+  `question_desk_drain` task (QD-029); step 5's campaign drain is now the `qd:overturn` /
+  `qd:decide` half only.
+
+- **2026-09-14 (answers become work)** — Step 5 opens with the server's follow-through: every
+  answer is acted on within one sweep and lands as a Work Loop item in the `question-desk`
+  campaign, which the desk's run drains first. The two HTML pages under
+  `operations/question-desk/` are deleted (live verification passed 2026-09-13; QD-016).
 
 - **2026-09-12 (in-app Question Desk)** — Step 3 now creates the interview and its questions over
   the `question_desk` MCP tool and sends Arman the admin URL instead of a built page. Step 4 notes

@@ -178,6 +178,38 @@ wrapper added in another lane's file.
 
 ## Change log
 
+- **2026-09-14 (DD-221 — an HR exception is written through HR's own door, under HR's own gate, into HR's own audit)** — the exceptions panel DD-203 mounted on `/hr/settings/*` wrote through `platform.knob_override_set`, which is owner/admin-gated and files nothing in `hr.access_audit`. Live, on `hr.employees.adjusted_service_date_rule` at the pay-group rung: a real HR admin who is not an org owner/admin was REFUSED there and ACCEPTED by `hr_knob_set` (with its audit row), and an org owner's write through the platform door left the HR audit trail untouched. The namespace now declares its doors (`platform.knob_write_door`: `hr.` → `public.hr_knob_set` / `public.hr_knob_clear`, authority `hr_settings_gate`), the screen asks `platform.knob_write_door_for` who may write instead of reading `org_role`, and `platform.knob_override_set` refuses an `hr.` key by name rather than forwarding. `hr_knob_clear` now names the cleared scope row in its audit row, as `hr_knob_set` already did. Migration `migrations/dd221_the_write_goes_through_the_keys_own_door.sql`.
+
+- **2026-09-14 (DD-203 — an HR setting's exceptions are set here, not nowhere)** —
+  `/hr/settings/*` now mounts the platform's ONE per-rung override picker
+  (`<KnobRungOverrides>`, via `features/hr/settings/components/HrKnobExceptions.tsx`),
+  so an HR key that is `overridable_by` `employer_profile` / `pay_group` / `location`
+  can finally be excepted at those rungs by name. `<KnobRow>`'s old dashed box —
+  "a scope override is stored on the scope row itself, so it is set where that row
+  is edited", linking to pages that do not set one — is gone, and it is worth
+  knowing it never rendered: it was gated on `HrKnobPresentation.scopes`, which no
+  call site in this repo has ever supplied (nothing passes `presentation` to
+  `useHrKnobs`). So an HR key said NOTHING about its three sub-org rungs. That dead
+  optional field and its `HrKnobScopeRung` type are removed. `HrSettingsChrome`
+  mounts `<UniversalSettingsProvider target="organization">` once for the whole
+  surface, because the picker resolves its ladder from `platform.knob_index`;
+  `hr_knob_index` answers the ORGANIZATION rung and nothing below it, which is
+  exactly why HR exceptions had nowhere to live.
+  **A rung is offered only where a reader answers it.** Every `hr.*` knob is
+  resolved through `hr._knob(feature, key)` or `hr._hr_knob(feature, key, org,
+  default)`; neither takes a person, an employment or a location, so neither can
+  name a row-keyed rung. `migrations/dd203_hr_readers_name_the_rungs_hr_settings_offers.sql`
+  taught the two readers that DO hold a subject — `hr.rehire_service_dates` and
+  `hr.sync_membership_to_employment` — to name all three rungs inline (nearest wins:
+  location > pay group > employer profile > organization, proven end to end in the
+  file's own self-proof). For every other HR key the picker is ABSENT, which is the
+  honest state, and the 576 remaining pairs are named in
+  `scripts/settings-ladder-ui-unaddressed-baseline.json` with the reader that owes
+  them. **Writing an exception is owner/admin** (`platform.knob_override_set`'s own
+  gate), which is narrower than `hr_knob_set`'s HR-admin gate for the organization
+  rung — an HR admin who is not an org owner/admin sees standing exceptions
+  read-only and no add control. That asymmetry is real and recorded, not designed.
+
 - **2026-09-13 (law portal contract and scope labels)** — The rounding-bounds
   class schema has always required `max_increment_minutes` and `allowed_modes`, but
   the org-rule save door passed legacy configuration-validator names through to the

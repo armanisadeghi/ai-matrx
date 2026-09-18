@@ -17,6 +17,7 @@
 
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
   generateRouteManifest,
   unclassifiedPromisePages,
@@ -88,10 +89,10 @@ async function main() {
   for (const p of problems) console.log(`${color}  • ${p}${RESET}`);
   console.log(`${color}  Fix: pnpm route-manifest:generate${RESET}`);
   console.log("");
-  if (strict) process.exit(1);
+  if (strict) exitAfterDrain(1);
 }
 
 main().catch((err) => {
   console.error(err);
-  process.exit(1);
+  exitAfterDrain(1);
 });

@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/adminClient';
-import { ensureOrgIdServer } from '@/lib/organizations/personalOrg';
+import { resolveSystemOrgId } from '@/lib/organizations/systemOrg';
 import { sendAndLogSms } from '@/lib/sms/send';
 import { sendAdminMessageSms } from '@/lib/sms/notificationService';
 import { updateAllWebhookUrls } from '@/lib/sms/numbers';
@@ -91,7 +91,11 @@ export async function POST(request: NextRequest) {
           if (existingConv) {
             convId = existingConv.id;
           } else {
-            const organizationId = await ensureOrgIdServer(supabase, undefined);
+            // org-fallback-deliberate: an admin↔external-phone thread runs on
+            //   the PLATFORM's own Twilio number and has no tenant — it used to
+            //   land in the acting admin's personal workspace, where the next
+            //   admin could not see the conversation they are continuing.
+            const organizationId = await resolveSystemOrgId(adminSupabase);
             const { data: newConv } = await adminSupabase
               .schema('communication').from('sms_conversations')
               .insert({

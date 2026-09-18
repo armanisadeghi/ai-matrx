@@ -1649,6 +1649,11 @@ function WindowHeader({
   return (
     <div
       className={cn(
+        // 🚨 NEW-8 — the header is a CONTAINER, so a consumer's title/actions can
+        // answer the WINDOW's width instead of the viewport's (`sm:` cannot know
+        // a window is 360px on a 1440px screen — that is how D4 stayed invisible).
+        // The name is `window-header`; `lib/detail/core/headerGeometry.ts` holds it.
+        "@container/window-header",
         "relative flex items-center justify-between gap-1 px-2 py-1.5 min-h-[26px] z-20 shrink-0",
         "border-b border-border/50 bg-muted/40 select-none",
         isMaximized || isMinimized
@@ -1709,47 +1714,58 @@ function WindowHeader({
         )}
       </div>
 
-      {/* Open titles stay centered and may be interactive. Minimized titles use
-          the fixed plain-text branch and can never inherit consumer typography
-          or interaction from a rich titleNode. */}
-      <div
-        className={cn(
-          "absolute top-0 bottom-0 flex items-center pointer-events-none",
-          isMinimized
-            ? "left-20 right-2 justify-start"
-            : "inset-x-0 justify-center",
-        )}
-      >
-        {isMinimized ? (
+      {/* Minimized titles use the fixed plain-text branch in an absolute layer
+          (a minimized window draws no action cluster, so nothing can run under
+          it) and can never inherit consumer typography or interaction from a
+          rich titleNode. */}
+      {isMinimized ? (
+        <div className="absolute top-0 bottom-0 left-20 right-2 flex items-center justify-start pointer-events-none">
           <span
             className="block min-w-0 truncate text-[11px] leading-none font-semibold text-foreground/80"
             data-minimized-window-title
           >
             {minimizedTitle}
           </span>
-        ) : typeof title === "string" || title == null ? (
-          <span className="text-xs font-medium text-foreground/80 truncate px-16">
-            {title ?? ""}
-          </span>
-        ) : (
-          <div
-            className="pointer-events-auto flex min-w-0 max-w-full items-center overflow-hidden whitespace-nowrap px-16"
-            onPointerDown={(event) => {
-              const target = event.target;
-              if (!(target instanceof Element)) return;
-              if (
-                target.closest(
-                  'a, button, input, select, textarea, [role="button"], [role="menuitem"], [data-window-no-drag]',
-                )
-              ) {
-                event.stopPropagation();
-              }
-            }}
-          >
-            {title}
-          </div>
-        )}
-      </div>
+        </div>
+      ) : null}
+
+      {/* 🚨 D4 — Open titles stay in flow, and the action zones' REAL widths are
+          reserved by the flex row itself. This used to be an `absolute inset-x-0
+          justify-center` layer with `px-16` standing in for the space the
+          traffic lights and the icons occupy: a short title looked centred, and
+          a long one grew to `max-w-full` and was drawn UNDERNEATH the action
+          cluster — in the Detail window that put the record's type chip and its
+          own doors under the open-as icons (VERIFY-U-P1 D4, still open by
+          geometry at VERIFY-U-P1-R2). A flex child with `min-w-0` yields exactly
+          what its siblings need and truncates instead of overlapping, at every
+          window width, with no `sm:` breakpoint pretending to know a window's
+          size. The title is still centred — in the space that is actually free. */}
+      {!isMinimized && (
+        <div className="flex min-w-0 flex-1 items-center justify-center overflow-hidden">
+          {typeof title === "string" || title == null ? (
+            <span className="min-w-0 truncate text-xs font-medium text-foreground/80">
+              {title ?? ""}
+            </span>
+          ) : (
+            <div
+              className="flex min-w-0 max-w-full items-center overflow-hidden whitespace-nowrap"
+              onPointerDown={(event) => {
+                const target = event.target;
+                if (!(target instanceof Element)) return;
+                if (
+                  target.closest(
+                    'a, button, input, select, textarea, [role="button"], [role="menuitem"], [data-window-no-drag]',
+                  )
+                ) {
+                  event.stopPropagation();
+                }
+              }}
+            >
+              {title}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Right action zone */}
       <div className="flex items-center gap-1 z-10 shrink-0">

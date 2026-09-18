@@ -4,6 +4,11 @@ import type { RootState } from "@/lib/redux/store";
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { defaultScopeState, type ConversationHistoryScopeState } from "./types";
+import {
+  CONVERSATION_LANES,
+  normalizeLanes,
+  type ConversationLane,
+} from "./lanes";
 
 const selectConversationHistory = (state: RootState) =>
   state.conversationHistory;
@@ -12,6 +17,27 @@ const selectConversationHistory = (state: RootState) =>
 
 export const selectSourceFacets = (state: RootState) =>
   state.conversationHistory.sourceFacets;
+
+/** Per-lane conversation totals for the lane toggle badges. */
+export const selectLaneCounts = createSelector(
+  [selectSourceFacets],
+  (facets): Record<ConversationLane, number> => {
+    const counts = Object.fromEntries(
+      CONVERSATION_LANES.map((l) => [l, 0]),
+    ) as Record<ConversationLane, number>;
+    for (const f of facets) if (f.lane) counts[f.lane] += f.count;
+    return counts;
+  },
+);
+
+const selectStoredLanes = (state: RootState) =>
+  state.userPreferences.conversationFilters?.lanes;
+
+/** The viewer's enabled lanes (persisted preference, normalized). */
+export const selectConversationLanes = createSelector(
+  [selectStoredLanes],
+  (stored) => normalizeLanes(stored),
+);
 
 export const selectSourceFacetsStatus = (state: RootState) =>
   state.conversationHistory.sourceFacetsStatus;

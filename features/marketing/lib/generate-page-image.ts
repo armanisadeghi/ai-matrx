@@ -41,6 +41,7 @@
  */
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { launchAgentExecution } from "@/features/agents/redux/execution-system/thunks/launch-agent-execution.thunk";
 import { executeInstance } from "@/features/agents/redux/execution-system/thunks/execute-instance.thunk";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
@@ -176,7 +177,7 @@ export async function waitForAnswerText(
  */
 export type HeadlessRunTarget =
   | { agentId: string; mandateKey?: undefined }
-  | { mandateKey: string; agentId?: undefined };
+  | { mandateKey: AnyMandateKey; agentId?: undefined };
 
 export type HeadlessRunArgs = HeadlessRunTarget & {
   surfaceKey: string;
@@ -382,7 +383,7 @@ export type PageImageResult =
  * passed into the launch (that would drop the binding's settings half).
  */
 async function mandateGate(
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
 ): Promise<Extract<PageImageResult, { step: "mandate" }> | null> {
   try {
     await resolveMandate(mandateKey);

@@ -15,6 +15,9 @@ export interface MarkdownStreamProps {
   /** Optional task ID for streaming updates (legacy mode with Redux) */
   taskId?: string;
   requestId?: string;
+  /** Inclusive/exclusive source timeline range for one live transcript segment. */
+  streamSlotStart?: number;
+  streamSlotEnd?: number;
   /** Turn ID for DB-loaded turn rendering */
   turnId?: string;
   /** Conversation ID for DB-loaded turn rendering */

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CameraOff, Columns2 } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -16,7 +16,10 @@ import {
 import { SnapshotCompare } from "@/features/marketing/components/pages/SnapshotCompare";
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
-import { useMarketingTableState } from "@/features/marketing/data/query-state";
+import {
+  normalizeSnapshotAppendState,
+  useMarketingTableState,
+} from "@/features/marketing/data/query-state";
 import { useSnapshots } from "@/features/marketing/data/hooks";
 import {
   humanLines,
@@ -34,7 +37,14 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
   const table = useMarketingTableState({
     defaultSort: { id: "captured_at", direction: "desc" },
   });
-  const snapshots = useSnapshots(site.id, pageId, table.queryState);
+  const appendState = normalizeSnapshotAppendState(table.state);
+  const queryAppendState = normalizeSnapshotAppendState(table.queryState);
+  useEffect(() => {
+    if (table.state.page !== 1 || table.state.pageSize !== appendState.pageSize) {
+      table.replaceState(appendState);
+    }
+  }, [appendState, table]);
+  const snapshots = useSnapshots(site.id, pageId, queryAppendState);
   // Compare mode — pick any two snapshots; a third pick replaces the oldest
   // selection. The diff panel renders above the table on demand.
   const [compareIds, setCompareIds] = useState<string[]>([]);
@@ -221,10 +231,41 @@ export function SnapshotsTable({ pageId }: { pageId: string }) {
         isLoading={snapshots.isLoading}
         isFetching={snapshots.isFetching}
         query={{
-          mode: "controlled",
-          state: table.state,
-          totalItems: snapshots.data?.total ?? 0,
-          onStateChange: table.onStateChange,
+          mode: "controlled-append",
+          state: appendState,
+          onStateChange: (nextState) =>
+            table.onStateChange({
+              ...normalizeSnapshotAppendState(nextState),
+            }),
+          sourceProcessing: {
+            search: "source",
+            columnFilters: "source",
+            sort: "source",
+          },
+          pagination: {
+            queryKey: snapshots.pagination.queryKey,
+            rows: snapshots.pagination.rows,
+            loading: snapshots.pagination.loading,
+            error: snapshots.pagination.error,
+            hasNextPage: snapshots.pagination.hasNextPage,
+            isFetchingNextPage: snapshots.pagination.isFetchingNextPage,
+            loadNextPage: snapshots.pagination.loadNextPage,
+            refresh: snapshots.pagination.refresh,
+            loadAll: {
+              isLoading: snapshots.pagination.isLoadingAll,
+              request: snapshots.pagination.requestLoadAll,
+              stop: snapshots.pagination.stopLoadingAll,
+            },
+            totalItems: snapshots.pagination.totalItems,
+            sourcePageSize: {
+              value: appendState.pageSize,
+              options: [10, 25, 50, 100, 250],
+              onChange: (pageSize) =>
+                table.onStateChange(
+                  normalizeSnapshotAppendState({ ...table.state, pageSize }),
+                ),
+            },
+          },
         }}
         toolbar={{
           searchPlaceholder: "Search final URL or content hash…",

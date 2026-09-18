@@ -7,6 +7,7 @@ import {
   SiteConnectionChips,
   SiteIdentityMark,
 } from "@/features/marketing/components/shared/SiteConnectionChips";
+import { GscBindingRefusalLine } from "@/features/marketing/components/shared/GscBindingRefusalLine";
 import { StatusBadge } from "@/features/marketing/components/shared/MarketingUi";
 import {
   formatMetric,
@@ -14,8 +15,8 @@ import {
   GscMetricPeek,
   PagesPeek,
   TrendDelta,
-  trendPercent,
 } from "@/features/marketing/components/sites/SiteKpiPeeks";
+import { siteKpiDelta } from "@/features/marketing/analytics/gsc-delta";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { SiteListRow } from "@/features/marketing/types";
 import type { EntityColumnSpec } from "@/lib/entity-list/columns";
@@ -106,13 +107,7 @@ export const SITE_LIST_COLUMNS: EntityColumnSpec<SiteListRow>[] = [
             <span className="text-sm font-medium tabular-nums text-foreground">
               {formatMetric(row.gsc_clicks_28d)}
             </span>
-            <TrendDelta
-              percent={trendPercent(
-                row.gsc_clicks_28d,
-                row.gsc_clicks_prev_28d,
-                row.gsc_prev_days,
-              )}
-            />
+            <TrendDelta delta={siteKpiDelta(row, "clicks")} />
           </span>
         </GscMetricPeek>
       ),
@@ -133,13 +128,7 @@ export const SITE_LIST_COLUMNS: EntityColumnSpec<SiteListRow>[] = [
             <span className="text-sm font-medium tabular-nums text-foreground">
               {formatMetric(row.gsc_impressions_28d)}
             </span>
-            <TrendDelta
-              percent={trendPercent(
-                row.gsc_impressions_28d,
-                row.gsc_impressions_prev_28d,
-                row.gsc_prev_days,
-              )}
-            />
+            <TrendDelta delta={siteKpiDelta(row, "impressions")} />
           </span>
         </GscMetricPeek>
       ),
@@ -273,13 +262,7 @@ export function renderSiteListMobileCard(
           </dt>
           <dd className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-foreground">
             {formatMetric(row.gsc_clicks_28d)}
-            <TrendDelta
-              percent={trendPercent(
-                row.gsc_clicks_28d,
-                row.gsc_clicks_prev_28d,
-                row.gsc_prev_days,
-              )}
-            />
+            <TrendDelta delta={siteKpiDelta(row, "clicks")} />
           </dd>
         </div>
         <div>
@@ -288,13 +271,7 @@ export function renderSiteListMobileCard(
           </dt>
           <dd className="mt-0.5 inline-flex items-center gap-1.5 text-sm font-semibold tabular-nums text-foreground">
             {formatMetric(row.gsc_impressions_28d)}
-            <TrendDelta
-              percent={trendPercent(
-                row.gsc_impressions_28d,
-                row.gsc_impressions_prev_28d,
-                row.gsc_prev_days,
-              )}
-            />
+            <TrendDelta delta={siteKpiDelta(row, "impressions")} />
           </dd>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -327,6 +304,10 @@ export function renderSiteListMobileCard(
           </div>
         </div>
       </dl>
+
+      {/* The refusal, on the record that depends on it (PLAN §5.3) — from the
+          list, not only from the editor. */}
+      <GscBindingRefusalLine site={row} variant="short" className="mt-3" />
 
       <footer className="mt-3 flex flex-wrap items-center justify-between gap-2">
         <StatusBadge value={row.status} />

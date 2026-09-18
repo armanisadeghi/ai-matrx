@@ -61,7 +61,7 @@ const groups: SurfaceValueGroup[] = [
     label: "Active selection",
     sortOrder: 300,
     description:
-      "The cell or row the user has open right now. Populated only while a row or cell editor is open.",
+      "The cell or row the user is on right now — the selected cell (a click, or the arrow keys) or the row whose editor is open.",
   },
   {
     key: "table_data",
@@ -135,7 +135,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "column_list",
     label: "Columns",
     description:
-      "Array of `{ name, display_name, type, required, order, format?, choices? }` for every column, in display order. `name` is the MACHINE field name (what a cell write must send); `display_name` is the header the user sees. `format` is the column's display meaning when the storage type alone would mislead — a `percent` column typed `number` holding 45 means 45%, not 0.45. `choices` lists the options a choice column offers; a value outside them is still accepted and simply flagged, but prefer an existing option over inventing one. Empty array when no table is open.",
+      "Array of `{ name, display_name, type, required, order, format?, choices?, validation? }` for every column, in display order. `name` is the MACHINE field name (what a cell write must send); `display_name` is the header the user sees. `format` is the column's display meaning when the storage type alone would mislead — a `percent` column typed `number` holding 45 means 45%, not 0.45. `choices` lists the options a choice column offers; a value outside them is still accepted and simply flagged, but prefer an existing option over inventing one. `validation` lists the column's validation RULES in plain English (`At least 0`, `###-#### pattern`, `One of: Red, Green`, `Unique across rows`) — unlike `choices` these are ENFORCED: a cell_value write that breaks one is refused with the reason, so read them before writing rather than discovering them by failing. Absent on a column that constrains nothing. Empty array when no table is open.",
     valueType: "array",
     alwaysAvailable: false,
     typicalCharCount: 500,
@@ -148,7 +148,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "current_cell_value",
     label: "Current cell value",
     description:
-      "Value of the cell the user has open in the full-content editor, stringified. Empty unless that editor is open — this grid has no persistent click-to-select cell, so a cell is 'current' only while its expanded editor is on screen.",
+      "Value of the current cell, stringified. The current cell is the one the user has SELECTED on the grid (a single click, or the arrow keys — the cell with the ring) or, when the full-content editor is open, that editor's draft. Empty when no cell is selected and no editor is open.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 2000,
@@ -159,7 +159,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "current_column_name",
     label: "Current column",
     description:
-      "MACHINE field name of the column containing the open cell — the same value a cell write sends as `field_name`, not the display header. Empty when no cell editor is open.",
+      "MACHINE field name of the column containing the current (selected or open) cell — the same value a cell write sends as `field_name`, not the display header. Empty when no cell is selected or open.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 40,
@@ -170,7 +170,7 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "current_row_id",
     label: "Current row ID",
     description:
-      "UUID of the row whose cell editor or row editor is open. Empty when neither is open.",
+      "UUID of the row containing the current cell, or whose row editor is open. Empty when no cell is selected and no editor is open.",
     valueType: "string",
     alwaysAvailable: false,
     typicalCharCount: 36,
@@ -181,12 +181,46 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "current_row_json",
     label: "Current row",
     description:
-      "The row named by `current_row_id` as a JSON object keyed by machine field name. Empty object when no row is open.",
+      "The row named by `current_row_id` as a JSON object keyed by machine field name. Empty object when no row is current.",
     valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 600,
     group: "active_selection",
     sortOrder: 355,
+  },
+
+  {
+    name: "selected_range_tsv",
+    label: "Selected cells (TSV)",
+    description:
+      "The block of cells the user has selected on the grid — shift-click, drag, shift+arrows, a whole row or column, or select-all — as tab-separated rows whose FIRST line is the machine field names of the columns spanned. Present only when the selection covers more than one cell (a single selected cell is current_cell_value). This is what \"these cells\" means when the user points at part of the table.",
+    valueType: "string",
+    alwaysAvailable: false,
+    typicalCharCount: 3000,
+    group: "active_selection",
+    sortOrder: 360,
+  },
+  {
+    name: "selected_range_cell_count",
+    label: "Selected cell count",
+    description:
+      "How many cells selected_range_tsv spans. Present only alongside it.",
+    valueType: "number",
+    alwaysAvailable: false,
+    typicalCharCount: 4,
+    group: "active_selection",
+    sortOrder: 362,
+  },
+  {
+    name: "selected_rows_json",
+    label: "Selected rows",
+    description:
+      "The rows the user ticked with the row checkboxes, as an array of `{ row_id, ...cells }` objects keyed by machine field name — the same shape as full_table_json. Present only while at least one row is ticked. Rows may span several pages; every ticked row is included, not just the visible page.",
+    valueType: "array",
+    alwaysAvailable: false,
+    typicalCharCount: 3000,
+    group: "active_selection",
+    sortOrder: 365,
   },
 
   // ── Table data (370-399) ──────────────────────────────────────────────
@@ -328,14 +362,14 @@ export const dataTablesManifest: SurfaceManifest = {
   surfaceName: "matrx-user/data-tables",
   readiness: "partial",
   readinessNote:
-    "Emitter + write handlers live on the /data/[id] mount (UserTableViewer, gated by emitSurfaceScope) and verified against the live page. Still missing: data-surface-value Locate anchors on the grid, and the /data LIST route emits nothing by design (no authored state there).",
+    "Emitter + write handlers live on the /data/[id] mount (UserTableViewer, gated by emitSurfaceScope); the grid mounts the v3 right-click menu (cell / row / column sections) and Locate anchors for its rendered controls, headers, selected rows/cells, and selection state. full_table_json deliberately has no Locate target: it can be emitted after a background fetch, but the grid renders only the current page and must not claim otherwise. This remains partial until the complete live binding and surface-certification checks run. The /data LIST route emits nothing by design because it has no authored table state.",
   label: "Data Tables",
   urlPattern: "/data/[id]",
   intro: `<surface_intro>
 You are on the Data Tables surface: the user is looking at one table they created, at /data/[id] — a paginated grid with search, per-column filters, sorting, inline per-cell editing and per-row history.
 table_id / table_name / table_description identify the table. table_schema and column_list are its columns; column_list's \`name\` is the MACHINE field name every write uses, and \`display_name\` is the header the user reads — never send a display name where a field name is wanted.
 The row bodies are visible_data_csv (the page on screen, whose first CSV column is row_id) and, when the viewer has already loaded it, full_table_json. row_count is the total after the user's search. search_term is the user's own filter — read it to know why rows are missing.
-current_cell_value / current_column_name / current_row_id / current_row_json describe the cell or row the user has open right now, and are empty when no editor is on screen. This grid has no persistent selected cell, so do not wait for one.
+current_cell_value / current_column_name / current_row_id / current_row_json describe the cell the user has SELECTED on the grid (one click, or the arrow keys) or the cell / row whose editor is open, and are empty when nothing is selected or open. "This cell" or "the cell I'm on" means that selection. When the user selected a BLOCK of cells (shift-click, drag, a row, a column), selected_range_tsv carries it with a header line of machine field names and selected_range_cell_count says how big it is — "these cells" means that block. selected_rows_json carries the rows ticked with the row checkboxes — "these rows" / "the selected rows" means those.
 This is the user's real data. You may write ONE cell at a time with cell_value, naming the row and column explicitly from what you have READ, and only for a row on the page currently on screen — that is what lets the user see the change land. You may write table_description. Everything else is theirs: columns and types are a migration that can destroy values, whole-table and whole-row replacement is unreviewable, deletes are human, and search_term is their filter.
 is_read_only tells you whether you may write at all; on a shared table you can read but every write is refused.
 </surface_intro>`,
@@ -375,12 +409,23 @@ export interface DataTableColumnEntry {
    * so an empty list never reads as "this column has no options".
    */
   choices?: string[];
+  /**
+   * The column's VALIDATION RULES, in plain English — the same phrases the row
+   * forms print under the input (`describeValidationRules`). Present because a
+   * `cell_value` write that breaks one is REFUSED, and an agent that cannot see
+   * the rule can only discover it by failing. Omitted when the column
+   * constrains nothing.
+   */
+  validation?: string[];
 }
 
 export function createDataTablesScope(values: {
   selection?: string;
   content?: string;
   context?: Record<string, unknown>;
+  selected_range_tsv?: string;
+  selected_range_cell_count?: number;
+  selected_rows_json?: unknown[];
   table_id?: string;
   table_name?: string;
   table_description?: string;

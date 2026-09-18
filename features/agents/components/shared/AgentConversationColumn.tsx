@@ -26,8 +26,16 @@ import {
 } from "@/features/agents/redux/execution-system/messages/messages.slice";
 import { selectStreamPhase } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import { selectShowCreatorPanel } from "@/lib/redux/preferences/creatorDebugSlice";
+import {
+  TranscriptAudienceProvider,
+  type TranscriptAudience,
+} from "./transcript-audience";
 
 import { cn } from "@/lib/utils";
+import {
+  ASSISTANT_MESSAGE_COLUMN_CLASS,
+  ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,
+} from "./assistant-message-layout";
 import {
   isWarRoomThreadAgentSurface,
   traceWarRoomRenderPath,
@@ -149,6 +157,17 @@ interface AgentConversationColumnProps {
    * Live requestId-backed streaming bypasses this.
    */
   deferColdMarkdown?: boolean;
+  /**
+   * 🚨 WHO IS READING THIS TRANSCRIPT. "builder" (the default, and every
+   * surface that says nothing) is today's behaviour exactly: every machine
+   * frame renders. "expert" is a conversation with a non-technical Subject
+   * Matter Expert — tool cards, raw result grids, machine status labels and
+   * ad-hoc context chips are suppressed, replaced by one quiet "Working…"
+   * line while work is in flight, and still shown in full to anyone with
+   * creator mode on. Law + the cold-walk defect it closes:
+   * ./transcript-audience.tsx.
+   */
+  audience?: TranscriptAudience;
 }
 
 export function AgentConversationColumn({
@@ -164,6 +183,7 @@ export function AgentConversationColumn({
   afterMessages,
   aboveInput,
   deferColdMarkdown = false,
+  audience = "builder",
 }: AgentConversationColumnProps) {
   const dispatch = useAppDispatch();
   const displayId = displayConversationId ?? conversationId;
@@ -211,7 +231,6 @@ export function AgentConversationColumn({
       didAutoRevealRef.current = false;
     }
     if (didAutoRevealRef.current) return undefined;
-    didAutoRevealRef.current = true;
     dispatch(
       setVisibleGroupLimit({
         conversationId: displayId,
@@ -219,6 +238,12 @@ export function AgentConversationColumn({
       }),
     );
     const timer = window.setTimeout(() => {
+      // Marked DONE here, not above: the cleanup below cancels this timeout, so
+      // a latch written before it would survive a cancelled reveal and leave
+      // the transcript narrowed to two groups forever (same class as the chat
+      // resume latch fixed 2026-09-13 in useConversationResume — a latch is a
+      // record of completed work, never of started work).
+      didAutoRevealRef.current = true;
       setChatVisibleGroupWindow((current) => ({
         displayId,
         limit:
@@ -358,16 +383,20 @@ export function AgentConversationColumn({
   // Centering wrapper for the content INSIDE the full-width scroll area /
   // input region. `contents` keeps the wrapper layout-transparent so the
   // legacy (non-edge) path renders byte-for-byte as before.
-  const centerWrap = edgeScroll ? "w-full max-w-3xl mx-auto px-2" : "contents";
+  const centerWrap = edgeScroll
+    ? cn(ASSISTANT_MESSAGE_COLUMN_CLASS, ASSISTANT_MESSAGE_COLUMN_INSET_CLASS)
+    : "contents";
 
   return (
+    <TranscriptAudienceProvider audience={audience}>
     <div
       className={cn(
         "h-full flex flex-col overflow-hidden",
         // Legacy: pad the whole column. Edge mode: padding lives on the
         // centered inner wrappers instead so the scroll area runs to the edge.
         !edgeScroll && "px-2",
-        constrainWidth && !edgeScroll && "w-full max-w-3xl mx-auto pb-2",
+        constrainWidth && !edgeScroll && ASSISTANT_MESSAGE_COLUMN_CLASS,
+        constrainWidth && !edgeScroll && "pb-2",
         edgeScroll && "w-full pb-2",
       )}
     >
@@ -483,7 +512,14 @@ export function AgentConversationColumn({
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.28, ease: [0.32, 0.72, 0, 1] }}
-          className={edgeScroll ? "w-full max-w-3xl mx-auto px-2" : undefined}
+          className={
+            edgeScroll
+              ? cn(
+                  ASSISTANT_MESSAGE_COLUMN_CLASS,
+                  ASSISTANT_MESSAGE_COLUMN_INSET_CLASS,
+                )
+              : undefined
+          }
         >
           {!hideCreatorPanel && showCreatorPanel && (
             <CreatorRunPanel
@@ -516,5 +552,6 @@ export function AgentConversationColumn({
         </motion.div>
       )}
     </div>
+    </TranscriptAudienceProvider>
   );
 }

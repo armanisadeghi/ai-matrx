@@ -34,6 +34,7 @@ import { marketingListQuery } from "@/features/marketing/lib/scopes/marketing-hu
 import { useMarketingSite } from "@/features/marketing/components/site/MarketingSiteContext";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { FetchPageButton } from "@/features/marketing/components/pages/FetchPageButton";
+import { AnalyzeAllPagesControl } from "@/features/marketing/components/pages/AnalyzeAllPagesControl";
 import { fetchPageNow } from "@/features/marketing/crawler/direct-client";
 import { startSiteCommandRun } from "@/features/marketing/crawler/command-run-store";
 import { useOpenSiteCommandRunWindow } from "@/features/overlays/openers/siteCommandRunWindow";
@@ -558,6 +559,10 @@ export function PagesTable() {
             searchPlaceholder: "Search URL, path, or target keyword…",
             actions: (
               <div className="flex items-center gap-2">
+                <AnalyzeAllPagesControl
+                  siteId={site.id}
+                  organizationId={site.organization_id}
+                />
                 <Button
                   variant="outline"
                   size="sm"

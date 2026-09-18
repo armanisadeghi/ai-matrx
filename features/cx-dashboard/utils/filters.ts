@@ -86,3 +86,35 @@ export function buildWhereClause(
 
   return { where: conditions.join(" AND "), params };
 }
+
+/** Source filters are distinct from sorting, page size and table view preferences. */
+export function hasActiveCxSourceFilters(params: URLSearchParams): boolean {
+  const filters = filtersFromSearchParams(params);
+  return filters.timeframe !== "month" || Boolean(
+    filters.start_date || filters.end_date || filters.user_id || filters.model_id ||
+    filters.provider || filters.status || filters.search,
+  );
+}
+
+/** Clear both query layers in one navigation, preserving sorting and view settings. */
+export function clearCxTableFilters(params: URLSearchParams, tableId?: string): URLSearchParams {
+  const next = new URLSearchParams(params);
+  for (const key of ["timeframe", "start_date", "end_date", "user_id", "model_id", "provider", "status", "search", "page"]) next.delete(key);
+  if (tableId) {
+    for (const key of ["p", "q", "match", "scope", "any", "lf", "f"]) next.delete(`table.${tableId}.${key}`);
+  }
+  return next;
+}
+
+/** Patch one source filter without discarding table or sibling URL state. */
+export function updateCxSourceFilter(
+  params: URLSearchParams,
+  key: keyof CxFilters,
+  value: string | undefined,
+): URLSearchParams {
+  const next = new URLSearchParams(params);
+  if (value) next.set(key, value);
+  else next.delete(key);
+  next.delete("page");
+  return next;
+}

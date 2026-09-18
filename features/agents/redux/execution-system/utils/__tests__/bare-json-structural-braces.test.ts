@@ -2,7 +2,17 @@ import { StreamBlockAccumulator } from "@/features/agents/redux/execution-system
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { RenderBlockPayload } from "@/types/python-generated/stream-events";
 
-jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({ captureError: jest.fn() }));
+// 🚨 A PARTIAL MOCK OF A REAL MODULE IS A SUITE THAT DIES ON THE NEXT EXPORT
+// (DD-239). Replacing the whole capture store with `{ captureError }` killed
+// this suite at IMPORT once the session barrier began calling
+// `setSessionStateProbe` from the same module at Supabase-client construction
+// time — zero tests ran while the file still looked green in a list. Spread the
+// real module: only the export this suite observes is replaced, and a new
+// export can never silently take the suite down.
+jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
+  ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
+  captureError: jest.fn(),
+}));
 
 const captureErrorMock = captureError as jest.MockedFunction<typeof captureError>;
 

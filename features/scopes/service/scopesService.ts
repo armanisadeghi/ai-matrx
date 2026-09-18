@@ -141,6 +141,43 @@ export const scopesService = {
       return { ok: false, error: mapPgError(e) };
     }
   },
+
+  /**
+   * THIS SCOPE'S COPY OF A TEMPLATE-BACKED TABLE — the dataset id, creating it
+   * on first ask. `context.provision_scope_dataset` is idempotent: it returns
+   * the existing `context.scope_dataset_instances.dataset_id` when there is
+   * one, and otherwise clones the template's fields into a new
+   * `workbench.udt_datasets` row, records the instance, and writes the scope's
+   * context value as a dataset reference so the agent receives the table.
+   *
+   * It returns NULL (not an error) for the three "this item is not a
+   * template-backed table" cases — a mismatched scope type, an item whose
+   * `reference_source.container_type` is not `dataset_template`, or a missing
+   * item — so a null answer is mapped to a named refusal here rather than
+   * being read as an empty table.
+   */
+  async provisionScopeDataset(
+    contextItemId: string,
+    scopeId: string,
+  ): Promise<ScopesRpcResult<{ datasetId: string }>> {
+    try {
+      requireUserId();
+      const { data, error } = await contextDb(supabase).rpc(
+        "provision_scope_dataset",
+        { p_item_id: contextItemId, p_scope_id: scopeId },
+      );
+      if (error) return err(...mapPgErrorPair(error));
+      if (typeof data !== "string" || data === "") {
+        return err(
+          "not_found",
+          "This context item does not hold a table for this scope — it is not bound to a table template, or it belongs to a different scope type.",
+        );
+      }
+      return ok({ datasetId: data });
+    } catch (e) {
+      return { ok: false, error: mapPgError(e) };
+    }
+  },
   // ──────────────────────────────────────────────────────────────────
   //  READ — TREE
   // ──────────────────────────────────────────────────────────────────

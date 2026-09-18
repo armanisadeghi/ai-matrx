@@ -122,12 +122,14 @@ substantial reasoning with a stated reason. Model tier and effort are separate c
 Shared policy: [subagent model ladder](/policies/subagent-model-ladder.md); the display
 pairs Sonnet/Luna, Opus/Terra, and Fable/Astra never replace exact tool model identifiers.
 
-Keep task-to-task messages exceptional. Read current task status or saved evidence
-first; send only when a necessary action, ownership conflict, or missing evidence
-cannot be handled without the other task. Do not wake inactive tasks for status,
-repeat unchanged updates, or send acknowledgements that need no action. Bundle the
-specific request with its exact IDs and evidence; identify the sending patrol and
-write readable sentences. Internal delegates return compact results to this parent.
+Task-to-task messaging follows the universal [cross-task silence rule](/policies/subagent-model-ladder.md#cross-task-silence-and-wake-cost).
+A peer prompt is a full paid wake, not a coordination channel. Do not send status,
+evidence requests, ownership questions, receipts, acknowledgments, or corrective replies,
+even to an apparently active task; an incoming task message does not authorize a reply.
+Use the patrol's durable state and internal subagents. Only Arman's exact request naming the
+recipient or a verified immediate system-wide security/data/destructive emergency with no
+local or passive alternative permits one self-contained message to one task and no follow-up.
+Internal delegates return compact results to this parent.
 
 Project tool results before displaying or saving parent state: retain identifiers,
 class tokens/cursors, counts/times, coverage flags, and an error-summary head capped
@@ -219,10 +221,9 @@ finding; do not hide the import or narrow the contract just to clear the scan.
   default, including any prohibition on a user-browser fallback.
 - Return exact commits, affected IDs, proof timestamp, test/canary method,
   environment/build identity, results, recurrence interval, and remaining work.
-  Coordinate release with its existing owner; do not create a competing release.
-  Resolve the current release task with `list_threads` and verify its returned title
-  and project before sending; historical task IDs are leads, never routing proof.
-  Continue the verification when it lands. Deployment lag is engineering work.
+  Do not create a competing release or message its existing owner. Leave pushed commits,
+  tags, package state, and findings in the release lane's durable inputs; the release owner
+  discovers them on its own cadence. Deployment lag is engineering work.
   For shared-package changes, verify the published artifact contains the fix and
   consuming dependency floors select it. A host image that copies workspace source
   can be correct while the published package is stale; track both acceptance gates.

@@ -1,0 +1,239 @@
+/**
+ * The attribution guard for a coding-session transcript.
+ *
+ * Three authorships now share one conversation, and the ONLY thing that tells
+ * them apart is what this normalizer reads off the row. Every test here fails
+ * if the behaviour is removed: the column test fails if `agent_id`/`metadata`
+ * leave the projection (they cannot be read if they are not selected), the
+ * origin tests fail if the metadata read is dropped, and the unreadable-row
+ * test fails with a thrown error if the try/catch honesty is deleted.
+ */
+
+import {
+  normalizeProviderMessage,
+  PROVIDER_MESSAGE_COLUMNS,
+  readCarriedFrom,
+  readProviderMessageAttribution,
+  type ProviderConversationMessageRow,
+} from "./providerConversationMessage";
+
+type Json = ProviderConversationMessageRow["metadata"];
+
+function row(
+  overrides: Partial<ProviderConversationMessageRow> = {},
+): ProviderConversationMessageRow {
+  return {
+    id: "msg-1",
+    conversation_id: "conv-1",
+    role: "assistant",
+    content: [{ type: "text", text: "hello" }] as unknown as Json,
+    position: 4,
+    status: "completed",
+    created_at: "2026-09-14T00:00:00.000Z",
+    agent_id: null,
+    metadata: { coding_session_bridge: { provider: "claude-code" } } as Json,
+    ...overrides,
+  };
+}
+
+describe("PROVIDER_MESSAGE_COLUMNS", () => {
+  it("selects the two columns attribution is read from", () => {
+    // Without these in the projection the rows arrive with `agent_id` and
+    // `metadata` undefined and EVERY turn reads as a provider mirror — our own
+    // words attributed to Claude Code.
+    const columns = PROVIDER_MESSAGE_COLUMNS.split(",").map((part) =>
+      part.trim(),
+    );
+    expect(columns).toContain("agent_id");
+    expect(columns).toContain("metadata");
+  });
+});
+
+describe("normalizeProviderMessage attribution", () => {
+  it("treats a row with no metadata.origin as a provider mirror with no attribution", () => {
+    const message = normalizeProviderMessage(row());
+    expect(message.origin).toBe("provider_mirror");
+    expect(message.agentId).toBeNull();
+    expect(message.agentName).toBeNull();
+  });
+
+  it("reads a person's AI Matrx reply as ai_matrx_reply", () => {
+    const message = normalizeProviderMessage(
+      row({
+        role: "user",
+        metadata: {
+          coding_session_bridge: { provider: "claude-code" },
+          origin: "ai_matrx_reply",
+        } as Json,
+      }),
+    );
+    expect(message.origin).toBe("ai_matrx_reply");
+    expect(message.role).toBe("user");
+    expect(message.agentName).toBeNull();
+  });
+
+  it("reads the AI Matrx answer's agent id from the column and its name from metadata", () => {
+    const message = normalizeProviderMessage(
+      row({
+        agent_id: "agent-77",
+        metadata: {
+          origin: "ai_matrx_reply",
+          ai_matrx_reply: {
+            agent_id: "agent-77",
+            agent_name: "Session Explainer",
+          },
+        } as Json,
+      }),
+    );
+    expect(message.origin).toBe("ai_matrx_reply");
+    expect(message.agentId).toBe("agent-77");
+    expect(message.agentName).toBe("Session Explainer");
+  });
+
+  it("reads an agent run triggered from the coding host as matrx_agent_run", () => {
+    const message = normalizeProviderMessage(
+      row({
+        agent_id: "agent-12",
+        metadata: {
+          coding_session_bridge: { provider: "claude-code" },
+          origin: "matrx_agent_run",
+          agent_run: {
+            agent_id: "agent-12",
+            agent_name: "Repo Auditor",
+            dispatch_key: "dk-9",
+            host: "claude-code",
+          },
+        } as Json,
+      }),
+    );
+    expect(message.origin).toBe("matrx_agent_run");
+    expect(message.agentId).toBe("agent-12");
+    expect(message.agentName).toBe("Repo Auditor");
+  });
+
+  it("never invents a name when the server reported none", () => {
+    const message = normalizeProviderMessage(
+      row({
+        agent_id: "agent-12",
+        metadata: {
+          origin: "matrx_agent_run",
+          agent_run: { agent_id: "agent-12", dispatch_key: "dk-9" },
+        } as Json,
+      }),
+    );
+    expect(message.origin).toBe("matrx_agent_run");
+    expect(message.agentId).toBe("agent-12");
+    expect(message.agentName).toBeNull();
+  });
+
+  it("reports an unreadable metadata row and shows it as a mirror with no attribution", () => {
+    const spy = jest.spyOn(console, "error").mockImplementation(() => {});
+    const hostile = {};
+    Object.defineProperty(hostile, "origin", {
+      enumerable: true,
+      get() {
+        throw new Error("metadata is not readable");
+      },
+    });
+
+    const message = normalizeProviderMessage(
+      row({ metadata: hostile as Json }),
+    );
+
+    expect(message.origin).toBe("provider_mirror");
+    expect(message.agentName).toBeNull();
+    expect(spy).toHaveBeenCalledWith(
+      "[normalizeProviderMessage] unreadable persisted message metadata",
+      expect.objectContaining({ messageId: "msg-1" }),
+    );
+    spy.mockRestore();
+  });
+
+  it("does not claim an origin it does not know", () => {
+    expect(
+      readProviderMessageAttribution({ origin: "something_new" }),
+    ).toEqual({
+      origin: "provider_mirror",
+      agentName: null,
+      carriedFrom: null,
+    });
+    expect(readProviderMessageAttribution(null)).toEqual({
+      origin: "provider_mirror",
+      agentName: null,
+      carriedFrom: null,
+    });
+    expect(
+      readProviderMessageAttribution({
+        origin: "ai_matrx_reply",
+        ai_matrx_reply: "not-an-object",
+      }),
+    ).toEqual({
+      origin: "ai_matrx_reply",
+      agentName: null,
+      carriedFrom: null,
+    });
+  });
+});
+
+/**
+ * The carry block is the ONLY evidence a turn was produced elsewhere, so the
+ * reader is held to it: a named provider is read and passed through, and a
+ * block with no provider is NOT reported as a carry — an unnamed "carried
+ * from somewhere" tells a person nothing and would replace a correct byline
+ * with a blank one.
+ */
+describe("readCarriedFrom / the handoff rebind's provenance", () => {
+  const block = {
+    reason: "seeded_handoff_rebind",
+    provider: "claude_code",
+    provider_session_id: "xt05b-claude-1789697063",
+    conversation_id: "bba61bf6-eb71-5296-ba64-c66f1854493f",
+    original_position: 0,
+    carried_at: "2026-09-18T07:35:14.231298+00:00",
+  };
+
+  it("reads the block the bridge actually writes", () => {
+    expect(readCarriedFrom({ carried_from: block } as unknown as Json)).toEqual({
+      provider: "claude_code",
+      providerSessionId: "xt05b-claude-1789697063",
+      conversationId: "bba61bf6-eb71-5296-ba64-c66f1854493f",
+    });
+  });
+
+  it("is null for a native turn, and for a carry that names no provider", () => {
+    expect(readCarriedFrom({} as unknown as Json)).toBeNull();
+    expect(readCarriedFrom(null)).toBeNull();
+    expect(
+      readCarriedFrom({
+        carried_from: { reason: "seeded_handoff_rebind" },
+      } as unknown as Json),
+    ).toBeNull();
+  });
+
+  it("travels with the attribution, alongside an AI Matrx origin", () => {
+    expect(
+      readProviderMessageAttribution({
+        origin: "ai_matrx_reply",
+        ai_matrx_reply: { agent_name: "Session Explainer" },
+        carried_from: block,
+      } as unknown as Json),
+    ).toEqual({
+      origin: "ai_matrx_reply",
+      agentName: "Session Explainer",
+      carriedFrom: {
+        provider: "claude_code",
+        providerSessionId: "xt05b-claude-1789697063",
+        conversationId: "bba61bf6-eb71-5296-ba64-c66f1854493f",
+      },
+    });
+  });
+
+  it("reaches the normalized message the transcript renders", () => {
+    const message = normalizeProviderMessage(
+      row({ metadata: { carried_from: block } as unknown as Json }),
+    );
+    expect(message.carriedFrom?.provider).toBe("claude_code");
+    expect(normalizeProviderMessage(row()).carriedFrom).toBeNull();
+  });
+});
+

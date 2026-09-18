@@ -1,4 +1,5 @@
 "use client";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * Surface config resolution — the canonical reader/writer for agent roles
@@ -22,13 +23,18 @@
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { isJsonObject } from "@/types/json";
+import type { Database } from "@/types/database.types";
 import { fetchMandatePins } from "@/features/mandates/service";
 import type { SurfaceAgentRole } from "@/features/surfaces/types";
 import {
   getNamespaceHandler,
   listRegisteredNamespaces,
 } from "@/features/surfaces/config/namespace-registry";
-import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
+import {
+  peekSystemOrgId,
+  resolveSystemOrgId,
+} from "@/lib/organizations/systemOrg";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 const sb = () => createClient();
@@ -114,7 +120,16 @@ export interface SurfaceConfigRow {
  * ORDER IS LOAD-BEARING. `organizationId` is now non-null on every row, so
  * testing it before `scopeId` would classify every scope-tier row as "org" and
  * silently move it down the precedence ladder.
+ *
+ * "Which organization is the platform's own" is answered by `iam.system_orgs`
+ * through `lib/organizations/systemOrg.ts` — never a UUID pasted into this
+ * file. This classifier is synchronous, so it PEEKS at the id the resolver
+ * memoized; `fetchSurfaceConfigBundle` primes it in the same call that loads
+ * the rows, and an unprimed peek says so out loud rather than quietly
+ * demoting a platform row to the org tier.
  */
+let warnedUnprimedSystemOrg = false;
+
 export function tierOf(row: {
   userId: string | null;
   organizationId: string | null;
@@ -122,7 +137,18 @@ export function tierOf(row: {
 }): PrefTier {
   if (row.userId) return "user";
   if (row.scopeId) return "scope";
-  return row.organizationId === SYSTEM_ORGANIZATION_ID ? "global" : "org";
+  const systemOrganizationId = peekSystemOrgId();
+  if (!systemOrganizationId) {
+    if (!warnedUnprimedSystemOrg) {
+      warnedUnprimedSystemOrg = true;
+      console.error(
+        "[surface-config] the system organization id has not been resolved yet, so platform-owned rows are being read as ordinary organization rows. " +
+          "Remedy: await resolveSystemOrgId() (fetchSurfaceConfigBundle does) before classifying rows.",
+      );
+    }
+    return "org";
+  }
+  return row.organizationId === systemOrganizationId ? "global" : "org";
 }
 
 /** Layer order for merge: global < org < scope(reserved) < user. */
@@ -145,7 +171,7 @@ export interface SurfaceConfigBundle {
     description: string;
     kind: "single" | "multi";
     defaultAgentId: string | null;
-    mandateKey: string | null;
+    mandateKey: AnyMandateKey | null;
     /**
      * Agent currently holding `mandateKey` (agent.mandate.default_agent_id),
      * resolved at fetch time. Null when the role has no mandateKey or the
@@ -161,6 +187,150 @@ export interface SurfaceConfigBundle {
   configRows: SurfaceConfigRow[];
 }
 
+// 🚨 A SELECT LIST IS A LITERAL, NEVER AN EXPRESSION.
+// supabase-js parses the select string at the TYPE level. A `uid ? "a" : "b"`
+// argument hands that parser a UNION of two strings, which it cannot parse —
+// it returns `ParserError<"Unexpected input: …">` for the WHOLE query and every
+// column then reads as "does not exist" (15 errors here, 2026-09-18). So the
+// two reads below branch the QUERY and each passes one literal.
+//
+// DD-230: `user_id` and `organization_id` are identity columns `anon` may not
+// read, so a GUEST asking for them got 42501 for the whole query and this
+// bundle threw — the guest surface config never arrived (measured: ten such
+// 401s on production in 24 h). A guest can only ever see global rows, where
+// both are null, so the guest read omits them and fills them in as null.
+const PREF_COLUMNS_SIGNED_IN =
+  "id, surface_name, role_name, agent_id, kind, position, settings, user_id, organization_id, scope_id, updated_at";
+const PREF_COLUMNS_GUEST =
+  "id, surface_name, role_name, agent_id, kind, position, settings, scope_id, updated_at";
+const CONFIG_COLUMNS_SIGNED_IN =
+  "id, surface_name, namespace, config, user_id, organization_id, scope_id, updated_at";
+const CONFIG_COLUMNS_GUEST =
+  "id, surface_name, namespace, config, scope_id, updated_at";
+
+type UiPrefRow = Database["ui"]["Tables"]["ui_surface_agent_pref"]["Row"];
+type UiConfigRow = Database["ui"]["Tables"]["ui_surface_config"]["Row"];
+
+/** What either pref read returns: the guest read omits the identity columns. */
+type SelectedPrefRow = Pick<
+  UiPrefRow,
+  | "id"
+  | "surface_name"
+  | "role_name"
+  | "agent_id"
+  | "kind"
+  | "position"
+  | "settings"
+  | "scope_id"
+  | "updated_at"
+> &
+  Partial<Pick<UiPrefRow, "user_id" | "organization_id">>;
+
+type SelectedConfigRow = Pick<
+  UiConfigRow,
+  "id" | "surface_name" | "namespace" | "config" | "scope_id" | "updated_at"
+> &
+  Partial<Pick<UiConfigRow, "user_id" | "organization_id">>;
+
+const ownerId = (row: { user_id?: string | null }): string | null =>
+  row.user_id ?? null;
+const orgId = (row: { organization_id?: string | null }): string | null =>
+  row.organization_id ?? null;
+
+const toPrefRow = (p: SelectedPrefRow): SurfaceAgentPrefRow => ({
+  id: p.id,
+  surfaceName: p.surface_name,
+  roleName: p.role_name,
+  agentId: p.agent_id,
+  kind: p.kind as "selection" | "roster_item",
+  position: p.position,
+  settings: isJsonObject(p.settings) ? p.settings : {},
+  userId: ownerId(p),
+  organizationId: orgId(p),
+  scopeId: p.scope_id,
+  updatedAt: p.updated_at,
+});
+
+const toConfigRow = (c: SelectedConfigRow): SurfaceConfigRow => ({
+  id: c.id,
+  surfaceName: c.surface_name,
+  namespace: c.namespace,
+  config: c.config,
+  userId: ownerId(c),
+  organizationId: orgId(c),
+  scopeId: c.scope_id,
+  updatedAt: c.updated_at,
+});
+
+/**
+ * 🚨 THE USER TIER IS PERSONAL — filter it to the CURRENT user explicitly.
+ * RLS breadth is NOT a personal-tier filter: a platform admin can read EVERY
+ * user's rows, and org-visibility branches can expose org-mates' rows. Without
+ * this filter those rows enter the tier merge as if they were "the user tier",
+ * so an admin's effective config became a per-field blend of OTHER PEOPLE's
+ * choices (observed: another user's voice + a third user's speed in the
+ * Listening settings, 2026-08-28). A missing session keeps only tier rows with
+ * no user_id (global/org).
+ */
+const mineOrShared =
+  (uid: string | null) =>
+  (row: { userId: string | null }): boolean =>
+    row.userId === null || row.userId === uid;
+
+type SurfaceConfigClient = ReturnType<typeof createClient>;
+
+async function fetchPrefRows(
+  client: SurfaceConfigClient,
+  surfaceName: string,
+  uid: string | null,
+): Promise<SurfaceAgentPrefRow[]> {
+  const keep = mineOrShared(uid);
+  if (uid) {
+    const { data, error } = await client
+      .schema("ui")
+      .from("ui_surface_agent_pref")
+      .select(PREF_COLUMNS_SIGNED_IN)
+      .is("deleted_at", null)
+      .eq("surface_name", surfaceName);
+    if (error) throw error;
+    return (data ?? []).map(toPrefRow).filter(keep);
+  }
+  const { data, error } = await client
+    .schema("ui")
+    .from("ui_surface_agent_pref")
+    .select(PREF_COLUMNS_GUEST)
+    .is("deleted_at", null)
+    .eq("surface_name", surfaceName);
+  if (error) throw error;
+  return (data ?? []).map(toPrefRow).filter(keep);
+}
+
+async function fetchConfigRows(
+  client: SurfaceConfigClient,
+  surfaceName: string,
+  uid: string | null,
+): Promise<SurfaceConfigRow[]> {
+  const keep = mineOrShared(uid);
+  if (uid) {
+    const { data, error } = await client
+      .schema("ui")
+      .from("ui_surface_config")
+      .select(CONFIG_COLUMNS_SIGNED_IN)
+      .is("deleted_at", null)
+      .eq("surface_name", surfaceName);
+    if (error) throw error;
+    return (data ?? []).map(toConfigRow).filter(keep);
+  }
+  const { data, error } = await client
+    .schema("ui")
+    .from("ui_surface_config")
+    .select(CONFIG_COLUMNS_GUEST)
+    .is("deleted_at", null)
+    .eq("surface_name", surfaceName);
+  if (error) throw error;
+  return (data ?? []).map(toConfigRow).filter(keep);
+}
+
 export async function fetchSurfaceConfigBundle(
   surfaceName: string,
 ): Promise<SurfaceConfigBundle> {
@@ -172,7 +342,24 @@ export async function fetchSurfaceConfigBundle(
   // as anon and reporting a permission failure.
   const { data: auth, error: authError } = await client.auth.getUser();
   const uid = authError ? null : (auth.user?.id ?? null);
-  const [rolesRes, prefsRes, configRes] = await Promise.all([
+  // Prime the memoized system organization id alongside the rows, so the
+  // synchronous `tierOf` above can tell a platform-owned row from an ordinary
+  // organization's without a hardcoded UUID. It is awaited with them (never
+  // fire-and-forget) so the classifier is never asked before the answer is in,
+  // and a failure screams instead of silently demoting platform rows.
+  // The priming runs BESIDE the three row reads, not inside their Promise.all:
+  // a fourth, differently-typed element there pushed the tuple past the
+  // PostgREST type parser's instantiation budget and every row came back typed
+  // as a ParserError (2026-09-17). It is still awaited before the rows are
+  // classified, so the classifier is never asked before the answer is in.
+  const systemOrganizationPrimed = resolveSystemOrgId(client).catch((e: unknown) => {
+    console.error(
+      "[surface-config] could not resolve the system organization — platform-owned rows will read as ordinary organization rows:",
+      e,
+    );
+    return null;
+  });
+  const [rolesRes, prefs, configRows] = await Promise.all([
     // VIEW LAW: container-scoped by surfaceName (admin-config lookup, platform-wide)
     client
       .schema("ui").from("ui_surface_agent_role")
@@ -181,24 +368,11 @@ export async function fetchSurfaceConfigBundle(
       )
       .eq("surface_name", surfaceName)
       .order("sort_order"),
-    client
-      .schema("ui").from("ui_surface_agent_pref")
-      .select(
-        "id, surface_name, role_name, agent_id, kind, position, settings, user_id, organization_id, scope_id, updated_at",
-      )
-      .is("deleted_at", null)
-      .eq("surface_name", surfaceName),
-    client
-      .schema("ui").from("ui_surface_config")
-      .select(
-        "id, surface_name, namespace, config, user_id, organization_id, scope_id, updated_at",
-      )
-      .is("deleted_at", null)
-      .eq("surface_name", surfaceName),
+    fetchPrefRows(client, surfaceName, uid),
+    fetchConfigRows(client, surfaceName, uid),
   ]);
+  await systemOrganizationPrimed;
   if (rolesRes.error) throw rolesRes.error;
-  if (prefsRes.error) throw prefsRes.error;
-  if (configRes.error) throw configRes.error;
 
   // Mandate-backed roles: resolve each declared mandateKey to its current
   // holder (agent.mandate, public-visible). A missing/unseeded mandate leaves
@@ -210,17 +384,6 @@ export async function fetchSurfaceConfigBundle(
   const mandatePins =
     uid && mandateKeys.length > 0 ? await fetchMandatePins(mandateKeys) : {};
 
-  // 🚨 THE USER TIER IS PERSONAL — filter it to the CURRENT user explicitly.
-  // RLS breadth is NOT a personal-tier filter: a platform admin can read
-  // EVERY user's rows, and org-visibility branches can expose org-mates'
-  // rows. Without this filter those rows enter the tier merge as if they
-  // were "the user tier", so an admin's effective config became a per-field
-  // blend of OTHER PEOPLE's choices (observed: another user's voice + a
-  // third user's speed in the Listening settings, 2026-08-28). A missing
-  // session keeps only tier rows with no user_id (global/org).
-  const isMineOrShared = (row: { user_id: string | null }) =>
-    row.user_id === null || row.user_id === uid;
-
   return {
     surfaceName,
     dbRoles: (rolesRes.data ?? []).map((r) => ({
@@ -229,7 +392,7 @@ export async function fetchSurfaceConfigBundle(
       description: r.description,
       kind: r.kind as "single" | "multi",
       defaultAgentId: r.default_agent_id,
-      mandateKey: r.mandate_key,
+      mandateKey: r.mandate_key ? storedMandateKey(r.mandate_key) : null,
       mandateAgentId: r.mandate_key
         ? (mandatePins[r.mandate_key]?.agentId ?? null)
         : null,
@@ -238,29 +401,8 @@ export async function fetchSurfaceConfigBundle(
       autoRun: r.auto_run as "always" | "never" | "user-choice",
       sortOrder: r.sort_order,
     })),
-    prefs: (prefsRes.data ?? []).filter(isMineOrShared).map((p) => ({
-      id: p.id,
-      surfaceName: p.surface_name,
-      roleName: p.role_name,
-      agentId: p.agent_id,
-      kind: p.kind as "selection" | "roster_item",
-      position: p.position,
-      settings: (p.settings ?? {}) as Record<string, unknown>,
-      userId: p.user_id,
-      organizationId: p.organization_id,
-      scopeId: p.scope_id,
-      updatedAt: p.updated_at,
-    })),
-    configRows: (configRes.data ?? []).filter(isMineOrShared).map((c) => ({
-      id: c.id,
-      surfaceName: c.surface_name,
-      namespace: c.namespace,
-      config: c.config,
-      userId: c.user_id,
-      organizationId: c.organization_id,
-      scopeId: c.scope_id,
-      updatedAt: c.updated_at,
-    })),
+    prefs,
+    configRows,
   };
 }
 
@@ -422,28 +564,60 @@ export function resolveSurfaceConfig(
 // ---------------------------------------------------------------------------
 
 export interface PrefScopeInput {
-  /** Exactly one set, or none = global (super admins only). */
+  /** Exactly one of the three tiers, or `global` for the platform tier. */
   userId?: string | null;
   organizationId?: string | null;
   scopeId?: string | null;
+  /**
+   * The PLATFORM-OWNED tier, stated by name (super admins only). Global rows
+   * are owned by the system organization — writing or matching them is a
+   * deliberate choice, never what an absent organization means.
+   */
+  global?: true;
+}
+
+/**
+ * The organization a NON-user, NON-scope tier addresses.
+ *
+ * 🚨 `scope.organizationId ?? SYSTEM_ORGANIZATION_ID` used to stand here, so a
+ * caller holding a null organization — the ordinary state while no org is
+ * selected — silently addressed the PLATFORM's rows: it read platform defaults
+ * as if they were the org's, and an insert on the same path stamped
+ * `matrx-system` onto a row the person believed was theirs. The platform tier
+ * is now asked for by name (`{ global: true }`), and a missing organization is
+ * a refusal with the remedy, never a substitution (the org an action acts in is
+ * the one the user selected: `common-docs/policies/context-is-carried-never-rebuilt.md`).
+ */
+async function tierOrganizationId(scope: PrefScopeInput): Promise<string> {
+  // The platform tier's id comes from `iam.system_orgs` through the ONE
+  // resolver, never from a UUID literal in the bundle (lib/organizations/
+  // systemOrg.ts: "Do NOT hardcode the UUID"). It is read at most once per
+  // process and memoized there.
+  if (scope.global) return resolveSystemOrgId();
+  if (scope.organizationId) return scope.organizationId;
+  throw new Error(
+    "[surfaces] no organization is selected, so this surface setting cannot be read or saved — choose one from the organization picker in the header and try again. Nothing was changed. (Platform-wide settings must ask for the global tier by name.)",
+  );
 }
 
 /**
  * Columns to WRITE for a scope tier.
  *
  * NO NULL ORG (db-rules §2/§6e): there is no all-NULL "global" row any more.
- * Global is the system org, so an empty scope writes `matrx-system` explicitly.
+ * Global is the system org, and a caller asks for it BY NAME (`{ global: true }`)
+ * — an absent organization is a refusal, not the platform tier.
  *
  * Every insert sends the required owning organization explicitly. User and
- * ctx-scope callers may provide the known owner; otherwise the canonical
- * active/personal-org resolver supplies it. The DB backstops remain the final
- * integrity layer for older clients and direct writes.
+ * ctx-scope rows are owned by the user's own workspace, so those two tiers
+ * still resolve their owner through `ensureOrgId` when the caller does not
+ * name one. The DB backstops remain the final integrity layer for older
+ * clients and direct writes.
  */
 async function scopeInsertColumns(scope: PrefScopeInput) {
   const organizationId =
-    !scope.userId && !scope.scopeId && !scope.organizationId
-      ? SYSTEM_ORGANIZATION_ID
-      : await ensureOrgId(scope.organizationId);
+    scope.userId || scope.scopeId
+      ? await ensureOrgId(scope.organizationId)
+      : await tierOrganizationId(scope);
   if (scope.userId) {
     return { user_id: scope.userId, scope_id: null, organization_id: organizationId };
   }
@@ -460,22 +634,40 @@ async function scopeInsertColumns(scope: PrefScopeInput) {
 /**
  * Narrow a query to the ONE row that owns a scope tier.
  *
+ * Throws when the org tier is asked for with no organization — see
+ * `tierOrganizationId`.
+ *
  * The org tier is now `user_id IS NULL AND scope_id IS NULL AND
  * organization_id = <org>` — matching the partial unique indexes the migration
  * rebuilt. The user and scope tiers do NOT constrain `organization_id`: it is
  * the row's owning org, not part of its identity, and their own unique indexes
  * are keyed on the tier column alone.
  */
+/**
+ * The organization the org/global tier of `scope` addresses, or null when the
+ * scope is a user or scope tier (which never filters by organization).
+ * Resolved BEFORE `matchScope` runs: a PostgREST builder is thenable, so an
+ * `async` matcher returning it was unwrapped into its RESPONSE by the caller's
+ * `await` and the next `.maybeSingle()` had nothing to call (2026-09-17).
+ */
+async function tierOrganizationFor(scope: PrefScopeInput): Promise<string | null> {
+  if (scope.userId || scope.scopeId) return null;
+  return tierOrganizationId(scope);
+}
+
 function matchScope<T extends { eq: (c: string, v: string) => T; is: (c: string, v: null) => T }>(
   q: T,
   scope: PrefScopeInput,
+  tierOrganization: string | null,
 ): T {
   if (scope.userId) return q.eq("user_id", scope.userId).is("scope_id", null);
   if (scope.scopeId) return q.is("user_id", null).eq("scope_id", scope.scopeId);
-  return q
-    .is("user_id", null)
-    .is("scope_id", null)
-    .eq("organization_id", scope.organizationId ?? SYSTEM_ORGANIZATION_ID);
+  if (!tierOrganization) {
+    throw new Error(
+      "[surfaces] matchScope: the org/global tier needs its organization resolved first (tierOrganizationFor).",
+    );
+  }
+  return q.is("user_id", null).is("scope_id", null).eq("organization_id", tierOrganization);
 }
 
 /** Set the agent filling (surface, role, position) at a scope tier. */
@@ -503,7 +695,7 @@ export async function setRoleSelection(args: {
     .eq("role_name", roleName)
     .eq("kind", "selection")
     .eq("position", position);
-  q = matchScope(q, scope);
+  q = matchScope(q, scope, await tierOrganizationFor(scope));
   const { data: existing, error: findErr } = await q.maybeSingle();
   if (findErr) throw findErr;
 
@@ -584,7 +776,7 @@ export async function setNamespaceConfig(args: {
     .select("id")
     .eq("surface_name", surfaceName)
     .eq("namespace", namespace);
-  q = matchScope(q, scope);
+  q = matchScope(q, scope, await tierOrganizationFor(scope));
   const { data: existing, error: findErr } = await q.maybeSingle();
   if (findErr) throw findErr;
 

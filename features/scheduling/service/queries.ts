@@ -13,11 +13,13 @@
 import { supabase } from "@/utils/supabase/client";
 import { schedulerDb } from "@/utils/supabase/schedulerDb";
 import { pgErrorToError } from "@ai-matrx/data";
-import { readAllRows } from "@ai-matrx/data/db";
+import { mergeJsonColumn, readAllRows } from "@ai-matrx/data/db";
+import type { Database, Json } from "@/types/database.types";
 import type { TaskDetailResponse } from "./schedulerApi.types";
 import type {
   AgendaTask,
   AgendaTrigger,
+  AlarmMuteBlock,
   AutoSuspendedBlock,
   SchAgentTaskRow,
   SchTaskMetadata,
@@ -26,8 +28,11 @@ import type {
   SchTriggerRow,
 } from "../types";
 import {
+  createScheduleLoadTimeout,
   createScheduleRosterLoadTimeout,
+  SCHEDULE_DETAIL_LOAD_TIMEOUT_MESSAGE,
   SCHEDULE_ROSTER_LOAD_TIMEOUT_MESSAGE,
+  SCHEDULE_RUNS_LOAD_TIMEOUT_MESSAGE,
 } from "./schedule-roster-timeout";
 
 // ── The reusable select string (per spec §8) ───────────────────────────────
@@ -100,20 +105,31 @@ function parseAutoSuspended(value: unknown): AutoSuspendedBlock | undefined {
     at: typeof value.at === "string" ? value.at : undefined,
     run_id: typeof value.run_id === "string" ? value.run_id : undefined,
     failure_signature:
-      typeof value.failure_signature === "string" ? value.failure_signature : undefined,
+      typeof value.failure_signature === "string"
+        ? value.failure_signature
+        : undefined,
     consecutive_failures:
-      typeof value.consecutive_failures === "number" ? value.consecutive_failures : undefined,
+      typeof value.consecutive_failures === "number"
+        ? value.consecutive_failures
+        : undefined,
     reason: typeof value.reason === "string" ? value.reason : undefined,
+    verdict: typeof value.verdict === "string" ? value.verdict : undefined,
     overriding_approval:
-      typeof value.overriding_approval === "string" ? value.overriding_approval : undefined,
+      typeof value.overriding_approval === "string"
+        ? value.overriding_approval
+        : undefined,
     override_notice:
-      typeof value.override_notice === "string" ? value.override_notice : undefined,
+      typeof value.override_notice === "string"
+        ? value.override_notice
+        : undefined,
     restored: restored
       ? {
           at: typeof restored.at === "string" ? restored.at : undefined,
           by: typeof restored.by === "string" ? restored.by : null,
           restored_approval:
-            typeof restored.restored_approval === "string" ? restored.restored_approval : null,
+            typeof restored.restored_approval === "string"
+              ? restored.restored_approval
+              : null,
         }
       : undefined,
   };
@@ -135,11 +151,27 @@ export function parseTaskMetadata(raw: unknown): SchTaskMetadata {
     auto_suspended: parseAutoSuspended(raw.auto_suspended),
     auto_suspended_history: history && history.length > 0 ? history : undefined,
     approval: typeof raw.approval === "string" ? raw.approval : undefined,
-    approved_by: typeof raw.approved_by === "string" ? raw.approved_by : undefined,
-    approved_at: typeof raw.approved_at === "string" ? raw.approved_at : undefined,
+    approved_by:
+      typeof raw.approved_by === "string" ? raw.approved_by : undefined,
+    approved_at:
+      typeof raw.approved_at === "string" ? raw.approved_at : undefined,
     approved_interval:
-      typeof raw.approved_interval === "string" ? raw.approved_interval : undefined,
+      typeof raw.approved_interval === "string"
+        ? raw.approved_interval
+        : undefined,
     handler_gate_pending: raw.handler_gate_pending,
+    alarm_mute: parseAlarmMute(raw.alarm_mute),
+    impact: parseImpact(raw.impact) ?? undefined,
+  };
+}
+
+function parseAlarmMute(value: unknown): AlarmMuteBlock | undefined {
+  if (!isRecord(value) || typeof value.until !== "string") return undefined;
+  return {
+    until: value.until,
+    reason: typeof value.reason === "string" ? value.reason : undefined,
+    by: typeof value.by === "string" ? value.by : undefined,
+    at: typeof value.at === "string" ? value.at : undefined,
   };
 }
 
@@ -298,14 +330,31 @@ export async function getAgentTask(id: string): Promise<AgendaTask | null> {
   // The rule this leaves behind: a read that backs a RECORD page narrows by
   // the id and nothing else. Anything else it excludes gets reported to a
   // person as an access failure it is not.
-  const { data, error } = await schedulerDb(supabase)
-    .schema("scheduler").from("sch_task")
-    .select(SELECT_TASK_RECORD)
-    .eq("id", id)
-    .is("deleted_at", null)
-    .maybeSingle()
-    .returns<JoinedAgentTaskRow | null>();
+  const { controller, dispose } = createScheduleLoadTimeout();
+  let data: JoinedAgentTaskRow | null;
+  let error: unknown;
+  try {
+    ({ data, error } = await schedulerDb(supabase)
+      .schema("scheduler")
+      .from("sch_task")
+      .select(SELECT_TASK_RECORD)
+      .eq("id", id)
+      .is("deleted_at", null)
+      .abortSignal(controller.signal)
+      .maybeSingle()
+      .returns<JoinedAgentTaskRow | null>());
+  } catch (cause) {
+    if (controller.signal.aborted) {
+      throw new Error(SCHEDULE_DETAIL_LOAD_TIMEOUT_MESSAGE, { cause });
+    }
+    throw cause;
+  } finally {
+    dispose();
+  }
 
+  if (controller.signal.aborted) {
+    throw new Error(SCHEDULE_DETAIL_LOAD_TIMEOUT_MESSAGE, { cause: error });
+  }
   if (error) throw pgErrorToError(error);
   if (!data) return null;
   return rowToAgendaTask(data);
@@ -336,7 +385,8 @@ export async function updateAgentTaskFields(
 ): Promise<void> {
   if (Object.keys(patch).length === 0) return;
   const { error } = await schedulerDb(supabase)
-    .schema("scheduler").from("sch_agent_task")
+    .schema("scheduler")
+    .from("sch_agent_task")
     .update(patch)
     .eq("id", id);
   if (error) throw pgErrorToError(error);
@@ -347,16 +397,61 @@ export async function updateAgentTaskFields(
 export async function listRunsForTask(
   taskId: string,
   limit = 20,
+  requiredRunIds: readonly string[] = [],
 ): Promise<SchRunRow[]> {
-  const { data, error } = await schedulerDb(supabase)
-    .schema("scheduler").from("sch_run")
-    .select("*")
-    .eq("task_id", taskId)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  const { controller, dispose } = createScheduleLoadTimeout();
+  try {
+    const { data, error } = await schedulerDb(supabase)
+      .schema("scheduler")
+      .from("sch_run")
+      .select("*")
+      .eq("task_id", taskId)
+      .order("created_at", { ascending: false })
+      .limit(limit)
+      .abortSignal(controller.signal)
+      .returns<SchRunRow[]>();
+    if (controller.signal.aborted) {
+      throw new Error(SCHEDULE_RUNS_LOAD_TIMEOUT_MESSAGE, { cause: error });
+    }
+    if (error) throw pgErrorToError(error);
 
-  if (error) throw pgErrorToError(error);
-  return (data ?? []) as SchRunRow[];
+    const recentRuns = data ?? [];
+    const missingRequiredIds = Array.from(new Set(requiredRunIds)).filter(
+      (id) => !recentRuns.some((run) => run.id === id),
+    );
+    if (missingRequiredIds.length === 0) return recentRuns;
+
+    // Both reads share one operation-level deadline. Historical enrichment
+    // must fit inside the run history's 20-second terminal boundary, not add a
+    // second full timeout after the recent-page query.
+    const { data: requiredData, error: requiredError } = await schedulerDb(
+      supabase,
+    )
+      .schema("scheduler")
+      .from("sch_run")
+      .select("*")
+      .eq("task_id", taskId)
+      .in("id", missingRequiredIds)
+      .abortSignal(controller.signal)
+      .returns<SchRunRow[]>();
+    if (controller.signal.aborted) {
+      throw new Error(SCHEDULE_RUNS_LOAD_TIMEOUT_MESSAGE, {
+        cause: requiredError,
+      });
+    }
+    if (requiredError) throw pgErrorToError(requiredError);
+
+    return [...recentRuns, ...(requiredData ?? [])].sort(
+      (a, b) => Date.parse(b.created_at) - Date.parse(a.created_at),
+    );
+  } catch (cause) {
+    if (controller.signal.aborted) {
+      throw new Error(SCHEDULE_RUNS_LOAD_TIMEOUT_MESSAGE, { cause });
+    }
+    throw cause;
+  } finally {
+    dispose();
+  }
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -377,12 +472,23 @@ export function stripTriggerType(
  * repeat-guard-suspended and sit unread for a day. This is the super-admin
  * SECURITY DEFINER read that makes it visible without touching RLS —
  * `scheduler.system_schedule_alarms` returns ONLY rows needing a human
- * (suspended / overdue past grace / last run failed), so it can never become
- * wallpaper. A non-super-admin caller is refused by the function itself.
+ * (suspended / overdue past the grace knob / a failure streak), so it can
+ * never become wallpaper. A non-super-admin caller is refused by the function.
+ *
+ * v2 (2026-09-14): every row is a DECISION, not a title — it carries the
+ * failed run, the declared impact (the product pages this job feeds), the
+ * approval, whether a run has succeeded since the guard switched it off, and
+ * the row's own mute (`metadata.alarm_mute`). Muted rows ARE returned: the
+ * global attention dock hides them until `muted_until`; the review page lists
+ * them and un-mutes. Thresholds are the `scheduler.alarms.*` knobs, read by
+ * the function itself.
  */
 export interface SystemScheduleAlarm {
   task_id: string;
   title: string;
+  description: string | null;
+  tags: string[] | null;
+  kind: string;
   alarm: "suspended" | "overdue" | "failing";
   severity: "critical" | "warning";
   detail: string;
@@ -391,14 +497,150 @@ export interface SystemScheduleAlarm {
   last_run_at: string | null;
   suspended_at: string | null;
   consecutive_failures: number | null;
+  succeeded_since_suspension: boolean;
+  last_run_id: string | null;
+  last_run_status: string | null;
+  last_run_error: string | null;
+  last_run_finished_at: string | null;
+  failed_streak: number;
+  approval: string | null;
+  impact: SystemTaskImpact[] | null;
+  muted_until: string | null;
+  mute_reason: string | null;
+  mute_by: string | null;
+  mute_at: string | null;
 }
 
-export async function fetchSystemScheduleAlarms(
-  overdueGraceMinutes = 90,
-): Promise<SystemScheduleAlarm[]> {
-  const { data, error } = await schedulerDb(supabase).rpc("system_schedule_alarms", {
-    p_overdue_grace_minutes: overdueGraceMinutes,
-  });
+/**
+ * One product page a system task feeds, declared by the job's registration
+ * in aidream (`register_system_task(..., impact=[...])`) and reconciled onto
+ * `sch_task.metadata.impact` at worker boot.
+ */
+export interface SystemTaskImpact {
+  href: string;
+  label: string;
+  what: string;
+}
+
+function parseImpact(raw: unknown): SystemTaskImpact[] | null {
+  if (!Array.isArray(raw)) return null;
+  const out: SystemTaskImpact[] = [];
+  for (const entry of raw) {
+    if (!isRecord(entry)) continue;
+    if (typeof entry.href !== "string" || typeof entry.label !== "string")
+      continue;
+    out.push({
+      href: entry.href,
+      label: entry.label,
+      what: typeof entry.what === "string" ? entry.what : "",
+    });
+  }
+  return out.length > 0 ? out : null;
+}
+
+export async function fetchSystemScheduleAlarms(): Promise<
+  SystemScheduleAlarm[]
+> {
+  // `p_overdue_grace_minutes: null` = the scheduler.alarms.overdue_grace_minutes
+  // knob. The argument survives only so the function identity stays put.
+  const { data, error } = await schedulerDb(supabase).rpc(
+    "system_schedule_alarms",
+    {
+      p_overdue_grace_minutes: undefined,
+    },
+  );
   if (error) throw pgErrorToError(error);
-  return (data ?? []) as SystemScheduleAlarm[];
+  return (data ?? []).map((row) => ({
+    ...row,
+    alarm: row.alarm as SystemScheduleAlarm["alarm"],
+    severity: row.severity as SystemScheduleAlarm["severity"],
+    impact: parseImpact(row.impact),
+  }));
+}
+
+/**
+ * THE WAY OUT (Arman, 2026-09-14): a super-admin can say "this one is
+ * supposed to be off" — for a while. The mute lives ON THE ROW
+ * (`metadata.alarm_mute`), not in a browser, because it is a fact about the
+ * schedule that every super-admin and every device must see: "the commerce
+ * ticks are off because commerce is unbuilt" is not a personal preference.
+ *
+ * Written through RLS (`platform_admin_all` admits a super-admin to every
+ * system schedule) with `mergeJsonColumn`, the canonical guarded jsonb merge —
+ * never a whole-metadata overwrite, which would race the repeat guard's own
+ * writes to the same column. No new SECURITY DEFINER door.
+ *
+ * A mute ALWAYS carries an `until`: silence that never ends is how the next
+ * real outage gets missed. Only un-muting or the clock clears it.
+ */
+type SchTaskMuteRow = Pick<
+  Database["scheduler"]["Tables"]["sch_task"]["Row"],
+  "id" | "version" | "metadata"
+>;
+
+async function writeAlarmMute(
+  taskId: string,
+  next: {
+    until: string;
+    reason: string | null;
+    by: string | null;
+    at: string;
+  } | null,
+): Promise<void> {
+  const db = schedulerDb(supabase);
+  const result = await mergeJsonColumn<SchTaskMuteRow>({
+    fetchCurrent: () =>
+      db
+        .from("sch_task")
+        .select("id, version, metadata")
+        .eq("id", taskId)
+        .maybeSingle(),
+    readColumn: (row) => row.metadata,
+    merge: (current) => {
+      const { alarm_mute: _dropped, ...rest } = current;
+      return next ? { ...rest, alarm_mute: { ...next } satisfies Json } : rest;
+    },
+    applyUpdate: ({ value, expectedVersion, nextVersion }) =>
+      db
+        .from("sch_task")
+        .update({ metadata: value, version: nextVersion })
+        .eq("id", taskId)
+        .eq("version", expectedVersion)
+        .select("id, version, metadata")
+        .maybeSingle(),
+  });
+  if (result.status === "saved") return;
+  if (result.status === "not_found") {
+    throw new Error(
+      "This schedule no longer exists, so its alarm cannot be muted.",
+    );
+  }
+  if (result.status === "conflict") {
+    throw new Error(
+      "Something else was editing this schedule at the same moment — try again.",
+    );
+  }
+  throw result.error instanceof Error
+    ? result.error
+    : new Error(`The mute could not be saved: ${String(result.error)}`);
+}
+
+export async function muteSystemScheduleAlarm(args: {
+  taskId: string;
+  untilIso: string;
+  reason: string | null;
+  by: string | null;
+}): Promise<void> {
+  await writeAlarmMute(args.taskId, {
+    until: args.untilIso,
+    reason: args.reason,
+    by: args.by,
+    at: new Date().toISOString(),
+  });
+}
+
+export async function clearSystemScheduleAlarmMute(
+  taskId: string,
+): Promise<void> {
+  await writeAlarmMute(taskId, null);
 }

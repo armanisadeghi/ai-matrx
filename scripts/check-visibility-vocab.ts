@@ -36,6 +36,7 @@
 
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -452,8 +453,8 @@ function main(): number {
 }
 
 try {
-  process.exit(main());
+  exitAfterDrain(main());
 } catch (err) {
   console.error(`${RED}check-visibility-vocab crashed:${RESET}`, err);
-  process.exit(2);
+  exitAfterDrain(2);
 }

@@ -98,6 +98,8 @@ export async function createServerConfig(args: {
   const { data, error } = await client
     .schema("tool").from("mcp_config")
     .insert({
+      // org-fallback-deliberate: an MCP server registration is platform
+      //   infrastructure shared by every organization
       organization_id: await resolveSystemOrgId(client),
       visibility: "public",
       server_id: args.serverId,
@@ -286,6 +288,7 @@ export function computeTestFreshness(server: McpServerRow): TestFreshness {
 }
 
 export interface ProvisionMcpServerInput {
+  organizationId: string;
   slug: string;
   name: string;
   vendor: string;
@@ -335,6 +338,7 @@ export async function provisionMcpServer(
     p_category: input.category,
     p_transport: input.transport,
     p_auth_strategy: input.authStrategy,
+    p_organization_id: input.organizationId,
     p_endpoint_url: input.endpointUrl ?? undefined,
     p_description: input.description ?? undefined,
     p_icon_url: input.iconUrl ?? undefined,

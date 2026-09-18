@@ -34,6 +34,7 @@ import {
   UserCog,
   Tags,
   Gauge,
+  PlugZap,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,7 @@ import {
   type OrgRole,
 } from "../types";
 import { GeneralSettings } from "./GeneralSettings";
+import { OrgBatchSavings } from "@/features/batch-savings/OrgBatchSavings";
 import { OrgIndustriesSection } from "@/features/industries/components/OrgIndustriesSection";
 import { MemberManagement } from "./MemberManagement";
 import { InvitationManager } from "./InvitationManager";
@@ -61,6 +63,7 @@ import { VaultWorkspace } from "@/features/secrets/components/VaultWorkspace";
 import { OrganizationAbbreviation } from "./OrganizationAbbreviation";
 import { OrgCompetitorLabelsSettings } from "@/features/marketing/competitors/OrgCompetitorLabelsSettings";
 import { SpendBudgetCard } from "@/features/entitlements/guardrails/SpendBudgetCard";
+import { ProviderAccountsSection } from "@/features/organizations/provider-accounts/ProviderAccountsSection";
 
 interface OrgManageProps {
   organization: Organization;
@@ -154,6 +157,12 @@ export function OrgManage({
       label: "Dictionary",
       icon: BookA,
       show: canManageSettings,
+    },
+    {
+      id: "provider-accounts",
+      label: "Provider accounts",
+      icon: PlugZap,
+      show: true,
     },
     {
       id: "vault",
@@ -335,11 +344,14 @@ export function OrgManage({
             title="AI budget"
             description="What the plan includes, what this organization has spent, and the lower ceiling it chooses for itself."
           >
-            <SpendBudgetCard
-              organizationId={displayOrganization.id}
-              mode="org"
-              canEdit={canManageSettings}
-            />
+            <div className="flex flex-col gap-3">
+              <SpendBudgetCard
+                organizationId={displayOrganization.id}
+                mode="org"
+                canEdit={canManageSettings}
+              />
+              <OrgBatchSavings organizationId={displayOrganization.id} />
+            </div>
           </SectionCard>
 
           {/* Members */}
@@ -543,6 +555,16 @@ export function OrgManage({
               />
             </section>
           )}
+
+          {/* Provider-native operating accounts and their organization-Vault coverage. */}
+          <SectionCard
+            id="provider-accounts"
+            icon={PlugZap}
+            title="Provider accounts"
+            description="The exact developer, publisher, partner, and operating accounts this organization uses with external services. Credentials stay in the organization Vault."
+          >
+            <ProviderAccountsSection organizationId={displayOrganization.id} />
+          </SectionCard>
 
           {/* Organization vault — all members can use/contribute; admins manage. */}
           <SectionCard

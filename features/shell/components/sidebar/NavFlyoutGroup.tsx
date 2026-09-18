@@ -24,6 +24,11 @@ import {
 } from "../../constants/nav-data";
 import { useNavActions } from "../../navigation/navActions";
 import { useNavPanelActions } from "../../navigation/navPanelActions";
+import {
+  findActiveNavChild,
+  isNavGroupActive,
+} from "../../utils/is-nav-group-active";
+import { cn } from "@/lib/utils";
 
 interface NavFlyoutGroupProps {
   item: ShellNavItem;
@@ -37,10 +42,6 @@ interface NavFlyoutGroupProps {
 
 const OPEN_DELAY = 90;
 const CLOSE_DELAY = 240;
-
-function isOnRoute(pathname: string, href: string): boolean {
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
 
 export default function NavFlyoutGroup({
   item,
@@ -64,11 +65,8 @@ export default function NavFlyoutGroup({
 
   // Active child = most specific matching href among siblings (so e.g. on
   // /transcripts/studio only "Studio" lights up, not "All Transcripts").
-  const activeHref = children
-    .filter((c) => isOnRoute(pathname, c.href))
-    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
-  const isGroupActive =
-    !suppressActive && (Boolean(activeHref) || isOnRoute(pathname, item.href));
+  const activeHref = findActiveNavChild(pathname, item)?.href;
+  const isGroupActive = !suppressActive && isNavGroupActive(pathname, item);
 
   // Destinations up top (grouped), create actions collected at the bottom.
   const { sections, panels, actions } = partitionNavChildren(children);
@@ -262,7 +260,10 @@ export default function NavFlyoutGroup({
         data-nav-href={suppressActive ? undefined : item.href}
         data-nav-active={isGroupActive ? "true" : undefined}
         aria-current={isGroupActive ? "page" : undefined}
-        className="shell-nav-item shell-nav-group-link shell-tactile-subtle"
+        className={cn(
+          "shell-nav-item shell-nav-group-link shell-tactile-subtle",
+          isGroupActive && "shell-active-pill",
+        )}
         onFocus={scheduleOpen}
       >
         <span className="shell-nav-icon">

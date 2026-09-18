@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FileUp, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { AgentCredit } from "../AgentCredit";
 import {
   Dialog,
@@ -16,16 +20,20 @@ import {
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import LoadingSpinner from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
+import { RunStages } from "../RunStages";
 import type { paths } from "@/types/python-generated/api-types";
 import type { IngestLane } from "../../browse/approachLane";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
+import { createSittingStore, type SittingBase } from "../../sitting/sitting";
+import { useDialogSitting } from "../../sitting/useDialogSitting";
+import { SittingResumed } from "../../sitting/SittingResumed";
 import { useRunResultOnce } from "../../durable-run/useRunResultOnce";
 import type { Rulebook } from "../../types";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { DurableRunAgain } from "@/lib/durable-run/DurableRunAgain";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
 import {
@@ -38,6 +46,9 @@ import {
   describeDistillWait,
 } from "../../record/MonologueRecorder";
 import { recordPastedSource } from "../../record/pastedSource";
+import {
+  durableRunDialogOnOpenChange,
+} from "@/lib/durable-run/durableRunDialogClose";
 
 /**
  * "Add rules from a source" — the plop-in-a-book / talk-it-out flow. Two ways
@@ -127,7 +138,7 @@ const MODE_OPTIONS: {
   },
   {
     value: "exemplar",
-    title: "It IS the finished work",
+    title: "It is the finished work",
     blurb:
       "Examples of great output — the rules behind them get worked out for you.",
   },
@@ -153,6 +164,14 @@ export interface IngestSummary {
    * expert touched but never explained — offered as "interview me about it".
    */
   followupSeed: string | null;
+  /**
+   * Sources this Rulebook ALREADY holds rules from, which this run refused to
+   * read again (`redistill="refuse"`, the default — aidream
+   * `source_identity.py`). `added` is then legitimately 0 for a reason that has
+   * nothing to do with the source being thin, so the summary must not say the
+   * distiller found nothing in it.
+   */
+  alreadyDistilled: number;
 }
 
 export function parseIngestSummary(raw: unknown): IngestSummary | null {
@@ -176,6 +195,9 @@ export function parseIngestSummary(raw: unknown): IngestSummary | null {
       typeof data.followup_seed === "string" && data.followup_seed.trim()
         ? data.followup_seed
         : null,
+    alreadyDistilled: Array.isArray(data.already_distilled)
+      ? data.already_distilled.length
+      : 0,
   };
 }
 
@@ -185,8 +207,39 @@ export function describeIngest({
   quotesUnverified,
   failedChunks,
   skippedWords,
+  alreadyDistilled = 0,
 }: IngestSummary): string {
   const missing = describeMissingIngestParts({ failedChunks, skippedWords });
+  // 🚨 ZERO IS NEVER A CLEAN SUCCESS SENTENCE (2026-09-15, found by driving the
+  // Meeting Scavenger against a real platform meeting on production). A run
+  // that read its source fine and found nothing used to print "0 suggested
+  // rules added as drafts. Every quote verified word-for-word against your
+  // source." — a screen that congratulates itself on verifying zero quotes
+  // while the Expert looks at an empty Rulebook and concludes the product is
+  // broken. This is the ONE summary every lane's dialog prints, so the fix
+  // belongs here and reaches all of them. A zero WITH a real cause (parts that
+  // failed, everything a duplicate) keeps saying that cause instead.
+  if (added === 0 && alreadyDistilled > 0) {
+    // A zero with a REAL cause keeps its own cause. This Rulebook already holds
+    // rules from these sources and the run refused to read them twice — saying
+    // "we found nothing in it" here would be a flat lie about a source that
+    // already produced rules.
+    return (
+      (alreadyDistilled === 1
+        ? "That source is "
+        : `${alreadyDistilled} of these sources are `) +
+      "already in this Rulebook, so nothing was read again and nothing was added. " +
+      "Pick something new, or distil one again on purpose to replace what it wrote before."
+    );
+  }
+  if (added === 0 && !missing && !duplicatesSkipped) {
+    return (
+      "We read your source and found nothing in it we could turn into a rule — " +
+      "no judgment calls, corrections or standards that would apply again next " +
+      "time. Nothing was added. That is usually the source rather than you: try " +
+      "one where you were deciding something."
+    );
+  }
   return (
     (missing ? `${missing} ` : "") +
     `${added} suggested ${added === 1 ? "rule" : "rules"} added as drafts` +
@@ -223,6 +276,21 @@ const SHAPE_OPTIONS: {
     blurb: "A document or a recording. We read or listen to it for you.",
   },
 ];
+
+interface IngestSitting extends SittingBase {
+  text: string;
+  sourceNote: string;
+  hideResolution: boolean;
+}
+
+/** One sitting per Rulebook PER LANE — the timeline lane's case and the source
+ *  lane's material are different work and must never restore into each other. */
+const ingestSittings = createSittingStore<IngestSitting>({
+  keyPrefix: "matrx.masterwork.ingest.v1:",
+  isUsable: (sitting) =>
+    typeof sitting.text === "string" &&
+    (sitting.text.trim().length > 0 || (sitting.sourceNote ?? "").trim().length > 0),
+});
 
 export function IngestSourceDialog({
   open,
@@ -275,6 +343,28 @@ export function IngestSourceDialog({
   );
   const [sourceNote, setSourceNote] = useState("");
   const [uploading, setUploading] = useState(false);
+  /**
+   * WHEN THE UPLOAD BEGAN. The durable run does not exist yet while a file is
+   * going up — nothing is paid for and there is no row — so `run.startedAt` is
+   * null and only this lane knows when the wait actually started. Without it
+   * the first stretch of a big upload is the motionless spinner this whole
+   * change exists to remove.
+   */
+  const [uploadStartedAt, setUploadStartedAt] = useState<number | null>(null);
+
+  /**
+   * The real size of this lane's source, in whichever unit its door counted:
+   * an upload has bytes, a recording has seconds, a paste has words. Nothing
+   * is invented — a lane that knows none of them gets the lane floor.
+   */
+  const ingestSize = useMemo(() => {
+    if (recordedSeconds !== null) return { seconds: recordedSeconds };
+    if (shape === "file" || monologue) {
+      return file ? { bytes: file.size } : {};
+    }
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    return words > 0 ? { words } : {};
+  }, [recordedSeconds, shape, monologue, file, text]);
 
   /**
    * ONE durable run for the paste and upload lanes — they emit the SAME
@@ -303,6 +393,11 @@ export function IngestSourceDialog({
         ? INGEST_FILE_PATH
         : INGEST_PATH,
     parseResult: parseIngestSummary,
+    // 🚨 MEASURED FROM WHAT IS ACTUALLY IN THE BOX. A 558 KB EPUB, an
+    // 8,000-character paste and a 40-minute recording are three different
+    // waits; one constant for all three is what made a correct 8m11s run read
+    // as a hang (acquisition-frontier §7.3).
+    size: ingestSize,
   });
   const running = run.running || uploading;
   const summary = run.result ? describeIngest(run.result) : null;
@@ -313,8 +408,48 @@ export function IngestSourceDialog({
   const reset = () => {
     run.reset();
     setUploading(false);
+    setUploadStartedAt(null);
     setRecordedSeconds(null);
   };
+
+  /**
+   * Back to this lane's own first step for the NEXT source — see
+   * `DurableRunAgain` and cold walk 6, finding 7. What already landed is
+   * untouched; only the box this lane types into is cleared.
+   */
+  const [addedSoFar, setAddedSoFar] = useState<string[]>([]);
+  const again = () => {
+    if (summary) setAddedSoFar((prev) => [...prev, summary]);
+    reset();
+    setText("");
+    setFile(null);
+  };
+
+  // A DIALOG NEVER LOSES IN-PROGRESS WORK. On 2026-09-15 a non-technical Expert
+  // pasted an ~8,000-character transcript into this exact field and watched it
+  // vanish twice when the dialog was torn down underneath her. The sibling key
+  // collision that tore it down is fixed and guarded; a per-field text draft
+  // then covered the paste box — and the cold-walk-6 census (2026-09-17) found
+  // everything AROUND it still lost on a reload: what the Expert called the
+  // source, and, on the timeline lane, whether the ending was to be held back.
+  // The whole lane is one sitting now, so there is one writer and one notice.
+  const sitting = useDialogSitting<IngestSitting>({
+    store: ingestSittings,
+    scopeId: `${rulebook.id}:${timeline ? "timeline" : monologue ? "monologue" : "source"}`,
+    active: open,
+    snapshot: { text, sourceNote, hideResolution },
+    isWorthKeeping: (s) =>
+      s.text.trim().length > 0 || s.sourceNote.trim().length > 0,
+    apply: (kept) => {
+      setText(kept.text);
+      setSourceNote(kept.sourceNote);
+      setHideResolution(Boolean(kept.hideResolution));
+    },
+    clearScreen: () => {
+      setText("");
+      setSourceNote("");
+    },
+  });
 
   // Drafts that landed while the user was away still have to reach the page
   // behind this dialog.
@@ -323,7 +458,11 @@ export function IngestSourceDialog({
   // dialog, so firing on the callback's identity looped forever (Bugbot,
   // PR #222). One primitive owns it — `useRunResultOnce`, the same one the
   // three sibling ingest dialogs use.
-  useRunResultOnce(run, onIngested);
+  useRunResultOnce(run, () => {
+    // Only once the server has actually accepted the text is it safe to drop.
+    sitting.forget();
+    onIngested?.();
+  });
 
   useEffect(() => {
     if (run.error) toast.error(run.error);
@@ -341,16 +480,24 @@ export function IngestSourceDialog({
   // Clearing it the moment the run is no longer running lets the NEXT live run
   // reopen in its turn, while the `open` guard still keeps it from re-firing on
   // the run that is already on screen.
+  // 🚨 IT ASKS `run.surfacing`, NEVER `run.running` (cold walk 7, finding 3,
+  // 2026-09-17). `running` is also true for `"rejoining"` — the state a
+  // RESTORED receipt sits in — and the "I closed this" half used to be a
+  // per-MOUNT ref, so a completed sitting the Expert had closed reopened
+  // itself on later, unrelated visits to the Rulebook page, on top of real
+  // controls, once claiming a finished run was "still going… reconnecting".
+  // `surfacing` is false for a run whose receipt records the dismissal, and
+  // the receipt outlives the mount exactly as the run does.
   const reopenedRef = useRef(false);
   useEffect(() => {
-    if (!run.running) {
+    if (!run.surfacing) {
       reopenedRef.current = false;
       return;
     }
     if (reopenedRef.current || open) return;
     reopenedRef.current = true;
     onOpenChange(true);
-  }, [open, run.running, onOpenChange]);
+  }, [open, run.surfacing, onOpenChange]);
 
   const ingest = async () => {
     if (timeline) {
@@ -367,12 +514,10 @@ export function IngestSourceDialog({
       await ingestFile();
       return;
     }
-    if (text.trim().length < MIN_SOURCE_CHARS) {
-      toast.error(
-        "Paste a real chunk of source material first (at least a few paragraphs).",
-      );
-      return;
-    }
+    // Gated on the button, which says the same thing in muted words before
+    // the press. Too little pasted YET is a PROMPT, not an alarm (class
+    // sweep, 2026-09-16).
+    if (text.trim().length < MIN_SOURCE_CHARS) return;
     // WHAT YOU PASTE IS A SOURCE (census D5) — kept BEFORE the run, so it is
     // listed in Sources whether the distillation succeeds, fails, or is
     // rejoined after a reload that took `text` with it.
@@ -396,12 +541,9 @@ export function IngestSourceDialog({
   };
 
   const ingestTimeline = async () => {
-    if (text.trim().length < MIN_SOURCE_CHARS) {
-      toast.error(
-        "Paste the case as it happened — at least a few paragraphs, in order.",
-      );
-      return;
-    }
+    // Gated on the button; see the timeline `reason` on it (class sweep,
+    // 2026-09-16).
+    if (text.trim().length < MIN_SOURCE_CHARS) return;
     // The timeline lane is a paste lane too — same law (census D5).
     await recordPastedSource({
       rulebookId: rulebook.id,
@@ -422,18 +564,15 @@ export function IngestSourceDialog({
   };
 
   const ingestFile = async () => {
-    if (!file) {
-      toast.error(
-        monologue
-          ? "Record something, or choose a recording you already have."
-          : "Choose a document or a recording first.",
-      );
-      return;
-    }
+    // Gated on the button, which already says "Choose a file to turn into
+    // rules" / "Record what you'd say…" in muted words (class sweep,
+    // 2026-09-16).
+    if (!file) return;
     // The upload happens BEFORE the run exists — there is no run row to rejoin
     // until the server has the file, so a reload during the upload legitimately
     // loses only the upload, and nothing has been paid for yet.
     setUploading(true);
+    setUploadStartedAt(Date.now());
     let fileId: string;
     try {
       // The ONE upload path (features/files) — it creates the cld_files row
@@ -454,6 +593,7 @@ export function IngestSourceDialog({
       return;
     } finally {
       setUploading(false);
+    setUploadStartedAt(null);
     }
 
     await run.launch(
@@ -470,13 +610,24 @@ export function IngestSourceDialog({
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (running) return;
-        if (!next) reset();
-        onOpenChange(next);
-      }}
+      // THE CLOSE ALWAYS CLOSES. This used to be `if (running) return;`,
+      // which made the X, Escape and an outside click all inert while a run
+      // was running OR rejoining — i.e. exactly when a user whose live view
+      // had been lost was trying to get out. The run is server-owned; closing
+      // never stopped it, so the guard bought nothing and cost the exit.
+      onOpenChange={durableRunDialogOnOpenChange({
+        running,
+        reset,
+        onOpenChange: (next) => {
+          // The Expert walked away from this run — recorded on the RECEIPT,
+        // so a later visit does not drag the same sitting back on screen.
+        if (!next) run.dismiss();
+          onOpenChange(next);
+        },
+        runLabel: "Reading your source",
+      })}
     >
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className="matrx-touch-targets sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {timeline
@@ -513,10 +664,21 @@ export function IngestSourceDialog({
                 "do X\u201d. They arrive as drafts for you to approve one by one."
               : "Bring in source material — paste a chapter or a playbook, or upload " +
                 "a document or a recording of you explaining your method out loud. " +
-                "The system distills candidate rules and adds them as drafts for you " +
-                "to approve one by one. Nothing goes live without you."}
+                "We read it and write the rules behind it, and they arrive as " +
+                "drafts for you to approve one by one. Nothing goes live without you."}
           </DialogDescription>
         </DialogHeader>
+
+        {/* THE NOTICE BELONGS TO THE LANE, NOT TO ONE FIELD. It used to live
+            inside the paste block, so the file and voice lanes — which never
+            render that block — put the Expert's source note back in silence. */}
+        {sitting.resumed ? (
+          <SittingResumed
+            what="what you had put in here, and what you called it"
+            onDiscard={sitting.discard}
+            onAcknowledge={sitting.acknowledge}
+          />
+        ) : null}
 
         {/* A failure STAYS on screen with its reason and a way out. It used to
             be a toast that removed itself, over a dialog that then showed the
@@ -563,25 +725,27 @@ export function IngestSourceDialog({
                   Interview me about the gaps
                 </Button>
               ) : null}
+              {/* 🚨 NO DEAD ENDS (cold walk 6, finding 7): every other
+                  control here LEAVES, and the likeliest next thing a person
+                  wants is another one. */}
+              <DurableRunAgain label="Add another source" onAgain={again} />
             </div>
           </div>
         ) : running || progress.length > 0 ? (
           <div className="space-y-2">
-            <div className="max-h-52 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/40 p-3">
-              {progress.map((line, i) => (
-                <p key={i} className="text-xs text-muted-foreground">
-                  {line}
-                </p>
-              ))}
-            </div>
-            {running ? (
-              <div className="flex items-start gap-2">
-                <LoadingSpinner size="sm" />
-                <p className="text-xs text-muted-foreground">
-                  {run.waitMessage ?? "Uploading your file…"}
-                </p>
-              </div>
-            ) : null}
+            {/* THE ONE PROGRESS SURFACE — a moving clock, the server's own
+                sentence, the per-source list and the counts it sent. This
+                lane's upload happens before the durable run exists, so the
+                upload line rides in as a stage and `running` covers both. */}
+            <RunStages
+              run={{
+                ...run,
+                running,
+                stages: progress,
+                startedAt: run.startedAt ?? uploadStartedAt,
+              }}
+              waitingMessage="Uploading your file…"
+            />
             {run.running ? (
               <DurableRunInterruption interruption={run.interruption} />
             ) : null}
@@ -773,6 +937,16 @@ export function IngestSourceDialog({
               <Label htmlFor="ingest-text">
                 {timeline ? "The case, in the order it happened" : "The source material"}
               </Label>
+              {/* A restore is never silent, and neither is a browser that
+                  refuses to keep the draft — the user has to know which of the
+                  two they are in before they paste an hour of work. */}
+              {!sitting.available ? (
+                <p className="text-xs text-amber-600 dark:text-amber-500">
+                  This browser will not let us keep a copy of what you type
+                  here, so nothing is saved until you press the button below.
+                  Copy long text somewhere safe first.
+                </p>
+              ) : null}
               <ProTextarea
                 id="ingest-text"
                 value={text}
@@ -785,7 +959,12 @@ export function IngestSourceDialog({
                       : "Paste the text here — long is fine; it gets split automatically."
                 }
                 rows={10}
-                enableTextStats
+                // NOT `enableTextStats`. This box pinned a monospace strip
+                // reading "0 chars 0 whitespace 0 words 0 lines 0 paragraphs"
+                // under a paste field aimed at a non-technical Expert
+                // (jobs-bar-2026-09-16 lanes-b, item 1). The prop exists for
+                // long-form AUTHORING, which this is not — nothing here is
+                // decided by a whitespace count.
               />
             </div>
             )}
@@ -843,22 +1022,62 @@ export function IngestSourceDialog({
                 onOpenChange(false);
               }}
             />
-            <Button
+            {/* A DISABLED PRIMARY ACTION SAYS WHY (`teach-recent-practitioner` W2, 2026-09-15). */}
+            <GatedActionButton
               onClick={() => void ingest()}
-              disabled={
-                running ||
-                (monologue && !file) ||
-                (!timeline && !monologue && shape === "file" && !file)
-              }
+              disabled={running}
+              reason={firstBlockingReason([
+                {
+                  when: monologue && !file,
+                  reason:
+                    "Record what you'd say, or upload a recording, and we'll turn it into rules",
+                },
+                {
+                  when: !timeline && !monologue && shape === "file" && !file,
+                  reason: "Choose a file to turn into rules",
+                },
+                // THE PASTE DOOR HAD NO GATE AT ALL (jobs-bar-2026-09-16
+                // lanes-b, item 18): with an empty box the primary action was
+                // fully blue and clickable, so a first-timer's first press
+                // spent a paid run on nothing.
+                {
+                  // `monologue` is a RECORDING door that leaves `shape` alone,
+                  // so it must be excluded here or its own button would never
+                  // unlock — caught by `monologue-door.test.tsx`.
+                  when: !monologue && shape !== "file" && !text.trim(),
+                  reason: "Paste the material first",
+                },
+                {
+                  when:
+                    timeline && text.trim().length < MIN_SOURCE_CHARS,
+                  reason:
+                    "Paste the case as it happened — a few paragraphs, in order",
+                },
+                {
+                  // The length threshold used to live ONLY inside `ingest`,
+                  // where it became a red toast after the press. The gate
+                  // says it before the press instead.
+                  when:
+                    !timeline &&
+                    !monologue &&
+                    shape !== "file" &&
+                    text.trim().length > 0 &&
+                    text.trim().length < MIN_SOURCE_CHARS,
+                  reason: "A few paragraphs at least, so there is something to read",
+                },
+              ])}
             >
+              {/* The Rulebook page's own control for this exact outcome says
+                  "Turn this into rules". Two verbs for one job, one of them a
+                  word ("distil") a first-timer has never met. */}
               {running
-                ? "Distilling…"
+                ? "Turning it into rules…"
                 : timeline
-                  ? "Distill this case"
+                  ? "Turn this case into rules"
                   : monologue
-                    ? "Distill what I said"
-                    : "Distill rules"}
-            </Button>
+                    ? "Turn what I said into rules"
+                    : "Turn this into rules"}
+            </GatedActionButton>
           </DialogFooter>
         ) : null}
       </DialogContent>

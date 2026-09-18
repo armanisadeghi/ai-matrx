@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1163,
+  "routeCount": 1200,
   "routes": [
     {
       "pattern": "/",
@@ -392,6 +392,16 @@
       "pattern": "/administration/applications/installations",
       "status": "live",
       "source": "app/(admin)/administration/applications/installations/page.tsx"
+    },
+    {
+      "pattern": "/administration/applications/packages",
+      "status": "live",
+      "source": "app/(admin)/administration/applications/packages/page.tsx"
+    },
+    {
+      "pattern": "/administration/applications/sync",
+      "status": "live",
+      "source": "app/(admin)/administration/applications/sync/page.tsx"
     },
     {
       "pattern": "/administration/automation",
@@ -874,6 +884,11 @@
       "source": "app/(admin)/administration/reporting/page.tsx"
     },
     {
+      "pattern": "/administration/reporting/codex-usage",
+      "status": "live",
+      "source": "app/(admin)/administration/reporting/codex-usage/page.tsx"
+    },
+    {
       "pattern": "/administration/reporting/dead-ends",
       "status": "live",
       "source": "app/(admin)/administration/reporting/dead-ends/page.tsx"
@@ -957,6 +972,11 @@
       "pattern": "/administration/ui/official-components/[componentId]",
       "status": "live",
       "source": "app/(admin)/administration/ui/official-components/[componentId]/page.tsx"
+    },
+    {
+      "pattern": "/administration/ui/official-components/alchemy",
+      "status": "live",
+      "source": "app/(admin)/administration/ui/official-components/alchemy/page.tsx"
     },
     {
       "pattern": "/administration/ui/official-components/to-be-added/toggle-menu-demo",
@@ -1574,6 +1594,11 @@
       "source": "app/(public)/canvas/shared/[token]/page.tsx"
     },
     {
+      "pattern": "/capture/needs-you",
+      "status": "live",
+      "source": "app/(core)/capture/needs-you/page.tsx"
+    },
+    {
       "pattern": "/chat",
       "status": "live",
       "source": "app/(core)/chat/page.tsx"
@@ -1809,6 +1834,11 @@
       "source": "app/(core)/commerce/triage/page.tsx"
     },
     {
+      "pattern": "/connected-sources",
+      "status": "live",
+      "source": "app/(core)/connected-sources/page.tsx"
+    },
+    {
       "pattern": "/contact",
       "status": "live",
       "source": "app/(public)/contact/page.tsx"
@@ -1932,6 +1962,11 @@
       "pattern": "/download",
       "status": "live",
       "source": "app/(public)/download/page.tsx"
+    },
+    {
+      "pattern": "/drive",
+      "status": "live",
+      "source": "app/(core)/drive/page.tsx"
     },
     {
       "pattern": "/education",
@@ -2414,6 +2449,16 @@
       "source": "app/error/page.tsx"
     },
     {
+      "pattern": "/exports",
+      "status": "live",
+      "source": "app/(core)/exports/page.tsx"
+    },
+    {
+      "pattern": "/exports/[libraryId]",
+      "status": "live",
+      "source": "app/(core)/exports/[libraryId]/page.tsx"
+    },
+    {
       "pattern": "/features",
       "status": "live",
       "source": "app/(core)/features/page.tsx"
@@ -2572,6 +2617,11 @@
       "pattern": "/how-it-works",
       "status": "live",
       "source": "app/(public)/how-it-works/page.tsx"
+    },
+    {
+      "pattern": "/how-we-prove-it",
+      "status": "live",
+      "source": "app/(public)/how-we-prove-it/page.tsx"
     },
     {
       "pattern": "/hr",
@@ -3206,6 +3256,16 @@
       "source": "app/(core)/legal/ca-wc/utilities/weeks/page.tsx"
     },
     {
+      "pattern": "/libraries",
+      "status": "live",
+      "source": "app/(core)/libraries/page.tsx"
+    },
+    {
+      "pattern": "/libraries/[id]",
+      "status": "live",
+      "source": "app/(core)/libraries/[id]/page.tsx"
+    },
+    {
       "pattern": "/lists",
       "status": "live",
       "source": "app/(core)/lists/page.tsx"
@@ -3301,6 +3361,41 @@
       "source": "app/(core)/marketing/[brandId]/content/page.tsx"
     },
     {
+      "pattern": "/marketing/[brandId]/content/map",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/map/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/map/[mapId]",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/map/[mapId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/map/[mapId]/graph",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/map/[mapId]/graph/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/map/[mapId]/history",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/map/[mapId]/history/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/map/[mapId]/pages",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/map/[mapId]/pages/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/map/[mapId]/table",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/map/[mapId]/table/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/map/[mapId]/text",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/map/[mapId]/text/page.tsx"
+    },
+    {
       "pattern": "/marketing/[brandId]/content/plan",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/content/plan/page.tsx"
@@ -3314,6 +3409,11 @@
       "pattern": "/marketing/[brandId]/content/plan/[siteId]/ai-runs",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/content/plan/[siteId]/ai-runs/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/content/plan/[siteId]/brief",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/content/plan/[siteId]/brief/page.tsx"
     },
     {
       "pattern": "/marketing/[brandId]/content/plan/[siteId]/entities",
@@ -3389,6 +3489,11 @@
       "pattern": "/marketing/[brandId]/identity/offerings",
       "status": "live",
       "source": "app/(core)/marketing/[brandId]/identity/offerings/page.tsx"
+    },
+    {
+      "pattern": "/marketing/[brandId]/identity/strategy",
+      "status": "live",
+      "source": "app/(core)/marketing/[brandId]/identity/strategy/page.tsx"
     },
     {
       "pattern": "/marketing/[brandId]/inbox",
@@ -4271,6 +4376,16 @@
       "source": "app/(core)/marketing/tools/youtube/videos/[videoId]/page.tsx"
     },
     {
+      "pattern": "/marketing/topical-maps/[mapId]",
+      "status": "live",
+      "source": "app/(core)/marketing/topical-maps/[mapId]/page.tsx"
+    },
+    {
+      "pattern": "/marketing/topical-maps/topics/[topicId]",
+      "status": "live",
+      "source": "app/(core)/marketing/topical-maps/topics/[topicId]/page.tsx"
+    },
+    {
       "pattern": "/masterwork",
       "status": "live",
       "source": "app/(core)/masterwork/page.tsx"
@@ -4291,9 +4406,24 @@
       "source": "app/(core)/masterwork/[id]/conduct/page.tsx"
     },
     {
+      "pattern": "/masterwork/[id]/drip",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/drip/page.tsx"
+    },
+    {
+      "pattern": "/masterwork/[id]/drive",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/drive/page.tsx"
+    },
+    {
       "pattern": "/masterwork/[id]/import",
       "status": "live",
       "source": "app/(core)/masterwork/[id]/import/page.tsx"
+    },
+    {
+      "pattern": "/masterwork/[id]/inbox",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/inbox/page.tsx"
     },
     {
       "pattern": "/masterwork/[id]/interview",
@@ -4306,14 +4436,49 @@
       "source": "app/(core)/masterwork/[id]/masterworks/page.tsx"
     },
     {
+      "pattern": "/masterwork/[id]/plan",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/plan/page.tsx"
+    },
+    {
+      "pattern": "/masterwork/[id]/probe",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/probe/page.tsx"
+    },
+    {
       "pattern": "/masterwork/[id]/record",
       "status": "live",
       "source": "app/(core)/masterwork/[id]/record/page.tsx"
     },
     {
+      "pattern": "/masterwork/[id]/sort",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/sort/page.tsx"
+    },
+    {
       "pattern": "/masterwork/[id]/sources",
       "status": "live",
       "source": "app/(core)/masterwork/[id]/sources/page.tsx"
+    },
+    {
+      "pattern": "/masterwork/[id]/sources/kept",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/sources/kept/page.tsx"
+    },
+    {
+      "pattern": "/masterwork/[id]/sources/kept/[sourceKey]",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/sources/kept/[sourceKey]/page.tsx"
+    },
+    {
+      "pattern": "/masterwork/[id]/teach-back",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/teach-back/page.tsx"
+    },
+    {
+      "pattern": "/masterwork/[id]/triad",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/triad/page.tsx"
     },
     {
       "pattern": "/masterwork/admin",
@@ -5221,6 +5386,11 @@
       "source": "app/(core)/scopes/page.tsx"
     },
     {
+      "pattern": "/scopes/fade-lab",
+      "status": "live",
+      "source": "app/(core)/scopes/fade-lab/page.tsx"
+    },
+    {
       "pattern": "/scopes/manage",
       "status": "live",
       "source": "app/(core)/scopes/manage/page.tsx"
@@ -5249,6 +5419,11 @@
       "pattern": "/scraper/[id]",
       "status": "live",
       "source": "app/(core)/scraper/[id]/page.tsx"
+    },
+    {
+      "pattern": "/scraper/batch",
+      "status": "live",
+      "source": "app/(core)/scraper/batch/page.tsx"
     },
     {
       "pattern": "/scraper/quick",
@@ -5511,6 +5686,11 @@
       "source": "app/(public)/terms-of-service/page.tsx"
     },
     {
+      "pattern": "/the-landscape",
+      "status": "live",
+      "source": "app/(public)/the-landscape/page.tsx"
+    },
+    {
       "pattern": "/tool-call-visualization/admin",
       "status": "live",
       "source": "app/(core)/tool-call-visualization/admin/page.tsx"
@@ -5689,6 +5869,11 @@
       "pattern": "/welcome",
       "status": "live",
       "source": "app/(core)/welcome/page.tsx"
+    },
+    {
+      "pattern": "/why-ai-matrx",
+      "status": "live",
+      "source": "app/(public)/why-ai-matrx/page.tsx"
     },
     {
       "pattern": "/work",

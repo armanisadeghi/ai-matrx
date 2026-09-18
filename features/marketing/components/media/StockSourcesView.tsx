@@ -340,6 +340,7 @@ export function StockSourcesView({
             {
               folderPath: "Images/Brand Library/Stock",
               fileName: `unsplash-${photo.id}.jpg`,
+              organizationId,
               metadata: {
                 stockSource: "unsplash",
                 stockSourceId: photo.id,

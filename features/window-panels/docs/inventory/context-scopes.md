@@ -1,6 +1,6 @@
 # Inventory chunk — Context, Scopes & Projects
 
-> Panels: `contextSwitcherWindow`, `drillDeckContextWindow`, `scopeEditWindow`, `hierarchyCreationWindow`, `contextAssignmentWindow`, `projectsWindow`, `createProjectWindow`, `creatorHub`, `resourcePickerWindow`, `itemDetailWindow`.
+> Panels: `contextSwitcherWindow`, `drillDeckContextWindow`, `scopeEditWindow`, `hierarchyCreationWindow`, `contextAssignmentWindow`, `projectsWindow`, `createProjectWindow`, `creatorHub`, `resourcePickerWindow`, `detailWindow` (was `itemDetailWindow`; the Detail primitive, `lib/detail`).
 > Legend: ✓ present · ◑ partial · ✗ missing · — n/a. Priority P0/P1/P2 · Effort S/M/L.
 > Filled 2026-06-23. See master `PANEL_INVENTORY.md` for column contracts.
 > Updated 2026-07-23: Miller Columns and Drill Deck are registered Surface-A WindowPanel siblings with adaptive popover hosts.
@@ -30,7 +30,7 @@
 | createProjectWindow | Projects | Create a project anywhere (Manual + Use-AI) | Gold | ✓/✗/✓ | ◑ initialOrg lock | ✗ (create-only) | ✗ | — | ✓ AI run creates server-side | none material; ephemeral by design | hierarchyCreation, projectsWindow | already-one (wraps canonical `ProjectCreatePanel`; nobody forks the form) | exemplar — replicate pattern (P2·S) |
 | creatorHub | Creator/Debug | Multi-tab creator+debug home bound to last-active conversation | Solid | ✗ | ✗ | ✗ | ✓ 17 tabs (Settings/Data/Context/Payload/Run/System/Memory/Stream/Routing/Sandbox…) | ✗ | ✓ run-control + debug actions | tabs are bespoke (no first-class WindowPanel tab API); conversation-bound, empty-state when none | (run-controls family in agents chunk) | already-one (consolidates inline CreatorRunPanel + debug panels) | — |
 | resourcePickerWindow (ORPHAN) | Resources/Attach | Pick a resource to attach (image/file/yt/audio) | Stub (window) | ✓ via menu | — | — | ✗ | ✓ attaches to input | ✓ onResourceSelected | UNREACHABLE: no opener/branch/tile; inner `ResourcePickerMenu` used directly elsewhere | (resource-picker primitive) | **delete window** (menu is the live primitive) | delete (P1·S) |
-| itemDetailWindow | Item-presentation | Generic read-only detail for any `item_presentation` entity w/o bespoke window | Solid | ✗ | ✓ seeds name/about instantly | ✗ (read-only) | ◑ all scalar fields formatted | ✗ | — | read-only; fetches via registry `detailSource`; graceful all states | (item-presentation registry) | keep-separate-justified (universal fallback) | — |
+| detailWindow (was itemDetailWindow) | Item-presentation → lib/detail | Generic read-only detail for any `item_presentation` entity w/o bespoke window; also `detailDocked` + `/detail/[type]/[id]` | Solid | ✗ | ✓ seeds name/about instantly | ✗ (read-only) | ◑ all scalar fields formatted | ✗ | — | read-only; fetches via registry `detailSource`; graceful all states | (item-presentation registry) | keep-separate-justified (universal fallback) | — |
 
 ---
 
@@ -47,7 +47,7 @@
 | createProjectWindow | ✗ | ◑ panel owns footer | ✗ | ✗ | ◑ Manual/Use-AI (in ProjectCreatePanel) | ✗/✗/✗/✗ (ephemeral) | default | default | **opener + callback group ✓** (created/ai-created/window-close) | ✗ | ✗ | ✗ | ✓ canonical `ProjectCreatePanel` (shared w/ Sheet + /projects/new) | ✓ DB→Redux + `invalidateAndRefetchFullContext` on AI | surface/help; std header tab API | exemplar; add surface (P2·S) |
 | creatorHub | ◑ titleNode | ✓ rich-ish (active agent/conv + creator chip, self-reading units) | ✓ tab-list sidebar (resizable) | ✗ | ✓ 17 (bespoke, sidebar-driven) | ✓/✓ `creator_hub`/✗/◑ onCollectData(activeTab) | default | default | opener (no cb) | ✗ | ✗ | ◑ footer shows active agent/conv (manual, not the S2 wiring) | ✓ reuses CreatorRunTabContent + debug panels (shared cores) | ✓ conversation-focus slice → shared cores | first-class tab API (S4); surface; std-ctrls | adopt tab API when S4 lands (P2·L) |
 | resourcePickerWindow (ORPHAN) | ✗ | ✗ | ✗ | ✗ | — | ✗/✗/✗/✗ | — | — | ✗ none | ✗ | ✗ | ✗ | inner `ResourcePickerMenu` canonical (used direct) | n/a (window never mounts) | entire window is dead | DELETE (P1·S) |
-| itemDetailWindow | ✓ titleNode + actionsRight (copy-id) | ✗ | ✗ | ✗ | — | ✗/✗/✗/✗ (ephemeral) | default | default | opener (no cb) | ✗ | ✗ | ✗ | ✓ canonical (item-presentation registry `detailSource`) | ◑ direct Supabase fetch (untyped client) — not via a slice | surface/help; could host actions/edit | add surface (P2·S) |
+| detailWindow | ✓ titleNode + actionsRight (prev/next · open-as · copy-id) | ✗ | ✗ | ✗ | — | ✗/✗/✗/✗ (ephemeral) | default | default | opener (no cb) | ✗ | ✗ | ✗ | ✓ canonical (item-presentation registry `detailSource`) | ◑ direct Supabase fetch (untyped client) — not via a slice | surface/help; could host actions/edit | add surface (P2·S) |
 
 ---
 
@@ -64,7 +64,7 @@
 | createProjectWindow | ✓ `useOpenCreateProjectWindow` (callback-aware) | **callback ✓** (popout default) | portable | ✗ (ephemeral; intentional) | ok | **3** — shared `ProjectPicker` (used by Research + War Room), `ProjectsHub`, sidebar `navActions` "Add Project" | none (well distributed) | — (exemplar) |
 | creatorHub | ✓ `useOpenCreatorHub` (+Controller, deep-link `initialTab`) | ✗ | portable | ✓ `tile.creator-hub` / creator (gated) | ok | 1 — `SidebarCreatorHubToggle` (Crown, footer) | ok (Crown + tile) | — |
 | resourcePickerWindow (ORPHAN) | ✗ **NONE** | ✗ none | **UNREACHABLE** | ✗ | **registered but no open path** | 0 (window); inner menu used directly 5+ (cx-chat, cx-conversation, ResourcePickerButton, public-chat) | **cannot be opened — dead registry/catalogue rows** | **delete window** (registry+catalogue) (P1·S) |
-| itemDetailWindow | ✓ `useOpenItemDetailWindow` (+Controller) | ✗ | portable | ✗ (contextual; intentional — opened per clicked entity) | ok | 1 — `useOpenItemPresentation` (the universal item-click fallback → effectively many surfaces) | ok (the fallback for all item types) | — |
+| detailWindow | ✓ `useOpenDetail` (lib/detail) → `useOpenDetailWindow` (+Controller) | ✗ | portable | ✗ (contextual; intentional — opened per clicked entity) | ok | 1 — `useOpenItemPresentation` (the universal item-click fallback → effectively many surfaces) | ok (the fallback for all item types) | — |
 
 ---
 

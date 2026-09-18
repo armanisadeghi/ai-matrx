@@ -30,7 +30,10 @@ import {
   X,
   ChevronDown,
   ChevronRight,
+  BookOpen,
 } from "lucide-react";
+import { listExampleTables } from "@/features/data-tables/service";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import Link from "next/link";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import CreateTableModal from "./CreateTableModal";
@@ -62,6 +65,8 @@ interface UserTable {
   row_count: number;
   field_count: number;
   updated_at: string;
+  /** Newest of the table's, its rows' and its columns' stamps — what `get_user_tables` orders by. */
+  last_activity_at?: string;
   is_public: boolean;
   /** Canonical sharing reach. Legacy rows may predate it — see VisibilityBadge. */
   visibility?: string | null;
@@ -208,6 +213,52 @@ export default function TableCards() {
 
   // Shared section collapse state
   const [isSharedSectionOpen, setIsSharedSectionOpen] = useState(true);
+
+  // EXAMPLES — the platform's own tables (Matrx System org), read-only for
+  // everyone, there so a user can see what a table can do before making one.
+  // Loaded separately from `get_user_tables`, which stays "my tables".
+  const [exampleTables, setExampleTables] = useState<UserTable[]>([]);
+  const [examplesError, setExamplesError] = useState<string | null>(null);
+  const [isExamplesSectionOpen, setIsExamplesSectionOpen] = useState(true);
+  // The global system org owns every example table. The account that seeded
+  // them (admin@admin.com — the account every agent signs in as) still gets
+  // them back from `get_user_tables`, so WITHOUT this they reappear under
+  // "My Tables" carrying the rename and delete controls the Examples section
+  // deliberately withholds. Found on independent review 2026-09-15: removing
+  // the controls from one of the two cards is not removing them.
+  const [systemOrgId, setSystemOrgId] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    resolveSystemOrgId()
+      .then((id) => {
+        if (!cancelled) setSystemOrgId(id);
+      })
+      .catch((err) => {
+        console.error("Could not resolve the system organization:", err);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  /** A platform example table — read-only for everyone, its seeder included. */
+  const isExampleTable = (table: UserTable) =>
+    systemOrgId !== null && table.organization_id === systemOrgId;
+
+  useEffect(() => {
+    let alive = true;
+    void listExampleTables().then((result) => {
+      if (!alive) return;
+      if (!result.success) {
+        setExamplesError(result.error);
+        return;
+      }
+      setExamplesError(null);
+      setExampleTables(result.data as unknown as UserTable[]);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   useEffect(() => {
     fetchCurrentUser();
@@ -384,7 +435,11 @@ export default function TableCards() {
   };
 
   // Render a single table card
-  const renderTableCard = (table: UserTable, owned: boolean) => {
+  const renderTableCard = (table: UserTable, ownedArg: boolean) => {
+    // An example table is never "owned" for the purpose of card controls, no
+    // matter which list it is being rendered from. The seed script is its only
+    // writer, so rename and delete must be absent on EVERY card of it.
+    const owned = ownedArg && !isExampleTable(table);
     const isNavigating = navigatingId === table.id;
     const isDisabled = isNavigating || navigatingId !== null;
 
@@ -511,7 +566,7 @@ export default function TableCards() {
             <div className="flex flex-col space-y-1.5">
               <div className="flex items-center text-xs text-gray-500 dark:text-gray-500">
                 <Calendar size={12} className="mr-1" />
-                <span>Updated: {formatDate(table.updated_at)}</span>
+                <span>Updated: {formatDate(table.last_activity_at ?? table.updated_at)}</span>
               </div>
 
               {/* THE BADGE MUST NOT LIE. This read the legacy `is_public`
@@ -691,7 +746,11 @@ export default function TableCards() {
                   <TableListItem
                     key={table.id}
                     {...table}
-                    isOwned={true}
+                    // The date shown is the one the list is ordered by.
+                    updated_at={table.last_activity_at ?? table.updated_at}
+                    // Same rule as the cards: an example table is never
+                    // "owned" for the purpose of rename/delete controls.
+                    isOwned={!isExampleTable(table)}
                     onNavigate={handleNavigate}
                     onEdit={(id) => {
                       const t = tables.find((t) => t.id === id);
@@ -784,6 +843,7 @@ export default function TableCards() {
                       <TableListItem
                         key={table.id}
                         {...table}
+                        updated_at={table.last_activity_at ?? table.updated_at}
                         isOwned={false}
                         onNavigate={handleNavigate}
                         isNavigating={navigatingId === table.id}
@@ -808,6 +868,62 @@ export default function TableCards() {
                   </div>
                 )}
               </>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
+      )}
+
+      {/* Examples — read-only platform tables that show what a table can do. */}
+      {(exampleTables.length > 0 || examplesError) && (
+        <Collapsible
+          open={isExamplesSectionOpen}
+          onOpenChange={setIsExamplesSectionOpen}
+          className="mt-8"
+        >
+          <CollapsibleTrigger className="flex items-center gap-2 w-full group mb-4 hover:opacity-80 transition-opacity">
+            <div className="flex items-center gap-2">
+              {isExamplesSectionOpen ? (
+                <ChevronDown className="w-5 h-5 text-muted-foreground" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              )}
+              <BookOpen className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                Examples
+              </h2>
+              <Badge
+                variant="secondary"
+                className="font-normal py-0.25 px-1.5 text-xs"
+              >
+                {exampleTables.length}
+              </Badge>
+              <span className="text-xs text-muted-foreground ml-2">
+                Read-only tables that show what a table can do
+              </span>
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            {examplesError ? (
+              <div className="text-center py-8 border border-dashed border-border rounded-lg bg-muted/30">
+                <p className="text-muted-foreground">
+                  The example tables could not be loaded: {examplesError}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {exampleTables
+                  .filter(
+                    (table) =>
+                      !searchTerm ||
+                      table.table_name
+                        .toLowerCase()
+                        .includes(searchTerm.toLowerCase()),
+                  )
+                  // Examples are the platform's read-only showcase for EVERYONE,
+                  // including the account that seeded them — no rename, no
+                  // delete from a card. The seed script is their only writer.
+                  .map((table) => renderTableCard(table, false))}
+              </div>
             )}
           </CollapsibleContent>
         </Collapsible>

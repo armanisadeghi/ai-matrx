@@ -29,6 +29,7 @@
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 /** Route prefixes owned by a deployment that not every profile compiles. */
 const SPLIT_PREFIXES = ["/administration", "/demos"] as const;
@@ -341,4 +342,4 @@ function main(): number {
   return strict ? 2 : 0;
 }
 
-if (!process.argv.includes("--as-module")) process.exit(main());
+if (!process.argv.includes("--as-module")) exitAfterDrain(main());

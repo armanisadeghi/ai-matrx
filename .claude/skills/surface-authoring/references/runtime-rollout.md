@@ -14,6 +14,7 @@ Read this when a surface already has a manifest or DB row but is not fully agent
 ### 1. Reconcile the manifest
 
 - Declare every meaningful custom value with honest `alwaysAvailable`, `autoContext`, type, description, size, group, and order.
+- Check every route/provider sharing the identity before declaring a value always available; a route-specific value stays optional on the shared manifest.
 - Keep the `createXxxScope` signature aligned: every `alwaysAvailable: true` value is required; other values and the five baselines are optional.
 - Run `pnpm check:surface-impact <surface>` before changing value vocabulary.
 
@@ -22,8 +23,10 @@ Read this when a surface already has a manifest or DB row but is not fully agent
 Mirror `features/notes/agent-context/`:
 
 - `buildXxxContextData(args)` maps live UI state through `createXxxScope(...)`.
-- `XXX_CONTEXT_MENU_PROPS` contains `sourceFeature` and the byte-identical `surfaceName`.
+- `XXX_CONTEXT_MENU_PROPS` contains the true product `sourceFeature` and byte-identical `surfaceName`. Verify `sourceFeatureFromSurfaceName` resolves the same product for header/role launches; a correct menu prop does not repair an unmapped header identity. Missing product names belong in the canonical attribution registry and generated contract (see `context-menu-v3`), never an unrelated allowed slug.
 - `createXxxExtraSections(handlers)` exposes every real surface action with real callbacks.
+
+For asynchronous derived values, carry the input identity with the result. A new input cannot emit the previous input's preview or error as current: pending, failed, and ready must describe the same input that the scope supplies. Verify a rapid input change before accepting the emitter.
 
 Emit real baselines: editor selection and surrounding text, primary `content`, and a focused `context` object. `buildApplicationScopeFromMenuContext` guarantees the baseline floor; that fallback never replaces the surface's own rich emitter.
 
@@ -36,7 +39,7 @@ For a live editor, use `useXxxSurfaceScope(): () => SurfaceScopePayload`. It rea
 Invoke `context-menu-v3` and follow its full contract:
 
 - Import wrappers statically; only their heavy content lazy-loads.
-- Use `EditableContextMenu` for editors and `NonEditableContextMenu` for rendered/read-only regions.
+- Use `EditableContextMenu` for editors and `NonEditableContextMenu` for rendered/read-only regions. For controlled fields, wire each field's ref and mutation callbacks to its owning state. One editable wrapper over several inputs without those callbacks is incomplete even when the menu opens; prove a menu edit changes both the displayed input and its derived result.
 - Use one menu per pane; lists/tables delegate row context through `resolveContextOnOpen`.
 - Pass `contentSource` for real rich-document content and `entity` for attachable/shareable records.
 - Pass `extraSections` for the surface's actions.
@@ -64,8 +67,8 @@ Invoke `context-menu-v3` and follow its full contract:
 
 ### 8. Sync and document
 
-- Sync only the focused manifest with `npx tsx scripts/emit-surface-sync-sql.ts --surface <client>/<local>` and apply it through the sanctioned DB path.
-- Verify the live `ui_surface`, value, role, and write-target rows.
+- Sync only the focused manifest with `pnpm exec tsx scripts/sync-surface-manifests-direct.ts --surface <client>/<local>`.
+- Verify it with the matching `--check --surface <client>/<local>` command; it reads the live `ui_surface` plus every declared value, role, write target, and client tool.
 - Update the feature's `FEATURE.md` and Change Log.
 
 ## Live completion gate
@@ -81,4 +84,4 @@ Invoke `context-menu-v3` and follow its full contract:
 
 ## Delegated implementation report
 
-When an authorized coordinator delegates part of this rollout, the implementer returns: files changed; every new/changed SurfaceValue with its full contract; editable and presentational regions wired; inputs migrated to Pro; and anything not completed with the exact reason. The coordinator owns DB sync, certification, commit, and handoff unless the delegation explicitly says otherwise.
+When an authorized coordinator delegates part of this rollout, the implementer returns: files changed; every new/changed SurfaceValue with its full contract; editable and presentational regions wired; inputs migrated to Pro; the focused sync/check receipt when authorized for that mirror; and anything not completed with the exact reason. The coordinator owns candidate submission, commit, and verifier handoff; the independent verifier owns certification. A coordinator may explicitly retain one narrow external sync boundary, never silently inherit it.

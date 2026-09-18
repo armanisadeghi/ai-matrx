@@ -632,11 +632,27 @@ export const adminCategoriesData: AdminCategory[] = [
         isNew: true,
       },
       {
+        title: "Folder Sync Health",
+        description:
+          "Fleet health for folder sync: accounts over quota, mappings that stopped, and devices that went quiet. States and counts only — never a local path.",
+        iconName: "FolderSync",
+        link: "/administration/applications/sync",
+        isNew: true,
+      },
+      {
         title: "Application History",
         description:
           "Review the unified configuration and catalog audit timeline for shipped applications.",
         iconName: "History",
         link: "/administration/applications/history",
+        isNew: true,
+      },
+      {
+        title: "Packages",
+        description:
+          "The @ai-matrx npm package catalog — what is published, at which version, and what this app has installed.",
+        iconName: "Package",
+        link: "/administration/applications/packages",
         isNew: true,
       },
     ],
@@ -1064,6 +1080,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/ui/official-components/to-be-added/toggle-menu-demo",
       },
       {
+        title: "Alchemy — Content Transfer",
+        description:
+          "Exercise the @ai-matrx/alchemy content-transfer menu over sample rows: copy, export and hand-off actions on a data table.",
+        iconName: "FlaskConical",
+        link: "/administration/ui/official-components/alchemy",
+        isNew: true,
+      },
+      {
         title: "Toggle Menu — With Categories",
         description: "Toggle menu demo variant with grouped categories.",
         iconName: "ToggleLeft",
@@ -1345,6 +1369,14 @@ export const adminCategoriesData: AdminCategory[] = [
           "Platform-wide reports across all users and organizations.",
         iconName: "BarChart2",
         link: "/administration/reporting/reports",
+        isNew: true,
+      },
+      {
+        title: "Codex usage",
+        description:
+          "Your sanitized local Codex activity by estimated standard-credit cost, model, project, conversation, and worker. Matrx Local is the only source.",
+        iconName: "Laptop",
+        link: "/administration/reporting/codex-usage",
         isNew: true,
       },
       {

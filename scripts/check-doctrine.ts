@@ -21,6 +21,7 @@
 
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 interface Args {
   mode: "staged" | "branch";
@@ -39,14 +40,14 @@ function parseArgs(): Args {
       const v = argv[++i];
       if (!v) {
         console.error("--branch requires a value");
-        process.exit(2);
+        exitAfterDrain(2);
       }
       args.branch = v;
     } else if (a === "-h" || a === "--help") {
       console.log(
         "Usage: check-doctrine [--staged | --branch <name>] [--strict]",
       );
-      process.exit(0);
+      exitAfterDrain(0);
     }
   }
   return args;
@@ -65,7 +66,7 @@ function git(cmd: string): string {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`git command failed: ${cmd}\n${message}`);
-    process.exit(2);
+    exitAfterDrain(2);
   }
 }
 
@@ -517,4 +518,4 @@ function main() {
   return 0;
 }
 
-process.exit(main());
+exitAfterDrain(main());

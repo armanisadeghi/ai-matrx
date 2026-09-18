@@ -373,7 +373,10 @@ function AssetInspector({
     try {
       const uploaded = await fileHandler.upload(
         { kind: "external_url", url: asset.src },
-        { folderPath: "Images/Brand Library" },
+        {
+          folderPath: "Images/Brand Library",
+          organizationId,
+        },
       );
       if (!uploaded.fileId) {
         throw new Error("Import finished without a file id.");

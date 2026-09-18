@@ -8,6 +8,10 @@
 import { useState } from "react";
 import { Download, Loader2, MoreHorizontal, Send } from "lucide-react";
 import { toast } from "@/lib/toast";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -102,13 +106,22 @@ export function CatalogRowActions({
   };
 
   const push = async (target: "workbook" | "dataset") => {
-    const view = await ensureView();
-    if (!view) return;
     setBusy(true);
     try {
+      const organizationId =
+        target === "workbook"
+          ? await ensureOrganizationContext()
+          : undefined;
+      const view = await ensureView();
+      if (!view) return;
       const res =
         target === "workbook"
-          ? await pushToWorkbook(view.name, view.columns, view.rows)
+          ? await pushToWorkbook(
+              view.name,
+              view.columns,
+              view.rows,
+              organizationId,
+            )
           : await pushToDataset(view.name, view.columns, view.rows);
       if (!res.ok || !res.href) {
         toast.error(
@@ -130,6 +143,12 @@ export function CatalogRowActions({
             : undefined,
         note: res.error,
       });
+    } catch (error) {
+      if (!isOrganizationSelectionCancelled(error)) {
+        toast.error("Could not create workbook", {
+          description: error instanceof Error ? error.message : String(error),
+        });
+      }
     } finally {
       setBusy(false);
     }

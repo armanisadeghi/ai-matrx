@@ -7,8 +7,12 @@
 
 // Deep import, NOT the `@/features/files` barrel — see the note in lib/redux/store.ts.
 import { fileHandler } from "@/features/files/handler/handler";
-import { RECORDING_LIMITS } from "../constants/recording";
-import { formatFileSize } from "@ai-matrx/kit/format";
+import {
+  overSizeMessage,
+  recordingLimits,
+  uploadLimits,
+  type ResolvedLimit,
+} from "@/features/audio/limits";
 import {
   normalizeAudioType,
   audioExtensionForType,
@@ -57,9 +61,18 @@ interface ValidationResult {
   size: number;
 }
 
+/**
+ * Validate one audio blob against a ceiling THE CALLER HAS ALREADY RESOLVED.
+ *
+ * There is deliberately no default for `maxSize`: a default here is exactly how
+ * a stale 100 MB constant survived for months as the real product limit. The
+ * ceiling arrives as a `ResolvedLimit` so an unreadable knob stays visible as
+ * "we could not read the limit" instead of silently becoming a number.
+ */
 export function validateAudioFile(
   blob: Blob,
-  maxSize: number = RECORDING_LIMITS.MAX_FILE_SIZE_BYTES,
+  maxSize: ResolvedLimit,
+  lane: "upload" | "recording",
 ): ValidationResult {
   const size = blob.size;
   if (size === 0 || !blob) {
@@ -77,14 +90,37 @@ export function validateAudioFile(
       size,
     };
   }
-  if (size > maxSize) {
+  if (!maxSize.resolved) {
+    // Nothing fails silently: we do NOT invent a ceiling, and we do NOT
+    // pretend one was checked. The upload proceeds and the reason is on the
+    // record — the server enforces its own limits regardless.
+    console.warn(
+      `[audioStorageService] No size ceiling applied to this ${lane}: ${maxSize.reason}`,
+    );
+    return { valid: true, size };
+  }
+  if (size > maxSize.value) {
     return {
       valid: false,
-      error: `File size (${formatFileSize(size)}) exceeds maximum allowed size (${formatFileSize(maxSize)})`,
+      error: overSizeMessage(size, maxSize.value, lane),
       size,
     };
   }
   return { valid: true, size };
+}
+
+/**
+ * Resolve the right lane's ceiling and validate against it. `"import"` is a
+ * file the person handed us (the server chunks it, so the ceiling is generous);
+ * `"recording"` is a live browser capture held in tab memory (much smaller).
+ */
+export async function validateAudioForLane(
+  blob: Blob,
+  source: AudioUploadSource,
+): Promise<ValidationResult> {
+  const lane = source === "import" ? "upload" : "recording";
+  const limits = lane === "upload" ? await uploadLimits() : await recordingLimits();
+  return validateAudioFile(blob, limits.maxFileSizeBytes, lane);
 }
 
 export function generateAudioFilename(
@@ -118,10 +154,11 @@ export async function saveAudioToStorage(
   maxRetries: number = 5,
   options: SaveAudioOptions = {},
 ): Promise<UploadResult> {
-  const validation = validateAudioFile(audioBlob);
+  const source = options.source ?? "recording";
+  const validation = await validateAudioForLane(audioBlob, source);
   if (!validation.valid) throw new Error(validation.error);
 
-  const isImport = (options.source ?? "recording") === "import";
+  const isImport = source === "import";
 
   // Present a clean `audio/*` type + matching extension so the file lands in
   // cld_files classified as audio, not video. Recordings (webm/opus, often

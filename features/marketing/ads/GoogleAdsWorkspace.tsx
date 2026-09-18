@@ -26,6 +26,7 @@ import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
 import { GOOGLE_ADS_REPORTING_SCOPES, GOOGLE_SCOPE } from "@/lib/googleScopes";
 import { toast } from "@/lib/toast";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
+import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
 
 function isoDate(daysAgo: number): string {
   const value = new Date();
@@ -84,6 +85,9 @@ function campaignStatusLabel(status: string | null | undefined): string {
 export function GoogleAdsWorkspace() {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const google = useGoogleAPI();
+  // 🚨 ONE Google authorization window per PERSON — never a per-component
+  // lock, never the raw provider primitive (V-23 NEW-3, lane F-103).
+  const googleAuth = useGoogleAuthorizationWindow();
   const inventory = useGoogleConnectionInventory();
   const connect = useConnectGoogle();
   const customers = useGoogleAdsCustomers();
@@ -120,7 +124,7 @@ export function GoogleAdsWorkspace() {
       if (!disclosureAccepted) {
         throw new Error("Confirm the read-only Google Ads disclosure first.");
       }
-      const code = await google.requestAuthorizationCode(
+      const code = await googleAuth.openAuthorizationWindow(
         [...GOOGLE_ADS_REPORTING_SCOPES],
         undefined,
         { forceConsent: true },

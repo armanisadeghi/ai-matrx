@@ -460,6 +460,28 @@ describe("Education tool-family resolution", () => {
     expect(surfaceFromPathname("/education/flashcards")).toBe(
       "matrx-user/education-flashcards",
     );
+    expect(
+      surfaceFromPathname(
+        "/education/flashcards/397e8cbb-d6fc-49cd-8864-542c2f910601",
+      ),
+    ).toBe("matrx-user/education-flashcard-set");
+    expect(
+      surfaceFromPathname(
+        "/education/flashcards/397e8cbb-d6fc-49cd-8864-542c2f910601/edit",
+      ),
+    ).toBe("matrx-user/education-flashcard-editor");
+    for (const route of [
+      "/education/flashcards/new",
+      "/education/flashcards/progress",
+      "/education/flashcards/review",
+      "/education/flashcards/sessions",
+      "/education/flashcards/weak-areas",
+      "/education/flashcards/admin",
+    ]) {
+      expect(surfaceFromPathname(route)).toBe(
+        "matrx-user/education-flashcards",
+      );
+    }
     expect(surfaceFromPathname("/education")).toBe("matrx-user/education");
     expect(surfaceFromPathname("/education/subjects/biology")).toBe(
       "matrx-user/education",

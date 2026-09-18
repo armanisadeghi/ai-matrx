@@ -1,0 +1,7 @@
+{
+  "_what_this_is": "DD-211. Rungs a knob's `overridable_by` OFFERS that no database reader can answer with, because no reader names them in `p_scopes`. Each one is a settings control a person can set and nothing will honour. This list is a RATCHET: `pnpm check:knob-database-consumers` fails on any rung NOT listed here, and fails just as loudly when a listed one has been FIXED and left behind, so it can only shrink. Adding a line needs the sentence that says why it is still owed and who owes it.",
+  "_how_to_clear_one": "Teach the reader to name the rung (what DD-211 did for `agent` on records.confirmation.agent_write_born_confirmed: platform._stamp_actor_tier now passes {\"kind\":\"agent\"} beside the table), or take the rung out of that knob's `overridable_by` until a reader does. Then delete the line here.",
+  "debt": {
+    "records.children.fan_out_ceiling | table": "`content_ir.archive_kind_instances` and `content_ir.confirm_kind_instances` both resolve this key with p_scopes = null, so a per-table fan-out ceiling cannot be answered even though the picker offers it. Owed by the records lane; the fix is the one DD-211 made next door — pass the table rung the way `platform._stamp_actor_tier` does."
+  }
+}

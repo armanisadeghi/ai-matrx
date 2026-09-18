@@ -49,6 +49,10 @@ import {
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { useAppSelector } from "@/lib/redux/hooks";
 
 import { useWorkflowRun } from "@/features/workflow-runtime/hooks/useWorkflowRun";
@@ -63,6 +67,8 @@ import {
   absentResultReason,
   readPresentedResult,
 } from "@/features/workflow-runtime/run-result/presented-result";
+import { ExpertSignOff } from "@/features/masterwork/review/ExpertSignOff";
+import { MASTERWORK_RUN_SUBJECT_TYPE } from "@/features/masterwork/review/signature";
 import {
   runIsOver,
   type WorkflowRunStatus,
@@ -482,25 +488,40 @@ export function TryMasterworkBox({
   const { values, touched, setValue } = useServedInputValues(inputs);
   const { kinds, error: kindError } = useServedInputKinds(inputs);
 
+  // A DESK IS NOT RUNNABLE WITHOUT A CASE, AND A FORM IS NOT RUNNABLE HALF
+  // FILLED. Both used to be red toasts fired AFTER the press; they are the
+  // gate on the button now, in muted words, because somebody who has not
+  // filled the form in yet is not in an error state (class sweep,
+  // 2026-09-16). The "no sealed cases at all" line stays out of this list: it
+  // is about the Rulebook, not about something this person can type here, and
+  // the button is already dark for it.
+  const missingToRun = firstBlockingReason([
+    {
+      when: discloseNodeId !== null && !chosenCaseIsCurrent && !noSealedCases,
+      reason: "Choose the sealed case this should work on first",
+    },
+    {
+      when: unsatisfiedServedInputs(inputs, values, touched).length > 0,
+      reason: `${
+        unsatisfiedServedInputs(inputs, values, touched)[0]?.label
+          .split("(")[0]
+          .trim() ?? "One field"
+      } — fill this in first`,
+    },
+  ]);
+
   const start = useCallback(async () => {
-    // A DESK IS NOT RUNNABLE WITHOUT A CASE. The picker is right there, so the
-    // refusal names the thing to do rather than letting a run start against
-    // nothing and fail three steps in.
     if (discloseNodeId !== null && !chosenCaseIsCurrent) {
-      toast.error(
-        noSealedCases
-          ? "This Rulebook holds no sealed cases yet — add one from Sources and mark it held-out."
-          : "Choose the sealed case this should work on first.",
-      );
+      // Only the "no sealed cases in this Rulebook" case can reach here, and
+      // that is a real dead end rather than an unfilled field.
+      if (noSealedCases) {
+        toast.error(
+          "This Rulebook holds no sealed cases yet — add one from Sources and mark it held-out.",
+        );
+      }
       return;
     }
-    const gaps = unsatisfiedServedInputs(inputs, values, touched);
-    if (gaps.length > 0) {
-      toast.error(
-        `${gaps[0].label.split("(")[0].trim()} — fill this in first.`,
-      );
-      return;
-    }
+    if (unsatisfiedServedInputs(inputs, values, touched).length > 0) return;
     setFailure(null);
     notifiedFor.current = null;
     // From here on, any re-attach check still in flight is stale.
@@ -668,25 +689,36 @@ export function TryMasterworkBox({
         </div>
       ))}
 
-      <div className="flex items-center gap-2">
-        <Button
+      {/* PHONE: the note beside the button does not fit next to it at 390px,
+          and without wrapping it printed straight across "Coach me through it"
+          (jobs-bar-2026-09-16, item 16). */}
+      <div className="flex flex-wrap items-center gap-2">
+        <GatedActionButton
           size="sm"
+          className="shrink-0"
+          wrapperClassName="justify-start"
           onClick={() => void start()}
           disabled={
             starting || running || servedLoading || rejoining || noSealedCases
           }
+          reason={missingToRun}
           aria-label={submitLabel ?? `Run ${whatItRuns}`}
           title={submitLabel ?? `Run ${whatItRuns}`}
         >
-          <Play className={submitLabel ? "mr-1 h-4 w-4" : "h-4 w-4"} />
+          {/* THE PRIMARY ACTION ALWAYS HAS WORDS (jobs-bar-2026-09-16, item 6).
+              Without a `submitLabel` this rendered a bare blue play triangle —
+              the only button on the Understudy card, and the one thing a
+              first-timer has to press. An icon is a decoration, never the
+              instruction. */}
+          <Play className="mr-1 h-4 w-4" />
           {rejoining
             ? "Checking…"
             : starting
               ? "Starting…"
               : running
                 ? "Working…"
-                : (submitLabel ?? "")}
-        </Button>
+                : (submitLabel ?? "Run it")}
+        </GatedActionButton>
         {onCompare && !candidateText && !noResultReason ? (
           <span className="text-xs text-muted-foreground">
             Runs land in your recent runs below.
@@ -778,6 +810,27 @@ export function TryMasterworkBox({
             invocation={finalInvocation}
             declaredKind={finalStep.outputKind}
             prefer="live"
+          />
+        </div>
+      ) : null}
+
+      {/* ── THE EXPERT'S SIGNATURE (Arman, 2026-09-15: a thumbs-up on a result
+          is "the most important indication we need"). One tap writes a verdict
+          row through the platform's ONE feedback path
+          (`platform.output_feedback`, subject `workflow_run`) — never a new
+          table. A thumbs-down opens the correction flow and the correction
+          becomes a rule candidate. Only on a FINISHED run: there is nothing to
+          judge while it is still working, and a control that pretends
+          otherwise is a dead control. */}
+      {runId && terminal && !failure ? (
+        <div
+          className="rounded-md border border-border bg-muted/20 px-3 py-2"
+          data-masterwork-signature="run"
+        >
+          <ExpertSignOff
+            subjectType={MASTERWORK_RUN_SUBJECT_TYPE}
+            subjectId={runId}
+            originalContent={candidateText ?? null}
           />
         </div>
       ) : null}

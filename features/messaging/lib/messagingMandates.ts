@@ -1,4 +1,4 @@
-import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
 
 // features/messaging/lib/messagingMandates.ts
 //
@@ -27,7 +27,7 @@ export const MESSAGING_MANDATE_KEYS = {
 
 export type MessagingCapability = keyof typeof MESSAGING_MANDATE_KEYS;
 
-export const MESSAGING_MANDATE_KEY_LIST: readonly string[] = Object.values(
+export const MESSAGING_MANDATE_KEY_LIST: readonly MandateKey[] = Object.values(
   MESSAGING_MANDATE_KEYS,
 );
 

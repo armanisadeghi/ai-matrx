@@ -93,6 +93,7 @@ export async function uploadInternal(
   const metadata = stampScope(
     opts.metadata ?? {},
     shouldInheritActiveScope(visibility, opts.inheritActiveScope, folderPath),
+    opts.organizationId,
   );
 
   // Asset-pipeline branch — when `preset` is set the upload routes through
@@ -387,27 +388,49 @@ function guessFilename(mime: string): string {
   return `upload-${Date.now()}.${ext}`;
 }
 
-function stampScope(
+export function stampScope(
   metadata: Record<string, unknown>,
   inherit: boolean,
+  organizationId?: string,
+  activeScope?: {
+    organizationId?: string | null;
+    projectId?: string | null;
+    taskId?: string | null;
+  },
 ): Record<string, unknown> {
-  if (!inherit) return metadata;
-  const store = getStoreSingleton();
-  if (!store) return metadata;
-  const state = store.getState() as RootState;
-  const organizationId = selectOrganizationId(state);
-  const projectId = selectProjectId(state);
-  const taskId = selectTaskId(state);
-  if (!organizationId && !projectId && !taskId) return metadata;
+  if (!inherit && !organizationId) return metadata;
+  let resolvedActiveScope = activeScope;
+  if (inherit && !resolvedActiveScope) {
+    const store = getStoreSingleton();
+    if (store) {
+      const state = store.getState() as RootState;
+      resolvedActiveScope = {
+        organizationId: selectOrganizationId(state),
+        projectId: selectProjectId(state),
+        taskId: selectTaskId(state),
+      };
+    }
+  }
+  const activeOrganizationId = resolvedActiveScope?.organizationId;
+  const projectId = resolvedActiveScope?.projectId;
+  const taskId = resolvedActiveScope?.taskId;
+  if (!organizationId && !activeOrganizationId && !projectId && !taskId) {
+    return metadata;
+  }
   const existing =
     (metadata.scope as Record<string, unknown> | undefined) ?? {};
   return {
     ...metadata,
     scope: {
       ...existing,
-      ...(organizationId ? { organization_id: organizationId } : {}),
+      ...(activeOrganizationId
+        ? { organization_id: activeOrganizationId }
+        : {}),
       ...(projectId ? { project_id: projectId } : {}),
       ...(taskId ? { task_id: taskId } : {}),
+      // An explicit owner is a record-bound write. It must never be replaced
+      // by whatever organization happens to be active in the shell.
+      ...(organizationId ? { organization_id: organizationId } : {}),
     },
   };
 }

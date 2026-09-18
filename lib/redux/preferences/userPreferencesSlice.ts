@@ -227,16 +227,27 @@ export interface CodingPreferences {
    */
   monacoEnvironmentsEnabled: boolean;
   /**
-   * Chat room "Sandbox" side panel — open / closed, remembered per user.
+   * Reveal the Sandbox in the Canvas the first time the agent works in the
+   * bound box — on by default.
    *
-   * "auto" (the default) means: open on a desktop viewport when the
-   * conversation has a bound sandbox, closed on a phone. Once the user
-   * clicks the header control the choice becomes explicit and travels with
-   * them across devices and reloads. Tri-state on purpose: a plain boolean
-   * cannot tell "the user has never touched this" apart from "the user
-   * closed it", and the phone/desktop defaults differ.
+   * The sandbox is a canvas content type, not a panel: with this on, the
+   * first `shell_execute` / `fs_*` / `git_ingest` of a conversation opens the
+   * canvas on the Sandbox pane, the way Claude Code reveals its terminal when
+   * it runs a command. With it off, the pane is still added to the canvas
+   * switcher — available, never on screen uninvited. Either way the canvas is
+   * never hijacked away from a document or the browser the user is reading.
    */
-  chatSandboxPanelOpen: "auto" | "open" | "closed";
+  sandboxCanvasAutoOpen: boolean;
+  /**
+   * Reveal a record a TOOL just created in the Canvas — on by default.
+   *
+   * Same courtesy as the sandbox knob, one level up: when a chat tool creates
+   * a document (or any other canvas-renderable record), the canvas opens on it
+   * the way Claude.ai shows an artifact the moment it is written — but ONLY
+   * into a canvas that is showing nothing else. With this off, the record is
+   * still added to the canvas switcher: available, never on screen uninvited.
+   */
+  toolResultCanvasAutoOpen: boolean;
   /**
    * Client-side favorite conversations. The `cx_conversation` table has no
    * favorite column yet; we persist ids in preferences so favorites still
@@ -462,6 +473,22 @@ export interface AssistsPreferences {
   } | null;
 }
 
+/**
+ * Connectors — the person's own answers about the connector prompt card.
+ *
+ * `promptDismissedAt` is keyed by PROVIDER id (`"google"`, and every provider
+ * after it) and holds the ISO timestamp of the dismissal, not a boolean: the
+ * `connectors.prompt.resurface_days` knob decides whether an organization ever
+ * brings the card back, and it needs to know WHEN it was dismissed. Default 0
+ * means never — a dismissal is final unless an organization says otherwise.
+ *
+ * It lives here rather than in `localStorage` because a person who says "not
+ * now" on their laptop has said it on their phone too.
+ */
+export interface ConnectorsPreferences {
+  promptDismissedAt: Record<string, string>;
+}
+
 export interface OrganizationPreferences {
   /**
    * The user's DEFAULT active organization. When set, the active-org bootstrap
@@ -492,6 +519,17 @@ export interface PromptsPreferences {
   includeThinkingInAutoPrompts: ThinkingMode;
   submitOnEnter: boolean;
   autoClearResponsesInEditMode: boolean;
+  /**
+   * Keep a typed-but-unsent composer message through a reload and put it back,
+   * per conversation. Default ON — never losing user input is table stakes
+   * (`common-docs/policies/table-stakes-are-never-a-question.md`); the knob
+   * exists for shared or kiosk-ish machines where a draft left in the tab's
+   * storage is unwanted. Read through `isDraftRestoreEnabled`, which treats a
+   * MISSING key as ON so the default never depends on a preferences backfill.
+   * Machinery: `features/agents/redux/execution-system/instance-user-input/
+   * composer-draft-store.ts`.
+   */
+  restoreUnsentDrafts: boolean;
 }
 
 /** Captured keyboard shortcut — mirrors the `KeybindingValue` shape used by
@@ -548,6 +586,13 @@ export interface ConversationFilterSurfacePref {
 export interface ConversationFilterPreferences {
   /** surfaceId → override. Empty = every surface uses its registry default. */
   surfaces: Record<string, ConversationFilterSurfacePref>;
+  /**
+   * The viewer's lane toggles (chat | matrx | auto | plugin | subagent) — one
+   * choice for every filterable history surface. Absent = never chosen → the
+   * default (chat + matrx); `[]` = every lane off. Read through
+   * `normalizeLanes` (features/agents/redux/conversation-history/lanes.ts).
+   */
+  lanes?: string[];
 }
 
 /**
@@ -655,6 +700,7 @@ export interface UserPreferences {
   listViews: ListViewsPreferences;
   lists: ListsPreferences;
   assists: AssistsPreferences;
+  connectors: ConnectorsPreferences;
 }
 
 // Add state interface for async operations
@@ -896,6 +942,7 @@ export const initializeUserPreferencesState = (
       includeThinkingInAutoPrompts: "none",
       submitOnEnter: true,
       autoClearResponsesInEditMode: true,
+      restoreUnsentDrafts: true,
     },
     voice: {
       // Empty = no explicit choice → resolveVoiceId() falls back to the
@@ -1002,7 +1049,8 @@ export const initializeUserPreferencesState = (
       lastSandboxTemplate: "bare",
       monacoEnvironmentsEnabled: true,
       activeAgentSandboxBySurface: {},
-      chatSandboxPanelOpen: "auto",
+      sandboxCanvasAutoOpen: true,
+      toolResultCanvasAutoOpen: true,
     },
     sandbox: {
       // "slim" = the full coding env without aidream-built-in. Matches what
@@ -1105,6 +1153,8 @@ export const initializeUserPreferencesState = (
       quietUntil: null,
       presentationCycle: null,
     },
+    // Keyed by provider id; absent = the connector card was never dismissed.
+    connectors: { promptDismissedAt: {} },
   };
 
   // Merge with defaults to ensure all properties exist
@@ -1183,6 +1233,10 @@ export const initializeUserPreferencesState = (
     assists: {
       ...defaultPreferences.assists,
       ...preferences.assists,
+    },
+    connectors: {
+      ...defaultPreferences.connectors,
+      ...preferences.connectors,
     },
   };
 
@@ -1603,9 +1657,17 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
         .schema("users")
         .from("user_preferences")
         .upsert({
-          // This is a user-global singleton (PK = user_id), so its ownership
-          // is the user's personal organization. The selected workspace org
-          // is unrelated and can fail RLS when the user is working in HR.
+          // org-fallback-deliberate: `users.user_preferences` is a user-global
+          // singleton (PK = user_id) — ONE row per person that follows them
+          // across every organization they work in, so its tenant is the
+          // person's own workspace by definition, not the organization they
+          // happen to have selected. This is the personal organization
+          // answering "which is this user's own workspace" — the one question
+          // it is still the right answer to
+          // (common-docs/policies/context-is-carried-never-rebuilt.md, rule 4)
+          // — never a substitute for a scope the write failed to carry. The
+          // selected workspace org is unrelated here and can fail RLS when the
+          // user is working in HR.
           organization_id: await resolvePersonalOrgId(),
           user_id: identity.userId,
           preferences: body,

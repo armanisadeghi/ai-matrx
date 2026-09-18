@@ -25,6 +25,7 @@ import {
   reduce,
   settleStaleAssets,
 } from "@/features/podcasts/generator/reduce";
+import { canRerunPodcastSource } from "@/features/podcasts/generator/sourceReadiness";
 import { podcastService } from "@/features/podcasts/service";
 import {
   INITIAL_RUN_STATE,
@@ -58,7 +59,7 @@ import { isOrphanedServerRun, trueLiveness } from "./run-truth";
 import {
   hasDeliverableEpisode,
   isEpisodeSettled,
-  mergeAncillarySlots,
+  reconcileRunState,
   reconcileRun,
   type ReconcileResult,
 } from "./reconcile";
@@ -111,9 +112,9 @@ export interface UseStudioRun {
    *  2026-08-01→04 outage: the DB refused writes, so no run row was created.
    *  Re-run from source still works — the request payload is on the row. */
   orphaned: boolean;
-  /** A saved request payload is loaded, so `rerunFromSource` will actually do
-   *  something. Sourced from the durable record OR the pc_studio_runs row, so
-   *  it stays true for a run the server never recorded. */
+  /** A saved request payload is loaded and passes the deterministic source
+   *  gate, so `rerunFromSource` will actually do something. Sourced from the
+   *  durable record OR the pc_studio_runs row, including orphaned runs. */
   canRerun: boolean;
   reconnect: () => void;
   /** Start a fresh run from the saved source (when resume can't proceed). */
@@ -136,6 +137,11 @@ export interface UseStudioRun {
   ) => Promise<void>;
   /** Durable run record (null until loaded / for a brand-new live run). */
   detail: RunDetail | null;
+  /** The durable agent_run id the moment it is known — from the loaded record
+   *  OR the live stream's `podcast_run` event (which arrives long before any
+   *  `detail` exists on an in-place run). Key anything run-scoped on this,
+   *  never on `detail?.run_id`. */
+  agentRunId: string | null;
   recovery: RecoveryState;
   selectedCoverUrl: string | null;
   selectCover: (url: string) => void;
@@ -206,6 +212,17 @@ export function useStudioRun(runId: string): UseStudioRun {
   const audioEncodingRef = useRef<"pcm_s16le" | "mp3" | null>(null);
   const audioStreamBrokenRef = useRef(false);
   const backendRunIdRef = useRef<string | null>(null);
+  // The durable agent_run id as RENDER state, mirrored from the ref. The ref
+  // alone was the 2026-09-17 defect: during an in-place run the id arrives on
+  // the live `podcast_run` event, lands only in the ref, and nothing re-renders
+  // — so every consumer keyed on `detail?.run_id` (the Run Truth inspector)
+  // saw null until a full reload. Every write to the ref goes through
+  // `adoptBackendRunId` so the two can never disagree.
+  const [agentRunId, setAgentRunId] = useState<string | null>(null);
+  const adoptBackendRunId = useCallback((id: string | null) => {
+    backendRunIdRef.current = id;
+    setAgentRunId(id);
+  }, []);
   const resumeAttemptsRef = useRef(0);
   const completedRef = useRef(false);
   const imgUrlsRef = useRef<string[]>([]);
@@ -247,12 +264,15 @@ export function useStudioRun(runId: string): UseStudioRun {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- a different run identity must not inherit the prior run's orphan verdict.
     setOrphaned(false);
     setCanRerun(false);
+    // Paired with the ref reset above: a new run identity has no durable id yet.
+    setAgentRunId(null);
 
     // requestRef is a ref (read inside stream callbacks) but the banner needs a
-    // reactive flag — set both through one seam so they can never disagree.
+    // reactive, source-aware flag — set both through one seam so an orphaned
+    // row cannot offer a rerun the server will deterministically reject.
     function setRequest(req: PodcastGenerateRequest | null) {
       requestRef.current = req;
-      setCanRerun(req !== null);
+      setCanRerun(canRerunPodcastSource(req));
     }
     imgUrlsRef.current = [];
     vidUrlsRef.current = [];
@@ -354,7 +374,7 @@ export function useStudioRun(runId: string): UseStudioRun {
       if (raw.type === "podcast_run") {
         const r = raw as PodcastRunEvent;
         if (r.run_id && backendRunIdRef.current !== r.run_id) {
-          backendRunIdRef.current = r.run_id;
+          adoptBackendRunId(r.run_id);
           persist({ backend_run_id: r.run_id });
           // A durable run id existing is the exact negation of "orphaned".
           setOrphaned(false);
@@ -417,38 +437,9 @@ export function useStudioRun(runId: string): UseStudioRun {
      */
     function applyReconcile(rec: ReconcileResult): void {
       const deliverable = hasDeliverableEpisode(rec);
-      setState((s) => ({
-        ...s,
-        // Ancillary slots the server says are still coming / have failed. A
-        // pending cover has no asset row yet (rows are written when a stage
-        // FINISHES), so without this the page would claim nothing is pending
-        // while three paid renders are in flight, then pop them in later.
-        images: mergeAncillarySlots(s.images, rec.ancillary_pending, "image"),
-        videos: mergeAncillarySlots(s.videos, rec.ancillary_pending, "video"),
-        status: deliverable
-          ? "done"
-          : rec.outcome === "failed"
-            ? "error"
-            : s.status,
-        progress: deliverable ? 100 : s.progress,
-        currentLabel: deliverable
-          ? "Episode ready"
-          : rec.outcome === "failed"
-            ? "Finished with errors"
-            : s.currentLabel,
-        audioUrl: rec.audio_url ?? s.audioUrl,
-        script: rec.script ?? s.script,
-        episodeId: rec.episode_id ?? s.episodeId,
-        episodeSlug: rec.episode_slug ?? s.episodeSlug,
-        // Only a run with NOTHING to show reports an error. A delivered episode
-        // with a failed cover is not an error state — the failed asset renders
-        // as its own retryable card.
-        error: deliverable
-          ? null
-          : rec.outcome === "failed"
-            ? rec.reason
-            : s.error,
-      }));
+      // The pure reducer owns the complete render-state transition, including
+      // specific-error precedence and ancillary slot reconciliation.
+      setState((s) => reconcileRunState(s, rec));
       if (deliverable) {
         setCanReconnect(false);
         setStalled(false);
@@ -847,7 +838,7 @@ export function useStudioRun(runId: string): UseStudioRun {
       setStalled(false);
       // A durable record exists — by definition not orphaned.
       setOrphaned(false);
-      backendRunIdRef.current = d.run_id;
+      adoptBackendRunId(d.run_id);
       setRequest(
         d.request && Object.keys(d.request).length > 0
           ? (d.request as unknown as PodcastGenerateRequest)
@@ -907,7 +898,7 @@ export function useStudioRun(runId: string): UseStudioRun {
           ? mergeRowPrompts(detailToRunState(runDetail), row)
           : detailToRunState(runDetail);
         setState(fromDetail);
-        backendRunIdRef.current = runDetail.run_id;
+        adoptBackendRunId(runDetail.run_id);
         setRequest(
           runDetail.request && Object.keys(runDetail.request).length > 0
             ? (runDetail.request as unknown as PodcastGenerateRequest)
@@ -923,7 +914,7 @@ export function useStudioRun(runId: string): UseStudioRun {
       } else if (row) {
         setState(rowToRunState(row));
         setSelectedCoverUrl(row.selected_cover_url ?? null);
-        backendRunIdRef.current = row.backend_run_id ?? null;
+        adoptBackendRunId(row.backend_run_id ?? null);
         imgUrlsRef.current = [...(row.image_urls ?? [])];
         vidUrlsRef.current = [...(row.video_urls ?? [])];
         // The row carries the originating request, so Re-run works even with no
@@ -1062,7 +1053,7 @@ export function useStudioRun(runId: string): UseStudioRun {
       livePlayerRef.current?.destroy();
       livePlayerRef.current = null;
     };
-  }, [runId, dispatch, persist]);
+  }, [runId, dispatch, persist, adoptBackendRunId]);
 
   // Heartbeat watchdog: while a stream is open but silent past STALL_MS, mark
   // the run stalled and settle lingering "queued" assets to failed.
@@ -1303,6 +1294,7 @@ export function useStudioRun(runId: string): UseStudioRun {
     regenerateAsset,
     addAsset,
     detail,
+    agentRunId,
     recovery,
     selectedCoverUrl,
     selectCover,

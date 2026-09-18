@@ -1,120 +1,249 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
-  AppWindow,
-  ArrowDown,
-  ArrowUp,
-  ArrowUpDown,
-  Copy,
-  Eye,
-  Loader2,
-  Pencil,
-  Trash2,
-} from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { toast } from "@/lib/toast";
+  PencilTapButton,
+  TrashTapButton,
+  ViewTapButton,
+} from "@ai-matrx/tap-target/buttons";
+import { AppWindow, Loader2 } from "lucide-react";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import {
   tierFor,
   readinessBucketOf,
   type SurfaceWithStats,
 } from "@/features/surfaces/services/surfaces.service";
 import { SurfaceReadinessBadge } from "@/features/surfaces/components/SurfaceReadinessBadge";
-import { cn } from "@/lib/utils";
 import {
   checkAgeLabel,
   checkSortWeight,
   surfaceCheckState,
 } from "@/features/surfaces/utils/surface-check-ledger";
+import { cn } from "@/lib/utils";
 import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
+  SurfacesFilterBar,
+  type SurfacesFilterState,
+} from "@/features/surfaces/components/SurfacesFilterBar";
 
-type SortKey =
-  | "name"
-  | "client_name"
-  | "executor_name"
-  | "parent_surface_name"
-  | "sort_order"
-  | "surfaceValueCount"
-  | "agentCount"
-  | "toolCount"
-  | "readiness"
-  | "lastChecked"
-  | "is_active";
-
-/** Sort weight so readiness orders verified → partial → stub → unregistered. */
 const READINESS_SORT_WEIGHT: Record<string, number> = {
   verified: 0,
   partial: 1,
   stub: 2,
   unregistered: 3,
 };
-type SortDir = "asc" | "desc";
 
 interface Props {
   rows: SurfaceWithStats[];
   isLoading: boolean;
   selectedName: string | null;
-  /** Surface names that have a code-side manifest registered. */
   manifestedSurfaceNames: Set<string>;
-  /** Row / pencil click — navigates to the full-screen editor. */
   onSelect: (row: SurfaceWithStats) => void;
   onEdit: (row: SurfaceWithStats) => void;
-  /** Eye click — opens the lightweight side panel without leaving the list. */
   onPeek: (row: SurfaceWithStats) => void;
   onDelete: (row: SurfaceWithStats) => void;
-  /** Name of the row currently navigating (shows a loader, guards re-clicks). */
   navigatingName: string | null;
+  filters: SurfacesFilterState;
+  onFilterChange: (patch: Partial<SurfacesFilterState>) => void;
+  onClearFilters: () => void;
+  clientNames: string[];
+  parentNames: string[];
+  onRefresh: () => void | Promise<void>;
+  onAdd: () => void | Promise<void>;
 }
 
-const cellClass = "px-2 py-1.5 text-xs align-middle";
-const headerClass =
-  "px-2 py-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground bg-muted/40 select-none";
-
-function SortHeader({
-  label,
-  active,
-  dir,
-  onClick,
-  align = "left",
-}: {
-  label: string;
-  active: boolean;
-  dir: SortDir;
-  onClick: () => void;
-  align?: "left" | "right" | "center";
-}) {
-  const justify =
-    align === "right"
-      ? "justify-end"
-      : align === "center"
-        ? "justify-center"
-        : "justify-start";
+function checkedBadge(row: SurfaceWithStats) {
+  const state = surfaceCheckState(row);
+  const title = row.last_checked_at
+    ? `Full UI surface check completed ${new Date(row.last_checked_at).toLocaleString()}${row.last_checked_by ? ` by ${row.last_checked_by}` : ""}`
+    : "The full UI surface check has never completed on this surface";
   return (
-    <button
-      onClick={onClick}
-      className={`${headerClass} flex w-full items-center gap-1 ${justify} hover:text-foreground`}
-    >
-      <span>{label}</span>
-      {active ? (
-        dir === "asc" ? (
-          <ArrowUp className="h-3 w-3" />
-        ) : (
-          <ArrowDown className="h-3 w-3" />
-        )
-      ) : (
-        <ArrowUpDown className="h-3 w-3 opacity-30" />
+    <Badge
+      variant="outline"
+      title={title}
+      className={cn(
+        "text-[10px]",
+        state === "never" && "bg-muted text-muted-foreground border-border",
+        state === "stale" &&
+          "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+        state === "fresh" &&
+          "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800",
       )}
-    </button>
+    >
+      {checkAgeLabel(row)}
+    </Badge>
   );
+}
+
+function surfaceColumns(
+  manifestedSurfaceNames: Set<string>,
+  navigatingName: string | null,
+): MatrxColumnDef<SurfaceWithStats>[] {
+  return [
+    {
+      accessorKey: "name",
+      header: "Name",
+      width: 300,
+      filterValue: (row) => `${row.label ?? ""} ${row.name}`,
+      cell: (row) => (
+        <div className="flex min-w-0 items-center gap-1.5">
+          {row.label ? (
+            <span className="min-w-0 max-w-[280px]">
+              <span className="block truncate font-medium text-foreground">
+                {row.label}
+              </span>
+              <span className="block truncate font-mono text-[10px] text-muted-foreground">
+                {row.name}
+              </span>
+            </span>
+          ) : (
+            <span className="max-w-[260px] truncate font-mono text-foreground">
+              {row.name}
+            </span>
+          )}
+          {row.overlay_id && (
+            <Badge
+              variant="outline"
+              className="shrink-0 gap-1 text-[10px]"
+              title={row.overlay_id}
+            >
+              <AppWindow className="h-3 w-3" /> overlay
+            </Badge>
+          )}
+          {row.name === navigatingName && (
+            <span className="inline-flex shrink-0 items-center gap-1 text-[10px] text-muted-foreground">
+              <Loader2 className="h-3 w-3 animate-spin" /> Opening…
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "client_name",
+      header: "Client",
+      width: 150,
+      cell: (row) => (
+        <span className="font-mono text-muted-foreground">
+          {row.client_name}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "executor_name",
+      header: "Executor",
+      width: 180,
+      cell: (row) =>
+        row.executor_name ? (
+          <span className="font-mono text-[10px] text-muted-foreground">
+            {row.executor_name}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
+      accessorKey: "parent_surface_name",
+      header: "Parent",
+      width: 180,
+      cell: (row) =>
+        row.parent_surface_name ? (
+          <span className="font-mono text-[10px] text-muted-foreground">
+            {row.parent_surface_name}
+          </span>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
+      accessorKey: "sort_order",
+      header: "Tier",
+      width: 110,
+      cell: (row) => {
+        const tier = tierFor(row.sort_order);
+        return (
+          <>
+            <Badge variant="outline" className="text-[10px]">
+              {tier.label}
+            </Badge>
+            <span className="ml-1 text-[10px] tabular-nums text-muted-foreground">
+              {row.sort_order}
+            </span>
+          </>
+        );
+      },
+    },
+    {
+      id: "surfaceValueCount",
+      header: "Values",
+      accessorFn: (row) => row.surfaceValueCount,
+      align: "right",
+      width: 90,
+      cell: (row) =>
+        manifestedSurfaceNames.has(row.name) ? (
+          <Badge
+            variant={row.surfaceValueCount > 0 ? "default" : "outline"}
+            className="text-[10px] tabular-nums"
+          >
+            {row.surfaceValueCount}
+          </Badge>
+        ) : (
+          <span className="text-muted-foreground">—</span>
+        ),
+    },
+    {
+      id: "agentCount",
+      header: "Agents",
+      accessorFn: (row) => row.agentCount,
+      align: "right",
+      width: 80,
+      cell: (row) => (row.agentCount > 0 ? row.agentCount : "—"),
+    },
+    {
+      id: "toolCount",
+      header: "Tools",
+      accessorFn: (row) => row.toolCount,
+      align: "right",
+      width: 80,
+      cell: (row) => (row.toolCount > 0 ? row.toolCount : "—"),
+    },
+    {
+      id: "readiness",
+      header: "Readiness",
+      accessorFn: (row) => readinessBucketOf(row),
+      sortValue: (row) => READINESS_SORT_WEIGHT[readinessBucketOf(row)],
+      width: 110,
+      cell: (row) => <SurfaceReadinessBadge row={row} />,
+    },
+    {
+      id: "lastChecked",
+      header: "Checked",
+      accessorFn: checkAgeLabel,
+      sortValue: (row) =>
+        `${String(checkSortWeight(row)).padStart(4, "0")}:${row.name}`,
+      defaultSortDirection: "desc",
+      width: 100,
+      cell: checkedBadge,
+    },
+    {
+      accessorKey: "is_active",
+      header: "Active",
+      filter: "boolean",
+      width: 90,
+      cell: (row) =>
+        row.is_active ? (
+          <Badge
+            variant="outline"
+            className="text-[10px] bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
+          >
+            active
+          </Badge>
+        ) : (
+          <Badge variant="outline" className="text-[10px]">
+            inactive
+          </Badge>
+        ),
+    },
+  ];
 }
 
 export function SurfacesTable({
@@ -127,402 +256,99 @@ export function SurfacesTable({
   onPeek,
   onDelete,
   navigatingName,
+  filters,
+  onFilterChange,
+  onClearFilters,
+  clientNames,
+  parentNames,
+  onRefresh,
+  onAdd,
 }: Props) {
-  const [sortKey, setSortKey] = useState<SortKey>("sort_order");
-  const [sortDir, setSortDir] = useState<SortDir>("asc");
-
-  const sorted = useMemo(() => {
-    const out = [...rows];
-    out.sort((a, b) => {
-      if (sortKey === "lastChecked") {
-        // never-checked first, then oldest — the dispatch order IS the work order.
-        const aw = checkSortWeight(a);
-        const bw = checkSortWeight(b);
-        const sign = sortDir === "asc" ? 1 : -1;
-        return sign * (aw === bw ? a.name.localeCompare(b.name) : aw - bw);
-      }
-      if (sortKey === "readiness") {
-        const aw = READINESS_SORT_WEIGHT[readinessBucketOf(a)];
-        const bw = READINESS_SORT_WEIGHT[readinessBucketOf(b)];
-        return (aw - bw) * (sortDir === "asc" ? 1 : -1);
-      }
-      const av = (a as unknown as Record<string, unknown>)[sortKey];
-      const bv = (b as unknown as Record<string, unknown>)[sortKey];
-      const sign = sortDir === "asc" ? 1 : -1;
-      if (typeof av === "number" && typeof bv === "number") {
-        return (av - bv) * sign;
-      }
-      const as = String(av ?? "");
-      const bs = String(bv ?? "");
-      return as.localeCompare(bs) * sign;
-    });
-    return out;
-  }, [rows, sortKey, sortDir]);
-
-  const handleSort = (key: SortKey) => {
-    if (key === sortKey) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir(
-        key === "name" || key === "client_name" || key === "readiness"
-          ? "asc"
-          : "desc",
-      );
-    }
-  };
+  const hasSpecializedFilters =
+    filters.client !== "__all__" ||
+    filters.status !== "all" ||
+    filters.manifest !== "all" ||
+    filters.parent !== "__all__" ||
+    filters.readiness !== "all" ||
+    filters.checked !== "all";
 
   return (
-    <TooltipProvider delayDuration={200}>
-      <div className="flex-1 min-h-0 overflow-auto">
-        <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
-          <thead className="sticky top-0 z-10 bg-card">
-            <tr>
-              <th className={headerClass}>
-                <SortHeader
-                  label="Name"
-                  active={sortKey === "name"}
-                  dir={sortDir}
-                  onClick={() => handleSort("name")}
-                />
-              </th>
-              <th className={headerClass}>
-                <SortHeader
-                  label="Client"
-                  active={sortKey === "client_name"}
-                  dir={sortDir}
-                  onClick={() => handleSort("client_name")}
-                />
-              </th>
-              <th className={headerClass}>
-                <SortHeader
-                  label="Executor"
-                  active={sortKey === "executor_name"}
-                  dir={sortDir}
-                  onClick={() => handleSort("executor_name")}
-                />
-              </th>
-              <th className={headerClass}>
-                <SortHeader
-                  label="Parent"
-                  active={sortKey === "parent_surface_name"}
-                  dir={sortDir}
-                  onClick={() => handleSort("parent_surface_name")}
-                />
-              </th>
-              <th className={headerClass}>
-                <SortHeader
-                  label="Tier"
-                  active={sortKey === "sort_order"}
-                  dir={sortDir}
-                  onClick={() => handleSort("sort_order")}
-                />
-              </th>
-              <th className={headerClass}>
-                <SortHeader
-                  label="Values"
-                  active={sortKey === "surfaceValueCount"}
-                  dir={sortDir}
-                  onClick={() => handleSort("surfaceValueCount")}
-                  align="right"
-                />
-              </th>
-              <th className={headerClass}>
-                <SortHeader
-                  label="Agents"
-                  active={sortKey === "agentCount"}
-                  dir={sortDir}
-                  onClick={() => handleSort("agentCount")}
-                  align="right"
-                />
-              </th>
-              <th className={headerClass}>
-                <SortHeader
-                  label="Tools"
-                  active={sortKey === "toolCount"}
-                  dir={sortDir}
-                  onClick={() => handleSort("toolCount")}
-                  align="right"
-                />
-              </th>
-              <th className={headerClass}>
-                <SortHeader
-                  label="Readiness"
-                  active={sortKey === "readiness"}
-                  dir={sortDir}
-                  onClick={() => handleSort("readiness")}
-                  align="center"
-                />
-              </th>
-              <th className={headerClass}>
-                <SortHeader
-                  label="Checked"
-                  active={sortKey === "lastChecked"}
-                  dir={sortDir}
-                  onClick={() => handleSort("lastChecked")}
-                  align="center"
-                />
-              </th>
-              <th className={headerClass}>
-                <SortHeader
-                  label="Active"
-                  active={sortKey === "is_active"}
-                  dir={sortDir}
-                  onClick={() => handleSort("is_active")}
-                  align="center"
-                />
-              </th>
-              <th className={`${headerClass} w-[140px] text-right`}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {isLoading && sorted.length === 0 && (
-              <tr>
-                <td
-                  colSpan={12}
-                  className="px-3 py-6 text-center text-muted-foreground"
-                >
-                  Loading surfaces…
-                </td>
-              </tr>
-            )}
-            {!isLoading && sorted.length === 0 && (
-              <tr>
-                <td
-                  colSpan={12}
-                  className="px-3 py-6 text-center text-muted-foreground"
-                >
-                  No surfaces match these filters.
-                </td>
-              </tr>
-            )}
-            {sorted.map((row) => {
-              const tier = tierFor(row.sort_order);
-              const isSelected = row.name === selectedName;
-              const hasManifest = manifestedSurfaceNames.has(row.name);
-              const isNavigating = row.name === navigatingName;
-              return (
-                <tr
-                  key={row.name}
-                  onClick={() => onSelect(row)}
-                  className={`border-b border-border group cursor-pointer hover:bg-accent/40 ${
-                    isSelected ? "bg-primary/10" : ""
-                  } ${row.is_active ? "" : "opacity-60"} ${
-                    isNavigating ? "opacity-60" : ""
-                  }`}
-                >
-                  <td className={cellClass}>
-                    <div className="flex items-center gap-1.5">
-                      {row.label ? (
-                        <span className="min-w-0 max-w-[280px]">
-                          <span className="block font-medium text-foreground truncate">
-                            {row.label}
-                          </span>
-                          <span className="block font-mono text-[10px] text-muted-foreground truncate">
-                            {row.name}
-                          </span>
-                        </span>
-                      ) : (
-                        <span className="font-mono text-foreground truncate max-w-[260px]">
-                          {row.name}
-                        </span>
-                      )}
-                      {row.overlay_id && (
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] gap-1 shrink-0"
-                            >
-                              <AppWindow className="h-3 w-3" />
-                              overlay
-                            </Badge>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <code className="font-mono">{row.overlay_id}</code>
-                          </TooltipContent>
-                        </Tooltip>
-                      )}
-                      {/* The ONLY row whose editor button is disabled — and it
-                          says why, in words, right here. */}
-                      {isNavigating && (
-                        <span className="inline-flex items-center gap-1 shrink-0 text-[10px] text-muted-foreground">
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                          Opening…
-                        </span>
-                      )}
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              void navigator.clipboard.writeText(row.name).then(
-                                () => toast.success("Surface name copied"),
-                                () => toast.error("Copy failed"),
-                              );
-                            }}
-                            className="opacity-0 group-hover:opacity-100 hover:text-foreground text-muted-foreground transition-opacity"
-                          >
-                            <Copy className="h-3 w-3" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent>Copy surface name</TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </td>
-                  <td className={cellClass}>
-                    <span className="font-mono text-muted-foreground">
-                      {row.client_name}
-                    </span>
-                  </td>
-                  <td className={cellClass}>
-                    {row.executor_name ? (
-                      <span className="font-mono text-muted-foreground text-[10px]">
-                        {row.executor_name}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className={cellClass}>
-                    {row.parent_surface_name ? (
-                      <span className="font-mono text-muted-foreground text-[10px]">
-                        {row.parent_surface_name}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className={cellClass}>
-                    <Badge variant="outline" className="text-[10px]">
-                      {tier.label}
-                    </Badge>
-                    <span className="ml-1 tabular-nums text-[10px] text-muted-foreground">
-                      {row.sort_order}
-                    </span>
-                  </td>
-                  <td className={`${cellClass} text-right`}>
-                    {hasManifest ? (
-                      <Badge
-                        variant={
-                          row.surfaceValueCount > 0 ? "default" : "outline"
-                        }
-                        className="text-[10px] tabular-nums"
-                      >
-                        {row.surfaceValueCount}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className={`${cellClass} text-right tabular-nums`}>
-                    {row.agentCount > 0 ? row.agentCount : "—"}
-                  </td>
-                  <td className={`${cellClass} text-right tabular-nums`}>
-                    {row.toolCount > 0 ? row.toolCount : "—"}
-                  </td>
-                  <td className={`${cellClass} text-center`}>
-                    <SurfaceReadinessBadge row={row} />
-                  </td>
-                  <td className={`${cellClass} text-center`}>
-                    {(() => {
-                      const state = surfaceCheckState(row);
-                      const label = checkAgeLabel(row);
-                      const title = row.last_checked_at
-                        ? `Full UI surface check completed ${new Date(row.last_checked_at).toLocaleString()}${row.last_checked_by ? ` by ${row.last_checked_by}` : ""}`
-                        : "The full UI surface check has never completed on this surface";
-                      return (
-                        <Badge
-                          variant="outline"
-                          title={title}
-                          className={cn(
-                            "text-[10px]",
-                            state === "never" &&
-                              "bg-muted text-muted-foreground border-border",
-                            state === "stale" &&
-                              "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800",
-                            state === "fresh" &&
-                              "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800",
-                          )}
-                        >
-                          {label}
-                        </Badge>
-                      );
-                    })()}
-                  </td>
-                  <td className={`${cellClass} text-center`}>
-                    {row.is_active ? (
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800"
-                      >
-                        active
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-[10px]">
-                        inactive
-                      </Badge>
-                    )}
-                  </td>
-                  <td className={`${cellClass} text-right`}>
-                    <div className="inline-flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onPeek(row);
-                            }}
-                          >
-                            <Eye className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Peek (side panel)</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            disabled={isNavigating}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEdit(row);
-                            }}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Open editor</TooltipContent>
-                      </Tooltip>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDelete(row);
-                            }}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Delete</TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </TooltipProvider>
+    <MatrxDataTable<SurfaceWithStats>
+      data={rows}
+      columns={surfaceColumns(manifestedSurfaceNames, navigatingName)}
+      tableId="administration/ui/surfaces"
+      getRowId={(row) => row.name}
+      searchText={(row) =>
+        [
+          row.name,
+          row.label,
+          row.description,
+          row.client_name,
+          row.executor_name,
+          row.parent_surface_name,
+        ]
+          .filter(Boolean)
+          .join(" ")
+      }
+      isLoading={isLoading}
+      defaultSort={{ id: "sort_order", direction: "asc" }}
+      selectedId={selectedName}
+      onRowOpen={onSelect}
+      detail={{ enabled: false }}
+      rowClassName={(row) =>
+        cn(
+          row.is_active ? undefined : "opacity-60",
+          row.name === navigatingName && "opacity-60",
+        )
+      }
+      toolbar={{
+        search: true,
+        searchPlaceholder: "Search surfaces…",
+        facets: [
+          {
+            type: "custom",
+            id: "surface-source-filters",
+            filter: {
+              active: hasSpecializedFilters,
+              onReset: onClearFilters,
+            },
+            render: () => null,
+          },
+        ],
+        leading: (
+          <SurfacesFilterBar
+            state={filters}
+            onChange={onFilterChange}
+            clientNames={clientNames}
+            parentNames={parentNames}
+          />
+        ),
+        refresh: { onRefresh },
+        add: { onAdd },
+      }}
+      rowActions={(row) => (
+        <>
+          <ViewTapButton
+            variant="transparent"
+            onClick={() => onPeek(row)}
+            ariaLabel={`Peek ${row.name}`}
+            tooltip="Peek (side panel)"
+          />
+          <PencilTapButton
+            variant="transparent"
+            disabled={row.name === navigatingName}
+            onClick={() => onEdit(row)}
+            ariaLabel={`Open editor for ${row.name}`}
+            tooltip="Open editor"
+          />
+          <TrashTapButton
+            variant="transparent"
+            onClick={() => onDelete(row)}
+            ariaLabel={`Delete ${row.name}`}
+          />
+        </>
+      )}
+      emptyState={{ title: "No surfaces match these filters" }}
+    />
   );
 }

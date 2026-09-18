@@ -16,9 +16,12 @@ looked at this. Zero authorship: you did not build this and did not write its br
 pass while Verdict B fails, and the reverse; one merged list headed "findings by severity" lets either
 mask the other and is a failed review even if every check appears in it.
 
-## What was requested
-Brief: [PATH]. Vision/spec: [PATHS §]. Acceptance targets: [list or register row].
-Binding constraints (verbatim): [..]
+## What the person asked for — start here, not at the builder's targets
+His words, verbatim: [PATH to the ground-truth file — `user-ground-truth` skill]. Where he said it
+lives and what he does to meet it: [one sentence in his terms]. Go there first, as him, on the live
+surface, before reading anything the builder wrote; what you find is Verdict A's first section.
+Then: Vision/spec: [PATHS §]. Acceptance targets: [list or register row] — the builder's frame,
+read second. Binding constraints (verbatim): [..]
 
 ## What the builder claims
 Report: [PATH] — unverified claims. Rationales ("kept simple", "per YAGNI") are self-grading and never
@@ -26,7 +29,9 @@ lower a severity. Worker screenshots and test runs are leads, not proof.
 Review package: [PKG PATH] (the builder's own commits: [SHAs]).
 
 ## Verdict A — vision/spec on the LIVE surface
-Exercise every target as a real user (non-admin where access matters) with real data, on the build you
+First: what he sees doing what he described — PASS | PARTIAL | FAIL with URL + evidence, and
+anything that already existed there for this job that the work ignored or duplicated. Then
+exercise every target as a real user (non-admin where access matters) with real data, on the build you
 state (SHA / version). Try to break it; pair every refusal proof with a positive control that could
 fail; re-run every red before believing it. Warnings and console noise are findings.
 Per target: PASS | PARTIAL | FAIL with URL + evidence. Then: Missing · Extra (unrequested scope) ·

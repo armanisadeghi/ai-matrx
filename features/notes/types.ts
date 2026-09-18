@@ -20,7 +20,13 @@ export interface NoteContextLinks {
     task_id: string | null;
 }
 
-export type Note = NoteRow & NoteContextLinks;
+// `content_preview` is a database-maintained projection of `content` (a stored
+// generated column, audit N-24): the server writes it, a client never does, and
+// a full row read carries it while a locally minted record does not — so it is
+// optional on the app-side shape.
+export type Note = Omit<NoteRow, "content_preview"> &
+  { content_preview?: string | null } &
+  NoteContextLinks;
 
 // ── Narrowed shapes for JSON columns ────────────────────────────────────────
 // `metadata` is a Json column — the generated type is `unknown`. Consumers use
@@ -146,6 +152,15 @@ export type UpdateNoteInput = NoteContentUpdate & PersistedFolderUpdate;
  */
 export interface UpdateNoteOptions {
   expectedVersion?: number;
+  /**
+   * The user-edited fields exactly as this client last acknowledged them from
+   * the server (its edit base). When the compare-and-swap on `expectedVersion`
+   * misses but the server's edited fields still equal this base, the version
+   * moved for a column nobody edits and the write is retried once against the
+   * current version instead of being reported as a conflict.
+   * See `utils/saveVerification.ts`.
+   */
+  acknowledgedBase?: import("./utils/saveVerification").NoteEditBase;
   expectedOrganizationId?: string;
   /** Optional explicit actor binding for a prepared direct-editor save. */
   expectedActorId?: string;

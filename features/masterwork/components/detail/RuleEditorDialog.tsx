@@ -9,7 +9,12 @@ import {
   patchWizardDraft,
   selectWizardDraft,
 } from "@/lib/redux/slices/wizardDraftSlice";
+import { WizardDraftRestored } from "@/lib/wizard-draft/WizardDraftRestored";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import {
   Dialog,
   DialogContent,
@@ -233,14 +238,38 @@ function RuleEditorForm({
     wizardId,
   ]);
 
+  /**
+   * A RESTORED DRAFT IS ANNOUNCED, NEVER SLIPPED IN (cold walk 6, 2026-09-17).
+   * Reopening this dialog can show words that are NOT the saved rule — an edit
+   * the Expert abandoned last time. On /masterwork/new the same silent
+   * pre-fill is what got typed into and produced a tripled goal; here it is
+   * what makes somebody "fix" a rule they already fixed. So the moment the
+   * persisted draft actually changes what is on screen, the dialog says so.
+   */
+  const [restoredFromDraft, setRestoredFromDraft] = useState(
+    () =>
+      !stagedDraft &&
+      Boolean(persistedDraft?.fields) &&
+      JSON.stringify(
+        mergeRuleFieldValues(savedValues, persistedDraft?.fields),
+      ) !== JSON.stringify(savedValues),
+  );
+
   useEffect(() => {
     if (open && !wasOpen.current) {
       // Reopening resets the WHOLE form to the saved rule, then lays the staged
       // or persisted draft over it — one merge, every field, so a cancelled
       // decision toggle never survives into the next open.
-      setValues(
-        mergeRuleFieldValues(savedValues, stagedDraft ?? persistedDraft?.fields),
+      const merged = mergeRuleFieldValues(
+        savedValues,
+        stagedDraft ?? persistedDraft?.fields,
       );
+      setRestoredFromDraft(
+        !stagedDraft &&
+          Boolean(persistedDraft?.fields) &&
+          JSON.stringify(merged) !== JSON.stringify(savedValues),
+      );
+      setValues(merged);
       setBeforeTidy(persistedDraft?.beforeTidy ?? null);
       // The restored policy wins over the live rule for the same reason the
       // restored prose does: it is what the Expert typed and has not saved.
@@ -294,13 +323,23 @@ function RuleEditorForm({
     initial?.id,
   );
 
+  /**
+   * What is still missing before this rule can be saved or cleaned up, in
+   * plain words. It is a next step on the button, never a red complaint at a
+   * person who simply has not typed yet.
+   */
+  const missingRuleFields = firstBlockingReason([
+    { when: !values.name.trim(), reason: "Give the rule a short name" },
+    { when: !values.statement.trim(), reason: "Write the rule itself" },
+  ]);
+
   const save = async () => {
     const { name, statement, rationale, detection, quote, severity, section } =
       values;
-    if (!name.trim() || !statement.trim()) {
-      toast.error("A rule needs at least a short name and the rule itself.");
-      return;
-    }
+    // Gated on the Save button; empty fields cannot reach here. A field
+    // nobody has typed in yet is a PROMPT, not an alarm (class sweep,
+    // 2026-09-16).
+    if (!name.trim() || !statement.trim()) return;
     const id = initial?.id ?? nextRuleId(name, existingIds);
     setSaving(true);
     try {
@@ -355,10 +394,8 @@ function RuleEditorForm({
   // `masterwork.rule_cleanup` Mandate, 2026-08-17.)
   const cleanupWithAi = async () => {
     const before = draftSnapshot();
-    if (!before.name.trim() || !before.statement.trim()) {
-      toast.error("Add a short name and the rule itself before cleaning it up.");
-      return;
-    }
+    // Gated on the "Clean up with AI" button; see `save` above.
+    if (!before.name.trim() || !before.statement.trim()) return;
 
     const context = getSurfaceScope();
     try {
@@ -404,6 +441,15 @@ function RuleEditorForm({
     toast.success("AI cleanup undone.");
   };
 
+  /** "Start fresh": the unsaved edit goes, and the saved rule comes back. */
+  const startFreshFromSavedRule = () => {
+    dispatch(clearWizardDraft(wizardId));
+    setRestoredFromDraft(false);
+    setValues(savedValues);
+    setPolicy(initial ? ruleMoveFieldsFromRule(initial) : EMPTY_RULE_MOVE_FIELDS);
+    setBeforeTidy(null);
+  };
+
   const cancel = () => {
     dispatch(clearWizardDraft(wizardId));
     cleanupRun.dismiss();
@@ -411,7 +457,7 @@ function RuleEditorForm({
   };
 
   return (
-    <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-3xl">
+    <DialogContent className="matrx-touch-targets max-h-[90dvh] overflow-y-auto sm:max-w-3xl">
       <EditableContextMenu
         sourceFeature="masterwork"
         surfaceName={surfaceName}
@@ -435,6 +481,14 @@ function RuleEditorForm({
               words into checks — you never have to.
             </DialogDescription>
           </DialogHeader>
+          {restoredFromDraft ? (
+            <WizardDraftRestored
+              what="the change you had not saved"
+              onStartFresh={startFreshFromSavedRule}
+              onDismiss={() => setRestoredFromDraft(false)}
+              startFreshLabel="Back to the saved rule"
+            />
+          ) : null}
           <RuleFields
             values={values}
             onChange={(patch) =>
@@ -469,14 +523,16 @@ function RuleEditorForm({
           ) : null}
           <DialogFooter className="gap-2 sm:justify-between">
             <div className="flex flex-wrap gap-2 sm:mr-auto">
-              <Button
+              <GatedActionButton
                 variant="secondary"
                 onClick={() => void cleanupWithAi()}
                 disabled={saving || cleanupRun.isRunning}
+                wrapperClassName="justify-start"
+                reason={missingRuleFields}
               >
                 <PencilLine className="h-4 w-4" />
                 {cleanupRun.isRunning ? "Cleaning up…" : "Clean up with AI"}
-              </Button>
+              </GatedActionButton>
               {!isNew && onImproveInstead ? (
                 <Button
                   variant="ghost"
@@ -516,12 +572,13 @@ function RuleEditorForm({
                   Close
                 </Button>
               ) : (
-                <Button
+                <GatedActionButton
                   onClick={() => void save()}
                   disabled={saving || cleanupRun.isRunning}
+                  reason={missingRuleFields}
                 >
                   {saving ? "Saving…" : isNew ? "Add rule" : "Save rule"}
-                </Button>
+                </GatedActionButton>
               )}
             </div>
           </DialogFooter>

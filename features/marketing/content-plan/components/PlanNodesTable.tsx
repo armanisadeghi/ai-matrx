@@ -958,7 +958,6 @@ export function PlanNodesTable({
             ? "Add a root node in the tree view — agents can fill in the bulk."
             : "Adjust the search or clear the column filters.",
       }}
-      className="p-2"
     />
     </NonEditableContextMenu>
   );

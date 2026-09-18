@@ -34,6 +34,24 @@ export interface ApprovalAutoApprove {
   noun: string;
 }
 
+/**
+ * A STRUCTURED proposed value, carried as DATA — never as a string.
+ *
+ * `<ApprovalCard>` renders it through the ONE render pipeline: a `kind` that
+ * the registry render-trusts routes to that kind's own component (the same one
+ * that draws the payload in chat and on its own page — streaming law 2), and
+ * everything else falls to the platform's structured floor, which is a human
+ * document, not a JSON dump. Producers MUST NOT pre-serialize: a
+ * `JSON.stringify` here is the "machine talking to itself" defect
+ * (cold walk 3, finding 4).
+ */
+export interface ApprovalProposedValue {
+  /** The canonical instance value, exactly as the producer holds it. */
+  value: unknown;
+  /** The registered kind slug the producer declared, when it has one. */
+  kind?: string;
+}
+
 export interface ApprovalChange {
   verb: ApprovalVerb;
   /** What's being changed, lowercase singular: "subtask", "task", "note", "tile". */
@@ -42,6 +60,11 @@ export interface ApprovalChange {
   title?: string | null;
   /** Field-level diffs (updates) or new values (adds). May be empty. */
   fields: ApprovalFieldDiff[];
+  /**
+   * A structured proposed value rendered below the diff through the kind
+   * pipeline. Set it instead of stringifying an object into a field.
+   */
+  proposedValue?: ApprovalProposedValue;
   /** Optional concise explanation of effect/timing shown above the diff. */
   description?: string;
   /**

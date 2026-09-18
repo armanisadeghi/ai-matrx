@@ -22,10 +22,6 @@ import type {
   GscResolvedPeriods,
 } from "@/features/marketing/search-console/types";
 import { cleanGscFilters } from "@/features/marketing/search-console/data";
-import {
-  isPlacementScopeTier,
-  type PlacementScopeTier,
-} from "./scope-tiers";
 
 async function seoDb() {
   await requireAuthenticatedSupabaseSession(supabase);
@@ -247,113 +243,88 @@ export async function getMatchingKeywordIds(
   };
 }
 
-/* ------------------------------------------------ the SERVICE (topic) stamp */
+/* ------------------------------------------------- the OFFERING placement */
 
 /**
- * THE SERVICE COLUMN. Arman, 2026-08-24: "when I look at all green electronics
+ * THE OFFERING COLUMN. Arman, 2026-08-24: "when I look at all green electronics
  * recycling, the first thing I wanna know is what service they map to… I wanna
  * know what maps to e-waste recycling, what maps to ITAD, and what maps to
  * data destruction."
  *
- * The topic tree is the ONE declared hierarchical exception in the stamp model
- * (P19), so it has its own stamp table (`seo.keyword_topic`) rather than a
- * dimension + value pair. Everything else about it is the same contract as a
- * stamp: read the window you render, write through ONE RPC, carry the reason.
+ * A placement is THIS site's own (`seo.site_keyword_offering`) on an offering
+ * its brand owns and the site has selected (brand-offerings cutover D1, D2, D4).
+ * Same contract as a stamp: read the window you render, write through ONE RPC,
+ * carry the reason. THE CONTRACT: `features/marketing/FEATURE.md` § Canonical
+ * offering writers.
  */
-export interface KeywordServicePlacement {
-  topicId: string;
-  topicName: string;
-  nodeType: string;
+export interface KeywordOfferingPlacement {
+  offeringId: string;
+  offeringName: string;
+  kind: string;
   rootId: string | null;
   rootName: string | null;
-  rootType: string | null;
-  /** Root › … › parent — the ancestors, never the node itself. */
+  rootKind: string | null;
+  /** Root › … › parent — the ancestors, never the offering itself. */
   lineage: string | null;
-  /** 'human' | 'agent' | a model token — whose ruling this is. */
+  /** 'human' | 'agent' — whose ruling this is. */
   assignedBy: string | null;
   confidence: number | null;
   notes: string | null;
-  /** True when THIS topic carries the site's own worth ruling. */
+  /** True when THIS offering carries the site's own worth. */
   hasOwnWorth: boolean;
-  /** The ancestor the worth is inherited FROM, when it is inherited. */
+  /** The ancestor offering the worth is inherited FROM, when it is inherited. */
   worthFromId: string | null;
   worthFromName: string | null;
-  /**
-   * WHICH RUNG DECIDED THIS — site | brand | organization | system, read
-   * straight off the RPC row. `null` only when the database sends a rung this
-   * ladder does not know (`isPlacementScopeTier`): the surface then says
-   * nothing rather than guessing, because naming the wrong decision-maker is
-   * worse than naming none.
-   */
-  scopeTier: PlacementScopeTier | null;
-  /**
-   * The organization whose ruling this is. `null` whenever `scopeTier` is —
-   * an owner without a known rung is not an owner we can name.
-   */
-  scopeOrganizationId: string | null;
 }
 
 /** keyword_id → its primary placement. Unplaced keywords are simply absent. */
-export type KeywordServiceMap = Map<string, KeywordServicePlacement>;
+export type KeywordOfferingMap = Map<string, KeywordOfferingPlacement>;
+
+/** The query-key root every placement write invalidates (append the site id). */
+export const KEYWORD_OFFERINGS_KEY = ["marketing", "seo", "keyword-offerings"] as const;
 
 /**
- * THE SCOPE RULE, again: the RPC refuses more than 2,000 ids, so the caller
- * asks for the page it renders. Resolving 20,000 keywords' lineage to paint 50
- * rows is the mistake the stamp reader already refuses to make.
- *
- * ONE READ, ONE LADDER. `seo.gsc_keyword_topics_for` answers WHAT the
- * placement is (name, root, lineage, worth) AND WHO DECIDED IT (`scope_tier`,
- * `scope_organization_id`), because its candidate set now comes from
- * `seo.keyword_placement_resolve` inside the database — the one site > brand >
- * organization > system ladder. Until 2026-09-12 it had no ladder and no
- * organization filter, so a site was handed other tenants' placements; a
- * second client-side read that tried to name the rung could only reconcile
- * what the first read had already got wrong.
+ * THE SCOPE RULE: the RPC refuses more than 2,000 ids, so the caller asks for
+ * the page it renders. `seo.gsc_keyword_offerings_for` reads only this site's
+ * placements, so there is no inherited rung to name.
  */
-export async function getKeywordServices(
+export async function getKeywordOfferings(
   siteId: string,
   keywordIds: string[],
   signal?: AbortSignal,
-): Promise<KeywordServiceMap> {
-  const map: KeywordServiceMap = new Map();
+): Promise<KeywordOfferingMap> {
+  const map: KeywordOfferingMap = new Map();
   if (keywordIds.length === 0) return map;
   const db = await seoDb();
   const abort = signal ?? new AbortController().signal;
-  // The RPC unnests the ids it is given, so a duplicate id would come back as a
-  // duplicate row and break the paged read's total order. One id, one row.
+  // One id, one row: a duplicate id would break the paged read's total order.
   const ids = Array.from(new Set(keywordIds));
-  // THE 1,000-ROW CAP. PostgREST answers at most `db-max-rows` (1,000) rows per
-  // request and says nothing about the rest. Every caller today pages at most
-  // 200 ids, so this read has never been cut — but the RPC accepts 2,000 and a
-  // 2,000-id admin probe returned 1,077 rows (2026-09-12), so the headroom is
-  // real. A map that is treated as complete is read through `readAllRows`.
+  // THE 1,000-ROW CAP: a map treated as complete is read through `readAllRows`.
   const rows = await readAllRows(
     ({ from, to }) =>
       db
         .rpc(
-          "gsc_keyword_topics_for",
+          "gsc_keyword_offerings_for",
           { p_site_id: siteId, p_keyword_ids: ids },
           { count: "exact" },
         )
         .order("keyword_id", { ascending: true })
         .range(from, to)
         .abortSignal(abort)
-        // A failed page surfaces the governed sentence, never the machine prefix.
         .then((res) => {
-          if (res.error) assertGoverned(null, res.error, "read which service these keywords map to");
+          if (res.error) assertGoverned(null, res.error, "read which offering these keywords map to");
           return res;
         }),
-    { label: "seo.gsc_keyword_topics_for", maxRows: 2000 },
+    { label: "seo.gsc_keyword_offerings_for", maxRows: 2000 },
   );
   for (const row of rows) {
-    const tier = isPlacementScopeTier(row.scope_tier) ? row.scope_tier : null;
     map.set(row.keyword_id, {
-      topicId: row.topic_id,
-      topicName: row.topic_name,
-      nodeType: row.node_type,
+      offeringId: row.offering_id,
+      offeringName: row.offering_name,
+      kind: row.offering_kind,
       rootId: row.root_id,
       rootName: row.root_name,
-      rootType: row.root_type,
+      rootKind: row.root_kind,
       lineage: row.lineage,
       assignedBy: row.assigned_by,
       confidence: row.confidence,
@@ -361,14 +332,12 @@ export async function getKeywordServices(
       hasOwnWorth: row.has_own_worth,
       worthFromId: row.worth_from_id,
       worthFromName: row.worth_from_name,
-      scopeTier: tier,
-      scopeOrganizationId: tier ? row.scope_organization_id : null,
     });
   }
   return map;
 }
 
-export interface SetServiceResult {
+export interface SetOfferingResult {
   /** What the resolver says each keyword is worth AFTER the placement. */
   keywordId: string;
   valueBand: string;
@@ -376,40 +345,146 @@ export interface SetServiceResult {
   valueScore: number | null;
 }
 
-/**
- * THE ONE PLACEMENT WRITE — `seo.gsc_set_keyword_topic`. One row from a cell,
- * the checked rows, or every keyword the filters match all land here, and the
- * reason (P24) rides along on the stamp.
- *
- * `topicId: null` takes the keyword off the tree. The payoff IS the response:
- * the RPC answers with the band each keyword lands in after the change,
- * straight from the resolver, so a caller never re-derives a score.
- *
- * EVERY placement surface calls this one — the keyword workbench, the ruling
- * session, and the topic tree. The tree used to keep a thinner wrapper of its
- * own that omitted `p_notes`; collapsed here 2026-08-24.
- */
-export async function setKeywordService(input: {
-  siteId: string;
-  keywordIds: string[];
-  topicId: string | null;
-  notes?: string | null;
-}): Promise<SetServiceResult[]> {
-  const response = await (await seoDb()).rpc("gsc_set_keyword_topic", {
-    p_site_id: input.siteId,
-    p_keyword_ids: input.keywordIds,
-    ...(input.topicId ? { p_topic_id: input.topicId } : {}),
-    ...(input.notes?.trim() ? { p_notes: input.notes.trim() } : {}),
-  });
-  const rows = assertGoverned(
-    response.data,
-    response.error,
-    input.topicId ? "place these keywords on that service" : "take these keywords off the tree",
-  );
+function toOfferingResults(
+  rows: Array<{ keyword_id: string; value_band: string; value_source: string; value_score: number | null }> | null,
+): SetOfferingResult[] {
   return (rows ?? []).map((row) => ({
     keywordId: row.keyword_id,
     valueBand: row.value_band,
     valueSource: row.value_source,
     valueScore: row.value_score == null ? null : Number(row.value_score),
+  }));
+}
+
+/**
+ * THE ONE PLACEMENT WRITE — `seo.gsc_set_keyword_offering`. A cell, the checked
+ * rows, every keyword the filters match, the ruling session and the approval
+ * queue all land here, and the reason (P24) rides along on the placement.
+ *
+ * `offeringId: null` takes the keywords off every offering. The database refuses
+ * an offering this site has not selected and an organization that does not own
+ * the site. The response is the band each keyword lands in after the change,
+ * straight from the resolver, so a caller never re-derives a score.
+ */
+export async function setKeywordOffering(input: {
+  organizationId: string;
+  siteId: string;
+  keywordIds: string[];
+  offeringId: string | null;
+  notes?: string | null;
+}): Promise<SetOfferingResult[]> {
+  const response = await (await seoDb()).rpc("gsc_set_keyword_offering", {
+    p_organization_id: input.organizationId,
+    p_site_id: input.siteId,
+    p_keyword_ids: input.keywordIds,
+    ...(input.offeringId ? { p_offering_id: input.offeringId } : {}),
+    ...(input.notes?.trim() ? { p_notes: input.notes.trim() } : {}),
+  });
+  const rows = assertGoverned(
+    response.data,
+    response.error,
+    input.offeringId ? "place these keywords on that offering" : "take these keywords off every offering",
+  );
+  return toOfferingResults(rows);
+}
+
+/**
+ * Confirm the AI's placement as THIS site's own ruling, with the person's
+ * reason (P24). Writes only this site's placement; the assigner never revisits
+ * a confirmed keyword (P12).
+ */
+export async function confirmKeywordOfferings(input: {
+  organizationId: string;
+  siteId: string;
+  keywordIds: string[];
+  notes?: string | null;
+}): Promise<SetOfferingResult[]> {
+  const response = await (await seoDb()).rpc("gsc_confirm_keyword_offering", {
+    p_organization_id: input.organizationId,
+    p_site_id: input.siteId,
+    p_keyword_ids: input.keywordIds,
+    ...(input.notes?.trim() ? { p_notes: input.notes.trim() } : {}),
+  });
+  const rows = assertGoverned(response.data, response.error, "confirm those placements");
+  return toOfferingResults(rows);
+}
+
+export interface OfferingProposalRow {
+  keywordId: string;
+  phrase: string;
+  offeringId: string;
+  offeringName: string;
+  confidence: number | null;
+  clicks: number;
+  impressions: number;
+  valueBand: string;
+  /** The whole set, not the page. */
+  totalCount: number;
+}
+
+/** The AI's unsure placements on this site's own offerings, highest demand first. */
+export async function listOfferingProposals(
+  siteId: string,
+  start: string,
+  end: string,
+  limit: number,
+  signal?: AbortSignal,
+): Promise<OfferingProposalRow[]> {
+  const response = await (await seoDb())
+    .rpc("gsc_offering_proposed_keywords", {
+      p_site_id: siteId,
+      p_start: start,
+      p_end: end,
+      p_limit: limit,
+    })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertGoverned(response.data, response.error, "read the placements waiting on you");
+  return (rows ?? []).map((row) => ({
+    keywordId: row.keyword_id,
+    phrase: row.phrase,
+    offeringId: row.offering_id,
+    offeringName: row.offering_name,
+    confidence: row.confidence,
+    clicks: Number(row.clicks ?? 0),
+    impressions: Number(row.impressions ?? 0),
+    valueBand: row.value_band,
+    totalCount: Number(row.total_count ?? 0),
+  }));
+}
+
+export interface OfferingDriftRow {
+  keywordId: string;
+  phrase: string;
+  oldOfferingId: string | null;
+  oldOfferingName: string | null;
+  newOfferingId: string;
+  newOfferingName: string;
+  confidence: number | null;
+  changedAt: string;
+}
+
+/**
+ * The AI moved a placement on this site from one offering to another and nobody
+ * here has ruled on it. Bounded by the site's own AI placements (D313 — the old
+ * inherited-rung read never finished on a large site).
+ */
+export async function getOfferingPlacementDrift(
+  siteId: string,
+  limit: number,
+  signal?: AbortSignal,
+): Promise<OfferingDriftRow[]> {
+  const response = await (await seoDb())
+    .rpc("gsc_offering_placement_drift", { p_site_id: siteId, p_limit: limit })
+    .abortSignal(signal ?? new AbortController().signal);
+  const rows = assertGoverned(response.data, response.error, "read the placements the AI moved");
+  return (rows ?? []).map((row) => ({
+    keywordId: row.keyword_id,
+    phrase: row.phrase,
+    oldOfferingId: row.old_offering_id,
+    oldOfferingName: row.old_offering_name,
+    newOfferingId: row.new_offering_id,
+    newOfferingName: row.new_offering_name,
+    confidence: row.confidence,
+    changedAt: row.changed_at,
   }));
 }

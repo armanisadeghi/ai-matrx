@@ -75,6 +75,46 @@ export interface ScrapedResultHashes {
   outline_simhash?: number | string;
 }
 
+/**
+ * Which engine produced a scrape result. The backend sends exactly these three
+ * (2026-09-17); anything else — including the field being absent on an older
+ * response — means "we do not know" and must be rendered as nothing, never as
+ * a guess.
+ */
+export type ScrapeEngine = "http" | "browser" | "cache";
+
+export const SCRAPE_ENGINES: readonly ScrapeEngine[] = [
+  "http",
+  "browser",
+  "cache",
+];
+
+export function asScrapeEngine(value: unknown): ScrapeEngine | null {
+  return typeof value === "string" &&
+    (SCRAPE_ENGINES as readonly string[]).includes(value)
+    ? (value as ScrapeEngine)
+    : null;
+}
+
+/**
+ * A row that succeeded but whose content is suspect — added 2026-09-17.
+ * Anything else, including absence, means "no warning" and must never be
+ * fabricated.
+ */
+export type ContentWarning = "thin_content" | "wrong_resource";
+
+export const CONTENT_WARNINGS: readonly ContentWarning[] = [
+  "thin_content",
+  "wrong_resource",
+];
+
+export function asContentWarning(value: unknown): ContentWarning | null {
+  return typeof value === "string" &&
+    (CONTENT_WARNINGS as readonly string[]).includes(value)
+    ? (value as ContentWarning)
+    : null;
+}
+
 export interface ScrapedResult {
   /** true = scraped successfully, false = scrape failed */
   success?: boolean;
@@ -89,6 +129,31 @@ export interface ScrapedResult {
   cms?: string;
   /** Firewall detected (e.g. "cloudflare", "none") */
   firewall?: string;
+
+  // ── Provenance (which engine actually produced this row) ──
+  // Added by the backend 2026-09-17. ABSENT on every response older than that,
+  // so every consumer must render gracefully without them and must never
+  // invent a value when they are missing.
+  /** The engine that produced the content. */
+  engine?: ScrapeEngine;
+  /** True when the plain HTTP fetch failed and the server browser was used. */
+  escalated?: boolean;
+  /** The named reason we escalated — e.g. "cloudflare_block". */
+  escalation_reason?: string | null;
+  /**
+   * The escalation reason already worded as a sentence a non-technical person
+   * reads — added by the backend 2026-09-17, alongside the fields below.
+   * Preferred over building a sentence from `escalation_reason` when present.
+   */
+  escalation_note?: string | null;
+  /** Plain-English reason this row failed — never a stack trace or code. */
+  failure_message?: string | null;
+  /** "thin_content" | "wrong_resource" | null — set only when the row succeeded but is suspect. */
+  content_warning?: ContentWarning | null;
+  /** Character count of the extracted content, when the backend computed it directly. */
+  content_chars?: number | null;
+  /** True when a configured proxy was skipped/bypassed for this row. */
+  proxy_bypassed?: boolean;
 
   // ── Text variants (richest first) ──
   /** Markdown with links and images */

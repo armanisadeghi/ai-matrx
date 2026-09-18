@@ -34,6 +34,8 @@ const visibleTask = {
 let mockFilteredTasks: TaskWithProject[] = [visibleTask];
 let mockSearchQuery = "visible";
 let mockCopyProps: CopyButtonsProps | undefined;
+let mockContextMenuProps:
+  { tasks: TaskWithProject[]; searchQuery: string } | undefined;
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
@@ -97,8 +99,20 @@ jest.mock("@/components/ui/checkbox", () => ({
   ),
 }));
 
-jest.mock("./MobileFilterMenu", () => () => <div>Filters</div>);
-jest.mock("./MobileProjectSelector", () => () => null);
+jest.mock(
+  "./MobileFilterMenu",
+  () =>
+    function MockMobileFilterMenu() {
+      return <div>Filters</div>;
+    },
+);
+jest.mock(
+  "./MobileProjectSelector",
+  () =>
+    function MockMobileProjectSelector() {
+      return null;
+    },
+);
 jest.mock("@/features/agent-context/components/ScopeTagsDisplay", () => ({
   ScopeTagsDisplay: () => null,
 }));
@@ -106,16 +120,20 @@ jest.mock("../TaskScopeFilter", () => ({ ActiveScopeFilterChips: () => null }));
 jest.mock("@/components/matrx/resizable/MatrxDynamicPanelHost", () => ({
   MatrxDynamicPanelHost: () => null,
 }));
-jest.mock("@/features/context-menu-v3/NonEditableContextMenu", () => ({
-  NonEditableContextMenu: ({ children }: { children: React.ReactNode }) => (
-    <>{children}</>
-  ),
-}));
-jest.mock("@/features/tasks/agent-context/buildTasksContextData", () => ({
-  TASKS_CONTEXT_MENU_PROPS: { sourceFeature: "tasks", surfaceName: "Tasks" },
-}));
-jest.mock("@/features/tasks/components/TasksListSurfaceRuntime", () => ({
-  useTasksListSurfaceScope: () => () => ({}),
+jest.mock("@/features/tasks/components/TasksListContextMenu", () => ({
+  TASK_ROW_DOM_ATTR: "data-task-row-id",
+  TasksListContextMenu: function MockTasksListContextMenu({
+    children,
+    tasks,
+    searchQuery,
+  }: {
+    children: React.ReactNode;
+    tasks: TaskWithProject[];
+    searchQuery: string;
+  }) {
+    mockContextMenuProps = { tasks, searchQuery };
+    return <>{children}</>;
+  },
 }));
 jest.mock("@/lib/toast", () => ({ toast: { error: jest.fn() } }));
 
@@ -123,6 +141,7 @@ beforeEach(() => {
   mockFilteredTasks = [visibleTask];
   mockSearchQuery = "visible";
   mockCopyProps = undefined;
+  mockContextMenuProps = undefined;
 });
 
 it("keeps the mobile copy identity stable while the visible filter result changes", () => {
@@ -132,6 +151,10 @@ it("keeps the mobile copy identity stable while the visible filter result change
   act(() => root.render(<MobileTasksList onTaskSelect={jest.fn()} />));
 
   expect(container.textContent).toContain("Visible task");
+  expect(mockContextMenuProps).toEqual({
+    tasks: [visibleTask],
+    searchQuery: "visible",
+  });
   expect(mockCopyProps?.size).toBe("sm");
   expect(mockCopyProps?.export?.items).toEqual([]);
   const firstSourceId = mockCopyProps?.sourceId;

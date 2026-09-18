@@ -66,7 +66,7 @@ export function WhatsWhatDialog({
           {triggerLabel}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="matrx-touch-targets max-w-lg">
         <DialogHeader>
           <DialogTitle>What&apos;s what here</DialogTitle>
           <DialogDescription>

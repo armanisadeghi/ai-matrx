@@ -1675,6 +1675,22 @@ export interface paths {
          *     states whether the next run will actually get tools (and ``reason`` why not,
          *     e.g. an ec2-tier box or a stopped sandbox) — so the client never silently
          *     fails the way the old direct-Supabase write did.
+         *
+         *     **Binding BEFORE the first turn is the normal case, not an edge one.** The
+         *     real flow is: open ``/chat/new``, pick your box, then talk. So this door
+         *     goes through ``ensure_conversation_for_actor`` — it CREATES the row for the
+         *     id the client minted rather than 404ing on it, exactly as the attachments
+         *     door does. Two things make that safe, and both were built for this ruling
+         *     (2026-09-18, feedback 6fae7a84):
+         *
+         *     * adoption on the first turn no longer clears the binding — it is
+         *       ``matrx_ai.db.conversation_gate._ADOPTION_PRESERVED_USER_CHOICE``, state a
+         *       person chose, not a dead attempt's leftovers; and
+         *     * turn-1 arming reads the persisted binding (``sandbox_autobind`` no longer
+         *       skips the lookup for a new conversation), so the run actually gets the box.
+         *
+         *     Before those, persisting here would have been WIPED in silence, which is
+         *     why this door deliberately kept its 404 until now.
          */
         put: operations["bind_conversation_sandbox_ai_conversation__conversation_id__sandbox_put"];
         post?: never;
@@ -1710,6 +1726,22 @@ export interface paths {
          *     states whether the next run will actually get tools (and ``reason`` why not,
          *     e.g. an ec2-tier box or a stopped sandbox) — so the client never silently
          *     fails the way the old direct-Supabase write did.
+         *
+         *     **Binding BEFORE the first turn is the normal case, not an edge one.** The
+         *     real flow is: open ``/chat/new``, pick your box, then talk. So this door
+         *     goes through ``ensure_conversation_for_actor`` — it CREATES the row for the
+         *     id the client minted rather than 404ing on it, exactly as the attachments
+         *     door does. Two things make that safe, and both were built for this ruling
+         *     (2026-09-18, feedback 6fae7a84):
+         *
+         *     * adoption on the first turn no longer clears the binding — it is
+         *       ``matrx_ai.db.conversation_gate._ADOPTION_PRESERVED_USER_CHOICE``, state a
+         *       person chose, not a dead attempt's leftovers; and
+         *     * turn-1 arming reads the persisted binding (``sandbox_autobind`` no longer
+         *       skips the lookup for a new conversation), so the run actually gets the box.
+         *
+         *     Before those, persisting here would have been WIPED in silence, which is
+         *     why this door deliberately kept its 404 until now.
          */
         put: operations["bind_conversation_sandbox_ai_conversations__conversation_id__sandbox_put"];
         post?: never;
@@ -3346,6 +3378,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/coding-sessions/conversations/{conversation_id}/responder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Coding Reply Responder
+         * @description Who answers a reply on this conversation — read BEFORE the turn.
+         *
+         *     Owner-scoped: a conversation that is not a coding-session mirror belonging to the
+         *     caller answers `is_coding_session_mirror: false` and nothing else, which is what
+         *     every ordinary conversation gets.
+         *
+         *     ``can_reply`` is the TURN DOOR'S own verdict, not this door's opinion of it:
+         *     it comes from ``can_reply_to_conversation``, the predicate
+         *     ``require_owned_conversation_id`` refuses ``POST /conversations/{id}`` with.
+         *     A caller who cannot reply is told so with a reason, instead of being handed
+         *     a composer that enables itself and then 404s.
+         */
+        get: operations["coding_reply_responder_coding_sessions_conversations__conversation_id__responder_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/coding-sessions/sessions": {
         parameters: {
             query?: never;
@@ -3383,7 +3445,18 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Claude Managed Capabilities */
+        /**
+         * Claude Managed Capabilities
+         * @description The hosted runtime's capability answer, from wherever it is asked.
+         *
+         *     Inside the box this is the runtime's own probe. On the app server it used to
+         *     answer a flat "Claude managed execution is available only inside a Matrx
+         *     Sandbox runtime" — true of the process, useless to the caller, and the
+         *     sentence that contradicted the bridge verdict which NAMED this route as its
+         *     live probe (feedback 2fb5f7b4). It now answers about the CALLER's box: their
+         *     real in-box probe when one is up, and otherwise the readiness verdict's own
+         *     reason.
+         */
         get: operations["claude_managed_capabilities_coding_sessions_claude_capabilities_get"];
         put?: never;
         post?: never;
@@ -3402,7 +3475,23 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Claude Managed Stream */
+        /**
+         * Claude Managed Stream
+         * @description ONE door with two homes, chosen by where this process is running.
+         *
+         *     Inside a hosted Matrx Sandbox this IS the runtime: the request falls through
+         *     to ``ClaudeManagedRuntime.run`` exactly as before. On the app server the
+         *     same URL finds or starts the caller's ``template=aidream`` sandbox, mints
+         *     the scoped proxy credential, forwards this very request to this very route
+         *     inside that box — where ``_require_sandbox`` is satisfied — and re-emits the
+         *     box's NDJSON byte for byte.
+         *
+         *     Deliberately NOT a second ``/hosted/stream`` door: two urls for one
+         *     operation is two auth stories, two places a stale token lives, and a second
+         *     dispatch path the surface guard has to grandfather. The browser keeps one
+         *     base URL because the app server carries the second hop, not because the
+         *     client learned a second address.
+         */
         post: operations["claude_managed_stream_coding_sessions_claude_stream_post"];
         delete?: never;
         options?: never;
@@ -3419,8 +3508,99 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Cancel Claude Managed Runtime */
+        /**
+         * Cancel Claude Managed Runtime
+         * @description Stop a hosted run — in this process, or in the caller's box.
+         *
+         *     Same two homes as the stream above. The box owns the cancel (it holds the
+         *     live SDK client and checks the owner itself), so a forwarded cancel returns
+         *     the box's own answer: a cancel that stopped nothing says ``cancelled:
+         *     false`` rather than a cheerful lie.
+         */
         post: operations["cancel_claude_managed_runtime_coding_sessions_claude_runtimes__runtime_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coding-sessions/codex/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Codex Managed Capabilities
+         * @description Can THIS box run a Codex turn — CLI, broker audience, mint, and all.
+         *
+         *     The same door shape as `/claude/capabilities`, and for the same reason:
+         *     a screen must be able to learn the answer with a reason instead of
+         *     discovering it from a launch that fails.
+         */
+        get: operations["codex_managed_capabilities_coding_sessions_codex_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coding-sessions/codex/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Codex Managed Stream */
+        post: operations["codex_managed_stream_coding_sessions_codex_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coding-sessions/codex/runtimes/{runtime_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Codex Managed Runtime */
+        post: operations["cancel_codex_managed_runtime_coding_sessions_codex_runtimes__runtime_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coding-sessions/hosted/runtime": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Hosted Runtime Status
+         * @description Can a hosted Claude session start for me, and what is my box doing?
+         *
+         *     This is the live probe the bridge ``capabilities`` verdict names, and both
+         *     read the same producer — so a client that ANDs them can never see them
+         *     disagree, which is the whole of feedback 2fb5f7b4. A read, not a dispatch
+         *     path: it starts nothing that was not already needed to answer.
+         */
+        get: operations["hosted_runtime_status_coding_sessions_hosted_runtime_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3670,6 +3850,31 @@ export interface paths {
         put?: never;
         /** Anthropic Count Tokens */
         post: operations["anthropic_count_tokens_broker_gateway_anthropic_v1_messages_count_tokens_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/broker/gateway/openai_codex/v1/responses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Openai Codex Responses
+         * @description The Codex CLI's data plane — `{base_url}/responses`, SSE, scoped-token auth.
+         *
+         *     The path is NOT cosmetic: `codex exec` derives it from the `base_url` of
+         *     its `model_providers.<id>` entry, so the credential's `endpoint` minus
+         *     `/responses` is exactly what the runtime configures. Scoped token only —
+         *     no `context_dep` here, by the gateway contract.
+         */
+        post: operations["openai_codex_responses_broker_gateway_openai_codex_v1_responses_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4112,6 +4317,40 @@ export interface paths {
         /** Replace Permissions */
         put: operations["replace_permissions_organization_secrets__organization_id___secret_id__permissions_put"];
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/exports/login-csv/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Login Csv */
+        post: operations["preview_login_csv_vault_exports_login_csv_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/exports/login-csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Download Login Csv */
+        post: operations["download_login_csv_vault_exports_login_csv_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4756,6 +4995,40 @@ export interface paths {
         get: operations["list_audit_vault_items__item_id__audit_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/passwords/matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Matches */
+        post: operations["matches_vault_native_passwords_matches_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/passwords/{item_id}/materialize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Materialize */
+        post: operations["materialize_vault_native_passwords__item_id__materialize_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5776,7 +6049,7 @@ export interface paths {
         put?: never;
         /**
          * Catalog Refresh
-         * @description Force the server-wide tool catalog sync without touching user auth.
+         * @description Force the server-wide tool catalog sync using this admin's connection.
          */
         post: operations["catalog_refresh_mcp_connections__server_id__catalog_refresh_post"];
         delete?: never;
@@ -5875,6 +6148,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/connections/attachable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Attachable Providers
+         * @description Every provider that lets a user pick something, and what kinds.
+         */
+        get: operations["attachable_providers_connections_attachable_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connections/resources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Connection Resources
+         * @description The attachable things this caller can reach through ``provider``.
+         *
+         *     A bare list, so the chooser turns a candidate into a pick without reshaping
+         *     it. WHICH kinds a provider offers — and therefore what an empty list means —
+         *     is `/connections/attachable`, which also rides the availability payload.
+         */
+        get: operations["list_connection_resources_connections_resources_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/conversations/{conversation_id}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Conversation Attachments
+         * @description Everything attached to this chat (ownership-scoped).
+         */
+        get: operations["get_conversation_attachments_conversations__conversation_id__attachments_get"];
+        put?: never;
+        /**
+         * Attach Conversation Resource
+         * @description Attach a repo / Doc / Sheet to this chat. Idempotent.
+         */
+        post: operations["attach_conversation_resource_conversations__conversation_id__attachments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/conversations/{conversation_id}/attachments/{association_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Detach Conversation Resource
+         * @description End one attachment. The resource row stays and can be re-attached.
+         */
+        delete: operations["detach_conversation_resource_conversations__conversation_id__attachments__association_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/google-integrations/exchange": {
         parameters: {
             query?: never;
@@ -5954,6 +6315,29 @@ export interface paths {
         put?: never;
         /** Google Ads Report */
         post: operations["google_ads_report_google_integrations_ads_report_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-integrations/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Google Capabilities
+         * @description Typed Google product metadata for the authenticated caller.
+         *
+         *     The catalog is static capability and rollout information only. It does not
+         *     inventory connections, selected resources, Vault values, or provider data.
+         */
+        get: operations["google_capabilities_google_integrations_capabilities_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6054,7 +6438,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/github-integrations/exchange": {
+    "/github-integrations/authorize": {
         parameters: {
             query?: never;
             header?: never;
@@ -6063,8 +6447,25 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Exchange */
-        post: operations["exchange_github_integrations_exchange_post"];
+        /** Authorize */
+        post: operations["authorize_github_integrations_authorize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/github-integrations/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete */
+        post: operations["complete_github_integrations_complete_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6112,7 +6513,37 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Internal Access Token */
+        /**
+         * Internal Access Token
+         * @description The sandbox git credential helper's one source of a live GitHub token.
+         *
+         *     A refusal here is read by a MACHINE and then printed to a person standing at
+         *     a `git push` that just failed, so it names the FACT — which user id was
+         *     looked up, and what exists for it — before any remedy. The old body was the
+         *     remedy alone ("Connect GitHub in AI Matrx…"), which sent a connected user
+         *     (2026-09-18) to reconnect an account that was already connected and hid the
+         *     only datum that could have identified the real cause.
+         *
+         *     Hand a sandbox the user's short-lived GitHub token.
+         *
+         *     WHAT THE ORGANIZATION DOES AND DOES NOT DO HERE. The bridge handshake
+         *     (``_bridge_user_id``) admits the call only with BOTH halves of the request
+         *     context and installs them, and it PROVES the forwarded user is a member of
+         *     the forwarded organization before admitting anything — that membership
+         *     proof is what bounds the shared bridge secret to a tenant the actor already
+         *     belongs to. The token itself is NOT org-scoped, and saying so would be a
+         *     lie: ``resolve_github_access_token(user_id)`` resolves the person's own
+         *     GitHub connection, by user. A personal integration connection carries NO
+         *     organization at all — ``users.integration_connections`` is constrained to
+         *     ``owner_type='user' AND owner_user_id IS NOT NULL AND organization_id IS
+         *     NULL`` (CHECK ``integration_connections_owner_shape``; see
+         *     ``aidream/services/microsoft_integrations/FEATURE.md``), where that column
+         *     is the owner discriminator, not a tenancy stamp.
+         *
+         *     So: membership is proven at the bridge; the credential handed back is the
+         *     person's own, the same one they would get anywhere else in the product.
+         *     This route resolves no organization of its own.
+         */
         get: operations["internal_access_token_github_integrations_internal_access_token_get"];
         put?: never;
         post?: never;
@@ -6150,23 +6581,6 @@ export interface paths {
         put?: never;
         /** Authorize */
         post: operations["authorize_microsoft_integrations_authorize_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/microsoft-integrations/callback": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Callback */
-        get: operations["callback_microsoft_integrations_callback_get"];
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6354,6 +6768,43 @@ export interface paths {
         put?: never;
         /** Selected Chat Recent Messages */
         post: operations["selected_chat_recent_messages_microsoft_integrations_teams_selected_chat_recent_messages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/microsoft-integrations/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Callback */
+        get: operations["callback_microsoft_integrations_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/storage-sources/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import Provider File
+         * @description Import provider bytes into one actor-owned canonical Matrx file.
+         */
+        post: operations["import_provider_file_storage_sources_import_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7079,7 +7530,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Public Help Article */
+        /**
+         * One public Zendesk help-center article — NOT your tickets
+         * @description Fetches a single article from a publicly readable Zendesk help center, the same page any anonymous visitor sees. It reads no ticket, no end-user, no agent reply, and no macro: AI Matrx has no Zendesk OAuth application, so a customer's own Zendesk data is not reachable today by any path.
+         */
         get: operations["public_help_article_zendesk_public_help_article_get"];
         put?: never;
         post?: never;
@@ -7181,7 +7635,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Public Video */
+        /**
+         * One publicly shared Loom link — NOT your Loom library
+         * @description Resolves the public oEmbed metadata of one Loom share URL that its owner already made public. It cannot list a workspace's videos and cannot reach a private recording or its transcript: AI Matrx has no Loom OAuth application, so a customer's own Loom library is not reachable today by any path.
+         */
         get: operations["public_video_loom_public_video_get"];
         put?: never;
         post?: never;
@@ -12206,7 +12663,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Public Status */
+        /**
+         * Gong's public uptime page — NOT your Gong account
+         * @description Reads the indicator on https://status.gong.io, the page Gong publishes for everyone. It is not connected to any customer's Gong workspace and returns no call, recording, transcript, or deal data. AI Matrx has no Gong OAuth application, so no such data is reachable today by any path.
+         */
         get: operations["public_status_gong_public_status_get"];
         put?: never;
         post?: never;
@@ -19106,6 +19566,9 @@ export interface paths {
          *     Still ``drive.file``: the scope covers files this app creates. The new file
          *     joins the same registry a Picker-selected file joins, so every later read or
          *     write passes the same boundary check.
+         *
+         *     Governed by ``hitl.google.attended_file_write``: under "review required" this
+         *     returns 202 with the queued proposal instead of creating anything.
          */
         post: operations["create_document_google_workspace_documents_create_post"];
         delete?: never;
@@ -19123,7 +19586,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Create Sheet */
+        /**
+         * Create Sheet
+         * @description Create a Sheet AI Matrx made for this user, and register it.
+         *
+         *     Governed by ``hitl.google.attended_file_write`` (see ``create_document``).
+         */
         post: operations["create_sheet_google_workspace_sheets_create_post"];
         delete?: never;
         options?: never;
@@ -19157,7 +19625,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Append Document */
+        /**
+         * Append Document
+         * @description Append to a picked Doc — or queue the append for review.
+         *
+         *     Governed by ``hitl.google.attended_file_write`` (see ``create_document``).
+         */
         post: operations["append_document_google_workspace_documents_append_post"];
         delete?: never;
         options?: never;
@@ -19191,7 +19664,12 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Write Sheet */
+        /**
+         * Write Sheet
+         * @description Replace a range in a picked Sheet — or queue the write for review.
+         *
+         *     Governed by ``hitl.google.attended_file_write`` (see ``create_document``).
+         */
         post: operations["write_sheet_google_workspace_sheets_write_post"];
         delete?: never;
         options?: never;
@@ -19208,8 +19686,487 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Send Gmail */
+        /**
+         * Send Gmail
+         * @description Send the reviewed message — through the outbound spine, which decides.
+         *
+         *     🚨 The gate is HERE, on the server, not only in the browser's preflight
+         *     (VERIFY-B1-B2-R4 V4 / amendment A8). A refused recipient answers 409 with the
+         *     authority's own blocks and the sentence a surface shows, and NOTHING was sent:
+         *     the gate runs before the provider write.
+         */
         post: operations["send_gmail_google_workspace_gmail_send_reviewed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-workspace/approvals/{approval_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Approval
+         * @description Approve one queued Google change and make it — exactly once.
+         *
+         *     The approval id IS the idempotency key: calling this twice writes to Google
+         *     once and returns the first call's receipt the second time.
+         *
+         *     🚨 A 200 here does NOT mean the change was made. A write that fails after the
+         *     claim answers 200 with `status: "pending"`, `receipt.state: "failed"` and the
+         *     sentence saying the change was not made — the row is back on the queue to
+         *     retry or reject. A proposal past `hitl.google.review_timeout_hours` answers
+         *     403 with the reason.
+         */
+        post: operations["apply_approval_google_workspace_approvals__approval_id__apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-workspace/approvals/{approval_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject Approval
+         * @description Turn one queued Google change down, with the reason kept on the record.
+         *
+         *     A fresh reject answers `applied_now: true` — this call changed the row — and
+         *     a proposal past the review window can still be rejected.
+         */
+        post: operations["reject_approval_google_workspace_approvals__approval_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-sources/adapters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Adapters
+         * @description What this person can browse, and — for what she cannot — why not.
+         */
+        get: operations["list_adapters_connected_sources_adapters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-sources/adapters/catalog": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Catalog
+         * @description Every adapter that exists, connected or not — the honest capability map.
+         */
+        get: operations["catalog_connected_sources_adapters_catalog_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-sources/browse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Browse Sources
+         * @description One page of Sources out of a connected account, with measured throughput.
+         */
+        post: operations["browse_sources_connected_sources_browse_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-sources/google/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Google Comments
+         * @description The corrections on a picked Google file — comments, replies, quoted text.
+         */
+        post: operations["google_comments_connected_sources_google_comments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-sources/google/revisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Google Revisions
+         * @description Who changed a picked Google file, and when.
+         */
+        post: operations["google_revisions_connected_sources_google_revisions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-sources/google/presentation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Google Presentation
+         * @description A picked Slides deck, speaker notes included.
+         */
+        post: operations["google_presentation_connected_sources_google_presentation_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/connected-sources/microsoft/scope-gaps": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Microsoft Scope Gaps
+         * @description What a Microsoft connection can and cannot reach — on the record, in a screen.
+         */
+        get: operations["microsoft_scope_gaps_connected_sources_microsoft_scope_gaps_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-sync/documents/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Documents Refresh
+         * @description Refresh one picked Doc or Sheet into its Record.
+         *
+         *     A Google 404 or 403 does NOT delete anything: the Record is kept, its status becomes
+         *     ``unavailable``, and the reason it carries is the sentence to show the person.
+         */
+        post: operations["documents_refresh_google_sync_documents_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-sync/calendar/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Calendar Refresh
+         * @description Refresh one window (1–31 days) of owned events and link attendees who are People here.
+         */
+        post: operations["calendar_refresh_google_sync_calendar_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-sync/sheets/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sheets Import
+         * @description Create or refresh the grid for one spreadsheet tab.
+         *
+         *     ``dry_run`` writes nothing — no dataset, no field, no row — and returns exactly what a real
+         *     import would create. A re-import updates the rows whose source reference still exists and
+         *     archives the rows that vanished from the sheet; it never destroys one.
+         */
+        post: operations["sheets_import_google_sync_sheets_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-sync/youtube/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Youtube Refresh
+         * @description Refresh an owned channel's recent videos and its daily analytics. Publishes nothing.
+         */
+        post: operations["youtube_refresh_google_sync_youtube_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-sync/tag-manager/snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tag Manager Snapshot
+         * @description Read one container and write a graded tracking snapshot on the site.
+         *
+         *     A container we cannot read is a 404 with the reason, never three confident falses that would
+         *     read as "this site has no tracking".
+         */
+        post: operations["tag_manager_snapshot_google_sync_tag_manager_snapshot_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-sync/records/{table}/{record_id}/detach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Records Detach
+         * @description "Keep as Matrx data" — stop this Record refreshing from Google and keep what it has.
+         *
+         *     Terminal by design: the status becomes ``detached``, every later refresh refuses with the
+         *     reason, and the cached copy stays exactly as it is. Nothing is deleted, nothing is un-shared,
+         *     the picked-resource row that authorizes the Record is untouched, and the customer's file in
+         *     Google is never written.
+         */
+        post: operations["records_detach_google_sync_records__table___record_id__detach_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-sync/records/{table}/{record_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Records Archive
+         * @description Archive this Record through the platform's ONE soft-delete door.
+         *
+         *     Recoverable, and never a hard delete: ``public.entity_soft_delete`` sets ``deleted_at``, the
+         *     platform's generic soft-delete triggers do the rest, and the table's retention policy decides
+         *     when the cached copy is purged. The file in Google is untouched.
+         */
+        post: operations["records_archive_google_sync_records__table___record_id__archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-import/contacts/fields": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Contact Fields
+         * @description The field map the panel renders: Google field → Person field.
+         *
+         *     Declared on the server so the panel and the agent tool cannot drift into two
+         *     different ideas of where a contact's job title lands.
+         */
+        get: operations["contact_fields_google_import_contacts_fields_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-import/contacts/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Contacts Search
+         * @description The person's Google contacts, searchable, with already-imported badges.
+         *     Reads only — nothing is written on either side.
+         */
+        post: operations["contacts_search_google_import_contacts_search_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-import/contacts/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Contacts Import
+         * @description Preview (``dry_run``) or apply the import of one or several contacts.
+         *
+         *     The same call answers "Import from Google Contacts" and "Update from
+         *     Google": on a Person that already exists the plan IS the diff. The preview
+         *     and the apply resolve the target Person through the SAME matcher, so the
+         *     preview names the Person it would merge into. A value edited here comes
+         *     back ``kept_manual``; a value nothing ever stamped comes back
+         *     ``unrecorded`` (kept as is, and not called an edit); a contact matching
+         *     several People comes back ``choice_required`` with those People named and
+         *     nothing written.
+         */
+        post: operations["contacts_import_google_import_contacts_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-import/tasks/list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tasks List
+         * @description Google's task lists with per-task already-imported state and an honest
+         *     count line per list. Reads only.
+         */
+        post: operations["tasks_list_google_import_tasks_list_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-import/tasks/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tasks Import
+         * @description Import the named Google tasks, or refresh the ones Google changed.
+         *
+         *     Idempotent by construction: a task this organization already holds is never
+         *     written twice, and a field edited here is never overwritten by a re-import.
+         *     While the generated models predate migration 0778 no re-import can update
+         *     anything: every difference comes back ``unrecorded`` with the remedy in
+         *     ``warnings``, never as a local edit.
+         */
+        post: operations["tasks_import_google_import_tasks_import_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -19460,7 +20417,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/seo/sites/{site_id}/landscape-brief": {
+    "/seo/brands/{brand_id}/strategy": {
         parameters: {
             query?: never;
             header?: never;
@@ -19468,10 +20425,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Site Landscape Brief
-         * @description The brief as it stands, whatever its review state.
+         * Get Brand Strategy
+         * @description The brand's strategy as it stands, whatever its review state.
          */
-        get: operations["get_site_landscape_brief_seo_sites__site_id__landscape_brief_get"];
+        get: operations["get_brand_strategy_seo_brands__brand_id__strategy_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -19480,7 +20437,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/seo/sites/{site_id}/landscape-brief/generate": {
+    "/seo/brands/{brand_id}/strategy/generate": {
         parameters: {
             query?: never;
             header?: never;
@@ -19490,20 +20447,22 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Generate Site Landscape Brief
-         * @description Stage 1 of the staged-confidence pattern: establish the ground facts.
+         * Generate Brand Strategy
+         * @description Establish the brand's ground facts as a DURABLE streamed command.
          *
-         *     Leaves the brief `awaiting_review` with a 24-hour deadline — after which
-         *     downstream work proceeds on these assumptions rather than stalling.
+         *     It reads every site the brand owns, each site's crawl, and the current
+         *     research document before it writes — minutes of work, so it claims its
+         *     `seo.collection_run` row first and streams a named stage per input. Rejoin
+         *     with `POST /seo/collections/{run_id}/rejoin`.
          */
-        post: operations["generate_site_landscape_brief_seo_sites__site_id__landscape_brief_generate_post"];
+        post: operations["generate_brand_strategy_seo_brands__brand_id__strategy_generate_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/seo/sites/{site_id}/landscape-brief/ruling": {
+    "/seo/brands/{brand_id}/strategy/ruling": {
         parameters: {
             query?: never;
             header?: never;
@@ -19513,11 +20472,147 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Rule On Site Landscape Brief
+         * Rule On Brand Strategy
          * @description The owner's correction, in their own words — the guidance every later
-         *     agent inherits.
+         *     agent inherits, for every website this brand owns.
          */
-        post: operations["rule_on_site_landscape_brief_seo_sites__site_id__landscape_brief_ruling_post"];
+        post: operations["rule_on_brand_strategy_seo_brands__brand_id__strategy_ruling_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/brands/{brand_id}/strategy/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Brand Strategy History
+         * @description Superseded brand strategies, newest first.
+         */
+        get: operations["get_brand_strategy_history_seo_brands__brand_id__strategy_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/brands/{brand_id}/map/author": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Author Brand Map
+         * @description How a topical map starts — ONE entry behind the "start a map" screen.
+         *
+         *     `body.source_kind` picks the tile: `data` | `documents` | `prompt` |
+         *     `web_search` | `existing_research` | `new_research`. The service resolves that
+         *     source to text, runs the `seo.map_author` mandate, dry-runs the tree it gets
+         *     back, and writes it — `proposed` or `active` according to the resolved
+         *     `map_agent_change_mode`. Streams a named stage per step; rejoin with
+         *     `POST /seo/collections/{run_id}/rejoin`.
+         *
+         *     `new_research` is the one source that does NOT author a map on this call: it
+         *     commissions a `content_topic_map` research run and answers with its id, because
+         *     the research IS the source and it has to finish first.
+         */
+        post: operations["author_brand_map_seo_brands__brand_id__map_author_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/strategy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Site Strategy
+         * @description What this website is FOR, as it stands, whatever its review state.
+         */
+        get: operations["get_site_strategy_seo_sites__site_id__strategy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/strategy/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generate Site Strategy
+         * @description Establish what this website is FOR as a DURABLE streamed command.
+         *
+         *     It reads the established brand strategy, this site's crawl, its Search
+         *     Console performance, its keyword library, its content plan and its research
+         *     document before it writes. Rejoin with
+         *     `POST /seo/collections/{run_id}/rejoin`.
+         */
+        post: operations["generate_site_strategy_seo_sites__site_id__strategy_generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/strategy/ruling": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rule On Site Strategy
+         * @description The owner's correction on what this website is for.
+         */
+        post: operations["rule_on_site_strategy_seo_sites__site_id__strategy_ruling_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/strategy/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Site Strategy History
+         * @description Superseded site strategies, newest first.
+         */
+        get: operations["get_site_strategy_history_seo_sites__site_id__strategy_history_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -21102,6 +22197,134 @@ export interface paths {
          *     hence the stream. Rejoin with ``POST /seo/collections/{run_id}/rejoin``.
          */
         post: operations["sync_press_newsroom_seo_sites__site_id__press_newsroom_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/map/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Map Site Pages
+         * @description Put this site's pages on its topical map — the ONE entry the "map the pages"
+         *     button calls.
+         *
+         *     It enrols every active page of the site in a durable ledger in Search Console demand
+         *     order, then works it in batches: claim, ask `seo.page_mapper` where each page sits,
+         *     write the surviving placements through `seo.set_pages_map_topics` with
+         *     `source='mapper'`, and settle the claim against the edges that actually landed.
+         *
+         *     Resumable by construction. Pressing this again continues where the last run stopped —
+         *     a page already mapped is never re-judged, a page a PERSON mapped is never touched, and
+         *     a worker that dies mid-batch costs one lease window and nothing else. Streams a named
+         *     stage per batch; rejoin with `POST /seo/collections/{run_id}/rejoin`.
+         *
+         *     `limit` caps the pages this press will spend on (the daily ceiling decides when it is
+         *     omitted), and `dry_run` answers what WOULD be written without writing it — honest
+         *     about the map, not free: every batch still costs a model call.
+         */
+        post: operations["map_site_pages_seo_sites__site_id__map_pages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/map/regions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Map Site Regions
+         * @description Give this site's map its GEOGRAPHY — the one entry the "map the regions" button
+         *     calls, and the rule that keeps a topic tree about subjects.
+         *
+         *     🚨 GEOGRAPHY IS A FACET, NOT A BRANCH. A topic answers WHAT this company does; a
+         *     region answers WHERE. `region` is a built-in facet of every map, so a location page
+         *     belongs on the SERVICE topic it is about, carrying its place as a facet value. When
+         *     a map has no region values the geography goes into the tree instead — measured live
+         *     2026-09-17, a topic slugged `california` on a real client's map had collected 557
+         *     location pages — and every downstream judgement then reads that company's local
+         *     footprint as duplicates of itself.
+         *
+         *     This pass derives the brand's region values from real data (the locations the
+         *     business has registered first, then the places its own pages name), creates them
+         *     hierarchically through `seo.create_map_facet_values`, and binds each location page
+         *     through `seo.set_page_map_facet` with `source='mapper'` — the LOWEST rank on the
+         *     precedence ladder, so a region a person set is never overwritten.
+         *
+         *     🚨 IT COSTS NOTHING. There is no model call anywhere in it: a place is read out of
+         *     a page's own address by subtracting the words this map already uses for its
+         *     subjects. `dry_run` is therefore genuinely free.
+         *
+         *     Resumable by construction and without a ledger: the work set is recomputed every
+         *     press as "pages whose region is not already the one we derived", so a run that dies
+         *     halfway costs nothing. Streams a named stage; rejoin with
+         *     `POST /seo/collections/{run_id}/rejoin`.
+         *
+         *     `retire_geography_topics` is OFF by default. Turning it on moves every page off the
+         *     map's place-named topics onto the service topics those pages already cover, then
+         *     retires the topics. A page is NEVER lost: one that covered nothing else ends on no
+         *     topic, still listed and named in the answer, for the page mapper to place now that
+         *     the place-named topic is gone.
+         */
+        post: operations["map_site_regions_seo_sites__site_id__map_regions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/map/intents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Propose Site Page Intents
+         * @description Propose where every mapped page of this site is GOING — the ONE entry the
+         *     "propose the destinations" button calls, and the second half of the convergence
+         *     workflow the map screen shows.
+         *
+         *     It enrols every active page that already sits on a topic (a `covers` edge) in a
+         *     durable ledger keyed by that topic, then works it TOPIC BY TOPIC: claim one topic's
+         *     pages so siblings are judged together, hand `seo.page_intent_proposer` the topic's
+         *     traffic-ranked roster, its keywords and its planned pages, write the surviving
+         *     proposals through `seo.set_page_intents` with `source='agent'` and `state='proposed'`,
+         *     and settle the claim against the intent edges that actually landed.
+         *
+         *     🚨 NOTHING HERE ACTS. Every intent is a PROPOSAL a person reviews through
+         *     `intent_review_mode`; no page is redirected, merged or deleted by this call. A page
+         *     whose destination a person already decided — or any intent already accepted or done —
+         *     is never proposed over.
+         *
+         *     Resumable by construction. Pressing this again continues where the last run stopped,
+         *     and a worker that dies mid-batch costs one lease window and nothing else. Streams a
+         *     named stage per batch; rejoin with `POST /seo/collections/{run_id}/rejoin`.
+         *
+         *     `limit` caps the pages this press will spend on (the daily ceiling decides when it is
+         *     omitted), `topic_slugs` restricts the pass to named topics, and `dry_run` answers what
+         *     WOULD be written without writing it — honest about the map, not free: every batch
+         *     still costs a model call.
+         */
+        post: operations["propose_site_page_intents_seo_sites__site_id__map_intents_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -23008,6 +24231,36 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/runtime/lock-storm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lock Storm
+         * @description Is anything queued behind one session RIGHT NOW, and who is holding it?
+         *
+         *     The on-demand half of the lock-storm alarm — the same sample the runtime
+         *     reaper takes every 15s, except this one RECORDS NOTHING. On 2026-09-15 a
+         *     77-second ACCESS EXCLUSIVE hold on `platform.reachability` timed out every
+         *     chat turn on the platform and the only way to see it was a human opening
+         *     `pg_stat_activity` by hand. This is that read, over HTTP.
+         *
+         *     `verdict` is 'ok' | 'lock_storm' | 'unreadable'. Thresholds come from the
+         *     `platform.lock_storm` feature knobs. See
+         *     `aidream/services/runtime/lock_storm_alarm.py`.
+         */
+        get: operations["lock_storm_admin_runtime_lock_storm_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/runtime/conversations/{conversation_id}": {
         parameters: {
             query?: never;
@@ -24218,6 +25471,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vision-interview/sessions/{session_id}/finish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finish Interview Session
+         * @description One press ends the interview and writes the documents. No extra round.
+         *
+         *     Deliberately NOT the start endpoint with a flag: starting a run and
+         *     finishing an interview are different operations, and collapsing them into
+         *     one control is the defect this endpoint exists to close.
+         */
+        post: operations["finish_interview_session_vision_interview_sessions__session_id__finish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/masterworks/build": {
         parameters: {
             query?: never;
@@ -24270,6 +25547,143 @@ export interface paths {
          *     do X") instead of static and written with hindsight.
          */
         post: operations["ingest_rulebook_timeline_masterworks_ingest_timeline_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/ingest-markup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Markup
+         * @description THE RED-PEN LANE (`red_pen`): a piece of someone else's work the Expert
+         *     marked up. Each correction is a struck-through passage plus the Expert's own
+         *     words — typed or dictated — on what is wrong and what they would do instead,
+         *     and the rule comes out of the DISAGREEMENT. Every rule's `source_ref.span`
+         *     cites the passage that provoked it and the moment the Expert said so.
+         */
+        post: operations["ingest_rulebook_markup_masterworks_ingest_markup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/ingest-drip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Drip Answers
+         * @description The `daily_drip` Approach: one short question a day about the work the
+         *     Expert actually did, answered by talking or typing in under a minute. This
+         *     reads the days that have an answer and turns them into rules — each rule
+         *     carrying the question it came from, the day it was asked, and the answer
+         *     verbatim as its provenance.
+         *
+         *     A drip that has been running three days is not an empty success: below the
+         *     `min_answers_to_distill` knob this refuses with the real counts and the
+         *     real remedy (`masterwork_drip_not_enough_answers`), and silence is never
+         *     distilled into nothing.
+         */
+        post: operations["ingest_rulebook_drip_answers_masterworks_ingest_drip_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/drip/send-now": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Todays Drip
+         * @description Send THIS Rulebook's owner today's question now, without waiting for
+         *     their hour.
+         *
+         *     🚨 NOT A SECOND SENDER. It calls exactly the pass the scheduler calls
+         *     (`masterwork_daily_drip.send_due_drips`), narrowed to one Rulebook, so the
+         *     day row, the once-a-day idempotence, the pause check and the notification
+         *     ladder are the same code on both paths. A day already asked is reported as
+         *     such and nothing is sent twice.
+         */
+        post: operations["send_todays_drip_masterworks_drip_send_now_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/ingest-predictions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Predictions
+         * @description The `prediction_ledger` Approach: the Expert's own calls on real open
+         *     cases, made before the outcome existed and now scored against what actually
+         *     happened. The whys behind calls that HELD become rules carrying the
+         *     prediction and its outcome as evidence; the whys behind calls that MISSED
+         *     become boundary findings the Expert is asked about, never rules written
+         *     over their head.
+         *
+         *     A ledger still waiting on the world is not an empty success: below the
+         *     `min_resolved_to_distill` knob this refuses with the real counts and the
+         *     real remedy (`masterwork_prediction_not_enough_outcomes`).
+         */
+        post: operations["ingest_rulebook_predictions_masterworks_ingest_predictions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/{rulebook_id}/predictions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Prediction Ledger
+         * @description The ledger's calibration readout and this organization's knob values.
+         *
+         *     The ENTRIES themselves are not returned: the client already holds them —
+         *     it wrote them direct to `platform.rulebook.metadata` through supabase-js,
+         *     which is the platform's normal path for a pure UI↔DB write. This endpoint
+         *     exists for the two things the client cannot compute for itself: the
+         *     organization-scoped knob values, and the server's own reading of the same
+         *     ledger, so a drift between the two derivations is visible rather than
+         *     silent.
+         */
+        get: operations["read_prediction_ledger_masterworks__rulebook_id__predictions_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -24448,6 +25862,205 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/masterworks/triads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Deal Rulebook Triads
+         * @description The Triad game's DEAL: three short items per card, drawn from this
+         *     Rulebook's own craft, for the Expert to choose between.
+         *
+         *     Not a durable run, deliberately. Nothing here is written to the Rulebook —
+         *     a generated card is a QUESTION, and a lost deck costs one cheap call and is
+         *     re-dealt by pressing the button again. Only an ANSWERED card is distilled,
+         *     and that door (`/masterworks/ingest-triad`) is the one that writes.
+         */
+        post: operations["deal_rulebook_triads_masterworks_triads_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/ingest-triad": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Triad
+         * @description ONE played Triad card into DRAFT rules: the three items, which one the
+         *     Expert chose, and the one line she said about why.
+         *
+         *     The reason is the rule candidate and the triad is the evidence, so the
+         *     quote is verified against HER words and never against an item the platform
+         *     wrote. One card per call — submitted the moment she swipes, so the rules
+         *     appear while she is still playing and a session abandoned after three cards
+         *     keeps all three.
+         *
+         *     🚨 DURABLE, AND THAT SENTENCE IS WHY (cold walk 4, finding 2, 2026-09-16).
+         *     This route used to run its pipeline on a bare stream: no
+         *     ``platform.masterwork_run`` row, so a card answered and then left — the
+         *     Expert reloads, closes the tab, or the phone sleeps — died with the
+         *     connection, and `source_identity.run_id_of` returned ``None``, which
+         *     degrades the source CLAIM to the read-only prior check that cannot see a
+         *     pass still in flight. A first-time Expert answered two cards, saw "Save and
+         *     next" succeed twice, reloaded, and found no rules, no resume state and no
+         *     trace the game had been played. The docstring above promised the opposite.
+         *     Every other rule-writing lane already ran under the run ledger; this one and
+         *     the Sorting Table's answer ingest were the two that did not.
+         */
+        post: operations["ingest_rulebook_triad_masterworks_ingest_triad_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/sort/cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Write Rulebook Sort Cases
+         * @description THE SORTING TABLE's case writer: a round of short, concrete, genuinely
+         *     borderline cases drawn from this Rulebook's own craft, for an Expert who
+         *     did not bring their own pile.
+         *
+         *     Not a durable run, deliberately, and for the Triad's reason: nothing here
+         *     is written to the Rulebook — an unsorted case is not expertise — and a lost
+         *     round costs one cheap call and is re-written by pressing the button again.
+         *     Only an ANSWERED boundary question is ever distilled, and that door
+         *     (`/masterworks/ingest-sort`) is the one that writes.
+         */
+        post: operations["write_rulebook_sort_cases_masterworks_sort_cases_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/sort/boundary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Find Rulebook Sort Boundary
+         * @description The sorted piles in, the questions worth asking out.
+         *
+         *     🚨 PURE ARITHMETIC — no model, no money, no write. The pairs put to the
+         *     Expert are the ones an IDF-weighted cosine over the round's own vocabulary
+         *     scores highest, so they can be recomputed from this very payload by anybody
+         *     who doubts them; that is the only version of "these two are the closest"
+         *     that is honest to say out loud. It is a plain request/response rather than
+         *     a stream for exactly that reason: there is nothing to wait for.
+         */
+        post: operations["find_rulebook_sort_boundary_masterworks_sort_boundary_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/ingest-sort": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Sort Answer
+         * @description ONE answered boundary question of the Sorting Table into DRAFT rules.
+         *
+         *     The Expert's answer is the rule candidate and THE PAIR IS THE EVIDENCE, so
+         *     the quote is verified against HER words and never against a case the
+         *     platform wrote. One question per call — submitted the moment she finishes
+         *     speaking, so the rules appear while she is still on the round and a session
+         *     abandoned after two answers keeps both.
+         *
+         *     🚨 DURABLE for the reason the Triad above is: "a session abandoned after
+         *     two answers keeps both" is only true of a lane that runs under the run
+         *     ledger. These two were the only rule-writing lanes that did not.
+         */
+        post: operations["ingest_rulebook_sort_answer_masterworks_ingest_sort_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/probe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Masterwork Bad Example Probe
+         * @description The Bad Example probe: ONE round. Distil what the Expert said was wrong
+         *     with the last plausible-but-wrong example we showed them, then write the
+         *     next one — probing a boundary of their judgment no earlier round reached.
+         *     Stops when they say "I'd never see that" or the round knob runs out.
+         */
+        post: operations["masterwork_bad_example_probe_masterworks_probe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/teach-back": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Masterwork Teach Back
+         * @description The Teach-Back: ONE round. Distil the Expert's correction of the last
+         *     explanation we gave back to them, then say it again with that correction
+         *     folded in — until they say "yes, that's it" or the round knob runs out.
+         *
+         *     Works on an EMPTY Rulebook too: with nothing distilled yet the explanation
+         *     is what a competent generalist would do, it says so, and the corrections are
+         *     the whole method.
+         */
+        post: operations["masterwork_teach_back_masterworks_teach_back_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/masterworks/ingest-chat": {
         parameters: {
             query?: never;
@@ -24485,6 +26098,121 @@ export interface paths {
          *     (chat.message, strict owner scope) into DRAFT rules.
          */
         post: operations["ingest_rulebook_conversations_masterworks_ingest_conversations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/meeting/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Meeting Transcripts
+         * @description The Meeting Scavenger's picker: read the chosen meetings (ours, an
+         *     uploaded transcript, or a paste) and list the VOICES in them, so the Expert
+         *     can say which one is them. Deterministic — no AI, no writes; meetings are
+         *     read under the caller's own RLS.
+         */
+        post: operations["preview_meeting_transcripts_masterworks_meeting_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/ingest-meeting": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Meeting
+         * @description THE MEETING SCAVENGER (`meeting_scavenger` Approach): the meetings the
+         *     Expert already has — ours, uploaded or pasted — scavenged for the moments
+         *     THEY made a call, corrected someone, or held a disagreement, each draft rule
+         *     carrying the speaker and the moment it was said. Zero new minutes.
+         */
+        post: operations["ingest_rulebook_meeting_masterworks_ingest_meeting_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/inbox/connection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Inbox Connection
+         * @description SHADOW-THE-INBOX's connected door: is there a mailbox whose threads this
+         *     person's replies can actually be read from?
+         *
+         *     `connected=false` is the ANSWER, never an error — the surface renders no
+         *     picker at all (an absent control, not a dead one) and shows
+         *     `how_to_connect`. Deterministic: no AI, no writes, no provider call.
+         */
+        get: operations["inbox_connection_masterworks_inbox_connection_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/inbox/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Inbox Threads
+         * @description Parse a pasted/uploaded mail export and list its threads, each saying
+         *     whether there is anything of the Expert's to shadow in it — before a single
+         *     paid call. Deterministic; access-gated on the file.
+         */
+        post: operations["preview_inbox_threads_masterworks_inbox_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/ingest-inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ingest Rulebook Inbox
+         * @description The Shadow-the-inbox Approach: diff what the Expert actually replied
+         *     against what a competent generalist would have written (drafted blind), and
+         *     distill the difference into DRAFT rules anchored to the thread.
+         */
+        post: operations["ingest_rulebook_inbox_masterworks_ingest_inbox_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -24617,6 +26345,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/masterworks/{rulebook_id}/bench": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Bench Proof
+         * @description THE PROOF — the latest five-arm Bench trial for this Rulebook, or an
+         *     honest no.
+         *
+         *     The Audition is a quick fidelity check against the Expert's published work
+         *     and can never establish a win (doctrine CORE.md §6/§9). This is where a
+         *     screen asks whether the thing that CAN — a logged Bench run naming the arm
+         *     and the budget — exists. No record means ``reason`` says so in one sentence;
+         *     it never means an empty success.
+         */
+        get: operations["read_bench_proof_masterworks__rulebook_id__bench_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/{rulebook_id}/bench/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Bench Run
+         * @description THE DOOR — start a Trial Bench run for this Rulebook, streamed arm by arm.
+         *
+         *     The Bench is the PROOF the Audition cannot be (doctrine CORE.md §6/§9): six
+         *     arms, a blind panel the expert's own withheld answer has to win, and dollars
+         *     and seconds on every row. It runs for minutes and spends real money on every
+         *     arm, so it streams — the arms land with their price as they finish, not all
+         *     at once at the end.
+         *
+         *     🚨 DURABLE, AND THE ROW IS THE RECORD. A bench trial is shaped exactly like a
+         *     ``platform.masterwork_run`` row and is stored as one: the run is claimed
+         *     before the first paid arm, so closing the tab and coming back rejoins it, and
+         *     the Encore page reads the proof from the row. Files stay as a mirror — they
+         *     were never a record on a replicated server, where the task that serves the
+         *     next read never saw the disk the trial wrote to.
+         *
+         *     ``operation`` is not free text: it has a foreign key onto
+         *     ``platform.masterwork_run_kind``, seeded on every boot from
+         *     ``masterwork_runs.TERMINAL_TYPES`` (migration 0727), so the code owns the
+         *     vocabulary and the database still refuses a kind nobody declared. The branch
+         *     below stays because the HONEST half must: if ``bench_trial`` ever leaves that
+         *     registry, claiming the row would fail the INSERT and kill the run before its
+         *     first arm, and filing it under another operation's name would corrupt that
+         *     operation's trend line — so the trial runs outside the ledger and the service
+         *     SAYS SO in the stream rather than letting a person believe a refresh is safe.
+         */
+        post: operations["start_bench_run_masterworks__rulebook_id__bench_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/masterworks/sealed-cases": {
         parameters: {
             query?: never;
@@ -24677,6 +26475,36 @@ export interface paths {
          *     findings as they arrive.
          */
         post: operations["checkup_masterwork_endpoint_masterworks_checkup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/masterworks/capture-plan/reminders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reconcile Capture Plan Reminders Endpoint
+         * @description Bring a Capture Plan's session reminders into agreement with the plan.
+         *
+         *     THE ONLY THING THE SERVER DOES FOR THIS PROGRAM. The plan itself — which
+         *     method comes next, how long it gets, what each session yielded, when to stop
+         *     — is arithmetic over the Rulebook's own metadata and runs in the browser,
+         *     which writes it straight to Postgres like every other pure UI/DB operation
+         *     here. Telling a person something is the one part the browser cannot do.
+         *
+         *     Idempotent, and it creates NO schedule: each reminder is queued now with a
+         *     future ``next_attempt_at``, and the one approved notification dispatcher
+         *     claims it when it comes due.
+         */
+        post: operations["reconcile_capture_plan_reminders_endpoint_masterworks_capture_plan_reminders_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -24804,7 +26632,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Sending Identities */
+        /**
+         * List Sending Identities
+         * @description The organization's sending mailboxes, OUTREACH ones unless asked otherwise.
+         *
+         *     A `correspondence` row is a person's own connected mailbox, recorded so the send
+         *     has an audit event: listing it here as an outreach mailbox showed a permanently
+         *     unverifiable domain and a fix nobody can perform (VERIFY-B1-B2-R5 W1). It is
+         *     filtered, never hidden — ask for it by name.
+         */
         get: operations["list_sending_identities_sending_identities_get"];
         put?: never;
         /** Create Sending Identity */
@@ -25734,11 +27570,7 @@ export interface paths {
         put?: never;
         /**
          * Dev Login As
-         * @description Mint a Supabase-shaped JWT for the given user_id.
-         *
-         *     Validates the user exists in auth.users, then signs a token with the
-         *     same SUPABASE_JWT_SECRET the auth middleware uses for inbound JWTs.
-         *     The auth middleware verifies the result like any other Supabase token.
+         * @description Mint a real Supabase Auth session for the given user id.
          */
         post: operations["dev_login_as_dev_login_as_post"];
         delete?: never;
@@ -26088,8 +27920,7 @@ export interface paths {
          * Create Topic Canonical
          * @description Create a research topic. No project required — ever.
          *
-         *     Org resolves via `resolve_effective_organization_id` (explicit
-         *     `organization_id` wins, else the caller's personal org). An optional
+         *     The admitted request context supplies the organization. An optional
          *     `project_id` becomes one canonical `platform.associations` edge; edge
          *     failure is loud but never fails the create.
          */
@@ -27660,6 +29491,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/crm/parties/kind-resolution/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Queue Party Kind Resolution
+         * @description Send parties waiting in the possible_person review queue to the AI judge
+         *     through the half-price Batch lane. Platform admin only: the queue spans
+         *     organizations. Verdicts land hours later through the ``crm.party_kind``
+         *     handler, which never overrides a human's decision. The YouTube channel fold
+         *     triggers the same submission at the end of every pass; this is the operator's
+         *     door for draining the backlog in deliberate slices.
+         */
+        post: operations["queue_party_kind_resolution_crm_parties_kind_resolution_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/content-processing/{cld_file_id}": {
         parameters: {
             query?: never;
@@ -28800,8 +30656,9 @@ export interface paths {
          *     does not own resolves to nothing and streams a clean "source_not_found"
          *     result rather than an error or a cross-tenant leak.
          *
-         *     The effective org is resolved (personal-org fallback) before the ingest
-         *     call so the written kg_chunks are always org-scoped (non-NULL invariant).
+         *     The organization is READ off the request context before the ingest call,
+         *     so the written kg_chunks are always org-scoped (non-NULL invariant) and
+         *     always in the tenant the caller was admitted for.
          */
         post: operations["rag_ingest_conversation_rag_conversations__conversation_id__ingest_post"];
         delete?: never;
@@ -30199,6 +32056,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/mandates/impact/advance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agent Impact Advance
+         * @description Move every advanceable token's pin to its target, through the sanctioned
+         *     pin writers, one transaction per row. Every token comes back with a status
+         *     (advanced / refused / excluded) and a sentence, and every one is ledgered so
+         *     the batch can be reverted by ``batch_id``. A stale pin is REFUSED, never
+         *     clobbered (R9); personal pins, tracks-latest rungs and non-agent holders are
+         *     EXCLUDED by name (R17/R35); a dry-run token is refused (R23). The server
+         *     re-judges every token with the impact read AS the caller: a rung the read
+         *     marks blocked is excluded with its sentence, a target not newer than the pin
+         *     is refused, and a rung the caller cannot read is refused without naming it
+         *     (R31). The body's injected ``organization_id`` grants nothing.
+         */
+        post: operations["agent_impact_advance_mandates_impact_advance_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandates/impact/revert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agent Impact Revert
+         * @description Undo a batch (or one row of it): each advanced ledger row's pin goes back
+         *     to ``prior_pinned_version_id`` through the same writers, as a new batch that
+         *     points at the one it undid. Refused per row when the pin moved again, when
+         *     the row was already reverted, or when the organization's revert window
+         *     (``agent_impact.revert_window_hours``) has passed.
+         */
+        post: operations["agent_impact_revert_mandates_impact_revert_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mandates/impact/mine": {
         parameters: {
             query?: never;
@@ -30213,6 +32123,51 @@ export interface paths {
          * @description The same verdicts, for the jobs this caller can already see.
          */
         post: operations["agent_impact_mine_mandates_impact_mine_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandates/impact/advance/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agent Impact Advance Mine
+         * @description The same batch advance, as the OWNER (I12): only this person's own
+         *     personal pins and the org rungs of organizations they administer move;
+         *     every other token is refused with the same sentence as a rung they cannot
+         *     see. Never on anyone's behalf.
+         */
+        post: operations["agent_impact_advance_mine_mandates_impact_advance_mine_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/mandates/impact/revert/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Agent Impact Revert Mine
+         * @description The same revert, as the OWNER (I12): a batch id is not an entitlement —
+         *     only rows this person may write go back; the rest are refused without
+         *     being named.
+         */
+        post: operations["agent_impact_revert_mine_mandates_impact_revert_mine_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -33537,6 +35492,674 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/media/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resolve Source
+         * @description Turn any input — channel URL, @handle, channel id, playlist, video link — into a
+         *     source, WITHOUT enumerating it. Cheap and fast, so a paste can be confirmed.
+         */
+        post: operations["resolve_source_media_resolve_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/libraries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Libraries */
+        get: operations["list_libraries_media_libraries_get"];
+        put?: never;
+        /**
+         * Create Library
+         * @description Save the Library. Enumeration is a separate, streaming call.
+         */
+        post: operations["create_library_media_libraries_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/libraries/{library_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Library */
+        get: operations["get_library_media_libraries__library_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/libraries/{library_id}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Library
+         * @description Enumerate EVERY Source, streaming pages as they land (NDJSON).
+         *
+         *     This is also "bring up to date": a person runs it. There is no recurring schedule
+         *     and none will be created here.
+         */
+        post: operations["sync_library_media_libraries__library_id__sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/libraries/{library_id}/videos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Library Videos
+         * @description The MOUNT READ — a client never depends on having caught the stream.
+         *
+         *     🚨 THE CONTRACT PUBLISHED TWELVE FILTERS AND THIS SERVED ONE. `media_kind` was
+         *     implemented; `has_captions`, `transcript_status`, the two date bounds, the two
+         *     duration bounds, `q`, `order` and `direction` were not even declared as query
+         *     parameters — so FastAPI dropped them without a word and every one of them came
+         *     back **200 with the whole unfiltered list**. A person filtering to "has captions"
+         *     or searching for a word got every Source and no sign anything had been ignored.
+         *     That is the envelope defect wearing different clothes: the caller is handed a
+         *     successful answer to a question the server never asked.
+         *
+         *     It is now ONE filter, not two. §4 of the contract says "the same query object is
+         *     the selection descriptor in §7", so this builds a `SelectionFilter` and runs the
+         *     same `jobs.apply_selection` a job runs — a filter that works here works there, and
+         *     neither can drift from the other. Sorting is this endpoint's own, because a
+         *     selection has no order.
+         */
+        get: operations["list_library_videos_media_libraries__library_id__videos_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/libraries/{library_id}/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Library Metrics */
+        get: operations["library_metrics_media_libraries__library_id__metrics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Actions
+         * @description The Action menu, served from the server so no client hardcodes a stale list.
+         */
+        get: operations["list_actions_media_actions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Settings */
+        get: operations["get_settings_media_settings_get"];
+        /** Put Settings */
+        put: operations["put_settings_media_settings_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/libraries/{library_id}/estimate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Estimate Selection
+         * @description Price a selection BEFORE anything runs. The expensive-click law's front door.
+         */
+        post: operations["estimate_selection_media_libraries__library_id__estimate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/libraries/{library_id}/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Library Jobs
+         * @description The job-discovery door: after a reload a client knows only the Library.
+         */
+        get: operations["list_library_jobs_media_libraries__library_id__jobs_get"];
+        put?: never;
+        /**
+         * Create Job
+         * @description Confirm a stored estimate and start the work. Streams progress.
+         */
+        post: operations["create_job_media_libraries__library_id__jobs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Job
+         * @description The MOUNT READ for progress — rows first, stream second.
+         */
+        get: operations["get_job_media_jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/jobs/{job_id}/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Resume Job
+         * @description Re-claim everything a restart stranded, then keep going.
+         */
+        post: operations["resume_job_media_jobs__job_id__resume_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/jobs/{job_id}/retry-failed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry Failed Items
+         * @description Requeue the failures that are worth retrying, and run them.
+         */
+        post: operations["retry_failed_items_media_jobs__job_id__retry_failed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/jobs/{job_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel Job
+         * @description Stop a job. Queued items go `cancelled`; a running item finishes (contract §7).
+         *
+         *     🚨 THIS ROUTE DID NOT EXIST until 2026-09-18, and that is the SAME CLASS as the
+         *     envelope defects above: the contract published it, `features/source-library/api.ts`
+         *     `cancelJob()` called it, `hooks/useJob.ts` wired it to a button — and the server had
+         *     no such path, so every click was a 404. Nobody noticed because nothing walked the
+         *     contract against the router. `tests/test_media_catalog_wire_shapes.py` now does.
+         */
+        post: operations["cancel_job_media_jobs__job_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/libraries/{library_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Export Library
+         * @description The `export` Action. Whole-selection scope, free, no model — served directly.
+         *
+         *     It does NOT ride the per-item job queue: the output is one document about the
+         *     selection, not one result per video, so a job row per video would be a lie about
+         *     the shape of the work.
+         */
+        post: operations["export_library_media_libraries__library_id__export_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/export-adapters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export Adapters
+         * @description What you can drop here — rendered from the server, never hardcoded.
+         *
+         *     Includes the formats we recognise but cannot read, each with the sentence
+         *     naming the obstacle and the lawful route, so a person who drops an Outlook
+         *     .pst is told what it is instead of "unknown file".
+         */
+        get: operations["export_adapters_media_export_adapters_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Export
+         * @description Identify an uploaded export and save it as a Library. Does NOT index it.
+         */
+        post: operations["create_export_media_exports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/exports/{library_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Export
+         * @description The MOUNT READ for an export Library — never depend on having caught the stream.
+         *
+         *     `GET /media/libraries/{id}` already exists and is the media catalog's own row.
+         *     This is the same Library through the export lane's eyes: it adds what only an
+         *     export has and what the screen must show — the sentence naming what in the
+         *     bytes decided the format, the confidence, whose export the server worked out
+         *     it is and on what evidence, and the summary card from the last index.
+         *
+         *     A reload mid-index lands here and loses nothing: `sync_status` says where it
+         *     got to and `sync_error` is a sentence when it stopped.
+         */
+        get: operations["read_export_media_exports__library_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/libraries/{library_id}/index": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Index Export
+         * @description Read the export once: the summary card AND the browsable index, streamed.
+         *
+         *     NDJSON, the platform emitter. Disconnecting does not stop it.
+         */
+        post: operations["index_export_media_libraries__library_id__index_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/libraries/{library_id}/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Items
+         * @description The mount read. Every filter runs server-side over the WHOLE export.
+         *
+         *     `total` is the Library's real size and `filtered_total` is what the current
+         *     filter matches — never `len(items)`, so "showing 100 of 20,110" is true.
+         */
+        get: operations["list_items_media_libraries__library_id__items_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/libraries/{library_id}/item-facets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Item Facets */
+        get: operations["item_facets_media_libraries__library_id__item_facets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/libraries/{library_id}/presets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Presets
+         * @description The named queries, each with how many items it matches in THIS export.
+         *
+         *     Served rather than hardcoded in the client for the same reason the adapter
+         *     catalog is: the filters and the label vocabulary these are built from live on
+         *     the server, and a list declared in TypeScript drifts from them silently.
+         *
+         *     The count is part of the contract. It is what lets the screen show a preset
+         *     that matches nothing as unavailable with a reason, instead of as a control
+         *     that returns an empty list.
+         */
+        get: operations["list_presets_media_libraries__library_id__presets_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/media/libraries/{library_id}/send-to-rulebook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send To Rulebook
+         * @description Send a selection to a Masterwork Rulebook as Sources.
+         *
+         *     🚨 This is the ONE place anybody's words leave the index, and it is the only
+         *     endpoint here that reads text at all. It is gated twice: a consent naming the
+         *     exact items, and an egress permit that cannot exist without the sentence a
+         *     person actually read — which is stored, verbatim, with the result.
+         */
+        post: operations["send_to_rulebook_media_libraries__library_id__send_to_rulebook_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/capture/handoffs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Handoffs
+         * @description What needs a browser right now, plus the count of every status.
+         */
+        get: operations["list_handoffs_capture_handoffs_get"];
+        put?: never;
+        /**
+         * Enqueue Handoffs
+         * @description "Send the rest to my browser" — queue pages for the person's own Chrome.
+         */
+        post: operations["enqueue_handoffs_capture_handoffs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/capture/handoffs/{handoff_id}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Claim Handoff
+         * @description One browser at a time, and a claim that expires by itself.
+         */
+        post: operations["claim_handoff_capture_handoffs__handoff_id__claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/capture/handoffs/{handoff_id}/result": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record Result
+         * @description 🚨 THE ONE DOOR a captured page enters the platform through.
+         */
+        post: operations["record_result_capture_handoffs__handoff_id__result_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/capture/handoffs/{handoff_id}/needs-drive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Needs Drive
+         * @description Rung 3 could not do it alone — ask the person, or stop and say why.
+         */
+        post: operations["needs_drive_capture_handoffs__handoff_id__needs_drive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/capture/handoffs/{handoff_id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dismiss Handoff
+         * @description "This one is not worth it" — the person's own answer, recorded.
+         */
+        post: operations["dismiss_handoff_capture_handoffs__handoff_id__dismiss_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/blocks/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry
+         * @description Run these blocked pages through the ladder again, and record what happened.
+         *
+         *     This really re-fetches and really spends the organization's scraping budget. Anything that
+         *     hits a wall again is recorded by the ledger's own seam while the scrape runs; this call's
+         *     own writes are the attempt itself — `retry_count`, `last_retry_at`, and `resolved` when the
+         *     page finally came back readable.
+         */
+        post: operations["retry_blocks_retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/blocks/handoffs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Handoffs
+         * @description Send these pages to the person's own browser, and name the handoff on each block.
+         *
+         *     The queueing itself is the capture ladder's own `enqueue`, so the ladder law, the per-rung
+         *     knobs and the Library landing stay enforced in exactly one place. What this adds is the
+         *     LINK: the block row is stamped with the handoff it produced, so a person reading the row
+         *     afterwards can follow it instead of guessing.
+         */
+        post: operations["handoffs_blocks_handoffs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/files/session": {
         parameters: {
             query?: never;
@@ -34992,27 +37615,36 @@ export interface paths {
         };
         /**
          * List Changes
-         * @description Polling fallback for the in-sandbox watcher's down-direction.
+         * @description THE downstream path for the in-sandbox replica — the whole of it.
          *
-         *     The recommended live path is Supabase Realtime on ``cld_files`` (see
-         *     ``db/migrations/0002_cld_files_realtime.sql``). When Realtime isn't
-         *     available — sandbox missing the realtime client lib, missing Supabase
-         *     creds, or a transient WebSocket drop — the watcher polls this endpoint
-         *     every ~30s with the ISO timestamp of the most recent change it has
-         *     already processed.
+         *     A sandbox never talks to the platform database; the bridge is the one hop,
+         *     and it is what carries the organization. The Supabase-Realtime subscriber
+         *     that used to sit beside the poller was deleted on 2026-09-17, so everything
+         *     a replica must learn has to be in this answer. The box polls with the ISO
+         *     timestamp of the newest change it has already applied and follows the
+         *     cadence this response instructs (``poll_after_seconds`` / ``Retry-After``).
          *
-         *     Returns only **modifications** (rows with ``updated_at > since``,
-         *     ``deleted_at IS NULL``), filtered and bounded server-side via
-         *     ``list_changed_files_async``. Soft-deletes are not surfaced through this
-         *     endpoint — they only show up via Realtime, or are picked up by the next
-         *     session's bulk down-sync.
+         *     Returns every change with ``updated_at > since`` in this tenant, oldest
+         *     first, bounded server-side — **modifications and deletions alike**. A
+         *     soft-deleted row is sent marked ``deleted: true`` (with its ``deleted_at``)
+         *     and ``deletions_supported`` is ``true``: until 2026-09-17 it was ``false``
+         *     and tombstones were filtered out, so a file the person deleted in the UI
+         *     stayed on the sandbox's disk and the shutdown up-sync PUT IT BACK — the
+         *     delete undid itself. Deletions ride the same cursor because
+         *     ``platform._touch_row`` stamps ``updated_at`` on a soft-delete.
+         *
+         *     Contract both halves meet on: matrx-sandbox
+         *     ``sandbox-image/sdk/matrx_agent/cloud_sync/FEATURE.md`` § The ``/changes``
+         *     contract.
          *
          *     Response shape:
          *         {
-         *             "files":       [{ id, file_path, file_size, mime_type,
-         *                               current_version, checksum, updated_at }, ...],
+         *             "files":       [{ id, file_path, file_size, size_bytes, mime_type,
+         *                               current_version, checksum, updated_at,
+         *                               deleted, deleted_at }, ...],
          *             "next_cursor": "<iso of most recent updated_at>",
-         *             "deletions_supported": false
+         *             "deletions_supported": true,
+         *             "poll_after_seconds": 30
          *         }
          */
         get: operations["list_changes_cloud_files_changes_get"];
@@ -38547,6 +41179,34 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** AdapterListResponse */
+        AdapterListResponse: {
+            /** Adapters */
+            adapters: components["schemas"]["AdapterRow"][];
+        };
+        /** AdapterRow */
+        AdapterRow: {
+            /** Adapter */
+            adapter: string;
+            /** Provider */
+            provider: string;
+            /** Title */
+            title: string;
+            /** Browse Outcome */
+            browse_outcome: string;
+            /** Kinds */
+            kinds: string[];
+            /** Limitation */
+            limitation: string | null;
+            /** Remedy */
+            remedy: string | null;
+            /** Connected */
+            connected: boolean;
+            /** Connections */
+            connections: components["schemas"]["aidream__api__routers__connected_sources__ConnectionSummary"][];
+            /** Unavailable Reason */
+            unavailable_reason: string | null;
+        };
         /** AddAssetRequest */
         AddAssetRequest: {
             /**
@@ -38914,6 +41574,99 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** AdvanceCounts */
+        AdvanceCounts: {
+            /**
+             * Total
+             * @default 0
+             */
+            total?: number;
+            /**
+             * Advanced
+             * @default 0
+             */
+            advanced?: number;
+            /**
+             * Reverted
+             * @default 0
+             */
+            reverted?: number;
+            /**
+             * Refused
+             * @default 0
+             */
+            refused?: number;
+            /**
+             * Excluded
+             * @default 0
+             */
+            excluded?: number;
+        };
+        /** AdvanceReport */
+        AdvanceReport: {
+            /** Batch Id */
+            batch_id: string;
+            /** Batch Label */
+            batch_label?: string | null;
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "advance" | "revert";
+            /** Reverts Batch Id */
+            reverts_batch_id?: string | null;
+            /** Results */
+            results?: components["schemas"]["AdvanceRowResult"][];
+            counts?: components["schemas"]["AdvanceCounts"];
+            /** Computed At */
+            computed_at: string;
+        };
+        /**
+         * AdvanceRequest
+         * @description ``organization_id`` is injected by callApi's scope resolution and grants
+         *     NOTHING here: which rungs may be written is decided per row by what the
+         *     acting user can read.
+         */
+        AdvanceRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Batch Label */
+            batch_label?: string | null;
+            /** Tokens */
+            tokens: components["schemas"]["ApplyToken"][];
+        };
+        /** AdvanceRowResult */
+        AdvanceRowResult: {
+            token: components["schemas"]["ApplyToken"];
+            /** Mandate Key */
+            mandate_key?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "advanced" | "excluded" | "refused" | "reverted";
+            /** Reason */
+            reason?: string | null;
+            /** Prior Pinned Version Id */
+            prior_pinned_version_id?: string | null;
+            /** New Pinned Version Id */
+            new_pinned_version_id?: string | null;
+            /** Ledger Row Id */
+            ledger_row_id?: string | null;
+        };
         /** AdviceSlipRecord */
         AdviceSlipRecord: {
             /**
@@ -39201,6 +41954,12 @@ export interface components {
         AgentDetail: {
             /** Id */
             id: string;
+            /**
+             * Agent Id
+             * @description Owning agent definition id; equals id for a live definition and names the parent for a version snapshot.
+             * @default
+             */
+            agent_id?: string;
             /** Name */
             name: string;
             /**
@@ -39681,7 +42440,7 @@ export interface components {
             include_parent?: boolean;
             /**
              * Organization Id
-             * @description Admin-only org override — should match the org used for the search.
+             * @description The organization the search ran in; must match the organization this request was admitted for (a disagreeing value is a 409).
              */
             organization_id?: string | null;
         };
@@ -41424,7 +44183,10 @@ export interface components {
              * @enum {string}
              */
             holder_kind: "binding" | "mandate_default";
-            /** Row Id */
+            /**
+             * Row Id
+             * Format: uuid
+             */
             row_id: string;
             /** Expected Pinned Version Id */
             expected_pinned_version_id?: string | null;
@@ -41504,6 +44266,21 @@ export interface components {
              * @enum {string}
              */
             source: "organization_policy" | "safe_default";
+        };
+        /** ApprovalDecisionResponse */
+        ApprovalDecisionResponse: {
+            /** Approval Id */
+            approval_id: string;
+            /** Status */
+            status: string;
+            /** Applied Now */
+            applied_now: boolean;
+            /** Receipt */
+            receipt: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Sentence */
+            sentence: string;
         };
         /**
          * ApproveDraftsRequest
@@ -42707,6 +45484,77 @@ export interface components {
          */
         AssignmentUniqueness: "allow_repeats" | "without_replacement";
         /**
+         * AttachResourceRequest
+         * @description What the chooser sends. Only `provider` plus one of `resource_ref` /
+         *     `resource_id` decides anything — the display fields ride along so the
+         *     client can post a candidate back unchanged, and the server re-reads the
+         *     real row rather than trusting them.
+         */
+        AttachResourceRequest: {
+            /**
+             * Provider
+             * @description github | google
+             */
+            provider: string;
+            /**
+             * Resource Ref
+             * @description Provider-stable ref, e.g. owner/repo or a Google file id
+             */
+            resource_ref?: string | null;
+            /**
+             * Resource Id
+             * @description users.integration_connection_resources.id, when known
+             */
+            resource_id?: string | null;
+            /**
+             * Resource Type
+             * @description Echoed from the candidate; the server re-reads the row.
+             */
+            resource_type?: string | null;
+            /**
+             * Display Name
+             * @description Echoed from the candidate; the server re-reads the row.
+             */
+            display_name?: string | null;
+            /**
+             * Link
+             * @description Echoed from the candidate; the server re-reads the row.
+             */
+            link?: string | null;
+            /**
+             * Metadata
+             * @description Echoed from the candidate; the server re-reads the row.
+             */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * AttachableKindInfo
+         * @description One kind of thing a connected service lets a user attach to a chat.
+         */
+        AttachableKindInfo: {
+            /** Resource Type */
+            resource_type: string;
+            /** Source */
+            source: string;
+            /** Label */
+            label: string;
+            /** Add More */
+            add_more?: string | null;
+        };
+        /** AttachableKindPayload */
+        AttachableKindPayload: {
+            /** Resource Type */
+            resource_type: string;
+            /** Source */
+            source: string;
+            /** Label */
+            label: string;
+            /** Add More */
+            add_more?: string | null;
+        };
+        /**
          * AttentiveServiceStatus
          * @description Safe aggregate status projection for Attentive's fixed status page.
          */
@@ -42904,13 +45752,22 @@ export interface components {
         };
         /**
          * AuditionCompareRequest
-         * @description Judge a Masterwork against a reference. TWO modes, one endpoint.
+         * @description Judge a Masterwork against a reference. THREE modes, one endpoint.
+         *
+         *     🚨 EVERY MODE HERE IS A QUICK CHECK, NOT A PROOF. Each one compares at most
+         *     two or three arms against one reference. Proof under the doctrine
+         *     (``common-docs/systems/masterwork/doctrine/CORE.md`` §6, and §9's standing
+         *     verdict of 2026-09-14 that the shipped Audition's "Expert match" score is
+         *     not proof) is a logged five-arm Bench run — A0/A1/A2/B/C/GT, blind panel,
+         *     dollars and seconds per arm, naming the arm and the budget
+         *     (``aidream/services/masterworks/bench/``). No sentence produced by these
+         *     modes claims a win, and none of them says "beat".
          *
          *     ``mode="reference"`` (the default, and the only shape that existed before
          *     2026-09-12): our Masterwork's output vs the Expert's real published exemplar
-         *     for the same inputs — comparison verdict citing rulebook rule ids, gaps
-         *     optionally landing as DRAFT rules. Every request written for that mode stays
-         *     valid byte-for-byte.
+         *     for the same inputs — a rule-by-rule fidelity comparison citing rulebook rule
+         *     ids, gaps optionally landing as DRAFT rules. Every request written for that
+         *     mode stays valid byte-for-byte.
          *
          *     ``mode="elicitation"``: the FIRST-MOVE benchmark (trial 12, item 4) — one or
          *     two Masterwork DESKS each hold a real conversation with a sealed, reactive
@@ -43147,6 +46004,60 @@ export interface components {
         AuthenticatorListResponse: {
             /** Entries */
             entries?: components["schemas"]["AuthenticatorEntryOut"][];
+        };
+        /**
+         * AuthorMapRequest
+         * @description The one body `POST /seo/brands/{brand_id}/map/author` takes.
+         *
+         *     Exactly one source kind per call. Every field that belongs to another source
+         *     kind is refused rather than ignored — a body that silently drops the thing the
+         *     person chose is the "screen that lies" defect.
+         */
+        AuthorMapRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Source Kind
+             * @enum {string}
+             */
+            source_kind: "data" | "documents" | "existing_research" | "new_research" | "prompt" | "web_search";
+            /** Map Id */
+            map_id?: string | null;
+            /** Map Name */
+            map_name?: string | null;
+            /** Prompt */
+            prompt?: string | null;
+            /** Document Text */
+            document_text?: string | null;
+            /** Document File Ids */
+            document_file_ids?: string[];
+            /** Web Search Text */
+            web_search_text?: string | null;
+            /** Web Search Query */
+            web_search_query?: string | null;
+            /** Research Topic Id */
+            research_topic_id?: string | null;
+            /** Site Id */
+            site_id?: string | null;
+            /** Section Parent Slug */
+            section_parent_slug?: string | null;
+            /** Emphasis */
+            emphasis?: string | null;
+            /** Change Mode */
+            change_mode?: ("apply" | "ask" | "propose") | null;
         };
         /** AuthorityCandidate */
         AuthorityCandidate: {
@@ -43420,6 +46331,39 @@ export interface components {
              * @description Cap the sources tagged this run; defaults to the topic setting.
              */
             max_calls?: number | null;
+        };
+        /**
+         * AwaitingInputRunResponse
+         * @description A headless start missing require/ask inputs PARKED instead of dying
+         *     (INPUT-SURFACE.md park-not-die). The run row exists at ``awaiting_input``
+         *     — durable, announced, listed in the same "waiting on you" inbox as
+         *     ``interrupted`` — and resumes via POST /runs/{run_id}/resume with the
+         *     missing values in ``inputs``.
+         */
+        AwaitingInputRunResponse: {
+            /** Run Id */
+            run_id: string;
+            /**
+             * Mode
+             * @default awaiting_input
+             * @constant
+             */
+            mode?: "awaiting_input";
+            /**
+             * Status
+             * @default awaiting_input
+             * @constant
+             */
+            status?: "awaiting_input";
+            /** Missing */
+            missing?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Message
+             * @default Run parked awaiting input — supply the missing values via POST /runs/{run_id}/resume to continue.
+             */
+            message?: string;
         };
         /**
          * AworkStatusResult
@@ -44029,6 +46973,11 @@ export interface components {
             skipped_no_content?: number;
             /** Errors */
             errors?: string[];
+            /**
+             * More Pages Waiting
+             * @default false
+             */
+            more_pages_waiting?: boolean;
         };
         /** BboxInput */
         BboxInput: {
@@ -44164,6 +47113,266 @@ export interface components {
              * @constant
              */
             status_page?: "https://www.beehiivstatus.com";
+        };
+        /**
+         * BenchProof
+         * @description One finished Bench trial, as a screen shows it. Every field is copied
+         *     from the record; nothing here is derived, and nothing is optimistic.
+         */
+        BenchProof: {
+            /** Record Id */
+            record_id: string;
+            /** Trial Id */
+            trial_id: string;
+            /**
+             * Subject
+             * @default
+             */
+            subject?: string;
+            /**
+             * Domain
+             * @default
+             */
+            domain?: string;
+            /**
+             * Finished At
+             * @default
+             */
+            finished_at?: string;
+            /**
+             * Passed
+             * @default false
+             */
+            passed?: boolean;
+            /**
+             * Void
+             * @default false
+             */
+            void?: boolean;
+            /**
+             * Void Reason
+             * @default
+             */
+            void_reason?: string;
+            /** Win Claimed */
+            win_claimed?: string | null;
+            /**
+             * Win Rationale
+             * @default
+             */
+            win_rationale?: string;
+            /**
+             * Arm
+             * @default a2
+             */
+            arm?: string;
+            /** Budget Multiple */
+            budget_multiple?: number | null;
+            /** Panel Winner */
+            panel_winner?: string | null;
+            /**
+             * Gt In Pool
+             * @default false
+             */
+            gt_in_pool?: boolean;
+            /**
+             * Gt Won
+             * @default false
+             */
+            gt_won?: boolean;
+            /**
+             * Panel Votes
+             * @default 0
+             */
+            panel_votes?: number;
+            /** C Cost Usd */
+            c_cost_usd?: number | null;
+            /** C Seconds */
+            c_seconds?: number | null;
+            /** Spec Sha256 */
+            spec_sha256?: string | null;
+            /** Corpus Sha256 */
+            corpus_sha256?: string | null;
+            /** Record Path */
+            record_path?: string | null;
+            /** Report Path */
+            report_path?: string | null;
+            /**
+             * Source
+             * @default file index
+             */
+            source?: string;
+            /**
+             * Headline
+             * @description The one sentence a screen leads with — never a win without a record.
+             *
+             *     A COMPUTED FIELD, so the wire carries it: the sentence and the record it
+             *     is derived from travel together, and no client re-writes it.
+             */
+            readonly headline: string;
+        };
+        /**
+         * BenchProofResponse
+         * @description What the run page asks for: the proof, whether one can be STARTED here,
+         *     and — when it can — every number the form will actually run with.
+         *
+         *     The two halves are independent on purpose. A Masterwork can have no proof
+         *     and still be able to run one (the common case), or carry a proof and no
+         *     longer be runnable (its Masterwork was deleted). A screen that collapsed
+         *     them would show a dead button in one direction and hide a working one in the
+         *     other.
+         */
+        BenchProofResponse: {
+            /** Rulebook Id */
+            rulebook_id: string;
+            proof?: components["schemas"]["BenchProof"] | null;
+            /** Reason */
+            reason?: string | null;
+            /**
+             * Can Run Here
+             * @default false
+             */
+            can_run_here?: boolean;
+            /**
+             * How To Run
+             * @default You can run one from here: six arms, a blind panel the expert's own answer has to win, and dollars and seconds on every row.
+             */
+            how_to_run?: string;
+            form?: components["schemas"]["BenchRunForm"] | null;
+            running?: components["schemas"]["BenchRunning"] | null;
+            /** Searched */
+            searched?: string[];
+        };
+        /**
+         * BenchRunForm
+         * @description What the screen needs to show a form that does not lie.
+         *
+         *     Every field is a fact the server already knows: the numbers it will actually
+         *     run with, the models it will actually call, the corpus it actually found, and
+         *     whether the run it starts can be rejoined. A form that prefilled a default
+         *     the server would then ignore would be the quiet kind of dishonest.
+         */
+        BenchRunForm: {
+            /** Budget Multiple */
+            budget_multiple: number;
+            /** Budget Multiple Source */
+            budget_multiple_source: string;
+            /** Judge Model */
+            judge_model: string;
+            /** Frontier Model */
+            frontier_model: string;
+            /** Cheap Model */
+            cheap_model: string;
+            /** Masterwork Id */
+            masterwork_id: string;
+            /** Masterwork Name */
+            masterwork_name: string;
+            /** Corpus Sources */
+            corpus_sources: number | null;
+            /** Corpus Note */
+            corpus_note: string;
+            /** Durable */
+            durable: boolean;
+            /** Durable Note */
+            durable_note: string;
+        };
+        /**
+         * BenchRunRequest
+         * @description What the person typed, and nothing else.
+         *
+         *     Deliberately small. Everything a trial needs that is NOT a judgement call by
+         *     the person running it — the corpus, the models, the judge, the panel, the
+         *     thresholds — comes from the Rulebook and the declared defaults, so two
+         *     people running the Bench on the same Masterwork run the same trial.
+         *
+         *     🚨 INHERITS ``AcceptsInjectedScope`` BECAUSE IT FORBIDS EXTRAS. The
+         *     frontend's ``callApi`` merges ``organization_id`` / ``project_id`` /
+         *     ``task_id`` onto every POST body from the active app context, so a
+         *     ``extra="forbid"`` model that omits them 422s the moment the person has an
+         *     organization selected — the 2026-07-15 ``/skills/ingest`` incident class.
+         *     Guard: ``scripts/check_request_accepts_org_scope.py``.
+         */
+        BenchRunRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Rulebook Id
+             * @default
+             */
+            rulebook_id?: string;
+            /** Task Prompt */
+            task_prompt: string;
+            /**
+             * Case Input
+             * @default
+             */
+            case_input?: string;
+            /**
+             * Ground Truth Text
+             * @default
+             */
+            ground_truth_text?: string;
+            /** Budget Multiple */
+            budget_multiple?: number | null;
+            /** Masterwork Id */
+            masterwork_id?: string | null;
+        };
+        /**
+         * BenchRunning
+         * @description A trial that is IN FLIGHT right now — not a proof, and never shown as one.
+         *
+         *     🚨 THE DEFECT THIS EXISTS TO CLOSE (production walk 4, wall W3, 2026-09-16).
+         *     ``run_durable_masterwork`` writes the ``platform.masterwork_run`` row at the
+         *     START of a trial, with ``status='processing'`` and an empty ``result``.
+         *     ``_latest_row`` filtered on rulebook, operation and ``deleted_at`` and
+         *     NOTHING ELSE, so mid-trial it handed that empty row to ``_proof_from_row``,
+         *     which dutifully built a BenchProof out of nothing: a record id, an empty
+         *     trial id, ``passed=False``, ``void=False``, zero panel votes. A screen was
+         *     being handed a proof of a trial that had not finished. It "self-resolved"
+         *     only because the finished row lands 13 minutes later and outranks it.
+         *
+         *     A running trial is its own answer, with its own sentence. The row is the
+         *     only source — so this survives a refresh, a different device, and the
+         *     load-balancer sending the next read to another task.
+         */
+        BenchRunning: {
+            /** Run Id */
+            run_id: string;
+            /**
+             * Started At
+             * @default
+             */
+            started_at?: string;
+            /**
+             * Label
+             * @default
+             */
+            label?: string;
+            /**
+             * Elapsed Minutes
+             * @default 0
+             */
+            elapsed_minutes?: number;
+            /** Remaining Minutes */
+            remaining_minutes?: number | null;
+            /**
+             * Headline
+             * @default
+             */
+            headline?: string;
         };
         /**
          * BettermodeServiceStatus
@@ -44632,6 +47841,11 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** BlockIdsBody */
+        BlockIdsBody: {
+            /** Block Ids */
+            block_ids?: string[];
+        };
         /** BlockStageRequest */
         BlockStageRequest: {
             /**
@@ -44948,6 +48162,8 @@ export interface components {
              * @description Destination cld_files.file_path
              */
             file_path: string;
+            /** Expected Checksum */
+            expected_checksum?: string | null;
         };
         /** Body_replace_attachment_vault_items__item_id__attachments__attachment_id__file_put */
         Body_replace_attachment_vault_items__item_id__attachments__attachment_id__file_put: {
@@ -45054,6 +48270,12 @@ export interface components {
              * @description Upload options. JSON: {"rag": {"enabled": bool|null, "trigger_now": bool}}
              */
             options_json?: string | null;
+            /** Expected Checksum */
+            expected_checksum?: string | null;
+            /** Intent */
+            intent?: string | null;
+            /** Reason */
+            reason?: string | null;
         };
         /** Body_upload_file_source_research_topics__topic_id__sources_upload_post */
         Body_upload_file_source_research_topics__topic_id__sources_upload_post: {
@@ -45568,9 +48790,22 @@ export interface components {
         };
         /**
          * BridgeAction
+         * @description The ONE advertised action vocabulary of the coding-session bridge.
+         *
+         *     This enum is not an internal dispatch key: it IS the ``action`` parameter
+         *     of the remote MCP tool and of ``POST /api/coding-sessions/bridge``, and MCP
+         *     hosts fetch that schema live. **A member added here is callable by Claude
+         *     Code, Codex, Cursor and VS Code the moment the server deploys** — so a
+         *     member arrives only WITH its implementation, or it is refused out loud
+         *     (:class:`BridgeRefusal`). Never add a placeholder member.
+         *
+         *     The dispatch family (``capabilities``, ``handoff`` and ``send`` today;
+         *     ``start``/``cancel`` in their own lanes) answers with
+         *     :class:`BridgeDispatchResult` on ``BridgeResponse.dispatch`` — never by
+         *     overloading the entry-ledger counters.
          * @enum {string}
          */
-        BridgeAction: "append_native" | "delete" | "health" | "list_native" | "load_native" | "observe_hook";
+        BridgeAction: "append_native" | "capabilities" | "delete" | "delete_native_stream" | "diagnose" | "handoff" | "health" | "list_native" | "load_native" | "observe_hook" | "reproject" | "send";
         /** BridgeCapabilities */
         BridgeCapabilities: {
             /** Native Resume */
@@ -45592,10 +48827,75 @@ export interface components {
              */
             tool_payload_fidelity: "full" | "none" | "partial";
         };
+        /**
+         * BridgeCapabilityReport
+         * @description The `capabilities` action's answer: provider × origin, with reasons.
+         *
+         *     Generalizes the Claude-only ``GET /api/coding-sessions/claude/capabilities``
+         *     probe to every provider and every origin, and is the ONLY place a client
+         *     may learn what it can do — see ``supported_actions``. A client that
+         *     hardcodes an action list breaks on the first server that predates or
+         *     postdates it, which is why there is no version number to negotiate.
+         */
+        BridgeCapabilityReport: {
+            provider: components["schemas"]["BridgeProvider"];
+            origin?: components["schemas"]["BridgeOrigin"] | null;
+            runtime?: components["schemas"]["BridgeRuntimeKind"] | null;
+            /** Available */
+            available: boolean;
+            /** Reason */
+            reason?: string | null;
+            /** Operations */
+            operations: components["schemas"]["CapabilityVerdict"][];
+            fidelity: components["schemas"]["BridgeCapabilities"];
+            /** Supported Actions */
+            supported_actions: components["schemas"]["BridgeAction"][];
+        };
+        /**
+         * BridgeChangeEntry
+         * @description A change-feed row: a modification, or a DELETION that says so.
+         *
+         *     Two fields the plain listing has no use for, both named by the contract the
+         *     sandbox implements (matrx-sandbox
+         *     ``sandbox-image/sdk/matrx_agent/cloud_sync/FEATURE.md`` § The ``/changes``
+         *     contract):
+         *
+         *     * ``deleted`` — the marker. ``true`` means this path is gone for this
+         *       person; the replica unlinks it. Stated, never inferred from absence,
+         *       because absence is also what a page limit looks like.
+         *     * ``file_size`` — the contract's name for ``size_bytes``. Both are sent so
+         *       the poller finds the name it reads and nothing loses the one it had.
+         */
+        BridgeChangeEntry: {
+            /** Id */
+            id?: string | null;
+            /** File Path */
+            file_path?: string | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
+            /** Mime Type */
+            mime_type?: string | null;
+            /**
+             * Current Version
+             * @default 1
+             */
+            current_version?: number;
+            updated_at?: components["schemas"]["JsonValue"] | null;
+            /** Checksum */
+            checksum?: string | null;
+            /**
+             * Deleted
+             * @default false
+             */
+            deleted?: boolean;
+            deleted_at?: components["schemas"]["JsonValue"] | null;
+            /** File Size */
+            file_size?: number | null;
+        };
         /** BridgeChangesResponse */
         BridgeChangesResponse: {
             /** Files */
-            files: components["schemas"]["BridgeFileEntry"][];
+            files: components["schemas"]["BridgeChangeEntry"][];
             /** Next Cursor */
             next_cursor: string;
             /**
@@ -45603,6 +48903,11 @@ export interface components {
              * @default false
              */
             deletions_supported?: boolean;
+            /**
+             * Poll After Seconds
+             * @default 30
+             */
+            poll_after_seconds?: number;
         };
         /** BridgeCheckpoint */
         BridgeCheckpoint: {
@@ -45637,6 +48942,85 @@ export interface components {
              * @constant
              */
             store?: true;
+        };
+        /**
+         * BridgeDiagnosis
+         * @description What AI Matrx actually holds for ONE provider session (CS-25 §4).
+         *
+         *     Every count here is read from the cloud's own rows. The verdict is computed
+         *     from those rows ALONE: see :data:`FORBIDDEN_CLOUD_VERDICTS` for the one
+         *     conclusion this half is never entitled to reach.
+         */
+        BridgeDiagnosis: {
+            /**
+             * Schema Version
+             * @default 1
+             */
+            schema_version?: number;
+            /** Provider Session Id */
+            provider_session_id: string;
+            /** Session Present */
+            session_present: boolean;
+            /** Conversation Id */
+            conversation_id?: string | null;
+            /** Fidelity */
+            fidelity?: string | null;
+            /** Status */
+            status?: string | null;
+            /** Last Seen At */
+            last_seen_at?: string | null;
+            /** Entries */
+            entries: number;
+            /** Projected Entries */
+            projected_entries: number;
+            /** Skipped Entries */
+            skipped_entries: number;
+            /** Pending Entries */
+            pending_entries: number;
+            /** Error Entries */
+            error_entries: number;
+            /** Projection Errors */
+            projection_errors?: components["schemas"]["BridgeProjectionErrorGroup"][];
+            /** Last Entry At */
+            last_entry_at?: string | null;
+            /** Last Entry Id */
+            last_entry_id?: string | null;
+            /** Messages */
+            messages: number;
+            /** Last Position */
+            last_position?: number | null;
+            /** Last Message At */
+            last_message_at?: string | null;
+            /** Cloud Verdict */
+            cloud_verdict: string;
+            /** Cloud Sentence */
+            cloud_sentence: string;
+            /** Cloud Remedy */
+            cloud_remedy?: string | null;
+        };
+        /**
+         * BridgeDispatchResult
+         * @description Result of a dispatch-family action.
+         *
+         *     ``BridgeResponse``'s ``accepted/duplicates/conflicts/receipts`` counters are
+         *     the RAW-LEDGER receipt and mean nothing for a dispatch verb; reusing them
+         *     (``accepted: 1`` for "the agent answered") is contract-lying. Dispatch
+         *     results land here instead, and each future verb adds its own fields in its
+         *     own lane rather than overloading an existing one.
+         */
+        BridgeDispatchResult: {
+            action: components["schemas"]["BridgeAction"];
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "accepted" | "completed" | "in_flight" | "refused";
+            runtime?: components["schemas"]["BridgeRuntimeKind"] | null;
+            capabilities?: components["schemas"]["BridgeCapabilityReport"] | null;
+            handoff?: components["schemas"]["BridgeHandoffResult"] | null;
+            send?: components["schemas"]["BridgeSendResult"] | null;
+            /** Detail */
+            detail?: string | null;
         };
         /** BridgeEntry */
         BridgeEntry: {
@@ -45685,6 +49069,75 @@ export interface components {
             /** Checksum */
             checksum?: string | null;
         };
+        /**
+         * BridgeHandoffResult
+         * @description What a handoff did — both bindings named, with an explicit verdict.
+         *
+         *     The FIRST contract object that describes two provider bindings on one
+         *     conversation. Until 2026-09-15 every one of 4,633 bound conversations in
+         *     production had exactly one binding and one provider, so "take a
+         *     conversation from one tool and continue it in another" had zero instances;
+         *     this result is that operation's receipt.
+         */
+        BridgeHandoffResult: {
+            state: components["schemas"]["BridgeHandoffState"];
+            /**
+             * Conversation Id
+             * Format: uuid
+             */
+            conversation_id: string;
+            /**
+             * Fidelity
+             * @default seeded
+             * @constant
+             */
+            fidelity?: "seeded";
+            /** Verdict */
+            verdict: string;
+            from_provider: components["schemas"]["BridgeProvider"];
+            /** From Provider Session Id */
+            from_provider_session_id: string;
+            /**
+             * From Coding Session Id
+             * Format: uuid
+             */
+            from_coding_session_id: string;
+            to_provider: components["schemas"]["BridgeProvider"];
+            /** To Provider Session Id */
+            to_provider_session_id?: string | null;
+            /**
+             * To Coding Session Id
+             * Format: uuid
+             */
+            to_coding_session_id: string;
+            /** Rebound From Conversation Id */
+            rebound_from_conversation_id?: string | null;
+            /**
+             * Carried Message Count
+             * @default 0
+             */
+            carried_message_count?: number;
+            /** Prior Context Conversation Id */
+            prior_context_conversation_id?: string | null;
+            /**
+             * Prior Context Message Count
+             * @default 0
+             */
+            prior_context_message_count?: number;
+            /** Absorbed Offer Session Id */
+            absorbed_offer_session_id?: string | null;
+            /** Archived Source Conversation Id */
+            archived_source_conversation_id?: string | null;
+            /** Bindings On Conversation */
+            bindings_on_conversation: number;
+            seed: components["schemas"]["BridgeSeedPacket"];
+        };
+        /**
+         * BridgeHandoffState
+         * @description Where one handoff stands. Never inferred by a reader from other fields.
+         * @enum {string}
+         */
+        BridgeHandoffState: "already_bound" | "claimed" | "offered";
         /** BridgeHealth */
         BridgeHealth: {
             /**
@@ -45767,10 +49220,77 @@ export interface components {
             next_cursor?: string | null;
         };
         /**
+         * BridgeOperation
+         * @description The ONE capability vocabulary every adapter and runtime reports against.
+         *
+         *     Reconciles the two lists that disagreed before 2026-09-14: the ten adapter
+         *     flags published in the contract doc (``start|send|stream|cancel|
+         *     resume_native|fork_native|list|mirror|export|open``) and the six
+         *     fidelity fields of :class:`BridgeCapabilities`. The ten OPERATIONS live
+         *     here and are answered per provider × origin with a reason; the six
+         *     fidelity FACTS stay in :class:`BridgeCapabilities`, which is also what
+         *     ``chat.coding_session.capabilities`` stores. ``handoff`` is the eleventh
+         *     member because the contract's collaboration section promises it as an
+         *     operation; it is reported unsupported until its lane lands.
+         *
+         *     Never mint a twelfth vocabulary: a new capability question becomes a member
+         *     here, reported by every runtime descriptor in the same change.
+         * @enum {string}
+         */
+        BridgeOperation: "cancel" | "export" | "fork_native" | "handoff" | "list" | "mirror" | "open" | "resume_native" | "send" | "start" | "stream";
+        /**
          * BridgeOrigin
          * @enum {string}
          */
         BridgeOrigin: "independent_hook" | "matrx_local" | "matrx_sandbox";
+        /**
+         * BridgePinDivergence
+         * @description The provider's star and the AI Matrx favorite disagreed — say so.
+         *
+         *     A coding session's pin exists on both sides: the provider's own star (what a
+         *     ``SessionMetadata`` observation reports, mirrored into the binding's
+         *     ``provider_pinned`` metadata) and the AI Matrx favorite
+         *     (``platform.user_entity_state.is_favorite``, the row every star in the app
+         *     reads and writes). They are TWO facts, and until 2026-09-18 the server
+         *     compared the provider's own echo against itself — so a divergence looked
+         *     like agreement and could never heal.
+         *
+         *     Which side wins a conflict is an ORG KNOB (``effective_setting`` key
+         *     ``coding_session_provider_pin_wins``, default: the provider wins, because
+         *     the coding agent is where the pin is made — Arman, 2026-09-18). Whatever the
+         *     knob says, the disagreement is REPORTED: it is never silently dropped, and
+         *     the identity list carries both values so a screen can show it.
+         */
+        BridgePinDivergence: {
+            /**
+             * Schema Version
+             * @default 1
+             */
+            schema_version?: number;
+            /** Provider Pinned */
+            provider_pinned: boolean;
+            /** Ai Matrx Is Favorite */
+            ai_matrx_is_favorite?: boolean | null;
+            /**
+             * Authority
+             * @enum {string}
+             */
+            authority: "ai_matrx" | "provider";
+            /** Mirrored */
+            mirrored: boolean;
+        };
+        /**
+         * BridgeProjectionErrorGroup
+         * @description One ``projection_error`` shape, and how many entries carry it.
+         */
+        BridgeProjectionErrorGroup: {
+            /** Code */
+            code?: string | null;
+            /** Detail */
+            detail?: string | null;
+            /** Count */
+            count: number;
+        };
         /** BridgeProjectionReceipt */
         BridgeProjectionReceipt: {
             /** Provider Entry Id */
@@ -45780,6 +49300,8 @@ export interface components {
             normalized_message_id?: string | null;
             /** Normalized Tool Call Id */
             normalized_tool_call_id?: string | null;
+            /** Subagent Conversation Id */
+            subagent_conversation_id?: string | null;
             /** Error Code */
             error_code?: string | null;
             /** Detail */
@@ -45815,6 +49337,64 @@ export interface components {
             /** Files Count */
             files_count: number;
         };
+        /**
+         * BridgeRefusal
+         * @description A typed refusal — never a validation dump, never silence.
+         *
+         *     Every refusal carries the action that was asked for, why it cannot be
+         *     served, what to do instead, and the live list of actions this server does
+         *     implement. That list is the version negotiation: there is no version number
+         *     to compare, so a client asks and believes the answer.
+         */
+        BridgeRefusal: {
+            code: components["schemas"]["BridgeRefusalCode"];
+            /**
+             * Requested Field
+             * @default action
+             */
+            requested_field?: string;
+            /** Requested Value */
+            requested_value: string;
+            /** Requested Action */
+            requested_action: string;
+            /** Reason */
+            reason: string;
+            /** Remedy */
+            remedy: string;
+            /** Supported Values */
+            supported_values: string[];
+            /** Supported Actions */
+            supported_actions: components["schemas"]["BridgeAction"][];
+        };
+        /**
+         * BridgeRefusalCode
+         * @enum {string}
+         */
+        BridgeRefusalCode: "conversation_not_owned" | "dispatch_ceiling" | "handoff_not_possible" | "malformed_field" | "run_in_flight" | "send_not_possible" | "unimplemented_action" | "unknown_action" | "unknown_field_value" | "unsupported_runtime";
+        /**
+         * BridgeReprojection
+         * @description The result of re-entering the ONE projector over a session's stuck rows.
+         *
+         *     Idempotent by construction: it only ever examines entries whose
+         *     ``projection_status`` is ``error`` or ``pending``, so a second pass over an
+         *     already-healed session examines nothing and returns the same diagnosis.
+         */
+        BridgeReprojection: {
+            /**
+             * Schema Version
+             * @default 1
+             */
+            schema_version?: number;
+            /** Examined */
+            examined: number;
+            /** Projected */
+            projected: number;
+            /** Skipped */
+            skipped: number;
+            /** Still Error */
+            still_error: number;
+            diagnosis: components["schemas"]["BridgeDiagnosis"];
+        };
         /** BridgeResponse */
         BridgeResponse: {
             /**
@@ -45825,6 +49405,10 @@ export interface components {
             schema_version?: 1;
             action: components["schemas"]["BridgeAction"];
             provider: components["schemas"]["BridgeProvider"];
+            /** Supported Actions */
+            supported_actions?: components["schemas"]["BridgeAction"][];
+            refusal?: components["schemas"]["BridgeRefusal"] | null;
+            dispatch?: components["schemas"]["BridgeDispatchResult"] | null;
             /** Session Id */
             session_id?: string | null;
             /** Conversation Id */
@@ -45860,16 +49444,191 @@ export interface components {
             has_more?: boolean;
             checkpoint?: components["schemas"]["BridgeCheckpoint"] | null;
             health?: components["schemas"]["BridgeHealth"] | null;
+            diagnosis?: components["schemas"]["BridgeDiagnosis"] | null;
+            reprojection?: components["schemas"]["BridgeReprojection"] | null;
             /**
              * Deleted
              * @default false
              */
             deleted?: boolean;
+            /** Stream Keys */
+            stream_keys?: string[] | null;
+            /** Deleted Entries */
+            deleted_entries?: number | null;
+            pin_divergence?: components["schemas"]["BridgePinDivergence"] | null;
             /** Hookspecificoutput */
             hookSpecificOutput?: {
                 [key: string]: components["schemas"]["JsonValue"];
             } | null;
         };
+        /**
+         * BridgeRuntimeKind
+         * @description Which runtime can actually execute turns for a provider session.
+         *
+         *     ``matrx_local`` and ``matrx_sandbox`` mirror the same-named
+         *     :class:`BridgeOrigin` values (the user's own machine via Matrx Local, and
+         *     the hosted Matrx Sandbox). ``seeded`` is the no-runtime case: a handoff
+         *     that carries a seed packet instead of an executor, so a second tool can
+         *     continue a conversation it never ran. It is implemented (lane XT-05) and is
+         *     the only runtime that serves every provider, precisely because it executes
+         *     nothing. ``independent_hook`` has no runtime
+         *     by definition — nothing on our side executes those turns.
+         * @enum {string}
+         */
+        BridgeRuntimeKind: "matrx_local" | "matrx_sandbox" | "seeded";
+        /**
+         * BridgeSeedPacket
+         * @description The seed a second tool continues a conversation from.
+         *
+         *     ``native_resume`` is a ``Literal[False]``, not a bool: a seeded handoff can
+         *     never become a native resume by any code path, and the contract forbids
+         *     calling prompt seeding "resume" (FEATURE.md §collaboration). A reader that
+         *     has this object in hand cannot be misled about which one it got.
+         */
+        BridgeSeedPacket: {
+            /**
+             * Kind
+             * @default seeded_handoff
+             * @constant
+             */
+            kind?: "seeded_handoff";
+            /**
+             * Native Resume
+             * @default false
+             * @constant
+             */
+            native_resume?: false;
+            /**
+             * Conversation Id
+             * Format: uuid
+             */
+            conversation_id: string;
+            /** Title */
+            title?: string | null;
+            /** Visible Message Count */
+            visible_message_count: number;
+            /** Read With */
+            read_with: components["schemas"]["BridgeSeedRead"][];
+            /** Instructions */
+            instructions: string;
+            /** Claim With */
+            claim_with?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+        };
+        /**
+         * BridgeSeedRead
+         * @description One call the receiving tool makes to read the conversation it inherits.
+         *
+         *     The seed packet does NOT carry the transcript: it carries the reads. The
+         *     adapter skills (``matrx-claude-plugin/skills/conversations``,
+         *     ``matrx-codex-plugin/skills/use-ai-matrx``) already consume exactly these
+         *     two ``conversations`` actions, so a handoff needs no client release — which
+         *     is the whole point of putting the verb on the bridge contract.
+         */
+        BridgeSeedRead: {
+            /**
+             * Tool
+             * @default conversations
+             * @constant
+             */
+            tool?: "conversations";
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "get_messages" | "get_summary";
+            /** Arguments */
+            arguments: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Returns */
+            returns: string;
+        };
+        /**
+         * BridgeSendResult
+         * @description What a ``send`` did — with the one fact a coding agent must not get wrong.
+         *
+         *     ``provider_sees_this`` is that fact. A turn answered by an AI Matrx agent is
+         *     invisible to Claude Code, Codex, Cursor and VS Code: their transcripts never
+         *     learn it happened. An agent that read an answer here and told the person "I
+         *     have updated the session" would be inventing. So the flag is on the wire, and
+         *     the ``detail`` sentence says it in words as well.
+         */
+        BridgeSendResult: {
+            state: components["schemas"]["BridgeSendState"];
+            target: components["schemas"]["BridgeSendTarget"];
+            /**
+             * Conversation Id
+             * Format: uuid
+             */
+            conversation_id: string;
+            /** Client Request Id */
+            client_request_id: string;
+            /** Provider Sees This */
+            provider_sees_this: boolean;
+            /** Answered By Agent Id */
+            answered_by_agent_id?: string | null;
+            /** Answered By Agent Name */
+            answered_by_agent_name?: string | null;
+            /** Responder Setting Key */
+            responder_setting_key?: string | null;
+            /**
+             * Used Platform Default
+             * @default false
+             */
+            used_platform_default?: boolean;
+            /**
+             * Responder Source
+             * @default mandate
+             * @enum {string}
+             */
+            responder_source?: "caller" | "mandate" | "platform_default";
+            /** User Message Id */
+            user_message_id?: string | null;
+            /** Answer Message Id */
+            answer_message_id?: string | null;
+            /**
+             * Answer
+             * @default
+             */
+            answer?: string;
+            /**
+             * Answer Truncated
+             * @default false
+             */
+            answer_truncated?: boolean;
+            /**
+             * Messages Written
+             * @default 0
+             */
+            messages_written?: number;
+        };
+        /**
+         * BridgeSendState
+         * @description Where one ``send`` stands. Never inferred by a reader from other fields.
+         * @enum {string}
+         */
+        BridgeSendState: "answered" | "replayed";
+        /**
+         * BridgeSendTarget
+         * @description WHO is meant to receive a turn sent with ``action=send``.
+         *
+         *     There is no default and there never will be one. The three things a person
+         *     could mean by "reply to this coding conversation" have completely different
+         *     consequences — an AI Matrx agent answers and the coding tool never learns of
+         *     it; the tool's own runtime continues the session and the provider's
+         *     transcript grows — and a verb that guessed between them would silently do
+         *     the other one. The caller names the target, and the answer says which target
+         *     served it (:class:`BridgeSendResult.target`).
+         *
+         *     ``seeded_handoff`` is deliberately NOT a target: handing a conversation to a
+         *     second tool is its own verb (``action=handoff``) because it writes a binding
+         *     rather than a turn, and folding it in here would put two different write
+         *     shapes behind one word.
+         * @enum {string}
+         */
+        BridgeSendTarget: "matrx_agent" | "provider_native";
         /**
          * BridgeSourceMetadata
          * @description Bounded, non-authoritative provenance for an explicit local import.
@@ -45981,6 +49740,11 @@ export interface components {
             gmail_readonly_granted: boolean;
             /** Connected Mailboxes */
             connected_mailboxes: number;
+            /**
+             * Connected Audit Mailboxes
+             * @default 0
+             */
+            connected_audit_mailboxes?: number;
         };
         /** BrokenLinkProspectingBody */
         BrokenLinkProspectingBody: {
@@ -46102,6 +49866,51 @@ export interface components {
             scopes?: string[];
             /** Expires At */
             expires_at: number;
+        };
+        /** BrowseRequest */
+        BrowseRequest: {
+            /** Adapter */
+            adapter: string;
+            /** Connection Id */
+            connection_id: string;
+            /** Container Id */
+            container_id?: string | null;
+            filter?: components["schemas"]["SourceFilterModel"];
+            /**
+             * Limit
+             * @default 200
+             */
+            limit?: number;
+            /**
+             * Offset
+             * @default 0
+             */
+            offset?: number;
+        };
+        /** BrowseResponse */
+        BrowseResponse: {
+            /** Adapter */
+            adapter: string;
+            /** Connection Id */
+            connection_id: string;
+            /** Sources */
+            sources: components["schemas"]["SourceRow"][];
+            /** Scanned */
+            scanned: number;
+            /** Matched */
+            matched: number;
+            /** Elapsed Seconds */
+            elapsed_seconds: number;
+            /** Sources Per Second */
+            sources_per_second: number;
+            /** Has More */
+            has_more: boolean;
+            /** Offset */
+            offset: number;
+            /** Total */
+            total: number | null;
+            /** Summary */
+            summary: string;
         };
         /**
          * BrowserAuthenticatorMaterializeRequest
@@ -47781,6 +51590,47 @@ export interface components {
              */
             days?: number;
         };
+        /** CalendarRefreshRequest */
+        CalendarRefreshRequest: {
+            /**
+             * Organization Id
+             * @description The organization this Record belongs to. Required: nothing on the server chooses one for you.
+             */
+            organization_id: string;
+            /** Connection Id */
+            connection_id: string;
+            /**
+             * Calendar Id
+             * @default primary
+             */
+            calendar_id?: string;
+            /**
+             * Days
+             * @default 7
+             */
+            days?: number;
+        };
+        /** CalendarRefreshResponse */
+        CalendarRefreshResponse: {
+            /**
+             * Window Start
+             * Format: date-time
+             */
+            window_start: string;
+            /**
+             * Window End
+             * Format: date-time
+             */
+            window_end: string;
+            /** Events */
+            events: components["schemas"]["EventRecordResponse"][];
+            /** Attendees Linked */
+            attendees_linked: number;
+            /** Detached Left Alone */
+            detached_left_alone: number;
+            /** Unmatched Attendee Emails */
+            unmatched_attendee_emails: string[];
+        };
         /** CalendlyServiceStatus */
         CalendlyServiceStatus: {
             /**
@@ -48008,6 +51858,25 @@ export interface components {
             applied?: boolean;
         };
         /**
+         * CapabilityVerdict
+         * @description One operation's truthful answer for one provider × origin.
+         *
+         *     ``reason`` is MANDATORY whenever ``supported`` is false: a UI renders this
+         *     sentence instead of guessing parity, and "unavailable" with no reason is
+         *     the silent failure the contract forbids. When ``supported`` is true the
+         *     reason may still carry the live-probe caveat (a hosted runtime needs a
+         *     Matrx Sandbox; a local runtime needs Matrx Local running).
+         */
+        CapabilityVerdict: {
+            operation: components["schemas"]["BridgeOperation"];
+            /** Supported */
+            supported: boolean;
+            /** Reason */
+            reason?: string | null;
+            /** Live Probe */
+            live_probe?: string | null;
+        };
+        /**
          * CapsuleServiceStatus
          * @description Safe aggregate status projection for Capsule CRM's fixed status page.
          */
@@ -48145,6 +52014,73 @@ export interface components {
             handoff_id: string;
             /** Status */
             status: string;
+        };
+        /**
+         * CapturePlanReminderEndpointRequest
+         * @description The plan page's whole ask of the server.
+         */
+        CapturePlanReminderEndpointRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /** Plan Id */
+            plan_id: string;
+            /** Rulebook Name */
+            rulebook_name: string;
+            /** Sessions */
+            sessions?: components["schemas"]["CapturePlanSessionInput"][];
+            /**
+             * Channel
+             * @default preferences
+             */
+            channel?: string;
+            /**
+             * Lead Minutes
+             * @default 0
+             */
+            lead_minutes?: number;
+        };
+        /** CapturePlanReminderResponse */
+        CapturePlanReminderResponse: {
+            /** Queued */
+            queued: number;
+            /** Superseded */
+            superseded: number;
+            /** Problem */
+            problem?: string | null;
+        };
+        /**
+         * CapturePlanSessionInput
+         * @description One scheduled session, as the plan page holds it.
+         */
+        CapturePlanSessionInput: {
+            /** Session Id */
+            session_id: string;
+            /** Method */
+            method: string;
+            /** Ask */
+            ask: string;
+            /** Minutes */
+            minutes: number;
+            /**
+             * Due At
+             * Format: date-time
+             */
+            due_at: string;
         };
         /** CaptureResponse */
         CaptureResponse: {
@@ -50050,6 +53986,16 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** ClaimBody */
+        ClaimBody: {
+            /**
+             * Client
+             * @default chrome-extension
+             */
+            client?: string;
+            /** Ttl Seconds */
+            ttl_seconds?: number | null;
+        };
         /** ClaimCreate */
         ClaimCreate: {
             /** Applicant Name */
@@ -50261,6 +54207,10 @@ export interface components {
             workspace_root?: string;
             /** Session Id */
             session_id?: string | null;
+            /** Hosted Runtime Id */
+            hosted_runtime_id?: string | null;
+            /** Hosted Project Key */
+            hosted_project_key?: string | null;
             /** Fork Up To Message Id */
             fork_up_to_message_id?: string | null;
             /** Model */
@@ -52254,46 +56204,63 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
-        /** CodingSessionBridgeRestRequest */
-        CodingSessionBridgeRestRequest: {
+        /**
+         * CodexManagedAction
+         * @enum {string}
+         */
+        CodexManagedAction: "resume" | "start";
+        /** CodexManagedCancelResponse */
+        CodexManagedCancelResponse: {
+            /** Runtime Id */
+            runtime_id: string;
+            /** Cancelled */
+            cancelled: boolean;
+        };
+        /** CodexManagedCapabilitiesResponse */
+        CodexManagedCapabilitiesResponse: {
+            /** Available */
+            available: boolean;
+            /** Native Resume */
+            native_resume: boolean;
+            /** Native Fork */
+            native_fork: boolean;
+            /** Cli Version */
+            cli_version?: string | null;
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
+         * CodexManagedRestRequest
+         * @description HTTP carrier that accepts, but never trusts, frontend-injected scope.
+         */
+        CodexManagedRestRequest: {
+            /** @default start */
+            action?: components["schemas"]["CodexManagedAction"];
+            conversation: components["schemas"]["BridgeConversation"];
+            /** Prompt */
+            prompt: string;
             /**
-             * Schema Version
-             * @default 1
-             * @constant
+             * Workspace Root
+             * @default /home/agent
              */
-            schema_version?: 1;
-            action: components["schemas"]["BridgeAction"];
-            provider: components["schemas"]["BridgeProvider"];
-            /** Provider Session Id */
-            provider_session_id?: string | null;
-            /** Provider Project Key */
-            provider_project_key?: string | null;
-            conversation?: components["schemas"]["BridgeConversation"] | null;
-            origin?: components["schemas"]["BridgeOrigin"] | null;
+            workspace_root?: string;
+            /** Thread Id */
+            thread_id?: string | null;
+            /** Model */
+            model: string;
             /**
-             * Stream Key
-             * @default main
+             * Sandbox Mode
+             * @default read-only
+             * @enum {string}
              */
-            stream_key?: string;
-            hook_event?: components["schemas"]["BridgeHookEvent"] | null;
-            /** Entries */
-            entries?: components["schemas"]["BridgeEntry"][];
-            source_metadata?: components["schemas"]["BridgeSourceMetadata"] | null;
-            account_identity?: components["schemas"]["BridgeAccountIdentity"] | null;
-            /** Writer Runtime Id */
-            writer_runtime_id?: string | null;
+            sandbox_mode?: "read-only" | "workspace-write";
             /**
-             * Writer Lease Seconds
-             * @default 300
+             * Turn Timeout Seconds
+             * @default 1800
              */
-            writer_lease_seconds?: number;
-            /** After Source Sequence */
-            after_source_sequence?: number | null;
-            /**
-             * Limit
-             * @default 250
-             */
-            limit?: number;
+            turn_timeout_seconds?: number;
+            /** Max Budget Usd */
+            max_budget_usd?: number | null;
             /**
              * Organization Id
              * @description Organization context for the request; omitted to use the authenticated context.
@@ -52310,6 +56277,119 @@ export interface components {
              */
             task_id?: string | null;
         };
+        /**
+         * CodingReplyResponder
+         * @description Who will answer a reply typed here, resolved before the person types.
+         */
+        CodingReplyResponder: {
+            /** Agent Id */
+            agent_id: string;
+            /** Agent Name */
+            agent_name?: string | null;
+            /** Setting Key */
+            setting_key: string;
+            /** Used Platform Default */
+            used_platform_default: boolean;
+        };
+        /**
+         * CodingReplyResponderReport
+         * @description What the reply composer labels itself with.
+         *
+         *     The sentence is composed on the SERVER (`composer_label`) so the label and the
+         *     resolution that decides it cannot disagree, and so binding the mandate to another
+         *     agent changes the label with no client release. V-XT/V3 (2026-09-15): the composer
+         *     said "AI Matrx is answering" while, on production, neither mandate was bound and
+         *     every reply was silently taking the platform-default stand-in.
+         */
+        CodingReplyResponderReport: {
+            /**
+             * Schema Version
+             * @default 1
+             */
+            schema_version?: number;
+            /** Conversation Id */
+            conversation_id: string;
+            /** Is Coding Session Mirror */
+            is_coding_session_mirror: boolean;
+            /** Provider */
+            provider?: string | null;
+            /** Origin */
+            origin?: string | null;
+            /** Composer Label */
+            composer_label: string;
+            /** Can Reply */
+            can_reply: boolean;
+            /** Reason */
+            reason?: string | null;
+            responder?: components["schemas"]["CodingReplyResponder"] | null;
+            /** Stand In Notice */
+            stand_in_notice?: string | null;
+        };
+        /**
+         * CodingSessionBridgeRestRequest
+         * @description Bridge request as posted over HTTP. Every field carries its real shape in the schema and is checked by the server's one validation boundary, which answers a bad value with a reason, a remedy and what is supported.
+         */
+        CodingSessionBridgeRestRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Schema Version */
+            schema_version?: 1 | components["schemas"]["JsonValue"];
+            /** Action */
+            action?: components["schemas"]["BridgeAction"] | components["schemas"]["JsonValue"];
+            /** Provider */
+            provider?: components["schemas"]["BridgeProvider"] | components["schemas"]["JsonValue"];
+            /** Provider Session Id */
+            provider_session_id?: string | components["schemas"]["JsonValue"] | null;
+            /** Provider Project Key */
+            provider_project_key?: string | components["schemas"]["JsonValue"] | null;
+            /** Conversation */
+            conversation?: components["schemas"]["BridgeConversation"] | components["schemas"]["JsonValue"] | null;
+            /** Origin */
+            origin?: components["schemas"]["BridgeOrigin"] | components["schemas"]["JsonValue"] | null;
+            /** Stream Key */
+            stream_key?: string | components["schemas"]["JsonValue"];
+            /** Hook Event */
+            hook_event?: components["schemas"]["BridgeHookEvent"] | components["schemas"]["JsonValue"] | null;
+            /** Entries */
+            entries?: components["schemas"]["BridgeEntry"][] | components["schemas"]["JsonValue"];
+            /** Source Metadata */
+            source_metadata?: components["schemas"]["BridgeSourceMetadata"] | components["schemas"]["JsonValue"] | null;
+            /** Account Identity */
+            account_identity?: components["schemas"]["BridgeAccountIdentity"] | components["schemas"]["JsonValue"] | null;
+            /** Writer Runtime Id */
+            writer_runtime_id?: string | components["schemas"]["JsonValue"] | null;
+            /** Writer Lease Seconds */
+            writer_lease_seconds?: number | components["schemas"]["JsonValue"];
+            /** After Source Sequence */
+            after_source_sequence?: number | components["schemas"]["JsonValue"] | null;
+            /** Limit */
+            limit?: number | components["schemas"]["JsonValue"];
+            /** Text */
+            text?: string | components["schemas"]["JsonValue"] | null;
+            /** Target */
+            target?: components["schemas"]["BridgeSendTarget"] | components["schemas"]["JsonValue"] | null;
+            /** Agent Id */
+            agent_id?: string | components["schemas"]["JsonValue"] | null;
+            /** Editor State */
+            editor_state?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | components["schemas"]["JsonValue"] | null;
+            /** Client Request Id */
+            client_request_id?: string | components["schemas"]["JsonValue"] | null;
+        };
         /** CodingSessionIdentity */
         CodingSessionIdentity: {
             /** Provider Session Id */
@@ -52320,11 +56400,8 @@ export interface components {
             conversation_id: string;
             /** Fidelity */
             fidelity: string;
-            /**
-             * Last Seen At
-             * Format: date-time
-             */
-            last_seen_at: string;
+            /** Last Seen At */
+            last_seen_at?: string | null;
             /** Conversation Title */
             conversation_title?: string | null;
             /** Title Source */
@@ -52345,6 +56422,8 @@ export interface components {
             claude_pinned_rank?: number | null;
             /** Claude Category */
             claude_category?: string | null;
+            /** Ai Matrx Is Favorite */
+            ai_matrx_is_favorite?: boolean | null;
         };
         /** CodingSessionIdentityList */
         CodingSessionIdentityList: {
@@ -52581,6 +56660,55 @@ export interface components {
             page_inventory_revision?: number;
             human_required?: components["schemas"]["HumanRequiredSignal"] | null;
             event_facts?: components["schemas"]["ActionEventFacts"] | null;
+        };
+        /** CommentReplyRow */
+        CommentReplyRow: {
+            /** Reply Id */
+            reply_id: string;
+            /** Author Name */
+            author_name: string | null;
+            /** Author Is Me */
+            author_is_me: boolean;
+            /** Created At */
+            created_at: string | null;
+            /** Modified At */
+            modified_at: string | null;
+            /** Content */
+            content: string;
+            /** Action */
+            action: string | null;
+        };
+        /** CommentRow */
+        CommentRow: {
+            /** Comment Id */
+            comment_id: string;
+            /** Author Name */
+            author_name: string | null;
+            /** Author Is Me */
+            author_is_me: boolean;
+            /** Created At */
+            created_at: string | null;
+            /** Modified At */
+            modified_at: string | null;
+            /** Resolved */
+            resolved: boolean;
+            /** Content */
+            content: string;
+            /** Quoted Text */
+            quoted_text: string | null;
+            /** Replies */
+            replies: components["schemas"]["CommentReplyRow"][];
+        };
+        /** CommentsResponse */
+        CommentsResponse: {
+            /** File Id */
+            file_id: string;
+            /** Comments */
+            comments: components["schemas"]["CommentRow"][];
+            /** Total Replies */
+            total_replies: number;
+            /** Truncated */
+            truncated: boolean;
         };
         /**
          * CommitChoiceRequest
@@ -53258,6 +57386,12 @@ export interface components {
             /** Open Plan Count */
             open_plan_count: number;
             /**
+             * Apply Mode
+             * @description The organization's `workflow.conductor.apply_mode` knob: `auto` — the Conductor's writes land on the canvas as they are saved; `review` — the canvas holds still and the chat offers Apply / Take it back.
+             * @default auto
+             */
+            apply_mode?: string;
+            /**
              * Conversation Id
              * @description The ONE stored Conductor conversation for this person and this workflow (deterministic; the studio continues it with is_new=false when conversation_exists, else starts it).
              */
@@ -53267,6 +57401,23 @@ export interface components {
              * @default false
              */
             conversation_exists?: boolean;
+            /**
+             * Conversation Generation
+             * @description Which conversation on this person's ladder for this workflow is open.
+             * @default 0
+             */
+            conversation_generation?: number;
+            /**
+             * Conversations
+             * @description Every conversation this person holds with this workflow's Conductor, most recently touched first. Reopen one by sending its `conversation_id` back as the `conversation_id` query — the client never invents one.
+             */
+            conversations?: components["schemas"]["LauncherConversation"][];
+            /**
+             * Test Run Mode
+             * @description The `workflow.conductor.test_run_mode` knob for this person and org: `ask` — the Conductor must get the Creator's word before it test-runs the workflow (the server refuses an unapproved run); `auto` — it may run a test on its own judgement.
+             * @default ask
+             */
+            test_run_mode?: string;
             /**
              * Messages
              * @description The stored transcript so far, oldest first — the panel reopens with it.
@@ -53403,30 +57554,42 @@ export interface components {
              * @default false
              */
             already_used?: boolean;
+            /**
+             * Recorded For Audit
+             * @default false
+             */
+            recorded_for_audit?: boolean;
+            /** Promotion Note */
+            promotion_note?: string | null;
         };
         /**
-         * ConnectionSummary
-         * @description Non-secret connection state — what the FE reads after any operation.
+         * ConnectionResource
+         * @description One attachable candidate. `link` and `detail` are the SERVER's words —
+         *     only it knows what matters about a given provider's resources.
          */
-        ConnectionSummary: {
+        ConnectionResource: {
+            /** Resource Id */
+            resource_id: string;
             /** Connection Id */
             connection_id: string;
-            /** Server Id */
-            server_id: string | null;
-            /** Server Slug */
-            server_slug: string | null;
-            /** Status */
-            status: string;
-            /** Auth Method */
-            auth_method: string | null;
-            /** Credential Item Id */
-            credential_item_id: string | null;
-            /** Token Expires At */
-            token_expires_at: string | null;
-            /** Oauth Scopes Granted */
-            oauth_scopes_granted: string[];
-            /** Last Error */
-            last_error: string | null;
+            /** Provider */
+            provider: string;
+            /** Resource Type */
+            resource_type: string;
+            /** Resource Ref */
+            resource_ref: string;
+            /** Display Name */
+            display_name: string;
+            /** Link */
+            link?: string | null;
+            /** Detail */
+            detail?: string | null;
+            /** Permission Level */
+            permission_level?: string | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
         };
         /** ConnectorContactView */
         ConnectorContactView: {
@@ -53583,6 +57746,48 @@ export interface components {
              */
             status_page?: "https://status.constantcontact.com/";
         };
+        /** ContactCandidate */
+        ContactCandidate: {
+            /** External Id */
+            external_id: string;
+            /** Display Name */
+            display_name: string;
+            /** First Name */
+            first_name: string;
+            /** Last Name */
+            last_name: string;
+            /** Job Title */
+            job_title: string;
+            /** Company */
+            company: string;
+            /** Emails */
+            emails: string[];
+            /** Phones */
+            phones: string[];
+            /** Source Updated At */
+            source_updated_at?: string | null;
+            /**
+             * Already Imported
+             * @default false
+             */
+            already_imported?: boolean;
+            /** Person Id */
+            person_id?: string | null;
+            /** Person Name */
+            person_name?: string | null;
+            /** Imported At */
+            imported_at?: string | null;
+            /**
+             * Match State
+             * @default new
+             * @enum {string}
+             */
+            match_state?: "choice_required" | "imported" | "matched" | "new";
+            /** Matched By */
+            matched_by?: string | null;
+            /** Candidates */
+            candidates?: components["schemas"]["PersonCandidate"][];
+        };
         /**
          * ContactCandidateView
          * @description A persisted candidate as a surface sees it. Every field is a door or a why.
@@ -53672,6 +57877,259 @@ export interface components {
             kind: "author_profile" | "byline" | "credentialed_author" | "editor" | "mention" | "quote";
             /** Detail */
             detail: string;
+        };
+        /**
+         * ContactFieldChoice
+         * @description The person's edit of one row of the map, from the panel.
+         */
+        ContactFieldChoice: {
+            /** Key */
+            key: string;
+            /**
+             * Include
+             * @default true
+             */
+            include?: boolean;
+            /** Value */
+            value?: string | string[] | null;
+            /**
+             * Override Manual
+             * @default false
+             */
+            override_manual?: boolean;
+        };
+        /** ContactFieldPlan */
+        ContactFieldPlan: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Person Field */
+            person_field: string;
+            /** Person Label */
+            person_label: string;
+            /** Value */
+            value: string | string[] | null;
+            /** Current Value */
+            current_value: string | string[] | null;
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "added" | "choice_required" | "conflict" | "create" | "excluded" | "fill" | "kept_manual" | "present" | "unchanged" | "unrecorded";
+            /** Current State */
+            current_state: string;
+            /**
+             * Explanation
+             * @default
+             */
+            explanation?: string;
+            /** Source Ref */
+            source_ref?: string | null;
+            /** Imported At */
+            imported_at?: string | null;
+        };
+        /**
+         * ContactFieldSpec
+         * @description One mappable field: where it comes from and where it lands.
+         */
+        ContactFieldSpec: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Person Field */
+            person_field: string;
+            /** Person Label */
+            person_label: string;
+            /**
+             * Multi
+             * @default false
+             */
+            multi?: boolean;
+        };
+        /** ContactImportItem */
+        ContactImportItem: {
+            /** External Id */
+            external_id: string;
+            /** Fields */
+            fields?: components["schemas"]["ContactFieldChoice"][];
+            target?: components["schemas"]["ContactImportTarget"] | null;
+        };
+        /** ContactImportOutcome */
+        ContactImportOutcome: {
+            /** External Id */
+            external_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Person Id */
+            person_id?: string | null;
+            /** Person Name */
+            person_name?: string | null;
+            /**
+             * Created
+             * @default false
+             */
+            created?: boolean;
+            /** Matched By */
+            matched_by?: string | null;
+            /** Fields */
+            fields: components["schemas"]["ContactFieldPlan"][];
+            /** Written Fields */
+            written_fields?: string[];
+            /** Kept Manual Fields */
+            kept_manual_fields?: string[];
+            /** Unrecorded Fields */
+            unrecorded_fields?: string[];
+            /** Refused Fields */
+            refused_fields?: string[];
+            /**
+             * Contact Points Added
+             * @default 0
+             */
+            contact_points_added?: number;
+            /**
+             * Choice Required
+             * @default false
+             */
+            choice_required?: boolean;
+            /** Candidates */
+            candidates?: components["schemas"]["PersonCandidate"][];
+            target?: components["schemas"]["ContactImportTarget"];
+            /** Target Moved */
+            target_moved?: string | null;
+            /**
+             * Reimport Policy
+             * @default manual_wins
+             */
+            reimport_policy?: string;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+        };
+        /** ContactImportRequest */
+        ContactImportRequest: {
+            /** Organization Id */
+            organization_id: string;
+            /** Google Account */
+            google_account?: string | null;
+            /** Contacts */
+            contacts: components["schemas"]["ContactImportItem"][];
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+        };
+        /** ContactImportResult */
+        ContactImportResult: {
+            /**
+             * Provider Key
+             * @default google_people
+             */
+            provider_key?: string;
+            /** Google Account */
+            google_account: string | null;
+            /** Dry Run */
+            dry_run: boolean;
+            /** Results */
+            results: components["schemas"]["ContactImportOutcome"][];
+            /**
+             * Choice Required
+             * @default 0
+             */
+            choice_required?: number;
+            /**
+             * Target Moved
+             * @default 0
+             */
+            target_moved?: number;
+            /** Warnings */
+            warnings?: string[];
+        };
+        /**
+         * ContactImportTarget
+         * @description THE Person a plan belongs to — pinned by the review, honoured by the apply.
+         *
+         *     🚨 **A PLAN IS ABOUT ONE PERSON, AND THE WRITE GOES TO THAT PERSON OR NOWHERE.**
+         *     Every ``fill`` / ``kept_manual`` / ``unrecorded`` decision, and the promise on
+         *     the approval card, is computed against ONE row's values and provenance. Until
+         *     2026-09-18 nothing carried that row's identity forward: the apply re-ran the
+         *     resolver and wrote the reviewed plan onto whatever it returned — a duplicate
+         *     Person created in between, a merge, an identity moved to another row — and
+         *     only ``locked_fields`` was re-checked there, so a value stamped ``manual`` on
+         *     the second row was overwritten by a plan that had never read it
+         *     (``common-docs/projects/google-native/VERIFY-B1-B2-R5.md`` W6, measured).
+         *
+         *     Every outcome now carries the target it was computed against, and a caller
+         *     that reviewed a plan sends it back (``ContactImportItem.target``,
+         *     ``google_workspace``'s ``reviewed_target`` replay argument). A disagreement is
+         *     a refusal that NAMES BOTH People — never a write to the other one.
+         */
+        ContactImportTarget: {
+            /** Person Id */
+            person_id?: string | null;
+            /** Person Name */
+            person_name?: string | null;
+            /**
+             * Create New
+             * @default false
+             */
+            create_new?: boolean;
+            /** Matched By */
+            matched_by?: string | null;
+        };
+        /** ContactSearchRequest */
+        ContactSearchRequest: {
+            /**
+             * Organization Id
+             * @description The organization the Person is written into. Never defaulted here.
+             */
+            organization_id: string;
+            /**
+             * Google Account
+             * @description Email of the connected account, when several are connected.
+             */
+            google_account?: string | null;
+            /** Query */
+            query?: string | null;
+            /**
+             * Limit
+             * @default 50
+             */
+            limit?: number;
+            /**
+             * Max Records
+             * @default 2000
+             */
+            max_records?: number;
+        };
+        /** ContactSearchResult */
+        ContactSearchResult: {
+            /**
+             * Provider Key
+             * @default google_people
+             */
+            provider_key?: string;
+            /** Google Account */
+            google_account: string | null;
+            /** Contacts */
+            contacts: components["schemas"]["ContactCandidate"][];
+            /** Count */
+            count: number;
+            /** Total Read */
+            total_read: number;
+            /** Already Imported */
+            already_imported: number;
+            /**
+             * Truncated
+             * @default false
+             */
+            truncated?: boolean;
+            /** Warnings */
+            warnings?: string[];
         };
         /** ContentBlockDetailResponse */
         ContentBlockDetailResponse: {
@@ -54289,6 +58747,42 @@ export interface components {
             /** Human Input Enabled */
             human_input_enabled: boolean;
         };
+        /**
+         * ConversationAttachmentPayload
+         * @description One live attachment. `link` and `detail` are the server's words: only it
+         *     knows what matters about a given provider's resources (THE DOOR LAW — the
+         *     row the UI names must open).
+         */
+        ConversationAttachmentPayload: {
+            /** Association Id */
+            association_id: string;
+            /** Conversation Id */
+            conversation_id: string;
+            /** Created At */
+            created_at?: string | null;
+            /** Resource Id */
+            resource_id: string;
+            /** Connection Id */
+            connection_id: string;
+            /** Provider */
+            provider: string;
+            /** Resource Type */
+            resource_type: string;
+            /** Resource Ref */
+            resource_ref: string;
+            /** Display Name */
+            display_name: string;
+            /** Link */
+            link?: string | null;
+            /** Detail */
+            detail?: string | null;
+            /** Permission Level */
+            permission_level?: string | null;
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+        };
         /** ConversationContinueRequest */
         ConversationContinueRequest: {
             /**
@@ -54411,6 +58905,8 @@ export interface components {
             skill_config?: {
                 [key: string]: unknown;
             } | null;
+            /** Responder Agent Id */
+            responder_agent_id?: string | null;
             /**
              * Max Iterations
              * @description Maximum agent reasoning/tool-loop iterations.
@@ -54608,6 +59104,8 @@ export interface components {
              * @default false
              */
             overwrite?: boolean;
+            /** Expected Checksum */
+            expected_checksum?: string | null;
         };
         /**
          * CopyInfo
@@ -55090,7 +59588,7 @@ export interface components {
             owner_user_id?: string | null;
             /**
              * Owner Organization Id
-             * @description Optional org placement for an owned agent. Ignored unless owner_user_id is set; when omitted it resolves to the owner's personal org via resolve_effective_organization_id. Never NULL on the written row.
+             * @description Org placement for an owned agent. Ignored unless owner_user_id is set; REQUIRED when it is — the organization the caller was admitted for (context_organization_id(ctx)) or the one on the record being processed. Never NULL on the written row, never defaulted.
              */
             owner_organization_id?: string | null;
         };
@@ -55120,6 +59618,11 @@ export interface components {
              * @default
              */
             text?: string;
+            /**
+             * Organization Id
+             * @description The organization the Record this registration creates belongs to. Omit it and the file still registers, with no Record and the reason on the response.
+             */
+            organization_id?: string | null;
         };
         /** CreateDraftRequest */
         CreateDraftRequest: {
@@ -55155,6 +59658,21 @@ export interface components {
             /** In Reply To */
             in_reply_to?: string | null;
         };
+        /** CreateExportBody */
+        CreateExportBody: {
+            /** File Id */
+            file_id: string;
+            /** Name */
+            name?: string | null;
+            /**
+             * Visibility
+             * @default personal
+             * @enum {string}
+             */
+            visibility?: "internal" | "link" | "personal" | "public";
+            /** Organization Id */
+            organization_id?: string | null;
+        };
         /** CreateFolderRequest */
         CreateFolderRequest: {
             /**
@@ -55177,6 +59695,29 @@ export interface components {
         CreateGroupRequest: {
             /** Name */
             name: string;
+        };
+        /** CreateLibraryBody */
+        CreateLibraryBody: {
+            /** Input */
+            input: string;
+            /** Adapter */
+            adapter?: ("blog_feed" | "drive_folder" | "google_picked_files" | "onedrive_drive" | "outlook_calendar" | "outlook_mail" | "podcast_rss" | "slide_deck" | "teams_chat" | "youtube") | null;
+            /** Name */
+            name?: string | null;
+            /** Description */
+            description?: string | null;
+            /**
+             * Visibility
+             * @default personal
+             * @enum {string}
+             */
+            visibility?: "internal" | "link" | "personal" | "public";
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            } | null;
         };
         /** CreatePlanRequest */
         CreatePlanRequest: {
@@ -55363,6 +59904,11 @@ export interface components {
             title: string;
             /** Values */
             values?: string[][];
+            /**
+             * Organization Id
+             * @description The organization the Record this registration creates belongs to. Omit it and the file still registers, with no Record and the reason on the response.
+             */
+            organization_id?: string | null;
         };
         /** CreateTemplateBody */
         CreateTemplateBody: {
@@ -56024,6 +60570,11 @@ export interface components {
              * @description matrx_connect ORIGIN_CLASSES + 'unknown' (DB backfill for pre-provenance rows). Valid filter values for origin_class.
              */
             origin_classes?: string[];
+            /**
+             * Outside Source Apps
+             * @description source_apps holding outside (non-AI Matrx) data — today only 'code-plugin'. CX Explorer hides them unless the viewer turns them on.
+             */
+            outside_source_apps?: string[];
         };
         /** CxExplorerFacetEntry */
         CxExplorerFacetEntry: {
@@ -57096,6 +61647,42 @@ export interface components {
             metadata?: {
                 [key: string]: unknown;
             };
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * DefinitionListPage
+         * @description A page of workflow definitions PLUS the size of the scope it came from.
+         *
+         *     🚨 A PAGE IS NOT A TOTAL. Measured on production 2026-09-15: admin's
+         *     Workspace held 98 active + 18 archived workflows, and the studio's
+         *     "Active + archived" header said *"Showing 100 active and archived
+         *     workflows."* over 100 cards. This route returned a bare
+         *     ``list[DefinitionRecord]`` capped at ``limit``, the studio never sent a
+         *     limit, and the page then counted the array it happened to receive — so
+         *     sixteen workflows were absent and the sentence stated the page size as
+         *     the total. Both sub-workflow pickers read the same list, so those
+         *     sixteen could not be *picked* either.
+         *
+         *     The same class the admin dashboard guards with ``check:list-page-size``
+         *     (``ADMIN_LIST_MAX_PAGE_SIZE = 2000`` was a lie), and the same rule
+         *     ``@ai-matrx/data``'s ``readAllRows`` enforces: a list reader either pages
+         *     to completeness or the screen states the truncation honestly, and the
+         *     count comes from the SERVER'S total — never from the length of one page.
+         *     An envelope makes that unskippable: there is no shape a caller can read
+         *     that hands it rows without also handing it ``total`` and ``has_more``.
+         */
+        DefinitionListPage: {
+            /** Items */
+            items: components["schemas"]["DefinitionRecord"][];
+            /** Total */
+            total: number;
+            /** Limit */
+            limit: number;
+            /** Offset */
+            offset: number;
+            /** Has More */
+            has_more: boolean;
         } & {
             [key: string]: unknown;
         };
@@ -58992,6 +63579,11 @@ export interface components {
              */
             dismissed_at: string;
         };
+        /** DismissBody */
+        DismissBody: {
+            /** Note */
+            note?: string | null;
+        };
         /** DismissResponse */
         DismissResponse: {
             /** Id */
@@ -59465,6 +64057,56 @@ export interface components {
             /** Updated At */
             updated_at: string;
         };
+        /** DocumentRecordResponse */
+        DocumentRecordResponse: {
+            /** Id */
+            id: string;
+            /** Organization Id */
+            organization_id: string;
+            /** Resource Id */
+            resource_id: string;
+            /** External Id */
+            external_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Mime Kind
+             * @enum {string}
+             */
+            mime_kind: "document" | "other" | "spreadsheet";
+            /** External Url */
+            external_url: string | null;
+            /** Owner Email */
+            owner_email: string | null;
+            /** External Modified At */
+            external_modified_at: string | null;
+            /** Body Chars */
+            body_chars: number;
+            /** Synced At */
+            synced_at: string | null;
+            /**
+             * Sync Status
+             * @enum {string}
+             */
+            sync_status: "available" | "unavailable";
+            /** Sync Status Reason */
+            sync_status_reason: string | null;
+            /** Export Mime */
+            export_mime: string | null;
+        };
+        /** DocumentRefreshRequest */
+        DocumentRefreshRequest: {
+            /**
+             * Organization Id
+             * @description The organization this Record belongs to. Required: nothing on the server chooses one for you.
+             */
+            organization_id: string;
+            /**
+             * File Id
+             * @description The Google file id of a file already picked.
+             */
+            file_id: string;
+        };
         /** DocumentResponse */
         DocumentResponse: {
             /** Id */
@@ -59868,6 +64510,72 @@ export interface components {
             schema?: string | null;
             /** Schema Source */
             schema_source?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Organization Source */
+            organization_source?: string | null;
+        };
+        /**
+         * DripSendReport
+         * @description What one pass did. Every field is reported, including the boring ones, so
+         *     a pass that did nothing is distinguishable from a pass that never ran.
+         */
+        DripSendReport: {
+            /**
+             * Scanned
+             * @default 0
+             */
+            scanned?: number;
+            /**
+             * Hit Scan Cap
+             * @default false
+             */
+            hit_scan_cap?: boolean;
+            /**
+             * Subscribed
+             * @default 0
+             */
+            subscribed?: number;
+            /**
+             * Active
+             * @default 0
+             */
+            active?: number;
+            /**
+             * Not Yet Their Hour
+             * @default 0
+             */
+            not_yet_their_hour?: number;
+            /**
+             * Already Asked Today
+             * @default 0
+             */
+            already_asked_today?: number;
+            /**
+             * Asked
+             * @default 0
+             */
+            asked?: number;
+            /**
+             * Adapted
+             * @default 0
+             */
+            adapted?: number;
+            /**
+             * Fell Back To Base Question
+             * @default 0
+             */
+            fell_back_to_base_question?: number;
+            /**
+             * Paused For Silence
+             * @default 0
+             */
+            paused_for_silence?: number;
+            /**
+             * Errors
+             * @default 0
+             */
+            errors?: number;
         };
         /**
          * DripServiceStatus
@@ -60244,16 +64952,26 @@ export interface components {
         };
         /**
          * DumpResource
-         * @description One resource inside a dump ingest — a platform entity (token + id) or a
-         *     public URL. Validated loudly up front so a malformed resource never gets
-         *     halfway into a paid run.
+         * @description One resource inside a dump ingest — a platform entity (token + id), a
+         *     public URL, or a Source this Rulebook already KEPT. Validated loudly up
+         *     front so a malformed resource never gets halfway into a paid run.
+         *
+         *     🚨 WHY `kept_source` EXISTS (2026-09-18, VERIFICATION.md D7). Every
+         *     acquisition door — send-to-Rulebook from a Library, an export selection, an
+         *     extension capture — writes its material through ``raw_material.keep`` into
+         *     ``platform.masterwork_source``. The dump lane could only be pointed at an
+         *     entity or a URL, so material that arrived through those doors was
+         *     unreachable from the one button that turns sources into rules. A Rulebook
+         *     holding 50 of a person's own emails could not distil any of them.
+         *
+         *     It needs no resolver: the text is already ours, in the row.
          */
         DumpResource: {
             /**
              * Kind
              * @enum {string}
              */
-            kind: "entity" | "url";
+            kind: "entity" | "kept_source" | "url";
             /**
              * Token
              * @description platform.entity_types token (kind='entity' only).
@@ -60269,6 +64987,11 @@ export interface components {
              * @description Public page URL (kind='url' only).
              */
             url?: string | null;
+            /**
+             * Source Key
+             * @description platform.masterwork_source.source_key (kind='kept_source' only). It is also the rule identity, so a kept source distilled here and the same source distilled by its own lane are ONE source.
+             */
+            source_key?: string | null;
             /**
              * Title
              * @description Optional display label the client already knows.
@@ -61144,6 +65867,21 @@ export interface components {
              */
             missing?: boolean;
         };
+        /** EnqueueBody */
+        EnqueueBody: {
+            /** Urls */
+            urls: string[];
+            /** Reason */
+            reason?: string | null;
+            /** Batch Id */
+            batch_id?: string | null;
+            /** Library Id */
+            library_id?: string | null;
+            /** Titles */
+            titles?: {
+                [key: string]: string;
+            } | null;
+        };
         /**
          * EnrichDirective
          * @description What the extension should go fetch + why (common-docs/systems/knowledge/research/EXTENSION_CAPTURE_CONTRACT.md § Enrichment).
@@ -61764,6 +66502,27 @@ export interface components {
              */
             episode: "completed" | "failed" | "pending" | "skipped";
         };
+        /** EstimateBody */
+        EstimateBody: {
+            /** Action */
+            action: string;
+            selection?: components["schemas"]["Selection"];
+            /**
+             * Allow Paid
+             * @default true
+             */
+            allow_paid?: boolean;
+            /**
+             * Prefer Lane
+             * @default free_captions
+             * @enum {string}
+             */
+            prefer_lane?: "free_captions" | "paid_agent";
+            /** Params */
+            params?: {
+                [key: string]: unknown;
+            } | null;
+        };
         /**
          * EuropePmcPublicPublication
          * @description Safe bounded projection of one public scholarly publication.
@@ -61824,6 +66583,31 @@ export interface components {
             error_type?: string | null;
             /** Value */
             value?: unknown;
+        };
+        /** EventRecordResponse */
+        EventRecordResponse: {
+            /** Id */
+            id: string;
+            /** External Id */
+            external_id: string;
+            /** Calendar Id */
+            calendar_id: string;
+            /** Title */
+            title: string;
+            /** Starts At */
+            starts_at: string | null;
+            /** Ends At */
+            ends_at: string | null;
+            /** All Day */
+            all_day: boolean;
+            /** Meeting Url */
+            meeting_url: string | null;
+            /** Organizer Email */
+            organizer_email: string | null;
+            /** Attendee Emails */
+            attendee_emails: string[];
+            /** Linked Party Ids */
+            linked_party_ids: string[];
         };
         /**
          * EventSourceSpec
@@ -62257,6 +67041,35 @@ export interface components {
             /** Children */
             children?: components["schemas"]["ExecutionTreeNode"][];
         };
+        /**
+         * ExemptedSendBlock
+         * @description A rule the send authority raised that this message class is NOT judged by.
+         *
+         *     🚨 AN EXEMPTION IS NEVER A SILENCE (VERIFY-B1-B2-R5 W3). The gate sets these
+         *     aside on purpose — `jurisdiction_prohibited` and the rest judge a cold campaign,
+         *     and the identity-readiness rules judge a campaign mailbox — but the approver of a
+         *     reviewed 1:1 is the legal actor, so what the authority said and why the spine did
+         *     not act on it travels to the surface, onto the interaction row and into the
+         *     `crm.sending_event` detail.
+         */
+        ExemptedSendBlock: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Exempt Reason */
+            exempt_reason: string;
+            /**
+             * Field
+             * @default recipient
+             */
+            field?: string;
+            /**
+             * Address
+             * @default
+             */
+            address?: string;
+        };
         /** ExpandRequest */
         ExpandRequest: {
             /** Query */
@@ -62566,6 +67379,21 @@ export interface components {
             sha256: string;
             /** Download Url */
             download_url: string;
+        };
+        /** ExportBody */
+        ExportBody: {
+            /**
+             * Format
+             * @default markdown
+             * @enum {string}
+             */
+            format?: "csv" | "json" | "markdown";
+            selection?: components["schemas"]["Selection"];
+            /**
+             * Include Transcripts
+             * @default false
+             */
+            include_transcripts?: boolean;
         };
         /** ExportDelivery */
         ExportDelivery: {
@@ -62937,6 +67765,29 @@ export interface components {
             jsonLd?: {
                 [key: string]: unknown;
             }[];
+        };
+        /**
+         * ExternalSourceMetadata
+         * @description Non-secret provenance persisted under ``files.files.metadata``.
+         *
+         *     ``source_ref`` is provider-owned opaque identity. It is never trusted as
+         *     authorization: every later read must resolve ``connection_id`` again for
+         *     the acting user before the adapter touches the provider.
+         */
+        ExternalSourceMetadata: {
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "box" | "dropbox" | "google_drive" | "onedrive";
+            /** Connection Id */
+            connection_id: string;
+            /** Source Ref */
+            source_ref: string;
+            /** Revision */
+            revision?: string | null;
+            /** Modified At */
+            modified_at?: string | null;
         };
         /** ExternalUrlChange */
         ExternalUrlChange: {
@@ -64599,6 +69450,8 @@ export interface components {
             actual_size_bytes?: number | null;
             /** Checksum */
             checksum?: string | null;
+            /** Expected Checksum */
+            expected_checksum?: string | null;
         };
         /** FindContactsRequest */
         FindContactsRequest: {
@@ -65538,6 +70391,8 @@ export interface components {
             skill_config?: {
                 [key: string]: unknown;
             } | null;
+            /** Responder Agent Id */
+            responder_agent_id?: string | null;
             /**
              * Max Iterations
              * @description Maximum agent reasoning/tool-loop iterations.
@@ -66724,12 +71579,62 @@ export interface components {
             /** Mcp Connected */
             mcp_connected: boolean;
         };
-        /** GitHubExchangeRequest */
-        GitHubExchangeRequest: {
+        /** GitHubOAuthCompleteRequest */
+        GitHubOAuthCompleteRequest: {
+            /** State */
+            state: string;
+            /** Browser Proof */
+            browser_proof: string;
             /** Code */
-            code: string;
-            /** Redirect Uri */
-            redirect_uri: string;
+            code?: string | null;
+            /** Provider Error */
+            provider_error?: string | null;
+        };
+        /** GitHubOAuthCompleteResponse */
+        GitHubOAuthCompleteResponse: {
+            /** Status */
+            status: string;
+            /** Return Url */
+            return_url: string;
+            /** Next Action */
+            next_action?: "authorize" | null;
+            /** Next Authorization Url */
+            next_authorization_url?: string | null;
+            /** Next State */
+            next_state?: string | null;
+            /** Next Flow */
+            next_flow?: ("authorize" | "install") | null;
+            connection?: components["schemas"]["GitHubConnectionResponse"] | null;
+        };
+        /** GitHubOAuthStartRequest */
+        GitHubOAuthStartRequest: {
+            /** Return Url */
+            return_url: string;
+            /** Browser Proof Hash */
+            browser_proof_hash: string;
+            /**
+             * Flow
+             * @default authorize
+             * @enum {string}
+             */
+            flow?: "authorize" | "install";
+        };
+        /** GitHubOAuthStartResponse */
+        GitHubOAuthStartResponse: {
+            /** Authorization Url */
+            authorization_url: string;
+            /** State */
+            state: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Flow
+             * @enum {string}
+             */
+            flow: "authorize" | "install";
         };
         /** GitHubWebhookResponse */
         GitHubWebhookResponse: {
@@ -66775,6 +71680,29 @@ export interface components {
              * @constant
              */
             instance_page?: "https://gitea.com";
+        };
+        /**
+         * GmailCcAttribution
+         * @description Whose address each copied-to recipient is, as the client's ONE integrity
+         *     primitive decided (`features/crm/gmail/recipient-integrity.ts`).
+         *
+         *     Stored verbatim on the row so a Cc on a Person's timeline says whose address
+         *     it is (VERIFY-B1-B2-R2 N9). The server does not re-decide it and does not
+         *     invent it — but it DOES gate every one of these addresses, which is the part
+         *     that was missing.
+         */
+        GmailCcAttribution: {
+            /** Address */
+            address: string;
+            /** Contact Point Id */
+            contact_point_id?: string | null;
+            /** Medium Id */
+            medium_id?: string | null;
+            /**
+             * Held By This Record
+             * @default false
+             */
+            held_by_this_record?: boolean;
         };
         /** Go1ServiceStatus */
         Go1ServiceStatus: {
@@ -66992,6 +71920,55 @@ export interface components {
             /** Organization Id */
             organization_id?: string | null;
         };
+        /**
+         * GoogleCapabilityMetadata
+         * @description Descriptor plus the verified caller's current rollout eligibility.
+         */
+        GoogleCapabilityMetadata: {
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
+            /** Title */
+            title: string;
+            /** User Outcome */
+            user_outcome: string;
+            /** Required Scopes */
+            required_scopes: components["schemas"]["GoogleCapabilityScope"][];
+            /** Eligible Resource Types */
+            eligible_resource_types: string[];
+            /**
+             * Rollout Phase
+             * @enum {string}
+             */
+            rollout_phase: "available" | "internal_test";
+            /** Native Tool Actions */
+            native_tool_actions: string[];
+            /** Mcp Tool Actions */
+            mcp_tool_actions: string[];
+            /** Limitation */
+            limitation: string;
+            /** Remedy */
+            remedy: string;
+            /** Eligible */
+            eligible: boolean;
+            /** Admission Error */
+            admission_error?: string | null;
+        };
+        /**
+         * GoogleCapabilityScope
+         * @description One required scope and Google's exact classification for that scope.
+         */
+        GoogleCapabilityScope: {
+            /** Scope */
+            scope: string;
+            /**
+             * Provider Classification
+             * @enum {string}
+             */
+            provider_classification: "non_sensitive" | "verified_sensitive";
+        };
         /** GoogleConnectionCredentialResponse */
         GoogleConnectionCredentialResponse: {
             /** Refresh Token */
@@ -67025,17 +72002,34 @@ export interface components {
             owner_type: string;
             /** Organization Id */
             organization_id?: string | null;
+            /** Target Connection Id */
+            target_connection_id?: string | null;
             /**
              * Connection Purpose
              * @default general
              * @enum {string}
              */
-            connection_purpose?: "contacts_import" | "general" | "google_ads_isolated" | "read_only_sweep";
+            connection_purpose?: "contacts_import" | "general" | "google_ads_isolated" | "google_capability" | "google_products" | "read_only_sweep";
+            /** Capability Key */
+            capability_key?: ("calendar" | "contacts" | "tag_manager" | "tasks" | "youtube_analytics") | null;
+            /** Capability Keys */
+            capability_keys?: ("analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[] | null;
         };
         /** GoogleExchangeResponse */
         GoogleExchangeResponse: {
             /** Connection Id */
             connection_id: string;
+            /** Connected Capability Keys */
+            connected_capability_keys?: ("analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics")[];
+            /** Refused Capability Keys */
+            refused_capability_keys?: components["schemas"]["GoogleProductRefusal"][];
+        };
+        /** GoogleFileRequest */
+        GoogleFileRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** File Id */
+            file_id: string;
         };
         /** GoogleListingCheckBody */
         GoogleListingCheckBody: {
@@ -67104,6 +72098,21 @@ export interface components {
             /** Raw Payload Id */
             raw_payload_id?: string | null;
         };
+        /**
+         * GoogleProductRefusal
+         * @description One selected product this verified caller may not connect yet.
+         */
+        GoogleProductRefusal: {
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "analytics" | "calendar" | "contacts" | "docs" | "drive_files" | "gmail_send" | "search_console" | "sheets" | "slides" | "tag_manager" | "tasks" | "youtube" | "youtube_analytics";
+            /** Error */
+            error: string;
+            /** Message */
+            message: string;
+        };
         /** GoogleTaskItem */
         GoogleTaskItem: {
             /** Task Id */
@@ -67122,6 +72131,8 @@ export interface components {
             parent_task_id: string | null;
             /** Position */
             position: string | null;
+            /** Source Updated At */
+            source_updated_at?: string | null;
         };
         /** GoogleTaskListPreview */
         GoogleTaskListPreview: {
@@ -67131,6 +72142,11 @@ export interface components {
             title: string;
             /** Tasks */
             tasks: components["schemas"]["GoogleTaskItem"][];
+            /**
+             * Has More
+             * @default false
+             */
+            has_more?: boolean;
         };
         /** GoogleTasksPreview */
         GoogleTasksPreview: {
@@ -68896,6 +73912,30 @@ export interface components {
              */
             status_page?: "https://status.hootsuite.com";
         };
+        /**
+         * HostedRuntimeReadiness
+         * @description Can a hosted Claude session start for this person, and if not, why not.
+         */
+        HostedRuntimeReadiness: {
+            /** Available */
+            available: boolean;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "provisionable" | "ready" | "unavailable";
+            /** Reason */
+            reason?: string | null;
+            /** Sandbox Id */
+            sandbox_id?: string | null;
+            /** Box Status */
+            box_status?: string | null;
+            /** Expires At */
+            expires_at?: string | null;
+            in_box?: components["schemas"]["InBoxCapabilities"] | null;
+            /** Active Runtime Ids */
+            active_runtime_ids?: string[];
+        };
         /** HotjarServiceStatus */
         HotjarServiceStatus: {
             /**
@@ -69291,6 +74331,31 @@ export interface components {
             name: string;
             /** Folders */
             folders: string[];
+        };
+        /**
+         * IdempotentDuplicateRunResponse
+         * @description Returned when X-Idempotency-Key matches a prior request.
+         *
+         *     The FE recognizes ``mode='duplicate'`` and switches to polling the
+         *     existing run_id (no fresh stream — the original is already in flight or
+         *     terminal).
+         */
+        IdempotentDuplicateRunResponse: {
+            /** Run Id */
+            run_id: string;
+            /**
+             * Mode
+             * @default duplicate
+             * @constant
+             */
+            mode?: "duplicate";
+            /** Status */
+            status: string;
+            /**
+             * Message
+             * @default Existing run returned for idempotency key
+             */
+            message?: string;
         };
         /**
          * IdentityHealth
@@ -69698,7 +74763,7 @@ export interface components {
             model_id?: string | null;
             /** Settings */
             settings?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
         };
         /** ImpactFinding */
@@ -69714,10 +74779,8 @@ export interface components {
             message: string;
             /** Field */
             field?: string | null;
-            /** Before */
-            before?: unknown | null;
-            /** After */
-            after?: unknown | null;
+            before?: components["schemas"]["JsonValue"] | null;
+            after?: components["schemas"]["JsonValue"] | null;
         };
         /** ImpactPrincipal */
         ImpactPrincipal: {
@@ -69746,6 +74809,10 @@ export interface components {
              * @default 0
              */
             agents_examined?: number;
+            /** Unknown Agent Ids */
+            unknown_agent_ids?: string[];
+            /** Unknown Sentence */
+            unknown_sentence?: string | null;
             /**
              * Dry Run
              * @default false
@@ -69759,8 +74826,30 @@ export interface components {
          * @description There is no batch id on ``agent.definition_version`` — a batch writer
          *     passes the ids it touched. A time window is NOT accepted: it sweeps
          *     unrelated concurrent saves.
+         *
+         *     Inherits ``AcceptsInjectedScope`` (aidream/api/FEATURE.md § extra="forbid"
+         *     bodies MUST accept injected org scope): the frontend ``callApi`` merges
+         *     ``organization_id`` / ``project_id`` / ``task_id`` onto every POST body, and
+         *     without them every call from the app 422'd with ``extra_forbidden``. The read
+         *     does not use them — it is scoped per CALLER through ``agent_mandate_rungs``,
+         *     never by the active organization (db-rules §6: access never depends on it).
          */
         ImpactRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
             /** Agent Ids */
             agent_ids: string[];
             delta?: components["schemas"]["ImpactDelta"] | null;
@@ -69961,6 +75050,31 @@ export interface components {
             why: string;
         };
         /**
+         * InBoxCapabilities
+         * @description The in-box runtime's OWN verdict, forwarded verbatim.
+         *
+         *     The hosted runtime's real probe lives inside the box
+         *     (``GET /api/coding-sessions/claude/capabilities`` on ``:8001``) and is the
+         *     only thing that can answer whether Bash isolation, the bundled CLI and the
+         *     broker credential are actually there. We never restate it in our own words:
+         *     when a box is ready we forward its answer, and when there is no box this is
+         *     ``None`` rather than a guess.
+         */
+        InBoxCapabilities: {
+            /** Available */
+            available: boolean;
+            /** Native Resume */
+            native_resume: boolean;
+            /** Native Fork */
+            native_fork: boolean;
+            /** Bash Available */
+            bash_available: boolean;
+            /** Bash Unavailable Reason */
+            bash_unavailable_reason?: string | null;
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
          * InboundClassification
          * @description One message, one verdict, with the human-readable WHY.
          *
@@ -70029,6 +75143,29 @@ export interface components {
             detail?: {
                 [key: string]: components["schemas"]["JsonValue"];
             };
+        };
+        /**
+         * InboxConnectionResponse
+         * @description Is the connected door open? A `False` here means the surface renders no
+         *     picker at all — an ABSENT control, never a dead one — plus the sentence in
+         *     `how_to_connect`.
+         */
+        InboxConnectionResponse: {
+            /**
+             * Connected
+             * @default false
+             */
+            connected?: boolean;
+            /** Provider */
+            provider?: string | null;
+            /** Account Email */
+            account_email?: string | null;
+            /** Connection Id */
+            connection_id?: string | null;
+            /** Days Back Default */
+            days_back_default?: number | null;
+            /** How To Connect */
+            how_to_connect?: string | null;
         };
         /** InboxEditRequest */
         InboxEditRequest: {
@@ -70154,6 +75291,152 @@ export interface components {
             injection_id: string;
             /** Status */
             status: string;
+        };
+        /**
+         * InboxPreviewRequest
+         * @description Parse a mail export and list its threads — no AI, no writes.
+         */
+        InboxPreviewRequest: {
+            /**
+             * File Id
+             * @description cld_files id of an uploaded mail export (.eml / .mbox / .txt / .zip).
+             */
+            file_id?: string | null;
+            /**
+             * Text
+             * @description A pasted email thread — your reply plus what you were answering.
+             */
+            text?: string | null;
+            /**
+             * Connection Id
+             * @description users.integration_connections id of a connected mailbox that granted read access. Only usable when GET /masterworks/inbox/connection says so.
+             */
+            connection_id?: string | null;
+            /**
+             * Expert Email
+             * @description WHICH address is the Expert's. Defaults to the signed-in account's email; never guessed from a display name.
+             */
+            expert_email?: string | null;
+            /**
+             * Own Replies Only
+             * @description Read only threads this person actually replied in (knob `masterwork.shadow_inbox.own_replies_only`, default on). None = the organization's standing answer.
+             */
+            own_replies_only?: boolean | null;
+            /**
+             * Voice Keys
+             * @description Which voices in these threads are the Expert (from /masterworks/inbox/preview). Used when no address in the thread matches — a mail client's copy labels the person's own message 'me', which is a voice, not an address.
+             */
+            voice_keys?: string[] | null;
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+        };
+        /** InboxPreviewResponse */
+        InboxPreviewResponse: {
+            /** Threads */
+            threads?: components["schemas"]["InboxThreadPreview"][];
+            /**
+             * Expert Email
+             * @default
+             */
+            expert_email?: string;
+            /**
+             * Skipped Files
+             * @default 0
+             */
+            skipped_files?: number;
+            /** Notes */
+            notes?: string[];
+        };
+        /** InboxThreadPreview */
+        InboxThreadPreview: {
+            /** Key */
+            key: string;
+            /** Subject */
+            subject: string;
+            /** Participants */
+            participants?: string[];
+            /**
+             * Messages
+             * @default 0
+             */
+            messages?: number;
+            /** Last At */
+            last_at?: string | null;
+            /**
+             * Snippet
+             * @default
+             */
+            snippet?: string;
+            /**
+             * You Replied
+             * @default false
+             */
+            you_replied?: boolean;
+            /**
+             * Has Given Draft
+             * @default false
+             */
+            has_given_draft?: boolean;
+            /** Nothing To Shadow */
+            nothing_to_shadow?: string | null;
+            /**
+             * Your Words
+             * @default 0
+             */
+            your_words?: number;
+            /** Voices */
+            voices?: components["schemas"]["InboxVoicePreview"][];
+            /**
+             * Needs Voice Pick
+             * @default false
+             */
+            needs_voice_pick?: boolean;
+        };
+        /**
+         * InboxVoicePreview
+         * @description One voice in a thread, so the Expert can say which one is them.
+         *
+         *     The Meeting Scavenger's `MeetingSpeakerPreview` for the inbox lane — same
+         *     question, same shape, so one picker component answers both.
+         */
+        InboxVoicePreview: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /**
+             * Address
+             * @default
+             */
+            address?: string;
+            /**
+             * Messages
+             * @default 0
+             */
+            messages?: number;
+            /**
+             * Words
+             * @default 0
+             */
+            words?: number;
+            /**
+             * Is You
+             * @default false
+             */
+            is_you?: boolean;
         };
         /** IncidentIoServiceStatus */
         IncidentIoServiceStatus: {
@@ -70488,6 +75771,64 @@ export interface components {
             redistill?: "refuse" | "replace";
         };
         /**
+         * IngestDripAnswersRequest
+         * @description Distil a run of the Expert's own daily answers into rules.
+         *
+         *     The `daily_drip` Approach. One short question a day about the work they
+         *     actually did — what they decided that a new hire would have got wrong, what
+         *     they fixed in someone else's work, what they refused and why — answered by
+         *     talking or typing on their phone. This reads the days that have an answer
+         *     and no distillation run against them yet.
+         *
+         *     The days themselves live on `platform.rulebook.metadata.daily_drip` and are
+         *     written by the send pass and by the client direct (a pure UI<->DB write, no
+         *     Python hop) — this request only names WHICH Rulebook, and optionally which
+         *     days.
+         *
+         *     Human-first invariant, identical to every other lane: drafts only.
+         */
+        IngestDripAnswersRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Days
+             * @description Which days to read, as YYYY-MM-DD. Omitted (the normal case) means every ANSWERED day no run has read yet — a run never re-reads a morning it already distilled.
+             */
+            days?: string[] | null;
+            /**
+             * Source Note
+             * @description What this run of days is about ('my first month on the new line').
+             */
+            source_note?: string | null;
+            /**
+             * Approach
+             * @description Registered Distillation Approach key (platform.approach) stamped on every rule's source_ref.approach. Defaults to 'daily_drip'.
+             */
+            approach?: string | null;
+            /**
+             * Source Ref Extra
+             * @description Extra provenance keys merged into every rule's source_ref. Never overrides the lane's own keys.
+             */
+            source_ref_extra?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+        };
+        /**
          * IngestDumpRequest
          * @description Distill a RESOURCE DUMP — 'here is everything, figure it out' — into
          *     draft rules. Each resource (a note, transcript, recording session, file,
@@ -70624,6 +75965,266 @@ export interface components {
              */
             redistill?: "refuse" | "replace";
         };
+        /**
+         * IngestInboxRequest
+         * @description Distill the difference between the Expert's real replies and the reply a
+         *     competent generalist would have written, into DRAFT rules.
+         *
+         *     Human-first invariant, identical to every other lane: drafts only.
+         */
+        IngestInboxRequest: {
+            /**
+             * File Id
+             * @description cld_files id of an uploaded mail export (.eml / .mbox / .txt / .zip).
+             */
+            file_id?: string | null;
+            /**
+             * Text
+             * @description A pasted email thread — your reply plus what you were answering.
+             */
+            text?: string | null;
+            /**
+             * Connection Id
+             * @description users.integration_connections id of a connected mailbox that granted read access. Only usable when GET /masterworks/inbox/connection says so.
+             */
+            connection_id?: string | null;
+            /**
+             * Expert Email
+             * @description WHICH address is the Expert's. Defaults to the signed-in account's email; never guessed from a display name.
+             */
+            expert_email?: string | null;
+            /**
+             * Own Replies Only
+             * @description Read only threads this person actually replied in (knob `masterwork.shadow_inbox.own_replies_only`, default on). None = the organization's standing answer.
+             */
+            own_replies_only?: boolean | null;
+            /**
+             * Voice Keys
+             * @description Which voices in these threads are the Expert (from /masterworks/inbox/preview). Used when no address in the thread matches — a mail client's copy labels the person's own message 'me', which is a voice, not an address.
+             */
+            voice_keys?: string[] | null;
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Thread Keys
+             * @description Thread keys to shadow (from the preview). None = every thread found.
+             */
+            thread_keys?: string[] | null;
+            /**
+             * Days Back
+             * @description Connected door only: how far back to look for threads you replied to (knob `masterwork.shadow_inbox.days_back`, default 30).
+             */
+            days_back?: number | null;
+            /**
+             * Source Note
+             * @description Where this came from ('the Northline quote thread, Sept 2026').
+             */
+            source_note?: string | null;
+            /**
+             * Redistill
+             * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
+             * @default refuse
+             * @enum {string}
+             */
+            redistill?: "refuse" | "replace";
+        };
+        /**
+         * IngestMarkupRequest
+         * @description THE RED-PEN LANE: a piece of someone else's work plus the Expert's
+         *     corrections on it, distilled into DRAFT rules.
+         *
+         *     The `red_pen` Approach. Unlike every other lane, the source is material the
+         *     Expert DISAGREES with — the rule lives in the disagreement, so the unit
+         *     distilled is the correction (span + the Expert's words + the moment), never
+         *     a window of the work's own words.
+         *
+         *     Human-first invariant, identical to every other lane: draft only.
+         */
+        IngestMarkupRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Work Text
+             * @description The piece of work being reviewed, verbatim.
+             */
+            work_text: string;
+            /**
+             * Corrections
+             * @description The Expert's corrections, in the order they made them. The FLOOR is the `min_corrections_before_distilling` knob, enforced server-side; this bound only refuses an empty list.
+             */
+            corrections: components["schemas"]["WorkCorrection"][];
+            /**
+             * Source Note
+             * @description What the work is ('Dan's draft launch email', 'the Q3 proposal').
+             */
+            source_note?: string | null;
+            /**
+             * Redistill
+             * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
+             * @default refuse
+             * @enum {string}
+             */
+            redistill?: "refuse" | "replace";
+        };
+        /**
+         * IngestMeetingRequest
+         * @description Scavenge meetings for the Expert's own judgment moments.
+         *
+         *     The two knobs (`masterwork_distillation.meeting_own_turns_only` and
+         *     `.meeting_min_moment_words`) supply the org's standing answer; a field left
+         *     None here means "use it". A value overrides it FOR THIS RUN only — the knob
+         *     row stays the authority for the next one.
+         */
+        IngestMeetingRequest: {
+            /**
+             * Meeting Ids
+             * @description communication.meet_meetings ids the caller may read.
+             */
+            meeting_ids?: string[] | null;
+            /**
+             * File Id
+             * @description files.files id of an uploaded transcript or recording.
+             */
+            file_id?: string | null;
+            /**
+             * Text
+             * @description A pasted meeting transcript.
+             */
+            text?: string | null;
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Speaker Keys
+             * @description Which voices are the Expert (from /masterworks/meeting/preview). Required when own_turns_only resolves true and the source cannot prove which speaker the caller is.
+             */
+            speaker_keys?: string[] | null;
+            /**
+             * Own Turns Only
+             * @description Scavenge only the Expert's own turns (the default), or every speaker in the room. None = this organization's knob value.
+             */
+            own_turns_only?: boolean | null;
+            /**
+             * Min Moment Words
+             * @description The shortest continuous turn read as a judgment moment. None = this organization's knob value.
+             */
+            min_moment_words?: number | null;
+            /**
+             * Source Note
+             * @description Optional label ('the Tuesday supplier reviews').
+             */
+            source_note?: string | null;
+            /**
+             * Redistill
+             * @description What to do when this Rulebook already holds rules distilled from the same source: 'refuse' (default) stops and reports it in the terminal payload's `already_distilled`; 'replace' removes the earlier pass's draft rules and keeps this one.
+             * @default refuse
+             * @enum {string}
+             */
+            redistill?: "refuse" | "replace";
+        };
+        /**
+         * IngestPredictionsRequest
+         * @description Distil the Expert's own SCORED predictions into rules and boundaries.
+         *
+         *     The `prediction_ledger` Approach. The Expert called real open cases in
+         *     their work — "this claim is fraudulent", "this candidate will accept" —
+         *     with a confidence and one line of why, before the outcome existed. This
+         *     reads the calls whose outcomes are now IN: the whys behind calls that held
+         *     become rules carrying the prediction and its outcome as evidence, and the
+         *     whys behind calls that missed become boundary findings the Expert is asked
+         *     about.
+         *
+         *     The ledger itself lives on `platform.rulebook.metadata.prediction_ledger`
+         *     and is written by the client direct (a pure UI↔DB write, no Python hop) —
+         *     this request only names WHICH Rulebook, and optionally which entries.
+         *
+         *     Human-first invariant, identical to every other lane: drafts only.
+         */
+        IngestPredictionsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Entry Ids
+             * @description Which ledger entries to read. Omitted (the normal case) means every RESOLVED entry no run has read yet — a run never re-reads a call it already distilled.
+             */
+            entry_ids?: string[] | null;
+            /**
+             * Source Note
+             * @description What these calls are about ('Q3 fraud queue', 'autumn hiring round').
+             */
+            source_note?: string | null;
+            /**
+             * Approach
+             * @description Registered Distillation Approach key (platform.approach) stamped on every rule's source_ref.approach. Defaults to 'prediction_ledger'.
+             */
+            approach?: string | null;
+            /**
+             * Source Ref Extra
+             * @description Extra provenance keys merged into every rule's source_ref. Never overrides the lane's own keys.
+             */
+            source_ref_extra?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+        };
         /** IngestReport */
         IngestReport: {
             /** Parsed */
@@ -70682,6 +76283,44 @@ export interface components {
             runs: components["schemas"]["IngestRunResponse"][];
             /** Count */
             count: number;
+        };
+        /**
+         * IngestSortRequest
+         * @description Distil ONE answered boundary question into DRAFT rules.
+         *
+         *     Submitted the moment the Expert finishes speaking, one question at a time,
+         *     so a session abandoned after two answers keeps both. Human-first invariant,
+         *     identical to every other lane: drafts only.
+         */
+        IngestSortRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            question: components["schemas"]["SortBoundaryQuestion"];
+            /**
+             * Reason
+             * @description The Expert's own words about what separates them — spoken or typed. THE RULE CANDIDATE, and the only text a rule's quote may be verified against.
+             */
+            reason: string;
+            /**
+             * Source Note
+             * @description Where this round came from; defaults to the question itself.
+             */
+            source_note?: string | null;
         };
         /**
          * IngestSourceRequest
@@ -70841,6 +76480,50 @@ export interface components {
              * @enum {string}
              */
             redistill?: "refuse" | "replace";
+        };
+        /**
+         * IngestTriadRequest
+         * @description Distill ONE played Triad card into DRAFT rules.
+         *
+         *     Submitted the moment the Expert swipes, one card at a time, so a session
+         *     abandoned after three cards keeps all three. Human-first invariant,
+         *     identical to every other lane: drafts only.
+         */
+        IngestTriadRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            triad: components["schemas"]["TriadPayload"];
+            /**
+             * Pick
+             * @description Which item the Expert chose (best one, or odd one out).
+             * @enum {string}
+             */
+            pick: "a" | "b" | "c";
+            /**
+             * Reason
+             * @description The Expert's own one line about why — spoken or typed. THE RULE CANDIDATE, and the only text a rule's quote may be verified against.
+             */
+            reason: string;
+            /**
+             * Source Note
+             * @description Where this card came from; defaults to the card's own question.
+             */
+            source_note?: string | null;
         };
         /**
          * IngestUnfoldingRequest
@@ -72680,6 +78363,21 @@ export interface components {
         };
         /** KeywordSerpIntentBody */
         KeywordSerpIntentBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
             /** Google Target Id */
             google_target_id: string;
             /** Brave Target Id */
@@ -73267,6 +78965,31 @@ export interface components {
             truncated?: boolean;
             /** Step */
             step?: number | null;
+        };
+        /** KindSubmitSummary */
+        KindSubmitSummary: {
+            /**
+             * Pending
+             * @default 0
+             */
+            pending?: number;
+            /**
+             * Enqueued
+             * @default 0
+             */
+            enqueued?: number;
+            /**
+             * Skipped In Flight
+             * @default 0
+             */
+            skipped_in_flight?: number;
+            /**
+             * Skipped No Owner
+             * @default 0
+             */
+            skipped_no_owner?: number;
+            /** Errors */
+            errors?: string[];
         };
         /**
          * KindSurfaceDescriptor
@@ -73886,69 +79609,6 @@ export interface components {
              */
             status_page?: "https://status.landr.com";
         };
-        /** LandscapeBrief */
-        LandscapeBrief: {
-            /** Id */
-            id: string;
-            /** Site Id */
-            site_id: string;
-            /** Status */
-            status: string;
-            /** Brief Markdown */
-            brief_markdown: string;
-            /** Facts */
-            facts?: {
-                [key: string]: components["schemas"]["JsonValue"];
-            };
-            /** Service Lines */
-            service_lines?: components["schemas"]["ServiceLine"][];
-            /** Agent Confidence */
-            agent_confidence?: number | null;
-            /**
-             * Confidence Reason
-             * @default
-             */
-            confidence_reason?: string;
-            /**
-             * Guidance
-             * @default
-             */
-            guidance?: string;
-            /** Auto Accept At */
-            auto_accept_at?: string | null;
-            /** Reviewed At */
-            reviewed_at?: string | null;
-            /** Generated At */
-            generated_at?: string | null;
-        };
-        /** LandscapeBriefResponse */
-        LandscapeBriefResponse: {
-            brief?: components["schemas"]["LandscapeBrief"] | null;
-        };
-        /** LandscapeBriefRulingBody */
-        LandscapeBriefRulingBody: {
-            /**
-             * Organization Id
-             * @description Organization context for the request; omitted to use the authenticated context.
-             */
-            organization_id?: string | null;
-            /**
-             * Project Id
-             * @description Optional associated project selected by the caller.
-             */
-            project_id?: string | null;
-            /**
-             * Task Id
-             * @description Optional associated task selected by the caller.
-             */
-            task_id?: string | null;
-            /** Guidance */
-            guidance: string;
-            /** Service Lines */
-            service_lines?: components["schemas"]["ServiceLine"][] | null;
-            /** Brief Markdown */
-            brief_markdown?: string | null;
-        };
         /** LaserficheServiceStatus */
         LaserficheServiceStatus: {
             /**
@@ -74091,6 +79751,27 @@ export interface components {
             indicator: "critical" | "major" | "minor" | "none";
             /** Operational */
             operational: boolean;
+        };
+        /**
+         * LauncherConversation
+         * @description One of a person's conversations with one launcher target.
+         */
+        LauncherConversation: {
+            /** Conversation Id */
+            conversation_id: string;
+            /** Generation */
+            generation: number;
+            /** Title */
+            title: string;
+            /** Started At */
+            started_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+            /**
+             * Message Count
+             * @default 0
+             */
+            message_count?: number;
         };
         /**
          * LeakRule
@@ -75540,6 +81221,39 @@ export interface components {
             /** Plain Text Preview */
             plain_text_preview: string;
         };
+        /** LockStormResponse */
+        LockStormResponse: {
+            /** Verdict */
+            verdict: string;
+            /** Checked At */
+            checked_at?: string | null;
+            /**
+             * Waiters
+             * @default 0
+             */
+            waiters?: number;
+            /** Longest Wait Seconds */
+            longest_wait_seconds?: number | null;
+            /** Waiter Count Threshold */
+            waiter_count_threshold?: number | null;
+            /** Waiting Seconds Threshold */
+            waiting_seconds_threshold?: number | null;
+            /**
+             * Relations
+             * @default []
+             */
+            relations?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /** Root Blocker */
+            root_blocker?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            } | null;
+            /** Note */
+            note?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** LogFileListResponse */
         LogFileListResponse: {
             /** Files */
@@ -76728,6 +82442,47 @@ export interface components {
             /** Sentence */
             sentence: string;
         };
+        /**
+         * MandatePatrolSection
+         * @description The patrol's own state and running cost (Arman, 2026-09-17: *"if there is
+         *     a cost, make sure it's tracked and easy for me to see"*).
+         */
+        MandatePatrolSection: {
+            /** Tool Name */
+            tool_name: string;
+            /** Task Id */
+            task_id: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Schedule */
+            schedule: string | null;
+            /** Trigger Enabled */
+            trigger_enabled: boolean;
+            /** Next Due At */
+            next_due_at: string | null;
+            /** Last Run At */
+            last_run_at: string | null;
+            /** Enabled At */
+            enabled_at: string | null;
+            /** Runs */
+            runs: components["schemas"]["PatrolRunRow"][];
+            /** Runs Counted */
+            runs_counted: number;
+            /** Runs Failed */
+            runs_failed: number;
+            /** Cumulative Wall Seconds */
+            cumulative_wall_seconds: number;
+            /** Cumulative Vcpu Seconds */
+            cumulative_vcpu_seconds: number;
+            /** Cumulative Compute Cost Usd */
+            cumulative_compute_cost_usd: number | null;
+            /** Cumulative Model Spend Usd */
+            cumulative_model_spend_usd: number;
+            /** Cost Note */
+            cost_note: string;
+            /** Read Error */
+            read_error?: string | null;
+        };
         /** MandateProvenanceReport */
         MandateProvenanceReport: {
             /** Mandate Key */
@@ -76763,6 +82518,7 @@ export interface components {
             open_finding_count: number;
             /** Unverified Repos */
             unverified_repos: string[];
+            patrol?: components["schemas"]["MandatePatrolSection"] | null;
             /**
              * Source
              * @default mandate.reference
@@ -77533,6 +83289,86 @@ export interface components {
              */
             max_steps?: number;
         };
+        /**
+         * MapPagesRequest
+         * @description The one body `POST /seo/sites/{site_id}/map/pages` takes.
+         */
+        MapPagesRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Refresh
+             * @default true
+             */
+            refresh?: boolean;
+            /** Limit */
+            limit?: number | null;
+            /** Batch Size */
+            batch_size?: number | null;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+        };
+        /**
+         * MapRegionsRequest
+         * @description The one body `POST /seo/sites/{site_id}/map/regions` takes.
+         */
+        MapRegionsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Derive Values
+             * @default true
+             */
+            derive_values?: boolean;
+            /**
+             * Bind Pages
+             * @default true
+             */
+            bind_pages?: boolean;
+            /** Limit */
+            limit?: number | null;
+            /**
+             * Retire Geography Topics
+             * @default false
+             */
+            retire_geography_topics?: boolean;
+            /** Geography Topic Slugs */
+            geography_topic_slugs?: string[] | null;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+        };
         /** MappingIssue */
         MappingIssue: {
             /** Edge Id */
@@ -77890,6 +83726,8 @@ export interface components {
              * @default 0
              */
             tool_count?: number;
+            /** Attachable */
+            attachable?: components["schemas"]["AttachableKindInfo"][];
         };
         /**
          * McpCatalogRefreshResult
@@ -78365,6 +84203,87 @@ export interface components {
         MeetingEndResponse: {
             /** Ended At */
             ended_at: string;
+        };
+        /** MeetingPreviewItem */
+        MeetingPreviewItem: {
+            /** Key */
+            key: string;
+            /** Title */
+            title: string;
+            /** Origin */
+            origin: string;
+            /** Slug */
+            slug?: string | null;
+            /** Started At */
+            started_at?: string | null;
+            /** Turns */
+            turns: number;
+            /** Speakers */
+            speakers: components["schemas"]["MeetingSpeakerPreview"][];
+        };
+        /**
+         * MeetingPreviewRequest
+         * @description Read the transcript(s) and list the voices — no AI, no writes.
+         */
+        MeetingPreviewRequest: {
+            /**
+             * Meeting Ids
+             * @description communication.meet_meetings ids the caller may read.
+             */
+            meeting_ids?: string[] | null;
+            /**
+             * File Id
+             * @description files.files id of an uploaded transcript or recording.
+             */
+            file_id?: string | null;
+            /**
+             * Text
+             * @description A pasted meeting transcript.
+             */
+            text?: string | null;
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+        };
+        /** MeetingPreviewResponse */
+        MeetingPreviewResponse: {
+            /** Meetings */
+            meetings?: components["schemas"]["MeetingPreviewItem"][];
+            /** Notes */
+            notes?: string[];
+        };
+        /**
+         * MeetingSpeakerPreview
+         * @description One voice in the room, so the Expert can say which one is them.
+         */
+        MeetingSpeakerPreview: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+            /** Turns */
+            turns: number;
+            /** Words */
+            words: number;
+            /** User Id */
+            user_id?: string | null;
+            /**
+             * Is You
+             * @default false
+             */
+            is_you?: boolean;
         };
         /**
          * MemServiceStatus
@@ -80295,6 +86214,68 @@ export interface components {
             /** Asset Page */
             asset_page: string;
         };
+        /** NativeErrorDetail */
+        NativeErrorDetail: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "credential_unavailable" | "invalid_request" | "item_unavailable" | "native_session_required" | "native_unavailable" | "organization_required" | "request_too_large";
+        };
+        /** NativeErrorOut */
+        NativeErrorOut: {
+            detail: components["schemas"]["NativeErrorDetail"];
+        };
+        /** NativeMatchOut */
+        NativeMatchOut: {
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Request Identifier Index */
+            request_identifier_index: number;
+        };
+        /** NativeMatchesIn */
+        NativeMatchesIn: {
+            /** Identifiers */
+            identifiers: components["schemas"]["NativeServiceIdentifierIn"][];
+        };
+        /** NativeMatchesOut */
+        NativeMatchesOut: {
+            /** Matches */
+            matches: components["schemas"]["NativeMatchOut"][];
+            /** Truncated */
+            truncated: boolean;
+            /** Reason */
+            reason: "no_service_identifiers" | null;
+        };
+        /** NativeMaterializeIn */
+        NativeMaterializeIn: {
+            /** Identifiers */
+            identifiers: components["schemas"]["NativeServiceIdentifierIn"][];
+            /** Request Identifier Index */
+            request_identifier_index: number;
+        };
+        /** NativeMaterializeOut */
+        NativeMaterializeOut: {
+            /** Username */
+            username: string;
+            /** Password */
+            password: string;
+        };
+        /** NativeServiceIdentifierIn */
+        NativeServiceIdentifierIn: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "domain" | "url";
+            /** Identifier */
+            identifier: string;
+        };
         /** NavLink */
         NavLink: {
             /** Label */
@@ -80398,6 +86379,13 @@ export interface components {
             http_status?: number | null;
             /** Text Preview */
             text_preview?: string | null;
+        };
+        /** NeedsDriveBody */
+        NeedsDriveBody: {
+            /** Reason */
+            reason: string;
+            /** Note */
+            note: string;
         };
         /**
          * NeighbourSelection
@@ -80731,6 +86719,10 @@ export interface components {
             spec_type: string;
             /** Backing Agent Id */
             backing_agent_id?: string | null;
+            /** Wizard */
+            wizard?: "run_agent" | null;
+            /** Wizard Step */
+            wizard_step?: ("agent" | "variables") | null;
             /**
              * Conversation Id
              * @description The ONE stored Steward conversation for this person and this step (deterministic; the studio continues it with is_new=false when conversation_exists, else starts it).
@@ -80741,6 +86733,17 @@ export interface components {
              * @default false
              */
             conversation_exists?: boolean;
+            /**
+             * Conversation Generation
+             * @description Which conversation on this person's ladder for this step is open.
+             * @default 0
+             */
+            conversation_generation?: number;
+            /**
+             * Conversations
+             * @description Every conversation this person holds with this step's Steward, most recently touched first. Reopen one by sending its `conversation_id` back as the `conversation_id` query — the client never invents one.
+             */
+            conversations?: components["schemas"]["LauncherConversation"][];
             /**
              * Messages
              * @description The stored transcript so far, oldest first — the panel reopens with it.
@@ -81469,6 +87472,11 @@ export interface components {
             params: string[];
             /** Where */
             where: string;
+        };
+        /** OAuthIncidentResponse */
+        OAuthIncidentResponse: {
+            /** Status */
+            status: string;
         };
         /**
          * OAuthTokenPersistRequest
@@ -85110,6 +91118,38 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /**
+         * PartyKindBatchRequest
+         * @description ``organization_id`` is the caller's injected app context, never the target;
+         *     the review queue is platform data, so the target org is its own field.
+         */
+        PartyKindBatchRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Queue Organization Id
+             * @description Only this organization's queue; omit for every organization.
+             */
+            queue_organization_id?: string | null;
+            /**
+             * Limit
+             * @default 25
+             */
+            limit?: number;
+        };
         /** PatchFolderRequest */
         PatchFolderRequest: {
             /**
@@ -85155,6 +91195,71 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.patreon.com/";
+        };
+        /**
+         * PatrolRunRow
+         * @description ONE `mandate_reference_patrol` run, and what it cost.
+         *
+         *     Every number here is READ off `scheduler.sch_run` — `result_metadata.cost`,
+         *     written by the patrol itself (`reference_patrol.RunAccounting`). Nothing on
+         *     this row is recomputed here, so the board and the run ledger cannot drift.
+         */
+        PatrolRunRow: {
+            /** Run Id */
+            run_id: string;
+            /** Status */
+            status: string;
+            /** Due At */
+            due_at: string | null;
+            /** Started At */
+            started_at: string | null;
+            /** Finished At */
+            finished_at: string | null;
+            /** Wall Seconds */
+            wall_seconds: number | null;
+            /**
+             * Seconds Source
+             * @enum {string}
+             */
+            seconds_source: "derived_from_timestamps" | "recorded" | "unknown";
+            /** Cpu Seconds */
+            cpu_seconds: number | null;
+            /** Vcpu Seconds */
+            vcpu_seconds: number | null;
+            /** Cpu Count Source */
+            cpu_count_source: string | null;
+            /** Compute Cost Usd */
+            compute_cost_usd: number | null;
+            /** Compute Cost Note */
+            compute_cost_note: string | null;
+            /** Model Spend Usd */
+            model_spend_usd: number | null;
+            /** Model Spend Evidence */
+            model_spend_evidence: string | null;
+            /** Revision */
+            revision: string | null;
+            /** Rows Submitted */
+            rows_submitted: number | null;
+            /** Findings */
+            findings: number | null;
+            /** Error Rows Filed */
+            error_rows_filed: number | null;
+            /** Error Rows Resolved */
+            error_rows_resolved: number | null;
+            /** Error Rows Request Id */
+            error_rows_request_id: string | null;
+            /** Git Clone Bytes */
+            git_clone_bytes: number | null;
+            /** Spend Row */
+            spend_row: string | null;
+            /** Failed Legs */
+            failed_legs: string[];
+            /** Summary */
+            summary: string | null;
+            /** Error Message */
+            error_message: string | null;
+            /** Cost Recorded */
+            cost_recorded: boolean;
         };
         /** PauseRequest */
         PauseRequest: {
@@ -85876,6 +91981,18 @@ export interface components {
             unresolved_errors?: number;
             /** Last Error At */
             last_error_at?: string | null;
+        };
+        /**
+         * PersonCandidate
+         * @description One existing Person a Google contact resolves to. Enough to open it.
+         */
+        PersonCandidate: {
+            /** Person Id */
+            person_id: string;
+            /** Person Name */
+            person_name: string;
+            /** Matched By */
+            matched_by: string;
         };
         /** PersonalizeBatchSummary */
         PersonalizeBatchSummary: {
@@ -88284,6 +94401,68 @@ export interface components {
              */
             error?: string | null;
         };
+        /**
+         * PredictionLedgerResponse
+         * @description What a surface needs to render the Prediction Ledger honestly.
+         *
+         *     Every number here is DERIVED from the entries on
+         *     `platform.rulebook.metadata.prediction_ledger` at read time — nothing about
+         *     a score is stored, so the readout can never disagree with the facts it came
+         *     from (`services/distillation/prediction_ledger.py`).
+         */
+        PredictionLedgerResponse: {
+            /** Rulebook Id */
+            rulebook_id: string;
+            /** Resolved */
+            resolved: number;
+            /** Open */
+            open: number;
+            /** Overdue */
+            overdue: number;
+            /** Correct */
+            correct: number;
+            /** Brier */
+            brier?: number | null;
+            /**
+             * Buckets
+             * @default []
+             */
+            buckets?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+            /**
+             * Earliest Open Due At
+             * @default
+             */
+            earliest_open_due_at?: string;
+            /**
+             * Ready To Distill
+             * @default 0
+             */
+            ready_to_distill?: number;
+            /**
+             * Min Resolved To Distill
+             * @default 5
+             */
+            min_resolved_to_distill?: number;
+            /**
+             * Reminder Cadence Hours
+             * @default 24
+             */
+            reminder_cadence_hours?: number;
+            /**
+             * Voice Default On
+             * @default true
+             */
+            voice_default_on?: boolean;
+            /**
+             * Boundaries
+             * @default []
+             */
+            boundaries?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            }[];
+        };
         /** PrefectServiceStatus */
         PrefectServiceStatus: {
             /**
@@ -88367,6 +94546,17 @@ export interface components {
                 [key: string]: number;
             };
         };
+        /** PresentationResponse */
+        PresentationResponse: {
+            /** File Id */
+            file_id: string;
+            /** Title */
+            title: string;
+            /** Slides */
+            slides: components["schemas"]["SlideRow"][];
+            /** Slides With Notes */
+            slides_with_notes: number;
+        };
         /**
          * PresentationSpec
          * @description Canonical AI-authorable shape for a PowerPoint deck (.pptx).
@@ -88430,6 +94620,8 @@ export interface components {
              * @description Logical path the file will live at in cloud_files
              */
             file_path: string;
+            /** Expected Checksum */
+            expected_checksum?: string | null;
             /** Content Type */
             content_type?: string | null;
             /** Expected Size Bytes */
@@ -89330,6 +95522,98 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.prismic.io/";
+        };
+        /**
+         * ProbeRound
+         * @description ONE round of the Bad Example probe, as the client holds it.
+         *
+         *     The client is the only thing that knows what is on screen, so the session
+         *     rides the request instead of a server-side session row — the same reason
+         *     the Triad submits one card at a time. Every field here was either produced
+         *     by the server (the example) or typed/dictated by the Expert (the critique);
+         *     nothing is derived.
+         */
+        ProbeRound: {
+            /**
+             * Example Title
+             * @default
+             */
+            example_title?: string;
+            /**
+             * Example Body
+             * @description The plausible-but-wrong work exactly as it was shown.
+             * @default
+             */
+            example_body?: string;
+            /**
+             * Probe Label
+             * @description The boundary this variant probed, as the generator named it. Carried back so the next round cannot re-probe ground already covered.
+             * @default
+             */
+            probe_label?: string;
+            /**
+             * Critique
+             * @description The Expert's own words about what is wrong with this example and what they would do instead — spoken or typed. THE RULE CANDIDATE, and the only text a rule's quote may be anchored in. Empty means they have not answered this round yet.
+             * @default
+             */
+            critique?: string;
+        };
+        /**
+         * ProbeRoundRequest
+         * @description Run ONE round of the Bad Example probe.
+         *
+         *     Two things happen in one call, in this order: the Expert's critique of the
+         *     LAST round (the final entry of ``rounds``) is distilled into draft rules,
+         *     and then the next variant is written — unless ``finish`` is set or the
+         *     round cap is reached, in which case the call only distils and reports.
+         *
+         *     Human-first invariant, identical to every other lane: drafts only, never
+         *     auto-activated.
+         */
+        ProbeRoundRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Case Brief
+             * @description What kind of work to fake, in the Expert's own words — the case, task or deliverable they handle. The one thing the Expert has to supply.
+             */
+            case_brief: string;
+            /**
+             * Rounds
+             * @description Every round of this session so far, oldest first. Empty starts the probe. The LAST entry is the one whose critique is distilled by this call.
+             */
+            rounds?: components["schemas"]["ProbeRound"][];
+            /**
+             * Finish
+             * @description The Expert said 'I'd never see that' — distil the last answer and stop instead of writing another variant.
+             * @default false
+             */
+            finish?: boolean;
+            /**
+             * Round Cap
+             * @description Lower the number of rounds for THIS session only. Never raises the organization's `masterwork.probe.rounds` knob — the knob is the ceiling.
+             */
+            round_cap?: number | null;
+            /**
+             * Source Note
+             * @description A short label for this probe; defaults to the case brief.
+             */
+            source_note?: string | null;
         };
         /** ProcessBlocksRequest */
         ProcessBlocksRequest: {
@@ -90324,6 +96608,64 @@ export interface components {
              */
             label?: string;
         };
+        /**
+         * ProposeIntentsRequest
+         * @description The one body `POST /seo/sites/{site_id}/map/intents` takes.
+         */
+        ProposeIntentsRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Refresh
+             * @default true
+             */
+            refresh?: boolean;
+            /** Limit */
+            limit?: number | null;
+            /** Batch Size */
+            batch_size?: number | null;
+            /** Topic Slugs */
+            topic_slugs?: string[] | null;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+        };
+        /**
+         * ProposedWriteResponse
+         * @description What a write door answers when the organization requires a review first.
+         *
+         *     🚨 NOTHING WAS WRITTEN. `assist_id` is the row on the approval queue that now
+         *     holds the exact change, and `/approvals/{id}/apply` is the only thing that
+         *     makes it. `mode` is the human-in-the-loop mode the ladder answered with, so a
+         *     screen can name the setting instead of guessing why the write did not happen.
+         */
+        ProposedWriteResponse: {
+            /**
+             * Proposed
+             * @default true
+             * @constant
+             */
+            proposed?: true;
+            /** Assist Id */
+            assist_id: string;
+            /** Mode */
+            mode: string;
+        };
         /** ProposifyServiceStatus */
         ProposifyServiceStatus: {
             /**
@@ -90521,6 +96863,13 @@ export interface components {
             variant: components["schemas"]["QueryVariant"];
             /** Seed Keyword */
             seed_keyword: string;
+        };
+        /** ProviderAttachablePayload */
+        ProviderAttachablePayload: {
+            /** Provider */
+            provider: string;
+            /** Attachable */
+            attachable: components["schemas"]["AttachableKindPayload"][];
         };
         /**
          * ProviderBindingView
@@ -93124,6 +99473,11 @@ export interface components {
             connection_id: string;
             /** File Id */
             file_id: string;
+            /**
+             * Organization Id
+             * @description The organization the Record this registration creates belongs to. Omit it and the file still registers, with no Record and the reason on the response.
+             */
+            organization_id?: string | null;
         };
         /** RegisteredToolSpec */
         RegisteredToolSpec: {
@@ -93389,6 +99743,11 @@ export interface components {
             cost_usd?: number;
             /** Faithful */
             faithful?: boolean | null;
+        };
+        /** RejectApprovalRequest */
+        RejectApprovalRequest: {
+            /** Reason */
+            reason?: string | null;
         };
         /** RejectCandidateRequest */
         RejectCandidateRequest: {
@@ -94674,6 +101033,13 @@ export interface components {
              */
             resolved_at: string;
         };
+        /** ResolveBody */
+        ResolveBody: {
+            /** Input */
+            input: string;
+            /** Adapter */
+            adapter?: ("blog_feed" | "drive_folder" | "google_picked_files" | "onedrive_drive" | "outlook_calendar" | "outlook_mail" | "podcast_rss" | "slide_deck" | "teams_chat" | "youtube") | null;
+        };
         /** ResolveErrorResponse */
         ResolveErrorResponse: {
             /** Id */
@@ -95044,6 +101410,28 @@ export interface components {
             rules_restored?: number | null;
             detail?: components["schemas"]["JsonValue"] | null;
         };
+        /** ResultBody */
+        ResultBody: {
+            /** Ok */
+            ok: boolean;
+            /**
+             * Captured By Rung
+             * @enum {string}
+             */
+            captured_by_rung: "human_drive" | "own_browser";
+            /** Chars */
+            chars?: number | null;
+            /** Title */
+            title?: string | null;
+            /** Text */
+            text?: string | null;
+            /** Html */
+            html?: string | null;
+            /** Final Url */
+            final_url?: string | null;
+            /** Note */
+            note?: string | null;
+        };
         /** ResumeRunRequest */
         ResumeRunRequest: {
             /**
@@ -95227,6 +101615,36 @@ export interface components {
             /** Queue Item Id */
             queue_item_id: string;
         };
+        /**
+         * RevertRequest
+         * @description Same injected scope, same rule: it is never an authority for the write.
+         */
+        RevertRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Batch Id
+             * Format: uuid
+             */
+            batch_id: string;
+            /** Row Id */
+            row_id?: string | null;
+            /** Batch Label */
+            batch_label?: string | null;
+        };
         /** ReviewDetailOut */
         ReviewDetailOut: {
             review: components["schemas"]["ReviewOut"];
@@ -95374,11 +101792,87 @@ export interface components {
              * @constant
              */
             user_confirmed: true;
+            /** Organization Id */
+            organization_id: string;
+            /** Party Id */
+            party_id?: string | null;
+            /** Deal Id */
+            deal_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Contact Point Id */
+            contact_point_id?: string | null;
+            /** Medium Id */
+            medium_id?: string | null;
+            /** Outreach List Id */
+            outreach_list_id?: string | null;
+            /** Identity Id */
+            identity_id?: string | null;
+            /** Cc Attribution */
+            cc_attribution?: components["schemas"]["GmailCcAttribution"][];
+            /** Account Email */
+            account_email?: string | null;
+            /** Drafted By Agent Id */
+            drafted_by_agent_id?: string | null;
+            /** Drafted By Run Id */
+            drafted_by_run_id?: string | null;
+            /** Drafted By Label */
+            drafted_by_label?: string | null;
+            /** Approval Assist Id */
+            approval_assist_id?: string | null;
         };
         /** ReviewedGmailResponse */
         ReviewedGmailResponse: {
             /** Message Id */
             message_id: string;
+            /**
+             * To
+             * @default
+             */
+            to?: string;
+            /** Cc */
+            cc?: string[];
+            /** Interaction Id */
+            interaction_id?: string | null;
+            /** Record Failure */
+            record_failure?: string | null;
+            /** Associations Written */
+            associations_written?: string[];
+            /** Association Failures */
+            association_failures?: string[];
+            /** Sending Event Id */
+            sending_event_id?: string | null;
+            /** Sending Event Gap */
+            sending_event_gap?: string | null;
+            /** Compliance */
+            compliance?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Compliance Class
+             * @default correspondence
+             * @enum {string}
+             */
+            compliance_class?: "commercial_outreach" | "correspondence";
+            /** Footer Text */
+            footer_text?: string | null;
+            /** Exempted Blocks */
+            exempted_blocks?: components["schemas"]["ExemptedSendBlock"][];
+            /**
+             * Bounce Correlation
+             * @default watched
+             * @enum {string}
+             */
+            bounce_correlation?: "not_watched" | "watched";
+            /**
+             * Bounce Correlation Note
+             * @default
+             */
+            bounce_correlation_note?: string;
+            /** Warnings */
+            warnings?: string[];
+            /** Audit Columns Written */
+            audit_columns_written?: string[];
         };
         /**
          * RevisePersonalizationRequest
@@ -95407,6 +101901,30 @@ export interface components {
             fields: {
                 [key: string]: string;
             };
+        };
+        /** RevisionRow */
+        RevisionRow: {
+            /** Revision Id */
+            revision_id: string;
+            /** Modified At */
+            modified_at: string | null;
+            /** Author Name */
+            author_name: string | null;
+            /** Author Is Me */
+            author_is_me: boolean;
+            /** Keep Forever */
+            keep_forever: boolean;
+            /** Size Bytes */
+            size_bytes: number | null;
+        };
+        /** RevisionsResponse */
+        RevisionsResponse: {
+            /** File Id */
+            file_id: string;
+            /** Revisions */
+            revisions: components["schemas"]["RevisionRow"][];
+            /** Truncated */
+            truncated: boolean;
         };
         /** RichDataStoreMember */
         RichDataStoreMember: {
@@ -95714,6 +102232,11 @@ export interface components {
             definition_agent_id: string;
             /** Conversation Id */
             conversation_id: string;
+            /**
+             * Conversation Started
+             * @default false
+             */
+            conversation_started?: boolean;
         };
         /**
          * RolesReadyPayload
@@ -96500,7 +103023,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "cancelled" | "claimed" | "failed" | "queued" | "running" | "skipped" | "success";
+            status: "cancelled" | "claimed" | "failed" | "interrupted" | "queued" | "running" | "skipped" | "success";
             /** Surface */
             surface?: string | null;
             /** Queue */
@@ -97554,6 +104077,27 @@ export interface components {
             /** Admin Bypass Acl */
             admin_bypass_acl: boolean;
         };
+        /** ScopeGapResponse */
+        ScopeGapResponse: {
+            /**
+             * Provider
+             * @constant
+             */
+            provider: "microsoft";
+            /** Granted */
+            granted: string[];
+            /** Gaps */
+            gaps: components["schemas"]["ScopeGapRow"][];
+        };
+        /** ScopeGapRow */
+        ScopeGapRow: {
+            /** Capability */
+            capability: string;
+            /** Scope */
+            scope: string;
+            /** Unlocks */
+            unlocks: string;
+        };
         /**
          * ScopedBody
          * @description Base for every body on this router.
@@ -97811,7 +104355,13 @@ export interface components {
             /** Selector */
             selector?: string | null;
         };
-        /** ScrollResult */
+        /**
+         * ScrollResult
+         * @description A scroll reports the position it started from, not just where it ended.
+         *
+         *     `scroll_y: 0` on its own cannot tell "the page is at the top because it just
+         *     went there" from "nothing moved at all" — the 2026-09-17 defect.
+         */
         ScrollResult: {
             /** Success */
             success: boolean;
@@ -97827,6 +104377,20 @@ export interface components {
             pixels?: number | null;
             /** Scroll Y */
             scroll_y?: number | null;
+            /** Scroll Y Before */
+            scroll_y_before?: number | null;
+            /**
+             * Moved
+             * @default false
+             */
+            moved?: boolean;
+            /**
+             * At End
+             * @default false
+             */
+            at_end?: boolean;
+            /** No Effect Reason */
+            no_effect_reason?: string | null;
         };
         /**
          * ScrubRequest
@@ -98290,7 +104854,7 @@ export interface components {
              * Resource Type
              * @enum {string}
              */
-            resource_type: "google_document" | "google_spreadsheet";
+            resource_type: "google_document" | "google_presentation" | "google_spreadsheet";
             /** File Id */
             file_id: string;
             /** Name */
@@ -98299,6 +104863,45 @@ export interface components {
             mime_type: string;
             /** Web View Link */
             web_view_link: string | null;
+            /** Record Id */
+            record_id?: string | null;
+            /** Record Sync Status */
+            record_sync_status?: string | null;
+            /** Record Sync Status Reason */
+            record_sync_status_reason?: string | null;
+            /** Record Absent Reason */
+            record_absent_reason?: string | null;
+        };
+        /**
+         * Selection
+         * @description Either explicit ids or a filter. Both empty means the whole Library.
+         */
+        Selection: {
+            /** Source Ids */
+            source_ids?: string[] | null;
+            filter?: components["schemas"]["SelectionFilter"] | null;
+        };
+        /**
+         * SelectionFilter
+         * @description A selection expressed as a filter, so "all 1,000" never travels as 1,000 ids.
+         */
+        SelectionFilter: {
+            /** Media Kind */
+            media_kind?: ("deciding" | "live" | "long" | "short" | "unknown")[] | null;
+            /** Transcript Status */
+            transcript_status?: ("failed" | "none" | "queued" | "ready" | "running" | "skipped")[] | null;
+            /** Has Captions */
+            has_captions?: boolean | null;
+            /** Published After */
+            published_after?: string | null;
+            /** Published Before */
+            published_before?: string | null;
+            /** Min Duration Seconds */
+            min_duration_seconds?: number | null;
+            /** Max Duration Seconds */
+            max_duration_seconds?: number | null;
+            /** Q */
+            q?: string | null;
         };
         /**
          * SemanticScholarPaperResult
@@ -98384,6 +104987,53 @@ export interface components {
             /** Provider Message Id */
             provider_message_id: string;
         };
+        /** SendToRulebookBody */
+        SendToRulebookBody: {
+            /** Rulebook Id */
+            rulebook_id: string;
+            /** Item Ids */
+            item_ids?: string[] | null;
+            /** Filter */
+            filter?: {
+                [key: string]: unknown;
+            } | null;
+            /** Confirmed Sentence */
+            confirmed_sentence: string;
+        };
+        /**
+         * SendTodaysDripRequest
+         * @description Ask this Rulebook's owner today's question NOW.
+         *
+         *     The on-demand door the product's own "send it now" button uses, and the
+         *     same body an operator dispatches by hand. It is NOT a second sender: it
+         *     calls exactly the pass the scheduler calls, narrowed to one Rulebook, so
+         *     the day row, the idempotence and the channel ladder are identical.
+         */
+        SendTodaysDripRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Force
+             * @description Skip the 'is it their hour yet' check. It never skips the day row: a forced send on a day already asked still asks nothing.
+             * @default true
+             */
+            force?: boolean;
+        };
         /**
          * SendingEventRecord
          * @description One line of the audit trail: who sent what to whom, and what happened.
@@ -98439,6 +105089,13 @@ export interface components {
              * @enum {string}
              */
             status: "disabled" | "draft" | "paused" | "ready" | "verifying" | "warming";
+            /**
+             * Purpose
+             * @enum {string}
+             */
+            purpose: "correspondence" | "outreach";
+            /** Purpose Note */
+            purpose_note: string;
             /** Domain Verified */
             domain_verified: boolean;
             /** Spf Pass */
@@ -98535,6 +105192,13 @@ export interface components {
              * @enum {string}
              */
             status: "disabled" | "draft" | "paused" | "ready" | "verifying" | "warming";
+            /**
+             * Purpose
+             * @enum {string}
+             */
+            purpose: "correspondence" | "outreach";
+            /** Purpose Note */
+            purpose_note: string;
             /** Domain Verified */
             domain_verified: boolean;
             /** Spf Pass */
@@ -98595,6 +105259,11 @@ export interface components {
              * @default 0
              */
             ready_identity_count?: number;
+            /**
+             * Correspondence Identity Count
+             * @default 0
+             */
+            correspondence_identity_count?: number;
         };
         /**
          * SendingRefusal
@@ -98907,6 +105576,9 @@ export interface components {
          *     disposition and Southern-California-only for small-business e-waste pickup,
          *     so a national ITAD rival is not a competitor for local pickup. Market
          *     overlap is a property of (service line x geography) — never of a company.
+         *
+         *     It is a BRAND fact. A site brief names which of these lines it carries by
+         *     name; it never re-describes them.
          */
         ServiceLine: {
             /** Name */
@@ -99186,6 +105858,21 @@ export interface components {
             op: "set_variable";
             variable: components["schemas"]["VariableSpec"];
         };
+        /** SettingsBody */
+        SettingsBody: {
+            /**
+             * Scope
+             * @default org
+             * @enum {string}
+             */
+            scope?: "library" | "org";
+            /** Library Id */
+            library_id?: string | null;
+            /** Values */
+            values: {
+                [key: string]: unknown;
+            };
+        };
         /** SettingsCapabilityIssue */
         SettingsCapabilityIssue: {
             /** Key */
@@ -99195,10 +105882,8 @@ export interface components {
              * @enum {string}
              */
             action: "clamped" | "const" | "dropped" | "effort_ceiling" | "mapped" | "omitted" | "to_default" | "unsupported_value";
-            /** Canonical Value */
-            canonical_value?: unknown | null;
-            /** Sent Value */
-            sent_value?: unknown | null;
+            canonical_value?: components["schemas"]["JsonValue"] | null;
+            sent_value?: components["schemas"]["JsonValue"] | null;
             /** Reason */
             reason: string;
             /** Expected */
@@ -99225,10 +105910,8 @@ export interface components {
              * @enum {string}
              */
             change: "added" | "changed" | "removed";
-            /** Before */
-            before?: unknown | null;
-            /** After */
-            after?: unknown | null;
+            before?: components["schemas"]["JsonValue"] | null;
+            after?: components["schemas"]["JsonValue"] | null;
         };
         /** SettlePlanRequest */
         SettlePlanRequest: {
@@ -99625,6 +106308,50 @@ export interface components {
             etag: string | null;
             /** Last Modified At */
             last_modified_at: string | null;
+        };
+        /** SheetImportRequest */
+        SheetImportRequest: {
+            /**
+             * Organization Id
+             * @description The organization this Record belongs to. Required: nothing on the server chooses one for you.
+             */
+            organization_id: string;
+            /** File Id */
+            file_id: string;
+            /** Tab */
+            tab?: string | null;
+            /**
+             * Header Row
+             * @default 1
+             */
+            header_row?: number;
+            /**
+             * Dry Run
+             * @description Return the fields and the row count and write nothing at all.
+             * @default false
+             */
+            dry_run?: boolean;
+        };
+        /** SheetImportResponse */
+        SheetImportResponse: {
+            /** Dry Run */
+            dry_run: boolean;
+            /** Field Names */
+            field_names: string[];
+            /** Row Count */
+            row_count: number;
+            /** Truncated */
+            truncated: boolean;
+            /** Dataset Id */
+            dataset_id: string | null;
+            /** Dataset Created */
+            dataset_created: boolean | null;
+            /** Rows Inserted */
+            rows_inserted: number | null;
+            /** Rows Updated */
+            rows_updated: number | null;
+            /** Rows Archived */
+            rows_archived: number | null;
         };
         /** SheetReadRequest */
         SheetReadRequest: {
@@ -101098,6 +107825,19 @@ export interface components {
              */
             status_page?: "https://status.sleekplan.com/";
         };
+        /** SlideRow */
+        SlideRow: {
+            /** Slide Id */
+            slide_id: string;
+            /** Index */
+            index: number;
+            /** Title */
+            title: string | null;
+            /** Body Text */
+            body_text: string;
+            /** Speaker Notes */
+            speaker_notes: string;
+        };
         /**
          * SlideSpec
          * @description One slide of a generated presentation.
@@ -101566,6 +108306,215 @@ export interface components {
             operational: boolean;
         };
         /**
+         * SortBoundaryQuestion
+         * @description ONE question the boundary pass found worth the Expert's voice.
+         *
+         *     Two shapes, one type, because they are answered on the same screen with the
+         *     same microphone and distilled by the same Mandate:
+         *
+         *     * `kind="pair"` — two cases, one on each side of a pile edge, as close to
+         *       each other as anything in the round. `closeness` is the arithmetic that
+         *       chose them, carried so it can be shown and recomputed.
+         *     * `kind="empty_pile"` — a pile the Expert named and never used. THE
+         *       NEGATIVE SPACE. It has no pair, and it is never a rule on its own.
+         */
+        SortBoundaryQuestion: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "empty_pile" | "pair";
+            /** Prompt */
+            prompt: string;
+            /**
+             * Left Case
+             * @default
+             */
+            left_case?: string;
+            /**
+             * Left Case Id
+             * @default
+             */
+            left_case_id?: string;
+            /**
+             * Left Pile
+             * @default
+             */
+            left_pile?: string;
+            /**
+             * Right Case
+             * @default
+             */
+            right_case?: string;
+            /**
+             * Right Case Id
+             * @default
+             */
+            right_case_id?: string;
+            /**
+             * Right Pile
+             * @default
+             */
+            right_pile?: string;
+            /**
+             * Empty Pile
+             * @default
+             */
+            empty_pile?: string;
+            /**
+             * Closeness
+             * @description How close the two cases sit, 0–1 (an IDF-weighted cosine over the round's own vocabulary). 0 on an empty-pile question.
+             * @default 0
+             */
+            closeness?: number;
+            /** Pile Names */
+            pile_names?: string[];
+        };
+        /**
+         * SortBoundaryRequest
+         * @description The sorted piles → the questions worth asking. Pure arithmetic: no
+         *     model, no money, no write.
+         */
+        SortBoundaryRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /** Cases */
+            cases: components["schemas"]["SortCasePayload"][];
+            /** Piles */
+            piles: components["schemas"]["SortPilePayload"][];
+            /**
+             * Assignments
+             * @description case id → pile key, for the cases the Expert actually sorted. A case that is not in here was skipped, and a skipped case is not a judgment — it never becomes evidence.
+             */
+            assignments?: {
+                [key: string]: string;
+            };
+            /**
+             * Question Count
+             * @description How many questions to ask. Omitted → the org knob `masterwork.sorting_table.boundary_questions_per_round` (5).
+             */
+            question_count?: number | null;
+        };
+        /**
+         * SortBoundaryResponse
+         * @description What the boundary pass found. `questions` may be SHORTER than
+         *     `requested` — a round with one pile used and nothing close in it genuinely
+         *     has fewer edges to ask about, and padding it would be inventing questions.
+         */
+        SortBoundaryResponse: {
+            /** Rulebook Id */
+            rulebook_id: string;
+            /** Questions */
+            questions?: components["schemas"]["SortBoundaryQuestion"][];
+            /**
+             * Requested
+             * @default 0
+             */
+            requested?: number;
+            /**
+             * Sorted Cases
+             * @default 0
+             */
+            sorted_cases?: number;
+        };
+        /**
+         * SortCaseGenerateRequest
+         * @description Write one round of cases for an Expert who brought none. Writes nothing.
+         *
+         *     Every value here is an OVERRIDE of an org knob for THIS round only —
+         *     omitted means "whatever the organization decided", which is the shape a
+         *     knob must have if turning it is to mean anything.
+         */
+        SortCaseGenerateRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Count
+             * @description How many cases to write. Omitted → the org knob `masterwork.sorting_table.cases_per_round` (20).
+             */
+            count?: number | null;
+            /**
+             * Pile Count
+             * @description How many piles this round sorts into. Omitted → the org knob `masterwork.sorting_table.piles` (3).
+             */
+            pile_count?: number | null;
+            /**
+             * Pile Names
+             * @description The piles in the Expert's own words, so the cases are written to be sortable into THEM. Empty → the round's default names.
+             */
+            pile_names?: string[];
+            /**
+             * Seen Cases
+             * @description Cases this sitting has already sorted, verbatim. The table never deals the same case twice in one sitting, and the session is the only thing that knows what it has shown.
+             */
+            seen_cases?: string[];
+        };
+        /**
+         * SortCasePayload
+         * @description ONE case exactly as it was shown to the Expert.
+         *
+         *     Short on purpose: this is a thing somebody sorts in about a second with
+         *     their thumb, not a document. `note` is where it came from in the Expert's
+         *     own terms ("from your CRM"), never a hint at which pile it belongs in.
+         */
+        SortCasePayload: {
+            /** Id */
+            id: string;
+            /** Text */
+            text: string;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+        };
+        /**
+         * SortPilePayload
+         * @description ONE pile, in the Expert's own word for it.
+         *
+         *     `key` is the stable handle an assignment names ("p1"), never the position
+         *     on screen and never the name — the Expert renames a pile mid-round and
+         *     every case already in it stays where it is.
+         */
+        SortPilePayload: {
+            /** Key */
+            key: string;
+            /** Name */
+            name: string;
+        };
+        /**
          * SoundCloudTrackResult
          * @description Safe bounded projection of one public SoundCloud track.
          */
@@ -101666,6 +108615,27 @@ export interface components {
             }[];
             /** Scraped At */
             scraped_at: string;
+        };
+        /** SourceFilterModel */
+        SourceFilterModel: {
+            /** Query */
+            query?: string | null;
+            /** Kinds */
+            kinds?: string[];
+            /** Container Id */
+            container_id?: string | null;
+            /** Modified After */
+            modified_after?: string | null;
+            /** Modified Before */
+            modified_before?: string | null;
+            /** Min Size Bytes */
+            min_size_bytes?: number | null;
+            /** Max Size Bytes */
+            max_size_bytes?: number | null;
+            /** Author */
+            author?: string | null;
+            /** Ids */
+            ids?: string[];
         };
         /** SourcePackageMetadata */
         SourcePackageMetadata: {
@@ -101921,6 +108891,39 @@ export interface components {
             policy_category?: string | null;
             /** Policy Reason */
             policy_reason?: string | null;
+        };
+        /** SourceRow */
+        SourceRow: {
+            /** Id */
+            id: string;
+            /** External Id */
+            external_id: string;
+            /** Adapter */
+            adapter: string;
+            /** Kind */
+            kind: string;
+            /** Title */
+            title: string;
+            /** Subtitle */
+            subtitle: string | null;
+            /** Url */
+            url: string | null;
+            /** Author */
+            author: string | null;
+            /** Created At */
+            created_at: string | null;
+            /** Modified At */
+            modified_at: string | null;
+            /** Size Bytes */
+            size_bytes: number | null;
+            /** Duration Seconds */
+            duration_seconds: number | null;
+            /** Container Id */
+            container_id: string | null;
+            /** Attributes */
+            attributes: {
+                [key: string]: unknown;
+            };
         };
         /** SourceSummary */
         SourceSummary: {
@@ -102944,6 +109947,33 @@ export interface components {
             /** Published At */
             published_at: string;
         };
+        /** StartJobBody */
+        StartJobBody: {
+            /** Estimate Token */
+            estimate_token?: string | null;
+            /** Action */
+            action?: string | null;
+            selection?: components["schemas"]["Selection"];
+            /** Params */
+            params?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Allow Paid
+             * @default true
+             */
+            allow_paid?: boolean;
+            /**
+             * Prefer Lane
+             * @default free_captions
+             * @enum {string}
+             */
+            prefer_lane?: "free_captions" | "paid_agent";
+            /** Name */
+            name?: string | null;
+            /** Parallelism */
+            parallelism?: number | null;
+        };
         /** StartLoopRequest */
         StartLoopRequest: {
             /**
@@ -102969,6 +109999,25 @@ export interface components {
             pipe_policy?: components["schemas"]["PipePolicy-Input"] | null;
             /** @default research */
             start_stage?: components["schemas"]["LoopStage"];
+        };
+        /** StartQueuedRunResponse */
+        StartQueuedRunResponse: {
+            /** Run Id */
+            run_id: string;
+            /** Job Id */
+            job_id: string;
+            /**
+             * Mode
+             * @default queued
+             * @constant
+             */
+            mode?: "queued";
+            /**
+             * Status
+             * @default pending
+             * @constant
+             */
+            status?: "pending";
         };
         /**
          * StartRunBody
@@ -103322,6 +110371,46 @@ export interface components {
             /** State */
             state: string;
         };
+        /**
+         * StorageImportResult
+         * @description Safe result of importing a provider item into canonical Matrx Files.
+         */
+        StorageImportResult: {
+            /** File Id */
+            file_id: string;
+            /** File Path */
+            file_path: string;
+            /** Checksum */
+            checksum?: string | null;
+            /** Version Number */
+            version_number: number;
+            /** Created */
+            created: boolean;
+            source: components["schemas"]["ExternalSourceMetadata"];
+        };
+        /**
+         * StorageSourceImportRequest
+         * @description Safe caller-supplied portion of an exact-item canonical import.
+         */
+        StorageSourceImportRequest: {
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "google_drive" | "onedrive";
+            /** Connection Id */
+            connection_id: string;
+            /** Source Ref */
+            source_ref: string;
+            /** File Path */
+            file_path: string;
+            /**
+             * Visibility
+             * @default personal
+             * @enum {string}
+             */
+            visibility?: "internal" | "link" | "personal" | "public";
+        };
         /** StorageUsageResponse */
         StorageUsageResponse: {
             /** Tier Id */
@@ -103490,6 +110579,21 @@ export interface components {
         /** StoryAngleGenerateBody */
         StoryAngleGenerateBody: {
             /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
              * Max Angles
              * @default 12
              */
@@ -103546,6 +110650,21 @@ export interface components {
         };
         /** StoryAngleRulingBody */
         StoryAngleRulingBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
             /**
              * Status
              * @enum {string}
@@ -103699,6 +110818,99 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.strapi.io/";
+        };
+        /**
+         * StrategyBrief
+         * @description One strategy document — brand or site — exactly as the row holds it.
+         */
+        StrategyBrief: {
+            /** Id */
+            id: string;
+            /** Scope */
+            scope: string;
+            /** Brand Id */
+            brand_id: string;
+            /** Site Id */
+            site_id?: string | null;
+            /** Status */
+            status: string;
+            /** Brief Markdown */
+            brief_markdown: string;
+            /** Facts */
+            facts?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /** Service Lines */
+            service_lines?: components["schemas"]["ServiceLine"][];
+            /** Inputs */
+            inputs?: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+            /**
+             * Version No
+             * @default 1
+             */
+            version_no?: number;
+            /** Agent Confidence */
+            agent_confidence?: number | null;
+            /**
+             * Confidence Reason
+             * @default
+             */
+            confidence_reason?: string;
+            /**
+             * Guidance
+             * @default
+             */
+            guidance?: string;
+            /** Auto Accept At */
+            auto_accept_at?: string | null;
+            /** Reviewed At */
+            reviewed_at?: string | null;
+            /** Generated At */
+            generated_at?: string | null;
+        };
+        /**
+         * StrategyBriefHistoryResponse
+         * @description Every SUPERSEDED version, newest first. Regeneration INSERTS, so the
+         *     strategy document has a history instead of an overwrite.
+         */
+        StrategyBriefHistoryResponse: {
+            /** Briefs */
+            briefs?: components["schemas"]["StrategyBrief"][];
+        };
+        /** StrategyBriefResponse */
+        StrategyBriefResponse: {
+            brief?: components["schemas"]["StrategyBrief"] | null;
+        };
+        /** StrategyRulingBody */
+        StrategyRulingBody: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Guidance
+             * @default
+             */
+            guidance?: string;
+            /** Service Lines */
+            service_lines?: components["schemas"]["ServiceLine"][] | null;
+            /** Service Lines Served */
+            service_lines_served?: string[] | null;
+            /** Brief Markdown */
+            brief_markdown?: string | null;
         };
         /** StreamServiceStatus */
         StreamServiceStatus: {
@@ -104557,6 +111769,20 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** SyncBody */
+        SyncBody: {
+            /**
+             * Mode
+             * @default full
+             * @enum {string}
+             */
+            mode?: "full" | "incremental";
+            /**
+             * Classify
+             * @default true
+             */
+            classify?: boolean;
+        };
         /** SyncClustersRequest */
         SyncClustersRequest: {
             /**
@@ -104608,6 +111834,44 @@ export interface components {
         SyncOpinionsRequest: {
             /** Cluster Ids */
             cluster_ids: number[];
+        };
+        /**
+         * SyncedRecordActionRequest
+         * @description The body of both generic Plane C doors.
+         *
+         *     `organization_id` is the workspace the person is working in, carried from the request context
+         *     like every other call in this module. It is NOT the authorization: that is
+         *     ``iam.has_access_for`` on the Record, and comparing the row's organization to this one would
+         *     refuse a person her own Record in another of her workspaces (ORGANIZATION IS TENANCY, NEVER
+         *     PERMISSION). The Record's own organization comes back on the response.
+         */
+        SyncedRecordActionRequest: {
+            /**
+             * Organization Id
+             * @description The organization this Record belongs to. Required: nothing on the server chooses one for you.
+             */
+            organization_id: string;
+        };
+        /** SyncedRecordResponse */
+        SyncedRecordResponse: {
+            /** Id */
+            id: string;
+            /** Table */
+            table: string;
+            /** Entity Token */
+            entity_token: string;
+            /** Organization Id */
+            organization_id: string;
+            /** Label */
+            label: string | null;
+            /** Sync Status */
+            sync_status: ("available" | "detached" | "unavailable") | null;
+            /** Sync Status Reason */
+            sync_status_reason: string | null;
+            /** Archived */
+            archived: boolean;
+            /** Changed */
+            changed: boolean;
         };
         /**
          * SyncplicityServiceStatus
@@ -105311,6 +112575,47 @@ export interface components {
              */
             access_mode?: "read_only";
         };
+        /** TagManagerSnapshotRequest */
+        TagManagerSnapshotRequest: {
+            /**
+             * Organization Id
+             * @description The organization this Record belongs to. Required: nothing on the server chooses one for you.
+             */
+            organization_id: string;
+            /** Connection Id */
+            connection_id: string;
+            /**
+             * Site Id
+             * @description The web.site this snapshot belongs to.
+             */
+            site_id: string;
+            /** Container Id */
+            container_id?: string | null;
+        };
+        /** TagManagerSnapshotResponse */
+        TagManagerSnapshotResponse: {
+            /** Id */
+            id: string;
+            /** Site Id */
+            site_id: string;
+            /** Container Id */
+            container_id: string;
+            /**
+             * Taken At
+             * Format: date-time
+             */
+            taken_at: string;
+            /** Has Ga4 */
+            has_ga4: boolean;
+            /** Has Conversion Tag */
+            has_conversion_tag: boolean;
+            /** Has Consent */
+            has_consent: boolean;
+            /** Findings */
+            findings: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
         /** TagManagerWorkspace */
         TagManagerWorkspace: {
             /** Workspace Id */
@@ -105521,6 +112826,38 @@ export interface components {
              */
             status_page?: "https://status.tango.us/";
         };
+        /** TaskCandidate */
+        TaskCandidate: {
+            /** Task Id */
+            task_id: string;
+            /** Title */
+            title: string;
+            /** Notes */
+            notes: string | null;
+            /** Due At */
+            due_at: string | null;
+            /** Status */
+            status: string | null;
+            /** Completed At */
+            completed_at: string | null;
+            /** Source Updated At */
+            source_updated_at: string | null;
+            /**
+             * Already Imported
+             * @default false
+             */
+            already_imported?: boolean;
+            /** Matrx Task Id */
+            matrx_task_id?: string | null;
+            /** Imported At */
+            imported_at?: string | null;
+            /** Changes */
+            changes?: string[];
+            /** Kept Local */
+            kept_local?: string[];
+            /** Unrecorded */
+            unrecorded?: string[];
+        };
         /**
          * TaskCreateRequest
          * @description Create a new sch_task (plus optional agent_task and trigger).
@@ -105583,6 +112920,103 @@ export interface components {
              */
             deduplicated?: boolean;
         };
+        /** TaskImportOutcome */
+        TaskImportOutcome: {
+            /** Task Id */
+            task_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "created" | "kept_local" | "unchanged" | "unrecorded" | "updated" | "would_create" | "would_update";
+            /** Matrx Task Id */
+            matrx_task_id?: string | null;
+            /** Changed Fields */
+            changed_fields?: string[];
+            /** Kept Local Fields */
+            kept_local_fields?: string[];
+            /** Unrecorded Fields */
+            unrecorded_fields?: string[];
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+        };
+        /**
+         * TaskImportPin
+         * @description THE task set a person reviewed — the list, the project, and each task.
+         *
+         *     🚨 **AN APPLY IMPORTS THE SET THAT WAS REVIEWED, OR NOTHING.** ``import_tasks``
+         *     re-reads Google at apply time, so between the preview a person approved and
+         *     the write, a task's title, notes, due date or status can change, a task can be
+         *     imported by somebody else, or the caller can name a different project. Until
+         *     2026-09-18 all of that was written silently: the person approved "Call Dana"
+         *     and the row said whatever Google said a minute later
+         *     (``common-docs/projects/google-native/VERIFY-B1-B2-R5.md`` W6's class, applied
+         *     to the tasks half of B-2). The plan now pins the set and the apply refuses a
+         *     set that moved, naming what changed.
+         */
+        TaskImportPin: {
+            /** Task List Id */
+            task_list_id: string;
+            /** Project Id */
+            project_id?: string | null;
+            /** Tasks */
+            tasks?: components["schemas"]["TaskPinRow"][];
+        };
+        /** TaskImportRequest */
+        TaskImportRequest: {
+            /** Organization Id */
+            organization_id: string;
+            /** Google Account */
+            google_account?: string | null;
+            /** Task List Id */
+            task_list_id: string;
+            /** Task Ids */
+            task_ids: string[];
+            /** Project Id */
+            project_id?: string | null;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+            reviewed_task_set?: components["schemas"]["TaskImportPin"] | null;
+        };
+        /** TaskImportResult */
+        TaskImportResult: {
+            /** Google Account */
+            google_account: string | null;
+            /** Task List Id */
+            task_list_id: string;
+            /** Task List */
+            task_list: string;
+            /** Dry Run */
+            dry_run: boolean;
+            /** Results */
+            results: components["schemas"]["TaskImportOutcome"][];
+            /**
+             * Created
+             * @default 0
+             */
+            created?: number;
+            /**
+             * Updated
+             * @default 0
+             */
+            updated?: number;
+            /**
+             * Unchanged
+             * @default 0
+             */
+            unchanged?: number;
+            reviewed_task_set?: components["schemas"]["TaskImportPin"] | null;
+            /** Warnings */
+            warnings?: string[];
+        };
         /** TaskInputPart */
         TaskInputPart: {
             /** Metadata */
@@ -105627,6 +113061,60 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** TaskListView */
+        TaskListView: {
+            /** Task List Id */
+            task_list_id: string;
+            /** Title */
+            title: string;
+            /** Tasks */
+            tasks: components["schemas"]["TaskCandidate"][];
+            /** Total */
+            total: number;
+            /** Already Imported */
+            already_imported: number;
+            /** Importable */
+            importable: number;
+            /**
+             * Has More
+             * @default false
+             */
+            has_more?: boolean;
+            /** Count Line */
+            count_line: string;
+        };
+        /** TaskListingRequest */
+        TaskListingRequest: {
+            /** Organization Id */
+            organization_id: string;
+            /** Google Account */
+            google_account?: string | null;
+            /**
+             * Max Lists
+             * @default 20
+             */
+            max_lists?: number;
+            /**
+             * Max Tasks Per List
+             * @default 200
+             */
+            max_tasks_per_list?: number;
+        };
+        /** TaskListingResult */
+        TaskListingResult: {
+            /** Google Account */
+            google_account: string | null;
+            /** Task Lists */
+            task_lists: components["schemas"]["TaskListView"][];
+            /** Total */
+            total: number;
+            /** Already Imported */
+            already_imported: number;
+            /** Importable */
+            importable: number;
+            /** Warnings */
+            warnings?: string[];
+        };
         /**
          * TaskPatchRequest
          * @description Update a subset of sch_task fields.
@@ -105646,6 +113134,23 @@ export interface components {
             expires_at?: string | null;
             /** Tags */
             tags?: string[] | null;
+        };
+        /**
+         * TaskPinRow
+         * @description One task as the plan showed it: its origin identity and its content.
+         */
+        TaskPinRow: {
+            /** Origin External Id */
+            origin_external_id: string;
+            /**
+             * Already Imported
+             * @default false
+             */
+            already_imported?: boolean;
+            /** Snapshot */
+            snapshot?: {
+                [key: string]: unknown;
+            };
         };
         /**
          * TaskResponse
@@ -105714,6 +113219,113 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.tawk.to";
+        };
+        /**
+         * TeachBackRound
+         * @description ONE round of a Teach-Back, as the client holds it.
+         *
+         *     The client is the only thing that knows what is on screen — and on this
+         *     lane it is also the only thing that knows what was SAID OUT LOUD — so the
+         *     session rides the request instead of a server-side session row, exactly as
+         *     the Probe and the Triad do. Every field here was either produced by the
+         *     server (the explanation) or spoken/typed by the Expert (the correction);
+         *     nothing is derived.
+         */
+        TeachBackRound: {
+            /**
+             * Subject
+             * @description The ONE decision this round explained back, in the Expert's words.
+             * @default
+             */
+            subject?: string;
+            /**
+             * Explanation
+             * @description The explanation exactly as it was shown and spoken — the system's understanding of the Expert's method, said back to them.
+             * @default
+             */
+            explanation?: string;
+            /**
+             * Basis
+             * @description What this round's explanation was built from: `rulebook` (the Rulebook held material) or `generalist` (it held nothing, so the explanation is what anyone competent would do — and says so).
+             * @default
+             * @enum {string}
+             */
+            basis?: "" | "generalist" | "rulebook";
+            /**
+             * Rule Ids
+             * @description The Rulebook rule ids this explanation leaned on. Empty on the generalist basis. THESE are the rules a `yes, that's it` signs.
+             */
+            rule_ids?: string[];
+            /**
+             * Correction
+             * @description The Expert's own words correcting this explanation — spoken or typed. THE RULE CANDIDATE, and the only text a rule's quote may be anchored in. Empty means they have not answered this round yet.
+             * @default
+             */
+            correction?: string;
+        };
+        /**
+         * TeachBackRoundRequest
+         * @description Run ONE round of a Teach-Back.
+         *
+         *     Two things happen in one call, in this order: the Expert's correction of
+         *     the LAST round (the final entry of ``rounds``) is distilled into draft
+         *     rules, and then the next explanation is written with that correction folded
+         *     in — unless ``agreed`` is set or the round cap is reached, in which case the
+         *     call only distils, signs, and reports.
+         *
+         *     Human-first invariant, identical to every other lane: drafts only, never
+         *     auto-activated. The SIGNATURE is the one thing here that touches an
+         *     existing rule, and it only ever ADDS a stamp.
+         */
+        TeachBackRoundRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Topic
+             * @description What the Expert asked to have explained back, in their own words. Empty is the normal answer — then the explainer picks the most load-bearing decision the Rulebook covers. THE ONE THING THIS LANE DOES NOT REQUIRE is material: it works on an empty Rulebook too.
+             */
+            topic?: string | null;
+            /**
+             * Rounds
+             * @description Every round of this session so far, oldest first. Empty starts the teach-back. The LAST entry is the one whose correction is distilled by this call.
+             */
+            rounds?: components["schemas"]["TeachBackRound"][];
+            /**
+             * Agreed
+             * @description The Expert said 'yes, that's it' — stamp the signed teach-back onto the rules the last explanation leaned on and stop, instead of explaining again.
+             * @default false
+             */
+            agreed?: boolean;
+            /**
+             * Signature Subject Id
+             * @description The `platform.masterwork_run` id of the round whose explanation was signed — the SAME subject the client wrote its `masterwork.expert_signature` verdict against, so the stamp on the rules and the verdict row point at one another. Only read when `agreed` is true.
+             */
+            signature_subject_id?: string | null;
+            /**
+             * Round Cap
+             * @description Lower the number of rounds for THIS session only. Never raises the organization's `masterwork.teach_back.rounds` knob — the knob is the ceiling.
+             */
+            round_cap?: number | null;
+            /**
+             * Source Note
+             * @description A short label for this teach-back; defaults to the subject.
+             */
+            source_note?: string | null;
         };
         /**
          * TeachableServiceStatus
@@ -108067,6 +115679,27 @@ export interface components {
             /** Transcript Session Ids */
             transcript_session_ids: string[];
         };
+        /**
+         * TranscriptionChapter
+         * @description One chapter the SOURCE container declared, on the transcript's clock.
+         *
+         *     An audiobook, a podcast episode with markers, a recorded lecture exported
+         *     with sections: the container carries the author's own division of the
+         *     material, and it is the only structure a transcript has. Without it a
+         *     nine-hour book is one undifferentiated wall of words and a rule cites
+         *     "at 4:41:02" instead of "Chapter 7". ``index`` is 1-based, in the order
+         *     the container declared them.
+         */
+        TranscriptionChapter: {
+            /** Index */
+            index: number;
+            /** Title */
+            title?: string | null;
+            /** Start */
+            start: number;
+            /** End */
+            end?: number | null;
+        };
         /** TranscriptionFileRequest */
         TranscriptionFileRequest: {
             /**
@@ -108351,6 +115984,89 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.tresorit.com";
+        };
+        /**
+         * TriadGenerateRequest
+         * @description Deal one session's deck of Triad cards. Writes nothing.
+         *
+         *     The `triad_game` Approach (`triad_ingest.py`). Every value here is an
+         *     OVERRIDE of an org knob for THIS session only — omitted means "whatever the
+         *     organization decided", which is the shape a knob must have if turning it is
+         *     to mean anything.
+         */
+        TriadGenerateRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Rulebook Id */
+            rulebook_id: string;
+            /**
+             * Count
+             * @description How many cards to deal. Omitted → the org knob `masterwork.triad_game.triads_per_session` (10).
+             */
+            count?: number | null;
+            /**
+             * Mode
+             * @description 'best_one' (which would you actually use?) or 'odd_one_out' (which two are alike?). Omitted → the org knob `masterwork.triad_game.default_mode` (best_one).
+             */
+            mode?: ("best_one" | "odd_one_out") | null;
+            /**
+             * Seen Prompts
+             * @description The card questions this session has already played, verbatim. The game never asks the same thing twice in one sitting, and the session is the only thing that knows what it has shown.
+             */
+            seen_prompts?: string[];
+        };
+        /**
+         * TriadItemPayload
+         * @description One of the three items exactly as it was shown to the Expert.
+         */
+        TriadItemPayload: {
+            /**
+             * Key
+             * @enum {string}
+             */
+            key: "a" | "b" | "c";
+            /** Text */
+            text: string;
+            /**
+             * Note
+             * @default
+             */
+            note?: string;
+        };
+        /**
+         * TriadPayload
+         * @description The card, played back to the server exactly as it was dealt.
+         *
+         *     The deck is never stored server-side: a triad is a QUESTION, and only an
+         *     ANSWERED one is worth anything. So the answer carries its own card, and the
+         *     card's `id` is the provenance every rule it produces cites.
+         */
+        TriadPayload: {
+            /** Id */
+            id: string;
+            /** Prompt */
+            prompt: string;
+            /**
+             * Mode
+             * @default best_one
+             * @enum {string}
+             */
+            mode?: "best_one" | "odd_one_out";
+            /** Items */
+            items: components["schemas"]["TriadItemPayload"][];
         };
         /**
          * TriageDraftsRequest
@@ -111589,6 +119305,55 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        /** VaultLoginCsvDownloadRequest */
+        VaultLoginCsvDownloadRequest: {
+            /**
+             * Profile
+             * @constant
+             */
+            profile: "matrx_login_csv_v1";
+            /** Item Ids */
+            item_ids: string[];
+            /** Revision */
+            revision: string;
+        };
+        /** VaultLoginCsvPreviewItem */
+        VaultLoginCsvPreviewItem: {
+            /** Item Id */
+            item_id: string;
+            /** Title */
+            title: string;
+            /** Eligible */
+            eligible: boolean;
+            /** Reason */
+            reason?: string | null;
+            /** Omissions */
+            omissions?: {
+                [key: string]: number;
+            };
+        };
+        /** VaultLoginCsvPreviewRequest */
+        VaultLoginCsvPreviewRequest: {
+            /**
+             * Profile
+             * @constant
+             */
+            profile: "matrx_login_csv_v1";
+            /** Item Ids */
+            item_ids: string[];
+        };
+        /** VaultLoginCsvPreviewResponse */
+        VaultLoginCsvPreviewResponse: {
+            /**
+             * Profile
+             * @constant
+             */
+            profile: "matrx_login_csv_v1";
+            /** Revision */
+            revision: string;
+            /** Items */
+            items: components["schemas"]["VaultLoginCsvPreviewItem"][];
+        };
         /** VaultResolveRef */
         VaultResolveRef: {
             /** Item Id */
@@ -111983,6 +119748,17 @@ export interface components {
             built_at: string;
             /** Branch */
             branch?: string | null;
+        };
+        /** VideoRecordResponse */
+        VideoRecordResponse: {
+            /** Id */
+            id: string;
+            /** External Id */
+            external_id: string;
+            /** Title */
+            title: string;
+            /** Duration Seconds */
+            duration_seconds: number | null;
         };
         /** Viewport */
         Viewport: {
@@ -113916,6 +121692,48 @@ export interface components {
             status_page?: "https://workcast.statuspage.io";
         };
         /**
+         * WorkCorrection
+         * @description ONE red-pen correction: a passage the Expert struck through, what they
+         *     said was wrong with it, and when they said it.
+         *
+         *     The unit of the `red_pen` Approach. All three parts are provenance: the
+         *     span is the evidence, the comment is the judgment, and the moment is when
+         *     the judgment was made (Masterwork doctrine CORE §5 — provenance per rule).
+         */
+        WorkCorrection: {
+            /**
+             * Span
+             * @description The passage the Expert highlighted, VERBATIM from the work. Re-checked against the work server-side; a passage that is not in the work refuses the run rather than anchoring a rule to evidence that does not exist.
+             */
+            span: string;
+            /**
+             * Comment
+             * @description The Expert's own words: what is wrong with that passage and what they would do instead. Typed or dictated — the same field either way, because dictation writes into the same box.
+             */
+            comment: string;
+            /**
+             * Start
+             * @description Character offset of the span in the work, as the client's selection saw it.
+             */
+            start?: number | null;
+            /**
+             * End
+             * @description Character offset of the end of the span in the work.
+             */
+            end?: number | null;
+            /**
+             * Voice
+             * @description True when the Expert spoke this correction rather than typing it.
+             * @default false
+             */
+            voice?: boolean;
+            /**
+             * At
+             * @description ISO-8601 moment the correction was made — the recording moment.
+             */
+            at?: string | null;
+        };
+        /**
          * WorkFlowyServiceStatus
          * @description Safe aggregate status projection for WorkFlowy's fixed status page.
          */
@@ -114507,6 +122325,49 @@ export interface components {
             /** Organization Id */
             organization_id?: string | null;
         };
+        /** YouTubeRefreshRequest */
+        YouTubeRefreshRequest: {
+            /**
+             * Organization Id
+             * @description The organization this Record belongs to. Required: nothing on the server chooses one for you.
+             */
+            organization_id: string;
+            /** Connection Id */
+            connection_id: string;
+            /** Channel Id */
+            channel_id: string;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+        };
+        /** YouTubeRefreshResponse */
+        YouTubeRefreshResponse: {
+            /** Channel Id */
+            channel_id: string;
+            /**
+             * Start Date
+             * Format: date
+             */
+            start_date: string;
+            /**
+             * End Date
+             * Format: date
+             */
+            end_date: string;
+            /** Videos */
+            videos: components["schemas"]["VideoRecordResponse"][];
+            /** Analytics Days Created */
+            analytics_days_created: number;
+            /** Analytics Days Updated */
+            analytics_days_updated: number;
+        };
         /** YouTubeSearchPage */
         YouTubeSearchPage: {
             /** Search Id */
@@ -114831,6 +122692,8 @@ export interface components {
             comment_count: number | null;
             /** Privacy Status */
             privacy_status: string | null;
+            /** Duration Seconds */
+            duration_seconds?: number | null;
         };
         /** ZendeskPublicArticle */
         ZendeskPublicArticle: {
@@ -115218,6 +123081,15 @@ export interface components {
             /** Source */
             source?: string | null;
         };
+        /** ConnectionSummary */
+        aidream__api__routers__connected_sources__ConnectionSummary: {
+            /** Connection Id */
+            connection_id: string;
+            /** Account Email */
+            account_email: string | null;
+            /** Status */
+            status: string;
+        };
         /** ExtractRequest */
         aidream__api__routers__dedup_strict__ExtractRequest: {
             /**
@@ -115503,6 +123375,20 @@ export interface components {
         aidream__api__routers__scheduling__ScannerStatusResponse: {
             /** Running */
             running: boolean;
+            /**
+             * Platform Scanner Live
+             * @default false
+             */
+            platform_scanner_live?: boolean;
+            /**
+             * Platform Scanner Count
+             * @default 0
+             */
+            platform_scanner_count?: number;
+            /** Platform Last Seen At */
+            platform_last_seen_at?: string | null;
+            /** Platform Note */
+            platform_note?: string | null;
             /** Started At */
             started_at?: string | null;
             /** Last Tick At */
@@ -115610,6 +123496,30 @@ export interface components {
              */
             enrollment_input: string;
         };
+        /**
+         * ConnectionSummary
+         * @description Non-secret connection state — what the FE reads after any operation.
+         */
+        aidream__api__schemas__mcp_connections__ConnectionSummary: {
+            /** Connection Id */
+            connection_id: string;
+            /** Server Id */
+            server_id: string | null;
+            /** Server Slug */
+            server_slug: string | null;
+            /** Status */
+            status: string;
+            /** Auth Method */
+            auth_method: string | null;
+            /** Credential Item Id */
+            credential_item_id: string | null;
+            /** Token Expires At */
+            token_expires_at: string | null;
+            /** Oauth Scopes Granted */
+            oauth_scopes_granted: string[];
+            /** Last Error */
+            last_error: string | null;
+        };
         /** ToolListResponse */
         aidream__services__admin_ops__tools_wire__ToolListResponse: {
             summary: components["schemas"]["ToolSummary"];
@@ -115698,6 +123608,8 @@ export interface components {
             duration?: number | null;
             /** Segments */
             segments?: components["schemas"]["TranscriptionSegment"][];
+            /** Chapters */
+            chapters?: components["schemas"]["TranscriptionChapter"][];
             meta: components["schemas"]["TranscriptionMeta"];
         };
         /** TypeResult */
@@ -118114,9 +126026,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: string;
-                    };
+                    "application/json": components["schemas"]["OAuthIncidentResponse"];
                 };
             };
             /** @description Validation Error */
@@ -123476,6 +131386,37 @@ export interface operations {
             };
         };
     };
+    coding_reply_responder_coding_sessions_conversations__conversation_id__responder_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodingReplyResponderReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_coding_session_identities_coding_sessions_sessions_get: {
         parameters: {
             query?: {
@@ -123589,6 +131530,110 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    codex_managed_capabilities_coding_sessions_codex_capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodexManagedCapabilitiesResponse"];
+                };
+            };
+        };
+    };
+    codex_managed_stream_coding_sessions_codex_stream_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodexManagedRestRequest"];
+            };
+        };
+        responses: {
+            /** @description Codex exec JSONL event stream */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-ndjson": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_codex_managed_runtime_coding_sessions_codex_runtimes__runtime_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                runtime_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodexManagedCancelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hosted_runtime_status_coding_sessions_hosted_runtime_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HostedRuntimeReadiness"];
                 };
             };
         };
@@ -124166,6 +132211,24 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AnthropicCountTokensResponse"];
                 };
+            };
+        };
+    };
+    openai_codex_responses_broker_gateway_openai_codex_v1_responses_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -124935,6 +132998,74 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["OrganizationSecretSummary"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_login_csv_vault_exports_login_csv_preview_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultLoginCsvPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultLoginCsvPreviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_login_csv_vault_exports_login_csv_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultLoginCsvDownloadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -126317,6 +134448,186 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    matches_vault_native_passwords_matches_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeMatchesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeMatchesOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+        };
+    };
+    materialize_vault_native_passwords__item_id__materialize_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NativeMaterializeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeMaterializeOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Not Found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeErrorOut"];
                 };
             };
         };
@@ -127737,7 +136048,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConnectionSummary"];
+                    "application/json": components["schemas"]["aidream__api__schemas__mcp_connections__ConnectionSummary"];
                 };
             };
             /** @description Validation Error */
@@ -127772,7 +136083,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConnectionSummary"];
+                    "application/json": components["schemas"]["aidream__api__schemas__mcp_connections__ConnectionSummary"];
                 };
             };
             /** @description Validation Error */
@@ -127803,7 +136114,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConnectionSummary"];
+                    "application/json": components["schemas"]["aidream__api__schemas__mcp_connections__ConnectionSummary"];
                 };
             };
             /** @description Validation Error */
@@ -127865,7 +136176,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConnectionSummary"];
+                    "application/json": components["schemas"]["aidream__api__schemas__mcp_connections__ConnectionSummary"];
                 };
             };
             /** @description Validation Error */
@@ -127994,6 +136305,161 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["McpInvokeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attachable_providers_connections_attachable_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderAttachablePayload"][];
+                };
+            };
+        };
+    };
+    list_connection_resources_connections_resources_get: {
+        parameters: {
+            query: {
+                /** @description github | google */
+                provider: string;
+                /** @description Substring of the name or ref */
+                q?: string | null;
+                limit?: number;
+                /** @description Ask the provider itself instead of our inventory. NO provider offers a live search today — /connections/attachable reports the source of every kind and none is `live` — so this changes nothing. Google in particular can never be live: AI Matrx holds the drive.file scope only, which reaches the files the user handed us and nothing else. */
+                live?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionResource"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_conversation_attachments_conversations__conversation_id__attachments_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationAttachmentPayload"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_conversation_resource_conversations__conversation_id__attachments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttachResourceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationAttachmentPayload"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    detach_conversation_resource_conversations__conversation_id__attachments__association_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+                association_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationAttachmentPayload"];
                 };
             };
             /** @description Validation Error */
@@ -128170,6 +136636,26 @@ export interface operations {
             };
         };
     };
+    google_capabilities_google_integrations_capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoogleCapabilityMetadata"][];
+                };
+            };
+        };
+    };
     google_calendar_agenda_google_integrations_calendar_agenda_post: {
         parameters: {
             query?: never;
@@ -128338,7 +136824,7 @@ export interface operations {
             };
         };
     };
-    exchange_github_integrations_exchange_post: {
+    authorize_github_integrations_authorize_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -128347,7 +136833,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["GitHubExchangeRequest"];
+                "application/json": components["schemas"]["GitHubOAuthStartRequest"];
             };
         };
         responses: {
@@ -128357,7 +136843,40 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GitHubConnectionResponse"];
+                    "application/json": components["schemas"]["GitHubOAuthStartResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_github_integrations_complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GitHubOAuthCompleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GitHubOAuthCompleteResponse"];
                 };
             };
             /** @description Validation Error */
@@ -128472,37 +136991,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["MicrosoftAuthorizationResponse"];
                 };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    callback_microsoft_integrations_callback_get: {
-        parameters: {
-            query: {
-                state: string;
-                code?: string | null;
-                error?: string | null;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            307: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -128859,6 +137347,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TeamsRecentChatMessagesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    callback_microsoft_integrations_callback_get: {
+        parameters: {
+            query: {
+                state: string;
+                code?: string | null;
+                error?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            307: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_provider_file_storage_sources_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageSourceImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageImportResult"];
                 };
             };
             /** @description Validation Error */
@@ -145975,7 +154527,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SelectedFileResponse"];
+                    "application/json": components["schemas"]["SelectedFileResponse"] | components["schemas"]["ProposedWriteResponse"];
+                };
+            };
+            /** @description Nothing was written: this organization requires a person to approve this change, so it is waiting on the approval queue as `assist_id`. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposedWriteResponse"];
                 };
             };
             /** @description Validation Error */
@@ -146008,7 +154569,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SelectedFileResponse"];
+                    "application/json": components["schemas"]["SelectedFileResponse"] | components["schemas"]["ProposedWriteResponse"];
+                };
+            };
+            /** @description Nothing was written: this organization requires a person to approve this change, so it is waiting on the approval queue as `assist_id`. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposedWriteResponse"];
                 };
             };
             /** @description Validation Error */
@@ -146074,7 +154644,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DocumentContentResponse"];
+                    "application/json": components["schemas"]["DocumentContentResponse"] | components["schemas"]["ProposedWriteResponse"];
+                };
+            };
+            /** @description Nothing was written: this organization requires a person to approve this change, so it is waiting on the approval queue as `assist_id`. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposedWriteResponse"];
                 };
             };
             /** @description Validation Error */
@@ -146140,7 +154719,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SheetValuesResponse"];
+                    "application/json": components["schemas"]["SheetValuesResponse"] | components["schemas"]["ProposedWriteResponse"];
+                };
+            };
+            /** @description Nothing was written: this organization requires a person to approve this change, so it is waiting on the approval queue as `assist_id`. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposedWriteResponse"];
                 };
             };
             /** @description Validation Error */
@@ -146174,6 +154762,653 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReviewedGmailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_approval_google_workspace_approvals__approval_id__apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                approval_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalDecisionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_approval_google_workspace_approvals__approval_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                approval_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectApprovalRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalDecisionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_adapters_connected_sources_adapters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdapterListResponse"];
+                };
+            };
+        };
+    };
+    catalog_connected_sources_adapters_catalog_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdapterListResponse"];
+                };
+            };
+        };
+    };
+    browse_sources_connected_sources_browse_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrowseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrowseResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_comments_connected_sources_google_comments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_revisions_connected_sources_google_revisions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevisionsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_presentation_connected_sources_google_presentation_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoogleFileRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    microsoft_scope_gaps_connected_sources_microsoft_scope_gaps_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScopeGapResponse"];
+                };
+            };
+        };
+    };
+    documents_refresh_google_sync_documents_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DocumentRefreshRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DocumentRecordResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    calendar_refresh_google_sync_calendar_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CalendarRefreshRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CalendarRefreshResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sheets_import_google_sync_sheets_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SheetImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SheetImportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    youtube_refresh_google_sync_youtube_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["YouTubeRefreshRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YouTubeRefreshResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tag_manager_snapshot_google_sync_tag_manager_snapshot_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TagManagerSnapshotRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TagManagerSnapshotResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    records_detach_google_sync_records__table___record_id__detach_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                table: string;
+                record_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SyncedRecordActionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncedRecordResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    records_archive_google_sync_records__table___record_id__archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                table: string;
+                record_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SyncedRecordActionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncedRecordResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    contact_fields_google_import_contacts_fields_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactFieldSpec"][];
+                };
+            };
+        };
+    };
+    contacts_search_google_import_contacts_search_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactSearchResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    contacts_import_google_import_contacts_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContactImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContactImportResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tasks_list_google_import_tasks_list_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskListingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskListingResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tasks_import_google_import_tasks_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskImportResult"];
                 };
             };
             /** @description Validation Error */
@@ -146581,7 +155816,174 @@ export interface operations {
             };
         };
     };
-    get_site_landscape_brief_seo_sites__site_id__landscape_brief_get: {
+    get_brand_strategy_seo_brands__brand_id__strategy_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategyBriefResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_brand_strategy_seo_brands__brand_id__strategy_generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptsInjectedScope"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rule_on_brand_strategy_seo_brands__brand_id__strategy_ruling_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StrategyRulingBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategyBriefResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_brand_strategy_history_seo_brands__brand_id__strategy_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategyBriefHistoryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    author_brand_map_seo_brands__brand_id__map_author_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AuthorMapRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_site_strategy_seo_sites__site_id__strategy_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -146598,7 +156000,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LandscapeBriefResponse"];
+                    "application/json": components["schemas"]["StrategyBriefResponse"];
                 };
             };
             /** @description Validation Error */
@@ -146612,7 +156014,7 @@ export interface operations {
             };
         };
     };
-    generate_site_landscape_brief_seo_sites__site_id__landscape_brief_generate_post: {
+    generate_site_strategy_seo_sites__site_id__strategy_generate_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -146633,7 +156035,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LandscapeBriefResponse"];
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -146647,7 +156049,7 @@ export interface operations {
             };
         };
     };
-    rule_on_site_landscape_brief_seo_sites__site_id__landscape_brief_ruling_post: {
+    rule_on_site_strategy_seo_sites__site_id__strategy_ruling_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -146658,7 +156060,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["LandscapeBriefRulingBody"];
+                "application/json": components["schemas"]["StrategyRulingBody"];
             };
         };
         responses: {
@@ -146668,7 +156070,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LandscapeBriefResponse"];
+                    "application/json": components["schemas"]["StrategyBriefResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_site_strategy_history_seo_sites__site_id__strategy_history_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategyBriefHistoryResponse"];
                 };
             };
             /** @description Validation Error */
@@ -148964,6 +158397,111 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["NewsroomSyncBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    map_site_pages_seo_sites__site_id__map_pages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MapPagesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    map_site_regions_seo_sites__site_id__map_regions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MapRegionsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    propose_site_page_intents_seo_sites__site_id__map_intents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProposeIntentsRequest"];
             };
         };
         responses: {
@@ -151960,6 +161498,8 @@ export interface operations {
                 error_type?: string | null;
                 /** @description Optional kind filter, e.g. 'request_snapshot_capture_failure'. `kind` is the stable family name a producer records under, so it is what an alarm deep-links on — error_type is the exception class and changes with the code. */
                 kind?: string | null;
+                /** @description Optional exact request_id filter. This is how a PRODUCER deep-links to the rows one of its own runs filed: the mandate reference patrol records the request_id its scan wrote (`mandate-scan/<repo>/<revision>`) on the run, and the board links here with it. Without this filter that link would land on an unfiltered list that merely LOOKS like the run's evidence. */
+                request_id?: string | null;
                 /** @description When true, only rows with resolved_at IS NULL. */
                 unresolved_only?: boolean;
             };
@@ -152093,6 +161633,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkerHealthResponse"];
+                };
+            };
+        };
+    };
+    lock_storm_admin_runtime_lock_storm_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LockStormResponse"];
                 };
             };
         };
@@ -153972,7 +163532,9 @@ export interface operations {
     create_interview_session_vision_interview_sessions_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -154103,6 +163665,41 @@ export interface operations {
             };
         };
     };
+    finish_interview_session_vision_interview_sessions__session_id__finish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["StartRunBody"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     build_masterwork_endpoint_masterworks_build_post: {
         parameters: {
             query?: never;
@@ -154189,6 +163786,169 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_rulebook_markup_masterworks_ingest_markup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestMarkupRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_rulebook_drip_answers_masterworks_ingest_drip_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestDripAnswersRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_todays_drip_masterworks_drip_send_now_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendTodaysDripRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DripSendReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_rulebook_predictions_masterworks_ingest_predictions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestPredictionsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_prediction_ledger_masterworks__rulebook_id__predictions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rulebook_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PredictionLedgerResponse"];
                 };
             };
             /** @description Validation Error */
@@ -154433,6 +164193,237 @@ export interface operations {
             };
         };
     };
+    deal_rulebook_triads_masterworks_triads_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TriadGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_rulebook_triad_masterworks_ingest_triad_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestTriadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    write_rulebook_sort_cases_masterworks_sort_cases_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SortCaseGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    find_rulebook_sort_boundary_masterworks_sort_boundary_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SortBoundaryRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SortBoundaryResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_rulebook_sort_answer_masterworks_ingest_sort_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestSortRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    masterwork_bad_example_probe_masterworks_probe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProbeRoundRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    masterwork_teach_back_masterworks_teach_back_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TeachBackRoundRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     ingest_rulebook_chat_masterworks_ingest_chat_post: {
         parameters: {
             query?: never;
@@ -154476,6 +164467,158 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["IngestConversationsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_meeting_transcripts_masterworks_meeting_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MeetingPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeetingPreviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_rulebook_meeting_masterworks_ingest_meeting_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestMeetingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    inbox_connection_masterworks_inbox_connection_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxConnectionResponse"];
+                };
+            };
+        };
+    };
+    preview_inbox_threads_masterworks_inbox_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InboxPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InboxPreviewResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_rulebook_inbox_masterworks_ingest_inbox_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestInboxRequest"];
             };
         };
         responses: {
@@ -154662,6 +164805,72 @@ export interface operations {
             };
         };
     };
+    read_bench_proof_masterworks__rulebook_id__bench_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rulebook_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BenchProofResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_bench_run_masterworks__rulebook_id__bench_runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                rulebook_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BenchRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_sealed_case_endpoint_masterworks_sealed_cases_post: {
         parameters: {
             query?: never;
@@ -154746,6 +164955,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reconcile_capture_plan_reminders_endpoint_masterworks_capture_plan_reminders_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CapturePlanReminderEndpointRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapturePlanReminderResponse"];
                 };
             };
             /** @description Validation Error */
@@ -154895,6 +165137,8 @@ export interface operations {
         parameters: {
             query?: {
                 organization_id?: string | null;
+                /** @description Which kind of mailbox to list. `outreach` (the default) is what the CRM sending-mailboxes page shows; `correspondence` is the mailboxes a reviewed one-to-one send recorded for audit; `all` is both. */
+                purpose?: "all" | "correspondence" | "outreach";
             };
             header?: never;
             path?: never;
@@ -156609,6 +166853,8 @@ export interface operations {
                 user_id?: string | null;
                 /** @description Max entries per facet axis */
                 facet_limit?: number;
+                /** @description Hide conversations from these source_apps (repeatable; NULL-safe). The CX Explorer sends 'code-plugin' by default: outside coding-tool data. */
+                exclude_source_app?: string[] | null;
             };
             header?: never;
             path?: never;
@@ -157216,7 +167462,9 @@ export interface operations {
     create_topic_canonical_research_topics_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path?: never;
             cookie?: never;
         };
@@ -157344,7 +167592,9 @@ export interface operations {
     create_topic_research_projects__project_id__topics_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
             path: {
                 project_id: string;
             };
@@ -160188,6 +170438,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ConnectorCursorResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    queue_party_kind_resolution_crm_parties_kind_resolution_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PartyKindBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KindSubmitSummary"];
                 };
             };
             /** @description Validation Error */
@@ -164970,6 +175253,72 @@ export interface operations {
             };
         };
     };
+    agent_impact_advance_mandates_impact_advance_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdvanceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdvanceReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_impact_revert_mandates_impact_revert_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevertRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdvanceReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     agent_impact_mine_mandates_impact_mine_post: {
         parameters: {
             query?: never;
@@ -164990,6 +175339,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ImpactReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_impact_advance_mine_mandates_impact_advance_mine_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdvanceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdvanceReport"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_impact_revert_mine_mandates_impact_revert_mine_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevertRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdvanceReport"];
                 };
             };
             /** @description Validation Error */
@@ -165931,7 +176346,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["DefinitionRecord"][];
+                    "application/json": components["schemas"]["DefinitionListPage"];
                 };
             };
             /** @description Validation Error */
@@ -166577,7 +176992,14 @@ export interface operations {
     };
     get_node_agent_context_workflows__definition_id__nodes__node_id__agent_context_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Reopen this exact conversation — it must be one this launcher itself listed for this person and this step; anything else is refused. */
+                conversation_id?: string | null;
+                /** @description Start a fresh conversation with this step's Steward. */
+                new_conversation?: boolean;
+                wizard?: "run_agent" | null;
+                wizard_step?: ("agent" | "variables") | null;
+            };
             header?: never;
             path: {
                 definition_id: string;
@@ -166609,7 +177031,14 @@ export interface operations {
     };
     get_conductor_context_workflows__definition_id__conductor_context_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description The step the Creator has selected on the canvas (Conductor mode). Rendered into the envelope so 'this step' needs no name. */
+                selected_node_id?: string | null;
+                /** @description Reopen this exact conversation — it must be one this launcher itself listed for this person and this workflow; anything else is refused. */
+                conversation_id?: string | null;
+                /** @description Start a fresh conversation with the Conductor. */
+                new_conversation?: boolean;
+            };
             header?: never;
             path: {
                 definition_id: string;
@@ -167007,7 +177436,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                /** @description Stable client-supplied key. If a previous request from the same user with the same key on the same route succeeded within the last 24h, the existing run is returned (mode='duplicate') instead of a new one being created. Use to make double-clicks, retried webhooks, and cron-with-jitter safe. */
+                /** @description Stable client-supplied key for retry-safe workflow starts. */
                 "X-Idempotency-Key"?: string | null;
             };
             path: {
@@ -167021,13 +177450,14 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Successful Response */
+            /** @description A JSON start result or an NDJSON workflow event stream. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["IdempotentDuplicateRunResponse"] | components["schemas"]["AwaitingInputRunResponse"] | components["schemas"]["StartQueuedRunResponse"];
+                    "application/x-ndjson": string;
                 };
             };
             /** @description Validation Error */
@@ -170167,6 +180597,1153 @@ export interface operations {
             };
         };
     };
+    resolve_source_media_resolve_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_libraries_media_libraries_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_library_media_libraries_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLibraryBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_library_media_libraries__library_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_library_media_libraries__library_id__sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SyncBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_library_videos_media_libraries__library_id__videos_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+                media_kind?: string | null;
+                has_captions?: boolean | null;
+                transcript_status?: string | null;
+                published_after?: string | null;
+                published_before?: string | null;
+                min_duration_seconds?: number | null;
+                max_duration_seconds?: number | null;
+                q?: string | null;
+                order?: ("duration_seconds" | "published_at" | "title" | "view_count") | null;
+                direction?: "asc" | "desc";
+            };
+            header?: never;
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    library_metrics_media_libraries__library_id__metrics_get: {
+        parameters: {
+            query?: {
+                /** @description Recompute instead of serving the snapshot the last sync stored. */
+                fresh?: boolean;
+            };
+            header?: never;
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_actions_media_actions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    get_settings_media_settings_get: {
+        parameters: {
+            query?: {
+                library_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_settings_media_settings_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    estimate_selection_media_libraries__library_id__estimate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EstimateBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_library_jobs_media_libraries__library_id__jobs_get: {
+        parameters: {
+            query?: {
+                status?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_job_media_libraries__library_id__jobs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartJobBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_job_media_jobs__job_id__get: {
+        parameters: {
+            query?: {
+                status?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_job_media_jobs__job_id__resume_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_failed_items_media_jobs__job_id__retry_failed_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_job_media_jobs__job_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_library_media_libraries__library_id__export_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExportBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_adapters_media_export_adapters_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    create_export_media_exports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateExportBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_export_media_exports__library_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    index_export_media_libraries__library_id__index_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_items_media_libraries__library_id__items_get: {
+        parameters: {
+            query?: {
+                /** @description outbound,inbound,unknown */
+                direction?: string | null;
+                kind?: string | null;
+                labels?: string | null;
+                author?: string | null;
+                container_id?: string | null;
+                has_attachment?: boolean | null;
+                occurred_after?: string | null;
+                occurred_before?: string | null;
+                min_chars?: number | null;
+                max_chars?: number | null;
+                q?: string | null;
+                /** @description A named preset id from /presets. Sets the filter and the sort. */
+                preset?: string | null;
+                order?: string | null;
+                dir?: ("asc" | "desc") | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    item_facets_media_libraries__library_id__item_facets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_presets_media_libraries__library_id__presets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_to_rulebook_media_libraries__library_id__send_to_rulebook_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                library_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendToRulebookBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_handoffs_capture_handoffs_get: {
+        parameters: {
+            query?: {
+                status?: string | null;
+                rung?: string | null;
+                batch_id?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enqueue_handoffs_capture_handoffs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnqueueBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    claim_handoff_capture_handoffs__handoff_id__claim_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                handoff_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClaimBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_result_capture_handoffs__handoff_id__result_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                handoff_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResultBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    needs_drive_capture_handoffs__handoff_id__needs_drive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                handoff_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NeedsDriveBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dismiss_handoff_capture_handoffs__handoff_id__dismiss_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                handoff_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DismissBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_blocks_retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlockIdsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    handoffs_blocks_handoffs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlockIdsBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     mint_file_session_files_session_post: {
         parameters: {
             query?: never;
@@ -170688,6 +182265,7 @@ export interface operations {
             };
             header?: {
                 "X-Idempotency-Key"?: string | null;
+                "If-Match"?: string | null;
             };
             path: {
                 file_id: string;

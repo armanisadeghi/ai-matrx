@@ -10,6 +10,7 @@
  * sized to fit a narrow sidebar column.
  */
 
+import { noteCreateErrorMessage } from "../utils/writeErrors";
 import { useState } from "react";
 import {
   CheckSquare,
@@ -36,7 +37,7 @@ import { cn } from "@/lib/utils";
 import { SimpleTooltip } from "@/components/matrx/Tooltip";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { removeInstanceTab } from "../redux/slice";
-import { deleteNote, moveNoteToFolder, moveNoteToNewFolder, restoreNote } from "../redux/thunks";
+import { deleteNote, moveNoteToFolder, moveNoteToNewFolder, restoreNote, ensureNoteBodiesLoaded } from "../redux/thunks";
 import { ingestSource } from "@/features/rag/api/ingest";
 import { isNoteContentEmpty } from "../utils/noteUtils";
 import { runWithConcurrency } from "@ai-matrx/kit/concurrency";
@@ -145,15 +146,21 @@ export function NoteSidebarBulkBar({
   const handleCreateFolder = async (folderName: string) => {
     if (!hasAny || busyKind) return;
     setBusyKind("move");
+    let firstFailure: unknown = null;
     try {
       const { succeeded, failed } = await runWithConcurrency(
         selectedNotes,
         MAX_PARALLEL,
         async (note) => {
-          await dispatch(moveNoteToNewFolder({ noteId: note.id, folderName })).unwrap();
+          try {
+            await dispatch(moveNoteToNewFolder({ noteId: note.id, folderName })).unwrap();
+          } catch (cause) {
+            firstFailure ??= cause;
+            throw cause;
+          }
         },
       );
-      if (failed > 0) toast.error(`Moved ${succeeded}, ${failed} failed`);
+      if (failed > 0) toast.error(`Moved ${succeeded}, ${failed} failed. ${noteCreateErrorMessage(firstFailure)}`);
       else toast.success(`Created ${folderName} and moved ${succeeded} note${succeeded === 1 ? "" : "s"}`);
       onClear();
     } finally {
@@ -163,11 +170,15 @@ export function NoteSidebarBulkBar({
 
   const handleExport = async () => {
     if (!hasAny) return;
-    if (singleNote) {
-      downloadNoteAsMarkdown(singleNote);
+    // List rows carry only a preview (audit N-24): read the bodies first.
+    const full = await dispatch(
+      ensureNoteBodiesLoaded(selectedNotes.map((n) => n.id)),
+    ).unwrap();
+    if (full.length === 1) {
+      downloadNoteAsMarkdown(full[0]);
       return;
     }
-    await downloadNotesAsMarkdownZip(selectedNotes, "notes-export.zip");
+    await downloadNotesAsMarkdownZip(full, "notes-export.zip");
   };
 
   const handleShare = () => {
@@ -178,7 +189,18 @@ export function NoteSidebarBulkBar({
   const handleDelete = async () => {
     if (!hasAny || busyKind) return;
 
-    const allEmpty = selectedNotes.every((n) => isNoteContentEmpty(n.content));
+    // "Empty" is judged on the BODY; list rows carry only a preview (audit
+    // N-24), so read the bodies before deciding to skip the confirmation.
+    let withBodies: NoteRecord[];
+    try {
+      withBodies = await dispatch(
+        ensureNoteBodiesLoaded(selectedNotes.map((n) => n.id)),
+      ).unwrap();
+    } catch {
+      toast.error("Could not load these notes to check them before deleting. Try again.");
+      return;
+    }
+    const allEmpty = withBodies.every((n) => isNoteContentEmpty(n.content));
     if (!allEmpty) {
       const ok = await confirm({
         title: `Delete ${count} note${count === 1 ? "" : "s"}?`,

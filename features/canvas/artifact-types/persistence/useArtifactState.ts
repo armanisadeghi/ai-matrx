@@ -17,6 +17,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getAdapter, type ArtifactLink } from "./artifact-adapters";
 import { isMaterializedArtifactId } from "../artifactId";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
+import { toast } from "@/lib/toast";
 
 interface UseArtifactStateResult<TState extends Record<string, unknown>> {
   state: TState | null;
@@ -79,7 +81,19 @@ export function useArtifactState<
     if (Object.keys(patch).length === 0) return;
     getAdapter(adapterKey)
       .saveState(liveId, patch, linkRef.current)
-      .catch((err) => console.error("[useArtifactState] save failed:", err));
+      .catch((err) => {
+        // This is the boundary that owns the save. An adapter that refuses
+        // because no organization is selected must say so with the remedy —
+        // a console line would leave the person believing their work saved.
+        // Law: common-docs/policies/context-is-carried-never-rebuilt.md.
+        if (isOrganizationRequiredError(err)) {
+          toast.error(
+            "Select an organization before saving \u2014 every record is filed under one organization. Pick yours from the avatar menu.",
+          );
+          return;
+        }
+        console.error("[useArtifactState] save failed:", err);
+      });
   }, [liveId, adapterKey]);
 
   const save = useCallback(

@@ -2,7 +2,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MessageSquarePlus, PanelLeft } from "lucide-react";
+import { Braces, MessageSquarePlus, PanelLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Tooltip,
@@ -20,9 +20,12 @@ import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkel
 import { AgentListDropdown } from "@ai-matrx/agents/catalog/react";
 import { DEFAULT_NEW_CHAT_MANDATE_KEY } from "@/features/agents/components/chat/chat-quick-actions.config";
 import { useMandate } from "@/features/mandates/useMandate";
-import { selectAgentName } from "@/features/agents/redux/agent-definition/selectors";
-import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
+import { resumeConversation } from "@/features/agents/redux/execution-system/thunks/resume-conversation.thunk";
+import { patchConversation } from "@/features/agents/redux/execution-system/conversations/conversations.slice";
+import { replaceSurfaceVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import { replaceSurfaceContextEntries } from "@/features/agents/redux/execution-system/instance-context/instance-context.slice";
+import { useActivePageSurface } from "@/features/surfaces/runtime/useActivePageSurface";
+import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
 import {
   registerSurface,
   unregisterSurface,
@@ -40,6 +43,17 @@ const SOURCE_FEATURE = "chat";
 const HISTORY_SCOPE = "quick-chat";
 /** Registry key for fork/retry routing — distinct from per-conversation focus keys. */
 const QUICK_CHAT_PANEL_SURFACE = "quick-chat:panel";
+
+/** Per-viewer convenience only — the panel works identically without it. */
+const PAGE_CONTEXT_STORAGE_KEY = "matrx:quick-chat:include-page-context";
+
+function readStoredPageContext(): boolean {
+  try {
+    return window.localStorage.getItem(PAGE_CONTEXT_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 function liveSurfaceKey(agentId: string, session: number): string {
   return `quick-chat:live:${agentId}:${session}`;
@@ -64,6 +78,16 @@ function loadedSurfaceKey(conversationId: string): string {
  *  - **loaded** — a history row was clicked; we hydrate that conversation and
  *    render it. "New chat" returns to live mode.
  *
+ * **Include page context** (off by default — Quick Chat is a context-free chat
+ * you can open over anything). On, the conversation in the panel is stamped
+ * with the surface the person is looking at, which is the ONE mechanism the
+ * header Agents menu uses too: `smartExecute` → `refreshSurfaceScope` re-reads
+ * that surface's live values through the agent↔surface binding layers on every
+ * send. Off, the stamp and the surface-owned values are cleared, so the toggle
+ * never says "off" while page values still ride along. The conversation is
+ * still LAUNCHED with `surfaceName: null` either way — the stamp is applied
+ * after, so flipping the toggle never mints a new conversation.
+ *
  * Rendered as bare content — surrounding chrome (the side panel header / the
  * Utilities Hub tab) is supplied by the consumer.
  *
@@ -76,8 +100,13 @@ export function QuickChatSheet({
   className,
   initialConversationId,
 }: QuickChatSheetProps) {
+  const handedOffAgentId = useAppSelector((state) =>
+    initialConversationId
+      ? state.conversations.byConversationId[initialConversationId]?.agentId
+      : undefined,
+  );
   const { mandate, loading, error } = useMandate(DEFAULT_NEW_CHAT_MANDATE_KEY);
-  if (loading) {
+  if (loading || (initialConversationId && !handedOffAgentId)) {
     return (
       <div className={cn("flex h-full flex-col overflow-hidden", className)}>
         <ChatRoomSkeleton />
@@ -106,7 +135,7 @@ export function QuickChatSheet({
   return (
     <QuickChatSheetBody
       className={className}
-      initialAgentId={mandate.agentId}
+      initialAgentId={handedOffAgentId || mandate.agentId}
       initialConversationId={initialConversationId}
     />
   );
@@ -119,14 +148,25 @@ function QuickChatSheetBody({
 }: QuickChatSheetProps & { initialAgentId: string }) {
   const dispatch = useAppDispatch();
 
+  // The wrapper waits for a handed conversation's shell and passes its agent;
+  // the generic Quick Chat mandate is only the default for a genuinely fresh
+  // panel. This state then belongs to explicit picker changes.
   const [agentId, setAgentId] = useState<string>(initialAgentId);
   const [session, setSession] = useState(0);
   const [loadedConversationId, setLoadedConversationId] = useState<
     string | null
   >(initialConversationId ?? null);
   const [showHistory, setShowHistory] = useState(false);
-
-  const agentName = useAppSelector((state) => selectAgentName(state, agentId));
+  const [includePageContext, setIncludePageContext] = useState(false);
+  // Read after mount — the stored choice must not differ between server and
+  // first client render.
+  useEffect(() => {
+    setIncludePageContext(readStoredPageContext());
+  }, []);
+  const { surfaceName: pageSurfaceName } = useActivePageSurface();
+  const pageSurfaceLabel = pageSurfaceName
+    ? getSurfaceDisplayLabel(pageSurfaceName)
+    : null;
 
   const loadAbortRef = useRef<AbortController | null>(null);
   const activeSurfaceKeyRef = useRef<string | null>(null);
@@ -176,6 +216,53 @@ function QuickChatSheetBody({
   const surfaceKey = isLoaded
     ? loadedSurfaceKey(loadedConversationId)
     : currentLiveSurfaceKey;
+
+  // Keep the conversation's surface stamp equal to what the toggle SAYS, for
+  // whichever conversation is in the panel (fresh or reopened) and whichever
+  // page is underneath it right now.
+  const stampedSurfaceName = useAppSelector((state) =>
+    conversationId
+      ? (state.conversations.byConversationId[conversationId]?.surfaceName ??
+        null)
+      : null,
+  );
+  const conversationReady = useAppSelector((state) =>
+    conversationId
+      ? !!state.conversations.byConversationId[conversationId]
+      : false,
+  );
+  const desiredSurfaceName =
+    includePageContext && pageSurfaceName ? pageSurfaceName : null;
+  useEffect(() => {
+    if (!conversationId || !conversationReady) return;
+    if (stampedSurfaceName === desiredSurfaceName) return;
+    dispatch(
+      patchConversation({ conversationId, surfaceName: desiredSurfaceName }),
+    );
+    if (!desiredSurfaceName) {
+      // Off means OFF: drop what the page already handed over.
+      dispatch(replaceSurfaceVariableValues({ conversationId, values: {} }));
+      dispatch(replaceSurfaceContextEntries({ conversationId, entries: [] }));
+    }
+  }, [
+    dispatch,
+    conversationId,
+    conversationReady,
+    stampedSurfaceName,
+    desiredSurfaceName,
+  ]);
+
+  const handleTogglePageContext = useCallback(() => {
+    setIncludePageContext((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem(PAGE_CONTEXT_STORAGE_KEY, next ? "1" : "0");
+      } catch {
+        /* storage unavailable — the toggle still works for this session */
+      }
+      return next;
+    });
+  }, []);
 
   // Track the active surface key for the unmount clearFocus — written in an
   // effect (never during render) so the ref always holds the last committed key.
@@ -230,29 +317,23 @@ function QuickChatSheetBody({
       loadAbortRef.current = ctrl;
 
       try {
-        if (conv.agentId) {
-          setAgentId(conv.agentId);
-          await dispatch(
-            createManualInstance({
-              agentId: conv.agentId,
-              conversationId: conv.conversationId,
-              apiEndpointMode: "agent",
-              responseDensity: "compact",
-              sourceFeature: SOURCE_FEATURE,
-            }),
-          )
-            .unwrap()
-            .catch(() => {
-              /* instance may already exist — loadConversation handles it */
-            });
+        if (!conv.agentId) {
+          console.error(
+            "[QuickChatSheet] conversation has no agent — cannot reopen",
+            conv.conversationId,
+          );
+          return;
         }
-
-        if (ctrl.signal.aborted) return;
-
+        setAgentId(conv.agentId);
+        // The canonical reopen sequence (hydrate + pending tool prompts +
+        // server-operation reconnect). The surface stamp is left to the
+        // page-context effect below, which owns it for this panel.
         await dispatch(
-          loadConversation({
+          resumeConversation({
             conversationId: conv.conversationId,
+            agentId: conv.agentId,
             surfaceKey: targetSurfaceKey,
+            sourceFeature: SOURCE_FEATURE,
             signal: ctrl.signal,
           }),
         ).unwrap();
@@ -293,11 +374,40 @@ function QuickChatSheetBody({
         <div className="flex min-w-0 flex-1 items-center">
           <AgentListDropdown
             onSelect={handleSelectAgent}
-            label={agentName?.trim() || "Select an agent"}
+            activeAgentId={agentId}
             compact
             noBorder
           />
         </div>
+
+        {pageSurfaceName && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "h-7 shrink-0 gap-1.5 px-2 text-xs",
+                    includePageContext &&
+                      "bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary",
+                  )}
+                  onClick={handleTogglePageContext}
+                  aria-pressed={includePageContext}
+                  aria-label="Include page context"
+                >
+                  <Braces className="h-3.5 w-3.5" />
+                  Page context
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {includePageContext
+                  ? `On — this chat receives the live values from ${pageSurfaceLabel} with every message`
+                  : `Off — turn on to share the live values from ${pageSurfaceLabel} with this chat`}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
 
         <TooltipProvider>
           <Tooltip>

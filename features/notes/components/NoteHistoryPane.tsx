@@ -13,7 +13,7 @@ import Link from "next/link";
 import { ExternalLink, X } from "lucide-react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setInstanceHistoryOpen } from "../redux/slice";
-import { fetchNoteContent } from "../redux/thunks";
+import { refetchNoteContent } from "../redux/thunks";
 
 const NoteVersionHistoryPanel = dynamic(
   () =>
@@ -65,7 +65,7 @@ export function NoteHistoryPane({ instanceId, noteId }: NoteHistoryPaneProps) {
         <NoteVersionHistoryPanel
           noteId={noteId}
           variant="embedded"
-          onVersionRestored={() => dispatch(fetchNoteContent(noteId))}
+          onVersionRestored={() => dispatch(refetchNoteContent(noteId))}
           className="h-full"
         />
       </div>

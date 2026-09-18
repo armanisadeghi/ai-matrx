@@ -38,6 +38,7 @@ Super-admin documentation routes browse the active feature-document registry wit
 
 ## Change log
 
+- 2026-09-17: Removed a double `decodeURIComponent` on the catch-all `path` param in `app/(admin)/administration/documentation/feature-docs/view/[[...path]]/page.tsx` — the App Router already decodes each catch-all segment, so a doc path segment carrying a literal `%` threw `URIError` on the second decode (`segments.map(decodeURIComponent)`). Part of the repo-wide `pnpm check:route-param-decode` census/guard; see `lib/detail/FEATURE.md` Change Log.
 - 2026-09-12: Retired the live `organization_id` default through ledgered FD-T01. Generated inserts now require the organization; raw missing-organization writes fail with `23502`, while an explicit sync canary remains visible in the authenticated viewer.
 - 2026-09-12: Restored the canonical 25-row rendering default after the live .claude view exposed 5,215 records; local search and filters still cover the complete source.
 - 2026-09-12: Made the documentation sync command admit only an explicit organization and use the captured value for every database operation, preparing the catalog for retirement of its database organization default.

@@ -14,9 +14,11 @@
  * gesture for clipboard, sonner toast.promise), so semantics cannot drift.
  */
 
-import { Fragment, useCallback, useRef, useState, type ReactNode } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { useScrollFade } from "@ai-matrx/design-system";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, createLucideIcon } from "lucide-react";
+import { ALCHEMY_GLYPH_PATHS } from "@ai-matrx/design-system/content-transfer/icon";
+import { useMatrxTableRowAlchemy, useMatrxTableRowControls } from "@ai-matrx/design-system/data-table/host";
 import { Slot } from "@radix-ui/react-slot";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -74,11 +76,12 @@ interface MenuFamily {
   }>;
   Sub: React.ComponentType<{ children?: ReactNode }>;
   SubTrigger: React.ComponentType<{
+    onPointerLeave?: (event: ReactPointerEvent<HTMLElement>) => void;
     disabled?: boolean;
     className?: string;
     children?: ReactNode;
   }>;
-  SubContent: React.ComponentType<{ className?: string; children?: ReactNode }>;
+  SubContent: React.ComponentType<{ className?: string; children?: ReactNode; onFocusOutside?: (event: CustomEvent<{ originalEvent: FocusEvent }>) => void; onPointerDownOutside?: (event: CustomEvent<{ originalEvent: PointerEvent }>) => void }>;
   Separator: React.ComponentType<{ className?: string }>;
   Label: React.ComponentType<{ className?: string; children?: ReactNode }>;
   Shortcut: React.ComponentType<{ className?: string; children?: ReactNode }>;
@@ -194,6 +197,11 @@ function MenuSections({
   );
 }
 
+function keepCanonicalPaletteInteraction(event: CustomEvent<{ originalEvent: Event }>) {
+  const target = event.detail.originalEvent.target;
+  if (target instanceof Element && target.closest("[data-canonical-alchemy-submenu]")) event.preventDefault();
+}
+
 function MenuLeaf({
   family,
   entry,
@@ -206,19 +214,21 @@ function MenuLeaf({
   if (isSubmenu(entry)) {
     return (
       <family.Sub>
-        <family.SubTrigger disabled={entry.disabled} className="gap-2">
+        <family.SubTrigger disabled={entry.disabled} className="gap-2" onPointerLeave={(event) => {
+          if (entry.renderContent && event.relatedTarget instanceof Element && event.relatedTarget.closest("[data-canonical-alchemy-submenu]")) event.preventDefault();
+        }}>
           <EntryInner
             entry={entry}
             Shortcut={family.Shortcut}
             showShortcut={false}
           />
         </family.SubTrigger>
-        <family.SubContent>
-          <MenuSections
+        <family.SubContent onFocusOutside={keepCanonicalPaletteInteraction} onPointerDownOutside={keepCanonicalPaletteInteraction} className={entry.renderContent ? "p-0 [--radix-popover-content-available-height:var(--radix-dropdown-menu-content-available-height)]" : undefined}>
+          {entry.renderContent ? entry.renderContent(onCloseRequest) : <MenuSections
             family={family}
             sections={entry.sections}
             onCloseRequest={onCloseRequest}
-          />
+          />}
         </family.SubContent>
       </family.Sub>
     );
@@ -298,6 +308,41 @@ function makeShortcutHandler(
   };
 }
 
+const RowAlchemyIcon = createLucideIcon("Alchemy", ALCHEMY_GLYPH_PATHS.portal.map((d, index) => ["path", { d, key: String(index) }]));
+function hasVisibleEntry(config: ItemMenuConfig | null, id: string): boolean {
+  const entries = config?.sections.flatMap((section) => section.items) ?? [];
+  return entries.some((entry) =>
+    entry.id === id
+      ? !entry.hidden
+      : isSubmenu(entry) && entry.sections.some((section) =>
+          section.items.some((child) => child.id === id && !child.hidden),
+        ),
+  );
+}
+const containsDestructiveAction = (items: ItemMenuEntry[]): boolean => items.some((item) =>
+  (isCommand(item) && item.tone === "destructive") || (isSubmenu(item) && item.sections.some((section) => containsDestructiveAction(section.items))),
+);
+
+/** The transfer session stays mounted in the row; only its canonical palette portals here. */
+function RowAlchemySubmenuContent({ onClose, restoreFocus }: { onClose: () => void; restoreFocus: () => void }) {
+  const alchemy = useMatrxTableRowAlchemy();
+  const target = useRef<HTMLDivElement>(null);
+  const closeRef = useRef(onClose);
+  const focusRef = useRef(restoreFocus);
+  useEffect(() => { focusRef.current = restoreFocus; }, [restoreFocus]);
+  useEffect(() => { closeRef.current = onClose; }, [onClose]);
+  const mountMenu = alchemy?.mountMenu;
+  useEffect(() => {
+    mountMenu?.(target.current, () => closeRef.current(), () => focusRef.current());
+    return () => mountMenu?.(null);
+  }, [mountMenu]);
+  return <div ref={target} data-canonical-alchemy-submenu aria-label="Alchemy output options" onKeyDown={(event) => {
+    // The embedded canonical palette uses native controls, not MenuItems.
+    // Let Tab reach those controls instead of Radix's menu-only suppression.
+    if (event.key === "Tab") event.stopPropagation();
+  }} />;
+}
+
 // ── ItemMenu (trigger-anchored dropdown / drawer) ───────────────────────────
 
 export function ItemMenu({
@@ -311,13 +356,44 @@ export function ItemMenu({
   contentMinWidth = "12rem",
   presentation = "auto",
 }: ItemMenuProps) {
+  const rowAlchemy = useMatrxTableRowAlchemy();
+  const rowControls = useMatrxTableRowControls();
+  const restoreTargetRef = useRef<HTMLElement | null>(null);
+  const dropdownTriggerRef = useRef<HTMLButtonElement | null>(null);
+  useEffect(() => { rowAlchemy?.activate(); }, [rowAlchemy]);
   const isMobile = useIsMobile();
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const isControlled = openProp !== undefined;
   const open = isControlled ? openProp : uncontrolledOpen;
   // Resolve while open so controlled open (whole-row click) and trigger open
   // share one path — no setState-during-render, no empty first frame.
-  const resolved = open ? resolveItemMenuConfig(config) : null;
+  const baseConfig = open ? resolveItemMenuConfig(config) : null;
+  const includeAlchemy = Boolean(rowAlchemy?.ready)
+    && !hasVisibleEntry(baseConfig, "alchemy");
+  const alchemyItem: ItemMenuEntry | null = rowAlchemy ? {
+    kind: "submenu",
+    id: "alchemy",
+    label: "Alchemy",
+    icon: RowAlchemyIcon,
+    disabled: rowAlchemy.copy.disabled,
+    sections: [],
+    renderContent: (onClose) => <RowAlchemySubmenuContent onClose={onClose} restoreFocus={() => (dropdownTriggerRef.current ?? restoreTargetRef.current)?.focus()} />,
+  } : null;
+  const normalSections = baseConfig?.sections.map((section, index) => ({ section, index }))
+    .filter(({ section }) => section.id !== "danger" && !containsDestructiveAction(section.items)) ?? [];
+  const targetSection = (normalSections.find(({ section }) => !section.label) ?? normalSections[0])?.index;
+  const injectedRowItems: ItemMenuEntry[] = [
+    ...(rowControls?.beginEdit && !hasVisibleEntry(baseConfig, "table-edit-row") ? [{ id: "table-edit-row", label: "Edit row", onSelect: rowControls.beginEdit }] : []),
+    ...(rowControls?.saveEdits && !hasVisibleEntry(baseConfig, "table-save-row") ? [{ id: "table-save-row", label: "Save changes", onSelect: rowControls.saveEdits }] : []),
+    ...(rowControls?.cancelEdits && !hasVisibleEntry(baseConfig, "table-discard-row") ? [{ id: "table-discard-row", label: "Discard changes", onSelect: rowControls.cancelEdits }] : []),
+    ...(alchemyItem && includeAlchemy ? [alchemyItem] : []),
+  ];
+  const resolved: ItemMenuConfig | null = baseConfig && injectedRowItems.length > 0 ? {
+    ...baseConfig,
+    sections: targetSection !== undefined
+      ? baseConfig.sections.map((section, index) => index === targetSection ? { ...section, items: [...section.items, ...injectedRowItems] } : section)
+      : [{ id: "actions", items: injectedRowItems }, ...baseConfig.sections],
+  } : baseConfig;
   // ── A LONG MENU SAYS SO, IN WORDS ────────────────────────────────────────
   //
   // 🚨 Measured on production `/agents/all` at 1024x768 (one-resolution
@@ -362,6 +438,7 @@ export function ItemMenu({
         <Slot
           onClick={(e: React.MouseEvent) => {
             e.stopPropagation();
+            if (e.currentTarget instanceof HTMLElement) restoreTargetRef.current = e.currentTarget;
             handleOpenChange(true);
           }}
         >
@@ -384,9 +461,11 @@ export function ItemMenu({
 
   return (
     <DropdownMenu open={open} onOpenChange={handleOpenChange} modal={false}>
-      <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
+      <DropdownMenuTrigger ref={dropdownTriggerRef} asChild>{children}</DropdownMenuTrigger>
       {resolved && (
         <DropdownMenuContent
+          onFocusOutside={keepCanonicalPaletteInteraction}
+          onPointerDownOutside={keepCanonicalPaletteInteraction}
           align={align}
           side={side}
           // A rich menu (a full record-action registry is 20+ entries) is

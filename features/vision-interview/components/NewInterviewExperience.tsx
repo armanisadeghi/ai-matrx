@@ -26,14 +26,10 @@ import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
 import { useDurableDraft } from "@ai-matrx/kit/drafts";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { createSession } from "../service";
 import { ROLE_ORDER, ROLES } from "../types";
-
-/** A readable title from the vision's opening words when none was given. */
-function titleFromVision(vision: string): string {
-  const words = vision.trim().split(/\s+/).slice(0, 7).join(" ");
-  return words.length > 60 ? `${words.slice(0, 57)}…` : words || "Untitled interview";
-}
+import { titleFromVision } from "../titleFromVision";
 
 export function NewInterviewExperience() {
   const router = useRouter();
@@ -59,8 +55,16 @@ export function NewInterviewExperience() {
         router.push(`/masterwork/vision-interview/${session.id}`);
       });
     } catch (err) {
+      // An honest refusal with its remedy — never the transport's programmer
+      // sentence ("Select an organization before sending this request."), which
+      // names no way to fix it. `createSession` fails closed when no
+      // organization is selected (features/vision-interview/service.ts).
       toast.error(
-        err instanceof Error ? err.message : "Could not create the interview.",
+        isOrganizationRequiredError(err)
+          ? "Select an organization before starting an interview \u2014 every interview is filed under one organization. Pick yours from the avatar menu."
+          : err instanceof Error
+            ? err.message
+            : "Could not create the interview.",
       );
       setBusy(false);
     }

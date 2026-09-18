@@ -107,6 +107,14 @@ export type CapturedErrorSource =
    */
   | "media"
   /**
+   * A media render DIED on its primary lane and the heal ladder served it
+   * anyway (`@ai-matrx/media` 0.6 `phase: "heal", healed: true`). Its own
+   * family on purpose: a render that fixes itself is still an incident to be
+   * counted and burned down — never the quiet norm. `code` carries the named
+   * root cause (`healed:<diagnosis>`), `raw.attempts` the whole ladder.
+   */
+  | "media-healed"
+  /**
    * `@ai-matrx/agents/catalog`'s errorSink fired — the ONE agent picker's
    * catalogue read, tier-2 search, favourite write, or mandate default-row
    * resolution failed, or a row arrived with no identity and was dropped.
@@ -137,6 +145,21 @@ export type CapturedErrorSource =
    * before any write runs — this firing means a real defect got past it.
    */
   | "org-resolution"
+  /**
+   * A `seo.*` topical-map RPC or table call refused or failed. These functions
+   * raise sentences written FOR the caller (22023 argument rules, 23514
+   * attachment policies, 42501 `<fn>_denied`, P0002 unknown slug), so the
+   * capture carries the message verbatim alongside the SQLSTATE.
+   */
+  | "topical-map-rpc"
+  /**
+   * A `platform.feature_knob` enum row answered with a value outside the
+   * vocabulary this build knows — an admin (or a migration) chose something no
+   * screen implements. The reader falls back to the row's own `default_value`
+   * and the screen keeps working; this capture is how anyone finds out, and it
+   * carries the knob address and the offending value so the fix is one line.
+   */
+  | "feature-knob-vocabulary"
   /**
    * A user-facing `toast.error(...)`. Showing a failure to the user describes
    * handling, not severity; these stay red unless a specific downgrade rule
@@ -172,6 +195,8 @@ export type CapturedErrorSource =
    * in either the caller or the surface's write wiring.
    */
   | "surface-writeback"
+  /** Code names a surface absent from the database catalog. */
+  | "surface-registration"
   /**
    * A runaway markdown delimiter reached a renderer: a stray/unpaired `$$`
    * that would have made remark-math swallow prose into a math node (KaTeX
@@ -313,6 +338,22 @@ export interface CapturedError {
   /** Full JSON-safe dump of the original error object — future-proof. */
   raw?: unknown;
 
+  /**
+   * What the client knew about its own Supabase session when this fired
+   * (DD-237): `attached`, `pre_attach` (the auth cookie says this browser is
+   * signed in but no session was in hand — racing at boot, or lapsed in a
+   * long-lived tab), `signed_out`, or `unknown`.
+   *
+   * It is a FIRST-CLASS field, not a line in `details`, for the same reason
+   * `recoverable` is: a tier rule and the server-side triage query both have
+   * to be able to see it. Until 2026-09-14 a client read refused for having no
+   * identity reached `ops.system_error` as a bare `42501 permission denied`,
+   * indistinguishable from a real grant gap, and three lanes spent a day each
+   * re-deriving which one it was. Stamped by `supabaseErrorCapture.ts` and
+   * persisted into `context.session_state`.
+   */
+  sessionState?: string;
+
   /** False keeps an expected recovery visible locally without filing a system_error. */
   durable?: boolean;
 
@@ -356,6 +397,8 @@ export interface CaptureInput {
   stack?: string;
   callSite?: string;
   raw?: unknown;
+  /** DD-237 — see CapturedError.sessionState. */
+  sessionState?: string;
   /** Set false only for expected, successfully handled diagnostics. Default true. */
   durable?: boolean;
 }
@@ -516,6 +559,39 @@ function currentRoute(): { route: string; url: string } {
  * instead of flooding the buffer — essential during a cutover where one broken
  * query fires on a loop.
  */
+/**
+ * DD-237 — what the client knew about its own Supabase session, for captures
+ * that do not carry it themselves.
+ *
+ * The Supabase wrapper stamps `sessionState` on its own captures because it
+ * holds the call context. Every OTHER adapter — the Redux middleware, the
+ * Python-backend client, `identity_unavailable`, a thunk's rejection — reaches
+ * this store without it, and those are exactly the rows where "was there a
+ * session at all?" is the first question anyone asks. Measured on production
+ * 2026-09-14, in the first three hours after the barrier shipped: 61 client
+ * rows, every one from an adapter that could not answer it.
+ *
+ * A PROBE, not an import: `sessionBarrier` imports `captureError` from this
+ * module, so a static edge back would be a cycle. The barrier registers this at
+ * install time; until then, and on the server, it is simply absent.
+ */
+type SessionStateProbe = () => string | undefined;
+let sessionStateProbe: SessionStateProbe | null = null;
+
+export function setSessionStateProbe(probe: SessionStateProbe | null): void {
+  sessionStateProbe = probe;
+}
+
+function currentSessionState(): string | undefined {
+  if (!sessionStateProbe) return undefined;
+  try {
+    return sessionStateProbe();
+  } catch {
+    // A probe that throws must never cost us the capture it was describing.
+    return undefined;
+  }
+}
+
 /** Bump the unseen counters for a given entry/tier (once per occurrence). */
 function bumpUnseen(id: string, tier: ErrorTier): void {
   unseen += 1;
@@ -583,6 +659,7 @@ export function captureError(input: CaptureInput): string {
     stack: input.stack,
     callSite: input.callSite,
     raw: input.raw,
+    sessionState: input.sessionState ?? currentSessionState(),
     durable: input.durable ?? true,
     dedupeKey: sig,
     // Classified below; seeded to the default so the object is well-typed.

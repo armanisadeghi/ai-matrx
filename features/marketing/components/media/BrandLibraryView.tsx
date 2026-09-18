@@ -341,7 +341,10 @@ export function BrandLibraryView({
       try {
         const uploaded = await upload(
           { kind: "file", file },
-          { folderPath: "Images/Brand Library" },
+          {
+            folderPath: "Images/Brand Library",
+            organizationId,
+          },
         );
         await createAsset.mutateAsync({
           organizationId,

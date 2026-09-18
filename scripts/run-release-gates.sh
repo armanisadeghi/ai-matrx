@@ -31,10 +31,20 @@ RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; DIM='\033[2m'; NC='\033[0m'
 
 STRICT=false
+REPORT_FILE=""
+LIST=false
+ONLY_LABELS=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --strict) STRICT=true; shift ;;
         --advisory) STRICT=false; shift ;;
+        --report-file)
+            [[ -n "${2:-}" ]] || { echo "--report-file requires a path" >&2; exit 2; }
+            REPORT_FILE="$2"; shift 2 ;;
+        --list) LIST=true; shift ;;
+        --only)
+            [[ -n "${2:-}" ]] || { echo "--only requires an exact gate label" >&2; exit 2; }
+            ONLY_LABELS+=("$2"); shift 2 ;;
         -h|--help)
             grep '^#' "$0" | head -16 | sed 's/^# \?//'
             exit 0
@@ -42,6 +52,11 @@ while [[ $# -gt 0 ]]; do
         *) echo "Unknown flag: $1" >&2; exit 2 ;;
     esac
 done
+
+if [[ -n "$REPORT_FILE" ]]; then
+    : > "$REPORT_FILE"
+    mkdir -p "${REPORT_FILE}.outputs"
+fi
 
 if $STRICT; then
     declare -a GATES=(
@@ -63,6 +78,27 @@ if $STRICT; then
         # `pnpm check:parse --fix` repairs the injected-import class;
         # `pnpm check:parse:self-test` proves the guard can still fail.
         "Every TypeScript file parses|pnpm check:parse"
+        # A `//` LINE INSIDE JSX CHILDREN IS TEXT, NOT A COMMENT. On 2026-09-17
+        # the "Add brand" dialog showed a Data Doctrine CONVERGE stamp after the
+        # organization name: a sweep had placed `// CONVERGE:` lines in JSX child
+        # position in seven files. Parse-only, zero findings after the fix.
+        # `--fix` rewrites them as {/* … */}; `--self-test` proves it can fail.
+        "No // comment lines rendered as JSX text|pnpm check:jsx-text-comments"
+        # EVERY GUARD BELOW IS READ THROUGH A PIPE by this very script, so this
+        # runs second: a guard that abandons its own stdout makes every finding
+        # below it unreliable. `process.exit(code)` tears Node down with whatever
+        # is still in the stdout pipe buffer. Measured three times on this repo:
+        # `check:anon-write-surface | grep FAIL` delivered ONE of THREE (B-110),
+        # `check:staff-door | sed` delivered 10 residue rows and a file got all of
+        # them (B-120), and a 4,000-finding guard shape delivered 810 lines through
+        # a pipe whose reader stalled for one second while a file got 4,000 (B-122)
+        # — exit code correct every time, so nothing looked wrong. Every
+        # scripts/check-*.ts now exits through scripts/lib/exit-after-drain.ts and
+        # this gate fails on a bare process.exit( in any of them. Zero findings at
+        # introduction and no lawful exception, so it exits 1 in both lanes.
+        # `pnpm check:guards-drain:self-test` proves the guard can still fail
+        # (3 planted REDs, all in a throwaway temp dir). (DD-232)
+        "Guards drain before they exit (no truncated findings)|pnpm check:guards-drain"
         # First, cheapest, and the one local tsc can't see: the COMMITTED tree
         # must resolve every import — a tracked file importing an untracked one
         # builds locally and dies on Vercel (v0.4.194, 2026-07-28).
@@ -70,6 +106,22 @@ if $STRICT; then
         "Parked route groups (a group deleted from main)|pnpm check:parked-routes:strict"
         "Cross-deployment links (a CORS preflight on every www hover)|pnpm check:cross-deployment-links:strict"
         "Agent addresses (a system agent linked into the user shell)|pnpm check:agent-links"
+        "Sign-out scope (a bare signOut() logs the account out of every device)|pnpm check:signout-scope"
+        "Hidden failure announcements (an error only a screen reader can perceive is a dead button)|pnpm check:hidden-alerts"
+        # THE UNIFIED-DATA CAMPAIGN SWITCH MUST COVER SOMETHING. The campaign's
+        # code ships continuously — any lane's `release*:` commit builds the
+        # whole pushed range — so campaign code must be inert until
+        # platform.feature_knob custom.code_paths_enabled is on. Until
+        # 2026-09-15 the switch existed, defaulted OFF, and was wired to NOTHING:
+        # ENTRY_POINTS was [] and its only test asserted audit([]) == [], green
+        # forever (ATTACK-4 finding 5). This resolves every import in the tree
+        # through the TypeScript AST and fails on any file that reaches the
+        # campaign store or a campaign module without being on the register —
+        # and on any `runtime` entry that never calls the gate. Static, no
+        # credential, no sibling checkout; UNMEASURED and exit 1 if it cannot
+        # list the tree. `pnpm check:campaign-entry-points:self-test` proves it
+        # can fail from committed fixtures.
+        "Unified-data campaign entry points are registered and gated|pnpm check:campaign-entry-points"
         "TypeScript type-check|pnpm type-check"
         "Doctrine check|pnpm exec tsx scripts/check-doctrine.ts --strict"
         "Doc claims vs live config|pnpm exec tsx scripts/check-doc-claims.ts --strict"
@@ -107,6 +159,11 @@ if $STRICT; then
         # ≥3-column dialog grids. The class behind the 2026-09-12 feedback-
         # console report. `pnpm check:phone-layout:self-test` proves it can fail.
         "Phone layout (tables, viewport units, dialog grids)|pnpm check:phone-layout:strict"
+        # MANDATE REFERENCES. Reported, never blocked (D23) — `check` exits 0
+        # without --strict. It also runs in release.sh OUTSIDE --no-gates, so a
+        # release that skips this suite still reports; the entry here is what
+        # makes a manual gate run show the findings too.
+        "Mandate references (every Mandate this build names, and every bypass)|pnpm check:mandate-references"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts --strict"
         # CANONICAL RATCHETS — the two counts from the 2026-08-15 architecture
         # drift audit's enforcement recommendation (item 2). Both read ONE cached
@@ -154,6 +211,17 @@ if $STRICT; then
         # re-ENABLE inside ONE transaction, so a guard left disabled at rest is a
         # mistake, not a state. (aidream/scripts/release.sh asserts the same.)
         "DB guards: triggers, planner traps, public exposure|pnpm check:db-guards:strict"
+        # THE SIGNED-OUT SURFACE, READ AND WRITE. Both of these existed only as pnpm
+        # scripts until 2026-09-14 — in no gate, no CI job and no hook — which is how
+        # DD-218 happened: `agent.mandate_exemplar` kept a live 22-column anon grant
+        # (`user_input` and `variables` among them) while a "sync live share and
+        # exposure registries" sweep DELETED its declaration, and nothing failed for a
+        # day because nothing ran the guard that already knew. A guard nobody runs is
+        # a comment. Both exit 1 on their own without a --strict flag, so the entry is
+        # the plain script; both are proven failing-then-passing by their own
+        # `:self-test` (3 and 7 RED proofs, rolled back against the live database).
+        "Anon column surface: every anon-readable relation declares its columns (DD-186)|pnpm check:anon-column-surface"
+        "Anon write surface: a signed-out caller writes nothing undeclared (DD-193/DD-196)|pnpm check:anon-write-surface"
         # IMPL DOORS is BLOCKING as of 2026-09-12 (DD-152, the condition DD-154
         # named): its backlog is gone. D6 — a declared ANONYMOUS door whose body
         # reads visibility-bearing rows with no gate of any kind — had REGRESSED
@@ -187,6 +255,18 @@ if $STRICT; then
         # be the exact failure this gate exists to end. Proven failing then
         # passing on DD-191's own shape: `pnpm check:door-rows:self-test`.
         "Door rows: a door returns only what its caller may read (DD-192)|pnpm check:door-rows:strict"
+        # DD-208 — the WIDE lane (all 892 declared signed-in doors, not just the
+        # 477 of b75). It could not block until two things were true, and on
+        # 2026-09-13 both became true: its three row-boundedness leaks are closed
+        # (`billing.entitlement_consume`, `public.agx_get_list_full`,
+        # `public.dict_resolve`, plus three sibling agent doors and the unchecked
+        # `p_org` on the four-argument consume overload), and the four doors that
+        # cross the organization boundary ON PURPOSE now carry a written reason and
+        # a named owner in `scripts/door-rows/by-design-allowlist.json`. Those four
+        # print on every run as ALLOWED BY DESIGN — never silent, never a PASS — and
+        # the list can only shrink: an entry whose door has stopped failing FAILS
+        # this gate by itself, so an excuse can never outlive the thing it excused.
+        "Door rows, wide: every declared signed-in door (DD-208)|pnpm check:door-rows:wide:strict"
         # A policy that reads its own relation raises 42P17 and the table is
         # unreadable by everyone — platform.rulebook and seo.starter_pack, live,
         # 2026-09-12, from the moment a routine iam.apply_rls sweep first emitted
@@ -320,6 +400,26 @@ if $STRICT; then
         # the fix is one command (`pnpm shape:types <kind>`), never an edit to a
         # .gen.ts. Needs the live registry, like its two neighbours here.
         "Generated kind types vs live registry|pnpm check:kind-types"
+        # 🚨 THE SHAPE SANDBOX'S OWN GATE (DD-242). Organization-authored component
+        # bodies execute in the browser; the ONLY proof that one of them reaches
+        # nothing on the network, is refused BY NAME as a CSP violation, and sits on
+        # an opaque origin is the real-Chromium spec this runs. Until 2026-09-14 that
+        # spec was in NO gate, NO CI job and NO hook — it ran only when a person typed
+        # it on a machine holding the single shared dev-server lease, which is why the
+        # DD-123 rollout's step-2 parity witness is UNKNOWN to this day. This gate
+        # boots ITS OWN server on a port the OS hands out (never 3001, never a port a
+        # peer holds), serving the REAL app/kind-sandbox/route.ts, regenerates the
+        # witness from live rows, and runs the spec plus the protocol and safelist
+        # guards. MEASURED 13.4 s end to end — cheaper than type-check and far cheaper
+        # than the jest suite already here. It also refuses to pass when it cannot
+        # compare its policy against the one production is serving (UNMEASURED is a
+        # finding, never a green). Proven failing-then-passing 2026-09-14 in a
+        # throwaway worktree: `connect-src 'none'` -> `connect-src *` produced two
+        # findings (the live-policy divergence by directive, and the spec's
+        # "connect-src never refused anything in the frame") with the in-page RED
+        # controls still firing; exit 1. `pnpm check:kind-sandbox-gate:self-test`
+        # proves the gate's own comparison logic can still fail.
+        "The Shape sandbox boundary, in a real browser (DD-242)|pnpm check:kind-sandbox-gate"
         # THE `__kind` MARKER LAW genuinely blocks a MERGE — ci.yml runs
         # `pnpm check:kind-marker-law` on every push and PR, so unlike most gates
         # here a red really does stop something. It exits 1 in both modes. `__kind` is part of
@@ -348,7 +448,7 @@ if $STRICT; then
         # measured victim before it (image-studio DESCRIBE never ran), so there
         # is no backlog to grandfather — a finding is new, and it is a run the
         # user will never get.
-        "autoRun never paired with a headless mode|pnpm check:autorun-headless"
+        "no UI flag aimed at a headless mode|pnpm check:headless-ui-flags"
         "Agent submission never requires typed user_input|pnpm check:agent-submit-content"
         "Content IR / kinds test suite|pnpm test:content-ir"
         # THE WHOLE JEST SUITE. `package.json`'s `"test"` script was invoked by
@@ -487,6 +587,8 @@ if $STRICT; then
 else
     # Non-strict variants still print the full loud report; they exit 0.
     declare -a GATES=(
+        "Hidden failure announcements (an error only a screen reader can perceive is a dead button)|pnpm check:hidden-alerts"
+        "Notes: a failed + is announced (the shared draft control and the real surfaces)|npx jest features/notes/hooks/useDraftInitializationControl.test.tsx features/notes/redux/draftInitialization.control.integration.test.tsx --silent"
         # EVERY FILE PARSES — the cheapest gate here (~4s over 14,716 files)
         # and the only one whose finding is not an opinion. On 2026-09-07 the
         # census-H1 codemod injected its new `@ai-matrx/kit/format` import
@@ -505,6 +607,16 @@ else
         # `pnpm check:parse --fix` repairs the injected-import class;
         # `pnpm check:parse:self-test` proves the guard can still fail.
         "Every TypeScript file parses|pnpm check:parse"
+        # A `//` LINE INSIDE JSX CHILDREN IS TEXT, NOT A COMMENT. On 2026-09-17
+        # the "Add brand" dialog showed a Data Doctrine CONVERGE stamp after the
+        # organization name: a sweep had placed `// CONVERGE:` lines in JSX child
+        # position in seven files. Parse-only, zero findings after the fix.
+        # `--fix` rewrites them as {/* … */}; `--self-test` proves it can fail.
+        "No // comment lines rendered as JSX text|pnpm check:jsx-text-comments"
+        # Guards are read through a pipe by this script; one that abandons its
+        # own stdout makes every finding below it unreliable. Full story and the
+        # three measurements at the strict copy of this entry. (DD-232)
+        "Guards drain before they exit (no truncated findings)|pnpm check:guards-drain"
         # First, cheapest, and the one local tsc can't see: the COMMITTED tree
         # must resolve every import — a tracked file importing an untracked one
         # builds locally and dies on Vercel (v0.4.194, 2026-07-28).
@@ -530,6 +642,8 @@ else
         "One agent-list read (package-owned)|pnpm check:agent-list-reads"
         "One \"is this run over?\" predicate (runIsOver)|pnpm check:run-is-over"
         "Scroll-chain (clipped tables/lists)|pnpm exec tsx scripts/check-scroll-chain.ts"
+        # See the strict lane above for why this class is a shipped-code hazard.
+        "Unified-data campaign entry points are registered and gated|pnpm check:campaign-entry-points"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts"
         # Blocking in --strict (see the strict list above); loud and exit-0 here,
         # like every other gate in the advisory list.
@@ -547,6 +661,17 @@ else
         # not a blocked release.
         "Reachability standing guards|pnpm check:reachability-guards"
         "DB guards: triggers, planner traps, public exposure|pnpm check:db-guards"
+        # THE SIGNED-OUT SURFACE, READ AND WRITE. Both of these existed only as pnpm
+        # scripts until 2026-09-14 — in no gate, no CI job and no hook — which is how
+        # DD-218 happened: `agent.mandate_exemplar` kept a live 22-column anon grant
+        # (`user_input` and `variables` among them) while a "sync live share and
+        # exposure registries" sweep DELETED its declaration, and nothing failed for a
+        # day because nothing ran the guard that already knew. A guard nobody runs is
+        # a comment. Both exit 1 on their own without a --strict flag, so the entry is
+        # the plain script; both are proven failing-then-passing by their own
+        # `:self-test` (3 and 7 RED proofs, rolled back against the live database).
+        "Anon column surface: every anon-readable relation declares its columns (DD-186)|pnpm check:anon-column-surface"
+        "Anon write surface: a signed-out caller writes nothing undeclared (DD-193/DD-196)|pnpm check:anon-write-surface"
         # IMPL DOORS ran NOWHERE until 2026-09-12 — not here, not in the strict
         # list, not in ci.yml — while three migrations cite it as the gate holding
         # their decision (d31, dd146, schema_templates_reference_write_doors_b8). It
@@ -675,6 +800,26 @@ else
         # the fix is one command (`pnpm shape:types <kind>`), never an edit to a
         # .gen.ts. Needs the live registry, like its two neighbours here.
         "Generated kind types vs live registry|pnpm check:kind-types"
+        # 🚨 THE SHAPE SANDBOX'S OWN GATE (DD-242). Organization-authored component
+        # bodies execute in the browser; the ONLY proof that one of them reaches
+        # nothing on the network, is refused BY NAME as a CSP violation, and sits on
+        # an opaque origin is the real-Chromium spec this runs. Until 2026-09-14 that
+        # spec was in NO gate, NO CI job and NO hook — it ran only when a person typed
+        # it on a machine holding the single shared dev-server lease, which is why the
+        # DD-123 rollout's step-2 parity witness is UNKNOWN to this day. This gate
+        # boots ITS OWN server on a port the OS hands out (never 3001, never a port a
+        # peer holds), serving the REAL app/kind-sandbox/route.ts, regenerates the
+        # witness from live rows, and runs the spec plus the protocol and safelist
+        # guards. MEASURED 13.4 s end to end — cheaper than type-check and far cheaper
+        # than the jest suite already here. It also refuses to pass when it cannot
+        # compare its policy against the one production is serving (UNMEASURED is a
+        # finding, never a green). Proven failing-then-passing 2026-09-14 in a
+        # throwaway worktree: `connect-src 'none'` -> `connect-src *` produced two
+        # findings (the live-policy divergence by directive, and the spec's
+        # "connect-src never refused anything in the frame") with the in-page RED
+        # controls still firing; exit 1. `pnpm check:kind-sandbox-gate:self-test`
+        # proves the gate's own comparison logic can still fail.
+        "The Shape sandbox boundary, in a real browser (DD-242)|pnpm check:kind-sandbox-gate"
         # THE `__kind` MARKER LAW genuinely blocks a MERGE — ci.yml runs
         # `pnpm check:kind-marker-law` on every push and PR, so unlike most gates
         # here a red really does stop something. It exits 1 in both modes. `__kind` is part of
@@ -703,7 +848,7 @@ else
         # measured victim before it (image-studio DESCRIBE never ran), so there
         # is no backlog to grandfather — a finding is new, and it is a run the
         # user will never get.
-        "autoRun never paired with a headless mode|pnpm check:autorun-headless"
+        "no UI flag aimed at a headless mode|pnpm check:headless-ui-flags"
         "Agent submission never requires typed user_input|pnpm check:agent-submit-content"
         "Content IR / kinds test suite|pnpm test:content-ir"
         # THE WHOLE JEST SUITE. `package.json`'s `"test"` script was invoked by
@@ -807,6 +952,23 @@ else
     )
 fi
 
+if [[ ${#ONLY_LABELS[@]} -gt 0 ]]; then
+    selected=()
+    for entry in "${GATES[@]}"; do
+        IFS='|' read -r label _ <<< "$entry"
+        for wanted in "${ONLY_LABELS[@]}"; do
+            [[ "$label" == "$wanted" ]] && selected+=("$entry")
+        done
+    done
+    [[ ${#selected[@]} -eq ${#ONLY_LABELS[@]} ]] || { echo "--only did not select every exact gate label" >&2; exit 2; }
+    GATES=("${selected[@]}")
+fi
+
+if $LIST; then
+    printf '%s\n' "${GATES[@]}"
+    exit 0
+fi
+
 echo ""
 echo -e "${BOLD}  Release quality gates${NC}"
 echo -e "  ${DIM}${#GATES[@]} checks — each prints its name before it starts${NC}"
@@ -874,6 +1036,13 @@ run_gate() {
     # mode exits 0 with a loud red box; hiding that would defeat the point.
     local has_output=false
     [[ -s "$tmp" ]] && has_output=true
+    # The terminal stays concise for healthy checks, but async receipts retain
+    # every check's complete stream, including healthy chatter, by step.
+    GATE_OUTPUT_FILE=""
+    if [[ -n "$REPORT_FILE" ]]; then
+        GATE_OUTPUT_FILE="${REPORT_FILE}.outputs/${step}.log"
+        cp "$tmp" "$GATE_OUTPUT_FILE" || { echo "Could not retain gate output: $GATE_OUTPUT_FILE" >&2; rm -f "$tmp"; return 1; }
+    fi
 
     if [[ $exit_code -ne 0 ]]; then
         echo -e "${RED}[FAIL]${NC}  [$step/$total] ${label} (${elapsed}s)"
@@ -941,6 +1110,18 @@ run_gate() {
     return 0
 }
 
+record_gate_result() {
+    local step="$1"
+    local label="$2"
+    local cmd="$3"
+    local result="$4"
+    local elapsed="$5"
+    [[ -n "$REPORT_FILE" ]] || return 0
+    STEP="$step" LABEL="$label" COMMAND="$cmd" RESULT="$result" ELAPSED_SECONDS="$elapsed" OUTPUT_FILE="${GATE_OUTPUT_FILE:-}" \
+        node -e 'process.stdout.write(JSON.stringify({step:Number(process.env.STEP),label:process.env.LABEL,command:process.env.COMMAND,result:process.env.RESULT,elapsedSeconds:Number(process.env.ELAPSED_SECONDS),outputFile:process.env.OUTPUT_FILE,recordedAt:new Date().toISOString()})+"\n")' \
+        >> "$REPORT_FILE"
+}
+
 failed=0
 warned=0
 step=1
@@ -948,16 +1129,22 @@ total=${#GATES[@]}
 
 for entry in "${GATES[@]}"; do
     IFS='|' read -r label cmd <<< "$entry"
+    gate_started=$SECONDS
     set +e
     run_gate "$step" "$total" "$label" "$cmd"
     rc=$?
     set -e
+    gate_elapsed=$(( SECONDS - gate_started ))
     if [[ $rc -eq 1 ]]; then
+        record_gate_result "$step" "$label" "$cmd" "fail" "$gate_elapsed"
         failed=1
         # Strict: stop early. Advisory: keep going so every gate screams.
         $STRICT && break
     elif [[ $rc -eq 2 ]]; then
+        record_gate_result "$step" "$label" "$cmd" "warn" "$gate_elapsed"
         warned=1
+    else
+        record_gate_result "$step" "$label" "$cmd" "ok" "$gate_elapsed"
     fi
     step=$(( step + 1 ))
 done

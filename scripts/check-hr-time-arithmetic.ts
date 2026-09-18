@@ -62,6 +62,7 @@
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { relative, resolve } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(__dirname, "..");
 
@@ -333,7 +334,7 @@ if (asJson) {
       2,
     )}\n`,
   );
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 const RED = "\x1b[31m";
@@ -347,7 +348,7 @@ if (total === 0) {
     `${GREEN}[OK]${NC} No client-side elapsed-time or money arithmetic in ` +
       `${SCAN_ROOTS.join(" + ")} (${scannedFiles.length} files scanned).\n`,
   );
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 process.stdout.write(
@@ -390,4 +391,4 @@ process.stdout.write(
     `arithmetic, mark it \`// hr-time-arithmetic-allow: <why>\` — with the reason.${NC}\n`,
 );
 
-process.exit(strict ? 1 : 0);
+exitAfterDrain(strict ? 1 : 0);

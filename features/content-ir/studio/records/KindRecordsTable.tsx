@@ -698,7 +698,7 @@ export default function KindRecordsTable({
           ),
         }}
         rowActions={(row) => (
-          <div className="flex items-center justify-end gap-1">
+          <>
             {row.confirmation === "unconfirmed" ? (
               <Button
                 size="sm"
@@ -724,7 +724,7 @@ export default function KindRecordsTable({
                 <MoreVertical className="h-4 w-4" />
               </button>
             </ItemMenu>
-          </div>
+          </>
         )}
         copy={{
           label: `${label} record`,

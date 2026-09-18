@@ -59,13 +59,14 @@ export function AudioPreview({
   // own file never just "expires". `remintOnError` is wired to the <audio>
   // error event; `remintFailed` flips true only after the retry is exhausted.
   // Foreign URLs pass through.
-  const src = url ?? "";
   const {
     retryKey,
     onLoadError: remintOnError,
     failed: remintFailed,
+    healedSrc,
   } = useMediaLoadRecovery(url, {
     recoverable: !!url && recognizeOurFileUrl(url) !== null,
+    failureRef: url ? { url } : null,
   });
 
   // A distinct audio source owns a distinct playback session. Keying the
@@ -83,6 +84,7 @@ export function AudioPreview({
       retryKey={retryKey}
       remintOnError={remintOnError}
       remintFailed={remintFailed}
+      healedSrc={healedSrc}
     />
   );
 }
@@ -91,6 +93,8 @@ interface AudioPreviewSessionProps extends AudioPreviewProps {
   retryKey: number;
   remintOnError: (event?: unknown) => void;
   remintFailed: boolean;
+  /** A healed (bearer-lane) object URL that replaces a dead element src. */
+  healedSrc: string | null;
 }
 
 function AudioPreviewSession({
@@ -101,10 +105,11 @@ function AudioPreviewSession({
   retryKey,
   remintOnError,
   remintFailed,
+  healedSrc,
 }: AudioPreviewSessionProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const src = url ?? "";
+  const src = healedSrc ?? url ?? "";
 
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);

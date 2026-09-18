@@ -173,6 +173,12 @@ cms-starter-kit`. Guarded CMS writes (agent_write_policy + activity log live
     read `features/surfaces/FEATURE.md` § Surface writeback before touching
     any of this.
 
+- **Site brief view** (`…/content/plan/[siteId]/brief`, `PlanView` `"brief"`) —
+  what this website is FOR, reading the brand strategy: the reference the plan
+  generator, brief writer, page writer and plan review all receive server-side.
+  ONE component with the brand strategy room, split by scope — see
+  `features/marketing/FEATURE.md` § Brand strategy and site brief.
+
 ## Data model (all live in Supabase, PostgREST-exposed)
 
 - `plan.node` — planned URL tree. **`route` / `depth` / `pillar_label` /

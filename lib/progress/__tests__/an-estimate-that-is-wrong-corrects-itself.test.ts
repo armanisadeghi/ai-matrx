@@ -1,0 +1,161 @@
+/**
+ * AN ESTIMATE THAT HAS BEEN OVERTAKEN CORRECTS ITSELF — a forcing function.
+ *
+ * Cold walk, 2026-09-16:
+ *
+ *   #7 — the Quick Build dialog said "Building — this takes about a minute."
+ *        and then held that sentence, word for word, while step 2 ran for
+ *        roughly three minutes. The promise was never updated and never
+ *        explained. The only honest reading left on the screen was "stuck".
+ *
+ *   #5 — the Conductor's "Build with me" streamed two tool blocks and then sat
+ *        for over two minutes with nothing in the viewport saying working,
+ *        done or stuck; the Stop control existed but had scrolled out of view.
+ *        Only leaving the page and reading a counter elsewhere proved the run
+ *        had in fact finished.
+ *
+ * Both are one law: a screen is absent or honest, never dead and never lying.
+ * What this holds down:
+ *
+ *   1. Before the usual time, the estimate says the usual time.
+ *   2. After it, the sentence CHANGES: it says this one is taking longer, says
+ *      how long it has actually been, and says nothing has failed — which is
+ *      the only question a waiting person actually has.
+ *   3. The Build reads a live clock, so the sentence can change at all. A
+ *      correct sentence computed once at launch is the original bug.
+ */
+
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describeDuration, estimateSentence } from "../estimateSentence";
+
+const REPO_ROOT = join(__dirname, "..", "..", "..");
+const read = (relative: string) =>
+  readFileSync(join(REPO_ROOT, relative), "utf8");
+
+const MINUTE = 60_000;
+
+describe("the sentence a person reads while they wait", () => {
+  const build = (elapsedMs: number) =>
+    estimateSentence({
+      elapsedMs,
+      usualMs: MINUTE,
+      doing: "Building",
+      keepsGoingWithoutYou: true,
+      // Every step healthy: the time-based sentences below are only reachable
+      // when the rows agree. See the step-aware suite at the bottom.
+      steps: [{ label: "Building the parts", status: "running" }],
+      shape: "sequence",
+    });
+
+  it("promises the usual time while the promise still holds", () => {
+    expect(build(10_000)).toBe("Building — this usually takes about a minute.");
+  });
+
+  it("does not cry wolf the instant the estimate ticks over", () => {
+    expect(build(MINUTE + 5_000)).toContain("usually takes");
+  });
+
+  it("CHANGES once it has really been overtaken — the whole defect", () => {
+    const atThreeMinutes = build(3 * MINUTE);
+    expect(atThreeMinutes).not.toBe(build(10_000));
+    expect(atThreeMinutes).toContain("longer than usual");
+  });
+
+  it("says how long it has actually been, in plain words", () => {
+    expect(build(3 * MINUTE)).toContain("after 3 minutes");
+    expect(build(2 * MINUTE)).toContain("after 2 minutes");
+  });
+
+  it("answers the only question a waiting person has: is this broken?", () => {
+    expect(build(3 * MINUTE)).toContain("Nothing has failed");
+  });
+
+  it("says you may walk away when the work survives you", () => {
+    expect(build(3 * MINUTE)).toContain("keeps going without you");
+    expect(
+      estimateSentence({
+        elapsedMs: 3 * MINUTE,
+        usualMs: MINUTE,
+        doing: "Checking every rule",
+        steps: [{ label: "Checking rule 4", status: "running" }],
+        shape: "sequence",
+      }),
+    ).not.toContain("keeps going without you");
+  });
+
+  it("speaks in minutes, never in seconds or tildes", () => {
+    expect(describeDuration(MINUTE)).toBe("about a minute");
+    expect(describeDuration(3 * MINUTE)).toBe("about 3 minutes");
+    expect(describeDuration(3 * MINUTE)).not.toMatch(/[~s]\d|\d+s/);
+  });
+});
+
+describe("the Build's estimate can actually change", () => {
+  const source = read("features/masterwork/build/useBuildRun.ts");
+
+  it("no longer hardcodes the promise it used to break", () => {
+    // Quoted in the fix's own comment, so the check is on the CODE: no string
+    // literal reaches the description any more.
+    const code = source.replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(code).not.toContain("this takes about a minute.");
+    expect(source).toContain("description: run.rejoinedTarget");
+  });
+
+  it("reads a live clock while the run is active", () => {
+    // Without an elapsed input the sentence is computed once and is exactly
+    // as stale as the string it replaced.
+    expect(source).toContain("estimateSentence");
+    expect(source).toContain("elapsedMs");
+    expect(source).toMatch(/setInterval/);
+  });
+});
+
+/**
+ * Cold walk 2026-09-16, finding #2 — the reassurance that contradicted the
+ * rows rendered beneath it. The clock never outranks a failed step.
+ */
+describe("a failed step outranks every word the clock would say", () => {
+  const withFailure = (elapsedMs: number) =>
+    estimateSentence({
+      elapsedMs,
+      usualMs: MINUTE,
+      doing: "Building",
+      keepsGoingWithoutYou: true,
+      steps: [
+        { label: "Reading the rules you approved", status: "completed" },
+        { label: "Building the parts that do the work", status: "failed" },
+        { label: "Saving it to your library", status: "waiting" },
+      ],
+      shape: "sequence",
+    });
+
+  it("never says nothing has failed when a rendered step has", () => {
+    expect(withFailure(3 * MINUTE)).not.toMatch(/nothing (has )?failed/i);
+    // And not only after the estimate is overtaken — the early sentence is
+    // just as much a lie while a step is red.
+    expect(withFailure(10_000)).not.toContain("this usually takes");
+  });
+
+  it("names the step and says what to do about it", () => {
+    const sentence = withFailure(3 * MINUTE);
+    expect(sentence).toContain("Building the parts that do the work");
+    expect(sentence).toMatch(/try it again/i);
+  });
+
+  it("counts the other failures rather than hiding them", () => {
+    const sentence = estimateSentence({
+      elapsedMs: 3 * MINUTE,
+      usualMs: MINUTE,
+      doing: "Building",
+      steps: [
+        { label: "First part", status: "failed" },
+        { label: "Second part", status: "failed" },
+        { label: "Third part", status: "failed" },
+      ],
+      shape: "sequence",
+    });
+    expect(sentence).toContain("First part");
+    expect(sentence).toContain("2 other steps failed too");
+  });
+});

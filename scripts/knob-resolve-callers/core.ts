@@ -30,7 +30,14 @@ export function knobResolveCalls(body: string): { args: string[]; at: number }[]
     const isRpc = body[i] === ",";
     if (isRpc) {
       while (i < body.length && body[i] !== "{" && body[i] !== "\n") i++;
-      if (body[i] !== "{") continue;
+      if (body[i] !== "{") {
+        // `knob_resolve` named as a STRING but not followed by an options object: a generic
+        // dispatcher such as aidream's `call_function(db, "platform", "knob_resolve", *args)`,
+        // where p_scopes is a positional argument of the HELPER, not of a call we can read.
+        // Reported as unreadable rather than dropped — a silent skip is how DD-198 survived.
+        out.push({ args: ["", "", "", "", "<called through a dispatcher — read it>"], at: m.index });
+        continue;
+      }
     }
     const open = body[i];
     const close = open === "{" ? "}" : ")";
@@ -106,3 +113,53 @@ export function classify(arg: string): Verdict {
   return "opaque";
 }
 
+
+// ───────────────────────────────────────────────────────────────────────────
+// DD-211 — WHICH RUNGS a call site names.
+//
+// `overridable_by` on a knob decides which rungs the settings picker offers;
+// `p_scopes` on the reader decides which rungs the database can actually
+// answer with (`organization` and `user` are the dedicated parameters and are
+// always reachable — every OTHER rung exists only if a reader names it). When
+// those two disagree the screen sells an exception that changes nothing, which
+// is how `records.confirmation.agent_write_born_confirmed`'s `agent` rung was a
+// silent no-op until DD-211 (V-64, 2026-09-13).
+//
+// These two readers are what make that measurable rather than remembered.
+// ───────────────────────────────────────────────────────────────────────────
+
+/** The rungs `organization` and `user` need no `p_scopes`: they are knob_resolve's own parameters. */
+export const RUNGS_WITHOUT_SCOPES: readonly string[] = ["organization", "user"];
+
+/** A single-quoted SQL literal / quoted JS-or-Python string, unwrapped; `null` when it is not one. */
+export function literalOf(arg: string): string | null {
+  const a = (arg ?? "").trim().replace(/::\s*text\s*$/i, "").trim();
+  const m = a.match(/^'([^']*)'$/) ?? a.match(/^"([^"]*)"$/);
+  return m ? m[1] : null;
+}
+
+/**
+ * The rung kinds one `p_scopes` argument NAMES, and whether any of them is
+ * computed rather than written out.
+ *
+ * `dynamic: true` means the call site builds a kind from a variable
+ * (`jsonb_build_object('kind', p_scope_kind, …)` — `platform._knob_override_write`
+ * does exactly that): which rungs it reaches is unknowable from the text, so it
+ * is reported as such and never counted as proof either way.
+ */
+export function rungsNamedBy(scopesArg: string): { kinds: string[]; dynamic: boolean } {
+  const a = (scopesArg ?? "").trim();
+  const kinds = new Set<string>();
+  // SQL: jsonb_build_object('kind', 'agent', 'id', …)   ·   TS/JS: { kind: "device", id }
+  // (the property name is quoted in SQL and usually bare in TS, so both spellings count).
+  const KIND = String.raw`(?:['"]kind['"]|\bkind)`;
+  for (const m of a.matchAll(new RegExp(`${KIND}\\s*[,:]\\s*['"]([a-z_][a-z0-9_]*)['"]`, "gi"))) {
+    kinds.add(m[1]);
+  }
+  const withoutLiterals = a.replace(
+    new RegExp(`${KIND}\\s*[,:]\\s*['"][a-z_][a-z0-9_]*['"]`, "gi"),
+    "",
+  );
+  const dynamic = new RegExp(`${KIND}\\s*[,:]\\s*[^'"\\s)]`, "i").test(withoutLiterals);
+  return { kinds: [...kinds].sort(), dynamic };
+}

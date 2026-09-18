@@ -8,6 +8,7 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = path.resolve(__dirname, "..");
 const PRODUCTION_ROOTS = ["features/agents/", "features/agent-comparison/"];
@@ -124,7 +125,7 @@ function main(): void {
       "typed message presence; shared Battle requests must fan out the complete " +
       "Smart Agent Input draft.\n",
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 main();

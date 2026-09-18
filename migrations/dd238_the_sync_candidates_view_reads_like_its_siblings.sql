@@ -1,0 +1,56 @@
+-- DD-238 — a signed-in screen never asks for what its reader may not have.
+--
+-- THE DEFECT (measured 2026-09-14 against the live database)
+-- ---------------------------------------------------------
+-- `/administration/ai/ai-models/provider-sync` reads `ai.provider_sync_candidates`
+-- (features/ai-models/service.ts, `fetchProviderSyncCandidates`). The view has
+-- NO acl at all — `pg_class.relacl is null`, owner `postgres` — so every signed-in
+-- caller is refused:
+--
+--   set local role authenticated;
+--   select count(*) from ai.provider_sync_candidates;
+--   → 42501  permission denied for view provider_sync_candidates   (HTTP 403)
+--
+-- Two such refusals reached `ops.system_error` on 2026-09-12 (15:10:44Z and
+-- 15:18:06Z, route `/administration/ai/ai-models/provider-sync`), and the screen
+-- has simply not been opened since. The view's own comment says the admin screen
+-- is meant to read it: "the sync agent reads status=missing and status=dropped
+-- first" — the classification the screen and the agent must never disagree about.
+--
+-- WHY THE GRANT IS THE FIX AND NOT A WIDENING
+-- -------------------------------------------
+-- `ai.provider_sync_candidates` is `security_invoker=true`. Its five sibling
+-- views in the same schema — `model_admin`, `model_config`, `model_offering`,
+-- `model_offering_admin`, `model_public`, `ui_enum_drift` — every one of them
+-- already carries `authenticated=r/postgres`. This one view was missed.
+--
+-- Access delta, measured in a rolled-back transaction before this file was
+-- written (the grant applied, then read as two real identities):
+--
+--   base relations of the view, every one already readable by `authenticated`
+--   with RLS ON: ai.endpoint, ai.model_alias, ai.model_definition, ai.offering,
+--   ai.provider.
+--
+--   as test@test.com (4060701e…, a plain member):   view 544 rows
+--   as admin@admin.com (87a6e699…):                 view 557 rows
+--     → security_invoker is doing its job; the two callers see different sets.
+--
+--   the same plain member, reading the view's INPUTS directly today, with no
+--   grant on the view at all:
+--     select count(*) from ai.provider where provider_models_cache is not null  → 8
+--     sum(jsonb_array_length(provider_models_cache->'models'))                  → 524
+--     select count(*) from ai.provider where sync_policy is not null            → 32
+--
+-- Every fact the view publishes is the classification of rows that caller can
+-- already select from `ai.provider`. The delta is 0: this restores the read the
+-- screen was built for, it does not open one.
+--
+-- Not `iam.apply_rls`: that generates POLICIES on tables. A view has no RLS of
+-- its own (THE VIEW LAW — RLS is the ceiling, never the view), and under
+-- `security_invoker` the ceiling is the base tables', unchanged by this file.
+-- No function body is replaced, so no `-- based-on:` line is owed.
+
+grant select on ai.provider_sync_candidates to authenticated;
+
+comment on view ai.provider_sync_candidates is
+  'Live provider /v1/models snapshot (ai.provider.provider_models_cache) classified against the catalog and ai.provider.sync_policy: matched | excluded | before_cutoff | missing, plus the reverse diff dropped (we list it, the provider no longer does; provider_entry carries offering_id / model_definition_id). The sync agent reads status=missing and status=dropped first. Serving vendors match on their own endpoint offerings (ai_080/081); dropped added in ai_082; excluded_patterns / excluded_types in ai_083; sync_policy.endpoint_vendor override in ai_084. security_invoker=true, and SELECT is granted to authenticated (DD-238) so the admin screen reads the same rows the sync agent does; the base tables'' RLS remains the ceiling.';

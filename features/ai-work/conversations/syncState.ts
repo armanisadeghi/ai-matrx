@@ -45,7 +45,9 @@ interface SyncRow {
   status: string;
   fidelity: string;
   origin: string;
-  last_seen_at: string;
+  /** Nullable since XT-FIX-5: an unclaimed handoff offer has no delivery. The
+   *  rollups below already drop blanks before deriving freshness. */
+  last_seen_at: string | null;
   metadata: Json;
 }
 

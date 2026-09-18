@@ -40,7 +40,7 @@ import {
 import { supabase } from "@/utils/supabase/client";
 import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { extractErrorMessage } from "@/utils/errors";
-import type { KeywordMeaningProposal } from "./proposal";
+import type { KeywordMeaningProposal, OfferingProposal } from "./proposal";
 
 /** The traffic-class dimension has its own ruling RPC (C3) — stamps route to it. */
 const TRAFFIC_CLASS_DIMENSION = "traffic_class";
@@ -72,6 +72,133 @@ async function stampFacet(
     });
   }
   return response.data?.length ?? 0;
+}
+
+function rpcError(error: unknown): Error {
+  return new Error(extractErrorMessage(error).split(" · ")[0], { cause: error });
+}
+
+/** The organization that owns the site — every offering write names it. */
+async function siteOrganizationId(siteId: string): Promise<string> {
+  await requireAuthenticatedSupabaseSession(supabase);
+  const response = await supabase
+    .schema("web")
+    .from("site")
+    .select("organization_id")
+    .eq("id", siteId)
+    .single();
+  if (response.error) throw rpcError(response.error);
+  return response.data.organization_id;
+}
+
+async function findSiteOfferingByName(
+  siteId: string,
+  name: string,
+): Promise<string | null> {
+  const response = await supabase
+    .schema("web")
+    .rpc("site_offerings", { p_site_id: siteId });
+  if (response.error) throw rpcError(response.error);
+  const wanted = name.trim().toLowerCase();
+  const match = (response.data ?? []).find(
+    (row) => row.name.trim().toLowerCase() === wanted,
+  );
+  return match?.id ?? null;
+}
+
+async function saveSiteOffering(
+  organizationId: string,
+  siteId: string,
+  proposal: OfferingProposal,
+): Promise<string> {
+  const response = await supabase.schema("web").rpc("save_site_offering", {
+    p_organization_id: organizationId,
+    p_site_id: siteId,
+    p_name: proposal.name,
+    p_kind: proposal.offeringKind,
+    ...(proposal.description ? { p_description: proposal.description } : {}),
+  });
+  if (response.error) throw rpcError(response.error);
+  return response.data;
+}
+
+async function adoptOfferingTemplate(
+  organizationId: string,
+  siteId: string,
+  templateId: string,
+): Promise<string> {
+  const response = await supabase.schema("web").rpc("adopt_offering_template", {
+    p_organization_id: organizationId,
+    p_site_id: siteId,
+    p_template_id: templateId,
+  });
+  if (response.error) throw rpcError(response.error);
+  return response.data;
+}
+
+/** The two canonical bounds: 2,000 keywords per placement read, 5,000 per write. */
+const PLACEMENT_READ_CHUNK = 2000;
+
+/**
+ * Places the keywords an agent proposed with the offering, through the
+ * ordinary human placement writer (`seo.gsc_set_keyword_offering`). A keyword
+ * that already has a placement on this site keeps it: approving an offering is
+ * not a ruling on a keyword someone (or the assigner) already put elsewhere.
+ */
+async function placeProposedKeywords(
+  organizationId: string,
+  siteId: string,
+  offeringId: string,
+  keywordIds: string[],
+  note: string,
+): Promise<{ placed: number; alreadyPlaced: number }> {
+  let placed = 0;
+  let alreadyPlaced = 0;
+  for (let i = 0; i < keywordIds.length; i += PLACEMENT_READ_CHUNK) {
+    const chunk = keywordIds.slice(i, i + PLACEMENT_READ_CHUNK);
+    const current = await supabase
+      .schema("seo")
+      .rpc("gsc_keyword_offerings_for", {
+        p_site_id: siteId,
+        p_keyword_ids: chunk,
+      });
+    if (current.error) throw rpcError(current.error);
+    const elsewhere = new Set(
+      (current.data ?? [])
+        .filter((row) => row.offering_id !== offeringId)
+        .map((row) => row.keyword_id),
+    );
+    const open = chunk.filter((id) => !elsewhere.has(id));
+    alreadyPlaced += chunk.length - open.length;
+    if (open.length === 0) continue;
+    const written = await supabase
+      .schema("seo")
+      .rpc("gsc_set_keyword_offering", {
+        p_organization_id: organizationId,
+        p_site_id: siteId,
+        p_keyword_ids: open,
+        p_offering_id: offeringId,
+        p_notes: note,
+      });
+    if (written.error) throw rpcError(written.error);
+    placed += open.length;
+  }
+  return { placed, alreadyPlaced };
+}
+
+async function setSiteOfferingWorth(
+  organizationId: string,
+  siteId: string,
+  offeringId: string,
+  points: number,
+): Promise<void> {
+  const response = await supabase.schema("seo").rpc("set_site_offering_value", {
+    p_organization_id: organizationId,
+    p_site_id: siteId,
+    p_brand_offering_id: offeringId,
+    p_worth_points: points,
+  });
+  if (response.error) throw rpcError(response.error);
 }
 
 export async function applyKeywordMeaningProposal(
@@ -159,6 +286,66 @@ export async function applyKeywordMeaningProposal(
       return {
         receipt: `Saved the guidelines (now version ${saved.guidelines_version}). Every agent reads the new text from its next run on.`,
         detail: { version: saved.guidelines_version },
+      };
+    }
+
+    case "offering": {
+      // KI-040 step 6 — replayed through THE canonical offering writers
+      // (features/marketing/FEATURE.md § "Canonical offering writers — THE
+      // CONTRACT"): `web.save_site_offering` creates the brand offering and
+      // makes it available on this site; `seo.set_site_offering_value` sets
+      // its worth in POINTS (D9). Both carry the site's own organization id
+      // explicitly and refuse any other.
+      const organizationId = await siteOrganizationId(siteId);
+      // An agent's request to offer a platform suggestion (D2) adopts THAT
+      // template — copy-on-adopt, D6. `web.adopt_offering_template` reuses the
+      // brand's live copy, so a retried approval never mints a second one.
+      // Otherwise: idempotent on the name the site already offers.
+      const existing = proposal.templateId
+        ? null
+        : await findSiteOfferingByName(siteId, proposal.name);
+      const offeringId = proposal.templateId
+        ? await adoptOfferingTemplate(organizationId, siteId, proposal.templateId)
+        : (existing ??
+          (await saveSiteOffering(organizationId, siteId, proposal)));
+      const placed = await placeProposedKeywords(
+        organizationId,
+        siteId,
+        offeringId,
+        proposal.keywordIds,
+        `Approved the Offering assigner's proposal to offer "${proposal.name}" on this site.`,
+      );
+      if (proposal.valueAdd !== null) {
+        await setSiteOfferingWorth(
+          organizationId,
+          siteId,
+          offeringId,
+          proposal.valueAdd,
+        );
+      }
+      const points =
+        proposal.valueAdd === null
+          ? ""
+          : ` and set its worth to ${proposal.valueAdd >= 0 ? "+" : ""}${proposal.valueAdd} points`;
+      const keywordReceipt =
+        proposal.keywordIds.length === 0
+          ? ""
+          : ` Placed ${placed.placed} keyword${placed.placed === 1 ? "" : "s"} on it${placed.alreadyPlaced > 0 ? `; ${placed.alreadyPlaced} already on another offering stayed where ${placed.alreadyPlaced === 1 ? "it was" : "they were"}` : ""}.`;
+      return {
+        receipt:
+          (existing
+            ? `"${proposal.name}" was already one of this site's offerings${points ? `; ${points.trim()}` : ""}.`
+            : `Offered "${proposal.name}" on this site${points}.`) +
+          keywordReceipt,
+        detail: {
+          offering_id: offeringId,
+          organization_id: organizationId,
+          created: existing ? 0 : 1,
+          template_id: proposal.templateId ?? "none",
+          keywords_placed: placed.placed,
+          keywords_left_on_another_offering: placed.alreadyPlaced,
+          worth_points: proposal.valueAdd ?? "not valued",
+        },
       };
     }
   }

@@ -32,6 +32,10 @@ import { NotesAPI } from "@/features/notes/service/notesApi";
 import { CodeFilesAPI } from "@/features/code-files/service/codeFilesApi";
 import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
 import { toast } from "@/lib/toast";
+import {
+  announceProposedGoogleWrite,
+  isProposedGoogleWrite,
+} from "@/features/google-workspace/export/proposedWrite";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { createFullScreenEditorCallbackGroup } from "@/features/overlays/callbacks/fullScreenEditor";
 import type { MenuItem } from "@/components/official/AdvancedMenu";
@@ -331,6 +335,16 @@ function googleDocItem(ctx: ContentActionContext): MenuItem {
         toast.error("Could not create the Google Doc", {
           description: result.message,
         });
+        return;
+      }
+      // NOTHING WAS WRITTEN, and it is not a failure: the organization reviews
+      // this kind of change first, so the server filed it in the approval queue
+      // instead. Saying "Created" here would claim a file that does not exist,
+      // and saying it failed would tell the user their work was lost when it is
+      // sitting in a queue with their name on it. ONE module owns those words
+      // and that door for all four call sites (F-99).
+      if (isProposedGoogleWrite(result)) {
+        announceProposedGoogleWrite(result);
         return;
       }
       if (!result.ok) {

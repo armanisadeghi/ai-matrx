@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   DATE_FILTER_OPTIONS,
   Muted,
+  TextCell,
   timeCell,
   type EntityColumnSpec,
 } from "@/lib/entity-list/columns";
@@ -20,8 +21,30 @@ export const ENCORE_COLUMNS: EntityColumnSpec<EncoreListRow>[] = [
       header: "Name",
       filter: "text",
       cell: (row) => (
-        <span className="truncate font-medium text-foreground">{row.name}</span>
+        <TextCell value={row.name} className="font-medium text-foreground" />
       ),
+    },
+  },
+  {
+    id: "status",
+    label: "Status",
+    column: {
+      id: "status",
+      accessorFn: (row) => (row.released_at === null ? "Draft" : "Released"),
+      header: "Status",
+      filter: false,
+      // A DRAFT SAYS SO — see EncoreBrowseCards for the rule.
+      cell: (row) =>
+        row.released_at === null ? (
+          <Badge
+            variant="outline"
+            className="px-1.5 py-0 text-[10px] text-muted-foreground"
+          >
+            Draft
+          </Badge>
+        ) : (
+          <Badge className="px-1.5 py-0 text-[10px]">Released</Badge>
+        ),
     },
   },
   {
@@ -32,8 +55,7 @@ export const ENCORE_COLUMNS: EntityColumnSpec<EncoreListRow>[] = [
       accessorFn: (row) => row.rulebook?.expert ?? "",
       header: "Expert",
       filter: "text",
-      cell: (row) =>
-        row.rulebook ? <span>{row.rulebook.expert}</span> : <Muted>—</Muted>,
+      cell: (row) => <TextCell value={row.rulebook?.expert} />,
     },
   },
   {
@@ -54,11 +76,14 @@ export const ENCORE_COLUMNS: EntityColumnSpec<EncoreListRow>[] = [
   },
   {
     id: "audition_score",
-    label: "Expert match",
+    // A QUICK CHECK, never "Expert match" and never proof: the Audition is two
+    // arms against one reference (CORE.md §6). The proof is a Bench run, shown
+    // on the run page beside this number.
+    label: "Quick check",
     column: {
       id: "audition_score",
       accessorKey: "auditionScore",
-      header: "Expert match",
+      header: "Quick check",
       filter: false,
       cell: (row) =>
         row.auditionScore !== null ? (

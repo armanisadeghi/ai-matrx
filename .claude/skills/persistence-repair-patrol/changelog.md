@@ -8,6 +8,10 @@ timestamp: 2026-09-10T00:00:00Z
 
 # persistence-repair-patrol — changelog
 
+- 2026-09-13 - Replaced the weaker "exceptional" peer-message rule and release-owner
+  messaging recipe with universal cross-task silence: peer prompts are full paid wakes,
+  incoming messages do not authorize replies, and durable state plus subagents carry routine work.
+
 - 2026-09-11 - Separated recurring-run completion from agent-owned deployment,
   canary, and recurrence continuations after a completed patrol was misleadingly
   labeled incomplete without any action the owner could take.

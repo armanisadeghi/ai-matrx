@@ -38,6 +38,10 @@ import { confirm } from '@/components/dialogs/confirm/ConfirmDialogHost';
 import type { FolderReference, Note, NoteFilters, NoteSortConfig } from '../types';
 import { noteFolderReference } from '../types';
 import { filterNotes, sortNotes, groupNotesByFolder } from '../utils/noteUtils';
+import { useAppDispatch } from '@/lib/redux/hooks';
+import { toast } from '@/lib/toast';
+import { ensureNoteBodiesLoaded } from '../redux/thunks';
+import { useNoteContentSearch } from '../hooks/useNoteContentSearch';
 import { getFolderIconAndColor } from '../utils/folderUtils';
 import { cn } from '@/lib/utils';
 import { RenameFolderDialog } from './RenameFolderDialog';
@@ -73,6 +77,7 @@ export function NotesSidebar({
     className,
 }: NotesSidebarProps) {
     const [searchQuery, setSearchQuery] = useState('');
+    const dispatch = useAppDispatch();
     const [sortConfig, setSortConfig] = useState<NoteSortConfig>({
         field: 'updated_at',
         order: 'desc',
@@ -95,12 +100,17 @@ export function NotesSidebar({
     const [moveNoteOpen, setMoveNoteOpen] = useState(false);
     const [moveNoteData, setMoveNoteData] = useState<Note | null>(null);
 
-    // Filter and sort notes
+    // Filter and sort notes. List rows carry only a preview (audit N-24), so
+    // bodies are matched by the database and merged in.
+    const bodySearch = useNoteContentSearch(searchQuery);
     const processedNotes = useMemo(() => {
         const filters: NoteFilters = searchQuery ? { search: searchQuery } : {};
         const filtered = filterNotes(notes, filters);
-        return sortNotes(filtered, sortConfig);
-    }, [notes, searchQuery, sortConfig]);
+        const byBody = searchQuery
+            ? notes.filter((n) => bodySearch.ids.has(n.id) && !filtered.includes(n))
+            : [];
+        return sortNotes([...filtered, ...byBody], sortConfig);
+    }, [notes, searchQuery, sortConfig, bodySearch.ids]);
 
     // Group by folders
     const folderGroups = useMemo(() => {
@@ -316,7 +326,15 @@ export function NotesSidebar({
             label: 'Export Note',
             description: 'Download as markdown',
             action: async () => {
-                const blob = new Blob([note.content ?? ''], { type: 'text/markdown' });
+                // A list row carries only a preview (audit N-24): read the body first.
+                let full: Note | undefined;
+                try {
+                    [full] = await dispatch(ensureNoteBodiesLoaded([note.id])).unwrap();
+                } catch {
+                    toast.error('Could not load this note to export it. Try again.');
+                    return;
+                }
+                const blob = new Blob([full?.content ?? note.content ?? ''], { type: 'text/markdown' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;

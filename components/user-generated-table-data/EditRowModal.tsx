@@ -40,6 +40,12 @@ import {
   formatHasOwnInput,
 } from "@/features/data-tables/components/FormatAwareInput";
 import { resolveFieldFormat } from "@/lib/field-formats/format";
+import { isFormulaColumn } from "@/features/data-tables/formulas";
+import {
+  describeValidationRules,
+  parseValidationRules,
+  validateCellValue,
+} from "@/features/data-tables/validation";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface TableField {
@@ -50,6 +56,12 @@ interface TableField {
   field_order: number;
   is_required: boolean;
   metadata?: Record<string, unknown> | null;
+  /**
+   * The column's validation rules, as the field row carries them. Optional
+   * because the shape is declared locally here while the rows arrive from
+   * `get_full_table`, which has always returned this column.
+   */
+  validation_rules?: unknown;
 }
 
 interface EditRowModalProps {
@@ -78,6 +90,12 @@ export default function EditRowModal({
   const [rowData, setRowData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * fieldName → why this value is refused. Inline and beside the input, never a
+   * single sentence at the top of the form: a form that says "something is
+   * wrong" without saying WHERE is a dead end on a table with twenty columns.
+   */
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Initialize row data when modal opens
   useEffect(() => {
@@ -92,6 +110,14 @@ export default function EditRowModal({
       ...prev,
       [fieldName]: value,
     }));
+    // Typing is the user answering the complaint — clear it as they do, rather
+    // than leaving a stale red line under a field they have already fixed.
+    setFieldErrors((prev) => {
+      if (!(fieldName in prev)) return prev;
+      const next = { ...prev };
+      delete next[fieldName];
+      return next;
+    });
   };
 
   // Handle HTML cleanup for a specific field
@@ -119,6 +145,7 @@ export default function EditRowModal({
       .filter(
         (field) =>
           field.is_required &&
+          !isFormulaColumn(field) &&
           (rowData[field.field_name] === null ||
             rowData[field.field_name] === undefined),
       )
@@ -128,6 +155,43 @@ export default function EditRowModal({
       setError(`Please fill in required fields: ${missingFields.join(", ")}`);
       return;
     }
+
+    // Column validation rules, checked before anything is sent. `unique` is
+    // skipped here on purpose: this form holds one row, not the table, and a
+    // uniqueness claim made without the other rows would be a guess.
+    const nextErrors: Record<string, string> = {};
+    for (const field of fields) {
+      if (isFormulaColumn(field)) continue;
+      const verdict = validateCellValue({
+        rules: parseValidationRules(field.validation_rules),
+        dataType: field.data_type,
+        format: resolveFieldFormat(field.data_type, field.metadata),
+        value: rowData[field.field_name],
+      });
+      if (!verdict.ok) nextErrors[field.field_name] = verdict.reason;
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      // 🚨 THE REFUSAL HAS TO BE VISIBLE FROM THE BUTTON. The inline message
+      // renders beside its own field, inside the scrolling list below — so on
+      // any table with more than a handful of columns the offending field is
+      // out of sight when Save is pressed, and the click reads as a dead
+      // button: nothing moves, nothing says no (found on live review
+      // 2026-09-15, where a refused 20-character Capital produced no visible
+      // response at all). The summary goes in the same always-visible banner
+      // the required-field refusal already uses, above the scroller; the
+      // inline messages stay where the fixing actually happens.
+      const broken = fields.filter((field) => nextErrors[field.field_name]);
+      setError(
+        broken.length === 1
+          ? `${broken[0].display_name}: ${nextErrors[broken[0].field_name]}`
+          : `These columns need fixing: ${broken
+              .map((field) => field.display_name)
+              .join(", ")}`,
+      );
+      return;
+    }
+    setFieldErrors({});
 
     try {
       setLoading(true);
@@ -159,6 +223,21 @@ export default function EditRowModal({
 
     // A declared display format gets first refusal on the input; when it has
     // no opinion the storage-type switch below runs unchanged.
+    // A formula column stores nothing and is computed from the row's other
+    // cells; this form offers no input for it, and says why, so nobody types a
+    // value that could never be kept.
+    if (isFormulaColumn(field)) {
+      return (
+        <p
+          id={field.field_name}
+          className="rounded-md border border-dashed border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
+        >
+          Calculated from the other columns in this row — it updates on its own
+          once the row is saved.
+        </p>
+      );
+    }
+
     const fieldFormat = resolveFieldFormat(field.data_type, field.metadata);
     if (formatHasOwnInput(fieldFormat)) {
       return (
@@ -460,6 +539,21 @@ export default function EditRowModal({
                     </span>
                   </div>
                   {renderFieldInput(field)}
+                  {fieldErrors[field.field_name] ? (
+                    <p className="text-xs text-destructive">
+                      {fieldErrors[field.field_name]}
+                    </p>
+                  ) : (
+                    describeValidationRules(
+                      parseValidationRules(field.validation_rules),
+                    ).length > 0 && (
+                      <p className="text-[11px] text-muted-foreground">
+                        {describeValidationRules(
+                          parseValidationRules(field.validation_rules),
+                        ).join(" • ")}
+                      </p>
+                    )
+                  )}
                 </div>
               ))}
           </div>

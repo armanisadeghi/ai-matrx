@@ -45,6 +45,7 @@ import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffView
 import { MandateNotesPanel } from "@/features/mandates/components/MandateNotesPanel";
 import { ProvisionOfferList } from "@/features/mandates/components/ProvisionOfferList";
 import { MandateGoalBlock } from "@/features/mandates/MandateGoalBlock";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 import { goalOfMandate } from "@/lib/supabase/mandateStorage";
 import {
   fetchProvision,
@@ -117,6 +118,13 @@ import {
   type MandateVersionInfo,
 } from "./service";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
+import {
+  GRADE_META,
+  fetchStandingImpact,
+  settingsSignalOf,
+  type ImpactVerdict,
+} from "./impact";
+import { VerdictDetail } from "./impact-cells";
 
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
@@ -201,11 +209,14 @@ function DriftPanel({
   } | null>(null);
   const [diffError, setDiffError] = useState<string | null>(null);
   const [busy, setBusy] = useState<"pin" | "latest" | null>(null);
-  // Set when a version bump would drop variables — the write waits for an
-  // explicit confirmation instead of silently changing what reaches the prompt.
+  // Set when the SERVER grades the bump orange or red, or cannot measure its
+  // settings — the write waits for an explicit confirmation (R2: warn, never
+  // block). `verdict` is the one grader (R12); `impact` is only the client
+  // renderer of the variable list and the fix brief, never a second verdict.
   const [versionImpact, setVersionImpact] = useState<{
     mode: "pin" | "latest";
-    impact: RebindImpact;
+    verdict: ImpactVerdict;
+    impact: RebindImpact | null;
   } | null>(null);
 
   useEffect(() => {
@@ -225,14 +236,11 @@ function DriftPanel({
   }, [agentId]);
 
   const pinnedNumber = row.pinnedVersionNumber;
-  // Newest SAVED snapshot — what an explicit rebind can actually point at.
-  // NOT the same fact as the master counter (row.latestVersion): the counter
-  // bumps on every save while snapshots exist only for saved versions, so the
-  // live definition can be AHEAD of every snapshot (the v8/v8-while-v9-exists
-  // bug — see resolveDriftRemedy).
+  // Newest SAVED snapshot — what "latest" means, and the only thing an
+  // explicit pin can point at. `row.liveCounter` is deliberately NOT read
+  // here: it is an optimistic-concurrency counter, not a version (D10).
   const latestSaved = versions?.[0] ?? null;
   const remedy = resolveDriftRemedy(
-    row.latestVersion,
     latestSaved?.versionNumber ?? null,
     pinnedNumber,
   );
@@ -301,28 +309,48 @@ function DriftPanel({
   const updateToLatest = async (mode: "pin" | "latest") => {
     setBusy(mode);
     try {
-      // A VERSION bump changes variables too — "updating an agent can break
-      // things" is the first failure Arman named. Compare the two snapshots'
-      // declarations before writing; loud, never blocking.
+      // A VERSION bump can break a job — "updating an agent can break things"
+      // is the first failure Arman named. ONE GRADER (R12): the pre-flight is
+      // the server's impact read for this mandate's own default rung, the
+      // same verdict the standing table shows. Loud, never blocking.
       if (pinnedNumber != null && latestSaved) {
-        const [oldSnap, nextSnap] = await Promise.all([
-          fetchVersionSnapshotDefinition(agentId, pinnedNumber),
-          fetchVersionSnapshotDefinition(agentId, latestSaved.versionNumber),
-        ]);
-        if (oldSnap && nextSnap) {
-          const impact = computeRebindImpact({
-            currentVariables: oldSnap.variableDefinitions ?? [],
-            candidateVariables: nextSnap.variableDefinitions ?? [],
-            contractRequired: parseMandateContract(
-              contractOfMandate(row.mandate),
-            ).requiredVariables,
-            codeSuppliedVariables: row.codeTruth?.code_variables,
-          });
-          if (impact.breaking.length > 0) {
-            setVersionImpact({ mode, impact });
-            setBusy(null);
-            return;
-          }
+        const report = await fetchStandingImpact(dispatch, [agentId]);
+        const verdict =
+          report.verdicts.find(
+            (v) =>
+              v.holder_kind === "mandate_default" && v.row_id === row.mandate.id,
+          ) ?? null;
+        if (!verdict) {
+          throw new Error(
+            "the impact read returned no verdict for this mandate's default pin, so the change is ungraded",
+          );
+        }
+        const settings = settingsSignalOf(verdict);
+        if (
+          verdict.grade === "orange" ||
+          verdict.grade === "red" ||
+          settings.state !== "clean"
+        ) {
+          // The variable list + fix brief are rendered from the snapshots —
+          // a renderer of the server's RED findings, not a second verdict.
+          const [oldSnap, nextSnap] = await Promise.all([
+            fetchVersionSnapshotDefinition(agentId, pinnedNumber),
+            fetchVersionSnapshotDefinition(agentId, latestSaved.versionNumber),
+          ]);
+          const impact =
+            oldSnap && nextSnap
+              ? computeRebindImpact({
+                  currentVariables: oldSnap.variableDefinitions ?? [],
+                  candidateVariables: nextSnap.variableDefinitions ?? [],
+                  contractRequired: parseMandateContract(
+                    contractOfMandate(row.mandate),
+                  ).requiredVariables,
+                  codeSuppliedVariables: row.codeTruth?.code_variables,
+                })
+              : null;
+          setVersionImpact({ mode, verdict, impact });
+          setBusy(null);
+          return;
         }
       }
     } catch (error: unknown) {
@@ -378,24 +406,13 @@ function DriftPanel({
           </div>
           <div className="mt-0.5 flex items-baseline gap-1.5">
             <span className="text-lg font-semibold leading-none">
-              v{remedy.newestNumber ?? "?"}
+              {remedy.newestNumber != null ? `v${remedy.newestNumber}` : "loading…"}
             </span>
-            {remedy.liveAheadOfSaved ? (
-              <Badge variant="outline" className="h-4 px-1 text-[9px]">
-                live, unsnapshotted
-              </Badge>
-            ) : null}
           </div>
-          {remedy.liveAheadOfSaved ? (
-            <div className="mt-1 text-[11px] text-muted-foreground">
-              Not saved as a snapshot — only &quot;Track latest&quot; runs it.
+          {latestSaved?.name && (
+            <div className="mt-1 truncate text-[11px] text-muted-foreground">
+              {latestSaved.name}
             </div>
-          ) : (
-            latestSaved?.name && (
-              <div className="mt-1 truncate text-[11px] text-muted-foreground">
-                {latestSaved.name}
-              </div>
-            )
           )}
         </div>
       </div>
@@ -456,10 +473,15 @@ function DriftPanel({
         <ConfirmDialog
           open
           onOpenChange={(open) => !open && setVersionImpact(null)}
-          title="This version drops variables the mandate supplies"
-          description={`v${latestSaved?.versionNumber} does not declare everything v${pinnedNumber} did. Updating changes what actually reaches the prompt.`}
+          title={`This update is graded ${GRADE_META[versionImpact.verdict.grade].label.toLowerCase()}`}
+          description={`Moving from v${pinnedNumber} to v${latestSaved?.versionNumber} changes what every run of ${row.mandateKey} uses. ${GRADE_META[versionImpact.verdict.grade].meaning}`}
           content={
             <div className="space-y-2 text-xs">
+              <VerdictDetail verdict={versionImpact.verdict} />
+              {versionImpact.impact &&
+              versionImpact.impact.variables.some(
+                (item) => item.verdict !== "ok",
+              ) ? (
               <ul className="rounded border border-border bg-muted/30 p-2">
                 {versionImpact.impact.variables
                   .filter((item) => item.verdict !== "ok")
@@ -491,6 +513,8 @@ function DriftPanel({
                     </li>
                   ))}
               </ul>
+              ) : null}
+              {versionImpact.impact ? (
               <CopyButton
                 content={buildRebindFixBrief({
                   mandateKey: row.mandateKey,
@@ -502,6 +526,7 @@ function DriftPanel({
                 tooltip="A paste-ready brief naming the mismatch and every call site to update"
                 size="sm"
               />
+              ) : null}
             </div>
           }
           confirmLabel="Update anyway"
@@ -874,7 +899,6 @@ function CodeAgentDriftPanel({
 export const HOLDER_HEALTH_VERDICTS: readonly MandateHealth[] = [
   "output contract unmet",
   "ok",
-  "version drift",
   "not a system agent",
   "agent archived",
   "no holder yet",
@@ -1022,6 +1046,14 @@ function StatusBanner({
         </div>
       );
     case "ok":
+      // A pin behind the agent's newest version is not a HEALTH state any
+      // more (Agent Change Impact I4, 2026-09-14): the console's Grade and
+      // Blocker columns say how dangerous the gap is. This panel keeps its
+      // single-pin door — the diff and the two remedies — whenever the local
+      // pin trails, so nothing here went missing when the flat state did.
+      if (row.drift != null) {
+        return <DriftPanel row={row} onSaved={onSaved} onTest={onTest} />;
+      }
       return (
         <div className="flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-xs">
           <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
@@ -1037,8 +1069,6 @@ function StatusBanner({
           </span>
         </div>
       );
-    case "version drift":
-      return <DriftPanel row={row} onSaved={onSaved} onTest={onTest} />;
     case "not a system agent":
       return <NonSystemPanel row={row} lineage={lineage} onSaved={onSaved} />;
     case "agent archived":
@@ -1346,20 +1376,22 @@ function FactsPanel({
                 {isFloatingMandate(row.mandate) ? (
                   <span>
                     latest
-                    {row.latestVersion != null && (
+                    {/* The newest SAVED snapshot, when known — never the
+                        `agent.definition.version` counter (D10). */}
+                    {row.newestSnapshotVersion != null && (
                       <span className="text-muted-foreground">
                         {" "}
-                        (v{row.latestVersion})
+                        (newest saved is v{row.newestSnapshotVersion})
                       </span>
                     )}
                   </span>
                 ) : row.pinnedVersionNumber != null ? (
                   <span className={cn(drifted && "font-medium text-amber-600")}>
                     v{row.pinnedVersionNumber}
-                    {drifted && (
+                    {drifted && row.newestSnapshotVersion != null && (
                       <span className="text-muted-foreground">
                         {" "}
-                        — latest is v{row.latestVersion}
+                        — newest saved is v{row.newestSnapshotVersion}
                       </span>
                     )}
                   </span>
@@ -1680,7 +1712,7 @@ export function MandateDetailView({
   const [pinOpen, setPinOpen] = useState(
     row.health === "agent archived" || row.health === "unresolved pin",
   );
-  const [testOpen, setTestOpen] = useState(row.health === "version drift");
+  const [testOpen, setTestOpen] = useState(row.drift != null);
   // REVIEW TIME. Notes are written in the second something is noticed (from the
   // Agents menu, wherever the job runs) and read back HERE, when the mandate is
   // being judged. Open by default: evidence you have to go looking for is
@@ -1815,7 +1847,7 @@ export function MandateDetailView({
           both. `description` is a different, lesser field. */}
       {showGoal ? (
         <MandateGoalBlock
-          mandateKey={row.mandateKey}
+          mandateKey={storedMandateKey(row.mandateKey)}
           storedGoal={goalOfMandate(row.mandate)}
           description={row.mandate.description}
         />

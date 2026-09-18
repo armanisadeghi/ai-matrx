@@ -21,6 +21,7 @@ import {
   selectCanvasIsOpen,
   toggleCanvas,
 } from "@/features/canvas/redux/canvasSlice";
+import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
 import { setConversationDocumentEnabledThunk } from "@/features/agents/redux/execution-system/instance-working-document/instance-working-document.thunks";
 
 interface ChatCanvasButtonProps {
@@ -35,10 +36,19 @@ export function ChatCanvasButton({ conversationId }: ChatCanvasButtonProps) {
   const itemCount = useAppSelector((s) => s.canvas?.items?.length ?? 0);
 
   const handleClick = () => {
-    // Items present (artifacts, an opened doc) → just toggle. Also the only
-    // sensible action when we don't yet have a conversation to open a doc into.
-    if (itemCount > 0 || !conversationId) {
+    // Items present (artifacts, an opened doc) → just toggle.
+    if (itemCount > 0) {
       dispatch(toggleCanvas());
+      return;
+    }
+    // Empty canvas and no conversation yet (/chat/new before the first turn):
+    // `toggleCanvas` no-ops in the reducer when there is no current item, so a
+    // bare dispatch here is a button that visibly does nothing. Say why.
+    if (!conversationId) {
+      reportCanvasOpenDrop({
+        reason: "nothing-to-show",
+        detail: "send a message first — this chat has no working document yet",
+      });
       return;
     }
     // Empty Canvas → open (and enable) this conversation's working document.

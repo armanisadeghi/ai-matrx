@@ -48,6 +48,7 @@ import {
   isContextTrimmedEvent,
   isInjectionConsumedEvent,
   isCitationEvent,
+  isControlTokenEvent,
   isValueStoredEvent,
   isContextGroomedEvent,
   type ConversationIdData,
@@ -451,6 +452,30 @@ export async function processStream({
   // temp id to the durable server id — same handshake the primary optimistic
   // user message uses.
   const inboxTempIdByPosition = new Map<number, string>();
+  // A visible inbox injection splits one transport request into separate
+  // transcript segments. Later assistant reservations begin at this slot;
+  // earlier rows are frozen at the boundary so post-steer output cannot grow
+  // above the injected user bubble.
+  const injectionSlotBoundaries: Array<{
+    position: number;
+    timelineIndex: number;
+  }> = [];
+  const streamRangeForAssistantPosition = (position: number) => {
+    if (injectionSlotBoundaries.length === 0) {
+      return { start: undefined, end: undefined };
+    }
+    let start = 0;
+    let end: number | undefined;
+    for (const boundary of injectionSlotBoundaries) {
+      if (position > boundary.position) {
+        start = boundary.timelineIndex;
+      } else {
+        end = boundary.timelineIndex;
+        break;
+      }
+    }
+    return { start, end };
+  };
 
   // Maps the provider's opaque `call_id` (used by activeRequests.toolLifecycle)
   // to the DB-side `cx_tool_call.id` (used by observability.toolCalls). Both
@@ -1956,6 +1981,7 @@ export async function processStream({
                 // completes. Without this anchor, AgentAssistantMessage
                 // would flip to the DB-content path the moment the stream
                 // ended, causing a full re-render of the response column.
+                const streamRange = streamRangeForAssistantPosition(position);
                 dispatch(
                   reserveMessage({
                     conversationId: owningConversationId,
@@ -1963,8 +1989,18 @@ export async function processStream({
                     role,
                     position,
                     requestId,
+                    streamSlotStart: streamRange.start,
                   }),
                 );
+                if (streamRange.end !== undefined) {
+                  dispatch(
+                    updateMessageRecord({
+                      conversationId: owningConversationId,
+                      messageId: d.record_id,
+                      patch: { _streamSlotEnd: streamRange.end },
+                    }),
+                  );
+                }
                 reservedAssistantTurns.push({
                   messageId: d.record_id,
                   position,
@@ -2655,6 +2691,20 @@ export async function processStream({
             }),
           );
         }
+      } else if (isControlTokenEvent(event)) {
+        otherEvents++;
+        // A DECLARED MACHINE LINE NEVER REACHES A PERSON'S SCREEN. aidream
+        // strips `WRAP_RATING: 4` and its siblings out of the visible text at
+        // the streaming emitter and routes the value here instead
+        // (aidream/packages/matrx-connect/matrx_connect/emitters/control_tokens.py).
+        // So the ONLY correct client behaviour is to render nothing: no block,
+        // no timeline entry, no transcript text. The value is not lost — the
+        // whole payload was already preserved verbatim by the appendRawEvent
+        // above, which is where a stage machine or run recorder reads it. This
+        // branch exists so the event is RECOGNISED: without it the exhaustive
+        // `never` check below fired and the token was logged as an
+        // "Unrecognized event type" and appended as an `unknown` timeline
+        // entry — the one place it could still surface to a reader.
       } else if (isInjectionConsumedEvent(event)) {
         otherEvents++;
         // Turn-Boundary Inbox delivery ack — the running agent just drained
@@ -2663,6 +2713,71 @@ export async function processStream({
         // user-visible) seed the transcript bubble from the echoed text. The
         // echo makes this work even for items queued by another device/panel —
         // no local record required (/Users/armanisadeghi/code/common-docs/systems/agents/execution-runtime/TURN-BOUNDARY-INBOX.md).
+        const visiblePositions = (event.data.items ?? [])
+          .filter(
+            (item) =>
+              item.is_visible_to_user !== false && Boolean(item.text),
+          )
+          .map((item) =>
+            typeof item.position === "number"
+              ? item.position
+              : selectMessageCount(conversationId)(getState()),
+          )
+          .sort((a, b) => a - b);
+        if (visiblePositions.length > 0) {
+          // A text block may still be open when the server acknowledges the
+          // natural turn boundary. Flush above already lands its current text;
+          // close it here so later chunks receive a new slot rather than mutate
+          // the pre-injection block in place.
+          blockAccumulator.breakTextBlock(dispatch);
+          // This acknowledgement is a real transcript boundary. The next chunk
+          // must open a fresh text/reasoning run instead of extending the one
+          // whose blocks were just frozen above the injected user row.
+          const activeRequest =
+            getState().activeRequests.byRequestId[requestId];
+          if (activeRequest?.isTextStreaming) {
+            dispatch(closeTextRun({ requestId, timestamp: now }));
+          }
+          if (activeRequest?.isReasoningStreaming) {
+            dispatch(closeReasoningRun({ requestId, timestamp: now }));
+          }
+          const boundarySlot =
+            getState().activeRequests.byRequestId[requestId]?.timeline
+              .length ?? 0;
+          for (const position of visiblePositions) {
+            injectionSlotBoundaries.push({
+              position,
+              timelineIndex: boundarySlot,
+            });
+          }
+          injectionSlotBoundaries.sort((a, b) => a.position - b.position);
+          const currentMessages =
+            getState().messages.byConversationId[conversationId]?.byId ??
+            {};
+          for (const message of Object.values(currentMessages)) {
+            if (
+              message.role === "assistant" &&
+              message._streamRequestId === requestId &&
+              message._streamSlotEnd === undefined
+            ) {
+              const streamRange = streamRangeForAssistantPosition(
+                message.position,
+              );
+              dispatch(
+                updateMessageRecord({
+                  conversationId,
+                  messageId: message.id,
+                  patch: {
+                    _streamSlotStart: streamRange.start,
+                    ...(streamRange.end !== undefined
+                      ? { _streamSlotEnd: streamRange.end }
+                      : {}),
+                  },
+                }),
+              );
+            }
+          }
+        }
         for (const item of event.data.items ?? []) {
           dispatch(
             removeInboxItem({

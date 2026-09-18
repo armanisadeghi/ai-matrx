@@ -53,7 +53,6 @@ import {
   emptyProviderIntegration,
   parseSiteIntegrations,
   providerReferenceStatus,
-  validateSiteIntegrations,
   type BuiltInProviderKey,
   type CredentialAuthority,
   type CustomProviderIntegrationDraft,
@@ -88,8 +87,18 @@ import { googleConnectionLabel } from "@/features/marketing/google/presentation"
 import {
   discoveredDomainProperty,
   isSiteDomainProperty,
+  judgeGscBindingWrite,
   preferredGscProperty,
+  preflightGscProperty,
+  shouldStartGscFirstImport,
 } from "@/features/marketing/google/gsc-property";
+import { GscBindingRefusalLine } from "@/features/marketing/components/shared/GscBindingRefusalLine";
+import {
+  integrationsWriteIssues,
+  integrationsWriteRefusal,
+  providerActionDisabled,
+  providerIssueMessages,
+} from "@/features/marketing/components/integrations/integration-issues";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import { GuidedChecklist } from "@/lib/guided-setup/components/GuidedChecklist";
@@ -124,6 +133,7 @@ import {
   listUrlChangeEvidence,
   type UrlChangeEvidenceRow,
 } from "@/features/marketing/data/url-change-evidence";
+import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
 
 const integrationValueLabels = surfaceValueLabels(
   marketingIntegrationsManifest,
@@ -253,6 +263,9 @@ function SiteIntegrationsEditor({
   const googleInventory = useGoogleConnectionInventory();
   const connectGoogle = useConnectGoogle();
   const google = useGoogleAPI();
+  // 🚨 ONE Google authorization window per PERSON — never a per-component
+  // lock, never the raw provider primitive (V-23 NEW-3, lane F-103).
+  const googleAuth = useGoogleAuthorizationWindow();
   const urlChangeEvidenceQuery = useQuery({
     queryKey: ["marketing", "url-change-evidence", site.id],
     queryFn: () => listUrlChangeEvidence(site.id),
@@ -293,9 +306,26 @@ function SiteIntegrationsEditor({
       resources: googleInventory.data.resources,
     });
   }, [draft.googleAnalytics4, googleInventory.data]);
+  // THE PRE-FLIGHT, enforcement half: a property-type mismatch is a
+  // configuration issue, so Save is refused until it is resolved. Binding
+  // `https://example.com/` to a site at `https://www.example.com/` returns 200
+  // with zero rows forever, and nothing downstream can tell that apart from a
+  // quiet site.
+  //
+  // 🚨 IT RUNS ON THE DRAFT, NEVER ON `enabled` (2026-09-17, verification
+  // defect B-1). Every guard here used to require `enabled` first, so the
+  // FIRST Enable — the one moment PLAN §4.8 exists for — was judged by
+  // nothing, saved the mismatch and kicked a ~16-month backfill against the
+  // wrong property. A property that is picked is judged, switched on or not;
+  // the rule itself lives in `integration-issues.ts`, under test.
   const issues = useMemo(
     () => [
-      ...validateSiteIntegrations(draft),
+      // ONE list, from the ONE judge every write path asks
+      // (`integrationsWriteIssues`) — including the page-level Save below.
+      ...integrationsWriteIssues(draft, {
+        root_url: site.root_url,
+        domain: site.domain,
+      }),
       ...(ga4BindingDiagnosis?.blocking
         ? [
             {
@@ -305,11 +335,14 @@ function SiteIntegrationsEditor({
           ]
         : []),
     ],
-    [draft, ga4BindingDiagnosis],
+    [draft, ga4BindingDiagnosis, site.root_url, site.domain],
   );
-  const visibleIssues = reviewMode
-    ? issues.filter((issue) => issue.field.startsWith("googleAnalytics4"))
-    : issues;
+  // NOTHING THAT BLOCKS THE SAVE IS EVER HIDDEN (round-2 verdict NEW-B6). This
+  // used to filter the list to `googleAnalytics4` in review mode while `save()`
+  // gated on the FILTERED list, so a pre-existing Search Console mismatch was
+  // invisible AND re-saved unjudged from that surface. Every issue that stops a
+  // write is on screen, on every surface, with its Fix door below.
+  const visibleIssues = issues;
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
   const update = useMutation({
     mutationFn: updateSiteIntegrations,
@@ -413,6 +446,19 @@ function SiteIntegrationsEditor({
     successTitle: string,
     successDescription?: string,
   ) => {
+    // THE CONNECT-TIME REFUSAL, at the one choke point every single-provider
+    // write passes through — including the auto-bind that follows a Google
+    // connection, which used to save a picked property and start the backfill
+    // without asking anything.
+    if (provider === "googleSearchConsole") {
+      const judgement = judgeGscBindingWrite(next, {
+        root_url: site.root_url,
+        domain: site.domain,
+      });
+      if (!judgement.allowed && judgement.sentence) {
+        throw new Error(judgement.sentence);
+      }
+    }
     const updatedSite = await updateBuiltInProviderIntegration({
       siteId: site.id,
       provider,
@@ -435,10 +481,18 @@ function SiteIntegrationsEditor({
    * dashboard/wizard narrate progress from server state.
    */
   const kickGscFirstImport = (next: ProviderIntegrationDraft) => {
-    const configured = Boolean(
-      next.enabled && next.credentialRef && next.resourceRef,
-    );
-    if (!configured || site.gsc_synced_at) return;
+    // A REFUSED BINDING NEVER STARTS A BACKFILL: the walk to Google's ~16-month
+    // horizon spends the property's daily request allowance, and against the
+    // wrong property it fills this site with another site's history.
+    if (
+      !shouldStartGscFirstImport(
+        next,
+        { root_url: site.root_url, domain: site.domain },
+        { alreadySynced: Boolean(site.gsc_synced_at) },
+      )
+    ) {
+      return;
+    }
     void syncGscSearchPerformance(dispatch, site.id, site.organization_id, {
       mode: "backfill",
     }).catch(() => undefined);
@@ -459,7 +513,7 @@ function SiteIntegrationsEditor({
   ) => {
     setGoogleConnectionOwner(owner);
     try {
-      const code = await google.requestAuthorizationCode([
+      const code = await googleAuth.openAuthorizationWindow([
         ...GOOGLE_CONNECTION_SCOPES,
       ]);
       const result = await connectGoogle.mutateAsync({
@@ -483,11 +537,10 @@ function SiteIntegrationsEditor({
       // site, so it wins over any URL-prefix match whenever Google returns
       // it. `.find` over an unordered inventory used to pick whichever
       // matching version happened to come back first.
-      const matchingSearch = preferredGscProperty(
-        resources,
-        connectionId,
-        site.domain,
-      );
+      const matchingSearch = preferredGscProperty(resources, connectionId, {
+        root_url: site.root_url,
+        domain: site.domain,
+      });
       const nextGoogleSearchConsole: ProviderIntegrationDraft = {
         ...draft.googleSearchConsole,
         enabled: Boolean(matchingSearch) || draft.googleSearchConsole.enabled,
@@ -497,7 +550,26 @@ function SiteIntegrationsEditor({
           matchingSearch?.resource_ref ?? draft.googleSearchConsole.resourceRef,
       };
 
-      if (matchingSearch) {
+      const autoPickRefusal = matchingSearch
+        ? judgeGscBindingWrite(
+            { resourceRef: matchingSearch.resource_ref },
+            { root_url: site.root_url, domain: site.domain },
+          )
+        : null;
+      if (autoPickRefusal && !autoPickRefusal.allowed) {
+        // Google returned properties, and the only one we could match is not
+        // this site's. Auto-binding it used to save silently and start the
+        // ~16-month backfill; now the draft holds the connection, the property
+        // stays unpicked, and the refusal is named.
+        setBuiltIn("googleSearchConsole", {
+          ...nextGoogleSearchConsole,
+          enabled: draft.googleSearchConsole.enabled,
+          resourceRef: "",
+        });
+        toast.error("Search Console property not bound", {
+          description: autoPickRefusal.sentence ?? undefined,
+        });
+      } else if (matchingSearch) {
         await persistBuiltInProvider(
           "googleSearchConsole",
           nextGoogleSearchConsole,
@@ -547,7 +619,7 @@ function SiteIntegrationsEditor({
           (googleInventory.data?.connections.length === 1
             ? googleInventory.data.connections[0].account_email
             : undefined);
-        const code = await google.requestAuthorizationCode(
+        const code = await googleAuth.openAuthorizationWindow(
           [...GOOGLE_ANALYTICS_SCOPES],
           loginHint ?? undefined,
           reviewMode ? { forceConsent: true } : undefined,
@@ -616,7 +688,7 @@ function SiteIntegrationsEditor({
           "Confirm the read-only Google Analytics disclosure before continuing.",
         );
       }
-      const code = await google.requestAuthorizationCode(
+      const code = await googleAuth.openAuthorizationWindow(
         [...GOOGLE_ANALYTICS_SCOPES],
         undefined,
         reviewMode ? { forceConsent: true } : undefined,
@@ -668,7 +740,18 @@ function SiteIntegrationsEditor({
   };
 
   const save = (draftToSave: SiteIntegrationsDraft = draft) => {
-    if (visibleIssues.length) return;
+    // THE JUDGE, ON THE WHOLE-DRAFT WRITE. `visibleIssues` is judged on the
+    // draft in state; this is judged on the draft actually being written (the
+    // domain-property swap above returns a different one), and it is the last
+    // line before `updateSiteIntegrations` — the path that had no judge at all.
+    const refusal = integrationsWriteRefusal(draftToSave, {
+      root_url: site.root_url,
+      domain: site.domain,
+    });
+    if (refusal) {
+      toast.error("These integrations were not saved", { description: refusal });
+      return;
+    }
     try {
       update.mutate(
         {
@@ -706,12 +789,22 @@ function SiteIntegrationsEditor({
    *
    * Returns the draft to persist (possibly swapped to the domain property).
    */
-  const confirmGscPropertyChoice =
-    async (): Promise<SiteIntegrationsDraft> => {
+  const confirmGscPropertyChoice = async (
+    /** The enabled state the click INTENDS, which is not always the draft's. */
+    intendedEnabled: boolean = draft.googleSearchConsole.enabled,
+  ): Promise<SiteIntegrationsDraft> => {
       const gsc = draft.googleSearchConsole;
       const unchanged =
         JSON.stringify(gsc) === JSON.stringify(initial.googleSearchConsole);
-      if (unchanged || !gsc.enabled || !gsc.credentialRef || !gsc.resourceRef) {
+      // `intendedEnabled`, not `gsc.enabled`: pressing Enable is exactly when
+      // these three warnings are worth showing, and that is the click on which
+      // the draft still reads `enabled: false`.
+      if (
+        unchanged ||
+        !intendedEnabled ||
+        !gsc.credentialRef ||
+        !gsc.resourceRef
+      ) {
         return draft;
       }
       if (isSiteDomainProperty(gsc.resourceRef, site.domain)) return draft;
@@ -761,7 +854,16 @@ function SiteIntegrationsEditor({
     };
 
   const saveWithGscPropertyGuard = async () => {
-    if (visibleIssues.length) return;
+    if (visibleIssues.length) {
+      // A CLICK THAT WOULD DO NOTHING SAYS SO. The buttons are disabled while
+      // an issue stands, so this is the last line of defence (a keyboard
+      // submit, a stale render) — it answers with the issues, never silence.
+      toast.error(
+        `Resolve ${visibleIssues.length} configuration issue${visibleIssues.length === 1 ? "" : "s"} first`,
+        { description: visibleIssues.map((issue) => issue.message).join(" ") },
+      );
+      return;
+    }
     save(await confirmGscPropertyChoice());
   };
 
@@ -1077,7 +1179,9 @@ function SiteIntegrationsEditor({
                   ) : undefined
                 }
                 value={draft[key]}
+                issues={providerIssueMessages(visibleIssues, key)}
                 siteDomain={site.domain}
+                siteRootUrl={site.root_url}
                 connections={googleInventory.data?.connections ?? []}
                 resources={googleInventory.data?.resources ?? []}
                 dirty={
@@ -1089,7 +1193,7 @@ function SiteIntegrationsEditor({
                   void (async () => {
                     const guarded =
                       key === "googleSearchConsole"
-                        ? (await confirmGscPropertyChoice())[key]
+                        ? (await confirmGscPropertyChoice(true))[key]
                         : draft[key];
                     await persistBuiltInProvider(
                       key,
@@ -1179,6 +1283,21 @@ function SiteIntegrationsEditor({
                 </ul>
               </AlertDescription>
             </Alert>
+          ) : null}
+
+          {/* THE FIX DOOR for a stored mismatch on the surface that has no
+              Search Console card to fix it on (review mode hides every provider
+              but GA4). The canonical line and door, never a second rendering. */}
+          {reviewMode ? (
+            <GscBindingRefusalLine
+              site={{
+                id: site.id,
+                brand_id: site.brand_id,
+                domain: site.domain,
+                root_url: site.root_url,
+                integrations: site.integrations,
+              }}
+            />
           ) : null}
 
           {update.isError ? (
@@ -1507,7 +1626,9 @@ function BuiltInProviderCard({
   resourcePlaceholder,
   icon: Icon,
   value,
+  issues,
   siteDomain,
+  siteRootUrl,
   connections,
   resources,
   dirty,
@@ -1525,7 +1646,10 @@ function BuiltInProviderCard({
   resourcePlaceholder?: string;
   icon: typeof SearchCheck;
   value: ProviderIntegrationDraft;
+  /** This provider's own configuration issues — printed beside its button. */
+  issues: readonly string[];
   siteDomain: string;
+  siteRootUrl: string | null;
   connections: GoogleConnectionSummary[];
   resources: GoogleConnectionResource[];
   dirty: boolean;
@@ -1587,6 +1711,7 @@ function BuiltInProviderCard({
           providerKey={providerKey}
           value={value}
           siteDomain={siteDomain}
+          siteRootUrl={siteRootUrl}
           connections={connections}
           resources={resources}
           resourceLabel={resourceLabel}
@@ -1594,21 +1719,40 @@ function BuiltInProviderCard({
           onChange={onChange}
         />
         {readyToApply || providerKey === "pageSpeedInsights" ? (
-          <Button
-            size="sm"
-            className="h-8 w-full gap-1.5"
-            disabled={(value.enabled && !dirty) || saving}
-            onClick={value.enabled ? onSave : onEnable}
-          >
-            {saving ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : dirty ? (
-              <Save className="h-3.5 w-3.5" />
-            ) : (
-              <CheckCircle2 className="h-3.5 w-3.5" />
-            )}
-            {value.enabled ? actionLabel : "Enable PageSpeed Insights"}
-          </Button>
+          // A CLICK THAT WOULD DO NOTHING SAYS SO (2026-09-17, verification
+          // defect B-3). This button used to stay enabled while a mismatch
+          // stood and its handler returned early on the issue list, so the
+          // press did nothing and said nothing. It now reads the same issue
+          // list the page-level Save does, and prints it right here.
+          <div className="space-y-1.5">
+            {issues.length ? (
+              <ul className="space-y-0.5 rounded-md border border-destructive/50 bg-destructive/10 px-2 py-1.5 text-[10px] leading-4 text-foreground">
+                {issues.map((issue) => (
+                  <li key={issue}>{issue}</li>
+                ))}
+              </ul>
+            ) : null}
+            <Button
+              size="sm"
+              className="h-8 w-full gap-1.5"
+              disabled={providerActionDisabled({
+                enabled: value.enabled,
+                dirty,
+                saving,
+                issueCount: issues.length,
+              })}
+              onClick={value.enabled ? onSave : onEnable}
+            >
+              {saving ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : dirty ? (
+                <Save className="h-3.5 w-3.5" />
+              ) : (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              )}
+              {value.enabled ? actionLabel : "Enable PageSpeed Insights"}
+            </Button>
+          </div>
         ) : null}
         {footer}
       </div>
@@ -1858,6 +2002,7 @@ function ProviderReferenceFields({
   providerKey,
   value,
   siteDomain,
+  siteRootUrl,
   connections,
   resources,
   resourceLabel,
@@ -1867,6 +2012,7 @@ function ProviderReferenceFields({
   providerKey: BuiltInProviderKey;
   value: ProviderIntegrationDraft;
   siteDomain: string;
+  siteRootUrl: string | null;
   connections: GoogleConnectionSummary[];
   resources: GoogleConnectionResource[];
   resourceLabel?: string;
@@ -1914,6 +2060,23 @@ function ProviderReferenceFields({
       value.resourceRef &&
       value.resourceRef !== domainProperty.resource_ref,
   );
+  // THE PRE-FLIGHT. Search Console only: GA4 properties are numeric ids with
+  // no URL shape to compare against a site.
+  // Judged the moment a property is PICKED — not once the binding is enabled.
+  // The enabled gate is what hid this box on every first setup (defect B-1).
+  const preflight =
+    providerKey === "googleSearchConsole" && value.resourceRef
+      ? preflightGscProperty(value.resourceRef, {
+          root_url: siteRootUrl,
+          domain: siteDomain,
+        })
+      : null;
+  const preflightFix =
+    preflight && preflight.verdict === "mismatch" && preflight.suggestedRef
+      ? (unorderedResources.find(
+          (resource) => resource.resource_ref === preflight.suggestedRef,
+        ) ?? null)
+      : null;
   // One entry per Google identity: a personal + an org connection to the
   // same Google account are the same authorization — never two choices.
   const pickerConnections = dedupeGoogleConnectionsForPicker(
@@ -1999,6 +2162,38 @@ function ProviderReferenceFields({
               ))}
             </SelectContent>
           </Select>
+          {preflight && preflight.verdict !== "ok" ? (
+            // THE PRE-FLIGHT (google-native PLAN §4.8): a property-type
+            // mismatch is named here, at the moment of choosing, with the
+            // property to pick instead. Saving a mismatch is refused by the
+            // configuration-issue list above the Save button.
+            <div
+              className={
+                preflight.verdict === "mismatch"
+                  ? "space-y-1.5 rounded-md border border-destructive/50 bg-destructive/10 px-2 py-1.5"
+                  : "space-y-1.5 rounded-md border border-warning/50 bg-warning/10 px-2 py-1.5"
+              }
+            >
+              <p className="text-[10px] font-medium leading-4 text-foreground">
+                {preflight.headline}
+              </p>
+              <p className="text-[10px] leading-4 text-muted-foreground">
+                {preflight.detail}
+              </p>
+              {preflightFix ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-6 px-2 text-[10px]"
+                  onClick={() =>
+                    onChange({ ...value, resourceRef: preflightFix.resource_ref })
+                  }
+                >
+                  Use {preflightFix.resource_ref}
+                </Button>
+              ) : null}
+            </div>
+          ) : null}
           {nonDomainChosen && domainProperty ? (
             <div className="flex flex-wrap items-center gap-2 rounded-md border border-warning/50 bg-warning/10 px-2 py-1.5">
               <p className="min-w-0 flex-1 text-[10px] leading-4 text-foreground">

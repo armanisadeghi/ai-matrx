@@ -65,7 +65,7 @@ const config: Config = {
         //   ./matrx     the shared matrx client
         //   ./catalog   the ONE agent picker (+ ./catalog/react)
         //   ./mandates  the published mandate-key vocabulary (0.10.0)
-        "^@ai-matrx/agents/(matrx|catalog|mandates)$":
+        "^@ai-matrx/agents/(matrx|catalog|mandates|content-transfer)$":
             "<rootDir>/node_modules/@ai-matrx/agents/dist/$1/index.js",
         "^@ai-matrx/agents/catalog/react$":
             "<rootDir>/node_modules/@ai-matrx/agents/dist/catalog/react/index.js",
@@ -116,9 +116,20 @@ const config: Config = {
         "/node_modules/",
         "/.next/",
         "/.claude/",
+        // Other lanes park whole checkouts under .wt/ and .matrx/*/checkout/
+        // (and cold-walk scratch under .coldwalk*/); without this every suite
+        // ran once per copy — seven times on 2026-09-18.
+        "/.wt/",
+        "/.matrx/",
+        "/.coldwalk",
         // This is an explicit Playwright gate that requires a running app and
         // Chromium; Jest owns the unit suite and must not attempt to load it.
         "/features/content-ir/sandbox/browser/",
+        // The shell layout gate (`pnpm test:shell-layout`,
+        // playwright.shell-layout.config.ts) measures real layout rects in
+        // Chromium; under Jest its `@playwright/test` import dies with
+        // "Class extends value undefined" before a single test runs.
+        "/features/shell/layout-gate/",
     ],
     // Restrict to *.test.ts(x) / *.spec.ts(x). Jest's default `testMatch`
     // also globs everything under `**/__tests__/**`, which picked up our

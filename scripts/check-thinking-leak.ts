@@ -28,6 +28,7 @@
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const SELF_TEST = process.argv.includes("--self-test");
@@ -95,7 +96,7 @@ function selfTest(): void {
       ? "check:thinking-leak self-test PASSED — the check can fail on a planted leak and stays quiet on the lawful shapes."
       : "check:thinking-leak self-test FAILED — the check no longer distinguishes a leak from lawful code.",
   );
-  process.exit(ok ? 0 : 1);
+  exitAfterDrain(ok ? 0 : 1);
 }
 
 function main(): void {
@@ -114,7 +115,7 @@ function main(): void {
   }
   console.error(`check:thinking-leak — ${findings.length} surface(s) can print chain-of-thought as content:\n`);
   for (const f of findings) console.error(`  ${f.file}\n    ${f.reason}\n`);
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 main();

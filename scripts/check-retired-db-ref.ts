@@ -43,6 +43,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import process from "node:process";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(__dirname, "..");
 
@@ -147,7 +148,7 @@ walk(ROOT);
 const asJson = process.argv.includes("--json");
 if (asJson) {
   console.log(JSON.stringify({ retired: RETIRED_REF, live: LIVE_REF, findings }, null, 2));
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 if (findings.length === 0) {
@@ -155,7 +156,7 @@ if (findings.length === 0) {
     `✅ check:retired-db-ref — no instructional file hands out the retired project id.\n` +
       `   Live DB: ${LIVE_REF} (db.matrxserver.com). Retired: ${RETIRED_REF}.`,
   );
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 console.log(
@@ -178,4 +179,4 @@ console.log(
     `   (a line that says "retired" or "stale" is a warning, and passes).\n`,
 );
 // Advisory by design — see the header. Never block a build.
-process.exit(0);
+exitAfterDrain(0);

@@ -44,6 +44,8 @@ import { RowActionsMenu } from "./editing/RowActionsMenu";
 import { ColumnActionsMenu } from "./editing/ColumnActionsMenu";
 import { useTableUndo } from "./editing/useTableUndo";
 import { useDoubleClickEdit } from "./editing/useDoubleClickEdit";
+import { useSpecimenMode } from "../specimen/SpecimenContext";
+import { MarkdownTableScrollArea } from "./MarkdownTableScrollArea";
 import {
   appendRow,
   appendColumn,
@@ -236,6 +238,11 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
   isStreamActive = false,
 }) => {
   const isMobile = useIsMobile();
+  // A DECLARED SPECIMEN CARRIES NO ACTIONS (feedback 729b59bd): no Export, no
+  // Send to Workbook / Google Sheet, no Save as data, no Edit on content the
+  // product has just told the Expert is deliberately false. RichDocument
+  // prints the banner that stands in their place.
+  const specimenMode = useSpecimenMode();
   const dispatch = useAppDispatch();
   const [savedTableInfo, setSavedTableInfo] = useState<SavedTableInfo | null>(
     null,
@@ -617,7 +624,9 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
 
   // Double-click anywhere on the table to enter edit mode (same gate as the
   // visible "Edit" button) and focus the exact cell that was clicked.
-  const canEnterEditMode = !isStreamActive;
+  // …and never inside a specimen: with the toolbar gone there would be no
+  // Save or Cancel to leave edit mode with — a dead end on a fake document.
+  const canEnterEditMode = !isStreamActive && !specimenMode;
   const { handleTableDoubleClick, bindCellTextareaRef } = useDoubleClickEdit({
     canEnterEditMode,
     editMode,
@@ -690,10 +699,9 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
           </Button>
         </div>
       ) : (
-        <div
+        <MarkdownTableScrollArea
           className={cn(
             isEditingEnabled ? editingBorderStyle : normalBorderStyle,
-            "overflow-x-auto",
             isMobile && "-mx-1",
           )}
         >
@@ -823,7 +831,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
               ))}
             </tbody>
           </table>
-        </div>
+        </MarkdownTableScrollArea>
       )}
       {/* Structural editing toolbar — only when in edit mode (and not streaming) */}
       {!isStreamActive && isEditingEnabled && (
@@ -837,7 +845,7 @@ const MarkdownTable: React.FC<MarkdownTableProps> = ({
           />
         </div>
       )}
-      {!isStreamActive && (
+      {!isStreamActive && !specimenMode && (
         <div
           className={cn(
             "flex gap-2 mt-2",

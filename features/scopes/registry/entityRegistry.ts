@@ -33,6 +33,7 @@ import {
   BrainCircuit,
   Boxes,
   CalendarClock,
+  CalendarDays,
   Building2,
   Contact,
   Database,
@@ -51,19 +52,25 @@ import {
   Layers,
   Layers3,
   LayoutTemplate,
+  Library,
   ListChecks,
   ListOrdered,
+  ListTree,
   MailCheck,
   Megaphone,
+  MonitorPlay,
   ListTodo,
   MessagesSquare,
   Mic,
+  Network,
   NotebookText,
   RefreshCw,
   Sheet,
+  SlidersHorizontal,
   Shapes,
   Table,
   Tag,
+  Tags,
   Target,
   Webhook,
   Workflow,
@@ -190,6 +197,25 @@ export interface EntityOverlay {
     | { ok: true; data: { id: string; title: string }[] }
     | { ok: false; error: string }
   >;
+}
+
+/**
+ * The Detail primitive's PAGE presentation for one record — `/detail/<token>/<id>`.
+ *
+ * This is the PATH HALF of `detailPageHref`
+ * (`features/window-panels/detail/DetailHost.tsx`), which also appends the
+ * list-context query a WINDOW carries and a registry door never does. It is
+ * spelled here instead of imported because `DetailHost` is a `"use client"`
+ * module with the whole window-manager, overlay and supabase graph behind it,
+ * and this registry is imported by server components and by the deliberately
+ * component-free door resolver (`components/official/entity-ref/doors.ts`) —
+ * importing it would drag that graph into every door (THE FRAGMENTATION LAW).
+ * The two spellings are held together by a test, not by hope:
+ * `entityRegistry.test.ts` reads `DetailHost`'s own template and fails when the
+ * route moves.
+ */
+function detailRecordHref(token: string, id: string): string {
+  return `/detail/${encodeURIComponent(token)}/${encodeURIComponent(id)}`;
 }
 
 // ─── The overlay table ──────────────────────────────────────────────────────
@@ -438,6 +464,80 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     // FOUND_DEFECTS D137.
   },
 
+  // ─── Google Workspace (connected records that open IN PLACE) ─────────────
+  //
+  // 🚨 V-21 — TWO REGISTRIES, AND THIS ONE WAS NOT TOLD. Both tokens are
+  // registered `platform.entity_types` rows (aidream migration 0766) whose ONE
+  // registration is in the item-presentation registry
+  // (`features/item-presentation/registry.tsx`, F-63): they open IN PLACE via
+  // `useOpenItemPresentation` → the Detail primitive's window / docked
+  // presentations. They were absent HERE, which is the registry
+  // `<EntityRef token=…>`, `resolveEntityDoors` and the dead-ends rules read —
+  // so `<EntityRef token="calendar_event">` rendered no controls at all, and the
+  // toast rule could not see a doorless "Calendar event created" (while
+  // "Google document imported" was reported against `udt_document`, the wrong
+  // record).
+  //
+  // The door is the SAME open path, in its addressable form: the Detail
+  // primitive's page presentation, which keys on exactly this token and id
+  // (`/detail/calendar_event/<id>`, `/detail/google_document/<id>` — both named
+  // by the two registrations' own headers). Neither table carries a
+  // `title_column`, so `RegistryPeek` cannot preview them either: without this
+  // line these records have no door in any form. Nothing here is a second
+  // opener — a surface holding the record still opens it in place; this is what
+  // Open-in-new-tab, a pasted link and a generic registry consumer resolve to.
+  calendar_event: {
+    Icon: CalendarDays,
+    labelPlural: "Calendar Events",
+    hrefFor: (id) => detailRecordHref("calendar_event", id),
+  },
+  google_document: {
+    Icon: FileText,
+    labelPlural: "Google Files",
+    hrefFor: (id) => detailRecordHref("google_document", id),
+  },
+
+  // ─── The two synced records F-82 stopped short of (V-22 NEW-6) ─────────────
+  // F-82 registered the two tokens its verifier had named and stopped, so the
+  // census behind it was never run. Live `platform.entity_types` (read
+  // 2026-09-18) carries 99 active + `is_listed` tokens; `media_source_library`
+  // and `web_youtube_video` were two of them with no `hrefFor`, no peek and no
+  // in-place opener — no door in ANY form — while both tables are live, synced
+  // (`sync_status`) entities. `web.youtube_video` is the third Google mirror
+  // table beside `communication.calendar_event` and `workbench.google_document`,
+  // so `<EntityRef token="web_youtube_video">` rendered no controls at all and
+  // the F-64 dead-ends rule could not see a YouTube video.
+  //
+  // The two doors are DIFFERENT on purpose, because the two records are:
+  //
+  //   * a Source Library already HAS a working screen of its own —
+  //     `/libraries/<id>` (`app/(core)/libraries/[id]/page.tsx` →
+  //     `LibraryPage`), whose `GET /media/libraries/{id}` loads exactly this
+  //     row (`source_library_manager_instance.load_item_or_none(id=…)`,
+  //     aidream `api/routers/media_catalog.py:197`). A registry door never
+  //     invents a second presentation when the canonical one exists;
+  //   * a synced YouTube video has NO screen anywhere in this repo
+  //     (`/marketing/tools/youtube/videos/<id>` is keyed on YouTube's own
+  //     external id through `/research/youtube/videos/{video_id}`, NOT on this
+  //     table's uuid — it would open a different thing), so its address is the
+  //     Detail primitive's page presentation, the same form the two Google
+  //     records above use, backed by the registration in
+  //     `features/item-presentation/registry.tsx`.
+  //
+  // Neither table carries a `title_column`, so `RegistryPeek` cannot preview
+  // either one — the address IS the door here (R35: `hrefFor` is the durable
+  // address; a working surface still opens the record in place).
+  media_source_library: {
+    Icon: Library,
+    labelPlural: "Source Libraries",
+    hrefFor: (id) => `/libraries/${encodeURIComponent(id)}`,
+  },
+  web_youtube_video: {
+    Icon: MonitorPlay,
+    labelPlural: "YouTube Videos",
+    hrefFor: (id) => detailRecordHref("web_youtube_video", id),
+  },
+
   // ─── Workspaces (containers — also valid as cards) ─────────────────────────
   project: {
     Icon: FolderKanban,
@@ -564,6 +664,31 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: FlaskConical,
     labelPlural: "SEO Changes",
     hrefFor: (id) => `/marketing/changes/${id}`,
+  },
+  // Topical map. The id door shipped 2026-09-17, so these two now link: the map
+  // door matches `platform.shareable_resource_registry.url_path_template`, and
+  // the topic door resolves the topic to its map and opens the workspace on it.
+  seo_topical_map: {
+    Icon: Network,
+    labelPlural: "Topical maps",
+    hrefFor: (id) => `/marketing/topical-maps/${id}`,
+  },
+  seo_map_topic: {
+    Icon: ListTree,
+    labelPlural: "Topical map topics",
+    hrefFor: (id) => `/marketing/topical-maps/topics/${id}`,
+  },
+  // Facets and facet values still have NO hrefFor, and that is deliberate: they
+  // are configuration read inside a topic's detail panel, and no screen
+  // addresses one on its own. A link to nowhere is worse than no link — give
+  // them one when the facet admin surface (U3/U4) ships.
+  seo_map_facet: {
+    Icon: SlidersHorizontal,
+    labelPlural: "Topical map facets",
+  },
+  seo_map_facet_value: {
+    Icon: Tags,
+    labelPlural: "Topical map facet values",
   },
 
   // ─── Container display metadata ───────────────────────────────────────────

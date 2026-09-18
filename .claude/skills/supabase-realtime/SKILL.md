@@ -35,6 +35,8 @@ description: "Doctrine for all Supabase realtime: postgres_changes, broadcast, p
 >
 > Rules 1–5 below are the package's job now, not yours. They are kept because knowing WHY the package does what it does is what stops someone re-adding a "helpful" copy beside it.
 
+> 🚨 **THE PHANTOM CONFLICT (2026-09-13): a `version` the ledger never saw is NEVER an echo.** `version` moves on EVERY row update (a desktop sync stamping `file_path`, an ingest job writing metadata). `@ai-matrx/realtime` 0.8.0 classifies by revision first and delivers anything newer than it holds — same actor, same content, pending write or not. Register your own writes WITH their number (`begin({ revision: expectedVersion + 1 })`, `settle(ticket, { revision: response.version })`, `observe({ revision })`), hand the reducer the WHOLE row, and pair every compare-and-swap with `guardedUpdate({ rebase })` from `@ai-matrx/data` 0.14.0 so a bump the client still missed is retried, never shown. Reference: `features/notes` (three layers, each with a failing-then-passing guard).
+
 Realtime + Redux + autosave is the most freeze-prone combination in this app. Every historical browser lockup traced to one of the mechanisms below. Reference implementations: **`features/notes/redux/realtimeMiddleware.ts`** (postgres_changes, the canonical one), `features/files/redux/realtime-middleware.ts` (request-ledger id-dedup variant), `features/data-tables/collab/SupabaseYjsProvider.ts` (broadcast CRDT).
 
 ## Rule 1 — Suppress your own echoes, timestamp-monotonic FIRST
@@ -113,7 +115,7 @@ Every row below is now on `@ai-matrx/realtime`. The interesting column is the la
 
 | Feature | What it is now | What the conversion fixed |
 |---|---|---|
-| Notes (`features/notes/redux/realtimeMiddleware.ts`) | `subscribeToRealtimeManager` + ledger registered at `markNoteSaving`/`markNoteSaved` | Deleted its ~60-line `isOwnEcho`, its backoff ladder and its alarm constants. Gained a backfill that fires on tab wake and network restore, not only after a channel error. |
+| Notes (`features/notes/redux/realtimeMiddleware.ts`) | `subscribeToRealtimeManager` + ledger registered at `markNoteSaving`/`markNoteSaved` WITH `revision` (`version`+1 on begin, the response's `version` on settle) | Deleted its ~60-line `isOwnEcho`, its backoff ladder and its alarm constants. Gained a backfill that fires on tab wake and network restore, not only after a channel error. |
 | Files (`features/files/redux/realtime-middleware.ts`) | `subscribeToRealtimeManager`, 5 bindings | Static topic → unique instance topic. Reconcile moved from the SUBSCRIBED callback to `onBackfill`, so a slept tab now reconciles at all. Its request-id ledger STAYS (a different mechanism). |
 | Transcript studio | `subscribeToRealtimeManager` ×2 | Neither channel had a catch-up; both do now (all six lists re-read via the service, not the thunks — graph fragmentation). |
 | Data tables (`SupabaseYjsProvider`) | broadcast room, `manager` injected | Gained the ordered handler queue (it ships 200KB frames), and a CRDT catch-up: re-send `y-request-state`, because Yjs cannot know what it missed. |

@@ -1,0 +1,22 @@
+"use client";
+
+/**
+ * V-21 probe arm 2, kept as the guard's own fixture: a surface that IMPORTS a
+ * Google file and names it in a toast with no door. `toast-names-record` did
+ * report this one — against `udt_document`, the platform's own custom-data
+ * document, because the bare word `document` was mapped to that token. The
+ * finding must now name `google_document`, never `udt_document`.
+ */
+
+import { toast } from "@/lib/toast";
+import { Button } from "@/components/ui/button";
+
+import { importGoogleDocument } from "./service";
+
+export function ImportDocButton({ fileId }: { fileId: string }) {
+  const onImport = async () => {
+    await importGoogleDocument({ fileId });
+    toast.success("Google document imported");
+  };
+  return <Button onClick={onImport}>Import from Google</Button>;
+}

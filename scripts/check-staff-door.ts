@@ -32,6 +32,11 @@
  *   C. the token DECLARES it (`suppress_platform_admin_lane`), so the registry and the policies
  *      say the same thing and the next regeneration cannot put the lane back.
  *
+ * ...for every token whose `audit_class` is NOT `machinery`. DD-229 (2026-09-14) took machinery out
+ * of this guard's jurisdiction — not out of sight: see `isStaffDoorOpen` for why all three limbs
+ * above are the wrong question on a token `iam.apply_rls` refuses by construction, and `main` for
+ * the by-name roll-call of every machinery token this rule steps away from.
+ *
  * Known-open rows are NOT silently excused. They are printed as RESIDUE with the reason the
  * registry itself stores, and the count is compared against a frozen budget — so the number can
  * shrink and can never grow without this guard failing.
@@ -45,6 +50,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
+import { armScratchSignals, registeredScratchPlan, teardownScratch } from "./lib/scratch-teardown";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -69,26 +76,38 @@ const C = { b: "\x1b[1m", d: "\x1b[2m", r: "\x1b[31m", g: "\x1b[32m", y: "\x1b[3
  *    admin reads 0 of 307. `credential_item` left the open set in the same edit: DD-137b11 had
  *    already closed its policies and left `suppress_platform_admin_lane` false, which was the only
  *    reason this guard kept reporting it;
- *  - `wc_impairment_definition`, a registered COMPONENT with no composition parent. db-rules §6d-1
- *    requires one, so `iam.apply_rls` refuses the table outright and it keeps `auth_read` +
- *    `platform_admin_all`. It resolves `private` only because a parentless component has nothing to
- *    inherit; it is a legal reference catalogue, and the REGISTRY defect is what wants fixing;
- *  - `billing_stripe_event` — ADDED 2026-09-12 by DD-163 (lane B-57), and it is the one entry here
- *    that is a DECISION rather than a defect waiting for a lane. B-46 censused five tables carrying
- *    a RESTRICTIVE `FOR ALL platform_admin_only` wall over live permissive lanes; four of them were
- *    walls killing a real lane and came down. This one is the wall BEING the design: the table holds
- *    the raw webhook bodies Stripe posted, its own permissive policy is literally named
- *    `stripe_event_no_access`, and nobody but AI Matrx staff and the service role reads it. B-57
- *    registered it precisely so that position is DECLARED with a reason on the registry row instead
- *    of living in an unregistered table no guard could see. `audit_class` is machinery, so
- *    `iam.apply_rls` refuses it by construction.
+ *  - ~~`wc_impairment_definition`~~ — REMOVED 2026-09-14 by DD-219 (lane B-112), and removed here in
+ *    the same commit because this list fails in both directions. It was a registered COMPONENT with
+ *    no composition parent, so it resolved `private` by the parentless fallback while a bespoke
+ *    `auth_read USING (true)` handed all 215 rows to every signed-in user. The registry defect this
+ *    entry pointed at is now fixed rather than tolerated: the California impairment schedule is
+ *    registered for what it is — `rls_variant = system`, `data_class = public`, the Matrx System
+ *    org, `visibility = 'public'` — so it no longer resolves `private` at all and has left this
+ *    guard's universe (component tokens 135 -> 134). Its counterpart entry in the APPLIED migration
+ *    `migrations/iam_component_regeneration_dd137b13_gate.sql` is deliberately NOT edited: that file
+ *    is ledgered in `public._schema_migrations` under the SHA-256 of its own bytes and is a one-shot
+ *    record of a 2026-09-12 run pinned to a DD-137b12a baseline. Editing it would make the ledger
+ *    disagree with the file and destroy the evidence of what actually ran, which is exactly what
+ *    `pnpm check:migrations` exists to catch. A historical record is not a live residue list;
+ *  - ~~`billing_stripe_event`~~ · ~~`access_request`~~ · ~~`agent_surface_binding`~~ ·
+ *    ~~`industry_curator`~~ · ~~`invitation`~~ · ~~`membership`~~ ·
+ *    ~~`system_personal_org_failure`~~ — REMOVED 2026-09-14 by DD-229 (lane B-120), in the same
+ *    commit as the rule change below, because this list fails in both directions and would
+ *    otherwise report all seven as "now CLOSED". **They did not close. They left this guard's
+ *    universe**, because every one of them is `audit_class = 'machinery'` and this guard no longer
+ *    measures machinery against the staff-door contract (see `isStaffDoorOpen`). Their staff lane
+ *    is exactly where it was; what changed is which gate is responsible for it —
+ *    `iam.verify_canonical`'s four `machinery_*` checks, which is the contract DD-200 ratified for
+ *    these tables. Every one of them is still printed by name on every run, under
+ *    "machinery — not measured here", with its live policy set, so nothing is hidden.
  */
 const RESIDUE_TOKENS: ReadonlySet<string> = new Set([
-  "access_request", "agent_surface_binding", "industry_curator", "invitation", "membership",
-  "system_personal_org_failure",
   "user_analysis_preference", "user_form_profile", "user_preference", "wbx_guidance",
-  "wc_impairment_definition",
-  "billing_stripe_event",
+  // admin_markdown_sample — ADDED 2026-09-18 (staff_door_six_tokens_dd137b_2026_09_18): platform-
+  // operator tooling content (admin.admin_markdown_samples) read by the admin markdown tester as a
+  // super admin. The table has NO organization_id, so no class lane but the staff lane can describe
+  // it; the staff lane IS the table. The reason is stored on the registry row and printed below.
+  "admin_markdown_sample",
 ]);
 
 function loadEnv(): { url: string; key: string } | null {
@@ -134,14 +153,48 @@ async function door(env: { url: string; key: string }, sql: string): Promise<Arr
 export interface StaffDoorRow {
   token: string;
   variant: string;
+  audit_class: string | null;
   resolved_class: string;
   has_admin_policy: boolean;
   has_staff_arm: boolean;
   declares_closed: boolean;
 }
 
-/** The pure rule, so --self-test can feed it rows it made up as well as rows it built for real. */
+/**
+ * MACHINERY IS NOT MEASURED AGAINST THIS CONTRACT (DD-229, 2026-09-14 — the same false reading
+ * B-93 removed from `check:policy-of-record`, keyed on the same column).
+ *
+ * All three limbs below are wrong on an `audit_class = 'machinery'` token, and the third is not
+ * merely noisy but unsatisfiable:
+ *
+ *   A/B — `platform_admin_all` and a permissive `is_platform_admin()` read arm are PLATFORM-WIDE
+ *         lanes their own migrations put on hundreds of tables, machinery included
+ *         (`access_gate_platform_admin_truth`: "a platform_admin_all policy … on 888 tables").
+ *         DD-200 ruled they are not evidence of anything about the table they sit on, and
+ *         `iam.verify_canonical`'s `machinery_no_generated_policy` says so in its own PASS detail.
+ *   C   — `suppress_platform_admin_lane` is an INPUT TO THE GENERATOR. It exists so a future
+ *         `iam.apply_rls` run cannot put the lane back. `iam.apply_rls` REFUSES a machinery token
+ *         by construction, so there is no run to stop: the declaration would never be read, and
+ *         demanding it asks these tables to assert something no code will ever consume.
+ *
+ * What a machinery token owes instead is the four-check contract DD-200 ratified and
+ * `iam.verify_canonical` enforces — a written reason, no generated class lane, no signed-out
+ * reader and no UNGATED client door, RLS on. That is a real gate with a real owner, not a waiver:
+ * `machinery_no_client_grant` is strictly stronger than anything this guard measures about who can
+ * read the table from a browser.
+ *
+ * 🚨 This is a change of JURISDICTION, never of visibility. Every machinery token this rule steps
+ * away from is printed by name on every run with its live policy set (see `main`), because
+ * UNMEASURED IS A FAILURE and "measured by a different gate" has to be said out loud to be true.
+ */
 export function isStaffDoorOpen(row: StaffDoorRow): boolean {
+  if (row.resolved_class !== "private" && row.resolved_class !== "confidential") return false;
+  if (row.audit_class === "machinery") return false;
+  return row.has_admin_policy || row.has_staff_arm || !row.declares_closed;
+}
+
+/** The same row, as this guard WOULD have judged it before DD-229 — used to name what moved. */
+export function wasStaffDoorOpenBeforeDd229(row: StaffDoorRow): boolean {
   if (row.resolved_class !== "private" && row.resolved_class !== "confidential") return false;
   return row.has_admin_policy || row.has_staff_arm || !row.declares_closed;
 }
@@ -162,6 +215,12 @@ select coalesce(json_agg(x order by x->>'token'), '[]'::json) as j from (
           and p.polpermissive and p.polcmd in ('r','*')
           and coalesce(pg_get_expr(p.polqual, p.polrelid), '') ~ 'is_platform_admin|is_super_admin'),
     'declares_closed', et.suppress_platform_admin_lane,
+    -- DD-229: the routing key. There is no 'machinery' rls_variant (the CHECK admits only
+    -- entity/component/system/restricted/ledger/personal) — machinery is an audit_class, which is
+    -- exactly the correction B-93 made when it keyed check:policy-of-record on this column.
+    'audit_class', et.audit_class::text,
+    'policies', (select string_agg(p.polname, ', ' order by p.polname) from pg_policy p
+                  where p.polrelid = to_regclass(format('%I.%I', et.schema_name, et.table_name))),
     'reason', left(coalesce(et.data_class_reason, ''), 240)
   ) as x
   from platform.entity_types et
@@ -177,7 +236,7 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
   console.log(`${C.b}SELF-TEST${C.x} ${C.d}(the detector must find an open staff lane on a private token, and must not flag a closed one)${C.x}`);
   let bad = 0;
   const base: StaffDoorRow = {
-    token: "x", variant: "component", resolved_class: "private",
+    token: "x", variant: "component", audit_class: "entity", resolved_class: "private",
     has_admin_policy: false, has_staff_arm: false, declares_closed: true,
   };
   const cases: Array<[string, StaffDoorRow, boolean]> = [
@@ -186,6 +245,11 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
     ["a private class that does not DECLARE the lane closed", { ...base, declares_closed: false }, true],
     ["a private token with the lane fully closed", base, false],
     ["an organization token with everything open", { ...base, resolved_class: "organization", has_admin_policy: true, has_staff_arm: true, declares_closed: false }, false],
+    // DD-229 — the rule turns on audit_class and on nothing else. The first pair is the whole
+    // change: the SAME private row, open on all three limbs, judged twice.
+    ["DD-229 · everything open on a MACHINERY token", { ...base, audit_class: "machinery", has_admin_policy: true, has_staff_arm: true, declares_closed: false }, false],
+    ["DD-229 · the identical row on a non-machinery token", { ...base, audit_class: "entity", has_admin_policy: true, has_staff_arm: true, declares_closed: false }, true],
+    ["DD-229 · an UNSET audit_class is not machinery and is still judged", { ...base, audit_class: null, has_admin_policy: true }, true],
   ];
   for (const [name, row, expected] of cases) {
     const got = isStaffDoorOpen(row);
@@ -199,6 +263,10 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
   // And the same two states built FOR REAL, so the SQL that feeds the detector is proven too.
   const schema = `zz_staff_door_selftest_${Date.now().toString(36)}`;
   const token = `${schema}_token`;
+  const scratch = registeredScratchPlan({
+    owner: "check:staff-door --self-test", run: (sql) => door(env, sql), schema, tokens: [token],
+  });
+  const disarm = armScratchSignals(scratch);
   try {
     await door(env, `create schema ${schema}`);
     await door(env, `create table ${schema}.probe (id uuid primary key default gen_random_uuid())`);
@@ -220,6 +288,32 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
       console.log(`  ${C.g}✓${C.x} RED  — the live query flags a real platform_admin_all under a private class`);
     }
 
+    // DD-229 — the routing key, proven against the REAL registry column and its CHECK constraint,
+    // on the same table with the same live platform_admin_all policy still attached. Nothing about
+    // the door changes between these two probes; only `audit_class` does.
+    await door(env, `update platform.entity_types set audit_class = 'machinery',
+        audit_class_reason = 'check:staff-door self-test probe (DD-229); deleted at the end of the run'
+      where token = '${token}'`);
+    const mach = await door(env, FINDINGS_SQL.replace("where et.is_active", `where et.token = '${token}' and et.is_active`));
+    const machRow = ((mach[0] as { j?: StaffDoorRow[] })?.j ?? [])[0];
+    if (!machRow || machRow.audit_class !== "machinery") {
+      console.log(`  ${C.r}✗${C.x} DD-229 — the live query did not carry audit_class back at all, so the rule is running on a field that is not there`); bad++;
+    } else if (isStaffDoorOpen(machRow)) {
+      console.log(`  ${C.r}✗${C.x} DD-229 — a machinery token with a live platform_admin_all under a private class is still reported`); bad++;
+    } else if (!wasStaffDoorOpenBeforeDd229(machRow)) {
+      console.log(`  ${C.r}✗${C.x} DD-229 — the probe row is not open on the OLD rule either, so this pair proves nothing`); bad++;
+    } else {
+      console.log(`  ${C.g}✓${C.x} DD-229 — the same live open door is reported on 'entity' and not reported on 'machinery'`);
+    }
+    await door(env, `update platform.entity_types set audit_class = 'entity', audit_class_reason = null where token = '${token}'`);
+    const back = await door(env, FINDINGS_SQL.replace("where et.is_active", `where et.token = '${token}' and et.is_active`));
+    const backRow = ((back[0] as { j?: StaffDoorRow[] })?.j ?? [])[0];
+    if (!backRow || !isStaffDoorOpen(backRow)) {
+      console.log(`  ${C.r}✗${C.x} DD-229 — moving audit_class back off machinery did not restore the finding`); bad++;
+    } else {
+      console.log(`  ${C.g}✓${C.x} DD-229 — moving audit_class back off machinery restores the finding`);
+    }
+
     await door(env, `drop policy platform_admin_all on ${schema}.probe`);
     const green = await door(env, FINDINGS_SQL.replace("where et.is_active", `where et.token = '${token}' and et.is_active`));
     const greenRow = ((green[0] as { j?: StaffDoorRow[] })?.j ?? [])[0];
@@ -229,13 +323,12 @@ async function selfTest(env: { url: string; key: string }): Promise<number> {
       console.log(`  ${C.g}✓${C.x} GREEN — the live query stops flagging it the moment the policy is dropped`);
     }
   } finally {
-    // The teardown is not optional: a leftover registered token would break every other guard.
-    try { await door(env, `delete from platform.entity_types where token = '${token}'`); } catch { /* reported below */ }
-    try { await door(env, `drop schema if exists ${schema} cascade`); } catch { /* reported below */ }
-    const left = await door(env, `select count(*)::int as n from platform.entity_types where token = '${token}'`);
-    if (Number((left[0] as { n?: number })?.n ?? 0) !== 0) {
-      console.log(`  ${C.r}✗${C.x} the self-test left its scratch token behind — remove '${token}' by hand`); bad++;
-    }
+    // The teardown is not optional, and never silent (DC-027 #8): on 2026-09-14 this block swallowed
+    // two `permission denied` failures and its leftover check threw past the report, so
+    // `zz_staff_door_selftest_mu0wnnb1_token` stayed registered and shipped in @ai-matrx/associations.
+    // `teardownScratch` attempts every step, probes every object, never throws, and names what is left.
+    disarm();
+    if (!(await teardownScratch(scratch)).ok) bad++;
   }
 
   console.log(bad === 0
@@ -271,6 +364,19 @@ async function main(): Promise<number> {
   for (const r of rows) byVariant.set(r.variant, (byVariant.get(r.variant) ?? 0) + 1);
 
   console.log(`  ${C.d}${rows.length} tokens resolve to private or confidential (${[...byVariant].map(([v, n]) => `${v}: ${n}`).join(", ")})${C.x}`);
+
+  // ── DD-229: WHAT THIS GUARD NO LONGER JUDGES, SAID OUT LOUD ────────────────────────────────
+  // Named one by one with the live policy set, because a rule that quietly stops looking at 45
+  // tables is indistinguishable from a rule that broke. Their gate is iam.verify_canonical's four
+  // machinery_* checks; run `select * from iam.verify_canonical(schema, table, token)` on any of
+  // them to see the contract that DOES apply.
+  const machinery = rows.filter((r) => r.audit_class === "machinery" && wasStaffDoorOpenBeforeDd229(r));
+  if (machinery.length > 0) {
+    console.log(`  ${C.d}${machinery.length} of them are audit_class=machinery and are NOT measured here (DD-229) — their contract is iam.verify_canonical's machinery_* checks (a written reason, no generated class lane, no signed-out or ungated client door, RLS on). Named in full so nothing is hidden behind this rule:${C.x}`);
+    for (const r of machinery) {
+      console.log(`     ${C.d}· ${r.token} (${r.variant}, ${r.resolved_class}) — policies: ${(r as { policies?: string }).policies ?? "none"}${C.x}`);
+    }
+  }
 
   let findings = 0;
   const unexpected = open.filter((r) => !RESIDUE_TOKENS.has(r.token));
@@ -320,7 +426,15 @@ async function main(): Promise<number> {
   return STRICT ? 1 : 0;
 }
 
-main().then((code) => process.exit(code)).catch((e) => {
+// 🚨 Exit through `exitAfterDrain`, never `process.exit(code)` (DD-229 found it here, DD-232 made
+// it the class remedy). `process.exit` tears the process down without draining stdout, and stdout
+// to a PIPE is asynchronous in Node — so under `| tee`, `| grep`, or any CI log collector this
+// guard printed the first ~10 residue rows and dropped the rest, silently, while exiting with the
+// right code. That is fatal to a guard whose whole design is "a NAMED set rather than a budget
+// number": the names were the output being lost. The class the DD-229 note reported to the chair
+// is swept: every `scripts/check-*.ts` exits through `scripts/lib/exit-after-drain.ts`, and
+// `pnpm check:guards-drain` fails the release gates on a bare `process.exit(` in any of them.
+main().then(exitAfterDrain).catch((e) => {
   console.error(`${C.r}✗${C.x} check:staff-door crashed: ${String(e)}`);
-  process.exit(1);
+  exitAfterDrain(1);
 });

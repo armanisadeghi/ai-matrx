@@ -184,7 +184,7 @@ export function KeywordStartHere({
               {door.screen}
             </Link>
           ))}
-          <ValueDoors brandId={brandId} siteId={siteId} />
+          <ValueDoors brandId={brandId} siteId={siteId} siteLabel={siteDomain} />
         </div>
       </section>
     </div>

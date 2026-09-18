@@ -49,7 +49,6 @@ import {
   cancelExecution,
 } from "@/features/agents/redux/execution-system/thunks/smart-execute.thunk";
 import { setAutoClearMode } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
-import { ComposerHint } from "@/components/official/composer/ComposerHint";
 
 // ── Inline button primitive ──────────────────────────────────────────────────
 
@@ -81,6 +80,9 @@ export function InputButton({
       type="button"
       onClick={onClick}
       title={tooltip}
+      // The tooltip is the control's whole identity — an icon-only button with
+      // no aria-label reads as "button" and nothing else.
+      aria-label={tooltip}
       className={`h-8 w-8 flex items-center justify-center rounded-full transition-colors
         ${active ? "text-primary ring-1 ring-inset ring-primary/50 hover:bg-muted/40" : INPUT_BUTTON_IDLE_TINT}
         ${className}`}
@@ -233,17 +235,6 @@ export function InputActionButtons({
           />
         )}
 
-        {/* A SCREEN NEVER LIES. Whether Return sends is a per-conversation
-            setting, and until 2026-09-12 nothing on the composer said which
-            way it was set — on the Scout interview panel, which HIDES the
-            toggle below, an Expert whose setting was off pressed Return,
-            watched nothing happen, and had no way to find out why (census
-            defect D2). The hint states the rule in force wherever the toggle
-            is not there to state it. */}
-        {!showSubmitOnEnterToggle && (
-          <ComposerHint submitOnEnter={submitOnEnter} className="mr-1 hidden sm:inline" />
-        )}
-
         {showSubmitOnEnterToggle && (
           <InputButton
             icon={CornerDownLeft}
@@ -278,6 +269,7 @@ export function InputActionButtons({
             className="h-11 w-11 lg:h-9 lg:w-9 p-0 shrink-0 rounded-full bg-muted text-foreground hover:bg-destructive/15 hover:text-destructive"
             tabIndex={-1}
             title="Stop the run (everything streamed so far is kept)"
+            aria-label="Stop the run"
           >
             <CircleStop className="w-4 h-4" />
           </Button>
@@ -295,6 +287,20 @@ export function InputActionButtons({
                 : voiceBusy
                   ? "Finish recording to send"
                   : "Send Message"
+            }
+            // An icon-only control needs a NAME, not just a hover tooltip: a
+            // screen reader reads "button" and nothing else, and a title=
+            // attribute is not an accessible name here. Live review, 2026-09-15:
+            // the loaded-chat composer's send control had title="Send Message"
+            // and no aria-label at all while the new-chat composer did — the
+            // same button, two different stories. Guard:
+            // __tests__/composer-controls-are-named.test.tsx.
+            aria-label={
+              isExecuting
+                ? "Queue message"
+                : voiceBusy
+                  ? "Finish recording to send"
+                  : "Send message"
             }
           >
             <ArrowUp className="w-5 h-5" />

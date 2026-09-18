@@ -61,6 +61,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { createClient } from "@supabase/supabase-js";
 import { unwrapRows } from "../lib/integrity/unwrap";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const STRICT = process.argv.includes("--strict");
@@ -317,10 +318,10 @@ const invokedDirectly =
 
 if (invokedDirectly) {
   main().then(
-    (code) => process.exit(code),
+    (code) => exitAfterDrain(code),
     (err) => {
       console.error(err);
-      process.exit(2);
+      exitAfterDrain(2);
     },
   );
 }

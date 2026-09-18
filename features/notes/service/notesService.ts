@@ -6,6 +6,7 @@ import { operationFailed } from "@/utils/errors";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import { requireOrganizationContext } from "@/lib/api/organization-context";
 import { guardedUpdate } from "@ai-matrx/data/db";
+import { noteEditedFieldsEqual, type NoteEditBase } from "../utils/saveVerification";
 import type {
   Note,
   NoteRow,
@@ -528,6 +529,17 @@ export async function persistNoteUpdate(
             .eq("organization_id", organizationId)
             .is("deleted_at", null)
             .maybeSingle(),
+        // THE PHANTOM CONFLICT: `version` moves on every row update. A CAS
+        // miss on a row whose EDITED fields still equal this client's base is
+        // a number we never learned, not a conflict — retry once on it.
+        ...(options?.acknowledgedBase !== undefined
+          ? {
+              rebase: {
+                isPhantom: (currentRow: NoteRow) =>
+                  noteEditedFieldsEqual(currentRow, options.acknowledgedBase as NoteEditBase),
+              },
+            }
+          : {}),
       });
       if (result.status === "conflict") {
         throw new NoteUpdateConflictError({
@@ -816,91 +828,32 @@ export async function fetchTags(scope?: ListScopeWord): Promise<string[]> {
  */
 export async function createFolder(name: string, capturedOrganizationId: string): Promise<string> {
   const organizationId = requireOrganizationContext(capturedOrganizationId);
-  const userId = requireUserId();
+  requireUserId();
 
-  // Atomic get-or-create on the (created_by, name) natural key, backed by the
-  // FULL unique index `note_folders_created_by_name_unique`. ON CONFLICT DO
-  // NOTHING (`ignoreDuplicates`) never emits a 23505/409: a concurrent create /
-  // double-Quick-Save returns an EMPTY result instead of silently minting a
-  // second folder (the old select-then-insert had no backing constraint).
-  const { data: inserted, error: insertError } = await supabase
+  // A folder belongs to ONE organization, and its name is unique per person
+  // WITHIN that organization — "Draft" exists once in each organization a
+  // person writes in. The get-or-create is one atomic database call because
+  // the organization-qualified key is PARTIAL (a removed folder stops holding
+  // its name), and PostgREST cannot name a partial index as an upsert arbiter.
+  // The function is SECURITY INVOKER: this caller's own RLS decides.
+  //
+  // History, so nobody rebuilds it: until 2026-09-18 this upserted against the
+  // org-blind `(created_by, name)` key. Before 2026-09-12 a collision silently
+  // returned ANOTHER organization's folder (130 notes were misfiled that way);
+  // after it, the collision was refused — and every "+" files under "Draft", so
+  // the "+" was dead in every organization but the one holding the first Draft.
+  const { data, error } = await supabase
     .schema("workbench")
-    .from("note_folders")
-    .upsert(
-      {
-        created_by: userId,
-        name,
-        path: name,
-        position: 0,
-        organization_id: organizationId,
-      },
-      { onConflict: "created_by,name", ignoreDuplicates: true },
-    )
-    .select("id, deleted_at")
-    .maybeSingle();
-
-  if (insertError && insertError.code !== "23505") {
-    console.error("Error creating folder:", insertError);
-    throw insertError;
+    .rpc("note_folder_get_or_create", {
+      p_organization_id: organizationId,
+      p_name: name,
+    });
+  if (error) {
+    console.error("Error creating folder:", error);
+    throw error;
   }
-  // A row came back → we created it.
-  if (inserted?.id) return inserted.id;
-
-  // No row → a LIVE folder with this (user, name) already exists (DO NOTHING).
-  // Folder rows are hard-deleted (see deleteFolderNotes), so there is never a
-  // soft-deleted row to revive — the conflicting row is always live and RLS-
-  // visible. Return it.
-  const { data: existing, error: selError } = await supabase
-    .schema("workbench")
-    .from("note_folders")
-    .select("id")
-    .eq("created_by", userId)
-    .eq("name", name)
-    .eq("organization_id", organizationId)
-    .is("deleted_at", null)
-    .maybeSingle();
-
-  if (selError) {
-    console.error("Error resolving existing folder:", selError);
-    throw selError;
-  }
-  if (existing?.id) return existing.id;
-
-  // The legacy unique key still overlaps organizations. Never return a folder
-  // from another org while it exists; the owner must activate the composite key.
-  const { data: conflicting } = await supabase
-    .schema("workbench")
-    .from("note_folders")
-    .select("id, organization_id")
-    .eq("created_by", userId)
-    .eq("name", name)
-    .is("deleted_at", null)
-    .maybeSingle();
-  if (conflicting && conflicting.organization_id !== organizationId) {
-    throw new Error("notes_folder_cross_org_legacy_key: this folder name is reserved in another organization until the folder-key cutover is activated.");
-  }
-
-  if (insertError) throw insertError;
-
-  // Vanishingly rare: the conflicting row was hard-deleted between the upsert
-  // and this re-read (concurrent create + delete of the same name). Create fresh.
-  const { data: recreated, error: recreateError } = await supabase
-    .schema("workbench")
-    .from("note_folders")
-    .insert({
-      created_by: userId,
-      name,
-      path: name,
-      position: 0,
-      organization_id: organizationId,
-    })
-    .select("id")
-    .single();
-  if (recreateError || !recreated) {
-    console.error("Error creating folder:", recreateError);
-    throw recreateError ?? new Error("Folder insert returned no row");
-  }
-  return recreated.id;
+  if (!data) throw new Error("The folder could not be created. Nothing was saved.");
+  return data;
 }
 
 /**
@@ -914,8 +867,11 @@ export async function renameFolder(
   const organizationId = requireOrganizationContext(folder.organizationId);
   const userId = requireUserId();
 
-  // Update the note_folders record
-  await supabase
+  // Update the note_folders record FIRST and stop if it is refused: a rename
+  // onto a name this organization already holds violates the name key, and
+  // until 2026-09-18 that error was never read — the folder kept its old name
+  // while every note below was rewritten to the new one.
+  const { error: folderError } = await supabase
     .schema("workbench")
     .from("note_folders")
     .update({ name: newName, path: newName })
@@ -923,6 +879,10 @@ export async function renameFolder(
     .eq("id", folder.id)
     .eq("organization_id", organizationId)
     .is("deleted_at", null);
+  if (folderError) {
+    console.error("Error renaming folder:", folderError);
+    throw folderError;
+  }
 
   // Update the denormalized folder_name on all notes
   const { error } = await supabase

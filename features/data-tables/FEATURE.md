@@ -3,7 +3,7 @@
 
 **Status:** `migrating`
 **Tier:** `1`
-**Last updated:** `2026-08-24`
+**Last updated:** `2026-09-14`
 
 ---
 
@@ -109,7 +109,7 @@ cell — an off-list value goes amber and the user decides.
 - ⏳ **Wave P3 — smart importer (XLSX → typed dataset vs workbook).** Detects "rational" (header-row + uniform-type columns) vs "look-sensitive" (merged cells, formulas, multi-region) and routes the upload to `udt_datasets` or `udt_workbooks` accordingly. P4 v1 makes this fully unblocked. Today the user picks the destination by entering via `/data` (typed) or `/workbooks` (lossless).
 
 **Pending — small + clear (🚧 ready when you say go):**
-- 🚧 **Bulk paste from Excel / Sheets clipboard** into the typed-dataset grid.
+- ✅ **Bulk paste from Excel / Sheets clipboard** into the typed-dataset grid — Cmd-V on a selected cell lands a TSV block downward and rightward in one transaction (2026-09-14, see § Grid clipboard + right-click menu).
 - 🚧 **`udt_workbooks.original_file_id` linkage** to the universal file handler — store the uploaded XLSX/CSV blob so the lossless original can be downloaded / re-imported / passed to a "diff against original" view.
 
 ---
@@ -211,6 +211,11 @@ creates workbook UI and duplicate internal editor documents.
   hover), field display-name labels via `fieldLabels`, copy-snapshot-as-JSON, Load more
   past the first 50, `onRowChanged` refetch callback. Honours `changed_by = NULL` as
   "System".
+- `features/data-tables/table-style.ts` (colors model: color-by / rules / highlights, pure) +
+  `components/ColorRulesDialog.tsx` (the Colors dialog) + `scripts/seed-udt-example-tables.ts`.
+- `features/data-tables/grid-clipboard.ts` (TSV parse / serialize + `planPaste`, pure) and
+  `features/data-tables/grid-context-menu.ts` (the grid's cell / row / column menu sections +
+  the DOM-anchor resolver, pure `build*`) — consumed by `UserTableViewer` + `useGridSelection`.
 - `features/data-tables/components/TableCopyControls.tsx` + `table-copy.ts` — the shared user-table copy control (canonical `CopyButtons`; row/column shaping through the platform `copy-subset` window, `components/agent-copy/copy-subset/`) and pure projection/Markdown/AI-envelope builders. `UserTableViewer` mounts the controls once, so route, quick-data sheet, resource picker, canvas, modal, dataset overlay, and WindowPanel consumers stay identical.
 
 **Services / business logic**
@@ -276,7 +281,14 @@ parent-token rule for viewer reads and editor appends. Sharing integrates with t
   - `udt_upsert_cell(p_table_id, p_row_id, p_field_name, p_value)` — surgical `jsonb_set` write.
   - `udt_bulk_write(p_table_id, p_operations jsonb[])` — one txn; ops `insert|update|cell|delete`.
   - `udt_change_field_type(p_table_id, p_field_id, p_new_type, p_strategy)` — rewrites every
-    row's JSONB cell; strategy `cast_or_null` (default) or `cast_or_skip`.
+    row's JSONB cell; strategy `cast_or_null` (default) or `cast_or_skip`. 🚨 **A value that
+    cannot become the new type goes to the row's history WITH the reason before its cell is
+    emptied** (`reason = 'type_change:<from>→<to>'`, Data Doctrine Rule 3), in the same
+    transaction; the call RAISES and changes nothing if fewer values reach history than it is
+    about to empty. Returns `values_moved_to_history` + `history_reason` — every screen that
+    runs a type change MUST say the number and the way back (DD-244).
+  - `udt_cast_jsonb_value(p_value, p_new_type)` — the ONE cast rule (SQL NULL = does not fit),
+    so "does this fit?" and "what does it become?" can never disagree.
 
 **Key types**
 - Generated Supabase types: `types/database.types.ts` (regenerate with `pnpm db-types`).
@@ -304,9 +316,15 @@ parent-token rule for viewer reads and editor appends. Sharing integrates with t
 **3. Change a column's type**
 - Trigger: user changes a field from `string` to `integer` in the column editor.
 - Path: `udt_change_field_type(table_id, field_id, 'integer', 'cast_or_null')`.
-- Walks every row, rewrites the JSONB cell (regex-validates then casts; un-castable → null or
-  skip per strategy), then flips `udt_dataset_fields.data_type`.
-- Exit: `{ field_id, new_type, strategy, rows_rewritten }`.
+- Walks every row, rewrites the JSONB cell (`udt_cast_jsonb_value`; un-castable → emptied or
+  left in place per strategy), then flips `udt_dataset_fields.data_type`.
+- Under `cast_or_null`, every un-castable value is first written to that row's history carrying
+  `reason = 'type_change:string→integer'` — the history row is the ONLY surviving copy, and the
+  call refuses outright (rolling back) if it cannot prove the history landed.
+- Exit: `{ field_id, new_type, strategy, rows_rewritten, rows_skipped, rows_total,
+  values_moved_to_history, history_reason }`. `TableConfigModal` shows the count, says the values
+  are in each row's history, and names Restore as the way back; `VersionHistoryViewer` badges that
+  version "Column type changed (string→integer)".
 
 **4. Validation enforcement (opt-in)**
 - Trigger: a dataset is set to `validation_mode='strict'` (new imports may default to strict).
@@ -370,6 +388,7 @@ parent-token rule for viewer reads and editor appends. Sharing integrates with t
   the bulk pass in `UserTableViewer` run the SAME operation set, so they can never disagree about
   what "clean" means. A new kind of damage is a new operation in that registry — never a helper
   in this feature. The bulk pass scans **every** row (`loadAllRowsForCleanup`), not the page.
+- **Ambient assistant runway lives on the real natural-height scroller.** `/data` and `/data/create` put `scroll-page-end-space` on their inner scrolling leaf. The shared Data route wrapper is a clipped full-height host and must never own that padding: doing so subtracts the runway from every child's usable height. `ScrollAssistantLauncher.includePathnames` limits the single-line dock to those two natural-height routes; `/data/[id]` is a full-height editor and deliberately has no floating composer.
 - **`/data/[id]` renders the viewer in `fillHeight` mode.** Three bands — chrome, grid, pagination
   — where only the grid scrolls. Embedded surfaces (windows, sheets, chat artifacts, pickers)
   leave it off and keep the content-sized `70dvh` cap. There is no in-body table selector any
@@ -386,8 +405,14 @@ parent-token rule for viewer reads and editor appends. Sharing integrates with t
 - **Realtime fanout.** `udt_dataset_rows` is in the `supabase_realtime` publication — a 10k-row
   import emits 10k events. Importers MUST batch via `udt_bulk_write`, and only the UI viewing a
   given dataset should subscribe. Do not subscribe app-wide.
-- **Version table growth.** Every cell edit appends to `udt_dataset_row_versions`. No retention
-  policy yet (P2). Heavy agent traffic will grow it quickly — budget for archival.
+- **Version retention is a knob, per organization, raise-only.** `udt_dataset_row_versions_trim_scoped`
+  (the weekly `udt_dataset_row_versions_trim_weekly` cron calls the zero-arg wrapper) keeps the
+  latest 2 versions of every row plus everything newer than that organization's
+  `extensibility.user_tables.history_retention_floor_days` — **default 30 days, `raise_only`**
+  (Data Doctrine Rule 10). It was a hardcoded platform-wide **14 days** until DD-244, which
+  together with `cast_or_null` meant the only copy of a value a type change could not keep was
+  deleted two weeks later. Heavy agent traffic still grows the table — budget for archival.
+  Guard: `pnpm check:udt-history` (`scripts/check-udt-history-honesty.ts`).
 - **`udt_change_field_type` validates against the *pre-change* type** during the row rewrite
   (rows are rewritten before the field's `data_type` flips). Run type changes on permissive
   datasets; on strict datasets with un-castable required values it can conflict. Documented
@@ -722,7 +747,304 @@ blob must not also discard the column layout someone arranged. Bump
 `SAVED_VIEW_DEFINITION_VERSION` when the shape changes and teach the parser the
 older shapes.
 
+## Grid clipboard + right-click menu (2026-09-14)
+
+**Copy / cut / paste act on the SELECTED cell, no editor needed.** Cmd-C copies
+the cell's text; Cmd-X copies and clears it; Cmd-V writes the clipboard over it.
+A paste carrying a spreadsheet block (tabs / line breaks, Excel quoting) lands as
+a block from the selected cell downward and rightward, in ONE `udt_bulk_write`,
+every cell on the undo stack; rows that fall below the page are offered as new
+rows (confirm) and columns that fall off the right edge are reported. The pure
+model is [`grid-clipboard.ts`](./grid-clipboard.ts) (TSV parse / serialize,
+`planPaste`) with its tests; the React shell is `useGridSelection`, which
+serves BOTH clipboard doors — the native `copy` / `cut` / `paste` events (the
+browser Edit menu, `event.clipboardData`, no permission prompt) and the keyboard
+chords, which arm a pending gesture and fall back to the async Clipboard API
+only when no native event claims it (Chromium fires none on a focused `<div>`
+with nothing text-selected). A real text range highlighted inside the grid is
+always the browser's to copy.
+
+**A choice cell selects on the FIRST click and opens its chooser on the
+second** (or Enter). Opening it on the first click moved focus into the
+chooser's search box and every grid shortcut went there — a choice column could
+not be copied at all.
+
+**The grid mounts ONE v3 right-click menu** (`NonEditableContextMenu` around
+the scroll container; `resolveContextOnOpen` reads the clicked `<td data-cell>`
+/ `<tr data-row-id>` / `<th data-field>`). Right-clicking a cell selects it. The
+menu's own Copy copies the cell (scope `content` = the cell text). Sections from
+[`grid-context-menu.ts`](./grid-context-menu.ts) — **Cell** (Cut · Paste ·
+Clear · Edit), **Row** (Edit… · Duplicate · Copy row as TSV · Row history · Get
+reference… · Delete…), **Column** (Sort A→Z / Z→A · Clear sort · Hide · Column
+settings… · Delete…) — plus the shared dataset section
+(`buildDatasetTableMenuSection`, "Open in Data Workspace" disabled on the route
+itself). Every item delegates to a handler the toolbar / header menu / row
+actions already call; view-only tables keep every row, disabled with the reason.
+The menu carries `surfaceName` only on the `/data/[id]` mount (inside another
+surface's window it resolves the host). The surface's `current_cell_value` /
+`current_column_name` / `current_row_id` now follow the SELECTED cell, not only
+an open editor.
+
+## Colors — color-by, rules, manual highlights (2026-09-14)
+
+**The Airtable line, not the Excel line** (Arman, 2026-09-14: "do what the best do and
+just do it better, not get crazy with features"). A typed dataset is not a canvas —
+Workbooks already are — so color here carries MEANING and never touches the data:
+
+1. **Color by a column.** A choice / multi-choice / boolean column tints the row (or
+   only that column's cells) with each option's own chip color. An option that never
+   declared a color gets a stable palette color by position (`colorForChoice`), so
+   "color rows by Status" always paints something. Booleans tint checked rows green.
+   Right-click a column header → "Color rows by this column", or the toolbar **Colors**
+   dialog.
+2. **Rules.** "When Budget > 50000 tint the cell amber", "when Status is Blocked tint the
+   row red" — evaluated live on the client, first matching rule wins, top to bottom.
+   Edited in the **Colors** dialog ([`components/ColorRulesDialog.tsx`](./components/ColorRulesDialog.tsx)).
+3. **Manual highlights.** A cell, a row or a column from the right-click menu
+   ("Highlight cell / row / column ▸"), the same seven-color palette the choice chips
+   use. Manual always wins over rules; a cell tint paints over a row tint.
+
+**Where it lives.** `udt_datasets.metadata.style` — one blob per table, read with the
+table's own metadata (`get_full_table` → `tableInfo.metadata`, zero extra requests),
+written by PATH through `public.udt_set_table_style(p_table_id, p_path text[], p_value)`
+(migration `udt_table_style_and_example_tables.sql`; editor-gated by
+`workbench.udt_dataset_access`; a null value deletes the key and prunes empty parents).
+Surgical paths are what let two editors highlight different cells without clobbering
+each other. Model, parsing, precedence and class maps: [`table-style.ts`](./table-style.ts)
+(tests in `__tests__/table-style.test.ts`). The grid patches its local copy optimistically
+and adopts the server's returned style on success. Copy, export, the agent scope and the
+row data never see colors. Realtime does NOT yet push style changes to other viewers
+(the viewer subscribes to rows only) — a reload shows them.
+
+## Examples — the platform's read-only showcase tables
+
+**Read-only for EVERYONE (2026-09-15, found by the independent reviewer):** the examples are
+owned by `admin@admin.com` in the global system org, and `isReadOnly` was "not the owner and
+not a shared editor" — so the one account every agent signs in as could edit, rename and
+delete the showcase every user sees. `UserTableViewer` now resolves the system org
+(`resolveSystemOrgId`) and treats any table whose `organization_id` is that org as read-only
+regardless of ownership (the View Only notice says why); the Examples cards on `/data` render
+without rename/delete. The seed script is the examples' only writer.
+
+`/data` gains an **Examples** section: datasets owned by the Matrx System organization,
+listed by `public.udt_list_example_tables()` (SECURITY INVOKER — RLS decides; every
+signed-in user is a viewer through the platform-global tier, super admins can edit).
+`get_user_tables` is untouched and still means "my tables". The content is seeded by
+`scripts/seed-udt-example-tables.ts` (three tables: Project Tracker — every column
+format, color-by Status, a rule, manual highlights; Product Catalog — rules on stock;
+Team Directory — color-by Department on cells; plus one shared pick list for the
+dependent Team column). Seeded live 2026-09-14 (Project Tracker `ce73458f`, Product
+Catalog `437ad3e2`, Team Directory `6a4b2950`). The first run was refused by RLS because
+`udt_datasets.std_insert` needs `iam.has_org_access(organization_id)`, which was pure
+membership, and the system org has no members BY DESIGN (Arman: "if something is requiring
+it to have a user before it can store things, that is the problem"). Fixed at the class:
+`migrations/iam_org_access_platform_admins_manage_global_system_org.sql` — the org lane
+(`iam.has_org_access_for` / `my_orgs`) admits a super admin on a `global_readable` system
+org, the write-side twin of the platform-global read tier. `--reset` rebuilds an example.
+
+## Right-click menu additions (2026-09-14, second pass)
+
+Row: **Add row…**, **Highlight row ▸**. Column: **Insert column left / right…** (the
+add-column modal takes `insertAtOrder`; after the column lands, `renumberFields` shifts
+the columns at and after that slot by one), **Highlight column ▸**, **Color rows by this
+column** / **Stop coloring…** (disabled with the reason on non-choice columns), **Table
+colors…**. Cell: **Highlight cell ▸**. Highlights show a ✓ on the color already applied.
+
+## Range selection — cells, rows, columns (2026-09-14, Arman: "go ahead and build those")
+
+A selection is an ANCHOR (the ringed cell) plus an optional FOCUS (`CellRange` in
+`grid-selection.ts`, resolved against the grid's current order so a re-sort cannot
+move it). Gestures: **shift-click** extends; **press-and-drag** across cells sweeps
+(`select-none` on the grid while dragging); **shift+arrows** grow the range;
+**click a header's own surface** (not its sort label / menu) or **Ctrl/Cmd+Space**
+selects the column; **click beside a row's checkbox** or **Shift+Space** selects the
+row; **Cmd/Ctrl+A** selects the page. Escape collapses the range first, then clears.
+Copy / cut / Delete / paste act on the range: copy writes the block as TSV
+(Excel-paste-ready), Delete or cut clears every cell in ONE `udt_bulk_write` with each
+cell on the undo stack, pasting ONE value over a range FILLS it, a block still lands at
+the anchor, and **Cmd-D / "Fill down"** copies the range's first row down. Right-click
+inside the range keeps it and the Cell section becomes "Cells · N selected" (cut / clear /
+paste over / fill down / highlight N cells). The ticked-checkbox rows are a separate
+model (bulk actions) and stay that way. **Agents see both:** `selected_range_tsv` (+
+`selected_range_cell_count`, a header line of machine field names first) and
+`selected_rows_json` on the `matrx-user/data-tables` surface — "these cells" / "these
+rows" now mean something to an agent.
+
+**Live colors.** `useTableRealtime` carries a second binding on the SAME channel —
+`workbench.udt_datasets` UPDATE for this table id — so a rename, a description or a
+color change by another editor lands without a reload (own writes echo harmlessly: the
+row IS what the grid already holds). Publication verified by `pnpm check:realtime-publication`.
+
+## Validation rules — what a column ACCEPTS (2026-09-14)
+
+Three questions can be asked of a column, and the Table Settings card now asks
+all three in one row: what it **Stores** (the storage type), what it **Shows as**
+(the display format), and what its **Rules** accept.
+
+The rules live on `workbench.udt_dataset_fields.validation_rules` (jsonb — a
+column that existed since the v2 backbone and was read by nothing). The model,
+the parser and the judge are ONE pure module: [`validation.ts`](./validation.ts).
+Champions: Excel's data validation (a rule per column; an invalid entry is
+refused *with the reason*) and Airtable (type-level only — we go past it).
+
+```ts
+type ValidationRules = {
+  required?: boolean;     // MIRROR of is_required — never stored, never written
+  min?: number; max?: number;                  // number-ish columns
+  minLength?: number; maxLength?: number;      // text-ish columns
+  pattern?: string; patternHint?: string;      // JS/PG-compatible, anchored by the author
+  allowedValues?: string[];                    // NON-choice columns only
+  unique?: boolean;                            // checked by the caller, never by the trigger
+};
+```
+
+**The four laws.**
+
+1. **`required` is not stored here.** The column already declares `is_required`
+   and the card already has the Req checkbox. `parseValidationRules` never
+   invents the key and `serializeValidationRules` always strips it. One fact,
+   one home.
+2. **An empty value is never a violation.** Emptiness is `is_required`'s
+   question, asked once, by whoever owns the whole row. Otherwise a `min: 0`
+   would quietly make every optional number column mandatory.
+3. **A rule judges what the user is WRITING, never what is already stored.**
+   Existing values that break a new rule are kept, never rewritten, and render
+   in the SAME amber THE FALLBACK LAW already uses for a format mismatch —
+   `<FormattedFieldValue validationRules>`, one amber, one voice. Declaring a
+   rule over existing data is how a user FINDS the values that do not fit,
+   exactly as declaring a choice column's options is.
+4. **`allowedValues` is refused on a choice column.** Its options live in its
+   format, are offered in the picker, and an off-list value there is legal and
+   amber by design. A second list would be a second vocabulary for one column.
+   `validateCellValue` skips the rule when the format is `choice`/`multi_choice`
+   and `ColumnValidationEditor` does not offer it.
+
+**Where it is enforced — the browser first, the database as a backstop.**
+
+| Path | File | What refusal looks like |
+|---|---|---|
+| Inline cell edit | `components/EditableCell.tsx` | Toast with the reason; the editor STAYS OPEN holding what was typed (same as a server refusal) |
+| Add row | `components/user-generated-table-data/AddRowModal.tsx` | Inline red line under that field; the rules print under every field that has them |
+| Edit row | `components/user-generated-table-data/EditRowModal.tsx` | Same |
+| Agent write (`cell_value`) | `hooks/useDataTableWriteHandlers.ts` | THROWS the reason plus every rule the column carries, so the retry is informed |
+| Database | `public.udt_validate_row` → `public.udt_validate_cell_rules` | **`validation_mode='strict'` ONLY** |
+
+Client enforcement is unconditional — it does not consult `validation_mode`,
+because strict mode is a database backstop, not the user's error message. The
+DB half keeps the standing invariant intact: permissive stays a pure
+passthrough (§ Invariants).
+
+**The reason strings are the product, and the two engines must agree on them
+word for word.** `features/data-tables/validation.ts` and
+`public.udt_validate_cell_rules(p_rules jsonb, p_value jsonb, p_data_type text)`
+are twins: `Must be at least 0`, `Must be at most 100`, `Must be at least 3
+characters (this is 2)`, `Must match the pattern ###-####`, `Must be one of:
+Red, Green, Blue`. The TS half is pinned by
+`__tests__/validation.test.ts` (39 cases); the SQL half by a DO block inside
+`migrations/udt_validation_rules_strict_enforcement.sql` (26 cases) that runs
+in the same transaction, so the migration cannot land if the wording drifts.
+
+**`unique` is NOT enforced by the trigger, on purpose.** A cross-row check
+inside a per-row BEFORE trigger cannot see a concurrent insert — it would be a
+guarantee that is not one — and it walks the table on every write. It is checked
+by the caller against the rows it holds (`existingValues`), which catches the
+common mistake honestly; the editor says so in as many words. A real guarantee,
+if one is ever wanted, is a unique expression index, not a trigger.
+
+**Saving.** Rules ride the SAME write every other column property uses —
+`update_user_table_config`'s `p_field_updates` has always accepted
+`validation_rules`. That RPC COALESCEs the column, so `{}` is the only way to
+CLEAR rules; `serializeValidationRules({})` returns exactly that. No new RPC.
+
+**Agents can see the rules.** `column_list` entries gain `validation?: string[]`
+— the same plain-English phrases the row forms print (`describeValidationRules`)
+— so an agent reads the rule instead of discovering it by being refused.
+
+**Not built (said plainly).** The Table Settings card does NOT show "N values
+don't fit". `udt_table_profile` returns `top_values`, not every value, so a
+count derived from it would be a confident number over a partial set — the exact
+failure § Column shape exists to prevent. A real count needs its own RPC and is
+not in this pass.
+
+## Formula columns in the grid (2026-09-14; readers unified 2026-09-15)
+
+**THE ONE INJECTION POINT (2026-09-15):** `withComputedColumns(rows, fields)` in
+[`formulas.ts`](./formulas.ts) (with `formulaColumnsOf` / `isFormulaColumn`) is the only place a
+formula column's value is put into a row. The grid page, `loadRowsForCopy` / `loadAllRows`
+(every Copy / Copy for AI / CSV+JSON export / copy-subset window — they all read
+`getCompleteTable`, whose rows hold the stored BLANK), the column-filter path, the client-side
+sort and the agent scope's `full_table_json` / `selected_rows_json` all call it. A reference
+resolves against the table's COLUMNS (machine name, then display name), so a row saved without
+that key is BLANK, not the "no such column" `#ERROR` (live-found on the empty sixth row of the
+test table; guard `__tests__/computed-columns.test.ts`). Off-grid writes are refused everywhere:
+`AddRowModal` / `EditRowModal` render a read-only note instead of an input (and skip the column
+in the required and rules checks), `AddColumnModal` offers no default/required control for a
+formula column, and the agent `cell_value` target throws with the reason. Header controls: sort
+by a formula column is client-side when the browser can hold every row (≤ `CLIENT_SORT_THRESHOLD`,
+no search) and otherwise refused with a toast that says why; the column filter's menu is mounted
+without `tableId` for a formula column so it works from the browser's computed rows and says
+when that is not every row (server facets never see the value).
+
+Live-verified 2026-09-15 on the local preview as admin@admin.com: new column "Double area" via
++ Column → Shows as → Formula → editor ("Valid · uses 1 column"), `{Area (sq km)} * 2` rendered
+19193920 for China; sort by it ordered 0 → 34196484; Edit Row showed the read-only note; Copy →
+Text carried the computed column; the Project Tracker example renders "Budget per point" as
+$2,471 (84000 / 34).
+
+A column whose format is `formula` (`lib/field-formats` — language, coercion rules and the
+26 functions in [`formulas.ts`](./formulas.ts), 65 tests) STORES nothing. `UserTableViewer`
+computes it at render for every displayed row (`{Display Name}` or `{field_name}` references,
+earlier formula columns visible to later ones) and injects the value into the row it renders,
+so display, copy, the agent scope and client-side sort all see the same number. A bad
+reference or a division by zero renders `#ERROR` with the reason as its tooltip. The cell is
+read-only (double-click, Enter, typing and the agent's `cell_value` all refuse), and paste /
+clear / fill down skip formula cells and say so. Not sortable or filterable server-side
+(`udt_column_facets` / the paginated RPC never see the value) — documented limitation.
+**Expression editor:** [`components/FormulaExpressionEditor.tsx`](./components/FormulaExpressionEditor.tsx)
+— a popover beside the format picker in Table Settings AND in the new-column form (so a
+formula column can never be created without a way to write its expression): live parse
+status with the error position (and, since 2026-09-15, an error naming any `{reference}` that matches no column — a reference is judged against the table's columns before save, not only as `#ERROR` after it), the table's other columns as `{Display Name}` chips, the
+function list, and "result shows as". It sits in `features/` because the language does and
+the picker is a `lib/` module that must not import upward. Not yet exercised live: the shared
+preview server was held by another checkout when this landed, so the editor has unit
+coverage of the language only — open Table Settings on any table, set a column's format to
+Formula, and the editor button appears under it.
+
+## Validation rules in the grid (2026-09-14)
+
+The grid passes each column's parsed rules to `EditableCell` (refuses a violating commit,
+stays in edit mode with the reason), to `FormattedFieldValue` (a STORED value that breaks a
+rule renders amber with "saved before the rule, and is kept"), to the agent scope
+(`column_list[].validation`), and judges pasted values (violations are skipped and named in a
+toast). `unique` reads every other loaded row of the column (full cache when held, else the
+page). Rule model, editor and strict-mode trigger: § Validation rules (below, by the
+validations build).
+
 ## Change log
+
+- `2026-09-17` — **The document editor stops losing the last thing you typed, and stops swallowing saves in silence.** Cold walk 8 typed several paragraphs into a brand-new document reached from a Masterwork Rulebook and found a blank page after a reload; that document has ZERO rows in `udt_document_snapshots`, so not one save was ever attempted. Two causes. (1) Autosave fired 2.5s after the last keystroke **and at no other moment**, so every reload, tab close and client-side route change inside that window dropped what had just been typed, silently. `DocumentEditor` now flushes the pending debounce on `pagehide`, on `visibilitychange` → hidden, and in the boot effect's cleanup (fired BEFORE the facade is nulled, since `performSave` takes its snapshot synchronously before its first `await`), and registers a `beforeunload` that warns when work is still unwritten — a flush is a request, not a guarantee. (2) `performSave` had two bare early returns, hit when the Univer facade or the active document was missing: they swallowed autosave AND the toolbar button while the page still said "Editing" and accepted keystrokes, which is indistinguishable from the walk's report. Both now call `announceUnsaveable`, which sets the error status and names the only remedy that saves the person's words (copy them out, then reload to reconnect). Boy-scout in the same file: the save-state pill no longer hides itself below `sm` — save state is the one thing on that bar a person must be able to trust — and no longer wears a hardcoded `border-green-500` while saying "Unsaved changes" in amber. Verified live: typed into a new document and reloaded 0.9s later, well inside the debounce; the `origin=autosave` row landed and the sentence was on screen after the reload. Guarded from the masterwork side by `features/masterwork/sitting/textEntrySurfaces.ts`, whose `door` row names this module and fails if the listeners go away.
+
+- `2026-09-17` — **The table list is ordered by most recent activity (Arman: "sort tables by the most recently updated as the default… it might be using the creation date").** It was: `get_user_tables` ordered by `created_at`. A dataset's own `updated_at` moves only on rename / settings, never on a cell or column edit, so the function now computes `last_activity_at` = newest of the dataset's, its rows' and its columns' stamps, orders by it (newest first) and returns it; the `/data` cards and list rows show that same date. Every reader of the RPC (pickers, Quick Data, save/append dialogs) inherits the order. Migration `migrations/udt_get_user_tables_orders_by_last_activity.sql` (based-on verified, applied + ledgered `2026-09-17 17:11:40+00`, checksum `7dce2d3e…`). Verified live: called as admin@admin.com, the July-created test table edited today came back first; `/data` shows it first with "Updated: Sep 17, 2026". Additive shape, `jsonb` return — no `db-types` change.
+
+- `2026-09-17` — **Long cell text no longer paints over the next column.** Past `FIXED_LAYOUT_MAX_COLUMNS` the table is `table-auto`, where `max-w-0` capped the column but not the content's paint. The body `<td>` now clips, and `lib/field-formats/FormattedFieldValue` gives a value asked to `truncate` an inline-block box (plain and markdown branches) so it ends in "…" with the full text as its tooltip. Verified live on the Project Tracker example.
+
+- `2026-09-17` — **Right-click reads by target; columns rename in place (Arman, testing the menu himself).** (1) The grid marks the clicked target's section `primary` (`features/context-menu-v3` § THE PRIMARY SECTION): a header click opens on `Column · <name>`, a cell on `Cell · <name>` → `Row ·` → `Column ·` → `Table · <table>`, the row checkbox/actions on `Row ·`; a group with no target is not offered (`gridMenuTargetKind` in `UserTableViewer`). (2) **Rename column** is the first row of the Column section and of the header ▾ menu: the header label becomes an input in place (Enter / blur saves, Escape cancels, a duplicate name is refused and the input stays open). `renameColumn` (`service.ts`) writes `display_name` only — `field_name` never changes, so rows, filters, colors and saved views are untouched — then `rewriteFormulasForRename` rewrites `{Old}` → `{New}` in every formula that named it (`rewriteFormulaReferences` in `formulas.ts`, string-literal aware, 4 tests). Table Settings calls the same rewrite after its own save, so neither path can turn a formula into `#ERROR`. Live-verified on the local preview as admin@admin.com: header menu order; `Capital` → `Capital city` saved and reloaded; `Area (sq km)` → `Area km2` kept `Double area` computing with the toast "Updated the formula in Double area"; both restored. Live-found and fixed: the closing menu hands focus back to its trigger AFTER the input mounts, which blurred and cancelled the rename — the input takes focus back for the first 700 ms. NOT verified: the rename from the header ▾ popover (same handler), the Table Settings rewrite path in a browser, mobile.
+
+- `2026-09-15` — **Formula columns: one read-side helper, off-grid refusals, header controls, showcase column.** See § Formula columns in the grid (top paragraph). Commits `26f41a5e8c`, `968b3f08f1`, `315c4dd761`. Verified live on the local preview (list in that section); 286 data-tables tests green; `tsc --noEmit` clean for every touched file. Surface mirror re-synced (`POST /api/admin/surfaces/sync-manifests` → 200) and `pnpm check:surface-drift` OK. Project Tracker example reseeded with `--only project-tracker --reset` (new id `30374c26-f16d-4e78-ab12-01495f86b954`). Filed five review-queue rows (lane `data-tables-grid-overhaul`) and dispatched an independent reviewer. NOT done: aidream ORM regeneration is a no-op for the two new SQL functions (`db/generate.py` emits table models only; nothing in aidream reads `udt_*` functions).
+
+- `2026-09-14` — **Formula columns rendered, validation rules wired into the grid.** Verified live on `/data/[id]`: a `maxLength: 12` rule on Capital rendered "Washington, D.C." amber with the tooltip "Must be at most 12 characters (this is 16) — this value was saved before the rule, and is kept."; typing a 22-character value into that cell and committing raised "Must be at most 12 characters" and kept the editor open with the typed text, and Escape restored "Beijing". Formula rendering has unit coverage only until a column carries the format — the expression editor is the next step.
+
+- `2026-09-14` — **DD-244: the grid's live data-loss path is closed.** A column type change no longer empties a cell without keeping the value, and row history is no longer trimmed below Arman's ruled 30-day floor. Migration `migrations/dd244_udt_history_reason_and_retention_floor.sql` (applied + ledgered `2026-09-15 03:57:51+00`, checksum `051bc808…`): new `workbench.udt_dataset_row_versions.reason`; `udt_log_row_version` stamps it from the transaction-local `matrx.udt_version_reason`; new `udt_cast_jsonb_value` is the ONE cast rule; `udt_change_field_type` counts un-castable values, stamps `type_change:<from>→<to>`, PROVES the history landed (and raises, rolling back, if it did not) and returns `values_moved_to_history` + `history_reason`; new knob `extensibility.user_tables.history_retention_floor_days` (30 days, `raise_only`, organization-overridable); `udt_dataset_row_versions_trim_scoped` reads it per organization and the cron's zero-arg wrapper delegates (cron job 13 untouched). UI: `TableConfigModal` says the count and names Restore as the way back (and its pre-change confirm no longer claims values just "become null"); `VersionHistoryViewer` badges that version "Column type changed (string→integer)". Guard `pnpm check:udt-history` / `:self-test` (`scripts/check-udt-history-honesty.ts`) — proven RED on the pre-fix bodies (`column "reason" does not exist`), GREEN on all five checks after. Verified: the live functions by SELECT; a lowering override refused live (`must be >= 30`); `pnpm db-types` regenerated; `pnpm check:parse` + `tsc --noEmit` clean for every touched file. NOT verified by me: the live browser dialog on production (a separate verifier owns that), and the weekly cron's next real run.
+
+- `2026-09-14` — **Column validation rules.** See § Validation rules. New: `features/data-tables/validation.ts` (the ONE rule model), `features/data-tables/components/ColumnValidationEditor.tsx` (the Rules popover on each Table Settings column card), `migrations/udt_validation_rules_strict_enforcement.sql` (new pure helper `public.udt_validate_cell_rules`; `public.udt_validate_row` consults it under strict mode only). Enforced client-side in `EditableCell`, `AddRowModal`, `EditRowModal` and the agent `cell_value` write target regardless of `validation_mode`; existing violating values render in the format system's existing amber. Verified: `npx jest features/data-tables/__tests__/validation.test.ts` 39/39 green; the migration's in-transaction DO block 26/26 (it cannot apply otherwise); applied and ledgered at `2026-09-15 03:46:40+00`, checksum `10db619e…`; `public.udt_validate_cell_rules` called live as the `authenticated` role returned `Must be at most 100` / `Must be one of: Red, Blue` / `null` for an empty value; `npx tsc --noEmit -p tsconfig.typecheck.json` clean for every touched file. NOT verified: the live browser — the grid, the row modals and the Rules popover were not exercised on `/data/[id]`, and the strict-mode trigger has not been tripped by a real row write. NOT wired (the viewer is owned by another session this turn): `UserTableViewer` still has to pass `validationRules` / `existingValues` to `EditableCell`, `validationRules` to `FormattedFieldValue`, and `validationRules` on each `surfaceFields` entry — until it does, the grid cell, the amber and the agent's `column_list.validation` are inert. The `EditRowModal`, `AddRowModal`, agent `cell_value`, Table Settings and database paths are complete.
+
+- `2026-09-14` — **Range selection (cells / rows / columns), live colors, wide-table layout.** See § Range selection. Verified live: shift-click made a 3-cell range and Cmd-C wrote "Beijing\nOttawa\nBrasília"; a drag selected a 2×4 block with no text selection; clicking the Capital header selected the column and copied 6 lines; right-click inside the range showed "Cells · 6 selected"; an SQL change to `metadata.style` on the open table repainted the rows within a second with no reload. Wide tables (over eight visible columns) now keep natural column widths and scroll sideways instead of overlapping text (the 26-column example was unreadable). The org lane fix that unblocked the example seed is in `migrations/iam_org_access_platform_admins_manage_global_system_org.sql`. NOT verified in the isolated browser: a real second user's session for the live-color path (the SQL update stood in for it).
+
+- `2026-09-14` — **Colors (color-by / rules / highlights), Examples section, menu additions.** See the three sections above. Verified live on `/data/[id]`: "Color rows by this column" on Country tinted every row (palette fallback for colorless options); "Highlight cell → Amber" wrote `style.cells` and painted the cell while selected; the Colors dialog opened with the live color-by and an empty rule list. Migration applied and ledgered; `pnpm db-types` regenerated. The example tables are seeded (see § Examples); realtime for style changes is still open.
+
+- `2026-09-14` — **Copy / cut / paste on a selected cell (spreadsheet blocks included), choice cells select-then-open, and the grid's first right-click menu.** See § Grid clipboard + right-click menu. Verified live on `/data/[id]` in the isolated browser: Cmd-C on a plain and on a choice cell wrote the cell text; a native paste event over a cell wrote it and Cmd-Z restored it; a two-row block on the last row raised the "Add 1 new row?" confirm, Skip wrote the fitting cell; the menu opened with the Cell / Row / Column sections and no INERT / VALUE MAPPING scream. Not verifiable in the isolated browser (it denies clipboard read and fires no native clipboard events): the Cmd-V async fallback was proven with a stubbed `readText`; the real-browser prompt path is untested.
+
+- `2026-09-13` — **Data's ambient assistant no longer shrinks list pages or covers the full-height table editor.** The route wrapper is padding-free and clipped; `/data` and `/data/create` now own their runway on the actual scrolling leaf. The launcher is exact-route limited so `/data/[id]` preserves its grid and pagination viewport. A forcing source-contract test locks the ownership and route boundary.
 
 - `2026-09-11` — **Every user-data-table RPC guard now asks the grant the RLS
   policy asks, instead of re-implementing it.** On a table shared read-only the

@@ -132,6 +132,26 @@ export interface FieldProps {
    * **Does not block typing.** For hard limits, also set `maxLength` on the input.
    */
   maxCount?: number;
+  /**
+   * 🚨 **THE EMPTY-LOOKS-EMPTY RULE (2026-09-15).** The child input's current
+   * value. Pass it on every `required` field.
+   *
+   * A required field that is EMPTY must LOOK empty. On 2026-09-15 a
+   * non-technical Expert could not build their Masterwork because the name
+   * field's placeholder ("Headless Headhunter Resume Review Masterwork") was
+   * indistinguishable from a typed value: the screen said filled, the field
+   * was empty, and the primary action sat silently disabled
+   * (`teach-recent-practitioner` W2). A placeholder is a suggestion, never an
+   * answer, and the screen must say which one it is showing.
+   *
+   * When `required` is set and this value is blank, `Field` dashes the input's
+   * border, fades and italicises its placeholder, and says so underneath — so
+   * no placeholder, however value-shaped, can pass for a filled field.
+   *
+   * Leave it `undefined` on fields you do not track; the honesty chrome then
+   * never renders (it cannot know). `""` means empty and IS tracked.
+   */
+  value?: string | null;
   /** Outer wrapper className. The only styling escape hatch — used for layout (e.g. `flex-1`). */
   className?: string;
   /** The input. Must have `id={htmlFor}` for the label to work correctly. */
@@ -151,9 +171,16 @@ export function Field({
   error,
   count,
   maxCount,
+  value,
   className,
   children,
 }: FieldProps) {
+  /**
+   * Tracked AND required AND blank. `undefined` is "not tracked" — only an
+   * explicitly passed value can be judged empty.
+   */
+  const requiredEmpty =
+    Boolean(required) && value !== undefined && !String(value ?? "").trim();
   const hasCounter = typeof count === "number";
   const overLimit = hasCounter && maxCount != null && count! > maxCount;
   const nearLimit =
@@ -208,14 +235,37 @@ export function Field({
         <p className="text-xs text-muted-foreground">{description}</p>
       )}
 
-      {children}
+      {/*
+        THE EMPTY-LOOKS-EMPTY RULE. Styled on a wrapper with descendant
+        selectors rather than by cloning the child, so it holds for EVERY
+        input a Field can wrap — shadcn Input, ProTextarea, a bespoke control —
+        without the child having to opt in or even know.
+      */}
+      <div
+        data-slot="field-control"
+        data-required-empty={requiredEmpty ? "true" : undefined}
+        className={cn(
+          requiredEmpty &&
+            "[&_input]:border-dashed [&_textarea]:border-dashed [&_input]:border-muted-foreground/50 [&_textarea]:border-muted-foreground/50 [&_input]:placeholder:italic [&_textarea]:placeholder:italic [&_input]:placeholder:text-muted-foreground/60 [&_textarea]:placeholder:text-muted-foreground/60",
+        )}
+      >
+        {children}
+      </div>
 
-      {(error || hasCounter) && (
+      {(error || hasCounter || requiredEmpty) && (
         <div className="flex items-start justify-between gap-2 min-h-[1rem]">
           {error ? (
             <p className="text-xs text-destructive flex items-center gap-1">
               <AlertCircle className="h-3 w-3 flex-shrink-0" />
               <span>{error}</span>
+            </p>
+          ) : requiredEmpty ? (
+            <p
+              data-slot="field-empty-notice"
+              className="text-xs text-muted-foreground flex items-center gap-1"
+            >
+              <AlertCircle className="h-3 w-3 flex-shrink-0" />
+              <span>Empty — the grey text is an example, not your answer.</span>
             </p>
           ) : (
             <span />

@@ -38,6 +38,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { Loader2, BrainCircuit } from "lucide-react";
 import type { ReviewResult } from "../../types";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
+import { useFlashcardMandates } from "../../data/mandate-disclosure";
 
 const EDU_BASE = "/education/flashcards";
 
@@ -48,6 +49,7 @@ const AUTO_GRADE_LABEL: Record<TypedGrade, string> = {
 };
 
 export function WriteSurface({ setId }: { setId: string }) {
+  useFlashcardMandates(["gradeTypedAnswer"]);
   const router = useRouter();
   const study = useFlashcardStudy({ setId, withSession: true, mode: "write" });
   const title = study.set?.name ?? "Write";
@@ -258,8 +260,8 @@ export function WriteSurface({ setId }: { setId: string }) {
                           <span className="font-medium capitalize text-foreground">
                             {verdict.result}
                           </span>
-                          {verdict.reason ? ` — ${verdict.reason}` : ""}{" "}
-                          Confirm or adjust below.
+                          {verdict.reason ? ` — ${verdict.reason}` : ""} Confirm
+                          or adjust below.
                         </span>
                       </p>
                     ) : autoGrade ? (

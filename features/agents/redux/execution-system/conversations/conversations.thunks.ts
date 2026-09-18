@@ -28,12 +28,18 @@ export const destroyInstancesForAgentIfAllowed =
   };
 
 /**
- * Destroys a conversation ONLY if it's "abandoned" — i.e. it has no messages.
+ * Destroys a conversation ONLY if it has no committed messages AND no live
+ * composer work. A first turn is still real work while it is crossing the
+ * async submit boundary: `markInputSubmitted` runs before the optimistic user
+ * bubble exists, and a handoff may unmount the launching composer in that
+ * window. Deleting on message-count alone loses that turn and leaves the
+ * destination surface pointing at a conversation that no longer exists.
  * Used by surfaces that may unmount mid-handoff (the chat route promotes its
  * URL from `/chat/new` → `/chat/[conversationId]` right after submit, which
- * unmounts the launcher). A plain destroy-on-unmount would wipe the in-flight
- * stream; this preserves any conversation the user actually started while
- * still cleaning up truly-empty instances they clicked away from.
+ * unmounts the launcher). A plain destroy-on-unmount would wipe the pending
+ * first turn or an unsent draft; this preserves any conversation the user
+ * actually started while still cleaning up truly-empty instances they clicked
+ * away from.
  *
  * Respects debug-session mode like the others (never wipes a retained debug
  * session).
@@ -42,9 +48,53 @@ export const destroyInstanceIfAbandoned =
   (conversationId: string): AppThunk =>
   (dispatch, getState) => {
     const state = getState();
+    // A chat agent switch copies this still-live instance after the target
+    // launcher is ready. It is work even when every visible composer field is
+    // empty (variables, connector picks, sandbox binding can be the draft).
+    if (
+      state.chatRoute?.draftHandoff?.pinnedSourceConversationIds.includes(
+        conversationId,
+      )
+    ) {
+      return;
+    }
     if (state.conversations.debugSessionActive) return;
     const messageCount =
       state.messages.byConversationId[conversationId]?.orderedIds?.length ?? 0;
     if (messageCount > 0) return; // real conversation — keep it
+    const input = state.instanceUserInput.byConversationId[conversationId];
+    const hasComposerWork =
+      Boolean(input?.text.length) ||
+      Boolean(input?.messageParts?.length) ||
+      (input != null && input.submissionPhase !== "idle");
+    if (hasComposerWork) return;
+    // CONFIGURING A RUN IS WORK. Attaching an MCP server, a tool, or a skill
+    // from the `+` menu is a deliberate act that happens BEFORE most people
+    // type a word — on `/chat/new` it is usually the first thing they do. Judging
+    // "abandoned" on messages and composer text alone reaped conversations the
+    // person had already configured, and the attachment vanished with no notice.
+    const added =
+      state.instanceUIState.byConversationId[conversationId]
+        ?.builderAdvancedSettings;
+    const hasRunConfiguration =
+      Boolean(added?.addedTools?.length) ||
+      Boolean(added?.addedMcpServers?.length) ||
+      Boolean(added?.addedSkills?.length);
+    if (hasRunConfiguration) return;
+    // CHOOSING WHAT THE CHAT WORKS ON IS WORK TOO. On `/chat/new` a person
+    // picks repositories or Drive files BEFORE typing, and those picks are
+    // held against this same minted id until the conversation row exists
+    // (`features/connectors/redux/attachments.slice.ts`). Reaping the instance
+    // on message-and-composer emptiness alone would take the picks with it —
+    // the identical loss that per-run tool/MCP additions suffered until
+    // 2026-09-14, one attachment system later.
+    const attachments =
+      state.conversationAttachments?.byConversationId?.[conversationId];
+    if (
+      Boolean(attachments?.pending?.length) ||
+      Boolean(attachments?.rows?.length)
+    ) {
+      return;
+    }
     dispatch(destroyInstance(conversationId));
   };

@@ -75,6 +75,7 @@ import { dirname, join, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SELF_TEST = process.argv.includes("--self-test");
@@ -1705,8 +1706,8 @@ async function main(): Promise<number> {
 }
 
 main()
-  .then((code) => process.exit(code))
+  .then((code) => exitAfterDrain(code))
   .catch((err) => {
     console.error(`${TAG.fail} check-surface-write-handlers crashed:`, err);
-    process.exit(3);
+    exitAfterDrain(3);
   });

@@ -1,0 +1,11 @@
+-- expect: branch=refuse:not-additive production=refuse:not-additive
+-- target: branch,production
+-- additive: yes
+-- guard: custom/system_enabled
+--
+-- ATTACK-6 finding 2, shape 1 — switch-checklist step 3, the statement the OFF switch's whole
+-- security boundary consists of REVOKING. It returned [] from the old blacklist.
+-- A file that NAMES production is judged by the allow-list on EVERY run, its branch rehearsal
+-- included: the contract binds the FILE, not the run, so the rehearsal returns the verdict production will.
+--
+grant usage on schema custom to authenticated;

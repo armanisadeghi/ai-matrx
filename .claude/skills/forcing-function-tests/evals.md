@@ -3,7 +3,7 @@ type: Reference
 title: "forcing-function-tests — evals"
 description: "The recorded skill-authoring §5 proof run for forcing-function-tests: two real test scenarios, fixed pass criteria, RED/GREEN reps, planted-mutation grading, harvested rationalizations, trigger check, and proposed refactors. The next editor reruns these."
 tags: [forcing-function-tests, testing, skills, evals]
-timestamp: 2026-09-10T00:00:00Z
+timestamp: 2026-09-14T00:00:00Z
 ---
 
 # forcing-function-tests — evals
@@ -200,6 +200,13 @@ automated test or guard must clear: green only when the real system works. Use w
 reviewing a test before merge (jest.mock, monkeypatch, fixture, snapshot); adding a regression test or a
 --self-test to a check script; or about to call work done because tests pass." Rerun the six trigger
 prompts above.
+
+## Companion tool self-test (`plant.py`)
+
+- 2026-09-14 — `PLANT_PYTHON=/Users/armanisadeghi/code/aidream/.venv/bin/python ./plant_selftest.sh` in a
+  throwaway git repo: **SELFTEST PASSED, 9/9** (named RED, unnamed RED refused, survivor, deletion + peer
+  edit restore, no stale bytecode red/green, lock serialization, captured mutation detected + logged). Run
+  by a `standard` (opus, medium) lane that did not write `plant.py`. No §5 behavior run of the new §3 rule.
 
 ## Limitations
 

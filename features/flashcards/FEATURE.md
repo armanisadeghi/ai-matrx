@@ -168,6 +168,33 @@ own fresh conversation):
 
 ## Change log
 
+- `2026-09-17` — **A card's detail layer carries its card's organization.** `fcService.addDetail` omitted `organization_id` on `education.fc_detail` and leaned on the `_inherit_org` trigger, but `public._stamp_org_default` fires on a NULL first and files the layer in the writer's personal workspace. The service now reads the parent card's `organization_id`, writes it, and refuses in plain words when the card cannot be read. Guard: `pnpm check:organization-context`.
+
+- `2026-09-17` — **The Flashcard-set agent surface is registered and has production run and binding evidence, but is not fully certified.** Commit `b19524edf9` wired the route and manifest but did not synchronize its runtime registration; the live database was missing that one parent surface out of 200. The transactional repair seeded the complete 12-key mirror at 06:33:55Z. Run `a8c5bdb0-9640-4075-9630-70426bbf0083` completed around 06:38Z with two completed `chat.request` rows, `card_count=50`, the correct deck title and first question, and only the deferred context tool. Independent production proof then bound Badass Agent at User/Me scope with empty mappings: the success receipt appeared, the Agents menu showed Run/Settings/Remove controls, and the exact association carried the expected user-tier role before cleanup. Broader full surface certification is still required, so the surface remains `partial`.
+
+- `2026-09-16` — **Flashcard set detail is now a real agent surface, not a
+  library fallback.** `/education/flashcards/[setId]` had no
+  `SurfaceRuntimeProvider`; route resolution therefore named the library
+  surface while the Agents menu launched with no live values — zero of the
+  title, 50 cards, detail layers, or study signal reached the agent. The
+  dedicated `matrx-user/education-flashcard-set` manifest, exact dynamic-leaf
+  route resolver, and detail-page runtime now supply the loaded deck at launch.
+  The regression test pins the library/detail/editor split: never let a broad
+  prefix claim a child route whose vocabulary it cannot emit. Study-mode routes
+  remain intentionally separate until each has its own complete contract.
+
+- `2026-09-16` — Flashcard generation previews now use the same `MarkdownStream`
+  path and the same shared `max-w-3xl` reading column as an assistant message.
+  Both topic and source generation inherit the repair; the old direct
+  `FlashcardsBlock` mount and narrower `max-w-2xl` page constraint are gone.
+
+- `2026-09-14` — **FastFire discloses every fixed mandate job in the shared
+  Agents menu.** The spoken answer grader, spoken-question TTS, and cached
+  instant-help TTS are registered as surface roles only; the drill page gains
+  no disclosure chrome. Its retry resets now happen in the learner's Retry
+  event instead of synchronously inside request effects, satisfying React's
+  effect contract without weakening the terminal loading boundary.
+
 - `2026-09-13` — **FastFire initial loading has an explicit terminal boundary.**
   The client chunk reaches a visible retry state after 20 seconds, while the
   setup deck read uses the same boundary to abort its direct Supabase request
@@ -427,6 +454,13 @@ provision-offers.ts` is generated from aidream (`pnpm db-types`), never hand-edi
   `showImages` setting (default ON, image-capable variants only). Browser-verified on a
   live deck: both face images render in the print document, a cloze card prints occluded
   front / revealed back, and the one file_id-only image is skipped with a toast.
+
+- **2026-09-17 — Flashcards jobs are disclosed in the existing header Agents menu.**
+  Every action-bearing Flashcards surface now registers only the mandates it can actually
+  launch: topic/source generation, set enrichment/expansion/top-up, study help/coaching/
+  review, quiz fallback, typed semantic grading, and the lazy voice tutor. FastFire's
+  static manifest also declares its missing instant-help job. The registration is UI-free;
+  the shell remains the one visible disclosure and mandate-opening surface.
 
 - **2026-08-18 — "Illustrate this set" (the per-SET image lane).** Set detail can now run
   the whole deck through the web-sourcing agent in one action, entitlement-guarded with the

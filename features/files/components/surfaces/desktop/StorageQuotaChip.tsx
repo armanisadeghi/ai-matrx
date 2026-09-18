@@ -9,17 +9,25 @@
  *   - Hover tooltip with bytes detail, file count, daily-upload usage,
  *     and the blocked reason (if any).
  *
- * Renders nothing (returns `null`) when:
- *   - The user isn't authenticated yet.
- *   - The first fetch hasn't completed (avoids layout flash).
- *   - The fetch errors out (silent; we don't want a noisy chip).
+ * Every state is honest (folder-sync SCOPE 31, law 4):
+ *   - USAGE NOT MEASURED — `files.user_storage_usage` holds no row, so the RPC
+ *     synthesizes zeros. The chip says "usage being recalculated" and draws no
+ *     bar, because "0 of 5 GB" about an unmeasured account is a lie.
+ *   - OVER QUOTA / BLOCKED — the reason, plus a real link to the plan page.
+ *   - COULD NOT READ — says so with a Retry, never a silent empty corner.
+ *   - Not signed in / first fetch in flight — renders nothing, deliberately
+ *     (there is nothing true to say yet, and a flash is not information).
  *
- * Backed by `useStorageQuota` against `GET /files/usage`.
+ * The plan NAME comes from billing (`billing.plan_status`), not from the
+ * retiring `files.account_tiers` ladder — folder-sync D11.
+ *
+ * Backed by `useStorageQuota` (direct-to-Supabase `get_usage_status`).
  */
 
 "use client";
 
-import { HardDrive, AlertTriangle } from "lucide-react";
+import Link from "next/link";
+import { HardDrive, AlertTriangle, RefreshCw, Gauge } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
@@ -34,10 +42,43 @@ export interface StorageQuotaChipProps {
   className?: string;
 }
 
-export function StorageQuotaChip({ className }: StorageQuotaChipProps) {
-  const { summary, data, error } = useStorageQuota();
+/** Where a user goes to buy more storage. The public plan page is the one
+ *  purchasable surface today (`app/(public)/pricing/page.tsx`). */
+export const PLAN_PAGE_HREF = "/pricing";
 
-  if (error || !summary || !data) return null;
+export function StorageQuotaChip({ className }: StorageQuotaChipProps) {
+  const { summary, data, error, loading, refresh } = useStorageQuota();
+
+  if (error) {
+    return (
+      <div
+        className={cn(
+          "flex items-center justify-between gap-2 rounded-md border border-destructive/40 bg-destructive/5 px-2.5 py-2 text-[12px]",
+          className,
+        )}
+        role="status"
+      >
+        <span className="flex items-center gap-1.5 truncate text-destructive">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span className="truncate">Storage usage could not be read</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => void refresh()}
+          disabled={loading}
+          className="flex shrink-0 items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-destructive hover:bg-destructive/10 disabled:opacity-60"
+        >
+          <RefreshCw
+            className={cn("h-3 w-3", loading && "animate-spin")}
+            aria-hidden="true"
+          />
+          Retry
+        </button>
+      </div>
+    );
+  }
+
+  if (!summary || !data) return null;
 
   const {
     tierName,
@@ -50,6 +91,7 @@ export function StorageQuotaChip({ className }: StorageQuotaChipProps) {
     severity,
   } = summary;
 
+  const { unmeasured } = summary;
   const usedLabel = formatFileSize(bytesUsed);
   const maxLabel = maxBytes ? formatFileSize(maxBytes) : null;
 
@@ -68,7 +110,11 @@ export function StorageQuotaChip({ className }: StorageQuotaChipProps) {
     }
   })();
 
-  const TitleIcon = isBlocked ? AlertTriangle : HardDrive;
+  const TitleIcon = isBlocked
+    ? AlertTriangle
+    : unmeasured
+      ? Gauge
+      : HardDrive;
 
   return (
     <TooltipProvider delayDuration={250}>
@@ -82,9 +128,11 @@ export function StorageQuotaChip({ className }: StorageQuotaChipProps) {
             )}
             role="status"
             aria-label={
-              maxLabel
-                ? `Storage: ${usedLabel} of ${maxLabel} used (${percent}%)`
-                : `Storage: ${usedLabel} used`
+              unmeasured
+                ? "Storage usage is being recalculated"
+                : maxLabel
+                  ? `Storage: ${usedLabel} of ${maxLabel} used (${percent}%)`
+                  : `Storage: ${usedLabel} used`
             }
           >
             <div className="flex items-center justify-between gap-1.5">
@@ -126,10 +174,22 @@ export function StorageQuotaChip({ className }: StorageQuotaChipProps) {
               </div>
             ) : null}
 
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+            <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
               <span className="truncate">
-                {maxLabel ? `${usedLabel} of ${maxLabel}` : `${usedLabel} used`}
+                {unmeasured
+                  ? "Usage being recalculated"
+                  : maxLabel
+                    ? `${usedLabel} of ${maxLabel}`
+                    : `${usedLabel} used`}
               </span>
+              {severity === "blocked" || severity === "critical" ? (
+                <Link
+                  href={PLAN_PAGE_HREF}
+                  className="shrink-0 font-medium text-destructive underline underline-offset-2 hover:opacity-80"
+                >
+                  {isBlocked ? "Get more storage" : "Upgrade"}
+                </Link>
+              ) : null}
             </div>
           </div>
         </TooltipTrigger>
@@ -138,7 +198,11 @@ export function StorageQuotaChip({ className }: StorageQuotaChipProps) {
           align="end"
           className="bg-popover text-popover-foreground border max-w-xs"
         >
-          <QuotaTooltipBody data={data} blockedReason={blockedReason} />
+          <QuotaTooltipBody
+            data={data}
+            planName={tierName}
+            blockedReason={blockedReason}
+          />
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -147,21 +211,34 @@ export function StorageQuotaChip({ className }: StorageQuotaChipProps) {
 
 interface QuotaTooltipBodyProps {
   data: ReturnType<typeof useStorageQuota>["data"];
+  planName: string;
   blockedReason: string | null;
 }
 
-function QuotaTooltipBody({ data, blockedReason }: QuotaTooltipBodyProps) {
+function QuotaTooltipBody({
+  data,
+  planName,
+  blockedReason,
+}: QuotaTooltipBodyProps) {
   if (!data) return null;
   const dailyMax = data.max_daily_upload_bytes;
   return (
     <div className="flex flex-col gap-1.5 py-0.5 text-[12px]">
-      <div className="font-semibold">{data.tier_name} plan</div>
+      <div className="font-semibold">{planName} plan</div>
+      {!data.ledger_measured ? (
+        <div className="rounded border border-border bg-muted/40 px-2 py-1 text-muted-foreground">
+          Nobody has measured this account&rsquo;s storage yet, so there is no
+          number to show. It appears as soon as the usage ledger is built.
+        </div>
+      ) : null}
       <Row
         label="Storage"
         value={
-          data.max_storage_bytes
-            ? `${formatFileSize(data.bytes_used)} / ${formatFileSize(data.max_storage_bytes)}`
-            : `${formatFileSize(data.bytes_used)} used`
+          !data.ledger_measured
+            ? "Being recalculated"
+            : data.max_storage_bytes
+              ? `${formatFileSize(data.bytes_used)} / ${formatFileSize(data.max_storage_bytes)}`
+              : `${formatFileSize(data.bytes_used)} used`
         }
       />
       <Row
@@ -187,8 +264,14 @@ function QuotaTooltipBody({ data, blockedReason }: QuotaTooltipBodyProps) {
         />
       ) : null}
       {blockedReason ? (
-        <div className="mt-1 rounded border border-destructive/40 bg-destructive/10 px-2 py-1 text-destructive">
-          {blockedReason}
+        <div className="mt-1 flex flex-col gap-1 rounded border border-destructive/40 bg-destructive/10 px-2 py-1 text-destructive">
+          <span>{blockedReason}</span>
+          <Link
+            href={PLAN_PAGE_HREF}
+            className="font-medium underline underline-offset-2"
+          >
+            See plans and add storage
+          </Link>
         </div>
       ) : null}
     </div>

@@ -27,6 +27,9 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -224,17 +227,29 @@ export function AccountsTableClient() {
   }, []);
 
   // In-app DM: create/find the direct conversation with the user, then send.
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
   const [dmTarget, setDmTarget] = useState<AdminUserRow | null>(null);
   const [dmContent, setDmContent] = useState("");
   const [dmSending, setDmSending] = useState(false);
 
   const sendDm = useCallback(async () => {
     if (!dmTarget || !dmContent.trim()) return;
+    if (!selectedOrganizationId) {
+      // The conversation route files the DM in the admitted organization and
+      // refuses without one; say so here instead of sending a request that 400s.
+      toast.error(
+        "No organization is selected, so this message has nowhere to be filed. Choose the organization you are working in from the avatar menu and try again.",
+      );
+      return;
+    }
     setDmSending(true);
     try {
       const convRes = await fetch("/api/messages/conversations", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: applyOrganizationContextHeader(
+          { "Content-Type": "application/json" },
+          selectedOrganizationId,
+        ),
         body: JSON.stringify({
           type: "direct",
           participant_ids: [dmTarget.id],
@@ -268,7 +283,7 @@ export function AccountsTableClient() {
     } finally {
       setDmSending(false);
     }
-  }, [dmTarget, dmContent, router]);
+  }, [dmTarget, dmContent, router, selectedOrganizationId]);
 
   const columns = useMemo((): MatrxColumnDef<AdminUserRow>[] => {
     return [

@@ -2,7 +2,7 @@
  * messages slice — DB-faithful storage of conversation messages.
  *
  * One canonical shape: `MessageRecord`, a 1:1 mirror of `cx_message.Row` plus
- * two client-only fields (`_clientStatus`, `_streamRequestId`). Records are
+ * client-only status and live stream segment fields. Records are
  * keyed in `byId` by the server-assigned `cx_message.id`; `orderedIds` is
  * the ordered spine of the transcript, sorted by `position`.
  *
@@ -156,6 +156,10 @@ export interface MessageRecord {
   _clientStatus?: "pending" | "streaming" | "complete" | "error";
   /** While a turn is live, points at `activeRequests.byRequestId[_streamRequestId]`. */
   _streamRequestId?: string;
+  /** Inclusive source timeline index owned by this live assistant segment. */
+  _streamSlotStart?: number;
+  /** Exclusive source timeline index; set when an inbox injection closes this segment. */
+  _streamSlotEnd?: number;
 }
 
 /**
@@ -173,6 +177,34 @@ function byPositionThenCreatedAt(a: MessageRecord, b: MessageRecord): number {
   if (a.createdAt < b.createdAt) return -1;
   if (a.createdAt > b.createdAt) return 1;
   return 0;
+}
+
+/**
+ * Keep the live transcript spine in the same order as a hydrated one.
+ *
+ * Stream events are transport-ordered, not transcript-ordered: an assistant
+ * reservation can arrive before a later `injection_consumed` event whose user
+ * row has the preceding server position. Appending both records made the
+ * injected bubble render below the assistant's later tool/output blocks until
+ * a reload re-sorted the DB records.
+ */
+function insertOrderedMessageId(entry: MessagesEntry, messageId: string): void {
+  const record = entry.byId[messageId];
+  if (!record) return;
+  const insertionIndex = entry.orderedIds.findIndex((existingId) => {
+    const existing = entry.byId[existingId];
+    return existing ? byPositionThenCreatedAt(record, existing) < 0 : false;
+  });
+  if (insertionIndex === -1) {
+    entry.orderedIds.push(messageId);
+  } else {
+    entry.orderedIds.splice(insertionIndex, 0, messageId);
+  }
+}
+
+function reorderMessageId(entry: MessagesEntry, messageId: string): void {
+  entry.orderedIds = entry.orderedIds.filter((id) => id !== messageId);
+  insertOrderedMessageId(entry, messageId);
 }
 
 // =============================================================================
@@ -214,6 +246,17 @@ export interface MessagesEntry {
    * revealed above the current viewport.
    */
   visibleGroupLimit: number | null;
+  /**
+   * Why this transcript is empty when it is empty for a BAD reason.
+   *
+   * A hydrate that could not read the conversation (RLS denied the bundle, the
+   * RPC failed, the row the surface was sent to does not exist) used to land
+   * as a fulfilled load with zero messages, and the room rendered as a normal
+   * brand-new chat — a screen that lies (law 4). When this is set, the
+   * transcript says the read failed and offers a retry; a genuinely empty
+   * conversation leaves it `null`. Cleared by any successful `hydrateMessages`.
+   */
+  hydrationFailure: string | null;
 }
 
 export interface MessagesState {
@@ -268,6 +311,7 @@ function getOrCreate(
       hasMoreOlder: false,
       isLoadingOlder: false,
       visibleGroupLimit: null,
+      hydrationFailure: null,
     };
     state.byConversationId[conversationId] = entry;
   }
@@ -346,7 +390,7 @@ const messagesSlice = createSlice({
         deletedAt: null,
         _clientStatus: "pending",
       };
-      entry.orderedIds.push(clientTempId);
+      insertOrderedMessageId(entry, clientTempId);
     },
 
     /**
@@ -394,6 +438,7 @@ const messagesSlice = createSlice({
       entry.orderedIds = entry.orderedIds.map((id) =>
         id === oldId ? newId : id,
       );
+      reorderMessageId(entry, newId);
     },
 
     /**
@@ -420,6 +465,8 @@ const messagesSlice = createSlice({
          * DB-hydrated history (which renders from byId.content).
          */
         requestId?: string;
+        /** Segment of the live request timeline this assistant row owns. */
+        streamSlotStart?: number;
       }>,
     ) {
       const {
@@ -429,6 +476,7 @@ const messagesSlice = createSlice({
         agentId = null,
         position = 0,
         requestId,
+        streamSlotStart,
       } = action.payload;
       const entry = getOrCreate(state, conversationId);
       if (entry.byId[messageId]) return;
@@ -451,8 +499,11 @@ const messagesSlice = createSlice({
         deletedAt: null,
         _clientStatus: "pending",
         ...(requestId ? { _streamRequestId: requestId } : {}),
+        ...(typeof streamSlotStart === "number"
+          ? { _streamSlotStart: streamSlotStart }
+          : {}),
       };
-      entry.orderedIds.push(messageId);
+      insertOrderedMessageId(entry, messageId);
     },
 
     /** Patch one or more fields on a MessageRecord by id. */
@@ -508,6 +559,8 @@ const messagesSlice = createSlice({
         entry.hasMoreOlder = false;
       }
       entry.isLoadingOlder = false;
+      // The read worked — whatever failed before is no longer true.
+      entry.hydrationFailure = null;
     },
 
     /**
@@ -640,6 +693,25 @@ const messagesSlice = createSlice({
       entry.keywords = keywords;
     },
 
+    /**
+     * Record (or clear) the reason this conversation's transcript could not be
+     * read. Set by `loadConversation` on a failed or empty-but-expected read;
+     * the transcript renders an honest "couldn't load — try again" state
+     * instead of an empty room. NEVER set for a conversation that is legitimately
+     * empty (one minted locally and not yet submitted).
+     */
+    setMessagesHydrationFailure(
+      state,
+      action: PayloadAction<{
+        conversationId: string;
+        failure: string | null;
+      }>,
+    ) {
+      const { conversationId, failure } = action.payload;
+      const entry = getOrCreate(state, conversationId);
+      entry.hydrationFailure = failure;
+    },
+
     /** Clear the transcript (e.g. auto-clear on a new run). */
     clearMessages(state, action: PayloadAction<string>) {
       const entry = state.byConversationId[action.payload];
@@ -683,6 +755,7 @@ export const {
   revealOlderGroups,
   removeMessage,
   setConversationLabel,
+  setMessagesHydrationFailure,
   clearMessages,
 } = messagesSlice.actions;
 

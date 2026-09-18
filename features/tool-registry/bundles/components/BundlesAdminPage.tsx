@@ -15,17 +15,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
+import { XTapButton } from "@ai-matrx/tap-target/buttons";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -698,56 +693,33 @@ function BundleDetail({
 
       {/* Members */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-medium">Members</h2>
-            <Badge variant="outline" className="text-[10px]">
-              {members.length}
-            </Badge>
-            {loading && (
-              <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-            )}
-          </div>
-          <Button size="sm" onClick={() => setAdding(true)} className="gap-1.5">
-            <Plus className="h-3.5 w-3.5" />
-            Add tool
-          </Button>
-        </div>
         {error && (
           <div className="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive flex items-center gap-2">
             <AlertCircle className="h-3.5 w-3.5" />
             {error}
           </div>
         )}
-        {!loading && members.length === 0 && (
-          <div className="rounded-md border border-dashed border-border px-4 py-6 text-center text-xs text-muted-foreground">
-            No tools in this bundle yet.
-          </div>
-        )}
-        {members.length > 0 && (
-          <div className="rounded-md border border-border bg-card overflow-hidden">
-            <Table wrapperClassName="phone-stack">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Tool</TableHead>
-                  <TableHead className="w-[260px]">Local alias</TableHead>
-                  <TableHead className="w-[80px] text-right">Sort</TableHead>
-                  <TableHead className="w-[80px] text-right">—</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {members.map((m) => (
-                  <MemberRow
-                    key={m.member.tool_id}
-                    item={m}
-                    onAliasChange={onSaveAlias}
-                    onRemove={() => void onRemove(m)}
-                  />
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+          <MatrxDataTable<BundleMemberWithTool>
+            data={members}
+            isLoading={loading}
+            detail={{ enabled: false }}
+            emptyState={{ title: "No tools in this bundle yet" }}
+            columns={memberColumns(onSaveAlias)}
+            tableId={`tool-registry/bundles/${bundle.id}/members`}
+            getRowId={(row) => row.member.tool_id}
+            rowClassName={(row) =>
+              row.tool?.is_active === false ? "opacity-60" : undefined
+            }
+            toolbar={{
+              title: "Members",
+              search: true,
+              refresh: { onRefresh: load },
+              add: { onAdd: () => setAdding(true) },
+            }}
+            rowActions={(row) => (
+              <XTapButton variant="transparent" onClick={() => void onRemove(row)} ariaLabel="Remove from bundle" />
+            )}
+          />
       </section>
       {adding && (
         <AddMemberDialog
@@ -764,86 +736,85 @@ function BundleDetail({
   );
 }
 
-function MemberRow({
+function MemberAliasCell({
   item,
   onAliasChange,
-  onRemove,
 }: {
   item: BundleMemberWithTool;
   onAliasChange: (toolId: string, alias: string) => void;
-  onRemove: () => void;
 }) {
   const [alias, setAlias] = useState(item.member.local_alias);
   const [dirty, setDirty] = useState(false);
   return (
-    <TableRow className={item.tool?.is_active === false ? "opacity-60" : ""}>
-      <TableCell data-phone="lead" className="text-xs">
-        {/* A bundle member IS a tool. It was rendered as plain text next to the
-            alias editor, so the console that manages membership could not open
-            a single thing it managed. */}
+    <div className="flex items-center gap-1.5">
+      <Input
+        value={alias}
+        onChange={(e) => {
+          setAlias(e.target.value);
+          setDirty(e.target.value !== item.member.local_alias);
+        }}
+        className="h-7 text-xs font-mono"
+        style={{ fontSize: "13px" }}
+      />
+      {dirty && (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            onAliasChange(item.member.tool_id, alias);
+            setDirty(false);
+          }}
+          className="h-7 text-xs px-2"
+        >
+          Save
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function memberColumns(
+  onAliasChange: (toolId: string, alias: string) => void,
+): MatrxColumnDef<BundleMemberWithTool>[] {
+  return [
+    {
+      id: "tool",
+      header: "Tool",
+      accessorFn: (row) => row.tool?.name ?? row.member.tool_id,
+      cell: (row) => (
         <div className="font-mono">
-          {item.tool ? (
+          {row.tool ? (
             <EntityRef
               token="tool"
-              id={item.tool.id}
-              name={item.tool.name}
-              href={toolHref(item.tool.id)}
+              id={row.tool.id}
+              name={row.tool.name}
+              href={toolHref(row.tool.id)}
               showIcon={false}
               className="font-mono"
             />
           ) : (
-            // The join returned no tool row — say that, never invent a name.
-            <AiToolRef toolId={item.member.tool_id} showId showIcon={false} />
+            <AiToolRef toolId={row.member.tool_id} showId showIcon={false} />
           )}
         </div>
-        {item.tool?.description && (
-          <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">
-            {item.tool.description}
-          </p>
-        )}
-      </TableCell>
-      <TableCell data-label="Local alias" data-phone="inline">
-        <div className="flex items-center gap-1.5">
-          <Input
-            value={alias}
-            onChange={(e) => {
-              setAlias(e.target.value);
-              setDirty(e.target.value !== item.member.local_alias);
-            }}
-            className="h-7 text-xs font-mono"
-            style={{ fontSize: "13px" }}
-          />
-          {dirty && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => {
-                onAliasChange(item.member.tool_id, alias);
-                setDirty(false);
-              }}
-              className="h-7 text-xs px-2"
-            >
-              Save
-            </Button>
-          )}
-        </div>
-      </TableCell>
-      <TableCell data-label="Sort" data-phone="inline" className="text-right text-xs tabular-nums">
-        {item.member.sort_order}
-      </TableCell>
-      <TableCell data-phone="actions">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onRemove}
-          className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
-          aria-label="Remove from bundle"
-        >
-          <X className="h-3.5 w-3.5" />
-        </Button>
-      </TableCell>
-    </TableRow>
-  );
+      ),
+    },
+    {
+      id: "local_alias",
+      header: "Local alias",
+      accessorFn: (row) => row.member.local_alias,
+      width: 260,
+      cell: (row) => (
+        <MemberAliasCell item={row} onAliasChange={onAliasChange} />
+      ),
+    },
+    {
+      id: "sort_order",
+      header: "Sort",
+      accessorFn: (row) => row.member.sort_order,
+      align: "right",
+      width: 80,
+    },
+  ];
 }
 
 function AddMemberDialog({

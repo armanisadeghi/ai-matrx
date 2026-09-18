@@ -6,7 +6,7 @@ export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Slack",
   title: "Tests",
   description: "Slack integration and webhook tests",
-  letter: "Sl",
+  letter: "SK",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

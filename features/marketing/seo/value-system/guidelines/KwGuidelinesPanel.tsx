@@ -54,10 +54,8 @@ import {
 import { useAppSelector } from "@/lib/redux/hooks";
 import type { RootState } from "@/lib/redux/store";
 import { selectAssistsForSurface } from "@/features/assists/redux/assistsSlice";
-import {
-  KEYWORD_MEANING_SURFACE,
-  KeywordMeaningSuggestions,
-} from "../suggestions/KeywordMeaningSuggestions";
+import { ApprovalQueue } from "@/features/approvals/ApprovalQueue";
+import { KEYWORD_MEANING_SURFACE } from "@/features/approvals/kinds/seo/keyword-meaning";
 import { GuidelinesDraftButton } from "./GuidelinesDraft";
 import { GUIDELINES_STALE_AFTER_DAYS } from "./GuidelinesGapPrompt";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -67,8 +65,8 @@ import { ProTextarea } from "@/components/official/ProTextarea";
  *  shared with the gap prompt and `seo.gsc_site_meaning_health`. */
 const STALE_AFTER_DAYS = GUIDELINES_STALE_AFTER_DAYS;
 
-/** This screen owns ONE subject, so its queue shows one kind of proposal. */
-const GUIDELINE_KINDS = ["guideline_edit"] as const;
+/** This screen owns ONE subject, so the one queue is narrowed to that kind. */
+const GUIDELINE_KINDS = ["keyword_meaning:guideline_edit"] as const;
 
 /** Section headings only — an outline the expert fills in, never invented
  *  business claims. Industry starter packs (D36) will seed real content. */
@@ -235,7 +233,18 @@ export function KwGuidelinesPanel({
       {/* Whatever an agent proposed about this document, waiting on a person.
           It sits ABOVE the editor because a draft you have not read is the
           most useful thing on this screen. */}
-      <KeywordMeaningSuggestions siteId={siteId} kinds={GUIDELINE_KINDS} />
+      <ApprovalQueue
+        scope={{
+          key: siteId,
+          siteId,
+          brandId: null,
+          organizationId: null,
+          siteLabel: null,
+        }}
+        kinds={GUIDELINE_KINDS}
+        title="Guidelines drafts waiting on you"
+        defaultExpanded
+      />
 
       {/* The editor is where you LAND from every prompt, so the offer has to
           be here too — an empty textarea with no way out is the whole bug. */}

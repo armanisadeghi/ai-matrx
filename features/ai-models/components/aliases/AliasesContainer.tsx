@@ -25,7 +25,8 @@ import {
 } from "@ai-matrx/design-system/data-table";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Plus, RefreshCw, Save, Trash2, X } from "lucide-react";
+import { AlertTriangle, RefreshCw, Save, X } from "lucide-react";
+import { TrashTapButton } from "@ai-matrx/tap-target/buttons";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { extractErrorMessage } from "@/utils/errors";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
@@ -69,19 +70,12 @@ function AliasDeleteAction({
   onDelete: (item: AiModelAliasRow) => void;
 }) {
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      className="h-11 w-11 text-destructive hover:bg-destructive/10 hover:text-destructive sm:h-7 sm:w-7"
-      onClick={(event) => {
-        event.stopPropagation();
-        onDelete(item);
-      }}
-      aria-label={`Delete alias ${item.alias}`}
-      title="Delete alias"
-    >
-      <Trash2 className="h-3.5 w-3.5" />
-    </Button>
+    <TrashTapButton
+      variant="transparent"
+      iconColor="text-destructive"
+      onClick={() => onDelete(item)}
+      ariaLabel={`Delete alias ${item.alias}`}
+    />
   );
 }
 
@@ -166,6 +160,9 @@ export default function AliasesContainer() {
         notes: form.notes.trim() || null,
       };
       if (editingId === "new") {
+        // org-fallback-deliberate: a model alias is a row of the platform's AI
+        //   catalog, identical for every organization; the surface lives in the
+        //   admin-gated (admin) route group
         const organization_id = await resolveSystemOrgId();
         const saved = await aiModelService.createAlias({
           ...payload,
@@ -244,7 +241,6 @@ export default function AliasesContainer() {
           <AiModelRef
             modelId={item.model_id}
             name={modelName(item.model_id)}
-            showId
             showIcon={false}
           />
         </span>
@@ -391,8 +387,10 @@ export default function AliasesContainer() {
 
       <div className="min-h-0 flex-1">
         <MatrxDataTable<AiModelAliasRow>
+          tableId="ai/model-aliases"
           data={aliases}
-          isLoading={loading}
+          isLoading={loading && aliases.length === 0}
+          isFetching={loading && aliases.length > 0}
           columns={columns}
           getRowId={(item) => item.id}
           pageSize={25}
@@ -436,25 +434,10 @@ export default function AliasesContainer() {
                 }
           }
           toolbar={{
+            title: "Model Aliases",
             searchPlaceholder: "Search aliases…",
-            leading: (
-              <div className="flex items-center gap-2">
-                <h2 className="text-sm font-semibold">Model Aliases</h2>
-                <Badge variant="outline" className="text-xs">
-                  {aliases.length}
-                </Badge>
-              </div>
-            ),
-            actions: (
-              <Button
-                size="sm"
-                className="h-8 gap-1.5 px-2 text-xs"
-                onClick={startNew}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                New Alias
-              </Button>
-            ),
+            refresh: { onRefresh: () => void load() },
+            add: { onAdd: startNew },
           }}
           rowActions={(item) => (
             <AliasDeleteAction item={item} onDelete={setPendingDelete} />
@@ -495,7 +478,6 @@ export default function AliasesContainer() {
                 <AiModelRef
                   modelId={item.model_id}
                   name={modelName(item.model_id)}
-                  showId
                   showIcon={false}
                 />
               </div>

@@ -114,8 +114,8 @@ const UI_PORTS: AssociationsUiPorts = {
       });
     },
     openFilePicker: (opts) => openFilePicker(opts),
-    createDataTable: async ({ name }) => {
-      const result = await createDocument({ name });
+    createDataTable: async ({ name, organizationId }) => {
+      const result = await createDocument({ name, organizationId });
       return result.success ? { id: result.data.id } : null;
     },
   },

@@ -7,6 +7,7 @@ import { PartyCreateForm } from "@/features/crm/components/PartyCreateForm";
 import type { PartyKind } from "@/features/crm/types";
 import { CRM_CREATE_PARTY_SURFACE_NAME } from "@/features/surfaces/manifests/crm-create-party.manifest";
 import { getSurfaceDisplayLabel } from "@/features/surfaces/utils/surface-display";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 
 export interface CrmCreatePartyWindowProps {
   isOpen: boolean;
@@ -56,7 +57,8 @@ export default function CrmCreatePartyWindow({
           onCancel={onClose}
           onCreated={(partyId) => {
             onClose();
-            router.push(`/crm/${partyId}`);
+            const href = resolveEntityDoors("party", partyId).href;
+            if (href) router.push(href);
           }}
         />
       </NonEditableContextMenu>

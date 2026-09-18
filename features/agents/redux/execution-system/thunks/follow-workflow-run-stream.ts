@@ -42,6 +42,22 @@ import {
 import { resolveBackendForConversation } from "./resolve-base-url";
 
 const STALL_TIMEOUT_MS = 45_000;
+/**
+ * How often the run ROW is polled while the feed is still open.
+ *
+ * 🚨 A HELD-OPEN FEED IS NOT A LIVE RUN. `build_run_events_stream` replays the
+ * backlog and then subscribes to LISTEN/NOTIFY, holding the socket open with
+ * keepalive pings for as long as the client stays. A run whose row went
+ * terminal WITHOUT a terminal event therefore never produces a boundary here
+ * at all: no `end` frame, no drop, and no stall either, because every ping
+ * rearms the stall timer. Reconciling only at boundaries is reconciling never.
+ *
+ * Measured live on 2026-09-15: over an `errored` row with a silent feed, the
+ * Vision Interview room sat on "The room is working… Working…" for a full
+ * minute with the boundary-only reconcile already in place. So the row is also
+ * polled, and a terminal row reaches the screen within one poll.
+ */
+const RECONCILE_POLL_MS = 20_000;
 const RECONNECT_LIMIT = 10;
 const RECONNECT_DELAY_MS = 2_000;
 
@@ -76,6 +92,75 @@ export const TERMINAL_RUN_EVENTS = new Set([
   "run_cancelled",
 ]);
 
+/**
+ * 🚨 THE ROW IS THE TRUTH; THE FEED IS ONLY A DELIVERY.
+ *
+ * A run's terminal STATUS and its terminal EVENT are written by two different
+ * places: `run_store.apply_status` flips `workflow.run.status` to
+ * completed/failed/errored/cancelled, and the scheduler separately emits the
+ * matching `run_*` event onto the durable feed. Every path that ends a run
+ * OUTSIDE the scheduler's own emit — a lease/recovery sweep, `force-fail`, a
+ * worker killed between the two writes — therefore leaves a row that is dead
+ * and a feed that never says so. A client that believes only the feed then
+ * spins forever over a run that ended minutes ago: that is wall W9's second
+ * half in the Vision Interview room ("Handing the interview to the room…
+ * Working…" over a run the server had already given up on).
+ *
+ * So this follower reconciles at EVERY boundary — a clean `end`, a dropped
+ * socket, a stall, and reconnects exhausted: it reads the run row and, when
+ * the row is already terminal, delivers the terminal event the feed owed. One
+ * read, one poll, and the screen tells the truth.
+ */
+export const TERMINAL_ROW_STATUS_EVENTS: Readonly<Record<string, string>> = {
+  completed: "run_completed",
+  failed: "run_failed",
+  errored: "run_errored",
+  cancelled: "run_cancelled",
+};
+
+/** Said when a run row is terminal but carries no sentence of its own. It
+ *  names the remedy, because a dead run with no next step is still a dead end. */
+export const RUN_ROW_TERMINAL_FALLBACK_MESSAGE =
+  "The run ended on the server without sending a finish signal. Nothing that already landed is lost — start it again.";
+
+/** The fields of `GET /runs/{run_id}` (RunRecord) this reconciliation reads. */
+export interface RunRowSnapshot {
+  status?: string | null;
+  error?: Record<string, unknown> | null;
+}
+
+/**
+ * The terminal wire event a run ROW implies, or null when the row is not
+ * terminal (pending/running/paused/interrupted/awaiting_input — all of which
+ * mean "keep following"). Pure, and exported so the guard drives it directly.
+ */
+export function reconcileEventFromRunRow(
+  runId: string,
+  row: RunRowSnapshot | null | undefined,
+): WorkflowRunWireEvent | null {
+  const status =
+    typeof row?.status === "string" ? row.status.trim().toLowerCase() : "";
+  const event = TERMINAL_ROW_STATUS_EVENTS[status];
+  if (!event) return null;
+  const error =
+    row?.error && typeof row.error === "object"
+      ? (row.error as Record<string, unknown>)
+      : null;
+  const sentence =
+    (typeof error?.message === "string" && error.message.trim()) ||
+    (typeof error?.technical === "string" && error.technical.trim()) ||
+    "";
+  const reconciled: WorkflowRunWireEvent = {
+    event,
+    run_id: runId,
+    payload: { reconciled_from_row: true, row_status: status },
+  };
+  if (event !== "run_completed") {
+    reconciled.error_message = sentence || RUN_ROW_TERMINAL_FALLBACK_MESSAGE;
+  }
+  return reconciled;
+}
+
 export interface FollowWorkflowRunOptions {
   /** The workflow run to follow. */
   runId: string;
@@ -91,6 +176,12 @@ export interface FollowWorkflowRunOptions {
    * throw.
    */
   onEvent?: (event: WorkflowRunWireEvent) => void;
+  /**
+   * How often the run ROW is polled while the feed is open. Defaults to
+   * `RECONCILE_POLL_MS`; the regression guard shortens it so it does not have
+   * to sit through a real twenty-second poll. Production callers pass nothing.
+   */
+  reconcilePollMs?: number;
 }
 
 export function followWorkflowRunStream(
@@ -108,6 +199,9 @@ export function followWorkflowRunStream(
       );
       return;
     }
+    // Narrowed once: `followLoop` below is a hoisted function declaration, so
+    // the null check above does not narrow inside it.
+    const wire = backend;
 
     const routeEvent = (parsed: WorkflowRunWireEvent, seq: number | null) => {
       if (
@@ -151,27 +245,76 @@ export function followWorkflowRunStream(
     // Ephemeral node_stream frames carry no id and never advance it.
     let cursor = 0;
     let failures = 0;
+    /** Has this run been settled — by a feed event, or by the row itself? */
+    let settled = false;
+    /** The in-flight attempt, so a poll that settles can stop the read. */
+    let attempt: AbortController | null = null;
 
+    /**
+     * Ask the run ROW whether the run is already over, and deliver the
+     * terminal event the feed never sent. Returns true when it settled.
+     *
+     * A failed row read is NOT a new failure surface: the follower simply
+     * keeps reconnecting, exactly as it did before this existed.
+     */
+    const reconcileWithRunRow = async (): Promise<boolean> => {
+      if (settled || opts.signal.aborted) return settled;
+      try {
+        const headers: Record<string, string> = { ...wire.headers };
+        delete headers["Content-Type"]; // GET has no body
+        headers["Accept"] = "application/json";
+        const res = await fetch(`${wire.baseUrl}/runs/${opts.runId}`, {
+          method: "GET",
+          headers,
+          signal: opts.signal,
+        });
+        if (!res.ok) return false;
+        const row = (await res.json()) as RunRowSnapshot;
+        const event = reconcileEventFromRunRow(opts.runId, row);
+        if (!event) return false;
+        settled = true;
+        routeEvent(event, null);
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    const poll = setInterval(() => {
+      void reconcileWithRunRow().then((done) => {
+        if (done) attempt?.abort();
+      });
+    }, opts.reconcilePollMs ?? RECONCILE_POLL_MS);
+
+    try {
+      await followLoop();
+    } finally {
+      clearInterval(poll);
+    }
+
+    async function followLoop(): Promise<void> {
     while (!opts.signal.aborted && failures < RECONNECT_LIMIT) {
-      const attempt = new AbortController();
-      const onOuterAbort = () => attempt.abort();
+      let endFrame = false;
+      attempt = new AbortController();
+      const controller = attempt;
+      const onOuterAbort = () => controller.abort();
       opts.signal.addEventListener("abort", onOuterAbort, { once: true });
 
       let stallTimer: ReturnType<typeof setTimeout> | null = null;
       const armStall = () => {
         if (stallTimer !== null) clearTimeout(stallTimer);
-        stallTimer = setTimeout(() => attempt.abort(), STALL_TIMEOUT_MS);
+        stallTimer = setTimeout(() => controller.abort(), STALL_TIMEOUT_MS);
       };
 
       try {
-        const headers: Record<string, string> = { ...backend.headers };
+        const headers: Record<string, string> = { ...wire.headers };
         delete headers["Content-Type"]; // GET has no body
         headers["Accept"] = "text/event-stream";
         if (cursor > 0) headers["Last-Event-ID"] = String(cursor);
 
         const res = await fetch(
-          `${backend.baseUrl}/runs/${opts.runId}/events/stream`,
-          { method: "GET", headers, signal: attempt.signal },
+          `${wire.baseUrl}/runs/${opts.runId}/events/stream`,
+          { method: "GET", headers, signal: controller.signal },
         );
         if (!res.ok || !res.body) {
           throw new Error(`workflow run event stream failed: ${res.status}`);
@@ -185,7 +328,10 @@ export function followWorkflowRunStream(
 
           if (frame.data === null) continue;
 
-          if (frame.event === "end") return;
+          if (frame.event === "end") {
+            endFrame = true;
+            break;
+          }
           if (frame.event !== "data") continue;
 
           const seq = frame.seq;
@@ -199,11 +345,16 @@ export function followWorkflowRunStream(
           }
           if (typeof parsed?.event !== "string") continue;
           routeEvent(parsed, seq);
-          if (TERMINAL_RUN_EVENTS.has(parsed.event)) return;
+          if (TERMINAL_RUN_EVENTS.has(parsed.event)) {
+            settled = true;
+            break;
+          }
         }
-        // Server closed without `end` (restart / already terminal) — retry;
-        // Last-Event-ID replays anything missed from wf_node_events.
-        failures += 1;
+        if (!settled && !endFrame) {
+          // Server closed without `end` (restart / already terminal) — retry;
+          // Last-Event-ID replays anything missed from wf_node_events.
+          failures += 1;
+        }
       } catch {
         if (opts.signal.aborted) break;
         failures += 1;
@@ -212,9 +363,26 @@ export function followWorkflowRunStream(
         opts.signal.removeEventListener("abort", onOuterAbort);
       }
 
+      if (settled || opts.signal.aborted) return;
+
+      // EVERY boundary asks the row — a clean `end`, a drop, or a stall. A
+      // replay that omits the terminal event over an already-dead row settles
+      // HERE, within one poll, instead of spinning forever.
+      if (await reconcileWithRunRow()) return;
+      // An `end` frame means this feed is finished talking. The row said the
+      // run is still live, so there is nothing left to follow and nothing to
+      // reconnect to.
+      if (endFrame) return;
+
       if (!opts.signal.aborted && failures < RECONNECT_LIMIT) {
         await new Promise((r) => setTimeout(r, RECONNECT_DELAY_MS));
       }
+    }
+
+    // Reconnects exhausted (or the loop fell out): one last row read, because
+    // stopping silently over a run the server already failed is the exact
+    // spinner-over-a-dead-run this follower exists to prevent.
+    await reconcileWithRunRow();
     }
   };
 }

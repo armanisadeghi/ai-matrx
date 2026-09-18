@@ -40,6 +40,7 @@ export function AgentSaveStatus({
     setShowModelWarning,
     readOnlySavePrompt,
     duplicateDialog,
+    reachBadge,
   } = useAgentSaveAction(agentId, { editModeOverride });
 
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -58,6 +59,8 @@ export function AgentSaveStatus({
             v{version}
           </span>
         )}
+
+        {isEditMode && reachBadge}
 
         {isEditMode && isReadOnly && (
           <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10">

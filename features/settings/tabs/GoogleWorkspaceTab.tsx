@@ -1,7 +1,7 @@
 "use client";
 
-import { GoogleWorkspaceReviewRoot } from "@/features/google-workspace/GoogleWorkspaceReviewRoot";
+import { GoogleWorkspaceSettingsOverview } from "@/features/google-workspace/GoogleWorkspaceSettingsOverview";
 
 export default function GoogleWorkspaceTab() {
-  return <GoogleWorkspaceReviewRoot />;
+  return <GoogleWorkspaceSettingsOverview />;
 }

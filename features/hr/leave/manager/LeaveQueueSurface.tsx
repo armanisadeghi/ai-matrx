@@ -591,7 +591,7 @@ export function LeaveQueueSurface() {
               ),
             }}
             rowActions={(row) => (
-              <div className="flex items-center gap-1">
+              <>
                 <Button
                   type="button"
                   size="sm"
@@ -626,7 +626,7 @@ export function LeaveQueueSurface() {
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              </div>
+              </>
             )}
           />
           </NonEditableContextMenu>

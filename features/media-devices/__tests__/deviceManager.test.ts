@@ -24,6 +24,7 @@ import {
   getMediaDevicesSnapshot,
   listDevices,
   noteCameraPermissionOutcome,
+  refreshDevicesAfterCameraLease,
   registerCameraPermissionAcquirer,
   resolveDeviceId,
   subscribeMediaDevices,
@@ -45,6 +46,11 @@ function dev(
 }
 
 const enumerateDevices = jest.fn<Promise<MediaDeviceInfo[]>, []>();
+
+async function flushEnumerationStart(): Promise<void> {
+  await Promise.resolve();
+  await Promise.resolve();
+}
 
 beforeAll(() => {
   Object.defineProperty(navigator, "mediaDevices", {
@@ -133,6 +139,131 @@ describe("snapshot stability + camera splitting", () => {
     const snap = await listDevices();
     expect(seen[seen.length - 1]).toBe(snap);
     unsub();
+  });
+});
+
+describe("post-lease camera inventory", () => {
+  it("forces a fresh single-camera read after a deferred pre-grant enumeration", async () => {
+    let resolvePreGrant!: (devices: MediaDeviceInfo[]) => void;
+    enumerateDevices
+      .mockImplementationOnce(
+        () =>
+          new Promise<MediaDeviceInfo[]>((resolve) => {
+            resolvePreGrant = resolve;
+          }),
+      )
+      .mockResolvedValueOnce([dev("cam-1", "Built-in", "videoinput")]);
+
+    const preGrant = listDevices();
+    const postLease = refreshDevicesAfterCameraLease();
+    await flushEnumerationStart();
+    resolvePreGrant([
+      dev("old-1", "Stale One", "videoinput"),
+      dev("old-2", "Stale Two", "videoinput"),
+    ]);
+
+    await expect(preGrant).resolves.toMatchObject({
+      cameras: [{ deviceId: "old-1" }, { deviceId: "old-2" }],
+    });
+    await expect(postLease).resolves.toMatchObject({
+      success: true,
+      snapshot: { cameras: [{ deviceId: "cam-1" }] },
+    });
+    expect(enumerateDevices).toHaveBeenCalledTimes(2);
+  });
+
+  it("affirms a deferred fresh two-camera inventory after the lease", async () => {
+    let resolvePreGrant!: (devices: MediaDeviceInfo[]) => void;
+    enumerateDevices
+      .mockImplementationOnce(
+        () =>
+          new Promise<MediaDeviceInfo[]>((resolve) => {
+            resolvePreGrant = resolve;
+          }),
+      )
+      .mockResolvedValueOnce([
+        dev("cam-1", "Front", "videoinput"),
+        dev("cam-2", "Rear", "videoinput"),
+      ]);
+
+    const preGrant = listDevices();
+    const postLease = refreshDevicesAfterCameraLease();
+    await flushEnumerationStart();
+    resolvePreGrant([dev("old-1", "Old", "videoinput")]);
+
+    await preGrant;
+    const inventory = await postLease;
+    expect(inventory).toMatchObject({
+      success: true,
+      snapshot: {
+        cameras: [{ deviceId: "cam-1" }, { deviceId: "cam-2" }],
+      },
+    });
+    expect(inventory.generation).toBeGreaterThan(0);
+    expect(enumerateDevices).toHaveBeenCalledTimes(2);
+  });
+
+  it("reports failure rather than authorizing a stale prior inventory", async () => {
+    enumerateDevices.mockResolvedValueOnce([
+      dev("old-1", "Old One", "videoinput"),
+      dev("old-2", "Old Two", "videoinput"),
+    ]);
+    await listDevices();
+    enumerateDevices.mockRejectedValueOnce(new Error("enumeration failed"));
+    const report = jest
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    await expect(refreshDevicesAfterCameraLease()).resolves.toMatchObject({
+      success: false,
+      snapshot: {
+        cameras: [{ deviceId: "old-1" }, { deviceId: "old-2" }],
+      },
+    });
+    expect(report).toHaveBeenCalledWith(
+      "[mediaDevices] enumerateDevices failed:",
+      expect.any(Error),
+    );
+    report.mockRestore();
+  });
+
+  it("serializes forced and ordinary reads so an older completion cannot overwrite newer state", async () => {
+    let resolveForced!: (devices: MediaDeviceInfo[]) => void;
+    let resolveOrdinary!: (devices: MediaDeviceInfo[]) => void;
+    enumerateDevices
+      .mockImplementationOnce(
+        () =>
+          new Promise<MediaDeviceInfo[]>((resolve) => {
+            resolveForced = resolve;
+          }),
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<MediaDeviceInfo[]>((resolve) => {
+            resolveOrdinary = resolve;
+          }),
+      );
+
+    const forced = refreshDevicesAfterCameraLease();
+    const ordinary = listDevices();
+    await flushEnumerationStart();
+    expect(enumerateDevices).toHaveBeenCalledTimes(1);
+
+    resolveForced([dev("cam-1", "First", "videoinput")]);
+    await expect(forced).resolves.toMatchObject({
+      success: true,
+      generation: expect.any(Number),
+    });
+    await flushEnumerationStart();
+    expect(enumerateDevices).toHaveBeenCalledTimes(2);
+
+    resolveOrdinary([dev("cam-2", "Second", "videoinput")]);
+    await expect(ordinary).resolves.toMatchObject({
+      cameras: [{ deviceId: "cam-2" }],
+    });
+    expect(getMediaDevicesSnapshot().cameras).toEqual([
+      expect.objectContaining({ deviceId: "cam-2" }),
+    ]);
   });
 });
 

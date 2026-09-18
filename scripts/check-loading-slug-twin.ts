@@ -38,6 +38,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
@@ -64,12 +65,12 @@ function membersOf(source: string, blockRe: RegExp, where: string): string[] {
         `             The list moved or was renamed — this guard compared NOTHING. Fix the\n` +
         `             pattern in scripts/check-loading-slug-twin.ts.\n`,
     );
-    process.exit(2);
+    exitAfterDrain(2);
   }
   const members = [...block[1].matchAll(/"([^"]+)"/gu)].map((m) => m[1]);
   if (members.length === 0) {
     console.error(`\n${RED}${BOLD}[UNMEASURED]${RESET} KIND_LOADING_SLUGS in ${where} parsed to ZERO slugs.\n`);
-    process.exit(2);
+    exitAfterDrain(2);
   }
   return members;
 }
@@ -78,7 +79,7 @@ if (!existsSync(TS_FILE)) {
   console.error(
     `\n${RED}${BOLD}[UNMEASURED]${RESET} The canonical slug list is missing: ${relative(ROOT, TS_FILE)}\n`,
   );
-  process.exit(2);
+  exitAfterDrain(2);
 }
 
 if (!existsSync(PY_FILE)) {
@@ -88,10 +89,10 @@ if (!existsSync(PY_FILE)) {
     `       verified this run.`;
   if (STRICT) {
     console.error(`${RED}${BOLD}[UNMEASURED]${RESET} ${line}`);
-    process.exit(2);
+    exitAfterDrain(2);
   }
   console.log(`${YELLOW}[WARN]${RESET} ${line}`);
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 const tsSlugs = membersOf(
@@ -116,7 +117,7 @@ if (onlyTs.length === 0 && onlyPy.length === 0 && !reordered) {
     `${GREEN}[OK]${RESET} check:loading-slug-twin — ${tsSlugs.length} loading slugs, identical in ` +
       `${relative(ROOT, TS_FILE)} and aidream/${PY_REL}.`,
   );
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 console.error("");
@@ -148,4 +149,4 @@ console.error(`       aidream/packages/matrx-ai/matrx_ai/tools/_generated_declar
 console.error(`       (KindCreateArgs.loading_component's Literal — must match the DB enum, or`);
 console.error(`       aidream's scripts/validate_tools.py screams).`);
 console.error("");
-process.exit(STRICT ? 1 : 0);
+exitAfterDrain(STRICT ? 1 : 0);

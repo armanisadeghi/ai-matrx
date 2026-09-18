@@ -29,28 +29,29 @@ import {
   ChevronDown,
   ChevronRight,
   DollarSign,
+  Info,
   Package,
-  RefreshCw,
 } from "lucide-react";
+import { RefreshCwTapButton } from "@ai-matrx/tap-target/buttons";
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { SpendExplorer } from "./SpendExplorer";
 import { SpendHeadline } from "./SpendHeadline";
+import { buildBillingSpendDashboardScope } from "./spend-surface-scope";
 import { knobNumber } from "@/lib/knobs/featureKnobs";
+import { ADMIN_BILLING_SPEND_SURFACE_NAME } from "@/features/surfaces/manifests/admin-billing-spend.manifest";
+import {
+  getRegisteredSurfaceScopeContributions,
+  SurfaceRuntimeProvider,
+} from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 
 import { fetchSpendOverview, viewerTimezone } from "./service";
 import { useSpendPopoverKnobs } from "./useSpendPopoverKnobs";
-import {
-  count,
-  staleness,
-  timestamp,
-  usd,
-  usdPrecise,
-  zoneLabel,
-} from "./format";
+import { staleness, timestamp, usd, usdPrecise } from "./format";
 import type { SpendLedger, SpendLedgerRole, SpendOverview } from "./types";
+import { formatCount } from "@ai-matrx/kit/format";
 
 const ROLE_LABEL: Record<SpendLedgerRole, string> = {
   primary: "Headline",
@@ -106,19 +107,22 @@ function Folded({
   icon: Icon,
   title,
   summary,
+  open,
+  onOpenChange,
   children,
 }: {
   icon: typeof DollarSign;
   title: string;
   summary: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
   return (
     <section className="flex min-w-0 flex-col gap-2">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => onOpenChange(!open)}
         className="flex min-h-10 min-w-0 items-center gap-2 text-left"
         aria-expanded={open}
       >
@@ -153,6 +157,8 @@ export function SpendDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const [reloadTick, setReloadTick] = useState(0);
+  const [costSourcesExpanded, setCostSourcesExpanded] = useState(false);
+  const [printOrdersExpanded, setPrintOrdersExpanded] = useState(false);
 
   const knobsState = useSpendPopoverKnobs();
   const scareThresholdUsd = knobsState.knobs?.scareThresholdUsd ?? null;
@@ -181,8 +187,10 @@ export function SpendDashboard() {
 
   useEffect(() => {
     let cancelled = false;
-    setLoading(true);
     void (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setLoading(true);
       try {
         const next = await fetchSpendOverview(timezone);
         if (cancelled) return;
@@ -266,7 +274,7 @@ export function SpendDashboard() {
       align: "right",
       cell: (r) => (
         <span className="tabular-nums text-muted-foreground">
-          {r.rows === null ? "—" : count(r.rows)}
+          {r.rows === null ? "—" : formatCount(r.rows)}
         </span>
       ),
     },
@@ -302,27 +310,25 @@ export function SpendDashboard() {
     [];
 
   return (
-    <div className="flex w-full min-w-0 flex-col gap-4 p-4">
-      <div className="flex flex-wrap items-center justify-end gap-2">
-        <span className="text-xs tabular-nums text-muted-foreground">
-          {data
-            ? `Updated ${new Date(data.generatedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
-            : "Loading"}
-        </span>
-        <button
-          type="button"
-          onClick={() => setReloadTick((t) => t + 1)}
-          disabled={loading}
-          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-accent disabled:opacity-60"
-        >
-          <RefreshCw
-            className={`h-3.5 w-3.5 ${loading ? "animate-spin" : ""}`}
-            aria-hidden
-          />
-          {loading ? "Refreshing…" : "Refresh"}
-        </button>
-      </div>
-
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_BILLING_SPEND_SURFACE_NAME}
+      getScope={() => ({
+        ...buildBillingSpendDashboardScope({
+          timezone,
+          data,
+          loading,
+          error,
+          fixedMonthly,
+          knobs: knobsState,
+          costSourcesExpanded,
+          printOrdersExpanded,
+        }),
+        ...getRegisteredSurfaceScopeContributions(
+          ADMIN_BILLING_SPEND_SURFACE_NAME,
+        ),
+      })}
+    >
+      <div className="scroll-page-end-space flex w-full min-w-0 flex-col gap-4 p-4">
       {error ? (
         <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
           <div className="font-medium">
@@ -362,29 +368,41 @@ export function SpendDashboard() {
           scareThresholdUsd={scareThresholdUsd}
           timezone={data.timezone}
           density="full"
+          headlineActions={
+            <div className="flex items-center gap-0.5">
+              <span
+                className="inline-flex h-7 w-7 items-center justify-center text-muted-foreground"
+                title={`AI + providers, lower bound. Day boundaries use ${data.timezone.replaceAll("_", " ")}. Fixed monthly services: ${
+                  fixedMonthly === null
+                    ? "loading"
+                    : fixedMonthly === "missing" || fixedMonthly <= 0
+                      ? "not set"
+                      : `${usd(fixedMonthly)}/month`
+                }.`}
+              >
+                <Info className="h-3.5 w-3.5" aria-hidden />
+                <span className="sr-only">Spend scope details</span>
+              </span>
+              <RefreshCwTapButton
+                variant="transparent"
+                ariaLabel={
+                  loading ? "Refreshing spend data" : "Refresh spend data"
+                }
+                tooltip={
+                  data
+                    ? `Refresh spend data · updated ${new Date(data.generatedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}`
+                    : "Refresh spend data"
+                }
+                disabled={loading}
+                className={loading ? "[&_svg]:animate-spin" : undefined}
+                onClick={() => setReloadTick((t) => t + 1)}
+              />
+            </div>
+          }
         />
       ) : null}
 
-      {data ? (
-        <div className="-mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs tabular-nums text-muted-foreground">
-          <span title="Headline values include AI and provider executions; unmetered sources are excluded.">
-            AI + providers · lower bound
-          </span>
-          <span title={`Day boundaries use ${zoneLabel(data.timezone)}.`}>
-            {zoneLabel(data.timezone)}
-          </span>
-          <span title="Hosting and plan-billed services are tracked separately from measured execution spend.">
-            Fixed:{" "}
-            {fixedMonthly === null
-              ? "loading"
-              : fixedMonthly === "missing" || fixedMonthly <= 0
-                ? "not set"
-                : `${usd(fixedMonthly)}/mo · ${usd(fixedMonthly / data.headline.daysInMonth)}/day`}
-          </span>
-        </div>
-      ) : null}
-
-      <SpendExplorer />
+      <SpendExplorer refreshKey={reloadTick} />
 
       {data ? (
         <>
@@ -392,6 +410,8 @@ export function SpendDashboard() {
             icon={DollarSign}
             title="Every cost source"
             summary={`${data.ledgers.length} sources · ${gaps.length} unmeasured`}
+            open={costSourcesExpanded}
+            onOpenChange={setCostSourcesExpanded}
           >
             <div className="flex flex-col gap-3">
               <Section icon={AlertTriangle} title="Known gaps">
@@ -420,6 +440,7 @@ export function SpendDashboard() {
                 pageSize={25}
                 emptyState={{ title: "No cost sources registered." }}
                 toolbar={{
+                  title: "Cost sources",
                   search: true,
                   searchPlaceholder: "Search cost sources…",
                 }}
@@ -431,6 +452,8 @@ export function SpendDashboard() {
             icon={Package}
             title="Print orders"
             summary={`${usd(data.printOrders.revenueUsd)} revenue · ${usd(data.printOrders.marginUsd)} margin`}
+            open={printOrdersExpanded}
+            onOpenChange={setPrintOrdersExpanded}
           >
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
               <div className="rounded-md border border-border bg-card px-3 py-2">
@@ -441,8 +464,8 @@ export function SpendDashboard() {
                   {usd(data.printOrders.revenueUsd)}
                 </div>
                 <div className="text-[11px] text-muted-foreground">
-                  {count(data.printOrders.paidOrders)} of{" "}
-                  {count(data.printOrders.orders)} orders
+                  {formatCount(data.printOrders.paidOrders)} of{" "}
+                  {formatCount(data.printOrders.orders)} orders
                 </div>
               </div>
               <div className="rounded-md border border-border bg-card px-3 py-2">
@@ -511,6 +534,7 @@ export function SpendDashboard() {
           </Folded>
         </>
       ) : null}
-    </div>
+      </div>
+    </SurfaceRuntimeProvider>
   );
 }

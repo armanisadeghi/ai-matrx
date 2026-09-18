@@ -22,6 +22,10 @@ import {
   selectOrganizationId,
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
+// The ONE typed "no organization is selected" refusal — the same class the
+// transport kernel throws, so `isOrganizationRequiredError` recognises this and
+// surfaces render the picker instead of a raw sentence.
+import { OrganizationContextError } from "@ai-matrx/agents/matrx";
 import type {
   CxArtifactRecord,
   CxArtifactRow,
@@ -103,8 +107,24 @@ export const registerArtifactThunk = createAsyncThunk<
   // Read context from appContextSlice at dispatch time. No project: a feature
   // table may not depend on a project FK — project membership rides on
   // `platform.associations` instead.
+  //
+  // 🚨 THE ORGANIZATION IS READ, NEVER INVENTED. `chat.artifact` is one of the
+  // 328 tables carrying `public._stamp_org_default`: a row sent without an
+  // organization is filed in the WRITER'S PERSONAL organization, silently.
+  // So a null selection fails HERE, before the network, with the one typed
+  // refusal every surface already recognises
+  // (`isOrganizationRequiredError` → `OrganizationRequiredNotice`).
+  // common-docs/policies/context-is-carried-never-rebuilt.md
+  const organizationId =
+    payload.organizationId ?? selectOrganizationId(state) ?? null;
+  if (!organizationId) {
+    throw new OrganizationContextError(
+      "organization_context_required",
+      "Select an organization before saving this artifact.",
+    );
+  }
   const context = {
-    organizationId: payload.organizationId ?? selectOrganizationId(state),
+    organizationId,
     taskId: payload.taskId ?? selectTaskId(state),
   };
 

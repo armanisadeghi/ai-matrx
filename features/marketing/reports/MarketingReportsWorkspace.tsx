@@ -47,6 +47,7 @@ import {
 } from "@/features/marketing/search-console/lib/url-state";
 import {
   formatCount,
+  formatCtr,
   type GscBreakdownRow,
 } from "@/features/marketing/search-console/types";
 import type { GscKeywordValueRow } from "@/features/marketing/search-console/data-insights";
@@ -63,28 +64,17 @@ import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import { cn } from "@/lib/utils";
 import { extractErrorMessage } from "@/utils/errors";
 import { buildReportFindings } from "./report-narrative";
+import {
+  buildReportRowCopy,
+  formatReportPlacement,
+  reportPlacementSentence,
+} from "./report-presentation";
 
 const SURFACE_NAME = "matrx-user/marketing-reports";
 
 function metricDelta(current: number, previous: number): string {
   const delta = current - previous;
   return `${delta > 0 ? "+" : ""}${formatCount(delta)} vs previous 28 days`;
-}
-
-function reportRowCopy(label: string, row: GscBreakdownRow) {
-  return webCopy({
-    kind: "web-search-report-row",
-    label,
-    description: `${label} from the client Search Console report.`,
-    surface: "Marketing Reports",
-    data: row,
-    lines: [
-      [label, row.key],
-      ["Visits", row.clicks],
-      ["Times shown", row.impressions],
-      ["Typical placement", row.avg_position.toFixed(1)],
-    ],
-  });
 }
 
 export function MarketingReportsWorkspace() {
@@ -241,7 +231,7 @@ export function MarketingReportsWorkspace() {
       ["Times shown", summaryRow?.impressions],
       [
         "Visits per 100 appearances",
-        summaryRow ? (summaryRow.ctr * 100).toFixed(1) : null,
+        summaryRow ? formatCtr(summaryRow.ctr) : null,
       ],
       ...findings.map<[string, string]>((finding) => [
         finding.finding,
@@ -475,13 +465,13 @@ export function MarketingReportsWorkspace() {
                   />
                   <MetricCell
                     label="Visits per 100 appearances"
-                    value={(summaryRow.ctr * 100).toFixed(1)}
+                    value={formatCtr(summaryRow.ctr)}
                     detail="How often people chose this result"
                     icon={<MousePointerClick className="h-4 w-4" />}
                   />
                   <MetricCell
                     label="Typical Google placement"
-                    value={`#${summaryRow.avg_position.toFixed(1)}`}
+                    value={formatReportPlacement(summaryRow.avg_position)}
                     detail="Smaller is better; #1 is the top result"
                     icon={<Search className="h-4 w-4" />}
                   />
@@ -721,13 +711,13 @@ function ReportQueryRow({
         </div>
         <CopyButtons
           size="xs"
-          {...reportRowCopy("Search", row)}
+          {...buildReportRowCopy("Search", "query", row)}
           json={() => row}
         />
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
         {formatCount(row.clicks)} visits · shown {formatCount(row.impressions)}{" "}
-        times · usually result #{row.avg_position.toFixed(1)}
+        times · {reportPlacementSentence(row.avg_position)}
       </p>
     </div>
   );
@@ -756,13 +746,13 @@ function ReportPageRow({
         />
         <CopyButtons
           size="xs"
-          {...reportRowCopy("Page", row)}
+          {...buildReportRowCopy("Page", "page", row)}
           json={() => row}
         />
       </div>
       <p className="mt-1 text-xs text-muted-foreground">
         {formatCount(row.clicks)} visits · shown {formatCount(row.impressions)}{" "}
-        times · usually result #{row.avg_position.toFixed(1)}
+        times · {reportPlacementSentence(row.avg_position)}
       </p>
       <GscClassBar
         siteId={siteId}

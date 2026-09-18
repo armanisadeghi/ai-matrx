@@ -73,11 +73,8 @@ import {
 } from "../../service";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 // Durable draft state: the generic persisted wizard-draft primitive.
-import {
-  patchWizardDraft,
-  clearWizardDraft,
-  selectWizardDraft,
-} from "@/lib/redux/slices/wizardDraftSlice";
+import { useWizardDraft } from "@/lib/wizard-draft/useWizardDraft";
+import { WizardDraftRestored } from "@/lib/wizard-draft/WizardDraftRestored";
 import TextArrayInput from "@/components/official/TextArrayInput";
 import { buildApplicationScopeFromMenuContext } from "@/features/context-menu-v3/utils/build-application-scope";
 import {
@@ -1101,6 +1098,58 @@ function AiCanvas({
   );
 }
 
+// ── Durable draft ─────────────────────────────────────────────────────────────
+
+export const RESEARCH_INIT_WIZARD_ID = "research-init";
+
+export interface ResearchInitDraftValues {
+  topicName: string | null;
+  description: string | null;
+  subjectDescription: string | null;
+  additionalInstructions: string | null;
+  selectedKeywords: string[] | null;
+  selectedProjectId: string | null;
+  selectedProjectName: string | null;
+  selectedOrganizationId: string | null;
+}
+
+/** Pure, called on render. Anything stored in a shape we cannot put back is
+ *  REPORTED (never dropped in silence) — the hook screams about it. */
+export function restoreResearchInitDraft(data: Record<string, unknown>): {
+  values: ResearchInitDraftValues;
+  rejectedKeys: string[];
+} {
+  const rejectedKeys: string[] = [];
+  const str = (key: string): string | null => {
+    const v = data[key];
+    if (v === undefined || v === null || v === "") return null;
+    if (typeof v === "string") return v;
+    rejectedKeys.push(key);
+    return null;
+  };
+  const keywords = (): string[] | null => {
+    const v = data.selectedKeywords;
+    if (v === undefined || v === null) return null;
+    if (Array.isArray(v) && v.every((k) => typeof k === "string"))
+      return v.length > 0 ? (v as string[]) : null;
+    rejectedKeys.push("selectedKeywords");
+    return null;
+  };
+  return {
+    values: {
+      topicName: str("topicName"),
+      description: str("description"),
+      subjectDescription: str("subjectDescription"),
+      additionalInstructions: str("additionalInstructions"),
+      selectedKeywords: keywords(),
+      selectedProjectId: str("selectedProjectId"),
+      selectedProjectName: str("selectedProjectName"),
+      selectedOrganizationId: str("selectedOrganizationId"),
+    },
+    rejectedKeys,
+  };
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function ResearchInitForm() {
@@ -1124,10 +1173,24 @@ export default function ResearchInitForm() {
   // Every text/keyword/project input is mirrored into the persisted generic
   // wizard-draft slice so a refresh, idle session, or step navigation recovers
   // the user's work. Cleared on successful topic creation.
-  const WIZARD_ID = "research-init";
-  const draft = useAppSelector(selectWizardDraft(WIZARD_ID));
-  const patchDraft = (patch: Record<string, unknown>) =>
-    dispatch(patchWizardDraft({ wizardId: WIZARD_ID, patch }));
+  // A RESTORED DRAFT IS ANNOUNCED, NEVER SLIPPED IN (cold walk 6, 2026-09-17).
+  // The Masterwork start screen put an abandoned goal back into its textarea
+  // in silence; the person read the pre-filled field as the blank one she
+  // still had to fill in and typed into the middle of it. This form fills FIVE
+  // fields the same way, so it goes through the same primitive: `applyOnce`
+  // puts the draft back exactly once and raises `didRestore`, and
+  // `<WizardDraftRestored>` says so with a "Start fresh" that empties it.
+  const {
+    restored: restoredDraft,
+    applyOnce: applyDraftOnce,
+    didRestore: draftRestored,
+    acknowledge: acknowledgeDraft,
+    discard: discardDraft,
+    patch: patchDraft,
+    clear: clearDraft,
+  } = useWizardDraft<ResearchInitDraftValues>(RESEARCH_INIT_WIZARD_ID, {
+    restore: restoreResearchInitDraft,
+  });
 
   // ── URL-derived step / mode ───────────────────────────────────────────────
   const modeParam = searchParams.get("mode") as Mode | null;
@@ -1164,39 +1227,41 @@ export default function ResearchInitForm() {
 
   // One-time draft recovery: fill only fields the user hasn't already typed
   // into this session (URL params beat the draft for the fields they carry).
-  const draftHydrated = useRef(false);
   useEffect(() => {
-    if (draftHydrated.current || !draft) return;
-    draftHydrated.current = true;
-    const d = draft.data;
-    const str = (v: unknown): string | null =>
-      typeof v === "string" && v.length > 0 ? v : null;
-    if (!topicName && str(d.topicName))
-      setTopicName(str(d.topicName) as string);
-    if (!description && str(d.description))
-      setDescription(str(d.description) as string);
-    if (!subjectDescription && str(d.subjectDescription))
-      setSubjectDescription(str(d.subjectDescription) as string);
-    if (!additionalInstructions && str(d.additionalInstructions)) {
-      setAdditionalInstructions(str(d.additionalInstructions) as string);
-      setShowAdditionalInstructions(true);
-    }
-    if (
-      selectedKeywords.length === 0 &&
-      Array.isArray(d.selectedKeywords) &&
-      d.selectedKeywords.every((k) => typeof k === "string")
-    ) {
-      setSelectedKeywords(d.selectedKeywords as string[]);
-    }
-    if (
-      !selectedProjectId &&
-      str(d.selectedProjectId) &&
-      str(d.selectedOrganizationId) === activeOrgId
-    ) {
-      setSelectedProjectId(str(d.selectedProjectId));
-      setSelectedProjectName(str(d.selectedProjectName));
-    }
-  }, [draft, activeOrgId]);
+    applyDraftOnce((d) => {
+      if (!topicName && d.topicName) setTopicName(d.topicName);
+      if (!description && d.description) setDescription(d.description);
+      if (!subjectDescription && d.subjectDescription)
+        setSubjectDescription(d.subjectDescription);
+      if (!additionalInstructions && d.additionalInstructions) {
+        setAdditionalInstructions(d.additionalInstructions);
+        setShowAdditionalInstructions(true);
+      }
+      if (selectedKeywords.length === 0 && d.selectedKeywords)
+        setSelectedKeywords(d.selectedKeywords);
+      if (
+        !selectedProjectId &&
+        d.selectedProjectId &&
+        d.selectedOrganizationId === activeOrgId
+      ) {
+        setSelectedProjectId(d.selectedProjectId);
+        setSelectedProjectName(d.selectedProjectName);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [applyDraftOnce, restoredDraft, activeOrgId]);
+
+  /** "Start fresh": the draft goes, and so does everything it put on screen. */
+  const startFreshFromDraft = () => {
+    discardDraft();
+    setTopicName(searchParams.get("topic") ?? "");
+    setDescription("");
+    setSubjectDescription(searchParams.get("topic") ?? "");
+    setAdditionalInstructions(searchParams.get("instructions") ?? "");
+    setSelectedKeywords([]);
+    setSelectedProjectId(null);
+    setSelectedProjectName(null);
+  };
 
   // A project selection belongs to the organization under which it was made.
   // Header/user-menu org switches must not leave an invisible stale project
@@ -1375,7 +1440,7 @@ export default function ResearchInitForm() {
             `Topic created, but linking it to the project failed: ${projectLink.error ?? "unknown error"}. Retry from Topic Settings.`,
           );
         }
-        dispatch(clearWizardDraft(WIZARD_ID));
+        clearDraft();
 
         if (keywords.length > 0) {
           await addKeywords(topic.id, { keywords });
@@ -1442,7 +1507,7 @@ export default function ResearchInitForm() {
           `Topic created, but linking it to the project failed: ${projectLink.error ?? "unknown error"}. Retry from Topic Settings.`,
         );
       }
-      dispatch(clearWizardDraft(WIZARD_ID));
+      clearDraft();
       const topicId = topic.id;
 
       setAiPhase({
@@ -1938,6 +2003,19 @@ export default function ResearchInitForm() {
 
   return (
     <div className="flex flex-col items-center justify-start min-h-full py-10 px-4 sm:px-6 text-foreground">
+      {/* ── A restored draft is announced, never slipped in ──
+          The fields below may already hold what this person started last
+          time. If they do, they are told, and "Start fresh" empties them. */}
+      {currentStep > 0 && draftRestored && (
+        <div className="w-full max-w-2xl mb-6">
+          <WizardDraftRestored
+            what="what you started filling in"
+            onStartFresh={startFreshFromDraft}
+            onDismiss={acknowledgeDraft}
+          />
+        </div>
+      )}
+
       {/* ── Step 0: Mode Selection ── */}
       {currentStep === 0 && (
         <div className="w-full max-w-2xl space-y-10">

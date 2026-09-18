@@ -15,10 +15,21 @@ import type {
   GooglePlatformApi,
 } from "@/lib/googlePicker";
 import {
+  assertGoogleOAuthRedirectInitiator,
   buildGoogleOAuthRedirectPending,
   storeGoogleOAuthRedirectPending,
 } from "./oauthRedirect";
 import type { GoogleOAuthRedirectStartOptions } from "./oauthRedirect";
+import {
+  acquireOrJoinGoogleAuthorizationGate,
+  type GoogleAuthorizationGateHandle,
+} from "./googleAuthorizationGate";
+import {
+  GOOGLE_IDENTITY_POLL_INTERVAL_MS,
+  GOOGLE_IDENTITY_READY_TIMEOUT_MS,
+  GOOGLE_IDENTITY_SCRIPT_SRC,
+  GOOGLE_IDENTITY_UNAVAILABLE_MESSAGE,
+} from "./googleIdentityReadiness";
 
 export class GoogleAuthorizationCancelledError extends Error {
   constructor() {
@@ -145,15 +156,29 @@ interface GoogleAPIContextType {
     scopesToRequest: string[],
     loginHint?: string,
     options?: GoogleAuthorizationCodeOptions,
+    /**
+     * The one-window gate, when the caller already took it (the consent runner
+     * holds it across its organization wait). Omitted, the primitive takes the
+     * gate itself, so no call site can bypass it.
+     */
+    gate?: GoogleAuthorizationGateHandle | null,
   ) => Promise<string>;
   startAuthorizationCodeRedirect: (
     scopesToRequest: string[],
     options: GoogleOAuthRedirectStartOptions,
+    gate?: GoogleAuthorizationGateHandle | null,
   ) => Promise<void>;
   signOut: () => Promise<void>;
   getGrantedScopes: () => string[];
   requestScopes: (scopes: string[]) => Promise<boolean>;
   resetError: () => void;
+  /**
+   * Re-inserts the Google Identity Services script and restarts the bounded
+   * readiness wait. This is the remedy the failed state offers; it is safe to
+   * call at any time (a wait already in flight is abandoned, and a late
+   * arrival from the abandoned attempt cannot resurrect it).
+   */
+  retryGoogleIdentityLoad: () => void;
 }
 
 export interface GoogleTokenRequestOptions {
@@ -217,6 +242,12 @@ export default function GoogleAPIProvider({
   );
   const [grantedScopes, setGrantedScopes] = useState<string[]>([]);
   const [authInProgress, setAuthInProgress] = useState(false);
+  /**
+   * Bumped by {@link retryGoogleIdentityLoad}. It is the effect's generation
+   * token: a new attempt re-runs the effect, whose cleanup marks the previous
+   * attempt abandoned, so nothing the old script does later can write state.
+   */
+  const [loadAttempt, setLoadAttempt] = useState(0);
 
   const tokenClientRef = useRef<TokenClient | null>(null);
   const tokenExpiresAtRef = useRef(0);
@@ -247,48 +278,97 @@ export default function GoogleAPIProvider({
     }
   }, []);
 
-  // Load Google Identity Services
+  /**
+   * 🚨 THE READINESS WAIT IS BOUNDED (V-24 NEW-4, lane F-111).
+   *
+   * The old poll re-scheduled itself every 100 ms with no timeout and no
+   * attempt bound, and `script.onerror` fires only when the REQUEST errors —
+   * so a script that is served but never defines `window.google.accounts` (a
+   * content blocker, a network filter, an outage) spun forever behind
+   * "Loading Google API…". Now: one bound, then an honest failed state whose
+   * sentence names what happened and offers Retry. The error path and the
+   * timeout path land in the SAME state, and an arrival after the bound cannot
+   * resurrect the abandoned attempt.
+   */
   useEffect(() => {
-    // ===== PERFORMANCE TIMING LOGS =====
-    console.log(
-      `⚡GoogleAPIProvider useEffect started at: ${performance.now().toFixed(2)}ms`,
-    );
-
     if (!clientId) {
       return;
     }
 
-    const loadGoogleIdentityServices = () => {
-      if (
-        document.querySelector(
-          'script[src="https://accounts.google.com/gsi/client"]',
-        )
-      ) {
-        checkGoogleLoaded();
-        return;
-      }
-      const script = document.createElement("script");
-      script.src = "https://accounts.google.com/gsi/client";
-      script.async = true;
-      script.defer = true;
-      script.onload = checkGoogleLoaded;
-      script.onerror = () => {
-        setError("Failed to load Google Identity Services");
-        setIsInitializing(false);
-      };
-      document.body.appendChild(script);
+    /** Abandoned: this attempt may no longer write state. */
+    let settled = false;
+    let pollTimer: ReturnType<typeof setTimeout> | undefined;
+    const deadline = Date.now() + GOOGLE_IDENTITY_READY_TIMEOUT_MS;
+
+    const succeed = () => {
+      if (settled) return;
+      settled = true;
+      setIsGoogleLoaded(true);
+      setIsInitializing(false);
+      setError((current) =>
+        current === GOOGLE_IDENTITY_UNAVAILABLE_MESSAGE ? null : current,
+      );
+    };
+
+    /** Both the timeout and `onerror` land here — one failed state, one sentence. */
+    const fail = () => {
+      if (settled) return;
+      settled = true;
+      setIsGoogleLoaded(false);
+      setIsInitializing(false);
+      setError(GOOGLE_IDENTITY_UNAVAILABLE_MESSAGE);
     };
 
     const checkGoogleLoaded = () => {
+      if (settled) return;
       if (window.google?.accounts) {
-        setIsGoogleLoaded(true);
-        setIsInitializing(false);
-      } else {
-        setTimeout(checkGoogleLoaded, 100);
+        succeed();
+        return;
       }
+      if (Date.now() >= deadline) {
+        fail();
+        return;
+      }
+      pollTimer = setTimeout(
+        checkGoogleLoaded,
+        GOOGLE_IDENTITY_POLL_INTERVAL_MS,
+      );
     };
 
-    loadGoogleIdentityServices();
+    const existing = document.querySelector<HTMLScriptElement>(
+      `script[src="${GOOGLE_IDENTITY_SCRIPT_SRC}"]`,
+    );
+    if (existing && loadAttempt === 0) {
+      // Someone else already inserted it on this page; just watch for the
+      // namespace, under the same bound.
+      checkGoogleLoaded();
+    } else {
+      // A retry re-INSERTS the script: a tag that already failed will never
+      // fire another load event, so reusing it would wait out the bound again
+      // for nothing.
+      existing?.remove();
+      const script = document.createElement("script");
+      script.src = GOOGLE_IDENTITY_SCRIPT_SRC;
+      script.async = true;
+      script.defer = true;
+      script.onload = checkGoogleLoaded;
+      script.onerror = fail;
+      document.body.appendChild(script);
+      checkGoogleLoaded();
+    }
+
+    return () => {
+      settled = true;
+      if (pollTimer !== undefined) clearTimeout(pollTimer);
+    };
+  }, [clientId, loadAttempt]);
+
+  const retryGoogleIdentityLoad = useCallback(() => {
+    if (!clientId) return;
+    setError(null);
+    setIsGoogleLoaded(false);
+    setIsInitializing(true);
+    setLoadAttempt((attempt) => attempt + 1);
   }, [clientId]);
 
   const signIn = async (
@@ -359,6 +439,7 @@ export default function GoogleAPIProvider({
     scopesToRequest: string[],
     loginHint?: string,
     options?: GoogleAuthorizationCodeOptions,
+    gate?: GoogleAuthorizationGateHandle | null,
   ): Promise<string> => {
     if (!isGoogleLoaded || !window.google?.accounts?.oauth2) {
       throw new Error("Google authorization is still loading.");
@@ -366,57 +447,75 @@ export default function GoogleAPIProvider({
     if (!clientId) {
       throw new Error("Google client ID is not configured.");
     }
-    if (authInProgress) {
-      throw new Error("A Google authorization window is already open.");
-    }
+    // 🚨 THE GATE, NOT `authInProgress`. The state flag is read from a rendered
+    // closure, so two presses in one tick both saw the stale `false`. The gate
+    // is module scope: one person, one window. Joining the caller's handle
+    // keeps the consent runner's organization wait covered by ONE lock.
+    const held = acquireOrJoinGoogleAuthorizationGate(gate);
 
     resetError();
     setAuthInProgress(true);
-    return new Promise<string>((resolve, reject) => {
-      const client = window.google.accounts.oauth2.initCodeClient({
-        client_id: clientId,
-        scope: (scopesToRequest.length ? scopesToRequest : allScopes).join(" "),
-        ux_mode: "popup",
-        select_account: true,
-        include_granted_scopes: false,
-        enable_granular_consent: true,
-        ...(options?.forceConsent ? { prompt: "consent" as const } : {}),
-        ...(loginHint ? { login_hint: loginHint } : {}),
-        callback: (response: CodeResponse) => {
-          setAuthInProgress(false);
-          if (response.code) {
-            resolve(response.code);
-            return;
-          }
-          const message =
-            response.error_description ||
-            response.error ||
-            "Google did not return an authorization code.";
-          setError(message);
-          reject(new Error(message));
-        },
-        error_callback: (response: ErrorResponse) => {
-          setAuthInProgress(false);
-          if (
-            response.type === "popup_closed" ||
-            response.type === "popup_closed_by_user"
-          ) {
-            reject(new GoogleAuthorizationCancelledError());
-            return;
-          }
-          const message =
-            response.message || `Google authorization failed: ${response.type}`;
-          setError(message);
-          reject(new Error(message));
-        },
+    try {
+      return await new Promise<string>((resolve, reject) => {
+        const client = window.google.accounts.oauth2.initCodeClient({
+          client_id: clientId,
+          scope: (scopesToRequest.length ? scopesToRequest : allScopes).join(
+            " ",
+          ),
+          ux_mode: "popup",
+          select_account: true,
+          include_granted_scopes: false,
+          enable_granular_consent: true,
+          ...(options?.forceConsent ? { prompt: "consent" as const } : {}),
+          ...(loginHint ? { login_hint: loginHint } : {}),
+          callback: (response: CodeResponse) => {
+            setAuthInProgress(false);
+            held.release();
+            if (response.code) {
+              resolve(response.code);
+              return;
+            }
+            const message =
+              response.error_description ||
+              response.error ||
+              "Google did not return an authorization code.";
+            setError(message);
+            reject(new Error(message));
+          },
+          error_callback: (response: ErrorResponse) => {
+            setAuthInProgress(false);
+            held.release();
+            if (
+              response.type === "popup_closed" ||
+              response.type === "popup_closed_by_user"
+            ) {
+              reject(new GoogleAuthorizationCancelledError());
+              return;
+            }
+            const message =
+              response.message ||
+              `Google authorization failed: ${response.type}`;
+            setError(message);
+            reject(new Error(message));
+          },
+        });
+        client.requestCode();
       });
-      client.requestCode();
-    });
+    } catch (cause) {
+      // Anything that threw before a callback could run — GIS refusing to build
+      // the client, `requestCode` throwing — means the window never opened. The
+      // gate must not stay held for the rest of the session. `release` is
+      // idempotent, so a callback that already released is unaffected.
+      setAuthInProgress(false);
+      held.release();
+      throw cause;
+    }
   };
 
   const startAuthorizationCodeRedirect = async (
     scopesToRequest: string[],
     options: GoogleOAuthRedirectStartOptions,
+    gate?: GoogleAuthorizationGateHandle | null,
   ): Promise<void> => {
     if (!isGoogleLoaded || !window.google?.accounts?.oauth2) {
       throw new Error("Google authorization is still loading.");
@@ -424,9 +523,11 @@ export default function GoogleAPIProvider({
     if (!clientId) {
       throw new Error("Google client ID is not configured.");
     }
-    if (authInProgress) {
-      throw new Error("A Google authorization window is already open.");
-    }
+    // The redirect path takes the SAME gate as the popup path — one person, one
+    // authorization window, whichever shape it has. It is deliberately never
+    // released on success: the page is leaving, and the next page load gets a
+    // fresh module with a free gate.
+    const held = acquireOrJoinGoogleAuthorizationGate(gate);
 
     resetError();
     setAuthInProgress(true);
@@ -439,16 +540,19 @@ export default function GoogleAPIProvider({
       const response = await fetch("/api/google/oauth/redirect-state", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ initiatingUserId: user.id }),
       });
       const body = (await response.json()) as {
         state?: unknown;
         redirectUri?: unknown;
+        userId?: unknown;
         error?: unknown;
       };
       if (
         !response.ok ||
         typeof body.state !== "string" ||
-        typeof body.redirectUri !== "string"
+        typeof body.redirectUri !== "string" ||
+        typeof body.userId !== "string"
       ) {
         throw new Error(
           typeof body.error === "string"
@@ -456,6 +560,10 @@ export default function GoogleAPIProvider({
             : "Google redirect authorization could not start.",
         );
       }
+      assertGoogleOAuthRedirectInitiator(
+        { initiatingUserId: user.id },
+        body.userId,
+      );
       const redirectUri = new URL(body.redirectUri);
       if (
         redirectUri.origin !== window.location.origin ||
@@ -467,7 +575,7 @@ export default function GoogleAPIProvider({
       }
       const pending = buildGoogleOAuthRedirectPending(
         body.state,
-        { ...options, initiatingUserId: user.id },
+        { ...options, initiatingUserId: body.userId },
         window.location.origin,
       );
       storeGoogleOAuthRedirectPending(window.sessionStorage, pending);
@@ -485,6 +593,7 @@ export default function GoogleAPIProvider({
       client.requestCode();
     } catch (cause) {
       setAuthInProgress(false);
+      held.release();
       throw cause;
     }
   };
@@ -590,6 +699,7 @@ export default function GoogleAPIProvider({
         getGrantedScopes,
         requestScopes,
         resetError,
+        retryGoogleIdentityLoad,
       }}
     >
       {children}

@@ -18,6 +18,10 @@
 import { useState } from "react";
 import { FileSpreadsheet, Loader2, Send, Table2 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -67,9 +71,11 @@ export function SendToMenu({
   const push = async (target: Target) => {
     setPushing(target);
     try {
+      const organizationId =
+        target === "workbook" ? await ensureOrganizationContext() : undefined;
       const res =
         target === "workbook"
-          ? await pushToWorkbook(name, columns, rows)
+          ? await pushToWorkbook(name, columns, rows, organizationId)
           : await pushToDataset(name, columns, rows);
 
       if (!res.ok || !res.href) {
@@ -93,6 +99,12 @@ export function SendToMenu({
             : undefined,
         note: res.error,
       });
+    } catch (error) {
+      if (!isOrganizationSelectionCancelled(error)) {
+        toast.error("Could not create workbook", {
+          description: error instanceof Error ? error.message : String(error),
+        });
+      }
     } finally {
       setPushing(null);
     }

@@ -16,7 +16,10 @@ import {
 import { toast } from "@/lib/toast";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { NotesAPI } from "@/features/notes/service/notesApi";
-import { ensureOrganizationContext, isOrganizationSelectionCancelled } from "@/lib/organization/organization-gate";
+import {
+  ensureOrganizationContext,
+  isOrganizationSelectionCancelled,
+} from "@/lib/organization/organization-gate";
 import { CodeFilesAPI } from "@/features/code-files/service/codeFilesApi";
 import { setPendingSource } from "@/features/tasks/redux/taskUiSlice";
 import { registerAction } from "../registry";
@@ -100,7 +103,9 @@ registerAction({
     )
       return;
     try {
-      const organizationId = await ensureOrganizationContext({ organizationId: ctx.organizationId });
+      const organizationId = await ensureOrganizationContext({
+        organizationId: ctx.organizationId,
+      });
       await NotesAPI.create({
         label: "New Note",
         content: ctx.content,
@@ -289,10 +294,17 @@ registerAction({
     )
       return;
     try {
+      const organizationId = await ensureOrganizationContext({
+        organizationId: ctx.organizationId,
+      });
       // Lazy-import so Univer (heavy) stays out of the bundle until used.
       const { pushMarkdownToDocument } =
         await import("@/features/data-tables/export-targets");
-      const res = await pushMarkdownToDocument(ctx.content);
+      const res = await pushMarkdownToDocument(
+        ctx.content,
+        undefined,
+        organizationId,
+      );
       if (!res.ok || !res.href) {
         toast.error(res.error || "Failed to create document");
         return;
@@ -306,7 +318,9 @@ registerAction({
         },
       });
     } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to create document"));
+      if (!isOrganizationSelectionCancelled(error)) {
+        toast.error(getErrorMessage(error, "Failed to create document"));
+      }
     }
   },
 });

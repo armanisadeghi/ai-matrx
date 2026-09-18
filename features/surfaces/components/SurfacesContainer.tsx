@@ -13,8 +13,6 @@ import {
   AlertTriangle,
   Layers,
   Loader2,
-  Plus,
-  RefreshCw,
   Zap,
   UserPlus,
   CircleCheck,
@@ -36,7 +34,6 @@ import { Label } from "@/components/ui/label";
 import { toast, recordToast, dismissRecordToasts } from "@/lib/toast";
 
 import {
-  SurfacesFilterBar,
   DEFAULT_FILTER_STATE,
   type SurfacesFilterState,
 } from "@/features/surfaces/components/SurfacesFilterBar";
@@ -144,7 +141,6 @@ export function SurfacesContainer() {
   );
 
   const visible = useMemo(() => {
-    const q = filters.search.trim().toLowerCase();
     return surfaces.filter((s) => {
       if (filters.client !== "__all__" && s.client_name !== filters.client) {
         return false;
@@ -183,15 +179,6 @@ export function SurfacesContainer() {
         manifestedSurfaceNames.has(s.name)
       )
         return false;
-      if (q) {
-        if (
-          !s.name.toLowerCase().includes(q) &&
-          !(s.label ?? "").toLowerCase().includes(q) &&
-          !(s.description ?? "").toLowerCase().includes(q)
-        ) {
-          return false;
-        }
-      }
       return true;
     });
   }, [surfaces, filters, manifestedSurfaceNames]);
@@ -257,7 +244,7 @@ export function SurfacesContainer() {
   return (
     <div className="h-[calc(100dvh-var(--header-height))] flex flex-col bg-background">
       {/* Header */}
-      <div className="shrink-0 px-3 py-1.5 border-b border-border flex items-center gap-2 flex-wrap">
+      <div data-matrx-table-page className="shrink-0 py-1.5 border-b border-border flex items-center gap-2 flex-wrap">
         <Layers className="h-4 w-4 text-muted-foreground" />
         <h1 className="text-sm font-medium">Tool Registry · UI Surfaces</h1>
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
@@ -284,16 +271,7 @@ export function SurfacesContainer() {
           <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
         )}
 
-        <div className="ml-auto flex items-center gap-1.5">
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => void load()}
-            className="h-7 gap-1.5 text-xs"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-            Refresh
-          </Button>
+        <div className="ml-auto flex flex-wrap items-center gap-1.5">
           <Button
             size="sm"
             variant="outline"
@@ -344,20 +322,12 @@ export function SurfacesContainer() {
               </Badge>
             )}
           </Button>
-          <Button
-            size="sm"
-            onClick={() => setCreating(true)}
-            className="h-7 gap-1.5"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            New surface
-          </Button>
         </div>
       </div>
 
       {/* Readiness rollup — the surface tracking board. Counts follow the
           client filter; clicking a tile filters the list by that bucket. */}
-      <div className="shrink-0 px-3 py-1.5 border-b border-border bg-background">
+      <div data-matrx-table-page className="shrink-0 py-1.5 border-b border-border bg-background">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
           {(
             [
@@ -403,13 +373,6 @@ export function SurfacesContainer() {
         </div>
       </div>
 
-      <SurfacesFilterBar
-        state={filters}
-        onChange={(patch) => setFilters((f) => ({ ...f, ...patch }))}
-        clientNames={clientNames}
-        parentNames={parentNames}
-      />
-
       {error && (
         <div className="mx-3 mt-2 rounded-md border border-destructive/40 bg-destructive/5 px-2 py-1.5 text-xs text-destructive flex items-center gap-2">
           <AlertCircle className="h-3.5 w-3.5" />
@@ -419,7 +382,10 @@ export function SurfacesContainer() {
 
       {/* Body: table + optional detail panel */}
       <div className="flex-1 min-h-0 flex">
-        <div className="flex-1 min-w-0 flex flex-col border-r border-border">
+        <div
+          data-matrx-table-page
+          className="flex-1 min-w-0 flex flex-col border-r border-border"
+        >
           <SurfacesTable
             rows={visible}
             isLoading={loading}
@@ -430,11 +396,14 @@ export function SurfacesContainer() {
             onPeek={(r) => setSelectedName(r.name)}
             onDelete={(r) => void onDelete(r)}
             navigatingName={navigatingName}
+            filters={filters}
+            onFilterChange={(patch) => setFilters((f) => ({ ...f, ...patch }))}
+            onClearFilters={() => setFilters(DEFAULT_FILTER_STATE)}
+            clientNames={clientNames}
+            parentNames={parentNames}
+            onRefresh={load}
+            onAdd={() => setCreating(true)}
           />
-          <div className="shrink-0 px-3 py-1 text-[10px] text-muted-foreground tabular-nums border-t border-border bg-card">
-            {visible.length} of {surfaces.length} surface
-            {surfaces.length === 1 ? "" : "s"} shown
-          </div>
         </div>
 
         {selected && (

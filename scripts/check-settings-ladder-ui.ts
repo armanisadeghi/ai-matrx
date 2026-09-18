@@ -80,6 +80,12 @@ import {
   unmeasured,
   type KnobRow,
 } from "./settings-guards/lib";
+// THE SCREEN'S OWN RULE, not a second copy of it. `pickableRungsFor` is what
+// `<KnobRungOverrides>` calls to decide which row-keyed rungs it offers for a
+// key; asking it here is the difference between measuring what renders and
+// re-implementing it (V-57's whole finding).
+import { pickableRungsFor } from "../features/settings/universal/rungRules";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const GUARD = "check:settings-ladder-ui";
 const UNIVERSAL_DIR = join(ROOT, "features", "settings", "universal");
@@ -87,10 +93,23 @@ const TYPES_FILE = join(ROOT, "lib", "scoped-config", "types.ts");
 const LADDER_FILE = join(ROOT, "lib", "scoped-config", "ladder.ts");
 const ALLOWLIST_FILE = join(ROOT, "scripts", "settings-ladder-ui-allowlist.json");
 const UNADDRESSED_BASELINE_FILE = join(ROOT, "scripts", "settings-ladder-ui-unaddressed-baseline.json");
-/** The ONE surface that mounts the per-rung override picker today. */
+/** DD-211's own ratchet of rungs no database reader can answer — see the note at `censusDebt`. */
+const RUNG_DEBT_FILE = join(ROOT, "scripts", "settings-guards", "knob-rung-debt.json");
+/** The organization destination that mounts the per-rung override picker. */
 const ORG_DESTINATION_FILE = join(
   ROOT, "app", "(core)", "organizations", "[orgId]", "settings", "configuration", "page.tsx",
 );
+/**
+ * THE SECOND DESTINATION (DD-203). `hr.*` keys are excluded from the
+ * organization configuration page by its own first line — HR settings live on
+ * their own page — so until DD-203 the 194 HR keys reached NO picker at any of
+ * their three sub-org rungs. `/hr/settings/*` now mounts the SAME
+ * `<KnobRungOverrides>` per key, through this bridge. Both files are read from
+ * disk: the bridge must mount the picker and the HR key row must mount the
+ * bridge, or the HR destination is not offering anything.
+ */
+const HR_BRIDGE_FILE = join(ROOT, "features", "hr", "settings", "components", "HrKnobExceptions.tsx");
+const HR_KNOB_ROW_FILE = join(ROOT, "features", "hr", "settings", "components", "KnobPanel.tsx");
 /** Rungs keyed by a ROW — the ones a person reaches only through a picker. */
 const ROW_KEYED_RUNGS = new Set([
   "employer_profile", "brand", "pay_group", "site", "location", "table", "agent",
@@ -215,8 +234,58 @@ async function main(): Promise<void> {
     }
     excludedPrefixes = [...filter[2].matchAll(/!\s*\w+\.feature\.startsWith\(\s*["']([^"']+)["']\s*\)/g)].map((m) => m[1]);
   }
-  const reachesRowKeyedRung = (feature: string): boolean =>
-    pickerMounted && !excludedPrefixes.some((prefix) => feature.startsWith(prefix));
+  // ── THE HR DESTINATION (DD-203) ─────────────────────────────────────────
+  // Measured the same way, from disk and from the live catalog — never from a
+  // constant. The prefix the HR settings surface serves is not declared in its
+  // source: its key list comes from `public.hr_knob_index`, whose body filters
+  // `k.feature like 'hr.%'`. That literal is read out of `pg_proc` here, so the
+  // day the door's scope changes this guard changes with it.
+  const hrPickerMounted =
+    existsSync(HR_BRIDGE_FILE) &&
+    /<\s*KnobRungOverrides\b/.test(readFileSync(HR_BRIDGE_FILE, "utf8")) &&
+    existsSync(HR_KNOB_ROW_FILE) &&
+    /<\s*HrKnobExceptions\b/.test(readFileSync(HR_KNOB_ROW_FILE, "utf8"));
+  let hrPrefixes: string[] = [];
+  if (hrPickerMounted) {
+    const door = await adminQuery<{ prosrc: string }>(
+      "select p.prosrc from pg_proc p join pg_namespace n on n.oid = p.pronamespace " +
+        "where n.nspname = 'public' and p.proname = 'hr_knob_index'",
+    );
+    const body = door.rows?.[0]?.prosrc ?? "";
+    const like = /feature\s+like\s+'([a-z_]+)\.%'/i.exec(body);
+    if (!like) {
+      unmeasured(
+        GUARD,
+        "public.hr_knob_index was not read, or its body no longer says which features the HR settings surface serves " +
+          "(no `feature like '<prefix>.%'`). The HR destination mounts the per-rung picker, so guessing which keys it " +
+          "renders would be exactly the declared-vs-observed failure this check exists to end.",
+        "keep hr_knob_index's feature filter a readable literal, or teach this guard the new shape",
+      );
+    }
+    hrPrefixes = [`${like![1]}.`];
+  }
+
+  /**
+   * Can a person reach THIS rung for THIS key on a rendered screen?
+   *
+   * Two independent things, both measured:
+   *   1. some destination mounts the picker AND renders this key, and
+   *   2. the picker would actually OFFER this rung for this key —
+   *      `pickableRungsFor` hides a rung no database reader can answer
+   *      (DD-211), and inside `hr.*` it hides one no reader positively names
+   *      (DD-203). A green gate over a rung the screen deliberately does not
+   *      draw is the same lie V-57 found, one layer in.
+   */
+  const reachesRowKeyedRung = (row: KnobRow, rung: string, withHr = hrPickerMounted): boolean => {
+    const renderedByOrg =
+      pickerMounted && !excludedPrefixes.some((prefix) => row.feature.startsWith(prefix));
+    const renderedByHr =
+      withHr && hrPrefixes.some((prefix) => row.feature.startsWith(prefix));
+    if (!renderedByOrg && !renderedByHr) return false;
+    return pickableRungsFor(row.overridable_by ?? [], `${row.feature}.${row.key}`).includes(
+      rung as never,
+    );
+  };
 
   const allow: AllowEntry[] = existsSync(ALLOWLIST_FILE)
     ? (JSON.parse(readFileSync(ALLOWLIST_FILE, "utf8")).entries as AllowEntry[])
@@ -249,6 +318,35 @@ async function main(): Promise<void> {
     });
   }
 
+  // 🚨 THE HR-DESTINATION ARM (DD-203). Without this, the guard would read
+  // exactly the same if `/hr/settings` mounted nothing at all: every hr.* pair
+  // is baselined, so "no new finding" proves nothing about the new destination.
+  // So the one hr.* pair that IS reachable is required to be reachable — and
+  // required to STOP being reachable the moment the HR destination is taken
+  // away. A measurement that cannot change is not a measurement.
+  if (selfTest) {
+    const proof = rows.find(
+      (r) => r.feature === "hr.employees" && r.key === "adjusted_service_date_rule",
+    );
+    if (!proof) {
+      unmeasured(GUARD, "hr.employees.adjusted_service_date_rule is not in the registry, so the HR destination cannot be self-tested.", "seed the key, or point this arm at another hr.* key whose reader names a rung");
+    }
+    const withHr = reachesRowKeyedRung(proof!, "location", true);
+    const withoutHr = reachesRowKeyedRung(proof!, "location", false);
+    if (!withHr || withoutHr) {
+      console.error(
+        `[LOUD] ${GUARD} SELF-TEST FAILED: hr.employees.adjusted_service_date_rule at the 'location' rung ` +
+          `is reachable=${withHr} with the HR destination and reachable=${withoutHr} without it. ` +
+          `It must be true then false, or this guard is not measuring the HR surface at all.`,
+      );
+      exitAfterDrain(1);
+    }
+    console.log(
+      "Self-test: the HR destination is measured — hr.employees.adjusted_service_date_rule at 'location' " +
+        "is reachable WITH /hr/settings mounted and unreachable without it.",
+    );
+  }
+
   let findings: Finding[] = [];
   const tolerated: KnobRow[] = [];
   for (const r of graded) {
@@ -263,7 +361,7 @@ async function main(): Promise<void> {
       } else if (!named.has(rung)) {
         findings.push({ feature: r.feature, key: r.key, overridable_by: ob, problem: "UNNAMED_RUNG", rung });
       } else if (ROW_KEYED_RUNGS.has(rung)) {
-        if (!reachesRowKeyedRung(r.feature)) {
+        if (!reachesRowKeyedRung(r, rung)) {
           findings.push({ feature: r.feature, key: r.key, overridable_by: ob, problem: "UNADDRESSED_RUNG", rung });
         }
       } else if (!addressed.has(rung)) {
@@ -286,11 +384,34 @@ async function main(): Promise<void> {
   for (const [rung, entry] of Object.entries(unaddressedBaseline?.rungs ?? {})) {
     for (const pair of entry.keys) knownUnaddressed.add(`${rung}|${pair}`);
   }
+  // ONE DEBT REGISTER PER CAUSE (DD-203). A rung the picker deliberately HIDES
+  // because no database reader can answer it is already owned, by name and with
+  // its sentence, in `scripts/settings-guards/knob-rung-debt.json` — the ratchet
+  // `check:knob-database-consumers` enforces. Recording the same pair a second
+  // time here would mean clearing it twice and forgetting once. It is tolerated
+  // on the strength of THAT file and printed as such.
+  const censusDebt: Record<string, string> = (() => {
+    try {
+      return (JSON.parse(readFileSync(RUNG_DEBT_FILE, "utf8")) as { debt?: Record<string, string> }).debt ?? {};
+    } catch {
+      return {};
+    }
+  })();
+  for (const entry of Object.keys(censusDebt)) {
+    const [address, rung] = entry.split(" | ");
+    if (address && rung) knownUnaddressed.add(`${rung}|${address.replace(/\.([^.]+)$/, " $1")}`);
+  }
   const tolerableUnaddressed = findings.filter(
     (f) => f.problem === "UNADDRESSED_RUNG" && knownUnaddressed.has(unaddressedKey(f)),
   );
   const tolerated_pairs = new Set(tolerableUnaddressed.map(unaddressedKey));
-  const staleUnaddressed = [...knownUnaddressed].filter((pair) => !tolerated_pairs.has(pair));
+  // Only the BASELINE ratchets here; a census-debt pair that became reachable is
+  // reported (and cleared) by `check:knob-database-consumers`, which owns it.
+  const baselinePairs = new Set<string>();
+  for (const [rung, entry] of Object.entries(unaddressedBaseline?.rungs ?? {})) {
+    for (const pair of entry.keys) baselinePairs.add(`${rung}|${pair}`);
+  }
+  const staleUnaddressed = [...baselinePairs].filter((pair) => !tolerated_pairs.has(pair));
   if (write) {
     const rungs: Record<string, { owner: string; reason: string; keys: string[] }> = {};
     const keep = unaddressedBaseline === null
@@ -329,7 +450,7 @@ async function main(): Promise<void> {
     console.log(
       `${unaddressedBaseline === null ? "Seeded" : "Ratcheted"} ${relative(ROOT, UNADDRESSED_BASELINE_FILE)}: ${total} known unreachable key-rung pair(s) across ${Object.keys(rungs).length} rung(s).`,
     );
-    process.exit(0);
+    exitAfterDrain(0);
   }
   findings = findings.filter((f) => !(f.problem === "UNADDRESSED_RUNG" && knownUnaddressed.has(unaddressedKey(f))));
 
@@ -353,12 +474,12 @@ async function main(): Promise<void> {
         2,
       ),
     );
-    process.exit(findings.length > 0 ? 1 : 0);
+    exitAfterDrain(findings.length > 0 ? 1 : 0);
   }
 
   console.log(`\n${C.bold}${C.white}SETTINGS LADDER UI REACHABILITY${C.reset} ${C.dim}(${GUARD})${C.reset}`);
   console.log(
-    `${C.dim}${graded.length} customer-tunable knobs (overridable_by non-empty) of ${rows.length} · rungs registered: ${[...registeredKinds].join(", ")} · named by the UI: ${[...named].join(", ")} · addressed by features/settings/universal: ${[...addressed].join(", ") || "none"}${C.reset}\n`,
+    `${C.dim}${graded.length} customer-tunable knobs (overridable_by non-empty) of ${rows.length} · rungs registered: ${[...registeredKinds].join(", ")} · named by the UI: ${[...named].join(", ")} · addressed by features/settings/universal: ${[...addressed].join(", ") || "none"} · row-keyed pickers mounted: ${[pickerMounted ? "organization configuration" : null, hrPickerMounted ? `/hr/settings (${hrPrefixes.join(", ")})` : null].filter(Boolean).join(", ") || "none"}${C.reset}\n`,
   );
 
   if (findings.length === 0) {
@@ -435,7 +556,7 @@ async function main(): Promise<void> {
   }
 
   console.log("");
-  process.exit(findings.length > 0 ? 1 : 0);
+  exitAfterDrain(findings.length > 0 ? 1 : 0);
 }
 
 main();

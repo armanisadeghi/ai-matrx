@@ -48,6 +48,7 @@
 import { resolve } from "node:path";
 
 import { isGeneratedKindSlug } from "../features/content-ir/kinds/generated/kinds.generated";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const NAME_RE = /^[a-z][a-z0-9_]*$/;
 const SURFACE_NAME_RE = /^[a-z][a-z0-9-]*\/[a-z0-9-/]+$/;
@@ -641,17 +642,17 @@ async function main() {
     console.log(
       `Surface manifests OK: ${ALL_MANIFESTS.length} surface${ALL_MANIFESTS.length === 1 ? "" : "s"}, ${totalValues} value${totalValues === 1 ? "" : "s"}, ${totalWriteTargets} write target${totalWriteTargets === 1 ? "" : "s"}, ${totalClientTools} client tool${totalClientTools === 1 ? "" : "s"} declared.`,
     );
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   console.error(
     `Surface manifest drift: ${errors.length} issue${errors.length === 1 ? "" : "s"} found:`,
   );
   for (const e of errors) console.error(`  - ${e}`);
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 main().catch((err) => {
   console.error("Unexpected error:", err);
-  process.exit(2);
+  exitAfterDrain(2);
 });

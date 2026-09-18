@@ -37,8 +37,17 @@ export interface RuleSourceRef {
    * Time anchor for a rule distilled from a RECORDING (the monologue lane):
    * the seconds range of the transcript portion the rule came from. `end`
    * is null when the transcription carried no end offset.
+   *
+   * `granularity` (W10, aidream `dd86f564d`) says how precisely the range
+   * locates the rule: "segment" — the range spans only the transcript
+   * sentences carrying the rule's own quote, a real moment the Expert can
+   * jump to. "chunk" — the quote could not be located in the transcript (no
+   * quote, a paraphrase, or a transcript with no spans), so the range is
+   * the whole ingestion chunk it came from — true but not a moment. Absent
+   * on older rules, which predate the distinction and read as an
+   * unqualified time range.
    */
-  time_range?: { start: number; end?: number | null };
+  time_range?: { start: number; end?: number | null; granularity?: "segment" | "chunk" };
   /**
    * The monologue distiller's read on how plainly the expert stated the
    * rule — "low" means an inference from an aside the Expert should confirm.
@@ -61,6 +70,20 @@ export interface RuleSourceRef {
    * matching this against the edge's `source_key`.
    */
   source?: string;
+  /**
+   * WHO SAID IT — the Meeting Scavenger's half of a meeting rule's provenance
+   * (`meeting_scavenger`). A meeting has several people in it, so "at 4:12" on
+   * its own cannot answer the only question that matters when the Expert
+   * reviews the rule: was that me? Absent on every other lane's rules, where
+   * there is only ever one voice.
+   */
+  speaker?: string;
+  /** The meeting this rule was scavenged from (`communication.meet_meetings`). */
+  meeting_id?: string;
+  /** Its durable room slug — `/meet/<slug>` is the door the provenance opens. */
+  meeting_slug?: string;
+  /** What the meeting is called, for the provenance line. */
+  meeting_title?: string;
   /** Free-form pointer ("Chapter 6", timestamp for audio, etc.). */
   note?: string;
   /**

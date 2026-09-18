@@ -101,7 +101,7 @@ const CredenzaContent = ({ className, children, ...props }: CredenzaProps) => {
       )}
       {...props}
     >
-      {children}
+      {lowerCredenzaContent(children, mode)}
     </Content>
   );
 };
@@ -168,6 +168,31 @@ const CredenzaFooter = ({ className, children, ...props }: CredenzaProps) => {
     </Footer>
   );
 };
+
+/** Lower known Credenza wrappers before DialogContent inspects its children for
+ * Radix title/description primitives. Do not execute arbitrary child components. */
+function lowerCredenzaContent(
+  children: React.ReactNode,
+  mode: CredenzaMode,
+): React.ReactNode {
+  return React.Children.map(children, (child) => {
+    if (!React.isValidElement(child)) return child;
+    const props = child.props as CredenzaProps;
+    if (child.type === CredenzaTitle) {
+      const Title = mode === "dialog" ? DialogTitle : DrawerTitle;
+      return <Title {...props} />;
+    }
+    if (child.type === CredenzaDescription) {
+      const Description = mode === "dialog" ? DialogDescription : DrawerDescription;
+      return <Description {...props} />;
+    }
+    if (child.type === CredenzaHeader) {
+      const Header = mode === "dialog" ? DialogHeader : DrawerHeader;
+      return <Header {...props}>{lowerCredenzaContent(props.children, mode)}</Header>;
+    }
+    return React.cloneElement(child, undefined, lowerCredenzaContent(props.children, mode));
+  });
+}
 
 export {
   Credenza,

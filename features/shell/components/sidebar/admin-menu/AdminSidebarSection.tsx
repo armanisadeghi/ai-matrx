@@ -46,7 +46,7 @@ export default function AdminSidebarSection() {
         target="_blank"
         rel="noopener noreferrer"
         title="Admin Launchpad"
-        className="shell-nav-item shell-tactile-subtle border border-sky-500/30 bg-sky-500/10 text-sky-700 hover:bg-sky-500/20 dark:text-sky-300"
+        className="shell-nav-item shell-tactile-subtle"
       >
         <span className="shell-nav-icon">
           <ShellIcon name="LayoutGrid" size={18} strokeWidth={1.75} />

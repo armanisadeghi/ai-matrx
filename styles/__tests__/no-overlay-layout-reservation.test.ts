@@ -19,32 +19,37 @@ const SHELL_CSS = stripComments(
 );
 const BANNER_TSX = stripComments(
   readFileSync(
-    join(
-      __dirname,
-      "..",
-      "..",
-      "features/scheduling/components/alarm/SystemScheduleAlarmBanner.tsx",
-    ),
+    join(__dirname, "..", "..", "features/admin/attention/AdminAttentionDock.tsx"),
     "utf8",
   ),
 );
 
 describe("global fixed alerts preserve reachable page actions", () => {
   it("reserves responsive runway on the shared shell scroll owner", () => {
-    expect(SHELL_CSS).toContain(":root[data-schedule-alarm=\"compact\"]");
-    expect(SHELL_CSS).toContain(":root[data-schedule-alarm=\"expanded\"]");
+    expect(SHELL_CSS).toContain(":root[data-admin-attention=\"compact\"]");
+    expect(SHELL_CSS).toContain(":root[data-admin-attention=\"expanded\"]");
     expect(SHELL_CSS).toContain("padding-bottom: var(--shell-fixed-alert-clearance)");
     expect(SHELL_CSS).toContain("36dvh");
     expect(SHELL_CSS).toContain("@media (min-width: 640px)");
   });
 
+  it("uses one alarm runway on mobile natural pages and none on the admin outer shell", () => {
+    expect(SHELL_CSS).toContain(
+      ':root[data-admin-attention] body:not(:has(.shell-show-dock)) .shell-main',
+    );
+    expect(SHELL_CSS).toContain("overflow: clip");
+    expect(SHELL_CSS).toContain(
+      ':root[data-admin-attention] .shell-root[data-pathname^="/administration"] .shell-main::after',
+    );
+  });
+
   it("the alarm publishes semantic state, not a measured height", () => {
-    expect(BANNER_TSX).toContain("root.dataset.scheduleAlarm");
+    expect(BANNER_TSX).toContain("root.dataset.adminAttention");
     expect(BANNER_TSX).not.toContain("ResizeObserver");
     expect(BANNER_TSX).not.toContain("getBoundingClientRect");
   });
 
-  it("the alarm and shared toasts have separate bottom slots", () => {
+  it("the dock and shared toasts have separate bottom slots", () => {
     expect(BANNER_TSX).toContain("useDraggableFloat");
     expect(BANNER_TSX).toContain("SNOOZE_CHOICES");
     expect(BANNER_TSX).toContain("DEFAULT_SNOOZE");

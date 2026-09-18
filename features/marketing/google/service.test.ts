@@ -1,12 +1,17 @@
 import {
   connectionResource,
+  buildGoogleReconnectRequest,
+  cumulativeGoogleReconnectScopes,
   filterGoogleConnectionInventoryForUser,
   isGoogleConnectionReachableByUser,
   isStaleGoogleConnectionSelection,
   type GoogleConnectionPurpose,
 } from "@/features/marketing/google/service";
 import { BackendApiError } from "@/lib/api/errors";
-import { GOOGLE_CONNECTION_SCOPES } from "@/features/marketing/google/types";
+import {
+  GOOGLE_CONNECTION_SCOPES,
+  GOOGLE_CONNECTION_RESOURCE_TYPES,
+} from "@/features/marketing/google/types";
 import {
   GOOGLE_ADS_REPORTING_SCOPES,
   GOOGLE_ANALYTICS_SCOPES,
@@ -31,6 +36,95 @@ const baseResource = {
 };
 
 describe("Google OAuth connection resources", () => {
+  it("reconnects an existing Analytics and YouTube grant without widening it", () => {
+    const existing = [
+      GOOGLE_SCOPE.openid,
+      GOOGLE_SCOPE.userinfoEmail,
+      GOOGLE_SCOPE.userinfoProfile,
+      GOOGLE_SCOPE.analyticsReadonly,
+      GOOGLE_SCOPE.youtubeReadonly,
+    ];
+
+    expect(cumulativeGoogleReconnectScopes(existing, [])).toEqual(existing);
+    expect(
+      cumulativeGoogleReconnectScopes(existing, [GOOGLE_SCOPE.youtubeReadonly]),
+    ).toEqual(existing);
+    expect(cumulativeGoogleReconnectScopes(existing, [])).not.toContain(
+      GOOGLE_SCOPE.webmastersReadonly,
+    );
+  });
+
+  it("targets the original connection and organization for a row reconnect", () => {
+    const connection = {
+      id: "connection-1",
+      owner_type: "organization" as const,
+      owner_user_id: null,
+      organization_id: "original-org",
+      provider: "google" as const,
+      provider_subject: "subject-1",
+      account_email: "owner@example.com",
+      account_name: null,
+      scopes: [GOOGLE_SCOPE.analyticsReadonly, GOOGLE_SCOPE.youtubeReadonly],
+      status: "connected" as const,
+      last_verified_at: null,
+      last_error: null,
+      created_at: "2026-09-01T00:00:00Z",
+      updated_at: "2026-09-01T00:00:00Z",
+      metadata: {},
+      credential_present: true,
+      credential_stable: true,
+      capability_health: null,
+      health: "connected" as const,
+    };
+
+    expect(buildGoogleReconnectRequest(connection)).toEqual({
+      scopes: connection.scopes,
+      loginHint: "owner@example.com",
+      owner: { type: "organization", organizationId: "original-org" },
+      options: { targetConnectionId: "connection-1" },
+    });
+  });
+
+  it("adds one capability scope set while preserving the exact target", () => {
+    const connection = {
+      id: "connection-contacts",
+      owner_type: "user" as const,
+      owner_user_id: "user-1",
+      organization_id: null,
+      provider: "google" as const,
+      provider_subject: "subject-contacts",
+      account_email: "contacts@example.com",
+      account_name: null,
+      scopes: [GOOGLE_SCOPE.youtubeReadonly],
+      status: "connected" as const,
+      last_verified_at: null,
+      last_error: null,
+      created_at: "2026-09-15T00:00:00Z",
+      updated_at: "2026-09-15T00:00:00Z",
+      metadata: {},
+      credential_present: true,
+      credential_stable: true,
+      capability_health: null,
+      health: "connected" as const,
+    };
+
+    expect(
+      buildGoogleReconnectRequest(
+        connection,
+        [GOOGLE_SCOPE.contactsReadonly],
+        "contacts",
+      ),
+    ).toEqual({
+      scopes: [GOOGLE_SCOPE.youtubeReadonly, GOOGLE_SCOPE.contactsReadonly],
+      loginHint: "contacts@example.com",
+      owner: { type: "user" },
+      options: {
+        targetConnectionId: "connection-contacts",
+        capabilityKey: "contacts",
+      },
+    });
+  });
+
   it("removes admin-visible foreign connections and their resources from picker inventory", () => {
     const connection = {
       id: "owned-connection",
@@ -50,6 +144,7 @@ describe("Google OAuth connection resources", () => {
       metadata: {},
       credential_present: true,
       credential_stable: true,
+      capability_health: null,
       health: "connected" as const,
     };
     const foreign = {
@@ -108,6 +203,7 @@ describe("Google OAuth connection resources", () => {
       metadata: {},
       credential_present: true,
       credential_stable: true,
+      capability_health: null,
       health: "connected" as const,
     };
 
@@ -173,6 +269,23 @@ describe("Google OAuth connection resources", () => {
       metadata: { uploads_playlist_id: "UU-channel-1" },
     });
   });
+
+  // The list is DERIVED, not hand-typed: a `google_presentation` row — a type
+  // the server has shipped, registers, and had already made a live `slides.read`
+  // call against — used to throw HERE, and this reader maps EVERY resource row,
+  // so one connected deck emptied every Google surface in the app (V13-3).
+  it.each(GOOGLE_CONNECTION_RESOURCE_TYPES)(
+    "accepts a %s row the server can register",
+    (resourceType) => {
+      expect(
+        connectionResource({
+          ...baseResource,
+          resource_type: resourceType,
+          resource_ref: "resource-1",
+        }),
+      ).toMatchObject({ resource_type: resourceType });
+    },
+  );
 
   it.each(["google_document", "google_spreadsheet"] as const)(
     "accepts Picker-selected %s resources",

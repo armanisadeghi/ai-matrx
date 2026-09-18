@@ -38,6 +38,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
@@ -140,7 +141,7 @@ async function main(): Promise<void> {
     console.error(
       `${C.r}check:backend-door-callers cannot run: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SECRET_KEY were not found in the environment or in .env.local${C.x}`,
     );
-    process.exit(1);
+    exitAfterDrain(1);
   }
 
   const failures: string[] = [];
@@ -203,12 +204,12 @@ async function main(): Promise<void> {
         `(see migrations/dd169_batch3_trusted_backend_callers.sql). A bare session check also refuses ` +
         `the service key and every direct connection.`,
     );
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log(`\n${C.g}${C.b}check:backend-door-callers passed${C.x} (${REGISTRY.length} server-called doors)`);
 }
 
 main().catch((e) => {
   console.error(`${C.r}check:backend-door-callers crashed:${C.x}`, e);
-  process.exit(1);
+  exitAfterDrain(1);
 });

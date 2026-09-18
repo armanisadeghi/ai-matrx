@@ -23,8 +23,9 @@
  */
 
 import { useCallback, useState } from "react";
-import { toast } from "@/lib/toast";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import { reportCanvasOpenDrop } from "@/features/canvas/openRequest";
+import { useCanvasOpenGuard } from "./useCanvasOpenGuard";
 import {
   openArtifactInCanvas,
   type CanvasContentType,
@@ -45,13 +46,19 @@ export interface OpenCanvasItemInput {
 
 export function useOpenCanvasItem() {
   const dispatch = useAppDispatch();
+  const { ensureCanvasReachable } = useCanvasOpenGuard();
   const [busy, setBusy] = useState(false);
 
   const openItem = useCallback(
     async (input: OpenCanvasItemInput): Promise<boolean> => {
+      if (!ensureCanvasReachable(input.title)) return false;
+
       if (!isMaterializedArtifactId(input.artifactId)) {
-        toast.error("That item has no saved artifact to open");
-        return false;
+        return reportCanvasOpenDrop({
+          reason: "not-persisted",
+          requested: input.title,
+          detail: "that item has no saved artifact to open",
+        });
       }
 
       setBusy(true);
@@ -65,8 +72,11 @@ export function useOpenCanvasItem() {
         if (!type) {
           const row = await canvasArtifactService.getById(input.artifactId);
           if (!row) {
-            toast.error("Couldn't load that artifact");
-            return false;
+            return reportCanvasOpenDrop({
+              reason: "no-content",
+              requested: input.title,
+              detail: `artifact ${input.artifactId} could not be loaded`,
+            });
           }
           type = row.type;
           title = title ?? row.title;
@@ -74,8 +84,11 @@ export function useOpenCanvasItem() {
 
         const artifactDef = getArtifactDef(type);
         if (!artifactDef) {
-          toast.error(`That artifact type cannot be opened: ${type}`);
-          return false;
+          return reportCanvasOpenDrop({
+            reason: "unknown-type",
+            requested: title,
+            detail: `type ${type}`,
+          });
         }
 
         dispatch(
@@ -94,7 +107,7 @@ export function useOpenCanvasItem() {
         setBusy(false);
       }
     },
-    [dispatch],
+    [dispatch, ensureCanvasReachable],
   );
 
   return { openItem, busy };

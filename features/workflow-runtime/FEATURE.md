@@ -176,6 +176,48 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-09-18 — **Workflow documents use the platform document-action system.** Static
+  readouts render through `RichDocument`; persisted kind and emission renderers keep their one
+  canonical kind component and mount `RichDocumentActionProvider` plus its shared mini action
+  surface underneath. `workflowDocumentText` only exposes a complete document: it unwraps an
+  agent answer or a single document field, but refuses prompts, usage envelopes, mixed typed
+  content, and partial structured results. This gives workflow Markdown the same copy, Notes,
+  Tasks, export, and overflow actions as other document surfaces without creating a second
+  renderer for any registered `__kind`.
+
+- 2026-09-18 — **The agent's words are visible while it writes.** The live
+  `ai.agent.start` lane carried ordinary prose, but its declared settled
+  `agent_result` envelope made `InvocationBody` reserve an arriving kind slot
+  over the live renderer. On run `75be076b`, the server reported writing and
+  the second agent readout stayed blank until settlement. The shared readout
+  now treats `agent_result` as the eventual result envelope, allowing live
+  prose to render while bare JSON still reserves its arriving shape, including
+  a tracked tail cut mid-document. Actual declared structured outputs retain
+  the same guard. Guard: `__tests__/agent-result-live-readout.test.tsx`.
+
+- 2026-09-17 — `RunSurfaceBuilder` reads the EXPLICIT active organization instead of the legacy `selectEffectiveOrganizationId` (`organization_id ?? personal_organization_id`); creating a run surface with none selected already refuses by name and now writes nothing anywhere else either.
+
+- 2026-09-17 — **A STEP LABEL IS DECLARED, NEVER SCRAPED — and a finished run
+  can be signed** (Masterwork cold walk 5, findings 5 and 5b). *The labels:* the
+  fan-out lanes in "THE PLAN" preferred a node's raw stream `textTail` over the
+  `progress.message` the engine declares, so a structured-output step printed
+  its own serialization as five step labels in front of a first-time Expert —
+  reproduced live on a brand-new run on 2026-09-17 as
+  `#1 dence": "", "fix_hint": "" } ], "content_id": "v1"…`. `laneDetail()`
+  ([`components/run/laneDetail.ts`](./components/run/laneDetail.ts)) puts the
+  declared line first and REFUSES a payload fragment outright rather than
+  truncating it into something that looks like prose; a lane with nothing honest
+  to say says its duration, or nothing. Guard:
+  `__tests__/a-step-label-is-never-a-payload.test.ts`, red against the old
+  expression on the four tails captured live. *The sign-off:* the ownership
+  control shipped on the Encore shelf's run rows and the Try box but not on
+  `/workflows/runs/<id>` — the page a finished Masterwork actually opens onto —
+  so there was nowhere to say "that one was mine". `RunStage` now renders the
+  ONE `ExpertSignOff` beneath the deliverables of a `completed` run; same
+  component, same `platform.output_feedback` row, never a second copy. Verified
+  live on brand-new run `a1105691`.
+
+
 - 2026-09-11 — **A refused run form shows the server's real reason.** A
   workflow that fails the server's compile gate answers `/run-form` with 400,
   and every surface printed a transport sentence — "Bad request. Please check
@@ -667,3 +709,18 @@ that is the exit-test surface.
   for it), and aidream's run-start routes accept callApi's body-injected `organization_id`
   (AcceptsInjectedScope + resolve_effective_organization_id — org-less runs made every agent
   step refuse).
+
+- 2026-09-17 — **An unread run is never narrated as a pending one** (cold walk 7, finding 5).
+  `WorkflowRunState.status` is non-nullable and every attached run is born `"pending"`, so every
+  run permalink opened by announcing "GETTING READY · 0 of N steps" about whatever it was
+  pointed at — including a run that had finished twenty minutes earlier — for as long as the
+  attach read took (measured: 1.2s warm, seconds to tens of seconds cold or across a server
+  restart). A walker read that on a finished Masterwork's permalink, concluded a click meant to
+  READ a paid result had started a second paid run, and pressed "Cancel now" — which was
+  ENABLED, because `"pending"` is not terminal. The store now records `statusKnown` (written
+  only by `stampStatus` and `seedRunRow`, read through `selectRunStatusKnown`); until it is
+  true the hero says what the PAGE is doing ("Opening this run"), prints the definition's step
+  count instead of `0 of N`, and the control bar holds `null` — which its own verb table
+  already means by "we have not been told", so every verb is disabled with that reason. W39
+  closed the half where the attach read FAILED; this is the half where it has not answered yet,
+  which is every load.

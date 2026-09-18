@@ -10,10 +10,12 @@
  *
  * 🚨 THE CLICK LAW (stated in full in `grid-selection.ts`): a single click may
  * SELECT, TOGGLE a two-state value, or OPEN a chooser — never drop the user
- * into a free-text buffer. So a checkbox, a rating and a choice column are
- * operable with one click, while text, numbers, dates and JSON still require a
- * deliberate double-click, Enter, or just typing. Select-and-copy must never
- * become an accidental edit.
+ * into a free-text buffer. So a checkbox and a rating are operable with one
+ * click; a choice column selects on the first click and opens its chooser on
+ * the second (or on Enter), so the cell can be copied, cut and navigated like
+ * any other; text, numbers, dates and JSON still require a deliberate
+ * double-click, Enter, or just typing. Select-and-copy must never become an
+ * accidental edit.
  *
  * Writes go through `udt_upsert_cell` (surgical jsonb_set — cannot touch
  * another field). A declared format owns the coercion; without one the storage
@@ -52,6 +54,7 @@ import { ChoiceInput } from "./ChoiceInput";
 import { RatingInput } from "./RatingInput";
 import { isDirectClickEditor, type GridMove } from "../grid-selection";
 import { upsertCell } from "../service";
+import { validateCellValue, type ValidationRules } from "../validation";
 import { isServiceFailure, type FieldDataType } from "../types";
 
 type Props = {
@@ -66,6 +69,21 @@ type Props = {
    * coerced before it is stored. Omit for a plain storage-type editor.
    */
   format?: FieldFormatConfig | null;
+  /**
+   * The column's validation rules, when it declares any. A commit that violates
+   * one is REFUSED here, in the browser, whatever the dataset's validation_mode
+   * says — strict mode is a database backstop, not the user's error message.
+   * The cell stays in edit mode with the value the user typed, exactly as it
+   * does when the server refuses a write, because throwing away what they typed
+   * is the one thing worse than not saving it.
+   */
+  validationRules?: ValidationRules | null;
+  /**
+   * Every OTHER row's value for this column, when the grid holds them. Only a
+   * `unique` rule reads this; omit it and `unique` is skipped rather than
+   * guessed.
+   */
+  existingValues?: unknown[];
   /**
    * The whole row. Only DEPENDENT choice columns read it — one whose options
    * narrow to the group another column's cell names. Everything else ignores it.
@@ -107,6 +125,8 @@ export function EditableCell({
   fieldDisplayName,
   dataType,
   format,
+  validationRules,
+  existingValues,
   row,
   value,
   display,
@@ -170,10 +190,34 @@ export function EditableCell({
       : normalizeCellValue(source, dataType);
 
     // Skip the write if nothing actually changed. Still counts as finishing,
-    // so Enter still moves down on a cell the user only looked at.
+    // so Enter still moves down on a cell the user only looked at. Checked
+    // BEFORE the rules, deliberately: re-confirming a value that was already
+    // stored — one that predates the rule, say — must never be turned into a
+    // refusal the user cannot escape.
     if (valuesEqual(normalized, value)) {
       onEndEdit?.(opts?.move);
       return;
+    }
+
+    // The column's own rules, refused in the browser with the reason. Same
+    // treatment as a server refusal: a toast that says what is wrong, and the
+    // editor stays open holding what they typed.
+    if (validationRules) {
+      const verdict = validateCellValue({
+        rules: validationRules,
+        dataType,
+        format,
+        value: normalized,
+        existingValues,
+      });
+      if (!verdict.ok) {
+        toast({
+          title: `${fieldDisplayName}: ${verdict.reason}`,
+          description: "The cell was not saved. Correct it, or press Escape to discard.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setSaving(true);
@@ -202,7 +246,9 @@ export function EditableCell({
     onSaved?.(normalized, typeof storedAt === "string" ? storedAt : undefined);
   }, [
     dataType,
+    existingValues,
     format,
+    validationRules,
     draft,
     fieldDisplayName,
     fieldName,
@@ -286,17 +332,26 @@ export function EditableCell({
             onDone={(next) => commitDirect(next)}
           />
         ) : directClickable ? (
-          // A choice column: one click opens the option list. Opening a menu is
-          // not a mutation, so this is safe under THE CLICK LAW.
+          // A choice column: the FIRST click selects the cell, a click on the
+          // already-selected cell opens the option list (the Airtable gesture).
+          // Opening a menu is not a mutation, so this is safe under THE CLICK
+          // LAW — but opening it on the very first click moved focus into the
+          // chooser's search box, and every grid shortcut (Cmd-C included)
+          // then went there instead of to the cell. Enter / Space on the
+          // selected cell open it too, so the keyboard path is one keystroke.
           <button
             type="button"
             className="w-full min-w-0 text-left"
             onClick={(e) => {
               e.stopPropagation();
-              onSelect?.();
-              onBeginEdit?.();
+              if (selected) onBeginEdit?.();
+              else onSelect?.();
             }}
-            title={`Choose ${fieldDisplayName}`}
+            title={
+              selected
+                ? `Choose ${fieldDisplayName}`
+                : `Click again to choose ${fieldDisplayName}`
+            }
           >
             {display}
           </button>

@@ -75,6 +75,10 @@ export function ShareButton({
       size={size}
       onClick={() => setIsModalOpen(true)}
       className={cn("gap-2", className)}
+      // An icon-only share control had NO accessible name: a tooltip describes
+      // a button, it never names one, so a screen reader announced "button".
+      // The label the tooltip shows is the label the button carries.
+      aria-label={size === "icon" ? label : undefined}
     >
       <Icon className="w-4 h-4" />
       {size !== "icon" && <span>{label}</span>}

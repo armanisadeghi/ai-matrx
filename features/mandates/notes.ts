@@ -106,13 +106,15 @@ function toNote(row: MandateNoteRow, authorName: string | null): MandateNote {
 }
 
 /**
- * Author display names for a set of user ids, best-effort.
+ * Display names for a set of user ids, best-effort. Shared by notes (authors)
+ * and the impact surfaces (owners of personal pins, I12) — one lookup, never
+ * two.
  *
  * `users.profiles` is 1:1 with `auth.users` and RLS may hide other people's
- * rows — an unreadable author is normal, not an error, and the UI falls back to
+ * rows — an unreadable person is normal, not an error, and the UI falls back to
  * the canonical user door (`AdminUserRef`).
  */
-async function fetchAuthorNames(
+export async function fetchUserDisplayNames(
   userIds: string[],
 ): Promise<Map<string, string>> {
   const names = new Map<string, string>();
@@ -149,7 +151,7 @@ export async function fetchMandateNotes(
         .range(from, to),
     { label: "agent.mandate_note" },
   );
-  const names = await fetchAuthorNames(
+  const names = await fetchUserDisplayNames(
     rows.map((row) => row.created_by).filter((id): id is string => !!id),
   );
   return rows.map((row) =>
@@ -180,7 +182,7 @@ export async function fetchMandateNotesFor(
         .range(from, to),
     { label: "agent.mandate_note (batch)" },
   );
-  const names = await fetchAuthorNames(
+  const names = await fetchUserDisplayNames(
     rows.map((row) => row.created_by).filter((id): id is string => !!id),
   );
   for (const row of rows) {

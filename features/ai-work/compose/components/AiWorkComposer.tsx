@@ -8,7 +8,9 @@
  *
  * THE INVENTORY LAW — this surface builds no execution, no picker, and no
  * store of its own. It composes, in order:
- *   1. Destination   → `destinationAvailability` over the live capability read
+ *   1. Destination   → `destinationAvailability` over the live capability
+ *                      reads (the bridge verdict for the hosted sandbox, the
+ *                      Matrx Local engine for the user's own Mac)
  *   2. Request       → the run's user input
  *   3. Expert system → `AgentListDropdown` (the canonical agent picker)
  *   4. Skills        → `RunSkillPicker` (the canonical per-run skill picker)
@@ -29,7 +31,7 @@
  * reading), and the conversation stays reachable at `/chat/<id>`.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -56,21 +58,25 @@ import { selectBuilderAdvancedSettings } from "@/features/agents/redux/execution
 import { setBuilderAdvancedSettings } from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
 import { associationsService } from "@/features/scopes/service/associationsService";
+import { readTypedRefusal } from "@/features/access-gate/service/serverRefusal";
+import { decideHomeAttachRetry } from "../homeAttach";
+import { createClient } from "@/utils/supabase/client";
 import { createAssignment } from "@/features/war-room/service/associations";
 import { roomRef } from "@/features/war-room/types";
 import { useUser } from "@/lib/hooks/useUser";
 import {
-  INITIAL_CAPABILITY,
-  readManagedCapability,
-  type ManagedCapability,
-} from "@/features/ai-work/lib/managedClaudeCapability";
+  INITIAL_BRIDGE_CAPABILITY,
+  readBridgeCapability,
+  type CodingBridgeCapability,
+} from "@/features/ai-work/lib/codingBridgeCapability";
+import { startHostedRun } from "@/features/ai-work/lib/hostedSandboxRun";
 import {
   INITIAL_LOCAL_CAPABILITY,
   readLocalRuntimeCapability,
   startLocalRuntimeSession,
   type LocalRuntimeCapability,
 } from "@/features/ai-work/lib/matrxLocalRuntime";
-import type { WorkDestinationId } from "../destinations";
+import { destinationAvailability, type WorkDestinationId } from "../destinations";
 import {
   createSavedRequest,
   readSavedRequest,
@@ -79,6 +85,7 @@ import {
   type SavedRequestHome,
 } from "../savedRequests";
 import { ComposerSection } from "./ComposerSection";
+import { HostedRunControls } from "./HostedRunControls";
 import { DestinationStep } from "./DestinationStep";
 import { HomeStep } from "./HomeStep";
 
@@ -87,17 +94,29 @@ const HOME_ATTACH_ATTEMPTS = 4;
 const HOME_ATTACH_DELAY_MS = 600;
 
 /**
- * The ONE retryable failure: the edge was written before the server committed
- * the conversation row, so the RPC's `iam.has_access` check saw nothing to
- * authorize. Everything else is permanent and must surface immediately.
+ * Is the run's conversation row readable by this caller YET?
+ *
+ * THE TRANSIENT CAUSE, OBSERVED. `assoc_add` answers every access refusal with
+ * the same code and the same sentence whether the row is a moment away or
+ * belongs to somebody else (measured on production — see `../homeAttach`), so
+ * the retry decision cannot come from the error. It comes from here.
+ *
+ * A read that itself fails answers `false`: not knowing is not evidence that
+ * the refusal was final, and the attempt budget bounds the loop anyway.
  */
-function isConversationNotReadyYet(message: string): boolean {
-  const lowered = message.toLowerCase();
-  return (
-    lowered.includes("access") ||
-    lowered.includes("not authorized") ||
-    lowered.includes("not found")
-  );
+async function conversationIsReadable(conversationId: string): Promise<boolean> {
+  try {
+    const supabase = createClient();
+    const { data } = await supabase
+      .schema("chat")
+      .from("conversation")
+      .select("id")
+      .eq("id", conversationId)
+      .maybeSingle();
+    return Boolean(data);
+  } catch {
+    return false;
+  }
 }
 
 export interface AiWorkComposerProps {
@@ -170,8 +189,8 @@ function ComposerBody({
 
   const organizationId = useAppSelector(selectOrganizationId);
   const [destination, setDestination] = useState<WorkDestinationId>("ai-matrx");
-  const [capability, setCapability] =
-    useState<ManagedCapability>(INITIAL_CAPABILITY);
+  const [bridgeCapability, setBridgeCapability] =
+    useState<CodingBridgeCapability>(INITIAL_BRIDGE_CAPABILITY);
   const [localCapability, setLocalCapability] = useState<LocalRuntimeCapability>(
     INITIAL_LOCAL_CAPABILITY,
   );
@@ -184,18 +203,24 @@ function ComposerBody({
   const [saved, setSaved] = useState<SavedRequest | null>(null);
   const [savedLabel, setSavedLabel] = useState("");
   const [saving, setSaving] = useState(false);
+  // ── The hosted (Matrx Sandbox) run in flight, if any. `hostedRuntimeId` is
+  //    whatever the run's own stream reported — Cancel has no other source.
+  const [hostedRunning, setHostedRunning] = useState(false);
+  const [hostedRuntimeId, setHostedRuntimeId] = useState<string | null>(null);
+  const hostedConversationId = useRef<string | null>(null);
 
   const skillSettings = useAppSelector(
     selectBuilderAdvancedSettings(conversationId ?? ""),
   );
   const skillIds = skillSettings?.addedSkills ?? [];
 
-  // ── Live destination capability. One reader, shared with /work/connections.
-  //    Keyed on the active organization so choosing one re-runs the read.
+  // ── Live destination capability. ONE reader per runtime, both shared with
+  //    /work/connections. Keyed on the active organization because the bridge
+  //    verdict is per user AND per organization.
   useEffect(() => {
     let cancelled = false;
-    void readManagedCapability().then((next) => {
-      if (!cancelled) setCapability(next);
+    void readBridgeCapability("claude_code", "matrx_sandbox").then((next) => {
+      if (!cancelled) setBridgeCapability(next);
     });
     // The LOCAL runtime answer comes from the user's own Matrx Local app over
     // the per-user bridge channel — a timeout is reported as unreachable.
@@ -248,13 +273,20 @@ function ComposerBody({
     };
   }, [savedRequestId, conversationId, agentId, dispatch, onAgentChange]);
 
+  const hostedAvailability = destinationAvailability(
+    "claude-code-hosted",
+    bridgeCapability,
+  );
+
   const canRun =
     requestText.trim().length > 0 &&
     (destination === "ai-matrx"
       ? Boolean(conversationId)
       : destination === "claude-code"
         ? localCapability.available && Boolean(localFolder)
-        : false);
+        : destination === "claude-code-hosted"
+          ? hostedAvailability.selectable && !hostedRunning
+          : false);
 
   /**
    * Applies the Home picks as REAL canonical edges once the conversation row
@@ -267,6 +299,8 @@ function ComposerBody({
   const attachHomes = async (runConversationId: string) => {
     for (const home of homes) {
       let attached = false;
+      /** The server's own refusal, in its own words. Never re-worded here. */
+      let refusal: ReturnType<typeof readTypedRefusal> = null;
       let lastError = "";
       for (let attempt = 0; attempt < HOME_ATTACH_ATTEMPTS; attempt += 1) {
         try {
@@ -289,12 +323,20 @@ function ComposerBody({
             attached = true;
             break;
           }
+          refusal = readTypedRefusal(result.error);
           lastError = result.error.message;
-          if (!isConversationNotReadyYet(lastError)) break;
         } catch (error) {
+          refusal = readTypedRefusal(error);
           lastError = error instanceof Error ? error.message : String(error);
-          if (!isConversationNotReadyYet(lastError)) break;
         }
+        // RETRY ONLY THE RACE, and only while it is still a race. The refusal
+        // is identical for "the row is a moment away" and "that is not yours",
+        // so the cause is observed instead of guessed at.
+        const decision = decideHomeAttachRetry(
+          refusal,
+          await conversationIsReadable(runConversationId),
+        );
+        if (decision === "stop") break;
         await new Promise((resolve) =>
           setTimeout(resolve, HOME_ATTACH_DELAY_MS),
         );
@@ -302,9 +344,14 @@ function ComposerBody({
       if (!attached) {
         console.error(
           `[ai-work/new] could not file the run under ${home.token} ${home.id}: ${lastError}`,
+          refusal?.code ?? "",
         );
+        // The server's sentence, verbatim, plus the code that makes it
+        // reportable — and a next step that does not promise a retry.
         toast.error(
-          `The run started, but it could not be filed under "${home.label}". Open the conversation and add it there.`,
+          refusal
+            ? `The run started, but it could not be filed under "${home.label}": ${refusal.message}${refusal.code ? ` (${refusal.code})` : ""}. Open the conversation and add it there.`
+            : `The run started, but it could not be filed under "${home.label}". Open the conversation and add it there.`,
         );
       }
     }
@@ -341,9 +388,76 @@ function ComposerBody({
     }
   };
 
+  /**
+   * Run in a Matrx Sandbox we start for the user.
+   *
+   * The conversation id is minted here so the floating live-run window and the
+   * "Open the conversation" door both exist from the first instant — the user
+   * never gets a spinner and never gets a link that resolves to nothing. The
+   * NDJSON stream is ADOPTED (`startHostedRun` → `adoptForeignStream`), so it
+   * renders through the ONE canonical pipeline; nothing here parses content.
+   */
+  const handleRunHosted = async () => {
+    if (!canRun) return;
+    const runConversationId = crypto.randomUUID();
+    hostedConversationId.current = runConversationId;
+    setLaunching(true);
+    setHostedRunning(true);
+    setHostedRuntimeId(null);
+    const handle = openLiveRun({
+      conversationId: runConversationId,
+      label: savedLabel.trim() || "Your request",
+      pending: true,
+      instanceId: `ai-work-hosted:${runConversationId}`,
+    });
+    // The door exists the moment the run is launched: a hosted run that the
+    // user cannot open while it runs is the dead end LiveRunWindow exists for.
+    setLaunched(runConversationId);
+    try {
+      const result = await dispatch(
+        startHostedRun(
+          {
+            conversationId: runConversationId,
+            prompt: requestText.trim(),
+            agentId,
+          },
+          {
+            onAdopted: (ids) =>
+              handle.update({ requestId: ids.requestId, pending: false }),
+            onRuntimeId: setHostedRuntimeId,
+          },
+        ),
+      );
+      if (result.error) {
+        handle.close();
+        setLaunched(null);
+        // The server's own sentence, verbatim. The composer stays usable.
+        toast.error(`The hosted session could not start — ${result.error}`);
+        return;
+      }
+      await attachHomes(runConversationId);
+    } catch (error) {
+      handle.close();
+      setLaunched(null);
+      console.error("[ai-work/new] hosted launch failed", error);
+      toast.error(
+        error instanceof Error
+          ? `The hosted session could not start — ${error.message}`
+          : "The hosted session could not start.",
+      );
+    } finally {
+      setHostedRunning(false);
+      setLaunching(false);
+    }
+  };
+
   const handleRun = async () => {
     if (destination === "claude-code") {
       await handleRunOnMyMac();
+      return;
+    }
+    if (destination === "claude-code-hosted") {
+      await handleRunHosted();
       return;
     }
     if (!canRun || !conversationId) return;
@@ -471,7 +585,9 @@ function ComposerBody({
             ? "AI Matrx"
             : destination === "claude-code"
               ? "Claude Code on my Mac"
-              : undefined
+              : destination === "claude-code-hosted"
+                ? "Claude Code (hosted)"
+                : undefined
         }
         complete
         open={openStep === 1}
@@ -479,7 +595,7 @@ function ComposerBody({
       >
         <DestinationStep
           value={destination}
-          capability={capability}
+          bridgeCapability={bridgeCapability}
           localCapability={localCapability}
           onChange={setDestination}
         />
@@ -692,7 +808,9 @@ function ComposerBody({
           <dd className="text-foreground">
             {destination === "claude-code"
               ? `Claude Code on my Mac — ${localFolder || "no folder chosen"}`
-              : "AI Matrx"}
+              : destination === "claude-code-hosted"
+                ? "Claude Code in a Matrx Sandbox we start for you"
+                : "AI Matrx"}
           </dd>
           <dt className="text-muted-foreground">Expert system</dt>
           <dd className="text-foreground">
@@ -732,14 +850,20 @@ function ComposerBody({
             Write your request first.
           </span>
         )}
+        <HostedRunControls
+          running={hostedRunning}
+          runtimeId={hostedRuntimeId}
+          onCancelled={() => setHostedRunning(false)}
+        />
         {launched && (
           <Link
-            // A local Claude Code run mirrors into an AGENTLESS provider
-            // conversation; /chat/[id] redirects those to /chat/new, so the
-            // user loses the run they just started. Route mirrors to the
-            // provider detail view, agent-backed runs to chat.
+            // A local OR hosted Claude Code run mirrors into an AGENTLESS
+            // provider conversation; /chat/[id] redirects those to /chat/new,
+            // so the user loses the run they just started. Route mirrors to
+            // the provider detail view, agent-backed runs to chat.
             href={
-              destination === "claude-code"
+              destination === "claude-code" ||
+              destination === "claude-code-hosted"
                 ? `/work/conversations/${launched}`
                 : `/chat/${launched}`
             }

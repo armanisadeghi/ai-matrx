@@ -3,9 +3,11 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
+  selectAuthReady,
   selectIsAuthenticated,
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectOrganizationIds } from "@/features/scopes/redux/selectors/tree";
 import {
   connectGoogle,
@@ -19,25 +21,49 @@ import {
   getTagManagerInventory,
   getYouTubeAnalyticsPreview,
   listGoogleConnectionInventory,
+  listGoogleCapabilities,
 } from "@/features/marketing/google/service";
-import type { GoogleConnectionPurpose } from "@/features/marketing/google/service";
+import type {
+  GoogleCapabilityKey,
+  GoogleConnectionPurpose,
+} from "@/features/marketing/google/service";
 import type { GoogleConnectionOwner } from "@/features/marketing/google/types";
 
 export const googleConnectionKeys = {
   inventory: ["marketing", "google-connections"] as const,
+  capabilities: ["marketing", "google-capabilities"] as const,
 };
 
+export function useGoogleCapabilities() {
+  const authReady = useAppSelector(selectAuthReady);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const userId = useAppSelector(selectUserId);
+  const organizationId = useAppSelector(selectOrganizationId);
+  return useQuery({
+    queryKey: [...googleConnectionKeys.capabilities, userId, organizationId],
+    queryFn: ({ signal }) => listGoogleCapabilities(signal),
+    enabled:
+      authReady &&
+      isAuthenticated &&
+      Boolean(userId) &&
+      Boolean(organizationId),
+    staleTime: 30_000,
+  });
+}
+
 export function useGoogleConnectionInventory() {
+  const authReady = useAppSelector(selectAuthReady);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const userId = useAppSelector(selectUserId);
   const organizationIds = useAppSelector(selectOrganizationIds);
+  const organizationId = useAppSelector(selectOrganizationId);
   return useQuery({
-    queryKey: googleConnectionKeys.inventory,
+    queryKey: [...googleConnectionKeys.inventory, userId, organizationId],
     queryFn: ({ signal }) => listGoogleConnectionInventory(signal),
     // `users.integration_connections` is deliberately unavailable to `anon`.
     // Core routes can mount before the Redux auth slice hydrates, so do not
     // issue the inventory read until the caller has an authenticated identity.
-    enabled: isAuthenticated,
+    enabled: authReady && isAuthenticated && Boolean(userId),
     select: (inventory) =>
       filterGoogleConnectionInventoryForUser(
         inventory,
@@ -55,11 +81,20 @@ export function useConnectGoogle() {
       code,
       owner,
       connectionPurpose = "general",
+      options,
     }: {
       code: string;
       owner: GoogleConnectionOwner;
       connectionPurpose?: GoogleConnectionPurpose;
-    }) => connectGoogle(code, owner, connectionPurpose),
+      options?: {
+        targetConnectionId?: string;
+        capabilityKey?: GoogleCapabilityKey;
+        /** `google_products` only: every catalog key the person switched on. */
+        capabilityKeys?: readonly string[];
+        organizationContextId?: string;
+        expectedUserId?: string;
+      };
+    }) => connectGoogle(code, owner, connectionPurpose, options),
     onSuccess: () =>
       queryClient.invalidateQueries({
         queryKey: googleConnectionKeys.inventory,

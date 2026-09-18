@@ -249,7 +249,7 @@ describe("notes realtime middleware on @ai-matrx/realtime", () => {
         table: "workbench.notes",
         id: "note-1",
         updatedAt: "2026-09-07T00:00:01.000Z",
-        fingerprint: JSON.stringify(["Ideas", "hello world", "Draft", []]),
+        fingerprint: JSON.stringify(["Ideas", "hello world", "Draft", null, [], null]),
         updatedBy: "user-1",
       };
       expect(stub.ledger.classify(echo).origin).toBe("remote");
@@ -299,11 +299,81 @@ describe("notes realtime middleware on @ai-matrx/realtime", () => {
             "Ideas",
             "a colleague rewrote this",
             "Draft",
+            null,
             [],
+            null,
           ]),
           updatedBy: "user-2",
         }).origin,
       ).toBe("remote");
+    });
+
+    it("registers the revision a save produces, and never calls a HIGHER revision an echo (the phantom conflict)", () => {
+      const state = baseState();
+      (state.notes as unknown as { notes: Record<string, unknown> }).notes = {
+        "note-1": {
+          id: "note-1",
+          label: "The Best Chicken Alfredo",
+          content: "the recipe",
+          folder_name: "Draft",
+          tags: [],
+          version: 1,
+          updated_at: "2026-09-14T05:55:17.534Z",
+        },
+      };
+      const h = (opened = harness(state));
+      h.handle(fetchNotesList.fulfilled(undefined, "request-1", undefined));
+      const fingerprint = JSON.stringify(["The Best Chicken Alfredo", "the recipe", "Draft", null, [], null]);
+
+      // The save opens a ticket for the number it will produce (1 → 2)…
+      h.handle({ type: "notes/markNoteSaving", payload: "note-1" });
+      // …and the REST response settles it at 2.
+      (state.notes as unknown as { notes: Record<string, { version: number }> }).notes["note-1"].version = 2;
+      h.handle({
+        type: "notes/markNoteSaved",
+        payload: { id: "note-1", updatedAt: "2026-09-14T05:55:17.600Z", version: 2 },
+      });
+      expect(stub.ledger.heldRevision("workbench.notes", "note-1")).toBe(2);
+
+      // Our own echo, by number: suppressed.
+      expect(
+        stub.ledger.classify({ table: "workbench.notes", id: "note-1", updatedAt: "2026-09-14T05:55:17.600Z", fingerprint, updatedBy: "user-1", revision: 2 }).origin,
+      ).toBe("own-echo");
+
+      // The desktop sync's write-back 0.9s later: SAME actor, SAME content,
+      // version 3. This was swallowed as an echo before, and the browser kept
+      // version 2 into a conflict dialog. It must be delivered.
+      const verdict = stub.ledger.classify({ table: "workbench.notes", id: "note-1", updatedAt: "2026-09-14T05:55:18.435Z", fingerprint, updatedBy: "user-1", revision: 3 });
+      expect(verdict.origin).toBe("remote");
+      expect(verdict.reason).toBe("newer-revision");
+    });
+
+    it("hands the reducer the WHOLE row so every edited field can be compared to the base", () => {
+      const h = (opened = harness(baseState()));
+      h.handle(fetchNotesList.fulfilled(undefined, "request-1", undefined));
+      const binding = notesBinding(stub.spec());
+      const row = {
+        id: "note-1", organization_id: "org-1", version: 2, content: "the recipe", label: "L",
+        folder_name: "Draft", folder_id: "folder-1", tags: [], metadata: {}, visibility: "personal",
+        position: 0, project_id: null, task_id: null, created_at: "2026-09-14T05:55:17.534Z",
+        created_by: "user-1", updated_at: "2026-09-14T05:55:18.435Z", updated_by: "user-1",
+        deleted_at: null, content_hash: null, file_path: "/Notes/x.md", last_device_id: "dev-1",
+        sync_version: 1, search_tsv: "never stored on the client",
+      };
+      void binding.onChange({
+        payload: { eventType: "UPDATE", new: row, old: {} } as never,
+        row,
+        origin: { origin: "remote", reason: "newer-revision", localWritePending: false },
+      });
+      const upsert = h.dispatched.find(
+        (a) => (a as { type?: string }).type === "notes/upsertNoteFromServer",
+      ) as { payload: { note: Record<string, unknown>; fetchStatus: string } };
+      expect(upsert.payload.fetchStatus).toBe("full");
+      expect(upsert.payload.note.folder_id).toBe("folder-1");
+      expect(upsert.payload.note.visibility).toBe("personal");
+      expect(upsert.payload.note.file_path).toBe("/Notes/x.md");
+      expect(upsert.payload.note.version).toBe(2);
+      expect("search_tsv" in upsert.payload.note).toBe(false);
     });
 
     it("registers a save that never announced itself (legacy service path)", () => {
@@ -333,7 +403,7 @@ describe("notes realtime middleware on @ai-matrx/realtime", () => {
           table: "workbench.notes",
           id: "note-2",
           updatedAt: "2026-09-07T00:00:08.000Z",
-          fingerprint: JSON.stringify(["L", "c", null, []]),
+          fingerprint: JSON.stringify(["L", "c", null, null, [], null]),
         }).origin,
       ).toBe("stale");
     });

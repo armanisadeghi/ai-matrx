@@ -1,24 +1,39 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo, useLayoutEffect } from "react";
 import dynamic from "next/dynamic";
 import { Eye, Loader2 } from "lucide-react";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { useNotesRedux } from "../../hooks/useNotesRedux";
 import { useNoteAccess } from "../../hooks/useNoteAccess";
+import { setNoteLiveContent } from "../../utils/noteLiveContent";
 import { NoteEditorDock } from "./NoteEditorDock";
 import { useNoteDelete } from "../../hooks/useNoteDelete";
 import { useToastManager } from "@/hooks/useToastManager";
 import { toastErrorAlreadyCaptured } from "@/lib/toast";
-import { useAppSelector } from "@/lib/redux/hooks";
 import { EditableContextMenu } from "@/features/context-menu-v3/EditableContextMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { RichDocument } from "@/features/rich-document/RichDocument";
-import type { ContentSource } from "@/features/rich-document/types";
 import { noteIdentityContentSource } from "../../richDocumentSource";
 import { usePreparedNoteContentSource } from "../../usePreparedNoteContentSource";
 import type { Note } from "@/features/notes/types";
 import { NOTES_EDITOR_CONTEXT_MENU_PROPS } from "@/features/notes/agent-context/buildNotesEditorContextData";
 import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
+import { updateNoteContent, updateNoteTags } from "../../redux/slice";
+import { saveNote } from "../../redux/thunks";
+import { getReduxSyncDelay } from "../../redux/notes.types";
+import {
+  selectNoteById,
+  selectNoteContent,
+  selectNoteFolder,
+  selectNoteIsDirtyById,
+  selectNoteIsSavingById,
+  selectNoteLabel,
+  selectNoteTags,
+} from "../../redux/selectors";
+import { NoteSaveFailureBanner } from "../NoteSaveFailureBanner";
+import { NoteDraftRecoveryBanner } from "../NoteDraftRecoveryBanner";
+import { useNoteConflictChoreography } from "../../hooks/useNoteConflictChoreography";
 
 export type MobileEditorMode = "plain" | "wysiwyg" | "preview";
 
@@ -51,6 +66,16 @@ const TuiEditorContent = dynamic(
   },
 );
 
+// The SAME conflict window desktop mounts — never a mobile copy. It is a
+// Dialog, which on a phone fills the screen.
+const NoteConflictWindow = dynamic(
+  () =>
+    import("@/features/notes/components/NoteConflictWindow").then((mod) => ({
+      default: mod.NoteConflictWindow,
+    })),
+  { ssr: false },
+);
+
 interface MobileNoteEditorProps {
   note: Note;
   editorMode: MobileEditorMode;
@@ -62,99 +87,229 @@ export default function MobileNoteEditor({
   editorMode,
   onBack,
 }: MobileNoteEditorProps) {
-  const { updateNote, deleteNote, copyNote, moveNote, moveNoteToNewFolder, setActiveNoteDirty } =
+  const noteId = note.id;
+  const dispatch = useAppDispatch();
+  const store = useAppStore();
+  const { copyNote, moveNote, moveNoteToNewFolder, setActiveNoteDirty } =
     useNotesRedux();
   const toast = useToastManager("notes");
 
   // A viewer-level sharee gets a read-only surface — their RLS-rejected
   // saves would otherwise silently discard every edit.
-  const access = useNoteAccess(note.id);
+  const access = useNoteAccess(noteId);
   const readOnly = access.readOnly;
   const effectiveMode: MobileEditorMode =
     readOnly && editorMode === "wysiwyg" ? "preview" : editorMode;
 
-  const [localLabel, setLocalLabel] = useState(note.label || "");
-  const [localContent, setLocalContent] = useState(note.content || "");
-  const [localFolder, setLocalFolder] = useState(note.folder_name || "Draft");
-  const [localTags, setLocalTags] = useState<string[]>(note.tags || []);
+  // ── THE RECORD IS THE TRUTH ────────────────────────────────────────
+  // This editor used to keep label/content/folder/tags in React state with a
+  // bespoke 2s timer and its own baseline/dirty/failed bookkeeping. It is now
+  // the same machine as `NoteContentEditor`: every change goes to Redux
+  // (live buffer + debounced `updateNoteContent`), `autoSaveMiddleware` owns
+  // persistence, and dirty/saving are read back off the record.
+  const record = useAppSelector(selectNoteById(noteId));
+  const reduxContent = useAppSelector(selectNoteContent(noteId)) ?? "";
+  const noteLabel = useAppSelector(selectNoteLabel(noteId)) ?? note.label ?? "";
+  const folder = useAppSelector(selectNoteFolder(noteId)) ?? "Draft";
+  const tags = useAppSelector(selectNoteTags(noteId));
+  const isDirty = useAppSelector(selectNoteIsDirtyById(noteId));
+  const isSaving = useAppSelector(selectNoteIsSavingById(noteId));
   const editingActorId = useAppSelector((state) => state.userAuth.id);
-  const acknowledgedRecord = useAppSelector((state) => state.notes.notes[note.id]);
-  const [isDirty, setIsDirty] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
+  const [localContent, setLocalContent] = useState(reduxContent);
+  const localContentRef = useRef(localContent);
+  const lastReduxRef = useRef(reduxContent);
+  const syncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const noteIdRef = useRef(noteId);
+  const editorMountedRef = useRef(true);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const tuiRef = useRef<TuiEditorContentRef>(null);
+
+  useEffect(() => {
+    localContentRef.current = localContent;
+  }, [localContent]);
+  useEffect(() => {
+    noteIdRef.current = noteId;
+  }, [noteId]);
+  useEffect(() => {
+    editorMountedRef.current = true;
+    return () => {
+      editorMountedRef.current = false;
+    };
+  }, []);
+
+  const displayedNote = useMemo(
+    () => (record ? { ...record, content: localContent } : null),
+    [record, localContent],
+  );
   const editableContentSource = usePreparedNoteContentSource(
-    editingActorId && acknowledgedRecord?._acknowledgedPhysicalSnapshot
-      ? { record: acknowledgedRecord, displayedNote: { ...note, label: localLabel, content: localContent, folder_name: localFolder, tags: localTags }, actorId: editingActorId, hasLocalEdits: isDirty || acknowledgedRecord._dirty || localContent !== (acknowledgedRecord.content || "") || localLabel !== (acknowledgedRecord.label || "") || localFolder !== (acknowledgedRecord.folder_name || "Draft") || JSON.stringify(localTags) !== JSON.stringify(acknowledgedRecord.tags || []) }
+    displayedNote && record?._acknowledgedPhysicalSnapshot && editingActorId && !readOnly
+      ? {
+          record,
+          displayedNote,
+          actorId: editingActorId,
+          hasLocalEdits: isDirty || record._dirty || localContent !== (record.content ?? ""),
+        }
       : null,
   );
 
+  // THE ONE conflict choreography — the same hook the desktop editor
+  // consumes, so Keep Mine on a phone produces the desktop dispatch sequence
+  // (begin lock → resolveNoteConflict → the reviewed-save coordinator), never
+  // a resolve-then-`saveNote` shortcut of its own.
+  const adoptResolvedContent = useCallback((content: string) => {
+    setLocalContent(content);
+    lastReduxRef.current = content;
+  }, []);
+  const conflict = useNoteConflictChoreography({
+    noteId,
+    record,
+    noteTitle: noteLabel || "Untitled Note",
+    localContent,
+    editableContentSource,
+    editorMountedRef,
+    noteIdRef,
+    localContentRef,
+    adoptResolvedContent,
+  });
+
   // The delete confirmation belongs to the platform, not to this screen —
-  // `requestDelete` opens the canonical `confirm()` (see useNoteDelete). The
-  // AlertDialog this file used to render was the desktop tab's dialog written
-  // a second time, for one decision.
+  // `requestDelete` opens the canonical `confirm()` (see useNoteDelete).
   const { isDeleting, requestDelete } = useNoteDelete({
     instanceId: "",
-    noteId: note.id,
-    noteLabel: localLabel || "Untitled Note",
+    noteId,
+    noteLabel: noteLabel || "Untitled Note",
     content: localContent,
     closeTab: false,
     onDeleted: onBack,
   });
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const tuiRef = useRef<TuiEditorContentRef>(null);
-  const autoSaveTimer = useRef<NodeJS.Timeout | null>(null);
-  // After a failed autosave, don't re-arm until the user edits again —
-  // otherwise the isDirty→schedule effect retries the doomed write every 2s
-  // forever (the failure already toasted via the thunk's loud-save path).
-  const autoSaveFailedRef = useRef(false);
+  // ── Note switch: adopt the newly selected note's stored content ─────
+  // Render-phase reset (React's "adjusting state when a prop changes"): an
+  // effect here would leave one frame showing the previous note's buffer.
+  const [syncedNoteId, setSyncedNoteId] = useState(noteId);
+  if (syncedNoteId !== noteId) {
+    setSyncedNoteId(noteId);
+    setLocalContent(store.getState().notes?.notes?.[noteId]?.content ?? "");
+    conflict.resetForNoteSwitch();
+  }
 
-  // Capture the server baseline when the note first loads (or switches).
-  // We compare local edits against THIS snapshot — not the live `note` prop —
-  // so that realtime context updates don't reset isDirty to false mid-edit.
-  const savedBaselineRef = useRef({
-    label: note.label || "",
-    content: note.content || "",
-    folder_name: note.folder_name || "Draft",
-    tags: JSON.stringify(note.tags || []),
-  });
-
-  // Sync when note switches (ID change only)
+  // ── Redux -> local (realtime / remote edits) ────────────────────────
   useEffect(() => {
-    const baseline = {
-      label: note.label || "",
-      content: note.content || "",
-      folder_name: note.folder_name || "Draft",
-      tags: JSON.stringify(note.tags || []),
-    };
-    savedBaselineRef.current = baseline;
-    setLocalLabel(baseline.label);
-    setLocalContent(baseline.content);
-    setLocalFolder(baseline.folder_name);
-    setLocalTags(note.tags || []);
-    setIsDirty(false);
-  }, [note.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (reduxContent === lastReduxRef.current) return;
+    // Don't clobber in-flight local keystrokes.
+    if (syncTimerRef.current) return;
+    lastReduxRef.current = reduxContent;
+    setLocalContent(reduxContent);
+    setNoteLiveContent(noteId, reduxContent);
+  }, [reduxContent, noteId]);
 
-  // Report dirty state to context so refreshNotes() never overwrites unsaved user input
+  // ── Debounced sync: local -> Redux (same delay table as desktop) ────
+  const syncToRedux = useCallback(
+    (content: string) => {
+      if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
+      const delay = getReduxSyncDelay(content.length);
+      syncTimerRef.current = setTimeout(() => {
+        syncTimerRef.current = null;
+        lastReduxRef.current = content;
+        dispatch(updateNoteContent({ id: noteId, content }));
+      }, delay);
+    },
+    [dispatch, noteId],
+  );
+
+  const handleChange = useCallback(
+    (content: string) => {
+      setLocalContent(content);
+      setNoteLiveContent(noteId, content);
+      syncToRedux(content);
+    },
+    [noteId, syncToRedux],
+  );
+
+  const handleChangeFlush = useCallback(
+    (content: string) => {
+      if (syncTimerRef.current) {
+        clearTimeout(syncTimerRef.current);
+        syncTimerRef.current = null;
+      }
+      setLocalContent(content);
+      setNoteLiveContent(noteId, content);
+      lastReduxRef.current = content;
+      dispatch(updateNoteContent({ id: noteId, content }));
+    },
+    [dispatch, noteId],
+  );
+
+  /** The WYSIWYG surface's live markdown, when it is the mounted body. */
+  const readMountedContent = useCallback(() => {
+    if (effectiveMode !== "wysiwyg") return localContentRef.current;
+    try {
+      return tuiRef.current?.getCurrentMarkdown?.() ?? localContentRef.current;
+    } catch {
+      return localContentRef.current;
+    }
+  }, [effectiveMode]);
+
+  // TYPE, TAP BACK, GONE — closed at the class. A pending debounce is flushed
+  // to Redux on unmount AND on a note switch (this effect is keyed by noteId,
+  // so the cleanup runs with the OUTGOING note's id and buffer), exactly as
+  // `NoteContentEditor` does. `autoSaveMiddleware` then persists it.
+  // On a TRUE unmount in rich (WYSIWYG) mode, the rich editor may hold words
+  // its onChange has not delivered yet. A layout-effect cleanup runs before the
+  // child editor detaches its imperative handle (and before the passive cleanup
+  // below), so the live markdown is snapshotted here and flushed below. Never
+  // on a note switch: by then the rich editor may already show the NEXT note.
+  const effectiveModeRef = useRef(effectiveMode);
   useEffect(() => {
-    setActiveNoteDirty(isDirty);
+    effectiveModeRef.current = effectiveMode;
+  }, [effectiveMode]);
+  const unmountSnapshotRef = useRef<string | null>(null);
+  /** Set by the rich editor's own onChange. Its re-serialized markdown can
+   *  differ from the stored text (list markers, escapes, a trailing newline)
+   *  with no edit at all, so the unmount snapshot is taken ONLY when the user
+   *  actually typed in rich mode — merely opening a note must never write it. */
+  const richEditedRef = useRef(false);
+  useLayoutEffect(
+    () => () => {
+      if (effectiveModeRef.current !== "wysiwyg" || !richEditedRef.current) return;
+      try {
+        const markdown = tuiRef.current?.getCurrentMarkdown?.();
+        if (typeof markdown === "string") unmountSnapshotRef.current = markdown;
+      } catch {
+        // A torn-down rich editor falls back to the last delivered buffer.
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    setNoteLiveContent(noteId, localContentRef.current);
+    // A fresh note has not been edited in rich mode yet.
+    richEditedRef.current = false;
     return () => {
-      setActiveNoteDirty(false);
+      setNoteLiveContent(noteId, null);
+      if (syncTimerRef.current) {
+        clearTimeout(syncTimerRef.current);
+        syncTimerRef.current = null;
+      }
+      const pending = unmountSnapshotRef.current ?? localContentRef.current;
+      if (pending !== lastReduxRef.current) {
+        lastReduxRef.current = pending;
+        dispatch(updateNoteContent({ id: noteId, content: pending }));
+      }
     };
-  }, [isDirty, setActiveNoteDirty]);
+  }, [dispatch, noteId]);
 
-  // Track dirty state against the saved baseline (not the live note prop)
+  // Leaving the WYSIWYG surface commits whatever it holds before it unmounts.
+  const previousModeRef = useRef(effectiveMode);
   useEffect(() => {
-    const baseline = savedBaselineRef.current;
-    const hasChanges =
-      localLabel !== baseline.label ||
-      localContent !== baseline.content ||
-      localFolder !== baseline.folder_name ||
-      JSON.stringify(localTags) !== baseline.tags;
-    setIsDirty(hasChanges);
-    // A NEW user edit re-earns one autosave attempt after a failure.
-    autoSaveFailedRef.current = false;
-  }, [localLabel, localContent, localFolder, localTags]);
+    const previous = previousModeRef.current;
+    previousModeRef.current = effectiveMode;
+    if (previous === effectiveMode || previous !== "wysiwyg") return;
+    const pending = localContentRef.current;
+    if (pending !== lastReduxRef.current) handleChangeFlush(pending);
+  }, [effectiveMode, handleChangeFlush]);
 
   // Auto-grow plain textarea
   const growTextarea = useCallback(() => {
@@ -165,97 +320,29 @@ export default function MobileNoteEditor({
   }, []);
 
   useEffect(() => {
-    if (editorMode === "plain") growTextarea();
-  }, [localContent, editorMode, growTextarea]);
+    if (effectiveMode === "plain") growTextarea();
+  }, [localContent, effectiveMode, growTextarea]);
 
-  // Auto-save 2s after last change
-  const scheduleAutoSave = useCallback(() => {
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    autoSaveTimer.current = setTimeout(async () => {
-      if (!isDirty || isSaving || autoSaveFailedRef.current) return;
-      setIsSaving(true);
-      const label = localLabel.trim() || "Untitled Note";
-      const content = localContent;
-      const tags = localTags;
-      try {
-        await updateNote(note.id, {
-          label,
-          content,
-          tags,
-        });
-        // Update baseline so dirty check doesn't flip back to true on next compare
-        savedBaselineRef.current = {
-          label,
-          content,
-          folder_name: localFolder,
-          tags: JSON.stringify(tags),
-        };
-        setIsDirty(false);
-      } catch {
-        // The save path already toasted loudly (writeErrors). Park autosave
-        // until the user edits again — retrying the same doomed write every
-        // 2s is a permanent request/toast loop.
-        autoSaveFailedRef.current = true;
-      } finally {
-        setIsSaving(false);
-      }
-    }, 2000);
-  }, [
-    isDirty,
-    isSaving,
-    note.id,
-    localLabel,
-    localContent,
-    localTags,
-    updateNote,
-  ]);
-
+  // Report dirty state so refreshNotes() never overwrites unsaved user input.
   useEffect(() => {
-    if (isDirty) scheduleAutoSave();
+    setActiveNoteDirty(isDirty);
     return () => {
-      if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
+      setActiveNoteDirty(false);
     };
-  }, [isDirty, scheduleAutoSave]);
+  }, [isDirty, setActiveNoteDirty]);
 
-  const handleSave = async () => {
-    if (!isDirty || isSaving) return;
-    if (autoSaveTimer.current) clearTimeout(autoSaveTimer.current);
-    setIsSaving(true);
+  const handleSave = useCallback(async () => {
+    handleChangeFlush(readMountedContent());
     try {
-      // Capture latest TUI content if in rich mode
-      let content = localContent;
-      if (editorMode === "wysiwyg" && tuiRef.current?.getCurrentMarkdown) {
-        content = tuiRef.current.getCurrentMarkdown();
-        setLocalContent(content);
-      }
-      const label = localLabel.trim() || "Untitled Note";
-      await updateNote(note.id, {
-        label,
-        content,
-        tags: localTags,
-      });
-      // Update the baseline so dirty tracking reflects the just-saved values.
-      // Do NOT call refreshNotes() — that fetches from server and can overwrite
-      // content the user is actively editing if a realtime echo arrives simultaneously.
-      savedBaselineRef.current = {
-        label,
-        content,
-        folder_name: localFolder,
-        tags: JSON.stringify(localTags),
-      };
-      setIsDirty(false);
+      await dispatch(saveNote(noteId)).unwrap();
     } catch {
-      // `updateNote` delegates to the canonical save thunk, which owns
-      // failure classification/capture. Keep this derived notice visible
-      // without filing a duplicate, context-free system_error.
+      // `saveNote` owns failure classification/capture; keep this derived
+      // notice visible without filing a duplicate, context-free system_error.
       toastErrorAlreadyCaptured("Failed to save note");
-    } finally {
-      setIsSaving(false);
     }
-  };
+  }, [dispatch, handleChangeFlush, noteId, readMountedContent]);
 
   // Expose save state and handler to parent (MobileNotesView injects into header)
-  // We use a module-level ref pattern so the parent can read current values
   useEffect(() => {
     window.__mobileNoteEditorState = { isDirty, isSaving, handleSave };
     return () => {
@@ -265,7 +352,7 @@ export default function MobileNoteEditor({
 
   const handleCopy = async () => {
     try {
-      await copyNote(note.id);
+      await copyNote(noteId);
       toast.success("Note duplicated");
     } catch {
       toast.error("Failed to duplicate note");
@@ -273,15 +360,12 @@ export default function MobileNoteEditor({
   };
 
   const handleExport = () => {
-    const content =
-      editorMode === "wysiwyg" && tuiRef.current?.getCurrentMarkdown
-        ? tuiRef.current.getCurrentMarkdown()
-        : localContent;
+    const content = readMountedContent();
     const blob = new Blob([content], { type: "text/markdown" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${localLabel || "note"}.md`;
+    a.download = `${noteLabel || "note"}.md`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -301,6 +385,49 @@ export default function MobileNoteEditor({
           </span>
         </div>
       )}
+
+      {/* Loud recovery, in the same priority order as desktop: work that is
+          failing to save blocks first, then work already rescued to a draft. */}
+      <NoteSaveFailureBanner noteId={noteId} />
+      {!readOnly && (
+        <NoteDraftRecoveryBanner noteId={noteId} onRestore={handleChangeFlush} />
+      )}
+
+      {conflict.reviewOutcomes.map((outcome) => (
+        <div key={outcome.requestId} className="shrink-0 flex items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-100">
+          <span>Reviewed save outcome: {outcome.result.status}. The original reviewed package remains available for inspection.</span>
+          <button
+            type="button"
+            className="shrink-0 rounded border border-amber-500/50 bg-background px-2 py-1 font-medium"
+            onClick={() => conflict.acknowledgeOutcome(outcome)}
+          >
+            Dismiss
+          </button>
+        </div>
+      ))}
+      {conflict.dismissedReviewAvailable && (
+        <div className="shrink-0 flex items-center justify-between gap-3 border-b border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-100">
+          <span>Your unsaved conflict review is still available.</span>
+          <button
+            type="button"
+            onClick={conflict.reopenConflict}
+            className="shrink-0 rounded border border-amber-500/50 bg-background px-2 py-1 font-medium text-amber-900 dark:text-amber-100"
+          >
+            Reopen conflict review
+          </button>
+        </div>
+      )}
+      {/* Desktop parity: a reviewed save refused AFTER the decision cleared (e.g. the
+          editor changed before phase two) is said out loud, never swallowed. */}
+      {conflict.conflictError && !conflict.conflictDecision && (
+        <div role="alert" className="shrink-0 border-b border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {conflict.conflictError}
+        </div>
+      )}
+      {conflict.conflictWindowProps != null && (
+        <NoteConflictWindow {...conflict.conflictWindowProps} />
+      )}
+
       {/* ── Scrollable content area ─────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto overscroll-contain px-4 pt-4 pb-32">
         {/* Plain text — wrapped in the universal v3 menu: on mobile it mounts
@@ -308,18 +435,18 @@ export default function MobileNoteEditor({
             phone editor the same Copy-as / Export / AI / agent actions as
             desktop. Read-only access gets the NON-editable wrapper: v3's
             Cut/Paste mutate through getTextarea/onTextReplace regardless of
-            the textarea's readOnly attribute, which would dirty localContent
-            and arm a doomed autosave on a note this user can't write. */}
+            the textarea's readOnly attribute, which would dirty the record
+            and arm a doomed save on a note this user can't write. */}
         {effectiveMode === "plain" && readOnly && (
           <NonEditableContextMenu
             sourceFeature="notes"
             surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
             contextData={{ content: localContent }}
-            contentSource={noteIdentityContentSource(note.id, `mobile-readonly:${note.id}`)}
+            contentSource={noteIdentityContentSource(noteId, `mobile-readonly:${noteId}`)}
             entity={{
               type: "note",
-              id: note.id,
-              title: localLabel || note.label,
+              id: noteId,
+              title: noteLabel || note.label,
               resourceType: "note",
             }}
           >
@@ -338,18 +465,16 @@ export default function MobileNoteEditor({
             sourceFeature="notes"
             surfaceName={NOTES_EDITOR_CONTEXT_MENU_PROPS.surfaceName}
             contextData={{ content: localContent }}
-            contentSource={
-              editableContentSource
-            }
+            contentSource={editableContentSource}
             entity={{
               type: "note",
-              id: note.id,
-              title: localLabel || note.label,
+              id: noteId,
+              title: noteLabel || note.label,
               resourceType: "note",
             }}
             getTextarea={() => textareaRef.current}
             onTextReplace={(next) => {
-              setLocalContent(next);
+              handleChangeFlush(next);
               growTextarea();
             }}
           >
@@ -357,7 +482,7 @@ export default function MobileNoteEditor({
               ref={textareaRef}
               value={localContent}
               onChange={(e) => {
-                setLocalContent(e.target.value);
+                handleChange(e.target.value);
                 growTextarea();
               }}
               placeholder="Start writing..."
@@ -373,7 +498,10 @@ export default function MobileNoteEditor({
             <TuiEditorContent
               ref={tuiRef}
               content={localContent}
-              onChange={(val: string) => setLocalContent(val)}
+              onChange={(val: string) => {
+                richEditedRef.current = true;
+                handleChange(val);
+              }}
               isActive={true}
               editMode="wysiwyg"
               className="w-full"
@@ -387,7 +515,7 @@ export default function MobileNoteEditor({
             {localContent.trim() ? (
               <RichDocument
                 content={localContent}
-                source={editableContentSource ?? noteIdentityContentSource(note.id, `mobile-preview:${note.id}`)}
+                source={editableContentSource ?? noteIdentityContentSource(noteId, `mobile-preview:${noteId}`)}
                 actionsVariant="mini-bar"
                 actionsClassName="mb-2"
               />
@@ -402,36 +530,27 @@ export default function MobileNoteEditor({
 
       {/* ── Fixed bottom dock ────────────────────────────────────────────────── */}
       <NoteEditorDock
-        noteId={note.id}
-        noteLabel={note.label}
+        noteId={noteId}
+        noteLabel={noteLabel}
         readOnly={readOnly}
-        folder={localFolder}
+        folder={folder}
         organizationId={note.organization_id}
-        tags={localTags}
+        tags={tags}
         content={localContent}
-        onFolderChange={async (folder) => {
-          await moveNote(note.id, folder);
-          setLocalFolder(folder.name);
-          savedBaselineRef.current = {
-            ...savedBaselineRef.current,
-            folder_name: folder.name,
-          };
+        onFolderChange={async (nextFolder) => {
+          await moveNote(noteId, nextFolder);
         }}
         onCreateFolder={async (folderName) => {
-          await moveNoteToNewFolder(note.id, folderName);
-          setLocalFolder(folderName);
-          savedBaselineRef.current = {
-            ...savedBaselineRef.current,
-            folder_name: folderName,
-          };
+          await moveNoteToNewFolder(noteId, folderName);
         }}
-        onTagsChange={setLocalTags}
+        onTagsChange={(nextTags) =>
+          dispatch(updateNoteTags({ id: noteId, tags: nextTags }))
+        }
         onDuplicate={handleCopy}
         onExport={handleExport}
         onDelete={requestDelete}
         isDeleting={isDeleting}
       />
-
     </div>
   );
 }

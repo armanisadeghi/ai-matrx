@@ -48,9 +48,19 @@ import type {
   ResolveKindValue,
 } from "./dbKindComponentCache";
 import { useContentIrKindVersion } from "../use-registry-repaint";
+import { readAtVersionForKey } from "../registry-versioned";
 import { resolveLoadingSlugForKind } from "../loading/resolve-loading-slug";
 import { resolveKindLoadingComponent } from "../loading/kind-loading-registry";
 import { earlyKeysFromValue } from "../loading/kind-loading.types";
+
+/**
+ * One entry per kind — the resolver's answer and the registry version it was
+ * read at (DD-215c). Bounded by the number of kinds a tab renders.
+ */
+const resolutionCache = new Map<
+  string,
+  { version: number; value: ReturnType<typeof resolveComponent> | null }
+>();
 
 /**
  * Safe fallback when no runner is supplied (bare test/SSR render): the action
@@ -140,12 +150,20 @@ export const DbKindComponentImpl: React.FC<DbKindComponentImplProps> = ({
   // It is read here, at the ONE react-flavor mount, so all three call sites
   // (chat, Kind Request, the directive window) inherit it together.
   const sandbox = useKindSandboxSettings();
+  // 🚨 THE VERSION IS AN ARGUMENT, NEVER A DEPENDENCY (DD-215c). `void
+  // registryVersion;` left this read's freshness to whether the React Compiler
+  // happened not to memoize `resolveComponent(kind, …)` — and the compiler IS
+  // on. The same idiom, one seam over, froze the kind route on production and
+  // handed readers the platform's component for a whole mount. The version is
+  // the cache key here, so the answer follows every arrival by construction.
+  // Rule: `react/registry-versioned.ts`. Guard: `pnpm check:registry-repaint`.
   const registryVersion = useContentIrKindVersion(kind);
-  void registryVersion;
-
-  const resolution = kind
-    ? resolveComponent(kind, "web", "output")
-    : null;
+  const resolution = readAtVersionForKey(
+    resolutionCache,
+    kind ?? "",
+    registryVersion,
+    () => (kind ? resolveComponent(kind, "web", "output") : null),
+  );
   const bodyPending = Boolean(
     resolution &&
       resolution.resolvedBy === "db" &&

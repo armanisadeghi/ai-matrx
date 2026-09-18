@@ -11,34 +11,50 @@
 // runtime — so agents run from the Agents popover here launched with an empty
 // application scope. See education-memory.manifest.ts.
 
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Brain, Plus } from "lucide-react";
+import { AlertCircle, Brain, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EducationToolHeader } from "@/features/education/components/EducationToolHeader";
 import { Skeleton } from "@ai-matrx/design-system";
+import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  selectAccessToken,
+  selectAuthReady,
+  selectUserId,
+} from "@/lib/redux/selectors/userSelectors";
+import { useLoginHref } from "@/hooks/auth/useLoginHref";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   createEducationMemoryScope,
   type MemoryLibraryEntry,
 } from "@/features/surfaces/manifests/education-memory.manifest";
-import { studyMediaService } from "@/features/education/media/service";
-import type { StudyMediaRow } from "@/features/education/media/types";
+import { authenticatedStudyMediaLoadKey } from "@/features/education/media/authLoad";
+import { useStudyMediaLibrary } from "@/features/education/media/useStudyMediaLibrary";
 
 const SURFACE_NAME = "matrx-user/education-memory";
 
 export function MemoryHome() {
   const router = useRouter();
-  const [rows, setRows] = useState<StudyMediaRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const loginHref = useLoginHref();
+  const authReady = useAppSelector(selectAuthReady);
+  const userId = useAppSelector(selectUserId);
+  const accessToken = useAppSelector(selectAccessToken);
+  const loadKey = authenticatedStudyMediaLoadKey({
+    authReady,
+    userId,
+    accessToken,
+  });
+  const library = useStudyMediaLibrary("memory_aid", loadKey);
+  const rows = library.rows;
+  const loading = !authReady || library.loading;
 
   // Read at trigger time, never from stale closure state.
   const buildScope = () =>
     createEducationMemoryScope({
       view: "list",
-      library_loaded: !loading,
-      ...(loading
+      library_loaded: library.loaded,
+      ...(!library.loaded
         ? {}
         : {
             aid_count: rows.length,
@@ -52,17 +68,23 @@ export function MemoryHome() {
           }),
     });
 
-  useEffect(() => {
-    let active = true;
-    studyMediaService.listByKind("memory_aid").then((res) => {
-      if (!active) return;
-      setRows(res.data ?? []);
-      setLoading(false);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  if (authReady && !loadKey) {
+    return (
+      <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
+        <EducationToolHeader title="Memory Aids" />
+        <div className="mx-auto w-full max-w-3xl px-4 pb-4">
+          <div className="rounded-xl border border-dashed border-border p-10 text-center">
+            <p className="text-sm text-muted-foreground">
+              Sign in to view and create your memory aids.
+            </p>
+            <Button asChild className="mt-4" size="sm">
+              <Link href={loginHref}>Sign in</Link>
+            </Button>
+          </div>
+        </div>
+      </SurfaceRuntimeProvider>
+    );
+  }
 
   return (
     <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={buildScope}>
@@ -84,6 +106,8 @@ export function MemoryHome() {
           <Skeleton className="h-16 w-full" />
           <Skeleton className="h-16 w-full" />
         </div>
+      ) : library.error ? (
+        <LibraryError error={library.error} onRetry={library.retry} />
       ) : rows.length === 0 ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed border-border p-10 text-center">
           <Brain className="h-8 w-8 text-muted-foreground" />
@@ -129,5 +153,15 @@ export function MemoryHome() {
       )}
     </div>
     </SurfaceRuntimeProvider>
+  );
+}
+
+function LibraryError({ onRetry }: { error: string; onRetry: () => void }) {
+  return (
+    <div className="flex flex-col items-center gap-3 rounded-xl border border-destructive/40 p-10 text-center">
+      <AlertCircle className="h-8 w-8 text-destructive" />
+      <p className="text-sm text-muted-foreground">Could not load memory aids right now.</p>
+      <Button size="sm" onClick={onRetry}>Try again</Button>
+    </div>
   );
 }

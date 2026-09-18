@@ -55,51 +55,143 @@ const selectInstancesMap = createSelector(
 // 2. GLOBAL LIST SELECTORS (non-curried — safe for direct use)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export const selectAllNotesList = createSelector(
+// ── The list PROJECTION: ordering and folders that content edits never touch ─
+//
+// `updateNoteContent` rewrites one record every 200–1000 ms while the user
+// types. Before 2026-09-14 that re-ran a full filter + sort of every note plus
+// a folder-set and folder-reference rebuild, three times, per keystroke burst
+// (audit N-23). The sort order and the folder sets do not depend on a note's
+// BODY at all, so they are keyed off a per-note STRUCTURAL signature instead:
+// a content edit leaves every signature identical, the projection returns the
+// previous object, and `selectAllFolders` / `selectFolderReferences` hand back
+// the very same array they returned last time — no sort, no Set, no rebuild,
+// and no re-render in any of their consumers.
+//
+// `selectAllNotesList` itself still returns FRESH records (a cheap O(N) map
+// over the cached order). It must: `useGlobalFind`, the sidebar's empty-note
+// reuse and the bulk markdown export all read `.content` off these rows, and
+// handing them the pre-edit objects would have made find, reuse and export
+// silently stale. What that selector no longer does is sort.
+
+const NOTE_STRUCTURE_SIGNATURE = new WeakMap<NoteRecord, string>();
+
+/** Everything the ordering and the folder sets are derived from — never the
+ *  body. Cached on the record's object identity, so an unrelated note costs a
+ *  WeakMap hit and an edited one costs one string join. */
+function structureSignature(note: NoteRecord): string {
+  const hit = NOTE_STRUCTURE_SIGNATURE.get(note);
+  if (hit !== undefined) return hit;
+  const signature = [
+    note.id,
+    note.position ?? "",
+    note.updated_at ?? "",
+    note.label ?? "",
+    note.folder_name ?? "",
+    note.folder_id ?? "",
+    note.organization_id ?? "",
+    note.deleted_at ?? "",
+    note._sharedWithMe ? "1" : "0",
+  ].join("\u0000");
+  NOTE_STRUCTURE_SIGNATURE.set(note, signature);
+  return signature;
+}
+
+export interface NotesListProjection {
+  /** Owner-visible note ids in sidebar order. */
+  readonly orderedIds: readonly string[];
+  /** Display-only folder names, default folders first. */
+  readonly folders: string[];
+  /** Folder identity for mutations. */
+  readonly folderReferences: FolderReference[];
+}
+
+let listProjectionCache:
+  | { signatures: Map<string, string>; value: NotesListProjection }
+  | null = null;
+
+export const selectNotesListProjection = createSelector(
   [selectNotesMap],
-  (notes): NoteRecord[] =>
-    Object.values(notes)
+  (notes): NotesListProjection => {
+    const signatures = new Map<string, string>();
+    const visible: NoteRecord[] = [];
+    for (const note of Object.values(notes) as NoteRecord[]) {
       // Shared-with-me notes live ONLY in the sidebar's "Shared with me"
       // section — never in the owner's folders/recents groupings.
-      .filter((n) => !n.deleted_at && !n._sharedWithMe)
-      .sort((a, b) => {
-        const aPos = a.position ?? 0;
-        const bPos = b.position ?? 0;
-        if (aPos !== bPos) return aPos - bPos;
-        return (b.updated_at ?? "").localeCompare(a.updated_at ?? "");
+      if (!note || note.deleted_at || note._sharedWithMe) continue;
+      signatures.set(note.id, structureSignature(note));
+      visible.push(note);
+    }
+
+    if (listProjectionCache && listProjectionCache.signatures.size === signatures.size) {
+      let unchanged = true;
+      for (const [id, signature] of signatures) {
+        if (listProjectionCache.signatures.get(id) !== signature) {
+          unchanged = false;
+          break;
+        }
+      }
+      // Nothing structural moved — the body changed. Same projection object.
+      if (unchanged) return listProjectionCache.value;
+    }
+
+    visible.sort((a, b) => {
+      const aPos = a.position ?? 0;
+      const bPos = b.position ?? 0;
+      if (aPos !== bPos) return aPos - bPos;
+      return (b.updated_at ?? "").localeCompare(a.updated_at ?? "");
+    });
+
+    const folderSet = new Set<string>(DEFAULT_FOLDER_ORDER);
+    const folderReferences = new Map<string, FolderReference>();
+    for (const note of visible) {
+      if (note.folder_name) folderSet.add(note.folder_name);
+      if (!note.folder_id || !note.organization_id) continue;
+      const folder = {
+        id: note.folder_id,
+        organizationId: note.organization_id,
+        name: note.folder_name ?? "Uncategorized",
+      };
+      folderReferences.set(`${folder.organizationId}:${folder.id}`, folder);
+    }
+
+    const value: NotesListProjection = {
+      orderedIds: visible.map((note) => note.id),
+      folders: Array.from(folderSet).sort((a, b) => {
+        const aIdx = DEFAULT_FOLDER_ORDER.indexOf(a);
+        const bIdx = DEFAULT_FOLDER_ORDER.indexOf(b);
+        if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
+        if (aIdx !== -1) return -1;
+        if (bIdx !== -1) return 1;
+        return a.localeCompare(b);
       }),
+      folderReferences: Array.from(folderReferences.values()),
+    };
+    listProjectionCache = { signatures, value };
+    return value;
+  },
+);
+
+export const selectAllNotesList = createSelector(
+  [selectNotesListProjection, selectNotesMap],
+  (projection, notes): NoteRecord[] => {
+    const rows: NoteRecord[] = [];
+    for (const id of projection.orderedIds) {
+      const note = notes[id];
+      if (note) rows.push(note as NoteRecord);
+    }
+    return rows;
+  },
 );
 
 export const selectAllFolders = createSelector(
-  [selectAllNotesList],
-  (notes): string[] => {
-    const folderSet = new Set<string>(DEFAULT_FOLDER_ORDER);
-    for (const note of notes) {
-      if (note.folder_name) folderSet.add(note.folder_name);
-    }
-    return Array.from(folderSet).sort((a, b) => {
-      const aIdx = DEFAULT_FOLDER_ORDER.indexOf(a);
-      const bIdx = DEFAULT_FOLDER_ORDER.indexOf(b);
-      if (aIdx !== -1 && bIdx !== -1) return aIdx - bIdx;
-      if (aIdx !== -1) return -1;
-      if (bIdx !== -1) return 1;
-      return a.localeCompare(b);
-    });
-  },
+  [selectNotesListProjection],
+  (projection): string[] => projection.folders,
 );
 
 /** Folder identity for mutations. `selectAllFolders` remains display-only. */
 export const selectFolderReferences = createSelector(
-  [selectAllNotesList],
-  (notes): FolderReference[] => {
-    const folders = new Map<string, FolderReference>();
-    for (const note of notes) {
-      if (!note.folder_id || !note.organization_id) continue;
-      const folder = { id: note.folder_id, organizationId: note.organization_id, name: note.folder_name ?? "Uncategorized" };
-      folders.set(`${folder.organizationId}:${folder.id}`, folder);
-    }
-    return Array.from(folders.values());
-  },
+  [selectNotesListProjection],
+  (projection): FolderReference[] => projection.folderReferences,
 );
 
 export const selectDeletedNotesList = createSelector(
@@ -120,6 +212,11 @@ export const selectSharedWithMeNotes = createSelector(
 export const selectNotesListStatus = createSelector(
   [selectNotesState],
   (slice) => slice.listStatus,
+);
+
+export const selectNotesListError = createSelector(
+  [selectNotesState],
+  (slice) => slice.listError,
 );
 
 export const selectRealtimeConnected = createSelector(

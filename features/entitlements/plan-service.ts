@@ -73,6 +73,13 @@ export interface PublicPlan extends PlanRecord {
 }
 
 interface PlanRow {
+  /**
+   * The plan SLUG ('personal-pro', 'free', …) — what Stripe checkout and
+   * `billing.org_plan_assign` take. DD-173 (B-103) moved that value off
+   * `billing.plan.id` to `billing.plan.plan_key` and gave the table a canonical
+   * uuid `id`; both `public_plans()` and `plan_status()` still emit it under the
+   * key `id`, so this contract is unchanged and the uuid never reaches a client.
+   */
   id: string;
   name: string;
   audience: PlanRecord["audience"];

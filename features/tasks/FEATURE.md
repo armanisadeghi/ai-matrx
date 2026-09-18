@@ -22,6 +22,15 @@ Org-scoped project management. Projects group work within an organization; tasks
 - `app/(core)/projects/[projectId]/page.tsx` — **ProjectWorkspace** (resolves by slug or UUID): hero + nested task list + associated resources + scopes + advanced references.
 - `app/(core)/projects/[projectId]/settings/page.tsx` — **ProjectManage** (single-page sectioned, no tabs): General / Scopes / Members / Invitations / Danger.
 - `app/(core)/tasks/page.tsx` — `TasksDesktopShell` (3-pane); `app/(core)/tasks/[id]/page.tsx` — `TaskEditor`.
+- **Import from Google Tasks** — `TasksHeaderControls` opens the
+  `googleTasksImportWindow` in place (`features/connectors/import/GoogleTasksImportPanel`,
+  Google-native PLAN §4.7). Imported tasks are ordinary `workspace.tasks` rows
+  carrying the origin spine (`origin='import'`, `source_type='google_tasks'`,
+  `source_id`, `source_label`, `dedupe_key`) plus `source_list_id`,
+  `source_imported_at` and `source_snapshot` (aidream migration 0778). A
+  re-import rewrites a field ONLY where Google changed it and the Matrx value
+  still equals that snapshot — a task edited here is never overwritten. Nothing
+  is ever written back to Google.
 - **Legacy redirects:** `app/(core)/organizations/[orgId]/projects/**` → `/projects?org=` and `/projects/[id]`; `(transitional)/settings/projects` → `/projects`. `(transitional)/projects/**` removed.
 
 **Feature code — `features/projects/`**
@@ -61,7 +70,7 @@ Org-scoped project management. Projects group work within an organization; tasks
 - **Editor copy is live-state only.** Every task editor header — route, full, embedded, window, and mobile — uses `TaskEditorCopyButtons` inside the editor controller, so its default payload includes the visible draft plus `unsaved_changes`. A route-hosted editor clears the shell glass header with `paddingTop: var(--shell-header-h)` so its own controls stay pointer-reachable; the duplicate route action cluster hides below `sm`, where the editor toolbar remains available. `TaskCopyForAiButton` is reserved for saved-record list surfaces.
 - **List copy is visible-state only.** Desktop rows/table and the mobile task-list header use the shared `CopyButtons` Alchemy menu. Its human, JSON, AI, sheet payload, current filters, and grouped rows come from `lib/copy.ts`; mobile sends exactly `filteredTasks` only after that list can render, with its active project, smart view, search, and completed-state metadata. The shared menu owns built-in JSON/CSV exports, so task hosts pass `items: []` and retain only their task-specific AI variants and grouping context.
 - **List title contract** — every task-list row gives metadata and actions non-shrinking space; the task title is the only flexible field, truncates to one line when necessary, and exposes the full title through its hover tooltip. `ProjectTaskList` uses a fixed-layout Task / Priority / Due / Actions table and includes local title/description/priority/due-date search that preserves parent context when a subtask matches. The main Tasks, Quick Tasks, and mobile lists already share the global task search pipeline.
-- **Provenance** — `origin` (`user|agent|system`), `source_type`, `source_id`, `source_url` (deep link), `source_label`, `dedupe_key` (unique per org among live rows). **`TaskProvenanceChip` is the ONE badge and the ONE door** — both editors, plus every general list row (`TaskListPane`'s `TaskRow`, `TasksTableView`, `CompactTaskItem` in both layouts, the last three via `compact` which drops the origin word for dense rows). It is driven purely by the four generic columns, so **a producer never writes its own chip and a list never runs a producer-specific query**: project a task with `source_url` and the badge + working door appear in every list at once. The only producer-aware code is `SOURCE_TYPE_ICON` inside the chip — a cosmetic icon map keyed on `source_type` (`hr_workflow_step` → `ClipboardCheck`); an unmapped type falls back to the origin icon and still gets a full badge. **System-created tasks go through the idempotent primitive**: `taskService.upsertSystemTask` → `public.wsp_upsert_system_task` RPC (create-once per dedupe key; never re-opens a task the user resolved) and `taskService.resolveSystemTask` → `wsp_resolve_system_task` (feature completes/cancels its own task when the underlying work resolves). Any feature may call these — that is THE way to put work in front of a user.
+- **Provenance** — `origin` (`user|agent|system`), `source_type`, `source_id`, `source_url` (deep link), `source_label`, `dedupe_key` (unique per org among live rows). 🚨 **A `source_url` IS A DOOR ONLY WHEN IT IS A PAGE** — `provenance-door.ts` decides (in-app path → `Link`; a real web page → new tab; an API host or `/v1`/`/api`/`.json` path → NO link, the chip renders as provenance and says why on hover). The Google Tasks import writes the Google Tasks API resource there, which answers 401 with a JSON body, and the chip used to make every imported task a click into that error (VERIFY-B1-B2-R2 N5). **`TaskProvenanceChip` is the ONE badge and the ONE door** — both editors, plus every general list row (`TaskListPane`'s `TaskRow`, `TasksTableView`, `CompactTaskItem` in both layouts, the last three via `compact` which drops the origin word for dense rows). It is driven purely by the four generic columns, so **a producer never writes its own chip and a list never runs a producer-specific query**: project a task with `source_url` and the badge + working door appear in every list at once. The only producer-aware code is `SOURCE_TYPE_ICON` inside the chip — a cosmetic icon map keyed on `source_type` (`hr_workflow_step` → `ClipboardCheck`); an unmapped type falls back to the origin icon and still gets a full badge. **System-created tasks go through the idempotent primitive**: `taskService.upsertSystemTask` → `public.wsp_upsert_system_task` RPC (create-once per dedupe key; never re-opens a task the user resolved) and `taskService.resolveSystemTask` → `wsp_resolve_system_task` (feature completes/cancels its own task when the underlying work resolves). Any feature may call these — that is THE way to put work in front of a user.
 - **Time controls** — `start_date`, `due_time`, `timezone`, `recurrence_rule` (RRULE subset incl. `BYMONTHDAY` (1–31 or -1 = last day), `features/tasks/utils/recurrence.ts`; editor: `TaskRecurrencePicker`; jest suite `utils/__tests__/recurrence.test.ts`), `reminders` jsonb (`TaskReminder[]`). **Completing a recurring task rolls `due_date` forward and reopens as `planned`** (Todoist semantics) — `taskService.completeTask` is the canonical completion path; the toggle thunk reconciles with the server row. On the first roll of a MONTHLY/YEARLY rule, `completeTask` stamps the original day-of-month anchor into the rule (`ensureMonthDayAnchor` → `BYMONTHDAY`) so month-end never drifts after a short-month clamp (Jan 31 → Feb 28 → Mar 31, not Mar 28).
 - **Per-user notification state** — `workspace.task_user_state` (`seen_at`/`acknowledged_at`/`snoozed_until`/`dismissed_at`/`pinned_at`, PK `(task_id,user_id)`, RLS own-rows). Client chokepoint `features/tasks/services/taskUserStateService.ts`; hydrated into `taskUiSlice.userState` by `loadTaskUserStateThunk` on /tasks mount. Snoozed tasks vanish from attention views until expiry; pinned tasks float to the top. UI: `TaskSnoozeButton`. Snooze expiry (and every other "now" derivation — overdue, Today/Upcoming windows) re-evaluates within ~60s via the `tasksUi.nowMinute` selector input, ticked by `useNowMinuteTick` (mounted in `TasksDesktopShell`) — never by capturing `new Date()` inside a memoized selector.
 - **Smart views** — Inbox / Today / Upcoming / Overdue / Assigned to me / Created by me / Completed, declared ONCE in `features/tasks/constants/smartViews.ts` (predicate registry) and consumed by the desktop sidebar, mobile overflow, live counts (`selectSmartViewCounts`, org-context-scoped), and `selectFilteredTasks` (`taskUiSlice.smartView`). Selecting a view widens to all projects; drilling into a project resets the view. The retired mobile `all | incomplete | overdue` filter is not a second view system. Sidebar targets stay compact at desktop widths and grow to 44px through tablet widths; mobile overflow items are also 44px.
@@ -151,6 +160,62 @@ Three channels, all frontend-side because ALL delivery infra (Resend email in `l
 Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tasks-world-class.md).
 
 ## Change log
+
+- `2026-09-18` — **F-89 (V-22, NEW-1): the import control stops telling people
+  to pick an organization they already picked.** F-75 gave
+  `TasksHeaderControls`' "Import from Google Tasks" a `disabled` + reason off the
+  bare `selectOrganizationId`, which cannot tell "boot has not answered" from
+  "you belong to nothing" — and from the seat, signed in, it announced *"Select
+  an organization before importing Google Tasks."* from 4.0s to 17.4s after load
+  (the memberships read landed at 9.6s) and enabled itself at 20.6s. It now
+  reads `useOrganizationGatedControl("importing Google Tasks")`, so the waiting
+  beat says it is checking, the refusal appears only once boot has settled with
+  nothing, and neither state can open the window. New
+  `components/__tests__/the-import-control-waits-for-the-organization.test.tsx`
+  (3, RED on HEAD with the received title verbatim); F-75's own test now models
+  the settled state explicitly. Guard: `pnpm check:org-three-states`.
+
+- `2026-09-18` — F-75: main deleted `selectEffectiveOrganizationId` (the
+  personal-workspace fallback the org-context law forbids). `TasksHeaderControls`'
+  "Import from Google Tasks" button now reads the plain `selectOrganizationId`
+  (the organization the person actually selected) and is `disabled` with a
+  `title` reason ("Select an organization before importing Google Tasks.")
+  when none is selected — the opener is never called, matching the honest-refusal
+  convention `QuickTasksWorkspace`/`GoogleTasksImportPanel` already use for the
+  same missing-organization state. No behavior change when an organization is
+  selected.
+- `2026-09-17` — F-20: **a provenance chip never links to something that is not a
+  page.** The chip turned any `source_url` not starting with `/` into "Open
+  source", and the Google Tasks import writes
+  `https://tasks.googleapis.com/tasks/v1/lists/<list>/tasks/<id>` — an identity,
+  not a page, measured at **HTTP 401** with a JSON error body, so every imported
+  Google task shipped a click into an API error
+  (`common-docs/projects/google-native/VERIFY-B1-B2-R2.md` N5). The rule now lives
+  in the shared layer (`features/tasks/provenance-door.ts`) rather than as a
+  comment in the import panel that never rendered the column: an API host or an
+  API-shaped path renders the provenance WITHOUT a door, with the reason on hover
+  and no hover affordance pretending otherwise. There is no durable per-task
+  Google Tasks web URL to offer instead. Guard:
+  `features/tasks/__tests__/provenance-is-never-a-401.test.ts`.
+
+- `2026-09-17` — **Google Tasks import.** The header carries "Import from Google
+  Tasks", which opens the shared import window: task lists, checkboxes,
+  already-imported badges, the server's honest count line, and a re-import that
+  only takes what Google changed. No second task store and no new task columns
+  beyond the three origin stamps in aidream migration 0778.
+- `2026-09-17` — **`createTask` no longer dies silently when no organization is selected.** `services/taskService.ts` caught the refusal and returned `null` with a `console.error`, so the task simply never appeared — a dead click. It now names the remedy in a toast at the moment of the click and keeps the `null` return: `createTask` has a dozen callers across modals, thunks, an inline context field and the projects task list, several of which do not catch, so a re-throw would have traded a dead click for an unhandled rejection. The stale "fall back to the cached personal org" comment is gone — `ensureOrgId` has had no personal-organization rung since 2026-09-17. `workspace.task_user_state` has no `organization_id` column at all (verified live), so `taskUserStateService` is correctly untouched. Law: `../../common-docs/policies/context-is-carried-never-rebuilt.md`.
+
+- `2026-09-17` — **The organization a task or project is filed under is the one the person SELECTED.**
+  `QuickTasksWorkspaceProvider` seeded the window's org with `appOrgId ?? orgs[0]` — the first
+  organization in the membership list, which can be a membership in someone ELSE's personal
+  workspace. It now seeds from the selected organization only; with none selected `QuickTasksMain`
+  renders `OrganizationRequiredNotice` (picker attached) instead of a quick-add box whose write
+  would be refused, and the sidebar cascade still lets the person choose. `projectService.createProject`
+  stopped writing `resolvePersonalOrgId()` unconditionally — a project is a workspace-scoped,
+  shareable record, so it is created in the selected organization and `requireSelectedOrgId()`
+  refuses with the one recognised `OrganizationContextError` when there is none; `ImportTasksModal`
+  names that refusal instead of its generic "try again" toast.
+  Law: `../../../common-docs/policies/context-is-carried-never-rebuilt.md`.
 
 - `2026-09-13` — **The initial `/tasks` hierarchy read has a terminal path.**
   `get_user_full_context` now aborts after 20 seconds and dispatches the

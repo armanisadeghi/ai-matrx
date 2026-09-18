@@ -24,7 +24,10 @@ import { FileLock2 } from "lucide-react";
 
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -46,6 +49,7 @@ import {
 } from "../../audition/unfoldingRuns";
 import { listMasterworksForRulebook } from "../../service";
 import type { Masterwork } from "../../types";
+import { RunStages } from "../RunStages";
 
 const AUDITION_PATH = "/masterworks/audition" satisfies keyof paths;
 
@@ -303,15 +307,21 @@ export function UnfoldingAuditionPanel({
     return [...list, id];
   };
 
+  /** What is still missing before an exam can be sat, in plain words. */
+  const missingPicks = firstBlockingReason([
+    {
+      when: deskIds.length === 0,
+      reason: "Pick at least one Masterwork to sit the exam",
+    },
+    {
+      when: caseIds.length === 0,
+      reason: "Pick at least one sealed case for it to work",
+    },
+  ]);
+
   const audition = () => {
-    if (deskIds.length === 0) {
-      toast.error("Pick at least one Masterwork to sit the exam.");
-      return;
-    }
-    if (caseIds.length === 0) {
-      toast.error("Pick at least one sealed case for it to work.");
-      return;
-    }
+    // Gated on the button; see `missingPicks`.
+    if (missingPicks) return;
     run.reset();
     void run.launch(
       {
@@ -432,12 +442,20 @@ export function UnfoldingAuditionPanel({
         </span>
       </label>
 
-      <Button onClick={audition} disabled={run.running}>
+      <GatedActionButton
+        onClick={audition}
+        disabled={run.running}
+        wrapperClassName="justify-start"
+        reason={missingPicks}
+      >
         {run.running ? (run.stage ?? "Working the cases…") : "Run the exam"}
-      </Button>
-      {run.running && run.stage ? (
-        <p className="text-xs text-muted-foreground">{run.stage}</p>
-      ) : null}
+      </GatedActionButton>
+      {/* THE WHOLE ACCOUNT, NOT JUST THE CURRENT LINE (cold walk 8,
+          2026-09-17). This lane showed `run.stage` — the latest step only —
+          so every earlier step, including the server's own explanation of why
+          a run found nothing, was overwritten by the next one and gone the
+          moment the run ended. `run.stages` is the full list and it stays. */}
+      <RunStages run={run} />
       {run.error ? (
         <p className="text-sm text-destructive">{run.error}</p>
       ) : null}

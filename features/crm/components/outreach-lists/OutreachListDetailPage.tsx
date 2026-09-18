@@ -43,6 +43,7 @@ import type {
 import { ItemMenu } from "@/components/official/item/ItemMenu";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { outreachMemberMenuTarget, useCrmRowMenu } from "../crm-row-actions";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import type { ItemMenuConfig } from "@/components/official/item/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
@@ -323,7 +324,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
       header: "Member",
       sortable: false,
       filter: false,
-      href: (row) => (row.party ? `/crm/${row.party.id}` : undefined),
+      href: (row) => (row.party ? resolveEntityDoors("party", row.party.id).href ?? undefined : undefined),
       cell: (row) =>
         !row.party ? (
           <UnresolvedEntityRef
@@ -520,7 +521,7 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
                   id: "open-record",
                   kind: "link" as const,
                   label: "Open CRM record",
-                  href: `/crm/${row.party.id}`,
+                  href: resolveEntityDoors("party", row.party.id).href ?? "",
                 },
               ]
             : [],
@@ -892,7 +893,8 @@ export function OutreachListDetailPage({ listId }: { listId: string }) {
                 detail={{ enabled: false }}
                 window={{ enabled: false }}
                 onRowOpen={(row) => {
-                  if (row.party) router.push(`/crm/${row.party.id}`);
+                  const href = row.party ? resolveEntityDoors("party", row.party.id).href : null;
+                  if (href) router.push(href);
                 }}
                 query={{
                   mode: "controlled",

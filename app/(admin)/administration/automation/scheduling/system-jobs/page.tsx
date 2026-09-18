@@ -26,15 +26,15 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import {
-  AlertTriangle,
-  Loader2,
-  Pencil,
-  Play,
-  Power,
-  RefreshCw,
-} from "lucide-react";
+import { AlertTriangle, Loader2, Pencil, Play, Power } from "lucide-react";
 import cronstrue from "cronstrue";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { TapTargetButtonTransparent } from "@ai-matrx/tap-target";
+import { PencilTapButton, PlayTapButton } from "@ai-matrx/tap-target/buttons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -85,7 +85,10 @@ import {
   useAdminSchedulingScopeSlice,
 } from "@/features/scheduling/lib/admin-scheduling-scope";
 import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
-import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import {
+  OrganizationContextNotice,
+  OrganizationRequiredNotice,
+} from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 
 // The trigger types humanizeTrigger knows. A system trigger's `type` arrives
@@ -145,7 +148,7 @@ function taxonomyNodeLabel(
 }
 
 export default function SystemJobsPage() {
-  const { organizationId, canLoad, organizationRequired } =
+  const { organizationId, canLoad, organizationRequired, organizationState } =
     useOrganizationRequired();
   const [rows, setRows] = useState<SystemTaskResponse[]>([]);
   const [taxonomyNodes, setTaxonomyNodes] = useState<SystemTaskTaxonomyNode[]>(
@@ -437,19 +440,18 @@ export default function SystemJobsPage() {
           const expr = String(
             (trig.config as Record<string, unknown> | null)?.expression ?? "",
           );
-          const hint = cronHint(expr);
           return (
-            <div className="min-w-0">
-              <span className="font-mono text-xs">{expr || "cron"}</span>
-              {hint && (
-                <div
-                  className="text-[11px] text-muted-foreground line-clamp-1"
-                  title={hint}
-                >
-                  {hint}
-                </div>
-              )}
-            </div>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-xs line-clamp-2" tabIndex={0}>
+                  {cadenceText(r)}
+                  {trig.enabled === false ? " (trigger off)" : ""}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent>
+                <code>{expr || "No cron expression"}</code>
+              </TooltipContent>
+            </Tooltip>
           );
         }
         return (
@@ -512,47 +514,34 @@ export default function SystemJobsPage() {
   const renderRowActions = (r: SystemTaskResponse) => {
     const isBusy = busy.has(r.id);
     return (
-      <span className="flex items-center gap-1">
-        <Button
-          size="sm"
-          variant={r.enabled ? "outline" : "default"}
-          className="h-7 px-2 text-xs"
+      <>
+        <TapTargetButtonTransparent
+          ariaLabel={
+            isBusy ? "Updating job" : r.enabled ? "Disable job" : "Enable job"
+          }
           disabled={isBusy}
           onClick={() => void toggleEnabled(r)}
         >
-          {isBusy ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <Power className="h-3 w-3" />
-          )}
-          {r.enabled ? "Disable" : "Enable"}
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 px-2 text-xs"
+          {isBusy ? <Loader2 className="animate-spin" /> : <Power />}
+        </TapTargetButtonTransparent>
+        <PencilTapButton
+          variant="transparent"
+          ariaLabel="Edit job"
           disabled={isBusy}
           onClick={() => setEditing(r)}
-        >
-          <Pencil className="h-3 w-3" />
-          Edit
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 px-2 text-xs"
+        />
+        <PlayTapButton
+          variant="transparent"
+          ariaLabel="Run job now"
           disabled={isBusy || r.handler_registered === false}
-          title={
+          tooltip={
             r.handler_registered === false
               ? "No handler registered — nothing would run."
-              : undefined
+              : "Run job now"
           }
           onClick={() => void runNow(r)}
-        >
-          <Play className="h-3 w-3" />
-          Run now
-        </Button>
-      </span>
+        />
+      </>
     );
   };
 
@@ -692,18 +681,23 @@ export default function SystemJobsPage() {
       width: 200,
       cell: (r) => {
         const hint = cronHint(r.schedule);
+        const label =
+          hint ??
+          (/^\s*\d+\s+seconds?\s*$/i.test(r.schedule)
+            ? `Every ${r.schedule.trim()}`
+            : r.schedule);
         return (
-          <div className="min-w-0">
-            <span className="font-mono text-xs">{r.schedule}</span>
-            {hint && (
-              <div
-                className="text-[11px] text-muted-foreground line-clamp-1"
-                title={hint}
-              >
-                {hint}
-              </div>
-            )}
-          </div>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="text-xs line-clamp-2" tabIndex={0}>
+                {label}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent>
+              <code>{r.schedule}</code>
+              <p>Uses the database scheduler timezone.</p>
+            </TooltipContent>
+          </Tooltip>
         );
       },
     },
@@ -797,32 +791,27 @@ export default function SystemJobsPage() {
   const renderDbRowActions = (j: DbJobResponse) => {
     const isBusy = dbBusy.has(j.jobid);
     return (
-      <span className="flex items-center gap-1">
-        <Button
-          size="sm"
-          variant={j.active ? "outline" : "default"}
-          className="h-7 px-2 text-xs"
+      <>
+        <TapTargetButtonTransparent
+          ariaLabel={
+            isBusy
+              ? "Updating database job"
+              : j.active
+                ? "Disable database job"
+                : "Enable database job"
+          }
           disabled={isBusy}
           onClick={() => void toggleDbActive(j)}
         >
-          {isBusy ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <Power className="h-3 w-3" />
-          )}
-          {j.active ? "Disable" : "Enable"}
-        </Button>
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 px-2 text-xs"
+          {isBusy ? <Loader2 className="animate-spin" /> : <Power />}
+        </TapTargetButtonTransparent>
+        <PencilTapButton
+          variant="transparent"
+          ariaLabel="Edit database job"
           disabled={isBusy}
           onClick={() => setEditingDbJob(j)}
-        >
-          <Pencil className="h-3 w-3" />
-          Edit
-        </Button>
-      </span>
+        />
+      </>
     );
   };
 
@@ -869,6 +858,15 @@ export default function SystemJobsPage() {
   // Nothing here can load without an organization, and the refusal happens
   // before the wire — so the screen says exactly that, with the picker, rather
   // than printing the transport's sentence into an empty-table caption.
+  // A read that FAILED says so and offers Retry, never the picker-backed
+  // refusal — nobody read this person's memberships (R37).
+  if (organizationState === "unavailable") {
+    return (
+      <div className="flex h-full min-h-0 flex-col overflow-y-auto p-4">
+        <OrganizationContextNotice state="unavailable" what="System jobs" />
+      </div>
+    );
+  }
   if (organizationRequired) {
     return (
       <div className="flex h-full min-h-0 flex-col overflow-y-auto p-4">
@@ -919,20 +917,7 @@ export default function SystemJobsPage() {
             toolbar={{
               search: true,
               searchPlaceholder: "Search title, tool, classification…",
-              actions: (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => void load()}
-                  disabled={fetching}
-                >
-                  {fetching ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-                </Button>
-              ),
+              refresh: { onRefresh: load, label: "Refresh system jobs" },
             }}
             copy={{
               label: "System job",
@@ -999,20 +984,7 @@ export default function SystemJobsPage() {
             toolbar={{
               search: true,
               searchPlaceholder: "Search job, classification, command…",
-              actions: (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => void loadDb()}
-                  disabled={dbFetching}
-                >
-                  {dbFetching ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-                </Button>
-              ),
+              refresh: { onRefresh: loadDb, label: "Refresh database jobs" },
             }}
             copy={{
               label: "Database job",

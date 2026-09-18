@@ -21,8 +21,11 @@
 
 import { useState } from "react";
 import { GitCompareArrows, Lock } from "lucide-react";
-import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
@@ -37,8 +40,28 @@ import { ProTextarea } from "@/components/official/ProTextarea";
 import { MasterworkDictationOrigin } from "@/features/masterwork/MasterworkDictationOrigin";
 import type { paths } from "@/types/python-generated/api-types";
 import { useMasterworkRun } from "../../durable-run/useMasterworkRun";
+import { createSittingStore, type SittingBase } from "../../sitting/sitting";
+import { useDialogSitting } from "../../sitting/useDialogSitting";
+import { SittingResumed } from "../../sitting/SittingResumed";
+import { RunStages } from "../RunStages";
 
 const PAIRWISE_PATH = "/masterworks/audition-pairwise" satisfies keyof paths;
+
+// A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17): both
+// pasted answers and what each was called survive a reload.
+interface CompareTwoSitting extends SittingBase {
+  labelOne: string;
+  labelTwo: string;
+  textOne: string;
+  textTwo: string;
+}
+
+const compareTwoSittings = createSittingStore<CompareTwoSitting>({
+  keyPrefix: "matrx.masterwork.compare-two.v1:",
+  isUsable: (sitting) =>
+    (sitting.textOne ?? "").trim().length > 0 ||
+    (sitting.textTwo ?? "").trim().length > 0,
+});
 
 type Mode = "preference" | "faithfulness";
 
@@ -134,6 +157,29 @@ export function CompareTwoDialog({
   const [rulebookTwo, setRulebookTwo] = useState("");
   const [caseNote, setCaseNote] = useState("");
 
+  // A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17: every
+  // capture dialog on the Rulebook page lost typed work on a reload, silently).
+  const sitting = useDialogSitting<CompareTwoSitting>({
+    store: compareTwoSittings,
+    scopeId: rulebookId,
+    active: open,
+    snapshot: { labelOne, labelTwo, textOne, textTwo },
+    isWorthKeeping: (s) =>
+      (s.textOne ?? "").trim().length > 0 || (s.textTwo ?? "").trim().length > 0,
+    apply: (kept) => {
+      setLabelOne(kept.labelOne ?? "Answer 1");
+      setLabelTwo(kept.labelTwo ?? "Answer 2");
+      setTextOne(kept.textOne ?? "");
+      setTextTwo(kept.textTwo ?? "");
+    },
+    clearScreen: () => {
+      setLabelOne("Answer 1");
+      setLabelTwo("Answer 2");
+      setTextOne("");
+      setTextTwo("");
+    },
+  });
+
   const run = useMasterworkRun<PairwiseVerdict>({
     surface: "compare_two",
     rulebookId,
@@ -142,11 +188,21 @@ export function CompareTwoDialog({
   });
   const verdict = run.result;
 
+  /** What is still missing before the two answers can be compared. */
+  const missingAnswers = firstBlockingReason([
+    {
+      when: textOne.trim().length < 50,
+      reason: "Paste the first answer — a paragraph at least",
+    },
+    {
+      when: textTwo.trim().length < 50,
+      reason: "Paste the second answer — a paragraph at least",
+    },
+  ]);
+
   const compare = () => {
-    if (textOne.trim().length < 50 || textTwo.trim().length < 50) {
-      toast.error("Paste both answers first — at least a paragraph each.");
-      return;
-    }
+    // Gated on the button; see `missingAnswers`.
+    if (missingAnswers) return;
     run.reset();
     void run.launch(
       {
@@ -173,7 +229,7 @@ export function CompareTwoDialog({
       rulebookId={rulebookId}
     >
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="matrx-touch-targets max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <GitCompareArrows className="h-4 w-4 text-primary" />
@@ -186,6 +242,13 @@ export function CompareTwoDialog({
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
+            {sitting.resumed ? (
+              <SittingResumed
+                what="both pasted answers and what you called each of them"
+                onDiscard={sitting.discard}
+                onAcknowledge={sitting.acknowledge}
+              />
+            ) : null}
             <div className="flex flex-wrap gap-2">
               <Button
                 size="sm"
@@ -268,11 +331,17 @@ export function CompareTwoDialog({
               />
             </div>
 
-            <Button onClick={compare} disabled={run.running}>
+            <GatedActionButton
+              onClick={compare}
+              disabled={run.running}
+              reason={missingAnswers}
+            >
               {run.running
                 ? (run.stage ?? "Judging blind…")
                 : "Compare, blind"}
-            </Button>
+            </GatedActionButton>
+            <RunStages run={run} />
+            <RunStages run={run} />
             {run.error ? (
               <p className="text-sm text-destructive">{run.error}</p>
             ) : null}

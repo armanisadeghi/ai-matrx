@@ -35,6 +35,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { ComposerChip } from "@/features/agents/components/inputs/smart-input/ComposerChip";
 import { AgentCredit } from "../components/AgentCredit";
 import {
   BookOpen,
@@ -53,6 +54,11 @@ import { useConversationResume } from "@/features/agents/hooks/useConversationRe
 import { useMandate } from "@/features/mandates/useMandate";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
+import {
+  setDisplayDescriptionOverride,
+  setDisplayIconNameOverride,
+  setDisplayNameOverride,
+} from "@/features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice";
 import { selectUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.selectors";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { RecordingOriginProvider } from "@/features/audio/RecordingOriginProvider";
@@ -291,6 +297,41 @@ function ConductorColumn({
   const dispatch = useAppDispatch();
   const store = useAppStore();
 
+  // WHO IS IN THE ROOM, AND WHAT DO I DO NOW (jobs-bar-2026-09-16, item 3).
+  // Before this, the Conductor's first screen was the generic agent hero:
+  // "Ready to run" over "Fill in any variables below and type a message to
+  // start." There are no variables below — the Rulebook rides in as named
+  // variables the Expert never sees — so the one instruction on the page
+  // pointed at something that does not exist, and nothing on the screen said
+  // what this conversation is FOR. Same mechanism the agent apps use.
+  // No wait for the instance row: the slice keeps a write that arrives before
+  // the row and replays it when the row lands (D326, fixed 2026-09-16). This
+  // panel gated on the row's existence until then — the same local workaround
+  // the interview panel carried, for a defect the slice has now fixed once.
+  useEffect(() => {
+    dispatch(
+      setDisplayNameOverride({
+        conversationId,
+        value: "Let's build your Masterwork",
+      }),
+    );
+    dispatch(
+      setDisplayDescriptionOverride({
+        conversationId,
+        value:
+          `I have read "${rulebookName}" and I build the working system from it. ` +
+          "Tell me what you want it to do for you — or press one of the questions " +
+          "below and I'll start there.",
+      }),
+    );
+    dispatch(
+      setDisplayIconNameOverride({
+        conversationId,
+        value: "BrainCircuit",
+      }),
+    );
+  }, [conversationId, dispatch, rulebookName]);
+
   const lastChipRef = useRef<string | null>(null);
   const stageChip = (text: string) => {
     const existing = selectUserInputText(conversationId)(store.getState());
@@ -313,6 +354,11 @@ function ConductorColumn({
       <AgentConversationColumn
         conversationId={conversationId}
         surfaceKey={surfaceKey}
+        /* The reader here is the Expert being interviewed about her own
+           judgment — never a builder. Tool cards, raw result grids and
+           bound-variable chips do not belong in front of her; an admin with
+           creator mode on still sees all of it. */
+        audience="expert"
         constrainWidth
         edgeToEdgeScroll
         smartInputProps={{
@@ -352,16 +398,17 @@ function ConductorColumn({
         }}
         afterMessages={
           <div className="mx-auto flex max-w-xl flex-wrap justify-center gap-1.5 px-4 pt-2">
+            {/* 🚨 A CHIP THAT FILLS THE BOX MUST LEAVE YOU ABLE TO SEND
+                (cold walk 5, finding 6b). The plain <button> took the caret out
+                of the composer, so Enter afterwards went to the chip and only
+                the mouse could send. `ComposerChip` refuses the focus and puts
+                it back — one component, so no surface re-types the bug. */}
             {CONDUCTOR_CHIPS.map((chip) => (
-              <button
+              <ComposerChip
                 key={chip.label}
-                type="button"
-                onClick={() => stageChip(chip.message)}
-                className="rounded-full border border-border bg-card px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
-                title="Puts the request in the message box — you can edit it before sending."
-              >
-                {chip.label}
-              </button>
+                label={chip.label}
+                onStage={() => stageChip(chip.message)}
+              />
             ))}
           </div>
         }

@@ -7,14 +7,15 @@ import { CODING_SESSION_PROVIDER_META, providerMeta } from "../catalog";
 import {
   APP_META,
   describeSource,
+  FEATURE_META,
 } from "@/features/agents/redux/conversation-history/source-registry";
 
 describe("coding-session provider vocabulary", () => {
-  it("maps storage enums to the exact conversation source_app slugs", () => {
+  it("maps storage enums to the exact conversation source_feature slugs", () => {
     expect(
       Object.values(CODING_SESSION_PROVIDER_META).map((provider) => [
         provider.provider,
-        provider.sourceApp,
+        provider.sourceFeature,
       ]),
     ).toEqual([
       ["claude_code", "claude-code"],
@@ -28,11 +29,13 @@ describe("coding-session provider vocabulary", () => {
     expect(providerMeta("other")).toBeNull();
   });
 
-  it("registers every provider in the canonical conversation source display", () => {
+  it("registers every tool as a FEATURE of the code-plugin app, never an app", () => {
+    expect(APP_META["code-plugin"]?.label).toBe("Code Plugin");
     for (const provider of Object.values(CODING_SESSION_PROVIDER_META)) {
-      expect(APP_META[provider.sourceApp]?.label).toBe(provider.label);
-      expect(describeSource(provider.sourceApp, "code-editor")).toBe(
-        `${provider.label} · Code`,
+      expect(APP_META[provider.sourceFeature]).toBeUndefined();
+      expect(FEATURE_META[provider.sourceFeature]?.label).toBe(provider.label);
+      expect(describeSource("code-plugin", provider.sourceFeature)).toBe(
+        `Code Plugin · ${provider.label}`,
       );
     }
   });
@@ -79,5 +82,14 @@ describe("coding-session storage health", () => {
 
   it("renders corrupt timestamps as an explicit data error", () => {
     expect(formatSessionTimestamp("not-a-timestamp")).toBe("Invalid timestamp");
+  });
+
+  it("says a missing timestamp is missing, never that it is invalid", () => {
+    // `last_seen_at` is nullable: a binding that has never delivered has no
+    // timestamp at all. Calling that "Invalid timestamp" tells the reader
+    // their data is corrupt when nothing is wrong.
+    expect(formatSessionTimestamp(null)).toBe("Not recorded");
+    expect(formatSessionTimestamp(undefined)).toBe("Not recorded");
+    expect(formatSessionTimestamp("   ")).toBe("Not recorded");
   });
 });

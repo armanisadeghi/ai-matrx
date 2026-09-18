@@ -85,8 +85,11 @@
  *               Renamed 2026-09-09; this guard is why it cannot come back.
  *   attribution — a `sourceFeature` value that is not in the generated
  *               SOURCE_FEATURES allow-list. That list comes from the Python
- *               server and cannot be extended here, so an invented value
- *               silently misattributes every agent run the menu launches.
+ *               server and cannot be extended here. A value that is not a
+ *               genuine product feature silently misattributes every agent
+ *               run; a genuine missing product must be registered in the
+ *               canonical Python registry and regenerated, never relabeled
+ *               as the nearest existing feature.
  *               Checked directly against the generated file because tsc only
  *               speaks once the whole tree compiles — and during a fleet run
  *               the tree is often red from another session, which is exactly
@@ -109,6 +112,7 @@
 import { readFileSync, globSync } from "node:fs";
 import { basename, join } from "node:path";
 import ts from "typescript";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = process.cwd();
 const ARGV = process.argv.slice(2);
@@ -459,7 +463,9 @@ function densityViolations(src: string): string[] {
  *
  * `SOURCE_FEATURES` is AUTO-GENERATED from the Python server's provenance
  * allow-list — it cannot be extended from this repo, so a value that is not in
- * it is always wrong, never a missing entry to add. Two fleet workers invented
+ * it is either an invented value or a genuine product missing from the
+ * canonical registry. Register the genuine product there and regenerate; do
+ * not relabel it as the nearest existing feature. Two fleet workers invented
  * one anyway ("admin-relationships", "hr") because the prop reads like free
  * text. It is not: it is how a run launched from this menu is attributed to
  * its true caller, so a wrong value silently files runs under the wrong
@@ -490,7 +496,7 @@ function attributionFindings(files: Map<string, string>): Finding[] {
         out.push({
           population: "attribution",
           file: path,
-          detail: `sourceFeature="${m[1]}" is not in the generated SOURCE_FEATURES allow-list — pick an existing value, never invent one`,
+          detail: `sourceFeature="${m[1]}" is not in the generated SOURCE_FEATURES allow-list — use a true registered feature; if this is a genuine missing product, register it in aidream's canonical source-attribution registry and regenerate`,
         });
     }
   }
@@ -1169,7 +1175,7 @@ function selfTest(): never {
       ? `\nLIVE-ITEM LAW self-test: ${cases.length}/${cases.length} — the guard can still fail.\n`
       : `\nLIVE-ITEM LAW self-test: ${failed} of ${cases.length} verdicts flipped. The law is broken.\n`,
   );
-  process.exit(failed === 0 ? 0 : 1);
+  exitAfterDrain(failed === 0 ? 0 : 1);
 }
 
 function main() {
@@ -1316,11 +1322,11 @@ function main() {
         2,
       ),
     );
-    process.exit(STRICT && selected.length > 0 ? 1 : 0);
+    exitAfterDrain(STRICT && selected.length > 0 ? 1 : 0);
   }
 
   report(selected, covered);
-  process.exit(STRICT && selected.length > 0 ? 1 : 0);
+  exitAfterDrain(STRICT && selected.length > 0 ? 1 : 0);
 }
 
 function countBy(rows: Finding[]): Record<string, number> {

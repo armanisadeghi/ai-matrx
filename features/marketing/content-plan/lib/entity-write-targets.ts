@@ -19,6 +19,8 @@
  * told the write succeeded.
  */
 
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
+
 /**
  * `entity_draft.source_type_id` — a category UUID the editor's Source type
  * picker actually offers, or `null` for its "None" option.
@@ -79,8 +81,9 @@ export function parseOpenEntityEditorWrite(
     // A person/company is a CRM record, not a plan.entity row — the editor
     // dialog cannot open it, but the agent named a real thing; say where it
     // lives instead of pretending it does not exist.
+    const partyHref = resolveEntityDoors("party", id).href ?? "";
     throw new Error(
-      `open_entity_editor: "${id}" is a person/company — a CRM record, not a source. It is managed at /crm/${id}; this dialog edits sources and media only.`,
+      `open_entity_editor: "${id}" is a person/company — a CRM record, not a source. It is managed at ${partyHref}; this dialog edits sources and media only.`,
     );
   }
   if (!liveEntityIds.includes(id)) {

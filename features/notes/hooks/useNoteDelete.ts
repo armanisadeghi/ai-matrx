@@ -24,9 +24,10 @@
 // softener — names the two ways back (the Undo toast, and Trash).
 
 import { useState, useCallback, useRef } from "react";
-import { useAppDispatch } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { removeInstanceTab } from "../redux/slice";
-import { deleteNote, restoreNote } from "../redux/thunks";
+import { selectNoteFetchStatus, selectNoteIsDirtyById } from "../redux/selectors";
+import { deleteNote, noteHasUnsavedEdits, restoreNote } from "../redux/thunks";
 import { isNoteContentEmpty } from "../utils/noteUtils";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast-service";
@@ -56,6 +57,8 @@ export function useNoteDelete({
   onDeleted,
 }: UseNoteDeleteOptions) {
   const dispatch = useAppDispatch();
+  const isDirty = useAppSelector(selectNoteIsDirtyById(noteId));
+  const fetchStatus = useAppSelector(selectNoteFetchStatus(noteId));
   // Not a dialog's open state any more — the dialog belongs to the package.
   // This is "a confirmation is on screen right now", which the notes tab strip
   // reads to keep its idle auto-move parked while the user decides.
@@ -99,18 +102,27 @@ export function useNoteDelete({
   }, [dispatch, instanceId, noteId, noteLabel, closeTab, onDeleted]);
 
   const requestDelete = useCallback(async () => {
-    if (isNoteContentEmpty(content)) {
+    // "Empty" is judged on the BODY, which a list row does not carry (audit
+    // N-24): only a fully read note may skip the confirmation.
+    if (fetchStatus === "full" && isNoteContentEmpty(content)) {
       await performDelete();
       return;
     }
 
     const title = noteLabel?.trim() ? noteLabel.trim() : "Untitled";
+    // Edits from the last few seconds may exist only in Redux or in the
+    // editor's pre-debounce buffer — Trash holds the SERVER's copy, which does
+    // not have them. Say so, and name where they survive (audit N-21).
+    const unsaved = noteHasUnsavedEdits({ id: noteId, _dirty: isDirty, content: content ?? null });
+    const description = unsaved
+      ? `This note has unsaved edits from the last few seconds. It leaves your notes list and its tab closes, and Trash holds the last saved version — deleting keeps a copy of the unsaved text in this browser, offered back to you as recovered text. You can bring the note back from the Undo button on the toast, or later from Trash.`
+      : `This note leaves your notes list and its tab closes. It is moved to Trash, not erased — you can bring it back from the Undo button on the toast, or later from Trash.`;
     setConfirmOpen(true);
     let ok = false;
     try {
       ok = await confirm({
         title: `Delete “${title}”?`,
-        description: `This note leaves your notes list and its tab closes. It is moved to Trash, not erased — you can bring it back from the Undo button on the toast, or later from Trash.`,
+        description,
         confirmLabel: "Delete note",
         variant: "destructive",
       });
@@ -120,7 +132,7 @@ export function useNoteDelete({
     if (!ok) return;
 
     await performDelete();
-  }, [content, noteLabel, performDelete]);
+  }, [content, fetchStatus, isDirty, noteId, noteLabel, performDelete]);
 
   return {
     /** True while the confirmation is on screen. Not a dialog you render. */

@@ -6,7 +6,7 @@ export const metadata = createRouteMetadata("/demos/agents", {
   titlePrefix: "Agents",
   title: "Demos",
   description: "Agent UI demos and component playgrounds",
-  letter: "Ag",
+  letter: "DAG",
 });
 
 export default function AgentsDemosLayout({

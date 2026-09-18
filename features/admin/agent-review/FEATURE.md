@@ -57,6 +57,10 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
 - The detail header keeps Back and Open page fixed around a single-line fading
   title. Its only metadata line is the compact repository → domain → feature
   hierarchy; status is not repeated above the stage rail.
+- The item header exposes the compact **Alchemy** transfer control. It captures
+  the live declared review scope at open time, so the current routing metadata
+  and unsaved feedback draft travel with the review instead of a stale row
+  snapshot.
 - The stage rail is a compact, horizontally scrollable stepper. Completed,
   current, and future stages read as one sequence instead of six equal cards
   competing with the review itself.
@@ -89,12 +93,35 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
   share sheet, then clipboard, then the manual copy dialog; the toast only claims
   a copy when a copy actually happened.
 
+- 🚨 **Approve and raise — approving is never the reason a thread dies.**
+  Arman, 2026-09-16, on a row he had already fixed himself: *"this exposes a
+  problem with this system where I have no way of closing this out but then
+  starting a conversation about the problem I'm actually having here. So the
+  only option is to not approve it, even though it's ok to approve now that I
+  fixed it myself."* Approve and Request changes were the only two doors, so a
+  row that deserved approval BUT exposed a separate problem got left
+  un-approved purely to keep a thread alive. **Approve and raise** is one
+  action: it approves through the EXACT path Approve uses
+  (`recordHumanReviewAction`, which also appends the note to the row's own
+  conversation, so the history shows what was raised) and files the same note
+  as a new platform feedback item carrying
+  `metadata.raised_from_review_row = <row id>` and `route` = the row's page.
+  **The two writes cross two systems, so the outcome is never averaged into a
+  boolean** (`approve-and-raise.ts`): `approved_and_raised` shows both facts
+  with a door to the item; `approved_not_raised` says the row IS approved, the
+  note was NOT filed, names the reason, and offers a retry that re-runs ONLY
+  the filing — it can never approve twice or post the note twice;
+  `not_approved` files nothing, so an orphan item can never exist for a row
+  that did not approve. Every visit afterwards shows **Raised from this
+  review** (`getFeedbackRaisedFromReviewRow`), so the link is a durable panel,
+  not a toast that scrolls away. Guard: `approve-and-raise.test.ts`.
+
 ## Agent surfaces
 
 Both routes are agent-aware surfaces, and they are TWO surfaces on purpose: the list can only emit true queue-wide counts because it reads every row, and the item page can only emit the open row's state — neither can honestly promise the other's values.
 
 - `matrx-admin/agent-review` (list) emits queue counts per workflow status, repair-routing rollups from `metadata.triage`, the registry classification vocabulary, and a 25-row sample of the open view. Its one write target, `review_triage_classification`, re-routes ONE row (lane, priority, workstreams, required tools) through `updateReviewQueueRow` and re-reads the row to prove the write landed.
-- `matrx-admin/agent-review-item` (workspace) emits the open row, its classification, its triage envelope, and the live feedback editor. Its one write target, `review_feedback_draft`, stages prose into that editor; nothing is saved.
+- `matrx-admin/agent-review-item` (workspace) emits every loaded row field: its human classification plus registry ids, filing source, full metadata, timestamps, validated triage envelope, and the live feedback editor. Its one write target, `review_feedback_draft`, stages prose into that editor; nothing is saved. The header's canonical read-only menu and Alchemy control both resolve through this same trigger-time scope.
 - **No agent may change a row's STATUS on either surface.** This queue is where agents register their own work, so no write target exists for Request changes, Approve, Run agent review again, or Archive — every transition stays a human button press recorded in the review's conversation. Claim state (`metadata.triage.assignment`) and the verification record are equally off-limits from the page: they belong to the skill's atomic SQL claim protocol.
 
 ## Security and integration
@@ -140,6 +167,23 @@ A recurring `agent-review-sweep` schedule is PROPOSED, not created, in
 no-unapproved-schedules law.
 
 ## Change log
+
+- 2026-09-17 — Added **Approve and raise** to the review workspace: one action
+  approves the row through the existing Approve path and files the human's note
+  as a new platform feedback item stamped `raised_from_review_row`, ending the
+  false choice between closing a row and keeping a thread alive. The outcome is
+  reported as two separate facts with a retry for the filing half, and a
+  durable "Raised from this review" panel links every item raised from the row.
+  Moved `reviewItemPath` out of the 700-line queue table into `doors.ts`, and
+  moved the feedback console's door to `features/admin/feedback/doors.ts` —
+  a Vercel build parks `app/(admin)` by renaming it, so a `features/` module
+  may never import a door declared beside an admin route.
+
+- 2026-09-16 — Completed the Agent Review Item declaration for every
+  `agent.review_queue` field the workspace loads, added the canonical header
+  context menu, and exposed the package-owned Alchemy transfer control over
+  that live declared scope. Readiness remains partial until a fresh isolated
+  super-admin browser pass can confirm the runtime and staged write.
 
 - 2026-09-11 — Search now covers every string leaf of `metadata`, not a curated
   key list: SQL found 31 "print" rows, the list showed 30 (the miss lived only

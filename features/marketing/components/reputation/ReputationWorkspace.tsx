@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -570,15 +570,14 @@ export function ReputationWorkspace({
 } = {}) {
   const { site, brandId } = useMarketingSite();
   const { getBaseValues } = useMarketingSiteSurfaceBase();
-  const params = useParams<{ brandId: string }>();
   const pathname = usePathname();
-  const workspace = useReputationWorkspace(site.id, params.brandId);
+  const workspace = useReputationWorkspace(site.id, brandId);
   const analysis = useReputationAnalysis({
     siteId: site.id,
-    brandId: params.brandId,
+    brandId,
     organizationId: site.organization_id,
   });
-  const updateCase = useUpdateReputationCase(site.id, params.brandId);
+  const updateCase = useUpdateReputationCase(site.id, brandId);
   // The five views are declared in `lib/site-subviews.ts` and rendered by the
   // SITE HEADER, which owns switching. This file only reads which one is
   // active — from the route when the route owns it, from `?view=` otherwise.
@@ -937,7 +936,7 @@ export function ReputationWorkspace({
                       </Link>
                     </Button>
                     <Button asChild size="sm" variant="outline" className="h-7">
-                      <Link href={`/marketing/brands/${params.brandId}`}>Open brand facts & assets</Link>
+                      <Link href={marketingRoutes.brand(brandId)}>Open brand facts & assets</Link>
                     </Button>
                   </div>
                 </SectionCard>

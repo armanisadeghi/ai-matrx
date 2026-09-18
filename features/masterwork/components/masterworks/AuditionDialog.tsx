@@ -26,6 +26,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Scale } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -58,8 +62,30 @@ import {
   saveExpertCall,
   type AuditionRunSummary,
 } from "../../audition/auditionRuns";
+import { createSittingStore, type SittingBase } from "../../sitting/sitting";
+import { useDialogSitting } from "../../sitting/useDialogSitting";
+import { SittingResumed } from "../../sitting/SittingResumed";
 
 const AUDITION_PATH = "/masterworks/audition" satisfies keyof paths;
+
+// A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17): the
+// pasted candidate, the reference it is judged against, what the case was
+// called, and the input given to the vanilla arm all survive a reload.
+interface AuditionSitting extends SittingBase {
+  candidate: string;
+  reference: string;
+  contextNote: string;
+  vanillaInput: string;
+}
+
+const auditionSittings = createSittingStore<AuditionSitting>({
+  keyPrefix: "matrx.masterwork.audition.v1:",
+  isUsable: (sitting) =>
+    (sitting.candidate ?? "").trim().length > 0 ||
+    (sitting.reference ?? "").trim().length > 0 ||
+    (sitting.contextNote ?? "").trim().length > 0 ||
+    (sitting.vanillaInput ?? "").trim().length > 0,
+});
 
 const VERDICT_COPY: Record<string, { label: string; cls: string }> = {
   candidate_better: {
@@ -201,6 +227,32 @@ export function AuditionDialog({
     [rules],
   );
 
+  // A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17: every
+  // capture dialog on the Rulebook page lost typed work on a reload, silently).
+  const sitting = useDialogSitting<AuditionSitting>({
+    store: auditionSittings,
+    scopeId: rulebookId,
+    active: open,
+    snapshot: { candidate, reference, contextNote, vanillaInput },
+    isWorthKeeping: (s) =>
+      (s.candidate ?? "").trim().length > 0 ||
+      (s.reference ?? "").trim().length > 0 ||
+      (s.contextNote ?? "").trim().length > 0 ||
+      (s.vanillaInput ?? "").trim().length > 0,
+    apply: (kept) => {
+      setCandidate(kept.candidate ?? "");
+      setReference(kept.reference ?? "");
+      setContextNote(kept.contextNote ?? "");
+      setVanillaInput(kept.vanillaInput ?? "");
+    },
+    clearScreen: () => {
+      setCandidate("");
+      setReference("");
+      setContextNote("");
+      setVanillaInput("");
+    },
+  });
+
   const run = useMasterworkRun<AuditionVerdict>({
     surface: "audition",
     rulebookId,
@@ -265,11 +317,21 @@ export function AuditionDialog({
     refreshHistory();
   }, [run.status, run.runId, verdict, handledRunId, onGapsCaptured, refreshHistory]);
 
+  /** What is still missing before the two texts can be judged. */
+  const missingTexts = firstBlockingReason([
+    {
+      when: candidate.trim().length < 50,
+      reason: "Paste our version first — a paragraph at least",
+    },
+    {
+      when: reference.trim().length < 50,
+      reason: "Paste the original too — a paragraph at least",
+    },
+  ]);
+
   const audition = () => {
-    if (candidate.trim().length < 50 || reference.trim().length < 50) {
-      toast.error("Paste both texts first — ours and the original.");
-      return;
-    }
+    // Gated on the button; see `missingTexts`.
+    if (missingTexts) return;
     if (compareVanilla && vanillaInput.trim().length < 20) {
       toast.error(
         "To compare against vanilla AI, paste the same input you gave your Masterwork.",
@@ -322,7 +384,7 @@ export function AuditionDialog({
       rulebookId={rulebookId}
     >
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
+      <DialogContent className="matrx-touch-targets max-h-[85dvh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Scale className="h-4 w-4 text-primary" />
@@ -361,6 +423,13 @@ export function AuditionDialog({
           <UnfoldingAuditionPanel rulebookId={rulebookId} />
         ) : (
         <div className="space-y-3">
+          {sitting.resumed ? (
+            <SittingResumed
+              what="what you had pasted, the original it was judged against, what you called the case, and the vanilla input"
+              onDiscard={sitting.discard}
+              onAcknowledge={sitting.acknowledge}
+            />
+          ) : null}
           <HistoryStrip
             runs={history}
             openRunId={reopened?.runId ?? null}
@@ -440,9 +509,13 @@ export function AuditionDialog({
               ) : null}
             </div>
           </div>
-          <Button onClick={audition} disabled={run.running}>
+          <GatedActionButton
+            onClick={audition}
+            disabled={run.running}
+            reason={missingTexts}
+          >
             {run.running ? (run.stage ?? "Judging rule by rule…") : "Compare"}
-          </Button>
+          </GatedActionButton>
           {run.running && run.stages.length > 0 ? (
             <p className="text-xs text-muted-foreground">{run.stage}</p>
           ) : null}

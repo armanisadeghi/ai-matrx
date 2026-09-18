@@ -14,12 +14,14 @@
  *   - Counts are `head: true` exact counts. The queue is unbounded by design,
  *     so a count must never be `rows.length` of a page PostgREST silently
  *     capped at 1000.
- *   - The savings roll-up pages through `readAllRows` inside a bounded window,
- *     because a SUM has to see every row it claims to cover.
+ *   - Savings are NOT computed here: they come from `batch.savings_summary`
+ *     through the shared `features/batch-savings` service — the one savings
+ *     computation every surface reads (actual tokens at the live rate).
  * Nothing here treats a rendered page as a complete set.
  */
 import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/client";
+import { fetchBatchSavings } from "@/features/batch-savings/service";
 import type { Database } from "@/types/database.types";
 
 type WorkItemRow = Database["batch"]["Tables"]["work_item"]["Row"];
@@ -66,7 +68,7 @@ export function handlerBucketOf(value: string | null): string {
 
 export const WORK_ITEM_COLUMNS =
   "id, custom_id, purpose, provider, model, status, handler_status, attempt_count, " +
-  "est_live_cost_usd, actual_cost_usd, est_tokens_in, est_tokens_out, tokens_in, tokens_out, " +
+  "est_live_cost_usd, actual_cost_usd, live_equivalent_cost_usd, est_tokens_in, est_tokens_out, tokens_in, tokens_out, " +
   "cache_read_tokens, link_kind, link_id, prefix_group_key, dedupe_key, urgency, " +
   "result_handler, organization_id, provider_batch_row_id, error, handler_error, " +
   "deadline_at, escalated_at, escalation_strategy, claimed_at, lease_expires_at, " +
@@ -84,6 +86,7 @@ export type WorkItem = Pick<
   | "attempt_count"
   | "est_live_cost_usd"
   | "actual_cost_usd"
+  | "live_equivalent_cost_usd"
   | "est_tokens_in"
   | "est_tokens_out"
   | "tokens_in"
@@ -112,7 +115,7 @@ export type WorkItem = Pick<
 
 export const PROVIDER_BATCH_COLUMNS =
   "id, provider, batch_id, purpose, status, request_count, model, prefix_group_key, " +
-  "est_live_cost_usd, est_cost_usd, cost_usd, tokens_in, tokens_out, cache_read_tokens, " +
+  "est_live_cost_usd, est_cost_usd, cost_usd, live_equivalent_cost_usd, tokens_in, tokens_out, cache_read_tokens, " +
   "cache_write_tokens, poll_count, escalation_state, escalation_requested_at, " +
   "cancel_requested_at, last_polled_at, next_poll_at, error, organization_id, " +
   "submitted_at, completed_at, created_at";
@@ -130,6 +133,7 @@ export type ProviderBatch = Pick<
   | "est_live_cost_usd"
   | "est_cost_usd"
   | "cost_usd"
+  | "live_equivalent_cost_usd"
   | "tokens_in"
   | "tokens_out"
   | "cache_read_tokens"
@@ -226,13 +230,18 @@ export type SavingsWindow = "7d" | "30d" | "all";
 
 export interface SavingsRollup {
   window: SavingsWindow;
+  /** Completed, priced items the saving covers. */
   items: number;
-  /** What the same work would have cost at live rates. */
-  estLiveUsd: number;
+  /** The same actual tokens at the same model's live catalog rate. */
+  liveEquivalentUsd: number;
   /** What it actually cost through the provider Batch API. */
   actualUsd: number;
   savedUsd: number;
   savedPct: number | null;
+  /** The pre-submission estimate for the same items — shown labelled, never a saving basis. */
+  preSubmissionEstimateUsd: number;
+  /** Completed items with tokens but no price — excluded from every sum. */
+  unpricedItems: number;
   tokensIn: number;
   cacheReadTokens: number;
   /** Share of input tokens served from a provider prefix cache. */
@@ -243,21 +252,11 @@ export interface SavingsRollup {
   undeliveredUsd: number;
 }
 
-function windowStart(window: SavingsWindow): string | null {
+function windowStart(window: SavingsWindow): Date | null {
   if (window === "all") return null;
   const days = window === "7d" ? 7 : 30;
-  return new Date(Date.now() - days * 86_400_000).toISOString();
+  return new Date(Date.now() - days * 86_400_000);
 }
-
-type SavingsRow = Pick<
-  WorkItemRow,
-  | "id"
-  | "est_live_cost_usd"
-  | "actual_cost_usd"
-  | "tokens_in"
-  | "cache_read_tokens"
-  | "handler_status"
->;
 
 /** numeric() can arrive as a string on some transports — never trust the wire type. */
 export function num(value: number | string | null | undefined): number {
@@ -266,66 +265,31 @@ export function num(value: number | string | null | undefined): number {
   return Number.isFinite(n) ? n : 0;
 }
 
+/** The batch savings band — a window over `batch.savings_summary`, nothing computed here. */
 export async function fetchSavings(
   window: SavingsWindow,
   opts: { signal?: AbortSignal } = {},
 ): Promise<SavingsRollup> {
-  const sb = batchSchema();
-  const since = windowStart(window);
-
-  const rows = await readAllRows<SavingsRow>(
-    ({ from, to }) => {
-      let q = sb
-        .from("work_item")
-        .select(
-          "id, est_live_cost_usd, actual_cost_usd, tokens_in, cache_read_tokens, handler_status",
-          { count: "exact" },
-        )
-        .eq("status", "completed");
-      if (since) q = q.gte("completed_at", since);
-      q = q.order("id", { ascending: true }).range(from, to);
-      if (opts.signal) q = q.abortSignal(opts.signal);
-      return q;
-    },
-    { label: "batch.work_item (savings)" },
-  );
-
-  let estLiveUsd = 0;
-  let actualUsd = 0;
-  let tokensIn = 0;
-  let cacheReadTokens = 0;
-  let undeliveredItems = 0;
-  let undeliveredUsd = 0;
-
-  for (const row of rows) {
-    const est = num(row.est_live_cost_usd);
-    const actual = num(row.actual_cost_usd);
-    estLiveUsd += est;
-    actualUsd += actual;
-    tokensIn += num(row.tokens_in);
-    cacheReadTokens += num(row.cache_read_tokens);
-    if (row.handler_status === "dead") {
-      undeliveredItems += 1;
-      undeliveredUsd += actual;
-    }
-  }
-
-  const savedUsd = estLiveUsd - actualUsd;
+  const s = await fetchBatchSavings({
+    from: windowStart(window),
+    to: null,
+    signal: opts.signal,
+  });
   return {
     window,
-    items: rows.length,
-    estLiveUsd,
-    actualUsd,
-    savedUsd,
-    savedPct: estLiveUsd > 0 ? (savedUsd / estLiveUsd) * 100 : null,
-    tokensIn,
-    cacheReadTokens,
+    items: s.items,
+    liveEquivalentUsd: s.liveEquivalentUsd,
+    actualUsd: s.actualUsd,
+    savedUsd: s.savedUsd,
+    savedPct: s.discountPct,
+    preSubmissionEstimateUsd: s.preSubmissionEstimateUsd,
+    unpricedItems: s.unpricedItems,
+    tokensIn: s.tokensIn,
+    cacheReadTokens: s.cacheReadTokens,
     cacheReadPct:
-      tokensIn + cacheReadTokens > 0
-        ? (cacheReadTokens / (tokensIn + cacheReadTokens)) * 100
-        : null,
-    undeliveredItems,
-    undeliveredUsd,
+      s.tokensIn > 0 ? (s.cacheReadTokens / s.tokensIn) * 100 : null,
+    undeliveredItems: s.undeliveredItems,
+    undeliveredUsd: s.undeliveredUsd,
   };
 }
 

@@ -208,29 +208,24 @@ export function analyzeDiff(local: string, remote: string): DiffAnalysis {
     removeEmptyLines(local) !== removeEmptyLines(remote);
   const hasChangesExcludingTrim = local.trim() !== remote.trim();
 
-  // Character diff count (simple)
-  const charsChanged = Math.abs(local.length - remote.length) +
-    (() => {
-      const minLen = Math.min(local.length, remote.length);
-      let diffs = 0;
-      for (let i = 0; i < minLen; i++) {
-        if (local[i] !== remote[i]) diffs++;
-      }
-      return diffs;
-    })();
-
   // Line-based diff
   const localLines = local.split("\n");
   const remoteLines = remote.split("\n");
   const segments = buildDiffSegments(localLines, remoteLines);
 
-  // Count changed lines
+  // Count changed lines, and the characters inside the changed lines. The
+  // character count comes from the SAME segments the user sees: a positional
+  // compare (the old method) reported every character after a deleted line as
+  // "different", so removing one 90-character line read as "6428 chars
+  // different" — a number that contradicted the "2 lines changed" beside it.
   let addedLines = 0;
   let removedLines = 0;
+  let charsChanged = 0;
   for (const seg of segments) {
     const lineCount = seg.content.split("\n").length;
     if (seg.type === "added") addedLines += lineCount;
     if (seg.type === "removed") removedLines += lineCount;
+    if (seg.type === "added" || seg.type === "removed") charsChanged += seg.content.length;
   }
   const linesChanged = addedLines + removedLines;
 

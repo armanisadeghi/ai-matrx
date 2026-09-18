@@ -9,6 +9,7 @@ import {
   type SourceFacet,
   type SourceFacetsStatus,
 } from "./types";
+import { laneOfClientMintedRow, type ConversationLane } from "./lanes";
 
 const initialState: ConversationHistoryState = {
   scopes: {},
@@ -45,8 +46,9 @@ function ensureScope(
     scope = { ...defaultScopeState };
     state.scopes[scopeId] = scope;
   }
-  // Field added 2026-08: heal scopes created before it existed.
+  // Fields added later: heal scopes created before they existed.
   if (scope.includeOriginClasses === undefined) scope.includeOriginClasses = [];
+  if (scope.includeLanes === undefined) scope.includeLanes = null;
   return scope;
 }
 
@@ -203,6 +205,30 @@ const slice = createSlice({
       scope.includeEmptySource = includeEmptySource;
       invalidateScopeWindow(scope);
     },
+    /**
+     * Sets the LANE gate for a scope (the Chat | Matrx | Auto | Plugins |
+     * Subagents toggles). The ONLY writer of `includeLanes` — the source tree
+     * never touches it, which is what keeps "Select all" from re-admitting a
+     * lane that is off. `null` removes the gate. Invalidates the page window
+     * when it changes; no-op when unchanged.
+     */
+    setScopeLanes(
+      state,
+      action: PayloadAction<{
+        scopeId: string;
+        lanes: ConversationLane[] | null;
+      }>,
+    ) {
+      const { scopeId, lanes } = action.payload;
+      const scope = ensureScope(state, scopeId);
+      const current = scope.includeLanes;
+      const unchanged =
+        current === lanes ||
+        (current !== null && lanes !== null && sameStringArray(current, lanes));
+      if (unchanged) return;
+      scope.includeLanes = lanes === null ? null : [...lanes];
+      invalidateScopeWindow(scope);
+    },
     setScopeAgentIds(
       state,
       action: PayloadAction<{ scopeId: string; agentIds: string[] }>,
@@ -337,6 +363,14 @@ const slice = createSlice({
             (scope.includeEmptySource && feature === "");
           if (!admitted) continue;
         }
+        // Lane gate: this path only ever carries a conversation the CLIENT
+        // just minted — a person's run, so Chat or Matrx by its feature.
+        if (
+          scope.includeLanes &&
+          !scope.includeLanes.includes(laneOfClientMintedRow(row.sourceFeature))
+        ) {
+          continue;
+        }
         const origins = scope.includeOriginClasses ?? [];
         // A conversation minted from a client surface is `human` server-side;
         // the row carries no origin until the next fetch, so match on that.
@@ -398,6 +432,7 @@ export const {
   setScopeAgentIds,
   setScopeSourceFilter,
   seedScopeSourceFilter,
+  setScopeLanes,
   setScopeSearch,
   setScopeGrouping,
   setScopeStatus,

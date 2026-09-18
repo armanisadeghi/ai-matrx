@@ -14,8 +14,10 @@
  */
 
 import {
+  approvalQueueHref,
   createGoogleDocument,
   createGoogleSheet,
+  SENT_FOR_APPROVAL_MESSAGE,
 } from "@/features/google-workspace/service";
 import {
   GOOGLE_WORKSPACE_SETTINGS_HREF,
@@ -26,6 +28,24 @@ import { BackendApiError } from "@/lib/api/errors";
 export type SendToGoogleResult =
   | { ok: true; name: string; fileId: string; openUrl: string | null }
   | { ok: false; reason: "not_connected"; settingsHref: string }
+  /**
+   * 🚨 NOTHING WAS WRITTEN — the organization's autonomy mode for this
+   * capability says a person reviews it first, so the server filed the change in
+   * the ONE approval queue and answered 202 instead of writing
+   * (`hitl.google.attended_file_write`; round-2 verification § A-vii). A caller
+   * MUST say so and offer the door: reporting "Created" here would be the screen
+   * claiming a file that does not exist, and reporting "Connect Google" —
+   * which every caller did before this variant existed — would be a lie in the
+   * other direction.
+   */
+  | {
+      ok: false;
+      reason: "proposed";
+      assistId: string;
+      mode: string;
+      queueHref: string;
+      message: string;
+    }
   /**
    * The connection looked healthy client-side but the server refused —
    * typically an expired grant needing reconnect. `message` is the server's
@@ -56,6 +76,18 @@ async function connection(): Promise<
   return { ok: true, connectionId: resolved.connectionId };
 }
 
+/** The 202 branch, said the same way for a Doc and a Sheet. */
+function proposed(assistId: string, mode: string): SendToGoogleResult {
+  return {
+    ok: false,
+    reason: "proposed",
+    assistId,
+    mode,
+    queueHref: approvalQueueHref(assistId),
+    message: SENT_FOR_APPROVAL_MESSAGE,
+  };
+}
+
 function failure(error: unknown): SendToGoogleResult {
   if (error instanceof BackendApiError) {
     // Already screamed by the API layer's capture; here we only translate it
@@ -80,11 +112,13 @@ export async function sendContentToGoogleDoc(
   const link = await connection();
   if (!link.ok) return link;
   try {
-    const file = await createGoogleDocument(
+    const outcome = await createGoogleDocument(
       link.connectionId,
       googleFileTitle(title, "AI Matrx document"),
       content,
     );
+    if (outcome.proposed) return proposed(outcome.assistId, outcome.mode);
+    const file = outcome.result;
     return {
       ok: true,
       name: file.name,
@@ -118,11 +152,13 @@ export async function sendRowsToGoogleSheet(
     ...rows.map((row) => columns.map((key) => cellText(row?.[key]))),
   ];
   try {
-    const file = await createGoogleSheet(
+    const outcome = await createGoogleSheet(
       link.connectionId,
       googleFileTitle(title, "AI Matrx export"),
       values,
     );
+    if (outcome.proposed) return proposed(outcome.assistId, outcome.mode);
+    const file = outcome.result;
     return {
       ok: true,
       name: file.name,

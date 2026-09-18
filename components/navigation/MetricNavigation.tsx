@@ -7,6 +7,7 @@ import ShellIcon from "@/features/shell/components/ShellIcon";
 import { iconColorMap } from "@/features/shell/constants/nav-data";
 import type { ShellIconName } from "@/features/shell/shellIconMap";
 import { cn } from "@/lib/utils";
+import { formatMetricNumber } from "./metricNumber";
 
 export interface MetricNavigationItem {
   key: string;
@@ -33,7 +34,7 @@ export interface MetricNavigationProps {
 }
 
 function formatValue(value: number | string): string {
-  return typeof value === "number" ? value.toLocaleString() : value;
+  return typeof value === "number" ? formatMetricNumber(value) : value;
 }
 
 function availabilityBadge(

@@ -973,6 +973,21 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/marketing/changes/{id}",
     rlsUsesHasPermission: false,
   },
+  seo_topical_map: {
+    resourceType: "seo_topical_map",
+    tableName: "topical_map",
+    schemaName: "seo",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Topical map",
+    // The id door shipped 2026-09-17 at app/(core)/marketing/topical-maps/[mapId]:
+    // it redirects a caller who can read the brand into the nested workspace and
+    // renders the map standalone for a record-only grantee — the two lanes
+    // sharing exactly matter.
+    urlPathTemplate: "/marketing/topical-maps/{id}",
+    rlsUsesHasPermission: true,
+  },
   seo_keyword: {
     resourceType: "seo_keyword",
     tableName: "keyword",
@@ -1004,6 +1019,17 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     isPublicColumn: null,
     displayLabel: "Rulebook",
     urlPathTemplate: "/masterwork/{id}",
+    rlsUsesHasPermission: true,
+  },
+  interview_decision_interview: {
+    resourceType: "interview_decision_interview",
+    tableName: "decision_interview",
+    schemaName: "interview",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Decision Interview",
+    urlPathTemplate: "/administration/question-desk/{id}",
     rlsUsesHasPermission: true,
   },
   interview_session: {
@@ -1427,6 +1453,43 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     isPublicColumn: null,
     displayLabel: "HR approval request",
     urlPathTemplate: "/hr/tasks/{id}",
+    rlsUsesHasPermission: true,
+  },
+  processed_document: {
+    resourceType: "processed_document",
+    tableName: "processed_documents",
+    schemaName: "docproc",
+    idColumn: "id",
+    // This table predates the canonical `created_by` column; the DB registry
+    // row names `owner_id` and the DB is the authority.
+    ownerColumn: "owner_id",
+    isPublicColumn: null,
+    displayLabel: "Processed document",
+    // Empty in the DB registry: no signed-in per-record destination exists.
+    // Never invent one here (D138).
+    urlPathTemplate: "",
+    rlsUsesHasPermission: true,
+  },
+  user_feedback: {
+    resourceType: "user_feedback",
+    tableName: "user_feedback",
+    schemaName: "users",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Feedback item",
+    urlPathTemplate: "",
+    rlsUsesHasPermission: true,
+  },
+  workflow_recovery_audit: {
+    resourceType: "workflow_recovery_audit",
+    tableName: "recovery_audit",
+    schemaName: "workflow",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Workflow recovery audit",
+    urlPathTemplate: "",
     rlsUsesHasPermission: true,
   },
 } as const satisfies Record<string, ShareableResourceEntry>;

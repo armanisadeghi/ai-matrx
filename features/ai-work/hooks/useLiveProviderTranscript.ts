@@ -62,6 +62,18 @@ export interface LiveTranscriptStatus {
   error: string | null;
   /** Manual re-check — also how an idle transcript resumes. */
   checkNow: () => void;
+  /**
+   * One newest-side read REGARDLESS of liveness, for a turn AI Matrx itself
+   * just wrote onto this conversation (the in-app reply composer).
+   *
+   * `checkNow` is gated on the coding session still delivering, which is
+   * correct for a mirror — but an AI Matrx reply lands on conversations whose
+   * provider session ended months ago, and on those `checkNow` returns before
+   * reading a single row, so a fresh answer would stay invisible until reload.
+   * This reads the same keyset endpoints through the same cycle (one in
+   * flight, one batched arrival, caller dedup) and never starts polling.
+   */
+  refreshNow: () => void;
 }
 
 export interface LiveTranscriptArrival {
@@ -99,7 +111,9 @@ export function useLiveProviderTranscript({
     onArrivalRef.current = onArrival;
   });
 
-  const runCycleRef = useRef<(() => void) | null>(null);
+  const runCycleRef = useRef<
+    ((options?: { force?: boolean }) => void) | null
+  >(null);
 
   useEffect(() => {
     let disposed = false;
@@ -124,7 +138,7 @@ export function useLiveProviderTranscript({
       }, delay);
     };
 
-    const cycle = async () => {
+    const cycle = async (options?: { force?: boolean }) => {
       if (disposed || inFlight) return;
       // A hidden tab is not being watched; stop reading and resume on focus.
       if (
@@ -142,7 +156,10 @@ export function useLiveProviderTranscript({
         const session = liveSessionState(bindings);
         setLastSeenAt(session.lastSeenAt);
 
-        if (!session.live) {
+        // A settled session stops the POLL. A forced read still happens once,
+        // because the rows it is looking for were written by AI Matrx, not by
+        // the provider — liveness says nothing about whether they exist.
+        if (!session.live && options?.force !== true) {
           setMode("idle");
           setError(null);
           clear();
@@ -157,14 +174,23 @@ export function useLiveProviderTranscript({
         ]);
         if (disposed) return;
 
-        setMode("live");
         setError(null);
-        backoffMs = 0;
-        errorRetries = 0;
         // ONE batched update for the whole cycle — never a dispatch per row.
         if (messages.length > 0 || toolCalls.length > 0) {
           onArrivalRef.current({ messages, toolCalls });
         }
+
+        if (!session.live) {
+          // Forced one-shot read on a settled session: the rows are applied,
+          // and the loop stays stopped and honest about being idle.
+          setMode("idle");
+          clear();
+          return;
+        }
+
+        setMode("live");
+        backoffMs = 0;
+        errorRetries = 0;
         // The caller dedups, so "arrived" here means "the read was not empty";
         // a tie-inclusive tool page that yields nothing new still decays.
         const advanced =
@@ -207,8 +233,8 @@ export function useLiveProviderTranscript({
       }
     };
 
-    runCycleRef.current = () => {
-      void cycle();
+    runCycleRef.current = (options?: { force?: boolean }) => {
+      void cycle(options);
     };
 
     // Returning to the tab is the ONE event that re-arms a settled transcript:
@@ -234,5 +260,9 @@ export function useLiveProviderTranscript({
     runCycleRef.current?.();
   }, []);
 
-  return { mode, lastSeenAt, busy, error, checkNow };
+  const refreshNow = useCallback(() => {
+    runCycleRef.current?.({ force: true });
+  }, []);
+
+  return { mode, lastSeenAt, busy, error, checkNow, refreshNow };
 }

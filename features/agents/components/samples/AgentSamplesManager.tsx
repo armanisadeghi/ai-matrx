@@ -15,6 +15,7 @@ import {
   ArrowDownToLine,
   BadgeCheck,
   ExternalLink,
+  Library,
   Loader2,
   RefreshCw,
   Trash2,
@@ -44,6 +45,8 @@ import {
 import { AgentUserMessageContent } from "@/features/agents/components/messages-display/user/AgentUserMessage";
 import { isAttachmentMessagePart } from "@/features/agents/components/context-items/normalize";
 import { isJsonObject } from "@/types/json";
+import { LoadFromLibraryDialog } from "@/features/agents/components/samples/LoadFromLibraryDialog";
+import { SampleOriginLine } from "@/features/agents/components/samples/SampleOriginLine";
 
 function describeError(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -108,6 +111,7 @@ export function AgentSamplesManager({
   const [loading, setLoading] = useState(true);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AgentSampleRow | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
   const reload = useCallback(async () => {
     try {
@@ -262,6 +266,7 @@ export function AgentSamplesManager({
             </Button>
           </div>
         </div>
+        <SampleOriginLine sample={sample} />
         <AgentUserMessageContent
           conversationId={
             sample.source_conversation_id ?? `sample:${sample.id}`
@@ -303,9 +308,20 @@ export function AgentSamplesManager({
       </section>
 
       <section className="space-y-2">
-        <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Candidates
-        </h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Candidates
+          </h3>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs"
+            onClick={() => setLibraryOpen(true)}
+          >
+            <Library className="mr-1 h-3.5 w-3.5" />
+            Load from a Library
+          </Button>
+        </div>
         {candidates.length === 0 ? (
           <p className="text-xs text-muted-foreground">None</p>
         ) : (
@@ -314,6 +330,13 @@ export function AgentSamplesManager({
       </section>
 
       <BorrowFromRunsSection agentId={agentId} onBorrowed={reload} />
+
+      <LoadFromLibraryDialog
+        agentId={agentId}
+        open={libraryOpen}
+        onOpenChange={setLibraryOpen}
+        onSamplesChanged={reload}
+      />
 
       <ConfirmDialog
         open={deleteTarget != null}

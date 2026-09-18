@@ -36,7 +36,7 @@ import {
   type ReactNode,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { SearchX } from "lucide-react";
+import { Network, SearchX } from "lucide-react";
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -77,9 +77,10 @@ import {
   parseStampFilter,
 } from "@/features/marketing/search-console/types";
 import {
-  setKeywordService,
+  setKeywordOffering,
   setKeywordStamps,
 } from "@/features/marketing/seo/keyword-workbench/data";
+import { requireOfferingOrganization } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteOfferings";
 import {
   AssignPanel,
   type AssignTarget,
@@ -92,7 +93,8 @@ import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/com
 import { WhyScoreHint } from "@/features/marketing/seo/value-system/workbench/WhyScore";
 import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import { ColumnChooser } from "./ColumnChooser";
-import { buildKeywordColumns } from "./columns";
+import { useKeywordMapHomes } from "@/features/marketing/seo/topical-map/linkins/useKeywordMapHomes";
+import { buildKeywordColumns, OFFERING_COLUMN_ID } from "./columns";
 import {
   liveSearchParams,
   mergeKeywordTableParams,
@@ -342,6 +344,14 @@ export function KeywordTable({
     dimensions: state.dimensions,
   });
   const { rows, total } = data;
+  // Where each keyword on this page lives on the site's topical map (the
+  // `map_topic` column). One read per page of ids; "no map" and "not homed
+  // yet" are real answers the column renders, never blanks.
+  const mapHomes = useKeywordMapHomes(
+    siteId,
+    brandId,
+    rows.map((row) => row.keyword_id),
+  );
 
   /* -------------------------------------------------------------- selection */
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -393,19 +403,24 @@ export function KeywordTable({
   /* ----------------------------------------------------------------- writes */
   const placeService = async (
     keywordId: string,
-    topicId: string | null,
+    offeringId: string | null,
     keyword: string,
   ) => {
     try {
-      await setKeywordService({ siteId, keywordIds: [keywordId], topicId });
+      await setKeywordOffering({
+        organizationId: requireOfferingOrganization(data.offerings),
+        siteId,
+        keywordIds: [keywordId],
+        offeringId,
+      });
       await afterWrite();
-      const name = topicId
-        ? (data.services.byId.get(topicId)?.name ?? "that offering")
+      const name = offeringId
+        ? (data.offerings.byId.get(offeringId)?.name ?? "that offering")
         : null;
       toast.success(
         name
           ? `“${keyword}” maps to ${name}.`
-          : `“${keyword}” is off the tree — it maps to no offering now.`,
+          : `“${keyword}” maps to no offering now.`,
       );
     } catch (error) {
       toast.error(
@@ -473,10 +488,10 @@ export function KeywordTable({
   };
 
   /* ---------------------------------------------------------------- filters */
-  const filterByService = (topic: string | undefined) => {
+  const filterByService = (offering: string | undefined) => {
     const filters: GscFilters = { ...state.filters };
-    if (!topic) delete filters.topic;
-    else filters.topic = topic;
+    if (!offering) delete filters.offering;
+    else filters.offering = offering;
     patch({ filters });
   };
 
@@ -521,9 +536,10 @@ export function KeywordTable({
       siteId,
       brandId,
       hasCompare: periods.compare !== null,
+      mapHomes,
       handlers: {
-        onPlaceService: (keywordId, topicId, keyword) =>
-          void placeService(keywordId, topicId, keyword),
+        onPlaceService: (keywordId, offeringId, keyword) =>
+          void placeService(keywordId, offeringId, keyword),
         onFilterByService: filterByService,
         onFilterByLocation: filterByLocation,
         onQuickAssign: (ids, picked) => void quickAssign(ids, picked),
@@ -547,8 +563,11 @@ export function KeywordTable({
   if (searchDraft) {
     tableColumnFilters.key = { kind: "text", value: searchDraft };
   }
-  if (state.filters.topic) {
-    tableColumnFilters.topic = { kind: "select", value: state.filters.topic };
+  if (state.filters.offering) {
+    tableColumnFilters[OFFERING_COLUMN_ID] = {
+      kind: "select",
+      value: state.filters.offering,
+    };
   }
   if (state.filters.location) {
     tableColumnFilters.location = {
@@ -671,9 +690,9 @@ export function KeywordTable({
       );
     };
 
-    const nextTopic = selectedValue("topic");
-    if (nextTopic !== state.filters.topic) {
-      filterByService(nextTopic);
+    const nextOffering = selectedValue(OFFERING_COLUMN_ID);
+    if (nextOffering !== state.filters.offering) {
+      filterByService(nextOffering);
       return;
     }
 
@@ -823,12 +842,12 @@ export function KeywordTable({
             </p>
             <ServiceCell
               siteId={siteId}
-              services={data.services}
-              placement={data.serviceFor(row)}
+              offerings={data.offerings}
+              placement={data.offeringFor(row)}
               disabled={!row.keyword_id}
-              onPlace={(topicId) => {
+              onPlace={(offeringId) => {
                 if (!row.keyword_id) return;
-                void placeService(row.keyword_id, topicId, row.key);
+                void placeService(row.keyword_id, offeringId, row.key);
               }}
               onFilter={filterByService}
               triggerClassName="min-h-11 w-full justify-start px-2"
@@ -964,9 +983,58 @@ export function KeywordTable({
   // The context menu's trigger renders `asChild`, so `wrapTable` must return a
   // real DOM element around the table — handing `asChild` a component that does
   // not forward props drops the right-click handler on the floor, silently.
+  /**
+   * `?topic=<slug>` — the MAP topic a link-in arrived from.
+   *
+   * 🚨 IT NARROWS THE LOADED PAGE ONLY. Which keywords come back at all is
+   * `gsc_perf_breakdown`'s decision and it takes no topic argument; a keyword's
+   * map home is read separately, for the ids ON THIS PAGE
+   * (`useKeywordMapHomes`). So this answers "of the fifty on screen, these live
+   * on that topic" and the banner below says so in those words. Presenting it
+   * as a filter of all 5,823 would be exactly the lie this file's header
+   * refuses. Nothing is hidden until the homes have actually loaded — a row
+   * whose home is still `undefined` is unknown, not absent.
+   */
+  const mapTopicSlug = state.mapTopicSlug;
+  const topicRows =
+    mapTopicSlug && mapHomes.ready
+      ? displayRows.filter(
+          (row) =>
+            !!row.keyword_id &&
+            mapHomes.homeFor(row.keyword_id)?.slug === mapTopicSlug,
+        )
+      : displayRows;
+  const topicName = mapTopicSlug
+    ? (topicRows
+        .map((row) => (row.keyword_id ? mapHomes.homeFor(row.keyword_id)?.name : null))
+        .find((name): name is string => !!name) ?? mapTopicSlug)
+    : null;
+
+  const mapTopicBanner = mapTopicSlug ? (
+    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-xs text-muted-foreground">
+      <Network className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      <span>
+        {mapHomes.error
+          ? mapHomes.error
+          : !mapHomes.mapId && mapHomes.ready
+            ? `This link came from the topical map's "${mapTopicSlug}", but this site uses no map, so nothing here can be narrowed to it.`
+            : !mapHomes.ready
+              ? `Reading which of these keywords live on "${mapTopicSlug}"…`
+              : `Showing the ${topicRows.length} of the ${displayRows.length} keywords loaded on this page that live on ${topicName} — this narrows the page you are looking at, not all ${formatCount(total)}.`}
+      </span>
+      <button
+        type="button"
+        onClick={() => patch({ mapTopicSlug: null })}
+        className="rounded-sm font-medium text-primary hover:underline"
+      >
+        Show every keyword on this page
+      </button>
+    </p>
+  ) : null;
+
   const table = (
     <MatrxDataTable<GscBreakdownRow>
-      data={displayRows}
+      data={topicRows}
       columns={columns}
       getRowId={(row) => row.key}
       isLoading={data.isLoading}
@@ -1053,11 +1121,11 @@ export function KeywordTable({
               allowedKeys={allowedFilterKeysForTab("queries")}
               siteId={siteId}
             />
-            {surface.baseFilters?.topic ? null : (
+            {surface.baseFilters?.offering ? null : (
               <ServiceFilterControl
                 siteId={siteId}
-                services={data.services}
-                value={state.filters.topic}
+                offerings={data.offerings}
+                value={state.filters.offering}
                 onChange={filterByService}
               />
             )}
@@ -1149,7 +1217,7 @@ export function KeywordTable({
         <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
           <OfferingAssignPanel
             siteId={siteId}
-            services={data.services}
+            offerings={data.offerings}
             target={serviceTarget}
             onCancel={() => setServiceTarget(null)}
             onDone={(result, placed) => {
@@ -1157,14 +1225,16 @@ export function KeywordTable({
               void afterWrite();
               setSelectedIds([]);
               toast.success(
-                placed.topicId
+                placed.offeringId
                   ? `${result.length.toLocaleString()} keyword${result.length === 1 ? "" : "s"} now map to ${placed.name}.`
-                  : `${result.length.toLocaleString()} keyword${result.length === 1 ? "" : "s"} taken off the tree.`,
+                  : `${result.length.toLocaleString()} keyword${result.length === 1 ? "" : "s"} taken off every offering.`,
               );
             }}
           />
         </div>
       ) : null}
+
+      {mapTopicBanner}
 
       {data.error ? (
         <InlineQueryError

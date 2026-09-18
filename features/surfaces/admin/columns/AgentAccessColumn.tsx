@@ -20,7 +20,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Inbox, Loader2, Save, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { toast } from "@/lib/toast";
+import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
+import {
+  isCapturedSurfaceRegistrationError,
+  isSurfaceRegistrationError,
+} from "@/features/surfaces/services/surface-registration-error";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { WritePolicyEditor } from "@/features/surfaces/components/bind/WritePolicyEditor";
 import { getManifest } from "@/features/surfaces/manifests/registry";
@@ -160,7 +164,13 @@ function AgentAccessForm({
       ).unwrap();
       toast.success("Agent access saved");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Save failed");
+      (isCapturedSurfaceRegistrationError(e)
+        ? toastErrorAlreadyCaptured
+        : toast.error)(
+        e instanceof Error || isSurfaceRegistrationError(e)
+          ? e.message
+          : "Save failed",
+      );
     } finally {
       setBusy(false);
     }

@@ -14,6 +14,7 @@
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import path from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = path.resolve(__dirname, "..");
 const MODEL_CANONICAL_IMPORT =
@@ -357,7 +358,7 @@ function selfTest(): void {
     console.error(
       "\nFix scripts/check-canonical-pickers.ts before trusting a green run.\n",
     );
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log(
     "✅ self-test: RED on a bare `AgentPicker` fork, RED on a comment-only package\n" +
@@ -411,7 +412,7 @@ function main(): void {
       "`canonical-model-picker-exempt: <reason>` comment (12+ reason characters). A\n" +
       "non-choice agent filter may analogously declare `canonical-agent-picker-exempt:`.\n",
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 main();

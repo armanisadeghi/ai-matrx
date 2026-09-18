@@ -23,6 +23,12 @@ import {
   formatHasOwnInput,
 } from '@/features/data-tables/components/FormatAwareInput';
 import { resolveFieldFormat } from '@/lib/field-formats/format';
+import { isFormulaColumn } from '@/features/data-tables/formulas';
+import {
+  describeValidationRules,
+  parseValidationRules,
+  validateCellValue,
+} from '@/features/data-tables/validation';
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface AddRowModalProps {
@@ -38,6 +44,12 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess }: Add
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loadingFields, setLoadingFields] = useState(true);
+  /**
+   * fieldName → why this value is refused. Inline and beside the input, never a
+   * single sentence at the top of the form: a form that says "something is
+   * wrong" without saying WHERE is a dead end on a table with twenty columns.
+   */
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Load field definitions
   useEffect(() => {
@@ -86,6 +98,14 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess }: Add
       ...prev,
       [fieldName]: value
     }));
+    // Typing is the user answering the complaint — clear it as they do, rather
+    // than leaving a stale red line under a field they have already fixed.
+    setFieldErrors((prev) => {
+      if (!(fieldName in prev)) return prev;
+      const next = { ...prev };
+      delete next[fieldName];
+      return next;
+    });
   };
   
   // Handle form submission
@@ -94,13 +114,46 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess }: Add
     
     // Validate required fields (excluding any ID fields)
     const missingFields = fields
-      .filter(field => field.is_required && (rowData[field.field_name] === null || rowData[field.field_name] === undefined))
+      .filter(field => field.is_required && !isFormulaColumn(field) && (rowData[field.field_name] === null || rowData[field.field_name] === undefined))
       .map(field => field.display_name);
     
     if (missingFields.length > 0) {
       setError(`Please fill in required fields: ${missingFields.join(', ')}`);
       return;
     }
+
+    // Column validation rules, checked before anything is sent. `unique` is
+    // skipped here on purpose: this form has not loaded the table's rows, and a
+    // uniqueness claim made without them would be a guess.
+    const nextErrors: Record<string, string> = {};
+    for (const field of fields) {
+      if (isFormulaColumn(field)) continue;
+      const verdict = validateCellValue({
+        rules: parseValidationRules(field.validation_rules),
+        dataType: field.data_type,
+        format: resolveFieldFormat(field.data_type, field.metadata),
+        value: rowData[field.field_name],
+      });
+      if (!verdict.ok) nextErrors[field.field_name] = verdict.reason;
+    }
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      // 🚨 THE REFUSAL HAS TO BE VISIBLE FROM THE BUTTON — see the same block
+      // in EditRowModal for the failure this kills: the inline message lives
+      // inside the scrolling field list, so Save on an off-screen offender
+      // looked like a dead button. The summary goes in the always-visible
+      // banner the required-field refusal already uses.
+      const broken = fields.filter((field) => nextErrors[field.field_name]);
+      setError(
+        broken.length === 1
+          ? `${broken[0].display_name}: ${nextErrors[broken[0].field_name]}`
+          : `These columns need fixing: ${broken
+              .map((field) => field.display_name)
+              .join(", ")}`,
+      );
+      return;
+    }
+    setFieldErrors({});
     
     try {
       setLoading(true);
@@ -136,6 +189,21 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess }: Add
     // A declared display format gets first refusal on the input (email
     // keyboard, color swatch, big box). It returns null when it has no
     // opinion, and the storage-type switch below takes over unchanged.
+    // A formula column stores nothing and is computed from the row's other
+    // cells; this form offers no input for it, and says why, so nobody types a
+    // value that could never be kept.
+    if (isFormulaColumn(field)) {
+      return (
+        <p
+          id={field.field_name}
+          className='rounded-md border border-dashed border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground'
+        >
+          Calculated from the other columns in this row — it updates on its own
+          once the row is saved.
+        </p>
+      );
+    }
+
     const fieldFormat = resolveFieldFormat(field.data_type, field.metadata);
     if (formatHasOwnInput(fieldFormat)) {
       return (
@@ -304,6 +372,21 @@ export default function AddRowModal({ tableId, isOpen, onClose, onSuccess }: Add
                     </span>
                   </div>
                   {renderFieldInput(field)}
+                  {fieldErrors[field.field_name] ? (
+                    <p className="text-xs text-destructive">
+                      {fieldErrors[field.field_name]}
+                    </p>
+                  ) : (
+                    describeValidationRules(
+                      parseValidationRules(field.validation_rules),
+                    ).length > 0 && (
+                      <p className="text-[11px] text-muted-foreground">
+                        {describeValidationRules(
+                          parseValidationRules(field.validation_rules),
+                        ).join(' • ')}
+                      </p>
+                    )
+                  )}
                 </div>
               ))}
             </div>

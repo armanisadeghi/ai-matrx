@@ -211,7 +211,7 @@ const OUTPUT_SLIDES = {
       name: "Research → Slides Generator",
       agentType: "builtin",
       isArchived: false,
-      latestVersion: 6,
+      liveCounter: 6,
     },
   },
   versionsById: {},

@@ -68,6 +68,11 @@ interface ContextItemAddFormProps {
   /** Called when the user cancels or finishes (plain "Add"). */
   onClose: () => void;
   defaultValueType?: ContextValueType;
+  /**
+   * What the person already typed into a picker's type-ahead before choosing
+   * `Create "…"` — P23: typed text is never retyped into a different box.
+   */
+  initialName?: string;
 }
 
 /**
@@ -87,12 +92,13 @@ export function ContextItemAddForm({
   onAdded,
   onClose,
   defaultValueType = "string",
+  initialName = "",
 }: ContextItemAddFormProps) {
   const dispatch = useAppDispatch();
   const nameRef = useRef<HTMLInputElement>(null);
   const uid = useId();
 
-  const [name, setName] = useState("");
+  const [name, setName] = useState(initialName);
   const [entryMode, setEntryMode] = useState<EntryMode>(
     defaultValueType === "reference" ? "reference" : "direct",
   );
@@ -150,7 +156,7 @@ export function ContextItemAddForm({
   function selectDatasetTemplate(templateId: string | null) {
     setDatasetTemplateId(templateId);
     if (templateId) {
-      setAllowedReferenceTypes(["dataset"]);
+      setAllowedReferenceTypes(["table"]);
       setMaxItems("1");
       setAllowedScopeTypeIds([]);
     }

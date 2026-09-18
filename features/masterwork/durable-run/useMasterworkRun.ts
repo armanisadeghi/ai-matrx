@@ -33,12 +33,28 @@
  * is for.
  */
 
+import { useCallback, useEffect, useRef, useState } from "react";
+
 import type {
   DurableRunHandle,
   DurableRunWire,
 } from "@/lib/durable-run/useDurableRun";
 import { useDurableRun } from "@/lib/durable-run/useDurableRun";
+import type { MeasuredRate, WorkSize } from "@/lib/progress/sizedEstimate";
+import { isEmptyWorkSize, sizedEstimateMs } from "@/lib/progress/sizedEstimate";
 import type { paths } from "@/types/python-generated/api-types";
+
+import {
+  CHAT_INGEST_RATE,
+  CORPUS_INGEST_RATE,
+  DUMP_INGEST_RATE,
+  SOURCE_INGEST_RATE,
+} from "./laneRates";
+import type { IngestProgress } from "./ingestProgress";
+import {
+  EMPTY_INGEST_PROGRESS,
+  reduceIngestProgress,
+} from "./ingestProgress";
 
 export const MASTERWORK_RUN_WIRE: DurableRunWire = {
   pointerPrefix: "matrx.masterwork-run.",
@@ -95,7 +111,57 @@ export type MasterworkRunSurface =
   // surface and pointer: it never rejoins the reference Audition's dialog.
   | "compare_two"
   | "checkup"
-  | "clean_corpus";
+  | "clean_corpus"
+  // THE PREDICTION LEDGER (`/masterworks/ingest-predictions`) — the Expert's
+  // own resolved calls on real open cases, distilled into rules from the WHYS
+  // behind the ones she called right and boundary findings from the ones she
+  // did not. Its own surface + pointer: a ledger distillation is not a source
+  // ingest, and a reload must never rejoin one as the other.
+  | "prediction"
+  // THE RED-PEN LANE (`/masterworks/ingest-markup`) — a piece of somebody
+  // else's work the Expert marked up, correction by correction. Its own
+  // surface + pointer: a review is not a source ingest, and a reload must
+  // never rejoin one as the other.
+  | "red_pen"
+  // THE BAD EXAMPLE PROBE (`/masterworks/probe`) — one round: distil what the
+  // Expert said was wrong with the last plausible-but-wrong example, then
+  // write the next one. Its own surface + pointer, and its own terminal event,
+  // because a probe round's answer is a NEW QUESTION as well as a rule count.
+  | "probe"
+  // SHADOW-THE-INBOX (`/masterworks/ingest-inbox`) — the Expert's real mail,
+  // diffed against a blind generic reply. Its own surface + pointer: it is not
+  // a source ingest and must never rejoin one, and its run makes TWO paid calls
+  // per thread rather than one.
+  | "shadow_inbox"
+  // THE TEACH-BACK (`/masterworks/teach-back`) — one round: distil the Expert's
+  // correction of the last explanation we gave back to them, then say it again
+  // with that correction in it. Its own surface + pointer, and its own terminal
+  // event, because a teach-back round's answer is a NEW QUESTION as well as a
+  // rule count — a rejoin that settled on an ingest summary would leave the
+  // Expert with nothing on screen to interrupt.
+  | "teach_back"
+  // THE MEETING SCAVENGER (`/masterworks/ingest-meeting`) — the meetings the
+  // Expert already has, mined for the moments THEY made a call. Its own
+  // surface + pointer: a meeting scavenge is not a chat import and a reload
+  // must never rejoin one as the other.
+  | "meeting"
+  // THE TRIAL BENCH (`/masterworks/{rulebook_id}/bench/runs`) — six arms, a
+  // blind panel, and a verdict. Its own surface and pointer: a Bench trial is
+  // not an Audition and must never rejoin one.
+  //
+  // 🚨 A BENCH RUN IS NOT ALWAYS DURABLE. `bench_trial` is not yet in the
+  // `platform.masterwork_run.operation` vocabulary, so when the server reports
+  // `form.durable === false` there is no row, no `masterwork_run` receipt and
+  // therefore no pointer and no rejoin. That degrades cleanly here — `launch`
+  // sets `running` itself, stages and the terminal event are handled without a
+  // run id — and the DOOR says so in the server's own sentence before the
+  // person spends. It is never papered over.
+  | "bench"
+  // THE DAILY DRIP (`/masterworks/ingest-drip`) — a run of one-question-a-day
+  // answers, each anchored to the morning it was asked. Its own surface +
+  // pointer: a drip distillation is not a source ingest, and a reload must
+  // never rejoin one as the other.
+  | "drip";
 
 const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   build: "masterwork_build_complete",
@@ -138,6 +204,28 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
   // paid pass the Expert asks for, so it gets its own surface and pointer and
   // is visible in the run ledger like every other Masterwork operation.
   clean_corpus: "masterwork_corpus_cleaned",
+  // The prediction-ledger lane appends draft rules exactly as the other
+  // ingest lanes do, so it shares their terminal event — and nothing else.
+  prediction: "masterwork_ingest_complete",
+  // The Daily Drip appends draft rules exactly as the other ingest lanes do,
+  // so it shares their terminal event — but never their pointer.
+  drip: "masterwork_ingest_complete",
+  // The red-pen lane appends draft rules exactly as the other ingest lanes
+  // do, so it shares their terminal event — and nothing else.
+  red_pen: "masterwork_ingest_complete",
+  // The probe is the one lane whose terminal payload is not an ingest summary:
+  // it carries the next bad example as well as what the last answer produced.
+  probe: "masterwork_probe_round",
+  // The teach-back is the probe's sibling in this one respect: its terminal
+  // payload carries the next explanation, not an ingest summary.
+  teach_back: "masterwork_teach_back_round",
+  // Shadow-the-inbox appends draft rules exactly as the other ingest lanes do,
+  // so it shares their terminal event — and nothing else.
+  shadow_inbox: "masterwork_ingest_complete",
+  // The Meeting Scavenger (`/masterworks/ingest-meeting`) — same terminal
+  // event as every ingest lane, its own surface so the pointers never cross.
+  meeting: "masterwork_ingest_complete",
+  bench: "masterwork_bench_verdict",
 };
 
 /**
@@ -162,6 +250,12 @@ const FINAL_EVENT: Record<MasterworkRunSurface, string> = {
  * entirely past three times it. Re-measure these when a pipeline changes.
  */
 const EXPECTED_MS: Record<MasterworkRunSurface, number> = {
+  // THE DAILY DRIP distils ONE batch of short answers in a single mandate
+  // call — a run of days is an atom, so there is no per-chunk multiplier. It
+  // sits below `ingest` because the whole corpus is a handful of paragraphs
+  // rather than a document. Estimated until this lane has runs of its own on
+  // the ledger; re-measure then, as the header of this table requires.
+  drip: 45_000,
   build: 60_000,
   ingest: 160_000,
   chat: 25_000,
@@ -191,7 +285,103 @@ const EXPECTED_MS: Record<MasterworkRunSurface, number> = {
   unfolding: 90_000,
   // Trial 8, 2026-09-12: the two live triage passes of ~900 drafts took 89 s.
   triage: 90_000,
+  // ESTIMATE, not a measurement — this lane has no runs of its own on the
+  // ledger yet, and the header of this table demands it be re-measured the
+  // moment it does. It distils a handful of one-line reasons rather than a
+  // whole document, so it opens on the measured `chat` figure (25 s) doubled
+  // rather than on a source ingest's 160 s.
+  prediction: 50_000,
+  // ESTIMATE, not a measurement — this lane has no runs of its own on the
+  // ledger yet, and the header of this table demands it be re-measured the
+  // moment it does. It distils a handful of short corrections rather than a
+  // whole document, in one or two batches, so it opens on the prediction
+  // lane's figure rather than on a source ingest's 160 s.
+  red_pen: 50_000,
+  // ESTIMATE, not a measurement — this lane has no runs of its own on the
+  // ledger yet, and the header of this table demands it be re-measured the
+  // moment it does. One round is TWO paid calls in sequence: distilling a
+  // short spoken critique (the measured `chat` shape, ~25 s) and then writing
+  // a whole work product with a reasoning model (nearer a build's 60 s).
+  probe: 90_000,
+  // ESTIMATE, not a measurement — this lane has no runs of its own on the
+  // ledger yet, and the header of this table demands it be re-measured the
+  // moment it does. Per thread it makes TWO paid calls in sequence: a
+  // generalist drafting one email blind (shorter than a `chat` distillation,
+  // ~20 s) and then the transcript distiller reading the correction log (the
+  // measured `chat` shape, ~25 s). Threads run concurrently, so the promise is
+  // the serial depth of one thread plus headroom, not a multiple of the count.
+  shadow_inbox: 60_000,
+  // ESTIMATE, not a measurement — this lane has no runs of its own on the
+  // ledger yet, and the header of this table demands it be re-measured the
+  // moment it does. One round is at most TWO paid calls in sequence: distilling
+  // a short spoken correction (the measured `chat` shape, ~25 s) and then
+  // writing about 150 words of plain speech from a Rulebook briefing (a short
+  // reasoning call, nearer 30 s). Round one is the second of those alone.
+  teach_back: 55_000,
+  // The scavenger reads one portion per meeting-sized batch of the Expert's own
+  // turns — far less text than a source ingest, and a single paid call for most
+  // meetings. Seeded at the chat lane's measured median until this lane has
+  // runs of its own on `platform.masterwork_run`; re-measure then.
+  meeting: 40_000,
+  // ESTIMATE, not a measurement — this lane has no runs of its own on the
+  // ledger yet, and the header of this table demands it be re-measured the
+  // moment it does. A trial runs SIX arms (A0/A1/A2/B/C/GT), one of which is
+  // the product's own workflow, and then judges them: a spine call per arm,
+  // the panel's calibration leg and the blind panel itself. Live CLI trials of
+  // 2026-09-15 put arm C alone at 782-1694 s. 15 minutes is the honest opening
+  // promise; `useDurableRun` stops promising entirely past three times it.
+  bench: 900_000,
 };
+
+/**
+ * 🚨 THE LANES THAT CAN MEASURE THEIR OWN RUN, AND MUST.
+ *
+ * `EXPECTED_MS` above is a fact about a LANE. For a lane whose door counts what
+ * the person handed over, stating it as a fact about THIS run is the defect
+ * acquisition-frontier §7.3 recorded: "this usually takes about 2 minutes" over
+ * a correct, paid 8m11s ingest, which an independent verifier reasonably read
+ * as a hang. So these surfaces compute the promise from the real pile
+ * (`lib/progress/sizedEstimate.ts` + `./laneRates.ts`), and `EXPECTED_MS`
+ * remains only their floor for the moment before a size is known.
+ *
+ * A lane is absent from this table when there is genuinely nothing to measure —
+ * a Bench trial, an Audition and a Checkup all work over the Rulebook itself,
+ * not over something just handed in. Adding a surface here without a door that
+ * counts something would put a fabricated size behind a sentence, which is the
+ * same lie in the other direction.
+ */
+const SIZED_RATES: Partial<Record<MasterworkRunSurface, MeasuredRate>> = {
+  ingest: SOURCE_INGEST_RATE,
+  timeline: SOURCE_INGEST_RATE,
+  unfolding: SOURCE_INGEST_RATE,
+  dump: DUMP_INGEST_RATE,
+  corpus: CORPUS_INGEST_RATE,
+  chat: CHAT_INGEST_RATE,
+  meeting: CHAT_INGEST_RATE,
+};
+
+/** The measured rate this surface prices its work with, when it has one. */
+export function rateForSurface(
+  surface: MasterworkRunSurface,
+): MeasuredRate | null {
+  return SIZED_RATES[surface] ?? null;
+}
+
+/**
+ * THE PROMISE for one run: the lane's measured rate applied to the real pile,
+ * never below the lane's own measured floor (a two-line paste still has to pay
+ * for the reader, the dedupe pass and the quote verification).
+ */
+export function expectedMsFor(
+  surface: MasterworkRunSurface,
+  size: WorkSize | null | undefined,
+  override?: number,
+): number {
+  if (typeof override === "number") return override;
+  const rate = SIZED_RATES[surface];
+  if (!rate || isEmptyWorkSize(size)) return EXPECTED_MS[surface];
+  return sizedEstimateMs(rate, size);
+}
 
 /**
  * Every Masterwork pipeline narrates itself with `step` + a human `message` the
@@ -232,6 +422,13 @@ export interface UseMasterworkRunOptions<TResult> {
    */
   expectedMs?: number;
   /**
+   * HOW BIG THE PILE IN FRONT OF THIS PERSON IS — files, bytes, pages, words,
+   * recorded seconds. Every lane whose door counts something passes it, and the
+   * duration promise is computed from it instead of from the lane median. See
+   * `SIZED_RATES` above and `lib/progress/sizedEstimate.ts`.
+   */
+  size?: WorkSize | null;
+  /**
    * Every domain event as it lands — for a pipeline that answers in PIECES.
    * The Final Checkup streams one finding at a time so the Expert can start
    * deciding while the rest are still being found.
@@ -253,7 +450,17 @@ export interface UseMasterworkRunOptions<TResult> {
   };
 }
 
-export type MasterworkRunHandle<TResult> = DurableRunHandle<TResult>;
+export interface MasterworkRunHandle<TResult>
+  extends DurableRunHandle<TResult> {
+  /**
+   * THE RUN'S OWN TYPED PROGRESS — a row per resource with a state, the chunk
+   * counts, the running rule total, and the server's labouring sentence while
+   * its heartbeat cannot land. Reduced HERE rather than in each dialog, so
+   * every Masterwork lane inherits the same honest movement instead of the
+   * flat string log that read as frozen (acquisition-frontier §7.3).
+   */
+  progress: IngestProgress;
+}
 
 export function useMasterworkRun<TResult>({
   surface,
@@ -263,19 +470,61 @@ export function useMasterworkRun<TResult>({
   onDomainEvent,
   live,
   expectedMs,
+  size,
 }: UseMasterworkRunOptions<TResult>): MasterworkRunHandle<TResult> {
-  return useDurableRun<TResult>({
+  // 🚨 ONE REDUCER FOR EVERY LANE. A dialog that wanted a file list used to
+  // have to decode the stream itself, which is why fifteen of sixteen never
+  // did and showed a motionless spinner over a working run instead.
+  const [progress, setProgress] = useState<IngestProgress>(
+    EMPTY_INGEST_PROGRESS,
+  );
+  const callerDomainEvent = useRef(onDomainEvent);
+  useEffect(() => {
+    callerDomainEvent.current = onDomainEvent;
+  }, [onDomainEvent]);
+  const handleDomainEvent = useCallback(
+    (
+      name: string,
+      data: Record<string, unknown>,
+      ctx: { rejoin: boolean },
+    ): void => {
+      setProgress((prev) => reduceIngestProgress(prev, name, data));
+      callerDomainEvent.current?.(name, data, ctx);
+    },
+    [],
+  );
+
+  const run = useDurableRun<TResult>({
     wire: MASTERWORK_RUN_WIRE,
     key: `${surface}:${rulebookId}`,
     path,
-    expectedMs: expectedMs ?? EXPECTED_MS[surface],
+    expectedMs: expectedMsFor(surface, size, expectedMs),
     rejoiningMessage:
       "Picking this back up — it kept working while you were away.",
     finalEvent: FINAL_EVENT[surface],
     stageLabels: {},
     stageFallback: STAGE_FALLBACK,
     ...(parseResult ? { parseResult } : {}),
-    ...(onDomainEvent ? { onDomainEvent } : {}),
+    onDomainEvent: handleDomainEvent,
     ...(live ? { live } : {}),
   });
+
+  // A fresh run starts from a clean slate — a REJOIN does not, because the
+  // rejoin snapshot replays this run's own events through the same reducer and
+  // the screen must come back showing what it showed before the reload. So the
+  // slate is wiped at the two places a NEW run begins, and nowhere else.
+  const { launch: startRun, reset: resetRun } = run;
+  const launch = useCallback<DurableRunHandle<TResult>["launch"]>(
+    async (...args) => {
+      setProgress(EMPTY_INGEST_PROGRESS);
+      return startRun(...args);
+    },
+    [startRun],
+  );
+  const reset = useCallback((): void => {
+    setProgress(EMPTY_INGEST_PROGRESS);
+    resetRun();
+  }, [resetRun]);
+
+  return { ...run, launch, reset, progress };
 }

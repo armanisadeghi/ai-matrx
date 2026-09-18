@@ -35,6 +35,7 @@ import type {
 } from "@/features/agents/types/instance.types";
 import { extractFirstJson } from "@/utils/json/extract-json";
 import { extractErrorMessage } from "@/utils/errors";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { destroyInstanceIfAllowed } from "@/features/agents/redux/execution-system/conversations/conversations.thunks";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
@@ -68,7 +69,7 @@ export interface HeadlessAgentJsonOptions {
   /** Exact agent to run. Mutually exclusive with mandateKey. */
   agentId?: string;
   /** Swappable mandate to resolve inside the canonical launcher, preserving config_overrides. */
-  mandateKey?: string;
+  mandateKey?: AnyMandateKey;
   /** Stable surface key for telemetry + the focus registry. */
   surfaceKey: string;
   /** UI feature that triggered the run. */
@@ -534,7 +535,9 @@ async function launchAndWait(
   };
 
   try {
-    let executionIdentity: { agentId: string } | { mandateKey: string };
+    let executionIdentity:
+      | { agentId: string }
+      | { mandateKey: AnyMandateKey };
     if (opts.mandateKey !== undefined) {
       if (opts.agentId !== undefined) {
         throw new Error("runHeadlessAgentJson accepts agentId or mandateKey, never both");

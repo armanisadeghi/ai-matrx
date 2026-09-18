@@ -18,6 +18,11 @@
 
 import { useCallback } from "react";
 import { useCanvas } from "@/features/canvas/hooks/useCanvas";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import {
+  offerCanvasItem,
+  type CanvasContent,
+} from "@/features/canvas/redux/canvasSlice";
 
 export interface OpenCloudBrowserCanvasOptions {
   initialProfileId?: string | null;
@@ -38,26 +43,52 @@ export function cloudBrowserCanvasSourceId(conversationId: string): string {
   return `cloud-browser:${conversationId}`;
 }
 
+/** The one payload both verbs use, so offering then opening shows ONE pane. */
+export function buildCloudBrowserCanvasContent(
+  opts: OpenCloudBrowserCanvasOptions = {},
+): CanvasContent {
+  const conversationId = opts.conversationId ?? undefined;
+  return {
+    type: "cloud_browser",
+    data: {
+      initialProfileId: opts.initialProfileId ?? undefined,
+      runId: opts.runId ?? undefined,
+    },
+    metadata: {
+      title: "Cloud Browser",
+      conversationId,
+      sourceMessageId: conversationId
+        ? cloudBrowserCanvasSourceId(conversationId)
+        : undefined,
+    },
+  };
+}
+
 export function useOpenCloudBrowserCanvas() {
   const { open } = useCanvas();
   return useCallback(
     (opts: OpenCloudBrowserCanvasOptions = {}) => {
-      const conversationId = opts.conversationId ?? undefined;
-      open({
-        type: "cloud_browser",
-        data: {
-          initialProfileId: opts.initialProfileId ?? undefined,
-          runId: opts.runId ?? undefined,
-        },
-        metadata: {
-          title: "Cloud Browser",
-          conversationId,
-          sourceMessageId: conversationId
-            ? cloudBrowserCanvasSourceId(conversationId)
-            : undefined,
-        },
-      });
+      open(buildCloudBrowserCanvasContent(opts));
     },
     [open],
+  );
+}
+
+/**
+ * Make the browser pane AVAILABLE without putting it on screen.
+ *
+ * `cloud_browser` is NON_PERSISTABLE and the canvas slice is not persisted, so
+ * nothing restores this pane after a reload — exactly the shape that stranded
+ * the Sandbox behind a hidden one-item switcher on 2026-09-15. While a run is
+ * live its surface keeps offering it, so the switcher always has a door to it.
+ * See `features/canvas/liveSourceReachability.ts`.
+ */
+export function useOfferCloudBrowserCanvas() {
+  const dispatch = useAppDispatch();
+  return useCallback(
+    (opts: OpenCloudBrowserCanvasOptions = {}) => {
+      dispatch(offerCanvasItem(buildCloudBrowserCanvasContent(opts)));
+    },
+    [dispatch],
   );
 }

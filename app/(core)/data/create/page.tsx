@@ -40,7 +40,7 @@ export default function CreateTablePage() {
         }
       />
       <div className="h-full overflow-hidden">
-        <div className="h-full overflow-y-auto scrollbar-none pt-[var(--shell-header-h)] p-4">
+        <div className="scroll-page-end-space h-full overflow-y-auto scrollbar-none pt-[var(--shell-header-h)] p-4">
           <div className="py-8 text-center bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-800">
             <p className="font-medium">Create a new data table</p>
             <p className="text-muted-foreground mt-2">

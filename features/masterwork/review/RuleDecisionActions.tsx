@@ -23,12 +23,37 @@
 // review queue says "Approve"; the VERBS are not overridable.
 //
 // Full state matrix: features/masterwork/FEATURE.md § The review-verb matrix.
+//
+// 🚨 THE EXPERT'S WORDING (2026-09-15). `vocabulary="ownership"` relabels the
+// SAME verbs as "Mine / Not mine / Mine but wrong" — doctrine CORE.md §5. The
+// verbs, their handlers and the statuses they write are untouched; only the
+// words change, and which word each verb wears is declared in ONE place
+// (`./vocabulary.ts`), never typed into a surface. `request changes` is the
+// third ownership word, so the row accepts an OPTIONAL `onRequestChanges` and
+// renders it beside the other four when a surface supplies it — a surface that
+// keeps the change request in an expanded panel simply omits it.
 
-import { CheckCircle2, MessageSquareText, Pencil, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  MessageSquareText,
+  MessageSquareWarning,
+  Pencil,
+  XCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import {
+  REVIEW_VOCABULARY_LABELS,
+  REVIEW_VOCABULARY_TITLES,
+  type ReviewVocabulary,
+} from "./vocabulary";
 
-export type RuleDecisionVerb = "approve" | "improve" | "reject" | "edit";
+export type RuleDecisionVerb =
+  | "approve"
+  | "improve"
+  | "reject"
+  | "edit"
+  | "requestChanges";
 
 export interface RuleDecisionActionsProps {
   onApprove: () => void;
@@ -37,6 +62,14 @@ export interface RuleDecisionActionsProps {
   /** Opens this surface's reason-capture; a reason is mandatory downstream. */
   onReject: () => void;
   onEdit: () => void;
+  /**
+   * "Mine but wrong" / "Request changes". OPTIONAL because a surface may keep
+   * it in an expanded panel; when supplied it renders in the row, which is
+   * what the ownership wording needs (all three ownership words together).
+   */
+  onRequestChanges?: () => void;
+  /** Which words the four verbs wear. Defaults to the standard set. */
+  vocabulary?: ReviewVocabulary;
   /** Disable everything (a save in flight, an agent mid-run). */
   disabled?: boolean;
   /** Disable individual verbs that are momentarily impossible. */
@@ -47,20 +80,30 @@ export interface RuleDecisionActionsProps {
   className?: string;
 }
 
-const DEFAULT_LABELS: Record<RuleDecisionVerb, string> = {
-  approve: "Approve",
-  improve: "Improve",
-  reject: "Reject",
-  edit: "Edit",
-};
+function defaultLabels(
+  vocabulary: ReviewVocabulary,
+): Record<RuleDecisionVerb, string> {
+  const words = REVIEW_VOCABULARY_LABELS[vocabulary];
+  return {
+    approve: words.approve,
+    improve: words.improve,
+    reject: words.reject,
+    edit: words.edit,
+    requestChanges: words.requestChanges,
+  };
+}
 
-const TITLES: Record<RuleDecisionVerb, string> = {
-  approve: "Approve this rule — the only action that approves.",
-  improve:
-    "Say what should change — the AI rewrites it and it comes back as a draft for your approval.",
-  reject: "Send it back with your reason.",
-  edit: "Change it yourself. Saving an edit does not approve it.",
-};
+function titles(vocabulary: ReviewVocabulary): Record<RuleDecisionVerb, string> {
+  const words = REVIEW_VOCABULARY_TITLES[vocabulary];
+  return {
+    approve: words.approve,
+    improve:
+      "Say what should change — the AI rewrites it and it comes back as a draft for your approval.",
+    reject: words.reject,
+    edit: "Change it yourself. Saving an edit does not approve it.",
+    requestChanges: words.requestChanges,
+  };
+}
 
 /**
  * The four verbs, always in this order, always all four. Icons rely on the
@@ -72,14 +115,18 @@ export function RuleDecisionActions({
   onImprove,
   onReject,
   onEdit,
+  onRequestChanges,
+  vocabulary = "standard",
   disabled = false,
   disabledVerbs,
   labels,
   size = "default",
   className,
 }: RuleDecisionActionsProps) {
+  const fallbackLabels = defaultLabels(vocabulary);
+  const verbTitles = titles(vocabulary);
   const label = (verb: RuleDecisionVerb) =>
-    labels?.[verb] ?? DEFAULT_LABELS[verb];
+    labels?.[verb] ?? fallbackLabels[verb];
   const off = (verb: RuleDecisionVerb) =>
     disabled || disabledVerbs?.[verb] === true;
   const heightClass = size === "sm" ? "h-7" : undefined;
@@ -91,18 +138,33 @@ export function RuleDecisionActions({
         className={heightClass}
         onClick={onApprove}
         disabled={off("approve")}
-        title={TITLES.approve}
+        title={verbTitles.approve}
       >
         <CheckCircle2 className="h-4 w-4" />
         {label("approve")}
       </Button>
+      {/* "Mine but wrong" sits where the Expert reads it — between "mine" and
+          "not mine" — and only when the surface handed us the handler. */}
+      {onRequestChanges ? (
+        <Button
+          size={size}
+          variant="outline"
+          className={heightClass}
+          onClick={onRequestChanges}
+          disabled={off("requestChanges")}
+          title={verbTitles.requestChanges}
+        >
+          <MessageSquareWarning className="h-4 w-4" />
+          {label("requestChanges")}
+        </Button>
+      ) : null}
       <Button
         size={size}
         variant="outline"
         className={heightClass}
         onClick={onImprove}
         disabled={off("improve")}
-        title={TITLES.improve}
+        title={verbTitles.improve}
       >
         <MessageSquareText className="h-4 w-4" />
         {label("improve")}
@@ -113,7 +175,7 @@ export function RuleDecisionActions({
         className={heightClass}
         onClick={onReject}
         disabled={off("reject")}
-        title={TITLES.reject}
+        title={verbTitles.reject}
       >
         <XCircle className="h-4 w-4" />
         {label("reject")}
@@ -124,7 +186,7 @@ export function RuleDecisionActions({
         className={heightClass}
         onClick={onEdit}
         disabled={off("edit")}
-        title={TITLES.edit}
+        title={verbTitles.edit}
       >
         <Pencil className="h-4 w-4" />
         {label("edit")}

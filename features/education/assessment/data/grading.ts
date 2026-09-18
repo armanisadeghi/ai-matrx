@@ -12,6 +12,7 @@
 // `gradeAnswer` (in the taking hook) picks the path per question type.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import {
   coerceGradeVerdict,
@@ -140,7 +141,7 @@ export function gradeAnswerAI(args: {
   expected: string;
   learnerAnswer: string;
   /** Override the grading mandate (rare — testing only). */
-  mandateKey?: string;
+  mandateKey?: AnyMandateKey;
 }) {
   return async (
     dispatch: AppDispatch,
@@ -230,7 +231,7 @@ export function gradeAnswerImage(args: {
   /** For upload metadata / telemetry (the assessment item, when there is one). */
   itemId?: string;
   /** Override the vision-grading mandate (rare — testing only). */
-  mandateKey?: string;
+  mandateKey?: AnyMandateKey;
   surfaceKey?: string;
   surfaceName?: string;
   /** Live handle — the vision grade streams where the caller mounts it. */

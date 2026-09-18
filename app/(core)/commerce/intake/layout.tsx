@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/commerce/intake", {
   title: "Intake Capture",
   description:
     "Camera-first warehouse intake: QR-keyed and untracked capture of photos, video and voice onto commerce intake assets.",
-  letter: "In",
+  letter: "IK",
 });
 
 export default function CommerceIntakeLayout({

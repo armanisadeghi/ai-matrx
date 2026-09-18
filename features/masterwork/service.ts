@@ -1,10 +1,17 @@
 import { supabase } from "@/utils/supabase/client";
 import { guardedUpdate } from "@ai-matrx/data/db";
+import { operationFailed } from "@/utils/errors";
 import { readAgentRunOutput } from "@/features/workflow-runtime/agent-run-output";
 import { presentedPreview } from "@/features/workflow-runtime/run-result/presented-result";
 import { pokeUnderstudy } from "./understudy/refresh";
 import { DuplicateRuleError, findIdenticalRule } from "./duplicateRules";
 import {
+  isPhantomRulebookMiss,
+  type RulebookCurrentRow,
+  type RulebookWriteTouches,
+} from "./rulebookRebase";
+import {
+  dumpUrlSources,
   parseRulebook,
   type DumpUrlSource,
   type Masterwork,
@@ -32,7 +39,7 @@ export async function getRulebook(id: string): Promise<Rulebook | null> {
     .eq("id", id)
     .is("deleted_at", null)
     .maybeSingle();
-  if (error) throw error;
+  if (error) throw operationFailed("open that Rulebook", error);
   return data ? parseRulebook(data as RulebookRow) : null;
 }
 
@@ -122,7 +129,7 @@ export async function createDraftRulebook(
       slug = `${base}-${Math.random().toString(36).slice(2, 6)}`;
       continue;
     }
-    throw error;
+    throw operationFailed("create that Rulebook", error);
   }
   throw new Error("Could not create the Rulebook: slug collision persisted.");
 }
@@ -133,8 +140,15 @@ export async function createDraftRulebook(
  * surfaces as a conflict instead of silently overwriting.
  */
 export async function saveRules(opts: {
-  rulebookId: string;
-  expectedVersion: number;
+  /**
+   * The Rulebook exactly as this edit was based on — the row the surface read
+   * (or the row the last save returned). It carries BOTH the id and the
+   * `version` to compare-and-swap on AND the `rules`/`sections`/`metadata` the
+   * edit was made against, which is what lets a miss be classified as a
+   * phantom conflict instead of refused. Passing the base is not optional:
+   * see `rulebookRebase.ts` for the wall this closed.
+   */
+  base: Rulebook;
   rules: RulebookRule[];
   sections?: RulebookSections;
   /**
@@ -148,22 +162,41 @@ export async function saveRules(opts: {
 }): Promise<Rulebook> {
   // `version` is supplied by guardedUpdate's `nextVersion` below — the CAS
   // helper owns the bump, and platform._touch_row re-derives it server-side.
+  const rulebookId = opts.base.id;
   const patch: Record<string, unknown> = {
     rules: opts.rules,
   };
   if (opts.sections) patch.sections = opts.sections;
   if (opts.metadata) patch.metadata = opts.metadata;
+  const touches: RulebookWriteTouches = {
+    rules: true,
+    sections: opts.sections !== undefined,
+    metadata: opts.metadata !== undefined,
+  };
   const result = await guardedUpdate<RulebookRow & { version: number }>({
-    expectedVersion: opts.expectedVersion,
+    expectedVersion: opts.base.version,
     applyUpdate: ({ expectedVersion, nextVersion }) =>
       rulebookTable()
         .update({ ...patch, version: nextVersion } as never)
-        .eq("id", opts.rulebookId)
+        .eq("id", rulebookId)
         .eq("version", expectedVersion)
         .select("*")
         .maybeSingle(),
     fetchCurrent: () =>
-      rulebookTable().select("*").eq("id", opts.rulebookId).maybeSingle(),
+      rulebookTable().select("*").eq("id", rulebookId).maybeSingle(),
+    // 🚨 WALL W12. Our OWN save wakes the server's Coherence Partner, which
+    // writes `metadata.coherence` back onto this row a second later and bumps
+    // `version`. Without this the Expert's NEXT decision — reject, approve,
+    // improve, edit — is refused with "someone else saved a newer version"
+    // when nobody else touched it. Read `rulebookRebase.ts` before changing.
+    rebase: {
+      isPhantom: (currentRow) =>
+        isPhantomRulebookMiss({
+          base: opts.base,
+          touches,
+          current: currentRow as unknown as RulebookCurrentRow,
+        }),
+    },
   });
   if (result.status !== "saved") {
     throw new Error(
@@ -174,7 +207,7 @@ export async function saveRules(opts: {
   // ONE funnel covers every FE rules write (editor, wizard, approve-all,
   // checkup apply): the Understudy rebuilds — free, in place — so the Expert
   // watches the running system get better as approvals land.
-  pokeUnderstudy(opts.rulebookId);
+  pokeUnderstudy(rulebookId);
   return parseRulebook(data as RulebookRow);
 }
 
@@ -209,11 +242,7 @@ export async function upsertRuleWithRetry(opts: {
       ? rulebook.rules.map((r) => (r.id === opts.rule.id ? opts.rule : r))
       : [...rulebook.rules, opts.rule];
     try {
-      return await saveRules({
-        rulebookId: opts.rulebookId,
-        expectedVersion: rulebook.version,
-        rules,
-      });
+      return await saveRules({ base: rulebook, rules });
     } catch (error) {
       lastError = error;
       const message = error instanceof Error ? error.message : "";
@@ -240,7 +269,7 @@ export async function updateRulebookMeta(opts: {
     .eq("id", opts.rulebookId)
     .select("*")
     .single();
-  if (error) throw error;
+  if (error) throw operationFailed("save that change to the Rulebook", error);
   return parseRulebook(data as RulebookRow);
 }
 
@@ -259,53 +288,107 @@ export type DumpUrlWriteResult =
  * concurrent save (the Scout, another tab) surfaces as a conflict with the
  * fresh Rulebook instead of silently clobbering it.
  */
+const DUMP_URL_CAS_RETRIES = 3;
+
+/** The `metadata` column as a plain object (tolerant read). */
+function metadataObject(metadata: unknown): Record<string, unknown> {
+  return metadata && typeof metadata === "object" && !Array.isArray(metadata)
+    ? (metadata as Record<string, unknown>)
+    : {};
+}
+
 export async function writeDumpUrlSources(opts: {
   rulebook: Rulebook;
   urls: DumpUrlSource[];
 }): Promise<DumpUrlWriteResult> {
-  const { rulebook, urls } = opts;
-  const baseMeta =
-    rulebook.metadata &&
-    typeof rulebook.metadata === "object" &&
-    !Array.isArray(rulebook.metadata)
-      ? (rulebook.metadata as Record<string, unknown>)
-      : {};
-  const metadata = { ...baseMeta, dump_url_sources: urls };
-  // Metadata-only: CAS-guard on the RULES version, never bump it — `version`
-  // is what a built Masterwork drifts against, and bumping it here made a
-  // freshly built Masterwork read "needs rebuild" the moment a link was
-  // attached (2026-09-10, v44 → v45 with identical rules).
-  const result = await guardedUpdate<RulebookRow>({
-    expectedVersion: rulebook.version,
-    applyUpdate: ({ expectedVersion }) =>
-      rulebookTable()
-        .update({ metadata } as never)
-        .eq("id", rulebook.id)
-        .eq("version", expectedVersion)
-        .is("deleted_at", null)
-        .select("*")
-        .maybeSingle(),
-    fetchCurrent: () =>
-      rulebookTable()
-        .select("*")
-        .eq("id", rulebook.id)
-        .is("deleted_at", null)
-        .maybeSingle(),
-  });
-  if (result.status === "saved") {
-    return { status: "saved", rulebook: parseRulebook(result.row) };
+  const { rulebook } = opts;
+  // The GESTURE, not the list: what this call adds and what it removes,
+  // measured against the row the caller was looking at. A rebase replays the
+  // gesture onto the row as it now stands — replaying the LIST would delete
+  // whatever landed in between.
+  //
+  // 🚨 BELT AND BRACES SINCE 2026-09-15, AND IT STAYS. The server no longer
+  // manufactures the conflict this loop was written for: aidream migration
+  // `0728_rulebook_background_metadata_does_not_bump_version.sql` stops a
+  // background `metadata.coherence` write from bumping `version`. Note the
+  // asymmetry that makes the retry still necessary — `dump_url_sources` is
+  // EXPERT-FACING metadata and deliberately still bumps, so two people
+  // attaching links at once is a real conflict, not a phantom, and this rebase
+  // is what keeps both sets of links.
+  let base = rulebook;
+  let desired = opts.urls;
+  let lastCurrent: Rulebook | null = null;
+
+  for (let attempt = 0; attempt < DUMP_URL_CAS_RETRIES; attempt++) {
+    const metadata = { ...metadataObject(base.metadata), dump_url_sources: desired };
+    // Metadata-only: CAS-guard on the RULES version, never bump it — `version`
+    // is what a built Masterwork drifts against, and bumping it here made a
+    // freshly built Masterwork read "needs rebuild" the moment a link was
+    // attached (2026-09-10, v44 → v45 with identical rules).
+    const result = await guardedUpdate<RulebookRow>({
+      expectedVersion: base.version,
+      applyUpdate: ({ expectedVersion }) =>
+        rulebookTable()
+          .update({ metadata } as never)
+          .eq("id", base.id)
+          .eq("version", expectedVersion)
+          .is("deleted_at", null)
+          .select("*")
+          .maybeSingle(),
+      fetchCurrent: () =>
+        rulebookTable()
+          .select("*")
+          .eq("id", base.id)
+          .is("deleted_at", null)
+          .maybeSingle(),
+    });
+    if (result.status === "saved") {
+      return { status: "saved", rulebook: parseRulebook(result.row) };
+    }
+    if (result.status !== "conflict") return { status: "not_found" };
+
+    // 🚨 WALL W7 (masterwork methods census, 2026-09-15) — THE SAME PHANTOM
+    // CONFLICT W12 closed for `saveRules`, in its missed sibling. Attaching a
+    // link is a metadata-only write, and the row's `version` is bumped by
+    // writes this Expert never makes: `pokeUnderstudy` wakes the Coherence
+    // Partner, which writes `metadata.coherence` back onto the SAME row a
+    // beat later, and the Understudy rebuild moves it again. So "Add a link"
+    // CASed on a number the row no longer held, the field emptied, and
+    // nothing was staged — while a file upload in the same pile (an
+    // association row, not this column) kept working. That is the census's
+    // exact discriminator.
+    //
+    // A link add is commutative: nobody DISAGREED about the link, we simply
+    // never learned about a write to another key. So replay the gesture onto
+    // the current row instead of throwing it away — carrying every other
+    // metadata key (coherence included) and every link that landed meanwhile.
+    const current = parseRulebook(result.currentRow);
+    lastCurrent = current;
+    const baseList = dumpUrlSources(base);
+    const added = desired.filter((u) => !baseList.some((b) => b.url === u.url));
+    const removed = new Set(
+      baseList.filter((b) => !desired.some((u) => u.url === b.url)).map((b) => b.url),
+    );
+    const currentList = dumpUrlSources(current);
+    base = current;
+    desired = [
+      ...currentList.filter((c) => !removed.has(c.url)),
+      ...added.filter((a) => !currentList.some((c) => c.url === a.url)),
+    ];
   }
-  if (result.status === "conflict") {
-    return { status: "conflict", rulebook: parseRulebook(result.currentRow) };
-  }
-  return { status: "not_found" };
+
+  // Three rebases and the row was still moving under us — say so rather than
+  // keep hammering it.
+  return lastCurrent
+    ? { status: "conflict", rulebook: lastCurrent }
+    : { status: "not_found" };
 }
 
 export async function softDeleteRulebook(rulebookId: string): Promise<void> {
   const { error } = await rulebookTable()
     .update({ deleted_at: new Date().toISOString() } as never)
     .eq("id", rulebookId);
-  if (error) throw error;
+  if (error) throw operationFailed("delete that Rulebook", error);
 }
 
 /** One recorded state of a Rulebook (history.row_versions, via the gated RPC). */
@@ -330,7 +413,7 @@ export async function listRulebookVersions(
   const { data, error } = await supabase.rpc("rulebook_versions", {
     p_rulebook_id: rulebookId,
   });
-  if (error) throw error;
+  if (error) throw operationFailed("list this Rulebook's earlier versions", error);
   return (data ?? []).map((row) => ({
     version: row.version,
     operation: row.operation,
@@ -355,7 +438,7 @@ export async function getRulebookSnapshotRules(
     p_rulebook_id: rulebookId,
     p_version: version,
   });
-  if (error) throw error;
+  if (error) throw operationFailed("read that earlier version of the Rulebook", error);
   if (!data || typeof data !== "object") return null;
   const rules = (data as { rules?: unknown }).rules;
   return Array.isArray(rules) ? (rules as unknown as RulebookRule[]) : [];
@@ -406,32 +489,57 @@ function runErrorMessage(error: unknown): string | null {
  */
 const EMISSIONS_SCANNED_PER_RUN = 20;
 
+export interface RecentRunsOptions {
+  /** How many runs to keep per Masterwork. Defaults to the lane's five. */
+  perMasterwork?: number;
+  /**
+   * Narrow to the caller's own runs. The SCOPE WORD is declared by the caller
+   * (`scopeToOwner`) and the answer passed in — this reader never decides a
+   * surface's scope for it.
+   */
+  onlyCreatedBy?: string | null;
+}
+
 /**
- * Recent runs per Masterwork, with per-run cost summed from node outcomes. Two
- * bounded reads (runs, then their node costs) — a preview surface, so a bare
- * select with limits is correct here, never a completeness read.
+ * Recent runs per Masterwork, with per-run cost summed from node outcomes and
+ * the first line of what each one PRESENTED. Three bounded reads (runs, their
+ * node costs, their last emissions) — a preview surface, so a bare select with
+ * limits is correct here, never a completeness read.
+ *
+ * 🚨 THIS IS THE ONLY READER OF "recent runs of a Masterwork". Encore had its
+ * own, which selected five columns and no preview, and that is exactly why its
+ * history was eight rows of "Finished · 1d ago" with nothing to tell them apart
+ * while the Masterworks lane showed the answer each run gave
+ * (jobs-bar-2026-09-16, item 18). A second implementation of one question is a
+ * defect even when it works: the two drift, and the poorer one wins wherever
+ * it happens to be mounted.
  */
 export async function listRecentRunsForMasterworks(
   masterworkIds: string[],
+  options: RecentRunsOptions = {},
 ): Promise<Record<string, MasterworkRun[]>> {
   if (masterworkIds.length === 0) return {};
-  const { data: runs, error } = await supabase
+  const perMasterwork = options.perMasterwork ?? RUNS_PER_MASTERWORK;
+  let runQuery = supabase
     .schema("workflow")
     .from("run")
     .select(
       "id,definition_id,status,created_at,started_at,completed_at,steps_executed,error",
     )
-    .in("definition_id", masterworkIds)
+    .in("definition_id", masterworkIds);
+  if (options.onlyCreatedBy)
+    runQuery = runQuery.eq("created_by", options.onlyCreatedBy);
+  const { data: runs, error } = await runQuery
     .order("created_at", { ascending: false })
-    .limit(RUNS_PER_MASTERWORK * masterworkIds.length);
-  if (error) throw error;
+    .limit(perMasterwork * masterworkIds.length);
+  if (error) throw operationFailed("list the recent runs of these Masterworks", error);
 
   const byMasterwork: Record<string, MasterworkRun[]> = {};
   const kept: { id: string; definition_id: string }[] = [];
   for (const row of runs ?? []) {
     const masterworkId = String(row.definition_id);
     const bucket = (byMasterwork[masterworkId] ??= []);
-    if (bucket.length >= RUNS_PER_MASTERWORK) continue;
+    if (bucket.length >= perMasterwork) continue;
     bucket.push({
       id: row.id,
       status: String(row.status),
@@ -594,7 +702,7 @@ export async function getMasterworkRunVerdict(
         .returns<{ node_id: string; output: Record<string, unknown> | null }[]>(),
     ]);
   if (runError) throw runError;
-  if (error) throw error;
+  if (error) throw operationFailed("read that run's verdict", error);
   if (!run) return null;
   // The node output is the agent-run ENVELOPE, not the text: reading
   // `final_text` off it (this used to be an `output->>final_text` select) is
@@ -788,8 +896,50 @@ export async function listMasterworksForRulebook(
   // `is_archived`) the moment a surface with a control asks.
   if (!includeArchived) query = query.eq("is_archived", false);
   const { data, error } = await query.order("created_at", { ascending: false });
-  if (error) throw error;
+  if (error) throw operationFailed("list the Masterworks built from this Rulebook", error);
   return (data ?? []).map(parseMasterworkRow);
+}
+
+/**
+ * The same list, but it does not return until the Masterwork a Build just
+ * announced is actually IN it.
+ *
+ * 🚨 A READ THAT RACES ITS OWN WRITE REPORTS A NUMBER NOBODY MEASURED
+ * (Masterwork cold walk 5, finding 6). The Build's terminal stream event fires
+ * the moment the run completes; the `workflow.definition` row it wrote is not
+ * necessarily visible to the next PostgREST read yet. The Rulebook reloaded on
+ * that event, once, with no retry — so ~15 seconds after a Quick Build finished
+ * its own page said "0 Built" about a Masterwork it had just watched being
+ * built, and only a fresh navigation corrected it.
+ *
+ * Bounded, and honest either way: `confirmed: false` means the row still had
+ * not appeared, which is a fact the caller must SAY rather than paint over.
+ */
+export async function listMasterworksAfterBuild(
+  rulebookId: string,
+  workflowId: string,
+  {
+    attempts = 6,
+    firstWaitMs = 300,
+    /** The read itself — injectable so the RACE, not the query, is guarded. */
+    read = (id: string) => listMasterworksForRulebook(id, { includeArchived: true }),
+  }: {
+    attempts?: number;
+    firstWaitMs?: number;
+    read?: (rulebookId: string) => Promise<Masterwork[]>;
+  } = {},
+): Promise<{ masterworks: Masterwork[]; confirmed: boolean }> {
+  let latest: Masterwork[] = [];
+  let wait = firstWaitMs;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    latest = await read(rulebookId);
+    if (latest.some((entry) => entry.id === workflowId)) {
+      return { masterworks: latest, confirmed: true };
+    }
+    await new Promise((resolve) => setTimeout(resolve, wait));
+    wait = Math.min(wait * 2, 3000);
+  }
+  return { masterworks: latest, confirmed: false };
 }
 
 /**
@@ -818,7 +968,7 @@ export async function listMasterworksForRulebooks(
   const { data, error } = await query.order("created_at", {
     ascending: false,
   });
-  if (error) throw error;
+  if (error) throw operationFailed("list the Masterworks built from these Rulebooks", error);
   const out: Record<string, Masterwork[]> = {};
   for (const row of data ?? []) {
     const mw = parseMasterworkRow(row);

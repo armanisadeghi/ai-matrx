@@ -194,7 +194,9 @@ export function detailToRunState(detail: RunDetail): PodcastRunState {
     episodeId: detail.episode_id ?? null,
     episodeSlug: detail.episode_slug ?? null,
     error:
-      status === "error" ? "This run was interrupted before finishing." : null,
+      status === "error"
+        ? detail.error || "This run was interrupted before finishing."
+        : null,
     podcastType: (detail.podcast_type as PodcastType | null) ?? null,
   };
 }

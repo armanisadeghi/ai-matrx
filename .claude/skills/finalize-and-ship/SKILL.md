@@ -5,7 +5,18 @@ description: "End-of-task routine: health checks, fixes, then commit and push. U
 
 # finalize-and-ship
 
-Complete the owned feature with proportionate checks, then commit and push. Scheduled release owners follow the ship-first policy below; they do not run the feature-author checklist as an unconditional release prerequisite.
+Complete the owned feature with its required local proof, then commit and push. A pushed feature
+is complete; deployment, production/live-site verification, full release work, and waiting for
+other agents belong to release owners. Scheduled release owners follow their ship-first policy
+below; they do not run the feature-author checklist as an unconditional release prerequisite.
+
+## Before anything else: is the outcome there, from the user's seat?
+
+Finishing means the user can do what he asked, the way he meets the product — not that the
+checks are green. For changed UI, drive the changed code in an actual localhost browser and
+confirm what he will see. For non-UI work, exercise the closest real local behavior boundary.
+If you cannot, the task is not at its end, and green checks will only make the gap harder to
+notice ([reality is the referee](../../../../common-docs/policies/reality-is-the-referee.md)).
 
 ## The commit/push contract (read first)
 
@@ -33,11 +44,14 @@ Defaults: scope = **this task's files**, delivery = **commit and push**. Follow 
 
 ## Feature-author checks
 
-Run checks relevant to changed behavior. Regenerate types only for changed contracts;
-use the canonical generator and never suppress errors or hand-edit generated files.
-Record unrelated ordinary findings for bounded repair; do not repeat a full
-`pnpm sync-types` until green merely to dispatch a release. Migrations belong to their
-own implementation: never apply an unrelated pending backlog as release preparation.
+Run checks relevant to changed behavior. Check every touched type boundary and prove the change
+introduced no type errors; use the canonical generator for changed contracts and never suppress
+errors or hand-edit generated files. Run meaningful tests that reach the changed behavior,
+exercise changed UI in an actual localhost browser, and repair every regression your change
+introduced before committing. Obtain independent review when the change's risk or scope requires
+it. Record unrelated ordinary findings for bounded repair; do not repeat a full `pnpm sync-types`
+until green merely to dispatch a release. Migrations belong to their own implementation: never
+apply an unrelated pending backlog as release preparation.
 
 ## Scheduled release owners
 
@@ -65,21 +79,27 @@ Do not broaden scheduled release preparation into a full validation sweep.
 
 ### 5. Commit & push
 
-Plain git, per the global commit rules: review `git status` + `git diff` first, stage the **specific** files (never blind `git add -A`), write a conventional commit (`feat(...)`/`fix(...)`) via a HEREDOC, then `git push origin main`. Quality gates (`check:doctrine`, UI primitives, migrations, dead-relations) run at **release time** via `./scripts/release.sh` / `pnpm check:release-gates` — not on every commit.
+Plain git, per the global commit rules: review `git status` + `git diff` first, stage the **specific** files (never blind `git add -A`), write a conventional commit (`feat(...)`/`fix(...)`) via a HEREDOC, then `git push origin main`. Quality gates (`check:doctrine`, UI primitives, migrations, dead-relations) run at **release time** via `./scripts/release.sh` / `pnpm check:release-gates` — not on every commit. The one narrow runtime admission is different: `release.sh` read-only checks the committed candidate's required surface registrations before tag/push. It neither syncs nor repairs manifests, and it does not make advisory registry drift a release gate.
 
-> `pnpm ship "msg"` is the **versioned-release** path. Use the release-freshness rule below after every push; the existing owner performs the release.
+> `pnpm ship "msg"` is the **versioned-release** path. Only the existing release owner uses the
+> release-freshness rule below; feature authors stop after local proof, commit, and push.
 
-### 6. If it must reach USERS, release it — `git push` alone deploys nothing
+### 6. Release-owner only — deployment is downstream of feature completion
 
-**Vercel skips every commit whose first line is not release-prefixed** (`vercel.json` → `scripts/vercel-ignore-build.sh`). A plain `git push origin main` reaches GitHub and **no user, ever**: no build starts, the deployment reads `CANCELED`, and production stays on the last release. Polling the live URL will never turn green — there is nothing running to wait for.
+Feature authors stop after their required local proof, commit, and push. They do not run,
+wait for, or report deployment. The following release procedure applies only to the designated
+release owner or an assignment that explicitly includes immediate release work.
 
-The release owner dispatches; the central build monitor observes completion every 30 minutes:
+**Vercel skips every commit whose first line is not release-prefixed** (`vercel.json` → `scripts/vercel-ignore-build.sh`). A plain `git push origin main` reaches GitHub and **no user, ever**: no build starts, the deployment reads `CANCELED`, and production stays on the last release.
+
+The release owner dispatches; the central build monitor observes completion on its configured
+schedule:
 
 | Situation | Do |
 |---|---|
 | Latest applicable `origin/main` code is already contained in every affected target's latest `Ready` deployment | No release; record the verified target SHAs. |
-| Any affected target is missing applicable `origin/main` code | After completing and pushing a fix for an already shipped partial feature, request one expedited release from the existing frontend owner. Otherwise use its normal cadence. Run `./scripts/release.sh` yourself only when the user requested an immediate release, per `CLAUDE.md`. Shared runtime changes affect all three targets. |
-| A release for the exact applicable SHA is already queued or building | Do not duplicate or wait through it. The central build monitor reports new failures once to its owner. |
+| Any affected target is missing applicable `origin/main` code | The pushed `origin/main` commit is the durable handoff; the frontend owner picks it up on its normal pass and cadence. Do not send or request an expedited-release message. Run `./scripts/release.sh` yourself only when the user requested an immediate release, per `CLAUDE.md`. Shared runtime changes affect all three targets. |
+| A release for the exact applicable SHA is already queued or building | Do not duplicate or wait through it. The central build monitor records a new failure in durable lane state; the owner reads unresolved state on its normal pass. |
 
 Verify a release actually landed: a `READY` production deployment whose commit is yours or a descendant (Vercel MCP `list_deployments`), then assert on a string that exists **only** in the new build — a marker the old build also contained reports a false success.
 

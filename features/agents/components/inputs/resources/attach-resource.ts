@@ -124,9 +124,9 @@ function newResourceId(): string {
 }
 
 /** Best-effort cld_files id from a picker payload (stored file / file_url). */
-function extractFileId(data: unknown): string | null {
-  if (!data || typeof data !== "object") return null;
-  const d = data as Record<string, unknown>;
+function extractFileId(resource: Pick<Resource, "type" | "data">): string | null {
+  if (resource.type !== "file" && resource.type !== "file_url") return null;
+  const d = resource.data as Record<string, unknown>;
   if (typeof d.fileId === "string" && d.fileId) return d.fileId;
   if (typeof d.id === "string" && d.id) return d.id;
   return null;
@@ -261,7 +261,7 @@ export function useAttachResource(
     // authorization edge before this function reports success. Provisional
     // chats carry file_id in the request; the server execution boundary writes
     // the edge immediately after the real conversation row materializes.
-    const attachedFileId = extractFileId(resource.data);
+    const attachedFileId = extractFileId(resource);
     const isDurableConversation =
       !selectIsCacheOnly(conversationId)(getState());
 
@@ -380,7 +380,7 @@ export function useDetachResource(
   const store = useAppStore();
 
   return async (resource: Resource) => {
-    const fileId = extractFileId(resource.data);
+    const fileId = extractFileId(resource);
     if (!fileId) return false;
 
     const getState = () => store.getState() as RootState;

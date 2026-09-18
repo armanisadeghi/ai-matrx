@@ -18,11 +18,33 @@
  * meant for me" before applying.
  */
 
+import type { Resource } from "@/features/agents/resources/types";
+
 const STORAGE_KEY = "matrx:chat-draft-transfer";
 
 export interface ChatDraftTransfer {
   text: string;
   targetAgentId: string;
+  /** Prepared context rendered as an attachment, never composer text. */
+  resources?: Resource[];
+  /** The transfer is valid only for the identity that created it. */
+  userId?: string | null;
+  organizationId?: string | null;
+}
+
+export function isChatSeedTextResource(
+  value: unknown,
+): value is Extract<Resource, { type: "text" }> {
+  if (!value || typeof value !== "object") return false;
+  const resource = value as { type?: unknown; data?: unknown };
+  if (resource.type !== "text" || !resource.data || typeof resource.data !== "object") return false;
+  const data = resource.data as Record<string, unknown>;
+  return (
+    typeof data.id === "string" &&
+    data.id.length > 0 &&
+    typeof data.label === "string" &&
+    typeof data.text === "string"
+  );
 }
 
 /**
@@ -33,9 +55,12 @@ export function stashChatDraftTransfer(transfer: ChatDraftTransfer): void {
   if (typeof window === "undefined") return;
   try {
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(transfer));
-  } catch {
-    // Quota or disabled storage — silently no-op; the chat still works, the
-    // user just doesn't get their draft carried over.
+  } catch (error) {
+    if (!transfer.resources?.length) return;
+    throw new Error(
+      "Prepared chat content could not be held while opening the new chat.",
+      { cause: error },
+    );
   }
 }
 
@@ -47,6 +72,7 @@ export function stashChatDraftTransfer(transfer: ChatDraftTransfer): void {
  */
 export function consumeChatDraftTransfer(
   expectedAgentId: string,
+  expectedIdentity?: { userId: string | null; organizationId: string | null },
 ): ChatDraftTransfer | null {
   if (typeof window === "undefined") return null;
   let raw: string | null = null;
@@ -70,6 +96,25 @@ export function consumeChatDraftTransfer(
   }
   if (!parsed || parsed.targetAgentId !== expectedAgentId) {
     return null;
+  }
+  const resources = parsed.resources;
+  if (resources !== undefined && (!Array.isArray(resources) || !resources.every(isChatSeedTextResource))) {
+    try {
+      window.sessionStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* noop */
+    }
+    throw new Error("Prepared chat content was invalid and was not attached.");
+  }
+  if (resources?.length && (!expectedIdentity ||
+    parsed.userId !== expectedIdentity.userId ||
+    parsed.organizationId !== expectedIdentity.organizationId)) {
+    try {
+      window.sessionStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* noop */
+    }
+    throw new Error("Prepared chat content belongs to a different account or organization.");
   }
   // Match — pop the slot before returning so a re-mount doesn't double-apply.
   try {

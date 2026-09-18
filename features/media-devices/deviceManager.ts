@@ -85,9 +85,18 @@ interface ManagerInternal {
   /** in-flight permission requests, coalesced. */
   ensuring: Promise<MediaPermissionState> | null;
   ensuringCamera: Promise<MediaPermissionState> | null;
-  /** in-flight enumerate, coalesced. */
-  enumerating: Promise<void> | null;
+  /** in-flight ordinary enumeration, coalesced. */
+  enumerating: Promise<MediaDeviceEnumeration> | null;
   listenersWired: boolean;
+}
+
+/** A device inventory result that distinguishes a fresh success from stale state. */
+export interface MediaDeviceEnumeration {
+  snapshot: MediaDevicesSnapshot;
+  /** False means the snapshot was retained from an earlier successful read. */
+  success: boolean;
+  /** Increments only after a successful browser enumeration. */
+  generation: number;
 }
 
 const m: ManagerInternal = {
@@ -104,6 +113,12 @@ const m: ManagerInternal = {
   enumerating: null,
   listenersWired: false,
 };
+
+let deviceEnumerationGeneration = 0;
+// Every browser enumeration passes through this tail, including forced
+// post-lease reads. Without it a slower older read can overwrite a newer
+// inventory simply because it resolves last.
+let deviceEnumerationTail: Promise<void> = Promise.resolve();
 
 // ── Safari detection (its Permissions API for mic/camera is unreliable) ──────
 function isSafari(): boolean {
@@ -192,30 +207,71 @@ function mapDevices(devices: MediaDeviceInfo[]): {
  * callers share one enumeration. Never throws — failures are reported + leave
  * the prior list intact.
  */
-export async function listDevices(): Promise<MediaDevicesSnapshot> {
+async function enumerateDevicesNow(): Promise<MediaDeviceEnumeration> {
   if (typeof navigator === "undefined" || !navigator.mediaDevices) {
-    return snapshot();
+    return {
+      snapshot: snapshot(),
+      success: false,
+      generation: deviceEnumerationGeneration,
+    };
   }
-  if (m.enumerating) {
-    await m.enumerating;
-    return snapshot();
+  try {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const { inputs, outputs, cameras } = mapDevices(devices);
+    m.inputs = inputs;
+    m.outputs = outputs;
+    m.cameras = cameras;
+    deviceEnumerationGeneration += 1;
+    emit();
+    return {
+      snapshot: snapshot(),
+      success: true,
+      generation: deviceEnumerationGeneration,
+    };
+  } catch (err) {
+    console.error("[mediaDevices] enumerateDevices failed:", err);
+    return {
+      snapshot: snapshot(),
+      success: false,
+      generation: deviceEnumerationGeneration,
+    };
   }
-  m.enumerating = (async () => {
-    try {
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const { inputs, outputs, cameras } = mapDevices(devices);
-      m.inputs = inputs;
-      m.outputs = outputs;
-      m.cameras = cameras;
-      emit();
-    } catch (err) {
-      console.error("[mediaDevices] enumerateDevices failed:", err);
-    } finally {
-      m.enumerating = null;
-    }
-  })();
-  await m.enumerating;
-  return snapshot();
+}
+
+/** Queue one browser read so singleton snapshots apply in invocation order. */
+function queueDeviceEnumeration(): Promise<MediaDeviceEnumeration> {
+  const pending = deviceEnumerationTail.then(
+    enumerateDevicesNow,
+    enumerateDevicesNow,
+  );
+  deviceEnumerationTail = pending.then(
+    () => undefined,
+    () => undefined,
+  );
+  return pending;
+}
+
+export async function listDevices(): Promise<MediaDevicesSnapshot> {
+  if (m.enumerating) return (await m.enumerating).snapshot;
+  const pending = queueDeviceEnumeration();
+  m.enumerating = pending;
+  try {
+    return (await pending).snapshot;
+  } finally {
+    if (m.enumerating === pending) m.enumerating = null;
+  }
+}
+
+/**
+ * Establish a camera inventory after a successful active-camera lease.
+ *
+ * A normal `listDevices()` call coalesces by design and may be an older,
+ * pre-permission enumeration. This queues a distinct read after every earlier
+ * browser read, returning success separately from stale state retained after
+ * a browser failure.
+ */
+export async function refreshDevicesAfterCameraLease(): Promise<MediaDeviceEnumeration> {
+  return queueDeviceEnumeration();
 }
 
 function mapPermissionStatus(status: PermissionStatus): MediaPermissionState {
@@ -392,10 +448,7 @@ export async function ensureCameraPermission(): Promise<MediaPermissionState> {
           setCameraPermissionState("denied");
           return "denied";
         }
-        console.error(
-          "[mediaDevices] camera permission request failed:",
-          err,
-        );
+        console.error("[mediaDevices] camera permission request failed:", err);
         setCameraPermissionState(
           m.cameraPermissionState === "granted" ? "granted" : "prompt",
         );

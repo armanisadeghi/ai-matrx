@@ -76,7 +76,7 @@ export const SESSION_COLUMNS: EntityColumnSpec<SessionListRow>[] = [
     column: {
       id: "open_questions",
       accessorKey: "open_questions",
-      header: "Open Qs",
+      header: "Open questions",
       filter: "text",
       width: 90,
       align: "center",

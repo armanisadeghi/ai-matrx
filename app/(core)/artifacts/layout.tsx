@@ -6,7 +6,7 @@ import { ModuleSignInGate } from "@/features/auth/components/module-landing/Modu
 export const metadata = createRouteMetadata("/artifacts", {
   title: "Artifacts",
   description: "Browse and manage CMS content artifacts and reusable blocks.",
-  letter: "Ar",
+  letter: "AF",
 });
 
 // Guests must never see the workspace tree (its artifact list fetch is

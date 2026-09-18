@@ -19,7 +19,11 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { IngestSourceDialog } from "../../components/detail/IngestSourceDialog";
+import {
+  IngestSourceDialog,
+  type IngestSummary,
+} from "../../components/detail/IngestSourceDialog";
+import type { MasterworkRunHandle } from "../useMasterworkRun";
 import type { IngestLane } from "../../browse/approachLane";
 import type { Rulebook } from "../../types";
 import {
@@ -28,6 +32,7 @@ import {
   useIngestDialogSession,
   useLiveIngestLane,
 } from "../liveIngestLane";
+import { EMPTY_INGEST_PROGRESS } from "../ingestProgress";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -92,6 +97,100 @@ const mounted: { surface: string }[] = [];
 let runningSurface: string | string[] | null = null;
 /** Which surface has a FINISHED run whose summary is on screen. */
 let settledSurface: string | null = null;
+/** The real `cancel` — a Stop button exists only while a run is in flight. */
+const cancelSpy = jest.fn(async () => {});
+
+/**
+ * 🚨 THE FAKE IS TYPED AGAINST THE REAL HANDLE — D325, 2026-09-15.
+ *
+ * This mock used to return a hand-written subset of `MasterworkRunHandle` with
+ * no `runId`. That is a state the real `useDurableRun` CANNOT produce on a
+ * rejoin: `rejoinDurableRun` writes `runId: pointer.runId` in the very same
+ * `setState` that sets `status: "rejoining"` (lib/durable-run/useDurableRun.ts),
+ * so `running === true` with a null `runId` never happens on the path these
+ * cases describe. When `6d424b231d` made the close honest, the reopen latch
+ * started asking whether the run was identified at all — which correctly
+ * refuses to reopen for a run it cannot identify — and seven cases went red
+ * against the FAKE's impossible state, not against the product. Every one of
+ * those seven assertions was right; none of them encoded the old bug.
+ *
+ * So the return type is the real one. A field the handle gains and this fake
+ * forgets is now a ts-jest compile error in the suite, not a silent lie that
+ * takes twelve hours to read.
+ */
+const FAKE_RESULT: IngestSummary = {
+  added: 11,
+  duplicatesSkipped: 0,
+  quotesUnverified: 0,
+  failedChunks: 0,
+  skippedWords: 0,
+  followupSeed: null,
+  // The untyped fake omitted this too, so the settled case was asserting
+  // against a summary shape `parseIngestSummary` never produces (D325).
+  alreadyDistilled: 0,
+};
+
+/**
+ * Which surfaces' runs the Expert has closed away from.
+ *
+ * The real handle keeps this ON THE RECEIPT (`RunPointer.dismissed`) rather
+ * than in the mount, which is the whole of cold walk 7's finding 3 — so the
+ * fake keeps it outside `fakeRun` too, where a remount cannot forget it.
+ */
+const dismissedSurfaces = new Set<string>();
+
+function fakeRun(surface: string): MasterworkRunHandle<IngestSummary> {
+  const running = Array.isArray(runningSurface)
+    ? runningSurface.includes(surface)
+    : surface === runningSurface;
+  const settled = surface === settledSurface;
+  const dismissed = dismissedSurfaces.has(surface);
+  return {
+    // Every Masterwork run now carries the typed per-resource progress the
+    // shared surface renders (`ingestProgress.ts`); this lane's fake has none.
+    progress: EMPTY_INGEST_PROGRESS,
+    // A surface pulls itself open only for a live run the person has not
+    // already closed away from — never for `"rejoining"` alone.
+    surfacing: running && !dismissed,
+    dismiss: () => {
+      dismissedSurfaces.add(surface);
+    },
+    // A run that is in flight or holding an answer HAS an identity — that is
+    // what the durable pointer is. `writePointer` in this file stores the same
+    // id, so the fake and the storage the probe reads agree.
+    runId: running || settled ? `run-${surface}` : null,
+    running,
+    status: running ? "running" : "idle",
+    stage: running ? "Reading the case step by step…" : null,
+    stages: running ? ["Reading the case step by step…"] : [],
+    result: settled ? FAKE_RESULT : null,
+    error: null,
+    stoppedMessage: null,
+    // This lane launches with no memo; the field exists because a durable run
+    // now carries back what it was launched with (`DurableRunState.memo`).
+    memo: null,
+    rejoinedTarget: running ? "your pasted source" : null,
+    interruption: null,
+    requestId: null,
+    waitMessage: running ? "Picking this back up" : null,
+    elapsedMs: running ? 30_000 : 0,
+    // The clock a waiting surface renders from, and the promise it is allowed
+    // to make — both null/constant here because this suite is about the lane,
+    // not about the wait.
+    startedAt: running ? Date.now() - 30_000 : null,
+    expectedMs: 160_000,
+    overdue: false,
+    // Stop is offered exactly while something is actually in flight — the same
+    // rule the real handle applies (`cancelPath && running && state.runId`).
+    cancel: running ? cancelSpy : null,
+    restoring: false,
+    cancelling: false,
+    launch: jest.fn(),
+    reset: jest.fn(),
+    fail: jest.fn(),
+    retry: null,
+  };
+}
 
 jest.mock("../useMasterworkRun", () => {
   const actual = jest.requireActual("../useMasterworkRun");
@@ -99,31 +198,7 @@ jest.mock("../useMasterworkRun", () => {
     ...actual,
     useMasterworkRun: (options: { surface: string }) => {
       mounted.push({ surface: options.surface });
-      const running = Array.isArray(runningSurface)
-        ? runningSurface.includes(options.surface)
-        : options.surface === runningSurface;
-      const settled = options.surface === settledSurface;
-      return {
-        running,
-        stages: running ? ["Reading the case step by step…"] : [],
-        result: settled
-          ? {
-              added: 11,
-              duplicatesSkipped: 0,
-              quotesUnverified: 0,
-              failedChunks: 0,
-              skippedWords: 0,
-              followupSeed: null,
-            }
-          : null,
-        status: running ? "running" : "idle",
-        error: null,
-        waitMessage: running ? "Picking this back up" : null,
-        launch: jest.fn(),
-        reset: jest.fn(),
-        fail: jest.fn(),
-        retry: jest.fn(),
-      };
+      return fakeRun(options.surface);
     },
   };
 });
@@ -147,6 +222,8 @@ beforeEach(() => {
   mounted.length = 0;
   runningSurface = null;
   settledSurface = null;
+  cancelSpy.mockClear();
+  dismissedSurfaces.clear();
   lastTimelineOpen = false;
   lastReady = false;
 });
@@ -621,6 +698,80 @@ describe("the Rulebook page after a refresh", () => {
     // It is rejoined — the earlier click does not outrank it any more.
     expect(mounted.at(-1)?.surface).toBe("timeline");
     expect(lastTimelineOpen).toBe(true);
+  });
+
+  it("closes for real while the rejoined run is still going, and stays closed", async () => {
+    // 🚨 THE OTHER SIDE OF D325 — the behaviour `6d424b231d` ("a close always
+    // closes") bought, asserted here for the first time. Nothing in this file
+    // proved it, which is why making the fake honest could not be checked
+    // against it. Two halves, both real:
+    //   1. Escape / the X go through `durableRunDialogOnOpenChange`, which no
+    //      longer swallows a close while `running` (the old `if (running)
+    //      return;` made every exit inert exactly while someone was stuck on
+    //      "Reconnecting…").
+    //   2. The reopen latch must not instantly undo that close — it remembers
+    //      the dismissed run id. Without that, this dialog cannot be dismissed
+    //      at all while its run is in flight.
+    writePointer("timeline");
+    runningSurface = "timeline";
+    await mountPage(null);
+    expect(lastOpen).toBe(true);
+
+    // Escape — the exit a person actually reaches for. Radix routes it, the X
+    // and an outside click all through the one `onOpenChange`.
+    await act(async () => {
+      document.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+      );
+    });
+    expect(lastOpen).toBe(false);
+    expect(lastTimelineOpen).toBe(false);
+
+    // The run is STILL going on the server — and the latch does not drag the
+    // dialog back up over the close the person meant.
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(lastOpen).toBe(false);
+
+    // And it survives the state this dialog's user was actually in: the live
+    // view drops and comes back ("Reconnecting…"), so `running` flickers and
+    // the latch re-arms. The SAME run must still not reopen over her close —
+    // that is what the receipt's own `dismissed` flag is for.
+    runningSurface = null;
+    await renderPage(null, RULEBOOK_ID);
+    runningSurface = "timeline";
+    await renderPage(null, RULEBOOK_ID);
+    expect(lastOpen).toBe(false);
+  });
+
+  it("offers Stop only while a run is really in flight", async () => {
+    // The fake's `cancel` follows the real handle's rule
+    // (`cancelPath && running && state.runId`), so a dialog that renders a Stop
+    // over an idle run — or hides it over a live one — is caught here.
+    // Idle: no Stop over a run that is not there.
+    await mountPage(null);
+    click("from-a-source");
+    expect(document.body.textContent ?? "").not.toContain("Stop this run");
+
+    // Rejoined and live: the Stop is on screen and reaches the real handle.
+    await act(async () => {
+      if (root) root.unmount();
+    });
+    container?.remove();
+    root = null;
+    container = null;
+    writePointer("timeline");
+    runningSurface = "timeline";
+    await mountPage(null);
+    const stop = Array.from(
+      document.body.querySelectorAll("button"),
+    ).find((b) => b.textContent?.trim() === "Stop this run");
+    expect(stop).toBeDefined();
+    await act(async () => {
+      stop?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    expect(cancelSpy).toHaveBeenCalled();
   });
 
   it("reports timeline_open from the latched session, not from the probe", async () => {

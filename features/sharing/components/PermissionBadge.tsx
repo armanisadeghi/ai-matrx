@@ -3,7 +3,8 @@
 import React from "react";
 import { Badge } from "@/components/ui/badge";
 import type { PermissionLevel } from "@/utils/permissions/types";
-import { Crown, Shield, Eye, Users, Globe } from "lucide-react";
+import { Crown, Shield, Eye, MessageSquare, Users, Globe } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 interface PermissionBadgeProps {
   level: PermissionLevel | "owner";
@@ -26,7 +27,14 @@ export function PermissionBadge({
   variant = "default",
   showIcon = false,
 }: PermissionBadgeProps) {
-  const config = {
+  // Every level on the ladder appears here. The map is typed against
+  // `PermissionLevel` (utils/permissions/levels.ts — THE ONE declaration), so a
+  // level added there fails this file rather than reaching a viewer as
+  // `undefined.label` (`commenter` did exactly that until 2026-09-18).
+  const config: Record<
+    PermissionLevel | "owner",
+    { label: string; className: string; icon: LucideIcon }
+  > = {
     owner: {
       label: "Owner",
       className:
@@ -38,6 +46,12 @@ export function PermissionBadge({
       className:
         "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border-red-300",
       icon: Shield,
+    },
+    commenter: {
+      label: "Commenter",
+      className:
+        "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 border-purple-300",
+      icon: MessageSquare,
     },
     editor: {
       label: "Editor",
@@ -113,8 +127,9 @@ export function PermissionLevelDescription({
   // the noun of the thing it governs, so the item level is never read as the organization-admin
   // role. "Full access" was the retired label for this same level (AI Matrx Data Doctrine R19:
   // "Admin is the top level on a thing; there is no 'full.'").
-  const descriptions = {
+  const descriptions: Record<PermissionLevel, string> = {
     viewer: "Can view",
+    commenter: "Can view and comment",
     editor: "Can view and edit",
     admin: "Admin of this item (view, edit, share, delete)",
   };

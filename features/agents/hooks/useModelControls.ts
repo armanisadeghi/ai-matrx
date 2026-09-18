@@ -223,9 +223,20 @@ export function supportsTools(
 }
 
 /**
- * Parse and normalize controls from a model's controls object
+ * Parse and normalize controls from a model's controls object.
+ *
+ * A hook in name only: it reads no React state, so `resolveModelControls`
+ * is the same computation for code that runs outside a render (a batch
+ * fixer working through several agents in one event handler).
  */
 export function useModelControls(
+  models: AIModelRecord[],
+  selectedModelId: string,
+) {
+  return resolveModelControls(models, selectedModelId);
+}
+
+export function resolveModelControls(
   models: AIModelRecord[],
   selectedModelId: string,
 ) {

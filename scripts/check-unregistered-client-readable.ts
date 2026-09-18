@@ -52,6 +52,7 @@ import { createRequire } from "node:module";
 import { dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const require_ = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -148,7 +149,7 @@ async function census(): Promise<Census[]> {
     console.error(`${TAG.fail}UNMEASURED — none of this repo's env files nor ../aidream/.env carry the five`);
     console.error(`       ${DB_VARS.join(", ")} variables, so the live census could not run.`);
     console.error(`       A guard that cannot run is not a guard that passed. Supply the credentials and re-run.`);
-    process.exit(1);
+    exitAfterDrain(1);
   }
   const client = new pg.Client({
     user: env.user, password: env.password, host: env.host, port: env.port,
@@ -252,7 +253,7 @@ async function selfTest(rows: Census[], allow: AllowEntry[]): Promise<void> {
   const red1 = judge(injected, allow);
   if (!red1.findings.some((f) => f.startsWith("selftest.b48_unregistered_probe"))) {
     console.error(`${TAG.fail}self-test RED 1 did not fire: an unregistered, unallowlisted client-readable relation was not reported`);
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log(`${TAG.ok}RED 1 — an injected unregistered relation is reported (${red1.findings.length} finding(s))`);
 
@@ -262,7 +263,7 @@ async function selfTest(rows: Census[], allow: AllowEntry[]): Promise<void> {
     console.error(`${TAG.fail}self-test RED 2 did not fire: with an empty allowlist the live census produced no finding,`);
     console.error(`       which would mean every client-readable relation is already registered. Verify that by hand`);
     console.error(`       before trusting this guard — it is far more likely the census query stopped seeing grants.`);
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log(`${TAG.ok}RED 2 — with the allowlist emptied, ${red2.findings.length} live relation(s) surface`);
 
@@ -270,7 +271,7 @@ async function selfTest(rows: Census[], allow: AllowEntry[]): Promise<void> {
   const red3 = judge(rows, [{ relation: rows[0]!.relation, reason: "TODO", owner: "" }]);
   if (red3.bad.length < 2) {
     console.error(`${TAG.fail}self-test RED 3 did not fire: a stub reason and a missing owner were accepted`);
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log(`${TAG.ok}RED 3 — a stub reason and a missing owner are both refused`);
 
@@ -278,7 +279,7 @@ async function selfTest(rows: Census[], allow: AllowEntry[]): Promise<void> {
   const green = judge(rows.map((r) => ({ ...r, registered: true })), []);
   if (green.findings.length !== 0) {
     console.error(`${TAG.fail}self-test GREEN did not pass: a fully registered census still produced findings`);
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log(`${TAG.ok}GREEN — a fully registered census produces no finding`);
   console.log("");
@@ -292,10 +293,10 @@ async function main(): Promise<void> {
   if (process.argv.includes("--self-test")) await selfTest(rows, allow);
 
   const failed = report(judge(rows, allow), rows.length);
-  process.exit(failed ? 1 : 0);
+  exitAfterDrain(failed ? 1 : 0);
 }
 
 main().catch((err) => {
   console.error(`${TAG.fail}UNMEASURED — the live census failed: ${err instanceof Error ? err.message : String(err)}`);
-  process.exit(1);
+  exitAfterDrain(1);
 });

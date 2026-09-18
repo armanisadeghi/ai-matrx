@@ -1,3 +1,4 @@
+import { formatCount } from "@ai-matrx/kit/format";
 /**
  * TOKEN ESTIMATION — one function, so a preview can never disagree with a run.
  *
@@ -79,15 +80,11 @@ export function charsForTokenBudget(
 /** Compact human token count: 940, 12.4k, 1.21M. Always an estimate. */
 export function formatTokens(tokens: number): string {
   if (!Number.isFinite(tokens) || tokens <= 0) return "0";
-  if (tokens < 1_000) return String(Math.round(tokens));
-  if (tokens < 1_000_000) return `${(tokens / 1_000).toFixed(1)}k`;
-  return `${(tokens / 1_000_000).toFixed(2)}M`;
+  return formatCount(tokens, { style: "compact" });
 }
 
 /** Compact human character count. */
 export function formatChars(chars: number): string {
   if (!Number.isFinite(chars) || chars <= 0) return "0";
-  if (chars < 1_000) return String(Math.round(chars));
-  if (chars < 1_000_000) return `${(chars / 1_000).toFixed(1)}k`;
-  return `${(chars / 1_000_000).toFixed(2)}M`;
+  return formatCount(chars, { style: "compact" });
 }

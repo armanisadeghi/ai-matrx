@@ -3,15 +3,100 @@
 // THE RULE: never tell the user their note has a conflict without checking the
 // ACTUAL server data first.
 //
-// A note UPDATE is gated by an optimistic lock (`WHERE updated_at = <local>`).
-// 0 rows back has always been read as "someone else wrote this row" — but it
-// also happens when only our CACHED `updated_at` drifted while the row itself
-// already holds exactly what we were trying to write. That second case is
-// bookkeeping, not a conflict, and surfacing it as one is the recurring false
-// "another device is overwriting your note" report on /notes.
+// A note UPDATE is a compare-and-swap on the integer `version`. 0 rows back
+// has always been read as "someone else wrote this row" — but `version` moves
+// on EVERY update of the row (the desktop sync stamping `file_path`, an ingest
+// job writing metadata, a folder move), not only on the fields the editor
+// edits. A CAS miss on a row whose EDITED fields still equal the base the edit
+// was made against is bookkeeping, not a conflict, and surfacing it as one is
+// the recurring false "another device is overwriting your note" report on
+// /notes (root-caused 2026-09-13: matrx-local wrote `file_path` 0.9s after a
+// web-created note's INSERT; the browser never adopted version 2).
+//
+// A conflict means the OTHER side changed something you are editing.
 
 import type { Note } from "../types";
 import type { NoteUndoableField } from "../redux/notes.types";
+
+/**
+ * The fields a user edits through the notes editor and its actions — the ONLY
+ * fields whose server-side change is a conflict with a local edit. Everything
+ * else on the row (`metadata`, `position`, `file_path`, `last_device_id`,
+ * `sync_version`, `content_hash`, actor stamps) is system bookkeeping that may
+ * move the version without touching what the user is working on.
+ */
+export const NOTE_EDITED_FIELDS = [
+  "content",
+  "label",
+  "folder_id",
+  "folder_name",
+  "tags",
+  "visibility",
+] as const satisfies readonly NoteUndoableField[];
+
+export type NoteEditedField = (typeof NOTE_EDITED_FIELDS)[number];
+
+/** The slice of a note row a phantom-conflict check compares. */
+export type NoteEditBase = Pick<Note, NoteEditedField>;
+
+function normalizeEdited(value: unknown): string {
+  // `tags` is an array; JSON is the stable comparison. `null` and `undefined`
+  // are the same absence on the wire.
+  return JSON.stringify(value ?? null);
+}
+
+/**
+ * True when every user-edited field of `serverRow` equals `base` — i.e. the
+ * server holds exactly the base this client's edit was made against, and any
+ * version difference between them came from a column nobody is editing.
+ */
+export function noteEditedFieldsEqual(
+  serverRow: Partial<NoteEditBase>,
+  base: NoteEditBase,
+): boolean {
+  for (const field of NOTE_EDITED_FIELDS) {
+    if (normalizeEdited(serverRow[field]) !== normalizeEdited(base[field])) return false;
+  }
+  return true;
+}
+
+/**
+ * The edit base of a live record. The acknowledged full-row snapshot is
+ * preferred; when a record has none (a web-created draft whose first save
+ * never left a snapshot, a list-hydrated row), the base is REBUILT from the
+ * record itself: every clean edited field holds the server's value, and every
+ * dirty one keeps its pre-edit value in `_fieldHistory` (captured once per
+ * field per clean cycle, before the first keystroke). A record therefore
+ * always has a base to compare a phantom bump against — no record is left
+ * on the old CAS-miss-equals-conflict path.
+ */
+export function noteEditBaseFromRecord(record: {
+  _acknowledgedPhysicalSnapshot: NoteEditBase | null;
+  _dirtyFields: Set<NoteUndoableField>;
+  _fieldHistory: Partial<Record<NoteUndoableField, Note[NoteUndoableField]>>;
+} & NoteEditBase): NoteEditBase {
+  if (record._acknowledgedPhysicalSnapshot) return noteEditBaseOf(record._acknowledgedPhysicalSnapshot);
+  const base: Record<string, unknown> = {};
+  for (const field of NOTE_EDITED_FIELDS) {
+    base[field] =
+      record._dirtyFields.has(field) && field in record._fieldHistory
+        ? record._fieldHistory[field]
+        : record[field];
+  }
+  return noteEditBaseOf(base as NoteEditBase);
+}
+
+/** Project the edit base out of a full row (drops the bookkeeping columns). */
+export function noteEditBaseOf(note: NoteEditBase): NoteEditBase {
+  return {
+    content: note.content,
+    label: note.label,
+    folder_id: note.folder_id,
+    folder_name: note.folder_name,
+    tags: note.tags === null ? null : [...note.tags],
+    visibility: note.visibility,
+  };
+}
 
 /**
  * True when the live server row already holds exactly the values this write

@@ -1,4 +1,11 @@
 import { createClient } from "@/utils/supabase/server";
+import {
+  PC_ARTICLE_PUBLIC_SELECT,
+  PC_EPISODE_PUBLIC_SELECT,
+  PC_EPISODE_WITH_SHOW_PUBLIC_SELECT,
+  PC_SHOW_PUBLIC_SELECT,
+} from "@/features/podcasts/publicColumns";
+import { publiclyServableEpisodes } from "@/features/podcasts/publicGate";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import type { Metadata } from "next";
@@ -7,7 +14,7 @@ import { PodcastShowPage } from "@/features/podcasts/components/player/PodcastSh
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import type {
-  PcArticle,
+  PcArticleDisplayRow,
   PcEpisode,
   PcEpisodeWithShow,
   PcShow,
@@ -39,12 +46,17 @@ const resolveSlug = cache(async (slug: string) => {
   const supabase = await createClient();
 
   // Try episode first — include all show fields needed for display and OG metadata
-  const episodeQuery = supabase
-    .schema("podcast").from("pc_episodes")
-    .select(
-      "*, show:pc_shows(id, slug, title, description, image_url, og_image_url, thumbnail_url, author, is_published, created_at, updated_at)",
-    )
-    .is("deleted_at", null);
+  // THE ONE ROW GATE (features/podcasts/publicGate.ts). `deleted_at IS NULL`
+  // alone let a PUBLIC but UNPUBLISHED episode render its own page to anyone
+  // with the slug — `pub_read` carries no `is_published` term, so RLS never
+  // closed it (DD-234 residue, V-103).
+  const episodeQuery = publiclyServableEpisodes(
+    supabase
+      .schema("podcast").from("pc_episodes")
+      // `anon` holds a COLUMN grant on these tables, so a `*` here is 42501 for
+      // every signed-out visitor — the columns are named (DD-230).
+      .select(PC_EPISODE_WITH_SHOW_PUBLIC_SELECT),
+  );
 
   const { data: episode } = isUUID(slug)
     ? await episodeQuery.eq("id", slug).single()
@@ -55,7 +67,11 @@ const resolveSlug = cache(async (slug: string) => {
   }
 
   // Try show (slug or UUID)
-  const showQuery = supabase.schema("podcast").from("pc_shows").select("*").is("deleted_at", null);
+  const showQuery = supabase
+    .schema("podcast")
+    .from("pc_shows")
+    .select(PC_SHOW_PUBLIC_SELECT)
+    .is("deleted_at", null);
 
   const { data: show } = isUUID(slug)
     ? await showQuery.eq("id", slug).single()
@@ -159,7 +175,7 @@ export default async function PodcastPage({
     const supabase = await createClient();
     const { data: articles } = await supabase
       .schema("podcast").from("pc_articles")
-      .select("*")
+      .select(PC_ARTICLE_PUBLIC_SELECT)
       .is("deleted_at", null)
       .eq("episode_id", result.data.id)
       .eq("status", "published");
@@ -185,7 +201,7 @@ export default async function PodcastPage({
         />
         <PodcastEpisodePage
           episode={result.data}
-          articles={(articles ?? []) as PcArticle[]}
+          articles={(articles ?? []) as PcArticleDisplayRow[]}
         />
       </>
     );
@@ -193,13 +209,12 @@ export default async function PodcastPage({
 
   // Show page — fetch its published episodes
   const supabase = await createClient();
-  const { data: episodes } = await supabase
-    .schema("podcast").from("pc_episodes")
-    .select("*")
-    .is("deleted_at", null)
-    .eq("show_id", result.data.id)
-    .eq("is_published", true)
-    .order("episode_number", { ascending: true, nullsFirst: false });
+  const { data: episodes } = await publiclyServableEpisodes(
+    supabase
+      .schema("podcast").from("pc_episodes")
+      .select(PC_EPISODE_PUBLIC_SELECT)
+      .eq("show_id", result.data.id),
+  ).order("episode_number", { ascending: true, nullsFirst: false });
 
   return (
     <>

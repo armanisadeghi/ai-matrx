@@ -130,8 +130,21 @@ function makeClient(tableRows: Record<string, Row[]>) {
   };
 }
 
+/**
+ * The fake chain is filter-blind (`.eq()` / `.is()` return the chain
+ * unchanged), so each table's fixture holds EXACTLY the rows its query should
+ * return — nothing here stands in for a WHERE clause.
+ */
 function buildTableRows(): Record<string, Row[]> {
   return {
+    // `applyManifestSync` stamps an explicit `organization_id` on every catalog
+    // write and resolves it through `resolveSystemOrgId` → `iam.system_orgs`
+    // (a3cb48fd26; the no-db-assigned-org work order forbids a resolver or
+    // trigger choosing one). Without this row the resolver throws "no row"
+    // before the sweep runs at all. The id is the live `key='system'` row.
+    "iam.system_orgs": [
+      { key: "system", organization_id: "39c38960-d30c-4840-b0c1-c9960de95582" },
+    ],
     "ui.ui_surface": [
       {
         name: TEST_SURFACE,

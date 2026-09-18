@@ -57,6 +57,7 @@ import { resolve } from "node:path";
 import process from "node:process";
 import { z } from "zod";
 import { readAllRowsRest } from "@ai-matrx/data/db";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
   requestTakeoverArgsSchema,
   updatePlanArgsSchema,
@@ -150,7 +151,7 @@ async function fetchDbRows(url: string, key: string, names: string[]): Promise<D
     });
   } catch (err) {
     console.error(`drift-check: Supabase fetch failed: ${err instanceof Error ? err.message : String(err)}`);
-    process.exit(2);
+    exitAfterDrain(2);
   }
 }
 
@@ -161,7 +162,7 @@ function toObjectSchema(name: string, schema: z.ZodTypeAny): JsonSchemaObject {
     return z.toJSONSchema(schema, { unrepresentable: "any" }) as JsonSchemaObject;
   } catch (err) {
     console.error(`drift-check: could not serialize Zod for "${name}":`, err);
-    process.exit(2);
+    exitAfterDrain(2);
   }
 }
 
@@ -357,7 +358,7 @@ async function main(): Promise<void> {
       "drift-check: Supabase creds not found — SKIPPING the code↔DB tool gate (cannot " +
         "verify without DB access). A build/CI with creds present enforces it.",
     );
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   const names = Object.keys(SCHEMAS);
@@ -390,7 +391,7 @@ async function main(): Promise<void> {
 
   if (total === 0) {
     console.log(`${GREEN}✓ No drift — every UI-first tool's real Zod matches the DB.${RESET}`);
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   const bar = "█".repeat(68);
@@ -415,13 +416,13 @@ async function main(): Promise<void> {
   console.log(`${DIM}Fix path — the DATABASE (tool.definition) is the source of truth:${RESET}`);
   console.log(`${DIM}  - Bring the Zod in features/agents/ui-first-tools/tools/schemas.ts to match tool.definition.${RESET}`);
   console.log(`${DIM}  - If the DB itself is wrong, change it (admin API / migration), then match code.${RESET}`);
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 if (require.main === module) {
   main().catch((err) => {
     console.error("drift-check: unexpected error");
     console.error(err);
-    process.exit(2);
+    exitAfterDrain(2);
   });
 }

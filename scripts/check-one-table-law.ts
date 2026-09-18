@@ -41,6 +41,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SCAN_DIR = "features/marketing";
@@ -195,7 +196,7 @@ function main(): void {
 
   if (json) {
     console.log(JSON.stringify({ findings, scanned: files.length }, null, 2));
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   console.log(
@@ -209,7 +210,7 @@ function main(): void {
     console.log(
       `${C.green}✓ Every keyword-bearing list under ${SCAN_DIR} goes through the canonical table.${C.reset}\n`,
     );
-    process.exit(0);
+    exitAfterDrain(0);
   }
 
   const byRule = new Map<string, Finding[]>();
@@ -231,7 +232,7 @@ function main(): void {
   console.log(
     `${C.red}${C.bold}${findings.length} finding${findings.length === 1 ? "" : "s"}.${C.reset} ${C.dim}Advisory — this never blocks. Fix it, or allowlist it WITH A REASON in scripts/check-one-table-law.ts.${C.reset}\n`,
   );
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 main();

@@ -172,6 +172,9 @@ export async function createAgentAppCategory(
   input: CreateAgentAppCategoryInput,
 ): Promise<AgentAppCategoryRow> {
   const supabase = getClient();
+  // org-fallback-deliberate: an agent-app category is a platform-wide catalog
+  //   row every organization sees; the only callers are the admin-gated (admin)
+  //   surfaces
   const organizationId = await resolveSystemOrgId(supabase);
   const { data, error } = await supabase
     .schema("platform").from("categories")

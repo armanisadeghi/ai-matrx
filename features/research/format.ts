@@ -1,3 +1,4 @@
+import { formatCount } from "@ai-matrx/kit/format";
 /**
  * Compact, human-readable counts for the research UI — the single formatter for
  * source counts, scraped character sizes, and any aggregate shown in a tight
@@ -15,16 +16,9 @@
  */
 export function fmtCount(n: number | null | undefined): string {
   if (n == null) return "—";
-  const abs = Math.abs(n);
-  // Thresholds sit at 999.95×unit, not 1×unit: at one-decimal precision a value
-  // like 999,999 rounds to "1000.0k", which should read "1M" — so it has to
-  // cross into the higher tier just early to avoid a "1000k" / "1000M" glitch.
-  if (abs >= 999_950_000) return `${trimZero(n / 1_000_000_000)}B`;
-  if (abs >= 999_950) return `${trimZero(n / 1_000_000)}M`;
-  if (abs >= 1_000) return `${trimZero(n / 1_000)}k`;
-  return String(n);
-}
-
-function trimZero(v: number): string {
-  return v.toFixed(1).replace(/\.0$/, "");
+  // The tier-crossing correction this body carried by hand — 999,999 must read
+  // "1.0M", never "1000k" — is kit's own rule as of 0.14.0, and "B" is BILLION
+  // in that voice by contract, which is what this file's byte-size shapeAllow
+  // entry used to say in prose.
+  return formatCount(n, { style: "compact" });
 }

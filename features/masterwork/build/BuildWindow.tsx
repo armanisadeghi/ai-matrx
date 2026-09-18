@@ -8,6 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import LoadingSpinner from "@/components/ui/loading-spinner";
+import { Field } from "@/components/official/Field";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { LiveRunProgress } from "@/features/agents/components/live-run/LiveRunProgress";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -16,6 +21,9 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { TryMasterworkBox } from "../components/masterworks/TryMasterworkBox";
 import { getRulebook } from "../service";
+import { createSittingStore, type SittingBase } from "../sitting/sitting";
+import { useDialogSitting } from "../sitting/useDialogSitting";
+import { SittingResumed } from "../sitting/SittingResumed";
 import type { Rulebook } from "../types";
 import { emitBuildEvent } from "./callbacks";
 import {
@@ -58,6 +66,21 @@ import { useBuildRun, type MasterworkKind } from "./useBuildRun";
  */
 
 const OVERLAY_ID = "masterworkBuildWindow";
+
+// A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17): what
+// the Masterwork is to be called and the instructions it is built from
+// survive a reload of this window.
+interface BuildSitting extends SittingBase {
+  name: string;
+  deliverable: string;
+}
+
+const buildSittings = createSittingStore<BuildSitting>({
+  keyPrefix: "matrx.masterwork.build.v1:",
+  isUsable: (sitting) =>
+    (sitting.name ?? "").trim().length > 0 ||
+    (sitting.deliverable ?? "").trim().length > 0,
+});
 
 /** How many rules this Masterwork will actually be built from. */
 function liveRuleCount(rulebook: Rulebook): number {
@@ -128,6 +151,27 @@ function BuildWindowInner({
   const [name, setName] = useState("");
   const [deliverable, setDeliverable] = useState("");
 
+  // A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17: every
+  // capture dialog on the Rulebook page lost typed work on a reload,
+  // silently). `active: true` — this is a whole-window surface, mounted only
+  // while it is open (see the `!isOpen` guard in `BuildWindow` above).
+  const sitting = useDialogSitting<BuildSitting>({
+    store: buildSittings,
+    scopeId: rulebookId,
+    active: true,
+    snapshot: { name, deliverable },
+    isWorthKeeping: (s) =>
+      (s.name ?? "").trim().length > 0 || (s.deliverable ?? "").trim().length > 0,
+    apply: (kept) => {
+      setName(kept.name ?? "");
+      setDeliverable(kept.deliverable ?? "");
+    },
+    clearScreen: () => {
+      setName("");
+      setDeliverable("");
+    },
+  });
+
   useEffect(() => {
     let cancelled = false;
     getRulebook(rulebookId)
@@ -169,12 +213,17 @@ function BuildWindowInner({
   useEffect(() => {
     if (!result || announcedRef.current === result.workflowId) return;
     announcedRef.current = result.workflowId;
+    // Only once the Build has actually landed is it safe to drop the sitting.
+    sitting.forget();
     emitBuildEvent(callbackGroupId, {
       type: "built",
       workflowId: result.workflowId,
       name: result.name,
       masterworkKind: result.masterworkKind,
     });
+    // `sitting.forget` is stable for a given scopeId/store; omitted here the
+    // same way `onIngested` callbacks are on the sibling ingest dialogs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result, callbackGroupId]);
 
   // Emit window-close exactly once, on unmount — covers X, Esc, programmatic.
@@ -194,10 +243,12 @@ function BuildWindowInner({
   }, [error]);
 
   const build = useCallback(() => {
-    if (!name.trim()) {
-      toast.error("Name this Masterwork first.");
-      return;
-    }
+    // Unreachable backstop, deliberately silent: the Build control is already
+    // a GatedActionButton carrying "Name your Masterwork to build it", so the
+    // person has been told before the click. Firing a red toast here would be
+    // an alarm for a precondition that is already a prompt — the class the
+    // 2026-09-16 sweep closed.
+    if (!name.trim()) return;
     run.launch(
       {
         rulebook_id: rulebookId,
@@ -369,6 +420,13 @@ function BuildWindowInner({
     return (
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
         <div className="mx-auto w-full max-w-3xl space-y-4">
+          {sitting.resumed ? (
+            <SittingResumed
+              what="the name and instructions you had typed for this Masterwork"
+              onDiscard={sitting.discard}
+              onAcknowledge={sitting.acknowledge}
+            />
+          ) : null}
           <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="h-4 w-4" />
@@ -388,17 +446,28 @@ function BuildWindowInner({
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="masterwork-name">Masterwork name</Label>
+          {/*
+            THE EMPTY-LOOKS-EMPTY RULE (W2, 2026-09-15). This field's
+            placeholder is a value-shaped suggestion ("<Rulebook> Masterwork"),
+            which is exactly the shape that read as filled-in and left the
+            Build silently disabled. `Field` gets the live value so an empty
+            required field is dashed, italicised and captioned as empty.
+          */}
+          <Field
+            label="Masterwork name"
+            htmlFor="masterwork-name"
+            required
+            value={name}
+          >
             <Input
               id="masterwork-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder={fallbackName}
+              placeholder={`e.g. ${fallbackName}`}
               maxLength={255}
               required
             />
-          </div>
+          </Field>
 
           <div className="space-y-2">
             <Label>What will someone give this Masterwork?</Label>
@@ -478,21 +547,34 @@ function BuildWindowInner({
             </Button>
           </>
         ) : (
-          <Button
+          /*
+            A DISABLED PRIMARY ACTION SAYS WHY (W2, 2026-09-15). `running` stays
+            a plain `disabled` — the label already reads "Building…", which is
+            honest about itself. Every state where the EXPERT must do something
+            first becomes a sentence they can act on.
+          */
+          <GatedActionButton
             size="sm"
             className="h-7"
             onClick={build}
-            disabled={
-              running ||
-              !rulebook ||
-              !name.trim() ||
-              approvedCount === 0 ||
-              (chosenKind === "generate" && !deliverableIsValid)
-            }
+            disabled={running}
+            reason={firstBlockingReason([
+              { when: !rulebook, reason: "Still loading this Rulebook" },
+              { when: !name.trim(), reason: "Name your Masterwork to build it" },
+              {
+                when: approvedCount === 0,
+                reason: "Approve at least one rule to build it",
+              },
+              {
+                when: chosenKind === "generate" && !deliverableIsValid,
+                reason: "Say what this Masterwork creates to build it",
+              },
+            ])}
+            reasonClassName="max-w-[18rem] text-right"
           >
             <Hammer className="h-3.5 w-3.5" />
             {running ? "Building…" : "Build the Masterwork"}
-          </Button>
+          </GatedActionButton>
         )}
       </div>
     </div>

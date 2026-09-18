@@ -158,8 +158,12 @@ export function stepOffersControls(
 /** The one-line state of the run, for the control bar's own label. */
 export function runStateLabel(status: RunStatusOrPending): string {
   switch (status) {
+    // 🚨 `null` is "this page has not read the run yet", NOT "the run has not
+    // started yet" — see RunHero's STATUS_COPY.unread (cold walk 7, finding
+    // 5). Saying "Getting ready" here narrated a run status the page did not
+    // have, on every permalink load, including finished runs.
     case null:
-      return "Getting ready";
+      return "Opening this run";
     case "pending":
       return "Starting";
     case "running":

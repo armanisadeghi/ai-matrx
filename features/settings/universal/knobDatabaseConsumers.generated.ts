@@ -3,7 +3,9 @@
 // Every `platform.feature_knob` key that is read from INSIDE the database (a
 // function body or a view), with the function(s) that read it. Regenerate with
 // `pnpm generate:knob-database-consumers`; the census itself is measured live
-// from `pg_proc`/`pg_views` by `check:settings-orphans`'s IN-DB tier.
+// from `pg_proc`/`pg_views` by `check:settings-orphans`'s IN-DB tier, and
+// `pnpm check:knob-database-consumers` FAILS when this file no longer matches
+// the live database.
 //
 // WHY the settings UI needs it: a knob resolved by a trigger has no call site
 // any source grep can find, so the hand-kept audit in `disposition.ts` would
@@ -23,7 +25,7 @@ export const KNOB_DATABASE_CONSUMERS: Readonly<Record<string, readonly string[]>
   "esign.delegation.allowed": ["esign._act_delegate", "esign.resolve_config_snapshot", "hr.punch_record", "public.hr_directory_list"],
   "esign.download.url_ttl_seconds": ["esign.resolve_config_snapshot"],
   "esign.expiry_days.sensitive": ["esign.resolve_config_snapshot"],
-  "esign.expiry_days.standard": ["esign.resolve_config_snapshot"],
+  "esign.expiry_days.standard": ["esign.resolve_config_snapshot", "platform.provision_validate"],
   "esign.hash.algorithm": ["esign.resolve_config_snapshot"],
   "esign.outsider.session.ttl_minutes.esign_signer": ["esign.resolve_config_snapshot"],
   "esign.outsider.verification.default_factor.esign_signer": ["esign.resolve_config_snapshot"],
@@ -33,7 +35,7 @@ export const KNOB_DATABASE_CONSUMERS: Readonly<Record<string, readonly string[]>
   "esign.retention.default_trigger": ["esign.resolve_config_snapshot"],
   "esign.signature.allow_drawn": ["esign.config_set", "esign.resolve_config_snapshot"],
   "esign.signature.allow_typed": ["esign.config_set", "esign.resolve_config_snapshot"],
-  "esign.signing_order.default": ["public.esign_create_envelope", "public.hr_directory_list"],
+  "esign.signing_order.default": ["platform.provision", "platform.provision_validate", "public.esign_create_envelope", "public.hr_directory_list"],
   "extensibility.custom_entities.max_definitions_per_org": ["platform._custom_entity_definition_guard"],
   "extensibility.custom_entities.max_fields_per_definition": ["platform._custom_field_definition_guard", "platform.extensibility_knob"],
   "extensibility.custom_entities.max_records_per_definition": ["platform._custom_record_guard", "platform.extensibility_knob"],
@@ -48,6 +50,7 @@ export const KNOB_DATABASE_CONSUMERS: Readonly<Record<string, readonly string[]>
   "extensibility.custom_fields.max_options_per_select": ["platform._custom_field_definition_guard"],
   "extensibility.custom_fields.promoted_indexes_per_target": ["platform.promote_custom_field_index"],
   "extensibility.custom_fields.validation_mode": ["platform.extensibility_knob", "platform.validate_custom_row"],
+  "extensibility.user_tables.history_retention_floor_days": ["public.udt_dataset_row_versions_trim_scoped"],
   "hr.access.break_glass_grant_ttl_minutes": ["public.hr_break_glass"],
   "hr.access.comp_visibility_for_managers": ["public.hr_employee_profile"],
   "hr.access.employee_can_see_own_access_log": ["public.hr_access_audit_query"],
@@ -55,7 +58,7 @@ export const KNOB_DATABASE_CONSUMERS: Readonly<Record<string, readonly string[]>
   "hr.approvals.delegation_max_depth": ["public.hr_authority_delegation_request"],
   "hr.approvals.delegation_max_horizon_days": ["public.hr_authority_delegation_request"],
   "hr.approvals.top_of_chart_approver": ["hr.can_approve"],
-  "hr.employees.adjusted_service_date_rule": ["hr.rehire_service_dates"],
+  "hr.employees.adjusted_service_date_rule": ["hr.rehire_service_dates", "platform.knob_write_door_for"],
   "hr.employees.contractor_directory_visible": ["public.hr_directory_list"],
   "hr.employees.directory_shows_hire_date": ["hr.employee_by_party", "public.hr_directory_list"],
   "hr.employees.directory_shows_manager": ["hr.employee_by_party", "public.hr_directory_list"],
@@ -120,17 +123,30 @@ export const KNOB_DATABASE_CONSUMERS: Readonly<Record<string, readonly string[]>
   "hr.workflow.inbox_show_waiting": ["hr.wf_pending"],
   "hr.workflow.tick_batch_max": ["hr.wf_tick"],
   "hr.workflow.timeout_warning_lead_hours": ["hr.wf_activate_step", "hr.wf_tick"],
+  "marketing.run_console.run_history_page_size": ["public.admin_list_run_history"],
+  "masterwork.capture_plan.horizon_days": ["hr.leave_project_balance"],
   "platform.access.emergency_door_justification_min_chars": ["iam._door_min_chars"],
   "platform.access.emergency_door_ttl_minutes": ["iam._door_ttl_minutes"],
+  "platform.reachability.selfheal_pause": ["platform.heal_reachability_drift"],
   "records.confirmation.agent_write_born_confirmed": ["platform._stamp_actor_tier"],
   "records.confirmation.confirm_on_human_edit": ["content_ir.edit_kind_instance_value"],
   "records.confirmation.table_allows_born_confirmed": ["platform._stamp_actor_tier"],
+  "scheduler.alarms.failing_streak": ["scheduler.system_schedule_alarms"],
+  "scheduler.alarms.overdue_grace_minutes": ["scheduler.system_schedule_alarms"],
   "seo.ai_autonomy.proposal_keyword_cap": ["seo.fn_autonomy_propose_stamp"],
   "seo.ai_autonomy.timeout_apply_cap": ["seo.fn_autonomy_apply_timed_out"],
   "seo.keyword_value.baseline_score": ["seo.fn_value_baseline", "seo.set_value_settings", "seo.value_settings_scope"],
   "seo.multi_location.max_attribution_km": ["seo.gsc_keyword_locations"],
   "seo.multi_location.single_location_fallback": ["seo.gsc_keyword_locations"],
   "seo.situational_stamps.stale_after_hours": ["seo.fn_situational_sites_owing", "seo.situational_refresh_status"],
+  "seo.topical_map.neighborhood_max_nodes": ["seo.map_outline"],
+  "seo.topical_map.neighborhood_min_nodes": ["seo.map_outline"],
+  "seo.topical_map.outline_description_max_chars": ["seo.map_outline"],
+  "seo.topical_map.outline_max_chars": ["seo.map_outline"],
+  "seo.topical_map.overview_max_nodes": ["seo.map_outline"],
+  "seo.topical_map.overview_min_nodes": ["seo.map_outline"],
+  "seo.topical_map.performance_window_days": ["seo._tm_perf_days"],
+  "seo.topical_map.topic_description_max_chars": ["seo.patch_map_topics", "seo.upsert_map_topics"],
 };
 
 /** The database function(s) that read this key, or `null` when none do. */
@@ -138,3 +154,41 @@ export function databaseConsumersOf(fullKey: string): readonly string[] | null {
   const readers = KNOB_DATABASE_CONSUMERS[fullKey];
   return readers && readers.length > 0 ? readers : null;
 }
+
+// ───────────────────────────────────────────────────────────────────────────
+// DD-211 — WHICH RUNGS the database can actually answer a key with.
+//
+// `overridable_by` says which rungs the PICKER offers. This says which rungs a
+// reader NAMES in `p_scopes` — the only way a rung other than `organization`
+// or `user` can change an answer. A key offered at a rung nobody names is a
+// control that saves a value nothing honours (law 4 from the other side), which
+// is what `records.confirmation.agent_write_born_confirmed`'s `agent` rung was
+// until DD-211.
+//
+// Only keys with a call site whose feature and key are WRITTEN OUT appear here:
+// a body that resolves them from variables tells us nothing, and guessing would
+// be worse than saying nothing.
+// ───────────────────────────────────────────────────────────────────────────
+
+export const KNOB_RUNG_CONSUMERS: Readonly<Record<string, readonly string[]>> = {
+  "hr.employees.adjusted_service_date_rule": ["employer_profile", "location", "pay_group"],
+  "hr.onboarding.access_shutoff_mode": ["employer_profile", "location", "pay_group"],
+  "records.confirmation.agent_write_born_confirmed": ["agent", "table"],
+  "records.confirmation.confirm_on_human_edit": ["table"],
+  "records.confirmation.table_allows_born_confirmed": ["agent", "table"],
+};
+
+/** The rungs in `overridable_by` this key's database readers CANNOT answer with. */
+export function unreachableRungsFor(
+  fullKey: string,
+  overridableBy: readonly string[],
+): readonly string[] {
+  const named = KNOB_RUNG_CONSUMERS[fullKey];
+  if (!named) return [];  // nothing readable to measure against — never guess
+  return overridableBy.filter(
+    (kind) => !RUNGS_ALWAYS_REACHABLE.includes(kind) && !named.includes(kind),
+  );
+}
+
+/** `organization` and `user` are knob_resolve's own parameters: always reachable. */
+export const RUNGS_ALWAYS_REACHABLE: readonly string[] = ["organization", "user"];

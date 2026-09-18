@@ -1,6 +1,6 @@
 "use client";
 
-import { SquareStack, User } from "lucide-react";
+import { PenLine, SquareStack, User } from "lucide-react";
 import { SettingsSwitch } from "@/components/official/settings/primitives/SettingsSwitch";
 import { SettingsSelect } from "@/components/official/settings/primitives/SettingsSelect";
 import { SettingsSlider } from "@/components/official/settings/primitives/SettingsSlider";
@@ -44,6 +44,9 @@ export default function AssistantTab() {
   );
   const [model, setModel] = useSetting<string>(
     "userPreferences.assistant.preferredModel",
+  );
+  const [restoreUnsentDrafts, setRestoreUnsentDrafts] = useSetting<boolean>(
+    "userPreferences.prompts.restoreUnsentDrafts",
   );
 
   return (
@@ -92,6 +95,16 @@ export default function AssistantTab() {
           description="Use a more casual, personalized tone."
           checked={isPersonal}
           onCheckedChange={setIsPersonal}
+          last
+        />
+      </SettingsSection>
+
+      <SettingsSection title="Composing" icon={PenLine}>
+        <SettingsSwitch
+          label="Put unsent drafts back"
+          description="If you reload or crash while writing a message, we keep what you typed in that tab and put it back in the box, per conversation. A sent message is never put back."
+          checked={restoreUnsentDrafts !== false}
+          onCheckedChange={setRestoreUnsentDrafts}
           last
         />
       </SettingsSection>

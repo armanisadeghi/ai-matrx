@@ -18,6 +18,11 @@ import { ExternalLink, Mail, Phone, Star } from "lucide-react";
 import { InlineMarkdownWithLinks } from "@/components/mardown-display/blocks/links/InlineMarkdownWithLinks";
 import { cn } from "@/utils/cn";
 
+import {
+  validateCellValue,
+  type ValidationRules,
+} from "@/features/data-tables/validation";
+
 import { choiceColorClass, isChoiceFormat } from "./choices";
 import { formatFieldValue } from "./format";
 import { getFieldFormat } from "./registry";
@@ -31,6 +36,17 @@ export type FormattedFieldValueProps = {
   format: FieldFormatConfig | null | undefined;
   /** Storage type — drives fallback rendering when the format doesn't fit. */
   dataType?: string;
+  /**
+   * The column's validation rules, when it declares any. A STORED value that
+   * violates one is never rewritten and never hidden — it renders in the SAME
+   * amber THE FALLBACK LAW already uses for a format mismatch, with the rule's
+   * reason as its tooltip. That is the whole point of declaring a rule over
+   * existing data: it is how a user FINDS the values that do not fit.
+   *
+   * There is exactly one amber in this file and this shares it — a second
+   * treatment would say "wrong" twice in two voices.
+   */
+  validationRules?: ValidationRules | null;
   /** Suppress links/chips and render plain text (e.g. inside a dense grid). */
   plain?: boolean;
   className?: string;
@@ -41,6 +57,7 @@ export function FormattedFieldValue({
   value,
   format,
   dataType,
+  validationRules,
   plain = false,
   className,
   emptyLabel = "—",
@@ -65,14 +82,49 @@ export function FormattedFieldValue({
     );
   }
 
+  // The format fits. Does the COLUMN'S RULE? A value that predates the rule is
+  // legal and stays exactly as it is — it just stops looking like everything
+  // else, so the user can see it and decide. `unique` is skipped here on
+  // purpose: a renderer holds one value, not the column.
+  if (validationRules) {
+    const verdict = validateCellValue({
+      rules: validationRules,
+      dataType: dataType ?? "string",
+      format,
+      value,
+    });
+    if (!verdict.ok) {
+      return (
+        <span
+          className={cn(MISMATCH_CLASS, className)}
+          title={`${verdict.reason} — this value was saved before the rule, and is kept.`}
+        >
+          {result.text}
+        </span>
+      );
+    }
+  }
+
   const def = format ? getFieldFormat(format.id) : null;
   if (!plain && def?.rich) {
     const rich = renderRich(def.id, result.text, value, format, className);
     if (rich !== undefined) return rich;
   }
 
+  // A caller that asks for `truncate` needs a BOX: `text-overflow: ellipsis`
+  // does nothing on an inline span, so a long plain value in a grid cell was
+  // cut mid-word with no "…" to say there is more. Only then — an inline span
+  // stays inline for every caller that flows the value inside a sentence.
+  const wantsTruncate = /(^|\s)truncate(\s|$)/.test(className ?? "");
   return (
-    <span className={cn(def?.numericAlign && "tabular-nums", className)}>
+    <span
+      className={cn(
+        wantsTruncate && "inline-block max-w-full align-bottom",
+        def?.numericAlign && "tabular-nums",
+        className,
+      )}
+      title={wantsTruncate ? result.text : undefined}
+    >
       {result.text}
     </span>
   );
@@ -153,7 +205,15 @@ function renderRich(
       );
     case "markdown":
       return (
-        <span className={cn("min-w-0", className)}>
+        // Same rule as the plain branch: `truncate` needs a box to end in "…".
+        <span
+          className={cn(
+            "min-w-0",
+            /(^|\s)truncate(\s|$)/.test(className ?? "") &&
+              "inline-block max-w-full align-bottom",
+            className,
+          )}
+        >
           <InlineMarkdownWithLinks text={text} />
         </span>
       );

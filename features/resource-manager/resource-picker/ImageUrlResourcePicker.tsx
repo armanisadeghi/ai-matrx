@@ -15,6 +15,7 @@ import { Input } from "@ai-matrx/design-system";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 import { useOpenImageUploaderWindow } from "@/features/overlays/openers/imageUploaderWindow";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
+import { parseYouTubeUrl } from "@/lib/media/youtube";
 
 interface ImageUrlResourcePickerProps {
   onBack: () => void;
@@ -40,10 +41,8 @@ function detectUrlType(url: string): "youtube" | "image" | "webpage" | "file" {
   try {
     const urlObj = new URL(normalizeUrl(url));
 
-    if (
-      urlObj.hostname.includes("youtube.com") ||
-      urlObj.hostname.includes("youtu.be")
-    ) {
+    // ONE canonical YouTube detector — `lib/media/youtube.ts`.
+    if (parseYouTubeUrl(urlObj.toString())) {
       return "youtube";
     }
 

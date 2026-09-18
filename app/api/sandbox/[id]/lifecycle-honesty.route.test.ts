@@ -135,14 +135,50 @@ test("admin stop uses hosted target/key then returns only orchestrator-persisted
   expect(update).not.toHaveBeenCalled();
 });
 
-test("admin delete network failure does not hard-delete or mutate its row", async () => {
-  rows.push({ data: row({ status: "stopped" }), error: null });
+test("admin delete transport loss returns outcome_unknown while the persisted row remains", async () => {
+  rows.push(
+    { data: row({ status: "stopped" }), error: null },
+    { data: row({ status: "stopped" }), error: null },
+  );
   jest.spyOn(global, "fetch").mockRejectedValue(new Error("offline"));
   const response = await adminDelete(
     new Request("https://app.example.test") as any,
     params,
   );
   expect(response.status).toBe(502);
+  expect(await response.json()).toEqual(
+    expect.objectContaining({ status: "outcome_unknown", operation: "delete" }),
+  );
+  expect(update).not.toHaveBeenCalled();
+  expect(remove).not.toHaveBeenCalled();
+});
+
+test("admin stop response loss returns success only after a fresh persisted stopped row", async () => {
+  rows.push(
+    { data: row(), error: null },
+    { data: row({ status: "stopped" }), error: null },
+  );
+  jest.spyOn(global, "fetch").mockRejectedValue(new Error("connection reset"));
+
+  const response = await adminPut(request({ action: "stop" }) as any, params);
+
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({
+    instance: expect.objectContaining({ status: "stopped" }),
+  });
+  expect(update).not.toHaveBeenCalled();
+});
+
+test("admin delete response loss returns success only after a fresh persisted deletion", async () => {
+  rows.push({ data: row({ status: "stopped" }), error: null });
+  jest.spyOn(global, "fetch").mockRejectedValue(new Error("connection reset"));
+
+  const response = await adminDelete(
+    new Request("https://app.example.test") as any,
+    params,
+  );
+
+  expect(response.status).toBe(204);
   expect(update).not.toHaveBeenCalled();
   expect(remove).not.toHaveBeenCalled();
 });
@@ -182,6 +218,63 @@ test("user stop upstream 403 cannot be converted into a local stopped state", as
   const response = await userPut(request({ action: "stop" }) as any, params);
   expect(response.status).toBe(403);
   expect(update).not.toHaveBeenCalled();
+  expect(remove).not.toHaveBeenCalled();
+});
+
+test("user stop transport loss returns success only after a fresh persisted stopped row", async () => {
+  rows.push({ data: row({ status: "stopped" }), error: null });
+  jest.spyOn(global, "fetch").mockRejectedValue(new Error("connection reset"));
+
+  const response = await userPut(request({ action: "stop" }) as any, params);
+
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({
+    instance: expect.objectContaining({ status: "stopped" }),
+  });
+  expect(update).not.toHaveBeenCalled();
+});
+
+test("user stop upstream 503 returns success only after a fresh persisted stopped row", async () => {
+  rows.push({ data: row({ status: "stopped" }), error: null });
+  jest
+    .spyOn(global, "fetch")
+    .mockResolvedValue(new Response("manager timed out", { status: 503 }));
+
+  const response = await userPut(request({ action: "stop" }) as any, params);
+
+  expect(response.status).toBe(200);
+  expect(await response.json()).toEqual({
+    instance: expect.objectContaining({ status: "stopped" }),
+  });
+  expect(update).not.toHaveBeenCalled();
+});
+
+test("user delete response loss returns success only after a fresh persisted deletion", async () => {
+  jest.spyOn(global, "fetch").mockRejectedValue(new Error("connection reset"));
+
+  const response = await userDelete(
+    new Request("https://app.example.test") as any,
+    params,
+  );
+
+  expect(response.status).toBe(204);
+  expect(remove).not.toHaveBeenCalled();
+});
+
+test("user delete upstream 403 remains a definitive refusal without reconciliation", async () => {
+  jest
+    .spyOn(global, "fetch")
+    .mockResolvedValue(new Response("denied", { status: 403 }));
+
+  const response = await userDelete(
+    new Request("https://app.example.test") as any,
+    params,
+  );
+
+  expect(response.status).toBe(403);
+  expect(await response.json()).toEqual({
+    error: "Sandbox orchestrator request failed",
+  });
   expect(remove).not.toHaveBeenCalled();
 });
 

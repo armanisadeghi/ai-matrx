@@ -13,6 +13,9 @@
  */
 "use client";
 
+import { isPreparedResourceIdentity } from "@/features/agents/components/chat/usePreparedResourceSeed";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { isMandateKey } from "@ai-matrx/agents/mandates";
 import type { ReactNode } from "react";
 import { lazyOverlay } from "@/features/overlays/boundary/lazyOverlay";
 import { useEffect } from "react";
@@ -25,6 +28,7 @@ import {
   type FullScreenEditorMode,
 } from "@/lib/redux/slices/overlaySlice";
 import { SidePanelSurface } from "@/features/overlays/surfaces/SidePanelSurface";
+import { readDetailOverlayData } from "@/features/window-panels/detail/detailOverlayData";
 
 // Prop-type imports for overlay components below — used to replace `as never`
 // casts emitted by the codegen with precise static types.
@@ -35,6 +39,7 @@ import type {
   Scope as AgentConnectionsScope,
 } from "@/features/agent-connections/types";
 import type { OverlayId } from "@/features/overlays/catalogue";
+import type { AttachableResource } from "@/features/connectors/attachable-resources";
 import type { CloudFilesWindowTab } from "@/features/files/components/surfaces/WindowPanelShell";
 import type { CreatorHubTabId } from "@/features/overlays/openers/creatorHub";
 import type { CodeFile as MultiFileCoreCodeFile } from "@/features/code-editor/multi-file-core/types";
@@ -219,6 +224,9 @@ const LiveIntegrationsWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/connectors/LiveIntegrationsWindow"),
 );
+const ConnectorConsentDialog = lazyOverlay(
+  () => import("@/features/connectors/ConnectorConsentDialog"),
+);
 const AgentSkillsWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/agents/AgentSkillsWindow"),
   { ssr: false },
@@ -314,6 +322,10 @@ const MandateWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/mandates/MandateWindow"),
   { ssr: false },
 );
+const ImpactBatchWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/mandates/ImpactBatchWindow"),
+  { ssr: false },
+);
 const AgentSidebarOverlay = lazyOverlay(
   () =>
     import("@/features/agents/components/agent-widgets/AgentSidebarOverlay").then(
@@ -332,11 +344,8 @@ const AiVoiceWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/voice/AiVoiceWindow"),
   { ssr: false },
 );
-const AnnouncementsViewer = lazyOverlay(
-  () =>
-    import("@/components/layout/AnnouncementsViewer").then((m) => ({
-      default: m.AnnouncementsViewer,
-    })),
+const AnnouncementExperience = lazyOverlay(
+  () => import("@/components/layout/AnnouncementExperience"),
   { ssr: false },
 );
 const AuthGateDialog = lazyOverlay(
@@ -452,6 +461,12 @@ const CrmManagerWindow = lazyOverlay(
 );
 const CrmCreatePartyWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/crm/CrmCreatePartyWindow"),
+  { ssr: false },
+);
+import { narrowGmailDraftedBy } from "@/features/crm/gmail/types";
+
+const GmailComposeWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/crm/GmailComposeWindow"),
   { ssr: false },
 );
 const CodeEditorWindow = lazyOverlay(
@@ -600,8 +615,33 @@ const SourceInspectorWindow = lazyOverlay(
     import("@/features/window-panels/windows/source-inspector/SourceInspectorWindow"),
   { ssr: false },
 );
-const ItemDetailWindow = lazyOverlay(
-  () => import("@/features/window-panels/windows/item-detail/ItemDetailWindow"),
+const DetailWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/detail/DetailWindow"),
+  { ssr: false },
+);
+const GoogleContactsImportWindow = lazyOverlay(
+  () =>
+    import(
+      "@/features/window-panels/windows/google-import/GoogleContactsImportWindow"
+    ),
+  { ssr: false },
+);
+const GoogleTasksImportWindow = lazyOverlay(
+  () =>
+    import(
+      "@/features/window-panels/windows/google-import/GoogleTasksImportWindow"
+    ),
+  { ssr: false },
+);
+const GoogleAgendaWindow = lazyOverlay(
+  () =>
+    import(
+      "@/features/window-panels/windows/google-calendar/GoogleAgendaWindow"
+    ),
+  { ssr: false },
+);
+const DetailDocked = lazyOverlay(
+  () => import("@/features/window-panels/windows/detail/DetailDocked"),
   { ssr: false },
 );
 const NoteInfoWindow = lazyOverlay(
@@ -630,6 +670,11 @@ const GalleryWindow = lazyOverlay(
 const HierarchyCreationWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/context-scopes/HierarchyCreationWindow"),
+  { ssr: false },
+);
+const AgentVariableEditorWindow = lazyOverlay(
+  () =>
+    import("@/features/agents/components/variables-management/AgentVariableEditorWindow"),
   { ssr: false },
 );
 const ScopeEditWindow = lazyOverlay(
@@ -704,6 +749,21 @@ const MatcherReviewWindow = lazyOverlay(
     import("@/features/window-panels/windows/marketing/MatcherReviewWindow"),
   { ssr: false },
 );
+const SiteDiscoveryWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/marketing/SiteDiscoveryWindow"),
+  { ssr: false },
+);
+const SiteAnalyticsWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/marketing/SiteAnalyticsWindow"),
+  { ssr: false },
+);
+const SiteQuickViewWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/marketing/SiteQuickViewWindow"),
+  { ssr: false },
+);
 const KeywordWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/seo/KeywordWindow"),
   { ssr: false },
@@ -742,6 +802,10 @@ const MasterworkBuildWindow = lazyOverlay(
 );
 const MasterworkYourWordsWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/masterwork/YourWordsWindow"),
+  { ssr: false },
+);
+const AttachResourceDialog = lazyOverlay(
+  () => import("@/features/connectors/AttachResourceDialog"),
   { ssr: false },
 );
 const AddToRulebookDialog = lazyOverlay(
@@ -1001,6 +1065,10 @@ const QuickNoteSaveOverlay = lazyOverlay(
     ),
   { ssr: false },
 );
+const ApprovalsWindow = lazyOverlay(
+  () => import("@/features/approvals/windows/ApprovalsWindow"),
+  { ssr: false },
+);
 const ScraperWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/ScraperWindow"),
   { ssr: false },
@@ -1077,6 +1145,15 @@ const HindsightFindingWindow = lazyOverlay(
 const ToolCallWindowPanel = lazyOverlay(
   () =>
     import("@/features/tool-call-visualization/window-panel/ToolCallWindowPanel"),
+  { ssr: false },
+);
+const TopicalMapTopicPanel = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/marketing/TopicalMapTopicPanel"),
+  { ssr: false },
+);
+const TopicalMapWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/marketing/TopicalMapWindow"),
   { ssr: false },
 );
 const TranscriptStudioWindow = lazyOverlay(
@@ -1198,6 +1275,9 @@ export default function OverlayController() {
     agentSkillsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentSkillsWindow"),
     ),
+    connectorConsentDialog: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "connectorConsentDialog"),
+    ),
     googleConnectWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "googleConnectWindow"),
     ),
@@ -1240,6 +1320,9 @@ export default function OverlayController() {
     addToRulebookDialog: useAppSelector((s) =>
       selectIsOverlayOpen(s, "addToRulebookDialog"),
     ),
+    attachResourcePicker: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "attachResourcePicker"),
+    ),
     agentTestCasesWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "agentTestCasesWindow"),
     ),
@@ -1251,6 +1334,9 @@ export default function OverlayController() {
     ),
     mandateWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "mandateWindow"),
+    ),
+    impactBatchWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "impactBatchWindow"),
     ),
     aiVoiceWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "aiVoiceWindow"),
@@ -1308,6 +1394,9 @@ export default function OverlayController() {
     crmCreatePartyWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "crmCreatePartyWindow"),
     ),
+    gmailComposeWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "gmailComposeWindow"),
+    ),
     cropStudioWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "cropStudioWindow"),
     ),
@@ -1352,8 +1441,20 @@ export default function OverlayController() {
     surfaceContextWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "surfaceContextWindow"),
     ),
-    itemDetailWindow: useAppSelector((s) =>
-      selectIsOverlayOpen(s, "itemDetailWindow"),
+    detailWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "detailWindow"),
+    ),
+    googleContactsImportWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "googleContactsImportWindow"),
+    ),
+    googleTasksImportWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "googleTasksImportWindow"),
+    ),
+    googleAgendaWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "googleAgendaWindow"),
+    ),
+    detailDocked: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "detailDocked"),
     ),
     researchContextPreviewWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "researchContextPreviewWindow"),
@@ -1366,6 +1467,9 @@ export default function OverlayController() {
     ),
     hierarchyCreationWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "hierarchyCreationWindow"),
+    ),
+    agentVariableEditorWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentVariableEditorWindow"),
     ),
     scopeEditWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "scopeEditWindow"),
@@ -1441,6 +1545,15 @@ export default function OverlayController() {
     matcherReviewWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "matcherReviewWindow"),
     ),
+    siteQuickViewWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "siteQuickViewWindow"),
+    ),
+    siteAnalyticsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "siteAnalyticsWindow"),
+    ),
+    siteDiscoveryWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "siteDiscoveryWindow"),
+    ),
     keywordWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "keywordWindow"),
     ),
@@ -1486,6 +1599,9 @@ export default function OverlayController() {
     ),
     quickUtilities: useAppSelector((s) =>
       selectIsOverlayOpen(s, "quickUtilities"),
+    ),
+    approvalsWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "approvalsWindow"),
     ),
     scraperWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "scraperWindow"),
@@ -1582,6 +1698,9 @@ export default function OverlayController() {
     agentSkillsWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentSkillsWindow"),
     ) as Record<string, unknown> | null,
+    connectorConsentDialog: useAppSelector((s) =>
+      selectOverlayData(s, "connectorConsentDialog"),
+    ),
     googleConnectWindow: useAppSelector((s) =>
       selectOverlayData(s, "googleConnectWindow"),
     ) as Record<string, unknown> | null,
@@ -1624,6 +1743,9 @@ export default function OverlayController() {
     addToRulebookDialog: useAppSelector((s) =>
       selectOverlayData(s, "addToRulebookDialog"),
     ) as Record<string, unknown> | null,
+    attachResourcePicker: useAppSelector((s) =>
+      selectOverlayData(s, "attachResourcePicker"),
+    ) as Record<string, unknown> | null,
     agentTestCasesWindow: useAppSelector((s) =>
       selectOverlayData(s, "agentTestCasesWindow"),
     ) as Record<string, unknown> | null,
@@ -1635,6 +1757,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     mandateWindow: useAppSelector((s) =>
       selectOverlayData(s, "mandateWindow"),
+    ) as Record<string, unknown> | null,
+    impactBatchWindow: useAppSelector((s) =>
+      selectOverlayData(s, "impactBatchWindow"),
     ) as Record<string, unknown> | null,
     aiVoiceWindow: useAppSelector((s) =>
       selectOverlayData(s, "aiVoiceWindow"),
@@ -1697,6 +1822,9 @@ export default function OverlayController() {
     crmCreatePartyWindow: useAppSelector((s) =>
       selectOverlayData(s, "crmCreatePartyWindow"),
     ) as Record<string, unknown> | null,
+    gmailComposeWindow: useAppSelector((s) =>
+      selectOverlayData(s, "gmailComposeWindow"),
+    ) as Record<string, unknown> | null,
     cropStudioWindow: useAppSelector((s) =>
       selectOverlayData(s, "cropStudioWindow"),
     ) as Record<string, unknown> | null,
@@ -1742,8 +1870,17 @@ export default function OverlayController() {
     surfaceContextWindow: useAppSelector((s) =>
       selectOverlayData(s, "surfaceContextWindow"),
     ) as Record<string, unknown> | null,
-    itemDetailWindow: useAppSelector((s) =>
-      selectOverlayData(s, "itemDetailWindow"),
+    detailWindow: useAppSelector((s) =>
+      selectOverlayData(s, "detailWindow"),
+    ) as Record<string, unknown> | null,
+    googleContactsImportWindow: useAppSelector((s) =>
+      selectOverlayData(s, "googleContactsImportWindow"),
+    ) as Record<string, unknown> | null,
+    googleTasksImportWindow: useAppSelector((s) =>
+      selectOverlayData(s, "googleTasksImportWindow"),
+    ) as Record<string, unknown> | null,
+    detailDocked: useAppSelector((s) =>
+      selectOverlayData(s, "detailDocked"),
     ) as Record<string, unknown> | null,
     researchContextPreviewWindow: useAppSelector((s) =>
       selectOverlayData(s, "researchContextPreviewWindow"),
@@ -1756,6 +1893,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     hierarchyCreationWindow: useAppSelector((s) =>
       selectOverlayData(s, "hierarchyCreationWindow"),
+    ) as Record<string, unknown> | null,
+    agentVariableEditorWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentVariableEditorWindow"),
     ) as Record<string, unknown> | null,
     scopeEditWindow: useAppSelector((s) =>
       selectOverlayData(s, "scopeEditWindow"),
@@ -1852,6 +1992,15 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     matcherReviewWindow: useAppSelector((s) =>
       selectOverlayData(s, "matcherReviewWindow"),
+    ) as Record<string, unknown> | null,
+    siteQuickViewWindow: useAppSelector((s) =>
+      selectOverlayData(s, "siteQuickViewWindow"),
+    ),
+    siteAnalyticsWindow: useAppSelector((s) =>
+      selectOverlayData(s, "siteAnalyticsWindow"),
+    ) as Record<string, unknown> | null,
+    siteDiscoveryWindow: useAppSelector((s) =>
+      selectOverlayData(s, "siteDiscoveryWindow"),
     ) as Record<string, unknown> | null,
     socialCardAnalyzerWindow: useAppSelector((s) =>
       selectOverlayData(s, "socialCardAnalyzerWindow"),
@@ -2083,6 +2232,12 @@ export default function OverlayController() {
     ),
     toolCallWindow: useAppSelector((s) =>
       selectOpenInstances(s, "toolCallWindow"),
+    ),
+    topicalMapTopicPanel: useAppSelector((s) =>
+      selectOpenInstances(s, "topicalMapTopicPanel"),
+    ),
+    topicalMapWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "topicalMapWindow"),
     ),
     voicePad: useAppSelector((s) => selectOpenInstances(s, "voicePad")),
     voicePadAdvanced: useAppSelector((s) =>
@@ -2390,7 +2545,9 @@ export default function OverlayController() {
               typeof data?.mandateId === "string" ? data.mandateId : null
             }
             mandateKey={
-              typeof data?.mandateKey === "string" ? data.mandateKey : null
+              typeof data?.mandateKey === "string"
+                ? storedMandateKey(data.mandateKey)
+                : null
             }
             mandateLabel={
               typeof data?.mandateLabel === "string" ? data.mandateLabel : null
@@ -2539,7 +2696,13 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "googleConnectWindow" }))
             }
             reason={typeof data?.reason === "string" ? data.reason : null}
-            mode={data?.mode === "drive-import" ? "drive-import" : "workspace"}
+            mode={
+              data?.mode === "drive-import"
+                ? "drive-import"
+                : data?.mode === "overview"
+                  ? "overview"
+                  : "workspace"
+            }
             initialConnectionId={
               typeof data?.initialConnectionId === "string"
                 ? data.initialConnectionId
@@ -2549,6 +2712,36 @@ export default function OverlayController() {
               typeof data?.callbackGroupId === "string"
                 ? data.callbackGroupId
                 : null
+            }
+          />
+        );
+      })()}
+
+      {/* connectorConsentDialog */}
+      {(() => {
+        const isOpen = isOpenById.connectorConsentDialog;
+        const data = dataById.connectorConsentDialog as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen) return null;
+        return (
+          <ConnectorConsentDialog
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "connectorConsentDialog" }))
+            }
+            initialConnectionId={
+              typeof data?.initialConnectionId === "string"
+                ? data.initialConnectionId
+                : null
+            }
+            initialProductKeys={
+              Array.isArray(data?.initialProductKeys)
+                ? (data.initialProductKeys as unknown[]).filter(
+                    (key): key is string => typeof key === "string",
+                  )
+                : undefined
             }
           />
         );
@@ -2994,6 +3187,40 @@ export default function OverlayController() {
         );
       })()}
 
+      {/* attachResourcePicker — choose WHICH repositories / files / sheets
+          out of an attachable connection ride this chat (Arman, 2026-09-15).
+          One picker for every provider and every entry point. */}
+      {(() => {
+        const isOpen = isOpenById.attachResourcePicker;
+        const data = dataById.attachResourcePicker as
+          Record<string, unknown> | null | undefined;
+        const conversationId =
+          typeof data?.conversationId === "string" ? data.conversationId : null;
+        const provider =
+          typeof data?.provider === "string" ? data.provider : null;
+        if (!isOpen || !conversationId || !provider) return null;
+        return (
+          <AttachResourceDialog
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "attachResourcePicker" }))
+            }
+            conversationId={conversationId}
+            provider={provider}
+            providerName={
+              typeof data?.providerName === "string"
+                ? data.providerName
+                : provider
+            }
+            attachable={
+              Array.isArray(data?.attachable)
+                ? (data.attachable as AttachableResource[])
+                : []
+            }
+          />
+        );
+      })()}
+
       {/* agentRunWindow — multi-instance */}
       {instancesById.agentRunWindow.map((inst) => {
         const data = inst.data as Record<string, unknown> | null | undefined;
@@ -3036,9 +3263,22 @@ export default function OverlayController() {
                 ? (data.initialVariableValues as Record<string, string>)
                 : null
             }
+            initialToolsOpen={data?.initialToolsOpen === true}
+            initialResources={
+              Array.isArray(data?.initialResources)
+                ? (data.initialResources as import("@/features/agents/resources/types").Resource[])
+                : null
+            }
+            initialResourceIdentity={
+              isPreparedResourceIdentity(data?.initialResourceIdentity)
+                ? data.initialResourceIdentity as { userId: string; organizationId: string }
+                : null
+            }
             initialAutoRun={data?.initialAutoRun === true}
             mandateKey={
-              typeof data?.mandateKey === "string" ? data.mandateKey : null
+              typeof data?.mandateKey === "string"
+                ? storedMandateKey(data.mandateKey)
+                : null
             }
             surfaceName={
               typeof data?.surfaceName === "string" ? data.surfaceName : null
@@ -3133,6 +3373,53 @@ export default function OverlayController() {
               data?.initialView === "info" || data?.initialView === "surface"
                 ? data.initialView
                 : undefined
+            }
+          />
+        );
+      })()}
+
+      {/* impactBatchWindow */}
+      {(() => {
+        const isOpen = isOpenById.impactBatchWindow;
+        const data = dataById.impactBatchWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const stringList = (value: unknown): string[] =>
+          Array.isArray(value)
+            ? (value as unknown[]).filter(
+                (entry): entry is string => typeof entry === "string",
+              )
+            : [];
+        return (
+          <ImpactBatchWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "impactBatchWindow" }))
+            }
+            agentIds={stringList(data?.agentIds)}
+            mode={data?.mode === "dry_run" ? "dry_run" : "post_batch"}
+            delta={
+              typeof data?.delta === "object" && data.delta !== null
+                ? (data.delta as { model_id?: string | null; settings?: Record<string, unknown> | null })
+                : null
+            }
+            batchLabel={
+              typeof data?.batchLabel === "string" ? data.batchLabel : undefined
+            }
+            sourceSentence={
+              typeof data?.sourceSentence === "string"
+                ? data.sourceSentence
+                : undefined
+            }
+            preselectedRungIds={stringList(data?.preselectedRungIds)}
+            surfaceName={
+              typeof data?.surfaceName === "string"
+                ? data.surfaceName
+                : undefined
+            }
+            posture={data?.posture === "mine" ? "mine" : "admin"}
+            focusAgentId={
+              typeof data?.focusAgentId === "string" ? data.focusAgentId : null
             }
           />
         );
@@ -3243,8 +3530,13 @@ export default function OverlayController() {
           Record<string, unknown> | null | undefined;
         if (!isOpen) return null;
         return (
-          <AnnouncementsViewer
+          <AnnouncementExperience
             isOpen
+            initialAnnouncementId={
+              typeof data?.initialAnnouncementId === "string"
+                ? data.initialAnnouncementId
+                : undefined
+            }
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "announcements" }))
             }
@@ -3705,6 +3997,50 @@ export default function OverlayController() {
             }
             initialName={
               typeof data?.initialName === "string" ? data.initialName : null
+            }
+          />
+        );
+      })()}
+
+      {/* gmailComposeWindow */}
+      {(() => {
+        if (!isOpenById.gmailComposeWindow) return null;
+        const data = dataById.gmailComposeWindow;
+        const partyId = typeof data?.partyId === "string" ? data.partyId : null;
+        const organizationId =
+          typeof data?.organizationId === "string" ? data.organizationId : null;
+        // A compose window with no record and no organization cannot write the
+        // sent record it exists to write — it does not open half-alive.
+        if (!partyId || !organizationId) return null;
+        const draftedBy = narrowGmailDraftedBy(data?.draftedBy);
+        return (
+          <GmailComposeWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "gmailComposeWindow" }))
+            }
+            partyId={partyId}
+            organizationId={organizationId}
+            partyLabel={
+              typeof data?.partyLabel === "string" ? data.partyLabel : "this record"
+            }
+            dealId={typeof data?.dealId === "string" ? data.dealId : null}
+            dealLabel={
+              typeof data?.dealLabel === "string" ? data.dealLabel : null
+            }
+            projectId={
+              typeof data?.projectId === "string" ? data.projectId : null
+            }
+            initialTo={typeof data?.initialTo === "string" ? data.initialTo : null}
+            initialSubject={
+              typeof data?.initialSubject === "string" ? data.initialSubject : null
+            }
+            initialBody={
+              typeof data?.initialBody === "string" ? data.initialBody : null
+            }
+            draftedBy={draftedBy}
+            sentCallbackId={
+              typeof data?.sentCallbackId === "string" ? data.sentCallbackId : null
             }
           />
         );
@@ -4320,26 +4656,95 @@ export default function OverlayController() {
         );
       })()}
 
-      {/* itemDetailWindow */}
+      {/* detailWindow — the Detail primitive's window presentation (lib/detail) */}
       {(() => {
-        const isOpen = isOpenById.itemDetailWindow;
-        const data = dataById.itemDetailWindow as
-          Record<string, unknown> | null | undefined;
+        const isOpen = isOpenById.detailWindow;
         if (!isOpen) return null;
+        const data = readDetailOverlayData(dataById.detailWindow);
+        if (!data) return null;
         return (
-          <ItemDetailWindow
+          <DetailWindow
+            isOpen
+            onClose={() => dispatch(closeOverlay({ overlayId: "detailWindow" }))}
+            type={data.type}
+            id={data.id}
+            seedName={data.seedName}
+            seedAbout={data.seedAbout}
+            listItems={data.listItems}
+            listIndex={data.listIndex}
+            listTrimmedFrom={data.listTrimmedFrom}
+          />
+        );
+      })()}
+
+      {/* googleContactsImportWindow — "Import from Google Contacts" (PLAN §4.5) */}
+      {(() => {
+        if (!isOpenById.googleContactsImportWindow) return null;
+        const data = dataById.googleContactsImportWindow;
+        return (
+          <GoogleContactsImportWindow
             isOpen
             onClose={() =>
-              dispatch(closeOverlay({ overlayId: "itemDetailWindow" }))
+              dispatch(closeOverlay({ overlayId: "googleContactsImportWindow" }))
             }
-            itemType={typeof data?.itemType === "string" ? data.itemType : null}
-            itemId={typeof data?.itemId === "string" ? data.itemId : null}
-            initialName={
-              typeof data?.initialName === "string" ? data.initialName : null
+            organizationId={
+              typeof data?.organizationId === "string" ? data.organizationId : null
             }
-            initialAbout={
-              typeof data?.initialAbout === "string" ? data.initialAbout : null
+            initialExternalId={
+              typeof data?.initialExternalId === "string"
+                ? data.initialExternalId
+                : null
             }
+          />
+        );
+      })()}
+
+      {/* googleTasksImportWindow — "Import from Google Tasks" (PLAN §4.7) */}
+      {(() => {
+        if (!isOpenById.googleTasksImportWindow) return null;
+        const data = dataById.googleTasksImportWindow;
+        return (
+          <GoogleTasksImportWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "googleTasksImportWindow" }))
+            }
+            organizationId={
+              typeof data?.organizationId === "string" ? data.organizationId : null
+            }
+            projectId={typeof data?.projectId === "string" ? data.projectId : null}
+          />
+        );
+      })()}
+
+      {/* googleAgendaWindow — the agenda over synced Calendar events (PLAN §4.6) */}
+      {(() => {
+        if (!isOpenById.googleAgendaWindow) return null;
+        return (
+          <GoogleAgendaWindow
+            isOpen
+            onClose={() => dispatch(closeOverlay({ overlayId: "googleAgendaWindow" }))}
+          />
+        );
+      })()}
+
+      {/* detailDocked — the Detail primitive's docked presentation (lib/detail) */}
+      {(() => {
+        const isOpen = isOpenById.detailDocked;
+        if (!isOpen) return null;
+        const data = readDetailOverlayData(dataById.detailDocked);
+        if (!data) return null;
+        return (
+          <DetailDocked
+            isOpen
+            onClose={() => dispatch(closeOverlay({ overlayId: "detailDocked" }))}
+            type={data.type}
+            id={data.id}
+            seedName={data.seedName}
+            seedAbout={data.seedAbout}
+            listItems={data.listItems}
+            listIndex={data.listIndex}
+            listTrimmedFrom={data.listTrimmedFrom}
           />
         );
       })()}
@@ -4488,6 +4893,31 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "hierarchyCreationWindow" }))
             }
             data={data?.data as HierarchyCreationWindowData | undefined}
+          />
+        );
+      })()}
+
+      {/* agentVariableEditorWindow — open state lives here, above the builder's mobile tree swap (C1) */}
+      {(() => {
+        if (!isOpenById.agentVariableEditorWindow) return null;
+        const raw = dataById.agentVariableEditorWindow;
+        if (
+          !raw ||
+          typeof raw.agentId !== "string" ||
+          typeof raw.variableName !== "string"
+        )
+          return null;
+        return (
+          <AgentVariableEditorWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentVariableEditorWindow" }))
+            }
+            data={{
+              agentId: raw.agentId,
+              variableName: raw.variableName,
+              justCreated: raw.justCreated === true,
+            }}
           />
         );
       })()}
@@ -4955,6 +5385,83 @@ export default function OverlayController() {
         );
       })()}
 
+      {/* siteDiscoveryWindow */}
+      {(() => {
+        const isOpen = isOpenById.siteDiscoveryWindow;
+        const data = dataById.siteDiscoveryWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const str = (key: string): string | null =>
+          typeof data?.[key] === "string" && data[key]
+            ? (data[key] as string)
+            : null;
+        const siteId = str("siteId");
+        // The panel's whole subject is one site.
+        if (!siteId) return null;
+        return (
+          <SiteDiscoveryWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "siteDiscoveryWindow" }))
+            }
+            siteId={siteId}
+            brandId={str("brandId")}
+            organizationId={str("organizationId")}
+            siteLabel={str("siteLabel")}
+          />
+        );
+      })()}
+
+      {/* siteQuickViewWindow — F-87: the ONE in-place door for a site record. */}
+      {(() => {
+        const isOpen = isOpenById.siteQuickViewWindow;
+        const data = dataById.siteQuickViewWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const str = (key: string): string | null =>
+          typeof data?.[key] === "string" && data[key]
+            ? (data[key] as string)
+            : null;
+        const siteId = str("siteId");
+        // The window's whole subject is one site.
+        if (!siteId) return null;
+        return (
+          <SiteQuickViewWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "siteQuickViewWindow" }))
+            }
+            siteId={siteId}
+            siteLabel={str("siteLabel")}
+          />
+        );
+      })()}
+
+      {/* siteAnalyticsWindow */}
+      {(() => {
+        const isOpen = isOpenById.siteAnalyticsWindow;
+        const data = dataById.siteAnalyticsWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const str = (key: string): string | null =>
+          typeof data?.[key] === "string" && data[key]
+            ? (data[key] as string)
+            : null;
+        const siteId = str("siteId");
+        // The panel's whole subject is one site.
+        if (!siteId) return null;
+        return (
+          <SiteAnalyticsWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "siteAnalyticsWindow" }))
+            }
+            siteId={siteId}
+            siteLabel={str("siteLabel")}
+          />
+        );
+      })()}
+
       {/* keywordWindow */}
       {(() => {
         const isOpen = isOpenById.keywordWindow;
@@ -5219,7 +5726,9 @@ export default function OverlayController() {
                 : null
             }
             mandateKey={
-              typeof data?.mandateKey === "string" ? data.mandateKey : ""
+              typeof data?.mandateKey === "string"
+                ? storedMandateKey(data.mandateKey)
+                : ""
             }
             files={
               (Array.isArray(data?.files) ||
@@ -6438,6 +6947,15 @@ export default function OverlayController() {
         );
       })}
 
+      {/* approvalsWindow — THE approval queue, same surface as /approvals */}
+      {isOpenById.approvalsWindow ? (
+        <ApprovalsWindow
+          onClose={() =>
+            dispatch(closeOverlay({ overlayId: "approvalsWindow" }))
+          }
+        />
+      ) : null}
+
       {/* scraperWindow */}
       {(() => {
         const isOpen = isOpenById.scraperWindow;
@@ -6801,7 +7319,11 @@ export default function OverlayController() {
                 : []) as CodeEditorAgentConfig[]
             }
             defaultPickerMandateKey={
-              typeof data?.defaultPickerMandateKey === "string"
+              // PROVEN DECLARED, not cast: the overlay `data` bag is untyped, and
+              // the code editor's picker only offers code-declared editing jobs.
+              // A stale key from a persisted window therefore falls back to
+              // `agents[0]` instead of selecting a job that no longer exists.
+              isMandateKey(data?.defaultPickerMandateKey)
                 ? data.defaultPickerMandateKey
                 : undefined
             }
@@ -7065,6 +7587,73 @@ export default function OverlayController() {
                 ? data.conversationId
                 : null
             }
+          />
+        );
+      })}
+
+      {/* topicalMapTopicPanel */}
+      {instancesById.topicalMapTopicPanel.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        // A panel with no map or no slug has no topic to show. Rendering it
+        // would paint an empty frame, so the malformed instance is skipped —
+        // the opener never produces one, and a stale persisted session can.
+        if (typeof data?.mapId !== "string" || typeof data?.slug !== "string") {
+          return null;
+        }
+        if (!data.mapId || !data.slug) return null;
+        return (
+          <TopicalMapTopicPanel
+            key={inst.instanceId}
+            instanceId={inst.instanceId}
+            stackIndex={
+              typeof data.stackIndex === "number" ? data.stackIndex : 0
+            }
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "topicalMapTopicPanel",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            mapId={data.mapId}
+            slug={data.slug}
+            siteId={typeof data.siteId === "string" ? data.siteId : null}
+          />
+        );
+      })}
+
+      {/* topicalMapWindow — multi-instance; instance id = map id, or "picker" */}
+      {instancesById.topicalMapWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        const screen = data?.screen;
+        return (
+          <TopicalMapWindow
+            key={inst.instanceId}
+            instanceId={inst.instanceId}
+            stackIndex={
+              typeof data?.stackIndex === "number" ? data.stackIndex : 0
+            }
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "topicalMapWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            mapId={typeof data?.mapId === "string" ? data.mapId : ""}
+            screen={
+              screen === "outline" ||
+              screen === "table" ||
+              screen === "graph" ||
+              screen === "text" ||
+              screen === "pages" ||
+              screen === "history"
+                ? screen
+                : "outline"
+            }
+            siteId={typeof data?.siteId === "string" ? data.siteId : null}
           />
         );
       })}

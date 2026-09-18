@@ -71,11 +71,17 @@ function metaVisibility(
   // to the `public` default below, which tells the UI the image has a permanent
   // CDN URL and suppresses signed-URL refresh: the image dies at expiry.
   if (value === "shared" || value === "private") return "personal";
-  // Default assumption: AI-generated images are stored with `visibility: "public"`
-  // in cld_files (see the example row in UNIFIED_IMAGE_BLOCK.md). When Python
-  // doesn't tell us AT ALL, public is the safer fallback because it never tries
-  // to refresh a signed URL that doesn't exist.
-  return "public";
+  // Unknown is NEVER "public". The old "public" default told
+  // useBlockMediaSource the block's URL was a permanent CDN URL and bound the
+  // authenticated durable `/files/{id}/download?inline=1` endpoint straight to
+  // an <img> — the third-party-cookie lane — for a `personal` row: "Image
+  // unavailable" forever in any browser that blocks third-party cookies
+  // (Arman's Chrome, 2026-09-16). "personal" is the row default in
+  // files.files and the safe assumption: the client resolves by file_id and
+  // upgrades to the permanent CDN URL itself once the row is hydrated. The
+  // server now stamps `metadata.visibility` on every generated block, so this
+  // branch is the exception, not the rule.
+  return "personal";
 }
 
 export function fromImageOutputData(

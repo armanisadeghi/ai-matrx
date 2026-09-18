@@ -5,6 +5,10 @@ import Link from "next/link";
 import { ExternalLink, FileUp, BrainCircuit, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
+import {
+  firstBlockingReason,
+  GatedActionButton,
+} from "@/components/official/GatedActionButton";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AgentCredit } from "../AgentCredit";
 import {
@@ -35,12 +39,16 @@ import {
   type IngestSummary,
 } from "./IngestSourceDialog";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { DurableRunAgain } from "@/lib/durable-run/DurableRunAgain";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
 import {
   DurableRunStopButton,
   DurableRunStopped,
 } from "@/lib/durable-run/DurableRunStop";
+import {
+  durableRunDialogOnOpenChange,
+} from "@/lib/durable-run/durableRunDialogClose";
 
 /**
  * "Import your AI chats" — the chat-import Distillation Approach.
@@ -125,6 +133,25 @@ const CHAT_IMPORT_DESCRIPTION =
   "and we mine YOUR rules from them, never the AI's opinions. Everything " +
   "lands as drafts you approve.";
 
+import { createSittingStore, type SittingBase } from "../../sitting/sitting";
+import { useDialogSitting } from "../../sitting/useDialogSitting";
+import { SittingResumed } from "../../sitting/SittingResumed";
+import { RunStages } from "../RunStages";
+
+interface ChatImportSitting extends SittingBase {
+  text: string;
+  sourceNote: string;
+  topic: string;
+  /** The tab the work was being done on — restoring text onto the upload tab
+   *  would put it back somewhere the Expert cannot see it. */
+  tab: ChatTab;
+}
+
+const chatImportSittings = createSittingStore<ChatImportSitting>({
+  keyPrefix: "matrx.masterwork.chat-import.v1:",
+  isUsable: (sitting) => (sitting.text ?? "").trim().length > 0 || (sitting.sourceNote ?? "").trim().length > 0 || (sitting.topic ?? "").trim().length > 0,
+});
+
 export function ChatImportDialog({
   open,
   onOpenChange,
@@ -153,6 +180,27 @@ export function ChatImportDialog({
   const [text, setText] = useState("");
   const [sourceNote, setSourceNote] = useState("");
   const [topic, setTopic] = useState("");
+  // A LANE NEVER LOSES IN-PROGRESS WORK (cold-walk-6 census, 2026-09-17: every
+  // capture dialog on the Rulebook page lost typed work on a reload, silently).
+  const sitting = useDialogSitting<ChatImportSitting>({
+    store: chatImportSittings,
+    scopeId: rulebook.id,
+    active: open,
+    snapshot: { text, sourceNote, topic, tab },
+    isWorthKeeping: (s) => (s.text ?? "").trim().length > 0 || (s.sourceNote ?? "").trim().length > 0 || (s.topic ?? "").trim().length > 0,
+    apply: (kept) => {
+      setText(kept.text ?? "");
+      setSourceNote(kept.sourceNote ?? "");
+      setTopic(kept.topic ?? "");
+      if (kept.tab) setTab(kept.tab);
+    },
+    clearScreen: () => {
+      setText("");
+      setSourceNote("");
+      setTopic("");
+    },
+  });
+
   const [preparing, setPreparing] = useState(false);
   const [shortlisting, setShortlisting] = useState(false);
   const [rows, setRows] = useState<ConversationRow[] | null>(null);
@@ -165,6 +213,8 @@ export function ChatImportDialog({
     rulebookId: rulebook.id,
     path: tab === "matrx" ? INGEST_CONVERSATIONS_PATH : INGEST_CHAT_PATH,
     parseResult: parseIngestSummary,
+    // Three conversations and two hundred are not the same wait.
+    size: { items: selected.size },
   });
   const running = run.running || preparing;
   const summary = run.result ? describeIngest(run.result) : null;
@@ -191,10 +241,25 @@ export function ChatImportDialog({
     setShortlisting(false);
   };
 
+  /**
+   * Back to this lane's own first step for the NEXT export — see
+   * `DurableRunAgain` and cold walk 6, finding 7.
+   */
+  const [addedSoFar, setAddedSoFar] = useState<string[]>([]);
+  const again = () => {
+    if (summary) setAddedSoFar((prev) => [...prev, summary]);
+    reset();
+    setText("");
+    setFile(null);
+  };
+
   // ONCE PER COMPLETED RUN, never once per render: the host passes a new
   // inline callback every render and the reload it starts re-renders this
   // dialog. See `useRunResultOnce`.
-  useRunResultOnce(run, onIngested);
+  useRunResultOnce(run, () => {
+    sitting.forget();
+    onIngested?.();
+  });
 
   useEffect(() => {
     if (run.error) toast.error(run.error);
@@ -212,16 +277,24 @@ export function ChatImportDialog({
   // Clearing it the moment the run is no longer running lets the NEXT live run
   // reopen in its turn, while the `open` guard still keeps it from re-firing on
   // the run that is already on screen.
+  // 🚨 IT ASKS `run.surfacing`, NEVER `run.running` (cold walk 7, finding 3,
+  // 2026-09-17). `running` is also true for `"rejoining"` — the state a
+  // RESTORED receipt sits in — and the "I closed this" half used to be a
+  // per-MOUNT ref, so a completed sitting the Expert had closed reopened
+  // itself on later, unrelated visits to the Rulebook page, on top of real
+  // controls, once claiming a finished run was "still going… reconnecting".
+  // `surfacing` is false for a run whose receipt records the dismissal, and
+  // the receipt outlives the mount exactly as the run does.
   const reopenedRef = useRef(false);
   useEffect(() => {
-    if (!run.running) {
+    if (!run.surfacing) {
       reopenedRef.current = false;
       return;
     }
     if (reopenedRef.current || open) return;
     reopenedRef.current = true;
     onOpenChange(true);
-  }, [open, run.running, onOpenChange]);
+  }, [open, run.surfacing, onOpenChange]);
 
   // ── the three doors → one picker ─────────────────────────────────────────
 
@@ -280,10 +353,10 @@ export function ChatImportDialog({
   };
 
   const prepareUpload = async () => {
-    if (!file) {
-      toast.error("Choose your export file first.");
-      return;
-    }
+    // Gated on the button, which names the missing file instead of sitting
+    // dark or firing a red toast at somebody who has not picked one yet
+    // (class sweep, 2026-09-16).
+    if (!file) return;
     setPreparing(true);
     try {
       const uploaded = await upload(
@@ -306,10 +379,9 @@ export function ChatImportDialog({
   };
 
   const preparePaste = async () => {
-    if (text.trim().length < 40) {
-      toast.error("Paste a real conversation first.");
-      return;
-    }
+    // Gated on the button, which says "Paste at least 40 characters to
+    // import" in muted words before the press (class sweep, 2026-09-16).
+    if (text.trim().length < 40) return;
     setPreparing(true);
     try {
       await previewSource({ text });
@@ -383,6 +455,13 @@ export function ChatImportDialog({
           path: SHORTLIST_PATH,
           method: "POST",
           body: body as never,
+          // 🚨 WITHOUT THIS FLAG THE HANDLER BELOW NEVER RUNS (found live
+          // 2026-09-15 by the Triad lane, which had the same omission). The
+          // server streamed `masterwork_shortlist`, `callApi` buffered the body
+          // instead of parsing events, `found` stayed null — and this dialog
+          // told the Expert "No standout conversations found", after paying for
+          // the pass that did find them.
+          stream: true,
           onStreamEvent: (event) => {
             const data = (event as { data?: Record<string, unknown> }).data;
             if (
@@ -432,8 +511,9 @@ export function ChatImportDialog({
   // ── launch ───────────────────────────────────────────────────────────────
 
   const distill = async () => {
+    // Gated on the button, which names this in muted words before the press
+    // (class sweep, 2026-09-16).
     if (selected.size === 0) {
-      toast.error("Select at least one conversation.");
       return;
     }
     if (selected.size > MAX_SELECTED) {
@@ -476,6 +556,16 @@ export function ChatImportDialog({
 
   const content = (
     <>
+      {/* THE NOTICE BELONGS TO THE LANE, NOT TO THE DIALOG CHROME. This
+          surface renders as a dialog AND as its own page; putting the notice
+          under <DialogHeader> meant the page half restored work in silence. */}
+      {sitting.resumed ? (
+        <SittingResumed
+          what="the chat you had pasted in, and what you called it"
+          onDiscard={sitting.discard}
+          onAcknowledge={sitting.acknowledge}
+        />
+      ) : null}
         {/* A failure STAYS on screen with its reason and a way out. It used to
             be a toast that removed itself, over a dialog that then showed the
             empty form again (census D4). */}
@@ -515,25 +605,18 @@ export function ChatImportDialog({
                   Interview me about the gaps
                 </Button>
               ) : null}
+              {/* 🚨 NO DEAD ENDS (cold walk 6, finding 7): every other
+                  control here LEAVES, and the likeliest next thing a person
+                  wants is another one. */}
+              <DurableRunAgain
+                label="Import another export"
+                onAgain={again}
+              />
             </div>
           </div>
         ) : run.running || run.stages.length > 0 ? (
           <div className="space-y-2">
-            <div className="max-h-52 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/40 p-3">
-              {run.stages.map((line, i) => (
-                <p key={i} className="text-xs text-muted-foreground">
-                  {line}
-                </p>
-              ))}
-            </div>
-            {run.running ? (
-              <div className="flex items-start gap-2">
-                <LoadingSpinner size="sm" />
-                <p className="text-xs text-muted-foreground">
-                  {run.waitMessage}
-                </p>
-              </div>
-            ) : null}
+            <RunStages run={run} />
             {run.running ? (
               <DurableRunInterruption interruption={run.interruption} />
             ) : null}
@@ -789,28 +872,44 @@ export function ChatImportDialog({
               }}
             />
             {rows ? (
-              <Button
+              <GatedActionButton
                 onClick={() => void distill()}
-                disabled={running || selected.size === 0}
+                disabled={running}
+                reason={firstBlockingReason([
+                  {
+                    when: selected.size === 0,
+                    reason: "Pick at least one conversation to distil",
+                  },
+                ])}
               >
                 {running
                   ? "Distilling…"
                   : `Distill ${selected.size || ""} conversation${selected.size === 1 ? "" : "s"}`}
-              </Button>
+              </GatedActionButton>
             ) : tab === "upload" ? (
-              <Button
+              <GatedActionButton
                 onClick={() => void prepareUpload()}
-                disabled={running || !file}
+                disabled={running}
+                reason={firstBlockingReason([
+                  { when: !file, reason: "Choose your export file first" },
+                ])}
               >
                 {preparing ? "Reading…" : "Read the export"}
-              </Button>
+              </GatedActionButton>
             ) : tab === "paste" ? (
-              <Button
+              /* A DISABLED PRIMARY ACTION SAYS WHY (`teach-recent-practitioner` W2, 2026-09-15). */
+              <GatedActionButton
                 onClick={() => void preparePaste()}
-                disabled={running || text.trim().length < 40}
+                disabled={running}
+                reason={firstBlockingReason([
+                  {
+                    when: text.trim().length < 40,
+                    reason: "Paste at least 40 characters to import",
+                  },
+                ])}
               >
                 {preparing ? "Reading…" : "Read the conversation"}
-              </Button>
+              </GatedActionButton>
             ) : null}
           </DialogFooter>
         ) : null}
@@ -831,13 +930,24 @@ export function ChatImportDialog({
   return (
     <Dialog
       open={open}
-      onOpenChange={(next) => {
-        if (running) return;
-        if (!next) reset();
-        onOpenChange(next);
-      }}
+      // THE CLOSE ALWAYS CLOSES. This used to be `if (running) return;`,
+      // which made the X, Escape and an outside click all inert while a run
+      // was running OR rejoining — i.e. exactly when a user whose live view
+      // had been lost was trying to get out. The run is server-owned; closing
+      // never stopped it, so the guard bought nothing and cost the exit.
+      onOpenChange={durableRunDialogOnOpenChange({
+        running,
+        reset,
+        onOpenChange: (next) => {
+          // The Expert walked away from this run — recorded on the RECEIPT,
+        // so a later visit does not drag the same sitting back on screen.
+        if (!next) run.dismiss();
+          onOpenChange(next);
+        },
+        runLabel: "Reading your chats",
+      })}
     >
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="matrx-touch-targets sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             Import your AI chats
@@ -857,6 +967,7 @@ export function ChatImportDialog({
           </DialogTitle>
           <DialogDescription>{CHAT_IMPORT_DESCRIPTION}</DialogDescription>
         </DialogHeader>
+
         {content}
       </DialogContent>
     </Dialog>

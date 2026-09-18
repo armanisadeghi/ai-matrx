@@ -66,6 +66,7 @@ import {
   type VaultTransferResponse,
 } from "./types";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import type { components } from "@/types/python-generated/api-types";
 
 const assertVaultData = makeAssertData("load your vault");
 
@@ -79,6 +80,48 @@ export type VaultExpectedActor = {
   userId: string;
   organizationId: string;
 };
+
+export type VaultLoginCsvPreviewRequest =
+  components["schemas"]["VaultLoginCsvPreviewRequest"];
+export type VaultLoginCsvPreviewResponse =
+  components["schemas"]["VaultLoginCsvPreviewResponse"];
+export type VaultLoginCsvDownloadRequest =
+  components["schemas"]["VaultLoginCsvDownloadRequest"];
+export type VaultVerifiedExportActor = VaultExpectedActor & {
+  email: string;
+};
+
+export class VaultLoginExportTransportError extends Error {
+  constructor(
+    public readonly code:
+      | "recent_auth_required"
+      | "preview_stale"
+      | "export_unavailable"
+      | "missing_or_forbidden"
+      | "limit_exceeded"
+      | "context_changed"
+      | "request_rejected"
+      | "unreachable",
+  ) {
+    super(
+      code === "recent_auth_required"
+        ? "Confirm your identity before exporting selected logins."
+        : code === "preview_stale"
+          ? "Your selected logins changed. Review the current selection again."
+          : code === "export_unavailable"
+            ? "These selected logins cannot be exported right now. Review the preview and try again."
+            : code === "missing_or_forbidden"
+              ? "One or more selected logins are no longer available. Reload your Vault and select them again."
+              : code === "limit_exceeded"
+                ? "This selection exceeds the Vault export limit. Reduce the selection and try again."
+                : code === "context_changed"
+                  ? "Your account or request organization changed. Start the export again."
+                  : code === "unreachable"
+                    ? "Vault export is unavailable. Try again when the service is online."
+                    : "Vault export could not be completed. Review the selection and try again.",
+    );
+  }
+}
 
 export class VaultImportTransportError extends Error {
   constructor(
@@ -94,7 +137,11 @@ export class VaultImportTransportError extends Error {
   }
 }
 
-async function authHeaders(expectedActor?: VaultExpectedActor): Promise<{
+async function authHeaders(
+  expectedActor?: VaultExpectedActor,
+  contextError: () => Error = () =>
+    new VaultImportTransportError("context_changed"),
+): Promise<{
   organizationId: string;
   headers: Record<string, string>;
 }> {
@@ -102,16 +149,18 @@ async function authHeaders(expectedActor?: VaultExpectedActor): Promise<{
     ? null
     : requireOrganizationContext(requireSelectedOrgId());
   const supabase = createClient();
-  const [
-    {
-      data: { session },
-    },
-    {
-      data: { user },
-      error: userError,
-    },
-  ] = await Promise.all([supabase.auth.getSession(), supabase.auth.getUser()]);
-  if (!session?.access_token || userError || !user)
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Not signed in");
+  // Verify the exact bearer token that will be sent. Calling getUser() without
+  // that token races a session replacement and can bind one user's identity to
+  // another user's Authorization header.
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser(session.access_token);
+  if (userError || !user)
     throw new Error("Not signed in");
   // Imports reread request context after final auth await; ordinary transport
   // keeps its existing fail-before-auth behavior.
@@ -122,7 +171,7 @@ async function authHeaders(expectedActor?: VaultExpectedActor): Promise<{
     (expectedActor.userId !== user.id ||
       expectedActor.organizationId !== organizationId)
   ) {
-    throw new VaultImportTransportError("context_changed");
+    throw contextError();
   }
   return {
     organizationId,
@@ -131,6 +180,141 @@ async function authHeaders(expectedActor?: VaultExpectedActor): Promise<{
       "Content-Type": "application/json",
     },
   };
+}
+
+/** The export dialog freezes this identity before preview/download and checks it
+ * again after every response. Email is display-only and is never caller input. */
+export async function getVaultExportActor(): Promise<VaultVerifiedExportActor> {
+  const supabase = createClient();
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token) throw new Error("Not signed in");
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser(session.access_token);
+  if (error || !user || !user.email) throw new Error("Not signed in");
+  return {
+    userId: user.id,
+    organizationId: requireOrganizationContext(requireSelectedOrgId()),
+    email: user.email,
+  };
+}
+
+async function assertVaultExportActor(
+  expectedActor: VaultExpectedActor,
+): Promise<void> {
+  const actual = await getVaultExportActor();
+  if (
+    actual.userId !== expectedActor.userId ||
+    actual.organizationId !== expectedActor.organizationId
+  ) {
+    throw new VaultLoginExportTransportError("context_changed");
+  }
+}
+
+async function exportFailureCode(resp: Response): Promise<
+  VaultLoginExportTransportError["code"]
+> {
+  // The structured recent-auth code is intentionally the only detail the
+  // browser reads. Never match server prose, which is neither a stable wire
+  // contract nor a safe place for sensitive diagnostics.
+  if (resp.status === 401) {
+    try {
+      const body: unknown = await resp.json();
+      if (
+        body &&
+        typeof body === "object" &&
+        "code" in body &&
+        body.code === "recent_auth_required"
+      ) {
+        return "recent_auth_required";
+      }
+    } catch {
+      // An unparseable response is not evidence of the reauthentication gate.
+    }
+    return "request_rejected";
+  }
+  if (resp.status === 404) return "missing_or_forbidden";
+  if (resp.status === 413) return "limit_exceeded";
+  if (resp.status === 409) {
+    try {
+      const body: unknown = await resp.json();
+      if (
+        body &&
+        typeof body === "object" &&
+        "code" in body &&
+        body.code === "preview_stale"
+      ) {
+        return "preview_stale";
+      }
+    } catch {
+      // The status is still a safe value-free export failure.
+    }
+    return "export_unavailable";
+  }
+  return resp.status >= 500 ? "unreachable" : "request_rejected";
+}
+
+async function vaultExportResponse(
+  path: string,
+  body: VaultLoginCsvPreviewRequest | VaultLoginCsvDownloadRequest,
+  expectedActor: VaultExpectedActor,
+  signal?: AbortSignal,
+): Promise<Response> {
+  const { organizationId, headers: auth } = await authHeaders(
+    expectedActor,
+    () => new VaultLoginExportTransportError("context_changed"),
+  );
+  const headers = applyOrganizationContextHeader(auth, organizationId);
+  let resp: Response;
+  try {
+    resp = await fetch(`${backendBase()}/api/vault${path}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+      signal,
+      cache: "no-store",
+    });
+  } catch (cause) {
+    if (cause instanceof DOMException && cause.name === "AbortError") throw cause;
+    throw new VaultLoginExportTransportError("unreachable");
+  }
+  await assertVaultExportActor(expectedActor);
+  if (!resp.ok)
+    throw new VaultLoginExportTransportError(await exportFailureCode(resp));
+  return resp;
+}
+
+export async function previewVaultLoginCsv(
+  body: VaultLoginCsvPreviewRequest,
+  expectedActor: VaultExpectedActor,
+  signal?: AbortSignal,
+): Promise<VaultLoginCsvPreviewResponse> {
+  const response = await vaultExportResponse(
+    "/exports/login-csv/preview",
+    body,
+    expectedActor,
+    signal,
+  );
+  return (await response.json()) as VaultLoginCsvPreviewResponse;
+}
+
+/** Returns bytes only to the caller's event handler. Do not store the Blob. */
+export async function downloadVaultLoginCsv(
+  body: VaultLoginCsvDownloadRequest,
+  expectedActor: VaultExpectedActor,
+  signal?: AbortSignal,
+): Promise<Blob> {
+  const response = await vaultExportResponse(
+    "/exports/login-csv",
+    body,
+    expectedActor,
+    signal,
+  );
+  await assertVaultExportActor(expectedActor);
+  return response.blob();
 }
 
 async function vaultFetch<T>(

@@ -1,0 +1,26 @@
+SEVEN QUESTIONS TO ASK ANY AI VENDOR
+Published by AI Matrx — aimatrx.com/the-landscape
+
+Use these on every vendor you are considering. Use them on us first.
+
+
+1. How will you capture what my expert knows but cannot articulate?
+   Name the technique.
+
+2. How will you prove the output matches MY expert, rather than a
+   competent generalist?
+
+3. Show me the comparison against a top frontier model given the same
+   material and a hundred times the budget.
+
+4. Who grades it, and how did you prove the grader agrees with my expert?
+
+5. What happens when my expert changes their mind?
+
+6. Who owns the captured method — me, or you?
+
+7. What does it cost per run, and what is the latency?
+
+
+A vendor who cannot answer 3 and 4 has not built a system.
+They have built a demo.

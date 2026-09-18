@@ -1,4 +1,4 @@
-import type { Json } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 
 // Types for user feedback and bug reporting system
 
@@ -136,6 +136,15 @@ export interface CreateFeedbackInput {
   feedback_type: FeedbackType;
   route: string;
   description: string;
+  /**
+   * The organization the person is acting in, read from Redux by the surface
+   * and CARRIED into the Server Action. A Server Action carries no
+   * `X-Organization-Id` header, so the selection has to travel as an argument
+   * — the action used to resolve the submitter's PERSONAL organization
+   * instead, filing their report in a workspace nobody chose.
+   * common-docs/policies/context-is-carried-never-rebuilt.md rule 4.
+   */
+  organization_id: string;
   image_file_ids?: string[];
   /**
    * Admin-only. Server action ignores these fields if the caller is not an
@@ -144,6 +153,14 @@ export interface CreateFeedbackInput {
    */
   category_id?: string | null;
   assigned_to?: string | null;
+  /**
+   * Structured provenance for the item, written to `users.user_feedback.metadata`.
+   * The caller owns the keys; the submit action merges nothing and invents
+   * nothing. Used by "Approve and raise" in the agent review queue, which
+   * stamps `raised_from_review_row: <agent.review_queue id>` so a note raised
+   * while approving a review is traceable back to the row that exposed it.
+   */
+  metadata?: Record<string, Json> | null;
 }
 
 export interface UpdateFeedbackInput {
@@ -362,17 +379,23 @@ export const ANNOUNCEMENT_TYPES = [
 ] as const;
 export type AnnouncementType = (typeof ANNOUNCEMENT_TYPES)[number];
 
-export interface SystemAnnouncement {
-  id: string;
-  title: string;
-  message: string;
+type SystemAnnouncementDatabaseRow =
+  Database["users"]["Tables"]["system_announcements"]["Row"];
+
+export type SystemAnnouncement = Pick<
+  SystemAnnouncementDatabaseRow,
+  | "id"
+  | "title"
+  | "message"
+  | "is_active"
+  | "created_at"
+  | "updated_at"
+  | "created_by"
+  | "target_user_id"
+> & {
   announcement_type: AnnouncementType;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  created_by: string | null;
   min_display_seconds: number;
-}
+};
 
 export interface CreateAnnouncementInput {
   title: string;

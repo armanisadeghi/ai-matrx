@@ -1,27 +1,21 @@
 "use client";
 
-import { useCallback } from "react";
 import { LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSignOut, reportSignOutFailure } from "@/features/shell/auth/useSignOut";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
 
+// The one sign-out primitive (device-scoped, super admins warned twice by
+// name) lives in features/shell/auth/useSignOut.ts — never call
+// the Supabase client's sign-out from a control directly.
 export function SignOutMenuItem() {
-    const handleClick = useCallback(async () => {
-        const { supabase } = await import("@/utils/supabase/client");
-        const { activeOrgCookie } = await import("@/lib/organizations/activeOrgCookie");
-        // Forget the shared active-organization cookie outright on an EXPLICIT
-        // sign-out (it is identity-keyed anyway) so the next person on this
-        // browser inherits nothing — on every Matrx surface of the apex.
-        activeOrgCookie.clear();
-        await supabase.auth.signOut();
-        window.location.href = "/login";
-    }, []);
+    const signOut = useSignOut();
 
     return (
         <label htmlFor="shell-user-menu" className="block">
             <button
                 className={cn(MENU_ITEM_CLASS, "text-destructive [&_svg]:text-destructive")}
-                onClick={handleClick}
+                onClick={() => signOut().catch(reportSignOutFailure)}
             >
                 <LogOut />
                 Sign Out

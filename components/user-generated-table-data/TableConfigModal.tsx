@@ -7,11 +7,19 @@ import {
   changeFieldType,
   deleteField,
   getTableProfile,
+  rewriteFormulasForRename,
   setFieldFormat,
   setValidationMode,
 } from "@/features/data-tables/service";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { FieldFormatPicker } from "@/lib/field-formats/FieldFormatPicker";
+import { ColumnValidationEditor } from "@/features/data-tables/components/ColumnValidationEditor";
+import { FormulaExpressionEditor } from "@/features/data-tables/components/FormulaExpressionEditor";
+import {
+  parseValidationRules,
+  serializeValidationRules,
+  type ValidationRules,
+} from "@/features/data-tables/validation";
 import { resolveFieldFormat } from "@/lib/field-formats/format";
 import type { FieldFormatConfig } from "@/lib/field-formats/types";
 import {
@@ -71,7 +79,12 @@ interface TableField {
   is_required: boolean;
   is_public: boolean;
   default_value?: any;
-  validation_rules?: any;
+  /**
+   * The column's validation rules. Read with `parseValidationRules`, written
+   * with `serializeValidationRules` — never touched by hand. `required` is NOT
+   * in here; the Req checkbox writes `is_required`, which is that fact's home.
+   */
+  validation_rules?: unknown;
   metadata?: Record<string, unknown> | null;
 }
 
@@ -147,6 +160,10 @@ export default function TableConfigModal({
   const [formatChanges, setFormatChanges] = useState<
     Record<string, FieldFormatConfig>
   >({});
+  /** fieldId → validation rules the user edited this session. */
+  const [validationChanges, setValidationChanges] = useState<
+    Record<string, ValidationRules>
+  >({});
   const [deletingFieldId, setDeletingFieldId] = useState<string | null>(null);
 
   /**
@@ -183,6 +200,7 @@ export default function TableConfigModal({
       setHasChanges(false);
       setDataTypeChanges({});
       setFormatChanges({});
+      setValidationChanges({});
       setError(null);
     }
   }, [isOpen, initialFields, initialTableInfo]);
@@ -267,6 +285,10 @@ export default function TableConfigModal({
         delete next[fieldId];
         return next;
       });
+      // Rules are written against a storage type — a min/max drawn for a
+      // number column is nonsense on a boolean — so retyping the column clears
+      // them rather than leaving an un-editable rule armed behind the new type.
+      setValidationChanges((prev) => ({ ...prev, [fieldId]: {} }));
       const originalField = initialFields.find((f) => f.id === fieldId);
       if (originalField && originalField.data_type !== value) {
         setDataTypeChanges((prev) => ({ ...prev, [fieldId]: value }));
@@ -421,6 +443,22 @@ export default function TableConfigModal({
         ),
       );
 
+      // A pattern the browser cannot compile is skipped at validation time —
+      // a rule that looks armed and does nothing. Refuse it here rather than
+      // store it: nothing fails silently.
+      for (const [fieldId, rules] of Object.entries(validationChanges)) {
+        if (!rules.pattern) continue;
+        try {
+          new RegExp(rules.pattern);
+        } catch (err) {
+          const label =
+            fields.find((f) => f.id === fieldId)?.display_name ?? fieldId;
+          throw new Error(
+            `The validation pattern on "${label}" is not a valid regular expression (${err instanceof Error ? err.message : "unreadable"}). Fix it under Rules, or clear it — a pattern that cannot be read would accept everything.`,
+          );
+        }
+      }
+
       // Prepare field updates AND collect type-change candidates.
       // Type changes are split off because they need to walk every row in the
       // table and rewrite the JSONB cell value via udt_change_field_type —
@@ -464,7 +502,18 @@ export default function TableConfigModal({
           if (field.display_name !== originalField.display_name)
             updates.display_name = field.display_name;
           if (field.data_type !== originalField.data_type) {
-            updates.data_type = field.data_type;
+            // DD-260: `data_type` deliberately does NOT ride this metadata write.
+            // `udt_change_field_type` below flips the declared type ITSELF, in the
+            // same transaction as the row rewrite and the row-history proof — and
+            // it reads the OLD type to stamp `type_change:<from>→<to>` on that
+            // history. Flipping it here first made the function read the NEW type
+            // as the "from", so the row-history badge on production read
+            // `integer→integer` and told the user nothing about what their value
+            // used to be (V-113 finding F1). The function now REFUSES a call whose
+            // stored type already equals the requested one, so this cannot regress
+            // silently. Sending it here is also unsafe on its own terms: if the
+            // row rewrite failed, the declared type had already changed and the
+            // table was left new-typed over old-shaped rows.
             typeChanges.push({
               fieldId: field.id,
               displayName: field.display_name,
@@ -479,6 +528,22 @@ export default function TableConfigModal({
           if (field.is_public !== originalField.is_public)
             updates.is_public = field.is_public;
 
+          // Validation rules ride the SAME write every other field property
+          // uses — `update_user_table_config` has always accepted
+          // `validation_rules` in p_field_updates. It COALESCEs the column, so
+          // an empty object is the only way to CLEAR rules; that is exactly
+          // what `serializeValidationRules` returns for an empty rule set.
+          const editedRules = validationChanges[field.id];
+          if (editedRules !== undefined) {
+            const next = serializeValidationRules(editedRules);
+            const prior = serializeValidationRules(
+              parseValidationRules(originalField.validation_rules),
+            );
+            if (JSON.stringify(next) !== JSON.stringify(prior)) {
+              updates.validation_rules = next;
+            }
+          }
+
           // Only return if there are actual changes
           return Object.keys(updates).length > 1 ? updates : null;
         })
@@ -492,7 +557,11 @@ export default function TableConfigModal({
           .join("\n");
         const ok = await confirm({
           title: `Convert ${typeChanges.length === 1 ? "1 column" : `${typeChanges.length} columns`}?`,
-          description: `${summary}\n\nExisting cell values will be coerced to the new type. Values that cannot be converted will become null.`,
+          // DD-244: it used to say values "will become null" and stop there,
+          // which read as destruction. They are emptied from the grid AND kept
+          // in each row's history, restorable — say both, and say the count
+          // afterwards (the toast does).
+          description: `${summary}\n\nExisting cell values are converted to the new type. A value that cannot be converted is emptied from the grid and saved in that row's history — open the row and choose Restore in its history to bring it back. You will be told how many.`,
           confirmLabel: "Convert",
           variant: "destructive",
         });
@@ -540,11 +609,18 @@ export default function TableConfigModal({
         });
       }
 
-      // After the metadata flip lands, walk rows for each type-changed field
-      // and coerce their JSONB cell values to the new type via the dedicated
-      // SECURITY DEFINER RPC. cast_or_null is the safer default — un-castable
-      // values become null rather than silently keeping the old shape.
+      // Now the type changes. This RPC owns BOTH halves — it walks every row and
+      // coerces the JSONB cell values AND flips `udt_dataset_fields.data_type`, in
+      // one transaction, stamping the real `type_change:<from>→<to>` on the row
+      // history it produces (DD-260: nothing above may flip the declared type
+      // first, or the "from" it records is a lie). cast_or_null is the safer
+      // default — un-castable values become null rather than silently keeping the
+      // old shape, and the value itself goes to row history, restorable.
       let totalRewritten = 0;
+      // DD-244: a value that cannot become the new type is emptied from the
+      // grid, and its only surviving copy is the row's history. The screen says
+      // so, with the number and the way back — never a silent null.
+      let totalMovedToHistory = 0;
       const typeFailures: string[] = [];
       for (const change of typeChanges) {
         const res = await changeFieldType({
@@ -557,6 +633,7 @@ export default function TableConfigModal({
           typeFailures.push(`${change.displayName}: ${res.error}`);
         } else {
           totalRewritten += res.data.rows_rewritten;
+          totalMovedToHistory += res.data.values_moved_to_history ?? 0;
         }
       }
 
@@ -571,6 +648,37 @@ export default function TableConfigModal({
           formatFailures.push(`${label}: ${res.error}`);
         }
       }
+      // A renamed header must not break the formulas that name it — the same
+      // rewrite the header's inline rename does, run AFTER the format saves
+      // above so it edits the expression as it now stands.
+      const brokenFormulas: string[] = [];
+      for (const field of fields) {
+        const before = initialFields.find((f) => f.id === field.id);
+        if (!before || before.display_name === field.display_name) continue;
+        const outcome = await rewriteFormulasForRename({
+          tableId,
+          fields: fields.map((f) => ({
+            id: f.id,
+            field_name: f.field_name,
+            display_name: f.display_name,
+            metadata: formatChanges[f.id]
+              ? { ...((f.metadata as object | null) ?? {}), format: formatChanges[f.id] }
+              : f.metadata,
+          })),
+          renamedFieldId: field.id,
+          from: before.display_name,
+          to: field.display_name,
+        });
+        brokenFormulas.push(...outcome.formulasFailed);
+      }
+      if (brokenFormulas.length > 0) {
+        toast({
+          title: "A formula still uses an old column name",
+          description: `Fix the formula in: ${brokenFormulas.join(", ")}. Until then it shows #ERROR.`,
+          variant: "destructive",
+        });
+      }
+
       if (formatFailures.length > 0) {
         toast({
           title: "Some formats could not be saved",
@@ -585,6 +693,19 @@ export default function TableConfigModal({
             title: "Some columns could not be converted",
             description: typeFailures.join("\n"),
             variant: "destructive",
+          });
+        } else if (totalMovedToHistory > 0) {
+          toast({
+            title: `Converted ${typeChanges.length === 1 ? "1 column" : `${typeChanges.length} columns`} — ${totalMovedToHistory} value${totalMovedToHistory === 1 ? "" : "s"} moved to row history`,
+            description:
+              `${totalRewritten} row${totalRewritten === 1 ? "" : "s"} rewritten. ` +
+              `${totalMovedToHistory} value${totalMovedToHistory === 1 ? " did" : "s did"} not fit the new type and ` +
+              `${totalMovedToHistory === 1 ? "was" : "were"} emptied — ` +
+              `${totalMovedToHistory === 1 ? "it is" : "they are"} saved in each row's history. ` +
+              `Open the row and choose Restore in its history to bring ` +
+              `${totalMovedToHistory === 1 ? "it" : "them"} back.`,
+            variant: "default",
+            duration: 15000,
           });
         } else {
           toast({
@@ -671,7 +792,7 @@ export default function TableConfigModal({
                     onDrop={handleDrop}
                     onDragEnd={handleDragEnd}
                   >
-                    <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-x-2 gap-y-2 px-2.5 py-2 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto_auto] lg:grid-cols-[auto_minmax(13rem,1fr)_8rem_9.5rem_7.5rem_6.5rem_auto] lg:gap-x-3">
+                    <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-x-2 gap-y-2 px-2.5 py-2 sm:grid-cols-[auto_minmax(0,1fr)_minmax(0,1fr)_auto_auto] lg:grid-cols-[auto_minmax(11rem,1fr)_7.5rem_9rem_9rem_7rem_6rem_auto] lg:gap-x-3">
                       <GripVertical className="col-start-1 row-start-1 h-4 w-4 self-center text-muted-foreground lg:row-start-1" />
                       <div className="col-span-2 col-start-2 row-start-1 min-w-0 sm:col-span-2 lg:col-span-1 lg:col-start-2">
                         <div className="flex items-center gap-2">
@@ -760,7 +881,60 @@ export default function TableConfigModal({
                         }}
                       />
 
-                      <div className="col-start-2 row-start-3 flex h-8 items-center gap-3 sm:col-span-2 sm:col-start-4 sm:row-start-2 lg:col-span-1 lg:col-start-5 lg:row-start-1">
+                      {/* A formula column's expression — the one place it is
+                          written. Only rendered when the format is `formula`,
+                          so every other column card keeps its shape. */}
+                      {(formatChanges[field.id] ??
+                        resolveFieldFormat(field.data_type, field.metadata)).id ===
+                        "formula" && (
+                        <FormulaExpressionEditor
+                          className="col-span-full"
+                          value={
+                            formatChanges[field.id] ??
+                            resolveFieldFormat(field.data_type, field.metadata)
+                          }
+                          siblingFields={fields
+                            .filter((f) => f.field_name !== field.field_name)
+                            .map((f) => ({
+                              field_name: f.field_name,
+                              display_name: f.display_name,
+                            }))}
+                          disabled={loading}
+                          onChange={(next) => {
+                            setFormatChanges((prev) => ({
+                              ...prev,
+                              [field.id]: next,
+                            }));
+                            setHasChanges(true);
+                          }}
+                        />
+                      )}
+
+                      {/* What this column ACCEPTS, next to what it stores and
+                          what it shows as — the third question about a column,
+                          in the same row as the other two. */}
+                      <ColumnValidationEditor
+                        className="col-span-2 col-start-2 row-start-4 min-w-0 sm:col-span-2 sm:col-start-2 sm:row-start-3 lg:col-span-1 lg:col-start-5 lg:row-start-1"
+                        dataType={field.data_type}
+                        format={
+                          formatChanges[field.id] ??
+                          resolveFieldFormat(field.data_type, field.metadata)
+                        }
+                        value={
+                          validationChanges[field.id] ??
+                          parseValidationRules(field.validation_rules)
+                        }
+                        disabled={loading}
+                        onChange={(next) => {
+                          setValidationChanges((prev) => ({
+                            ...prev,
+                            [field.id]: next,
+                          }));
+                          setHasChanges(true);
+                        }}
+                      />
+
+                      <div className="col-start-2 row-start-3 flex h-8 items-center gap-3 sm:col-span-2 sm:col-start-4 sm:row-start-2 lg:col-span-1 lg:col-start-6 lg:row-start-1">
                         <div className="flex items-center gap-1.5">
                           <Checkbox
                             id={`required-${field.id}`}
@@ -797,7 +971,7 @@ export default function TableConfigModal({
                         </div>
                       </div>
 
-                      <div className="col-span-2 col-start-3 row-start-3 flex h-8 items-center justify-end sm:col-span-1 sm:col-start-4 sm:row-start-1 lg:col-start-6 lg:row-start-1 lg:justify-start">
+                      <div className="col-span-2 col-start-3 row-start-3 flex h-8 items-center justify-end sm:col-span-1 sm:col-start-4 sm:row-start-1 lg:col-start-7 lg:row-start-1 lg:justify-start">
                         {dataTypeChanges[field.id] && (
                           <Badge
                             variant="outline"
@@ -811,7 +985,7 @@ export default function TableConfigModal({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="col-start-4 row-start-1 h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive sm:col-start-5 lg:col-start-7 lg:row-start-1"
+                        className="col-start-4 row-start-1 h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive sm:col-start-5 lg:col-start-8 lg:row-start-1"
                         onClick={(e) => {
                           e.stopPropagation();
                           void handleDeleteField(field);

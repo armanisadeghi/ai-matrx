@@ -15,7 +15,409 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D338 — A ledgered index rebuild on `workbench.note_folders` was undone by something that left no ledger row (2026-09-18)
+
+`chair_step_2026_09_18_db_guard_findings_non_additive.sql` (ledgered 15:22:24Z) rebuilt `note_folders_organization_created_by_name_unique` as `where deleted_at is null`, and its same-transaction proof asserts the predicate — so it WAS partial at 15:22Z. At ~19:30Z the live index was a full index again (`indpred IS NULL`). No `_schema_migrations` row between the two names it, and nothing in matrx-frontend, aidream, matrx-local or common-docs creates it outside `notes_n01_…` (`CREATE … IF NOT EXISTS`, which cannot replace an existing index). Meaning: some path executes DDL on production without the ledger — exactly what `pnpm db:apply` exists to prevent. Consequences seen: `check:soft-delete-unique` reports green for a shape the database does not have. `chair_step_2026_09_18a_note_folders_org_blind_name_key.sql` rebuilds it again; **if it reverts a second time the actor is still running.** Not investigated further: needs Postgres logs (`query_logs` for `CREATE UNIQUE INDEX note_folders_organization`) from an owner of the hunt.
+
+### D337 — Every launcher in `node_modules/.bin` is rewritten with a path one directory too high, repeatedly (2026-09-18)
+
+Twice today (11:56 and 12:13 local) all 115 shims were regenerated pointing at `$basedir/../../../../../Users/armanisadeghi/code/matrx-frontend/node_modules/…`, which resolves to `/Users/Users/…` — so `pnpm type-check`, `pnpm db:apply`, `pnpm db-types` and every `tsx` script die with `MODULE_NOT_FOUND`. The off-by-one means an install computed the relative path from a directory one level DEEPER than the checkout while writing into this checkout's `node_modules` — the shape of an install run inside a worktree whose `node_modules` is a symlink or hard-link copy of the primary's (see `docs/official/browser-testing.md` § From a private worktree). Repaired in place both times with a `sed` over the shims; the writer is still out there. Workaround that does not depend on the shims: `node node_modules/tsx/dist/cli.mjs <script>` and `node node_modules/typescript/bin/tsc --noEmit -p tsconfig.typecheck.json`.
+
+### D336 — `content_ir.kind_component` advertises three renderers that exist only on the unmerged, CONFLICTING PR 228 branch (2026-09-18)
+
+`pnpm check:shapes:components` names three ACTIVE bundled `kind_component` rows —
+`google_marketing_result`, `google_workspace_result`, `platform_record` — whose component_key
+`resolveBlockDispatch` on `main` does not know. The renderers (`components/mardown-display/blocks/google-kinds/*`,
+`.../result-kinds/PlatformRecordBlock.tsx`) and the `block-dispatch.tsx` registration live on
+`claude/youthful-babbage-erl2x4` (PR 228, "docs: point the Google Workspace feature at the native-Google
+plan"), which is `mergeable: CONFLICTING` as of 2026-09-18 11:16Z. The rows were activated in the one
+shared database by that branch, so `main` serves a registry that names a renderer it does not ship: a
+stream of any of these three kinds on production falls to the generic floor. Closes when PR 228 lands;
+the rows are deliberately NOT deactivated here because that would break the branch the moment it merges.
+Owner: whoever resolves PR 228's conflict (the google-workspace lane).
+
+### D335 — `udt_document_snapshot` declares anonymous read through its public parent, but the parent grants anon nothing — `iam.apply_rls` refuses the table (2026-09-18)
+
+Found while regenerating the two UDT snapshot components for D-component-created-by. The registry row
+for `udt_document_snapshot` carries `component_anon_read_via_public_parent = true`, so the generator
+emits a `pub_read` policy that subqueries `workbench.udt_documents` — and refuses to run because
+`anon` holds no SELECT on that parent: "the policy subquery would 42501 for every anon query. Apply
+the parent's canonical RLS (its pub_read lane grants anon) first." The LIVE `pub_read` on the snapshots
+table has the same shape today, so an anonymous reader of a public UDT document's snapshots already
+gets 42501, not rows. Fix: `iam.apply_rls('workbench','udt_documents','udt_document','entity')` (which
+grants the parent's anon lane), then regenerate `udt_document_snapshots`. Not done in the 2026-09-18
+guard session because regenerating the parent changes a live entity's policy set outside that
+session's scope. The sibling `udt_workbook_snapshots` regenerated cleanly. Owner: the workbench lane.
+
+### D334 — `integration_connection` is classified `private` (derived, never ruled) while its live read policy is owner-OR-ORGANIZATION (2026-09-18)
+
+`users.integration_connections` (and its component `integration_connection_resources`) carry
+`data_class = 'private'` with the reason "Born unclassified and derived by platform.derive_data_class
+… Reclassify deliberately if this table is not what that implies." Their bespoke read policies
+(`*_read_owner_or_org`) admit every member of the row's organization — the `organization` class's
+lane, not `private`'s (§3.1: private has no org-member lane). The 2026-09-18 staff-door migration
+closed the STAFF lane on both (that is what the class demands and what the guard measures) and left
+the owner/org arms verbatim, because whether colleagues may see each other's connected Google /
+Microsoft / GitHub accounts is a product ruling, not a guard's. Two consistent end states: classify
+`organization` (the policy is already that; the staff lane would then be lawful again and could be
+regenerated back), or keep `private` and narrow the policy to the owner. Needs the owner lane's
+ruling; until then the table is in-between. Owner: integrations (users.*).
+
+
+### D333 — Four Media Source Catalog endpoints are published in the contract but were never built, and the frontend called all four (2026-09-18)
+
+**Status:** open (frontend half fixed; the server half is aidream's) · **Priority:** P2 — one of them was a visible, user-reachable control · **Repo:** aidream (`aidream/api/routers/media_catalog.py`) + `common-docs/projects/media-source-catalog/API-CONTRACT.md`
+
+`pnpm sync-types:live` on 2026-09-18 replaced `features/source-library/contract-paths.ts` with the
+real generated contract and showed that four endpoints the client called do not exist on the server
+and never did. Each is marked `implemented: False` in `aidream/tests/test_media_catalog_wire_shapes.py`
+and appears in API-CONTRACT.md §0.5's "NOT working" table, yet §3/§6/§7 publish them as if they work:
+
+| Endpoint | Contract says | The client did |
+|---|---|---|
+| `PATCH /media/libraries/{id}` | §3 published; §0.5 "Not implemented" | `updateLibrary` (no callers) |
+| `DELETE /media/libraries/{id}` | §3 published; §0.5 "Not implemented" | **"Remove this Library" in the Library row menu** — confirm dialog, then a 404 and an error toast, every time |
+| `POST …/classify` | §6 published; §0.5 "no separate endpoint, classification runs inside every sync" | `classifyLibrary` (no callers) |
+| `GET /media/jobs/{id}/stream` | §7 publishes six event types; the wire table says "Progress rides the platform operation stream, not a /media path" | `streamJob` → the job panel's only live update, so every job panel 404'd and then sat frozen on its mount read |
+
+This is the third instance of the class §0.5 itself records (`POST /media/jobs/{id}/cancel` was
+published and called for the feature's whole life with no route serving it). The wire-shape guard
+catches a route with no table entry and a table entry claiming `implemented` with no route — it does
+NOT catch a section of the contract document publishing an endpoint the table marks unimplemented,
+which is what a client lane reads and builds from.
+
+**Frontend half, done in `chore(types): adopt the live API contract…`:** all four callers deleted;
+the Remove control is absent rather than dead; job progress re-reads the durable rows every 2s
+(`features/source-library/hooks/useJob.ts`).
+
+**To act (server lane):** either build the four routes, or mark them in §3/§6/§7 themselves — at the
+endpoint heading, where a client lane reads — as not built, and extend the wire guard's third
+reconciliation to fail when a documented endpoint heading carries no "not built" marker while its
+table entry says `implemented: False`. Job progress in particular is a real capability gap: until a
+stream exists, the frontend re-read is the honest ceiling.
+### D333 — `EntityRef` and `EntityDoorControls` disagree about the peek door, and two peek keys point at nothing (2026-09-17)
+
+**Status:** open · **Priority:** P2 · **Repo:** matrx-frontend
+
+`EntityRef.tsx`'s own header says both door components call `resolveEntityDoors`, "so a registry
+edit lights up both at once and neither can drift". For the PEEK they do not:
+`EntityDoorControls` asks `resolveEntityDoors(...).canPeek`, which is
+`hasPeek(peekKind) || hasRegistryPeek(info)`; `EntityRef` asks only
+`hasPeek(canonicalToken)`. So every token that has NO bespoke peek but does have a
+`titleColumn` — `seo_keyword`, `crm_deal`, `folder`, `working_document`, ~40 of them — gets the
+generic `RegistryPeek` door from one component and nothing from the other, which is the
+component almost every surface actually renders. (Measured with
+`ENTITY_TYPE_METADATA`: `seo_keyword` → `seo.keyword`, `titleColumn: "phrase"`.)
+
+Second half, in the same file: `doors.ts`'s `PEEK_KEY_BY_TOKEN` still maps `app` → `agent_app`
+and `structured_list` → `picklist`, but `PEEK_REGISTRY` was re-keyed to the canonical tokens
+(`app`, `structured_list`) and `agent_app` is not a registered entity token at all. So
+`EntityDoorControls` for an `app` offers "Quick look" (via `hasRegistryPeek`), hands
+`ResourcePeekHost` the kind `agent_app`, finds no component and no entity info, and renders
+NOTHING — a door that opens on nothing, which the doctrine ranks worse than no door.
+
+**Fix:** delete both `PEEK_KEY_BY_TOKEN` entries (the map's own comment says the real fix is
+aligning the keys, and they are aligned now), then make `EntityRef` read `canPeek`/`peekKind`
+from `resolveEntityDoors` like its sibling. **Why not done here (F-40):** flipping `EntityRef`
+turns the peek control on for ~40 tokens on every surface in the app at once — a change whose
+value is per-kind (is `RegistryPeek` a useful answer for a keyword?) and which no test in this
+tree can see; `entity-ref-doors.test.tsx` currently ASSERTS the opposite for `seo_keyword`
+("no route and no peek"). It wants one owner, a browser, and a pass over what the generic peek
+shows per kind.
+
+### D332 — Six files under `coding-sessions/` carry no `kind` and no session id, so no session has ever listed them (2026-09-17)
+
+**Status:** open · **Priority:** P3 (six rows, and they are not a regression) · **Repo:** DB rows + whichever writer produced them
+
+Found by the new unstamped-row detector in `pnpm check:artifact-read-latency` while CS-30 was
+checking its own backfill. `select … from files.files where file_path like 'coding-sessions/%'
+and deleted_at is null` returns 50 rows with no `artifact_kind`: 44 are the deploy-gap rows CS-30
+swept (uploaded between the backfill and the upload door's deploy), and **6, all created
+2026-09-14 14:46:50-14:46:57Z, carry no `metadata.kind` AND no `metadata.cli_session_id` at all.**
+They sit under the artifact path prefix, so some coding-session writer produced them, but nothing
+attributes them to a session — the panel could not list them under the old JSONB filter either, so
+this is a pre-existing gap and not something the column change caused.
+
+**To act:** identify the writer that produced those six (the path carries the provider and the
+session id: `coding-sessions/<provider>/<session id>/<relative path>`, so the session id is
+recoverable from `file_path` even though the metadata lost it), then either backfill their identity
+from the path or explain why the row exists without it. Related: CS-20/CS-21 artifact truth
+(`common-docs/projects/coding-agent-bridge/REGISTER.md`).
+
+### D331 — Every client read of `files.files` pays 2.5-6 s of RLS predicate SETUP the moment one examined row is not the reader's own (2026-09-17)
+
+**Status:** open · **Priority:** P1 — it is the whole remaining latency of the coding-session Files tab, and it is not specific to that read · **Repo:** DB (the access system) · **Owner:** the access system's, not a feature lane's
+
+**What.** `files.files`'s `std_select` policy is a ~180-subplan OR chain whose expensive branches
+build several `iam.accessible_entity_ids(...)`-shaped hashed sets. They are built LAZILY — on the
+first row that reaches those branches — so a read whose rows are all the reader's own
+short-circuits on the cheap `created_by = uid` branch and is free, while a read that examines ONE
+foreign row pays the whole setup, once, whatever the row count.
+
+**Measured on production (`db.matrxserver.com`), role `authenticated`, `EXPLAIN (ANALYZE, BUFFERS)`
+on the coding-session artifacts read, all with an Index Cond on the new
+`files_artifact_provider_session_idx` so the plan is not the variable:**
+
+| candidate rows | reader owns them? | time | buffers |
+|---|---|---|---|
+| 0 | n/a | **0.9 ms** | 75 |
+| 2 | yes | **0.1 ms** | — |
+| 377 (188 own, 189 foreign) | mixed | **5,999 ms** | 670,458 hit + 31,263 read |
+| 6,614 (338 own, 6,276 foreign) | mixed | **4,739 ms** warm | 672,911 hit |
+| 377, all foreign, as an ORDINARY user (`test@test.com`) | no | **2,464 ms** | 345,228 |
+
+Note rows 3 and 4: 377 candidates cost the same as 6,614. The cost is the SETUP, not the rows,
+and it is not an admin-only phenomenon. Inside the plan, the expensive nodes are
+`Unique → Merge Append → ProjectSet` over ~29,697 ids (1,990-3,086 ms) plus three `Nested Loop`s
+of 380-780 ms each.
+
+**Consequence.** Through PostgREST against role `authenticated`'s 8 s `statement_timeout` this is
+4.8-5.3 s for one session (20/20 return 200 but with no headroom), and an exact count doubles it:
+`Prefer: count=exact` on the same request returned **0 ok / 20 HTTP 500, 8,119 ms min**, because
+PostgREST computes the count as its own statement and pays the predicate twice. That is why
+`features/ai-work/conversations/artifacts/service.ts` proves completeness with a short page
+instead of `readAllRows`. Guard: `pnpm check:artifact-read-latency` stays RED on its 4 s headroom
+line for a session holding another account's artifacts (it PASSES at 326-618 ms for a 1,373-row
+session the reader owns).
+
+**The fix is in `iam.apply_rls`'s generated predicate, not in any reader** — cheapen or reorder
+those accessible-id sets (CS-27 named this option (d): "make `iam.apply_rls`'s generated predicate
+cheap: this would fix every unindexed read on this table, and belongs to the access system's
+owner"). Do NOT "fix" it in a feature read by adding `created_by = <me>`: that would hide
+artifacts legitimately shared with the reader, which is a screen that lies.
+
+
+### D328 — `str(ctx.organization_id or …)` turns a missing org into the literal `"None"` at 13 aidream call sites (2026-09-17)
+
+**Status:** open · **Priority:** P3 (latent — near-unreachable today) · **Repo:** aidream (filed here because it was found during this repo's cold-walk-8 round; aidream should take it as an `AD<n>` remainder)
+
+Every distillation lane calls `claim_sources(organization_id=str(ctx.organization_id or rulebook.organization_id))`.
+When both are `None`, `str()` produces the four-character string `"None"`, which PASSES
+`raw_material.keep`'s truthy guard (`aidream/services/distillation/raw_material.py` ~L236-241) and
+then fails on the uuid column — inside a bare `except Exception` that swallows it. The lane reports
+success and the Source is silently never kept.
+
+The 13 sites, all `aidream/aidream/services/distillation/`: `ingest.py:582`, `chat_import.py:347`,
+`sort_ingest.py:917`, `markup_ingest.py:359`, `timeline_ingest.py:438`, `teach_back.py:702`,
+`probe.py:389`, `triad_ingest.py:564`, `file_ingest.py:146`, `prediction_ingest.py:472`,
+`drip_ingest.py:325`, `meeting_ingest.py:681`, `inbox_ingest.py:961`. The correct shape already
+exists one file over — `inbox_ingest.py:623` uses `... or "") or None`.
+
+**Why it is only P3:** `rulebook.organization_id` is NOT NULL, so the `None`/`None` path is
+near-unreachable in practice. It was investigated as the cause of zero `masterwork_source` rows on
+2026-09-17 and ruled out — the likelier cause there was that `raw_material.py` was not yet live.
+
+**Fix:** the `or "") or None` shape at all 13, plus a guard that fails on a stringified `None`
+reaching `keep`. Not done in this round only because a concurrent agent owned `*_ingest.py`
+(the `material=` raw-material capture) and the brief forbade fighting its edits.
+
+### D329 — `policy-rule-surface.test.tsx` fails on an incomplete `next/navigation` mock (2026-09-17)
+
+**Status:** open · **Priority:** P3
+
+Both tests in `features/masterwork/__tests__/policy-rule-surface.test.tsx` fail with
+`TypeError: (0 , navigation_1.useParams) is not a function`. `RulePassageLink`
+(`features/masterwork/kept-sources/…`, ~L30) calls `useParams()`, and this test's `next/navigation`
+mock does not provide it. Pre-existing and unrelated to the cold-walk-8 round — confirmed by cause,
+not by assumption (the test imports nothing that round touched). **Fix:** add `useParams` to that
+test's navigation mock, returning the rulebook id the card expects.
+
+
+### D331 — the surface-manifest registry imports a module that does not exist (2026-09-17)
+
+**Status:** open · **Priority:** P2
+
+`features/surfaces/manifests/registry.ts:141` does
+`import { barcodePreviewManifest } from "./barcode-preview.manifest";` and that
+file exists in no commit on any branch (`git log --all -- …barcode-preview.manifest*`
+is empty; the import is already committed, so it is not another lane's dirty
+tree). Every module that transitively reaches the manifest registry therefore
+fails to resolve — under Jest it is a hard suite failure, and it reaches far:
+`components/agent-copy/CopyButtons` and `features/surfaces/runtime/surface-writeback`
+both pull it, so the Gmail review card and `AssistCard` do, so
+`features/approvals/registry.ts` did, twice over. Found by lane F-6 while testing
+the approval kinds (worked around there with one virtual Jest mock, named in the
+test's header — the break itself is untouched).
+
+Fix: whoever owns the barcode-preview surface either lands the manifest file or
+removes the import and its registry entry. It is NOT safe to delete on sight —
+an unreferenced-looking manifest is unfinished work, not dead work
+(`../common-docs/policies/unfinished-work-alarm.md`), and the import's presence
+says someone meant to write it.
+
+### D330 — `AttachableAvailability` no longer extends the generated MCP availability shape (2026-09-17)
+
+**Status:** open · **Priority:** P3
+
+`features/connectors/attachable-resources.ts:68` fails the type-check:
+`Interface 'AttachableAvailability' incorrectly extends` the generated
+availability shape it widens (`McpAvailability` in
+`features/connectors/connection-state.ts`, aliased from
+`types/python-generated/api-types.ts`). Found while type-checking lane F-7's own
+files — this one is UNRELATED to that work and the file is untouched by it. It
+did not report on a run earlier in the same session, so the most likely cause is
+the generated-contract sync in `00d99946` moving the server shape underneath the
+hand-widened interface.
+
+**Fix:** re-read the generated `attachable` member and make
+`AttachableAvailability` conform to it (the generated type is the truth — never
+widen it back). Repro: `npx tsc -p` a config including
+`features/connectors/**/*` , or `pnpm type-check` when it can be run without
+OOM.
+
+### D327 — Canonical agent picker can offer a stale identity and create an invisible surface binding (2026-09-17)
+
+**Status:** open · **Priority:** P2
+
+**Analyzed 2026-09-17 — verified live and in the write path:** the production
+`AgentListInlinePicker` used by
+`features/surfaces/components/bind/SurfaceAgentBindPanel.tsx` listed **Quick Test Agent 2**
+(`92c37a37-7630-4517-b2a2-b6f1d2427208`) under Mine on
+`/education/flashcards/397e8cbb-d6fc-49cd-8864-542c2f910601`. Selecting it and saving a User/Me
+binding produced `platform.associations.id = 336d5eb9-cea7-467f-9596-c67bc5f59cfa`, role
+`binding:u:87a6e699-3622-4869-8843-d0867456c0dd`, with an empty `surface_binding` payload. The UI
+closed as though the save succeeded, but the binding was invisible in the reopened Agents menu
+because `agent.menu_surface` inner-joins `agent.card`; a direct production read found no
+`agent.card` row for that selected ID. Card absence alone does **not** prove the picker identity is
+invalid: the canonical picker package may intentionally source another agent model, so that source
+model and its lifecycle must be investigated before choosing the repair.
+
+**Cleanup proof:** the exact association above was deleted in a guarded transaction, and the
+surface association census returned to zero after the independent Badass Agent bind probe was also
+cleaned up. **Fix shape:** trace which Redux/package source supplied the stale picker row; then make
+selection and binding agree on one live agent identity contract, reject an unresolvable source ID
+before `assoc_add`, and pin the stale/deleted-agent case so no successful-looking invisible binding
+can be created.
+
+### D324 — EVERY release is blocked: `@ai-matrx/associations` is installed twice, and the remedy needs an install the shared preview refuses (2026-09-15)
+
+**Live release blocker, not mine, and it blocks the `Matrx frontend release watch` automation too** —
+`./ship.sh` fails at its first gate for anyone, on any change.
+
+```
+@ai-matrx install-graph check failed:
+  - DUPLICATE: @ai-matrx/associations is installed at 2 versions in one graph —
+    0.9.14 ← a nested install copy with no recorded requirer
+    0.9.16 ← . (this repo), @ai-matrx/media@0.5.11
+```
+
+Reproduced 2026-09-15 08:4x PT: `pnpm check:matrx-packages` red; `./ship.sh "…" -- <paths>` stops at
+`MATRX PACKAGE VERSION DRIFT`. The 18 declared packages are each at npm latest — the failure is the
+install GRAPH, one nested `0.9.14` copy.
+
+The documented remedy (`pnpm sync:matrx-packages` → `pnpm update -r "@ai-matrx/*" --latest`) is
+**refused by the install-gate** while the shared preview on port 3001 is running (pid 48897, this
+checkout): relinking `node_modules` under a compiling Turbopack server kills it and evicts every
+agent's session. So the fix needs whoever owns the preview to stop it, or a lockfile-only pass.
+
+Per the gate's own message the root cause is upstream: if `@ai-matrx/media@0.5.11` holds
+`@ai-matrx/associations` at `0.9.14` through its own pinned spec, **media must be republished** so
+its sibling spec resolves to `0.9.16` — otherwise the duplicate returns on the next clean install.
+
+Owner: whoever owns `@ai-matrx/media` (`aidream/apps/shared/media`). Until then no release-prefixed
+commit can be produced by `ship.sh`.
+
+### D323 — aidream's `structured_output_contract_satisfied` message marker lands on ZERO live rows (2026-09-15)
+
+**aidream-side defect, filed here because the frontend is the consumer that needed it.** While
+building the schema-bound answer renderer, the only DURABLE per-message signal for "this
+assistant turn is the run's structured output" turned out to be declared but never observed.
+
+- Declared: `STRUCTURED_OUTPUT_SATISFIED_KEY` in `aidream/packages/matrx-ai/matrx_ai/config/response_format.py`
+  (constant ~L16), written into `message.metadata` (~L285-292) and invoked from
+  `matrx_ai/orchestrator/executor.py` (~L2042-2047) *before* `persist_completed_request`.
+- Observed live, `brsgrqvjdzwihsvnfqkf`, 2026-09-15:
+  `select count(*) filter (where metadata ? 'structured_output_contract_satisfied'), count(*) from chat.message where role='assistant' and created_at > now() - interval '7 days'`
+  → **0 of 9,859**. Assistant `metadata` holds only `{finish_reason, provider_iteration}`; the
+  text part's own `metadata` is `{}`.
+- Consequence: the client cannot ask the message whether it is structured output. The renderer
+  therefore reads the RUN'S CONTRACT instead (the conversation-bound agent's `output_schema`,
+  via `features/mandates/output-contract.ts`) and matches the payload's keys against it — honest
+  and durable, but it cannot tell two different agents apart inside one conversation, and it
+  cannot see the kind slug (`kind` / `kind_checked` ride the ephemeral `structured_output`
+  stream event only).
+- Fix belongs in aidream: either make the marker actually land (it is presumably overwritten by a
+  later metadata write on the same row, or the branch's preconditions never hold), or promote the
+  `structured_output` event's `schema_name` / `kind` / `kind_checked` onto the persisted message.
+  Then this repo's `parseStructuredAgentAnswer` can gate on the marker instead of on key coverage.
+
+### D322 — SEO topical map: 14 `seo.*` DEFINER functions have no door and no grant, and a committed client module already calls them (2026-09-14)
+
+**Not live breakage — an in-flight build with a missing last step.** Filed so the door
+work is not forgotten between the two halves of the feature, which landed hours apart in
+two repos.
+
+State as of 2026-09-14, measured live and in both checkouts:
+
+- The 14 functions are created by **aidream** `packages/matrx-seo/matrx_seo/migrations/20260914161833_seo_topical_map_02_functions.sql`
+  (plus siblings `..._01a_tables` … `..._06_marker_key`). **Those files were still
+  untracked/uncommitted in the aidream checkout when this was filed** — an active lane's
+  work in progress. Do not edit them; coordinate.
+- That batch contains **no `platform.client_callable_door` INSERT and no `GRANT EXECUTE`**
+  anywhere. The `definer_client_grant_revoked` rows are therefore the guard closing the
+  *implicit* `PUBLIC` EXECUTE every new function is born with — not a deliberate grant
+  being taken back.
+- matrx-frontend `features/marketing/seo/topical-map/data.ts` (commit `7595672c3d`, on
+  `origin/main`) builds a browser `supabase.schema("seo")` client and `.rpc()`s all 14.
+- **Nothing in `app/` routes to `topical-map` yet**, so no user-facing surface is failing
+  today. This is a trap armed for whoever wires the first page.
+
+The 14 (`seo` schema): `create_map_facet_values`, `map_facet_value_ref`, `map_graph`,
+`map_outline`, `map_topic_facets`, `merge_map_topics`, `move_map_topic`, `set_map_topic_facet`,
+`set_page_map_facet`, `set_page_map_topics`, `set_site_map`, `site_map_id`, `split_map_topic`,
+`upsert_map_topics`.
+
+**Fix — belongs to the aidream matrx-seo lane, not to a frontend session:** add the 14
+`platform.client_callable_door` rows (`anonymous_callers = false`, real `reason`,
+`identity_args` matching the live signature) and the matching
+`GRANT EXECUTE ... TO authenticated`, door row BEFORE the grant in the same migration, or
+the guard revokes again (db-rules §6d-4). Verify with
+`has_function_privilege('authenticated', …, 'EXECUTE')` before wiring a page.
+
+Contrast with **D319** (32 HR doors): that one IS live breakage on shipped surfaces. This
+one is the same mechanism caught before it shipped.
+
+Guard rows acked 2026-09-14 citing this entry.
+
+### D321 — Client paths that call a function the caller cannot execute: 16 pre-existing hits outside DD-169 (2026-09-14)
+
+Found by the DD-169 reach census (`pnpm check:impl-doors`, gate **D18**). A call inside a
+SECURITY INVOKER body, an RLS policy, a view or a column default is checked against the
+CALLER's EXECUTE, so a closed function there is a 42501 in a user path. The DD-169 hits were
+fixed (`migrations/dd169_closed_helpers_reached_by_client_paths.sql`); these 16 were not
+DD-169 revokes and are held by name in `scripts/impl-doors/closed-helper-reach-baseline.json`
+(each with its evidence). Proven live as `authenticated` in rolled-back transactions:
+
+- **LIVE 42501:** `INSERT` into `web.site` / `web.brand` fails on the column default
+  `platform.entity_default_visibility()`. No migration file revokes it. Whether any client
+  inserts those rows directly is unproven — check before assuming an outage.
+- **LIVE 42501:** `content_ir.check_kind_admission` → `content_ir.resolve_kind_version`
+  (revoked by `content_ir_resolve_kind_version_definer.sql`); `hr.punch_edit_notify_debt` →
+  `hr._notify_channels` (revoked by hr_l3_114/116). Client callers not yet censused.
+- **Unreachable today:** the `hr.leave_policy` / `hr.leave_enrollment` triggers — `hr_write_forbidden`
+  refuses the client write first.
+- **Unproven:** `web.screenshot` / `web.snapshot` validators → `web.assert_crawl_artifact_file`
+  (the probe stopped at `requires site_id`).
+- **Question, not a reopen:** four `iam.*` invoker tools (`verify_canonical`, `_apply_rls_unchecked`,
+  `entity_read_expr`, `org_readable`) → `iam.class_lanes`: why does `authenticated` hold EXECUTE
+  on the tools at all?
+- `platform.retention_policy` default → `platform.retention_settling_interval` (a DD-169 revoke):
+  no client write path; kept closed.
+
+Fix per the D18 remedy (definer trigger, auth.uid()-bound door, or a declared door) and delete
+the baseline entry in the same commit — the gate fails on a stale entry.
+
 ### D320 — `workbench.note_folders` unique indexes count removed rows: delete a folder, you can never reuse its name (2026-09-13)
+
+**Update 2026-09-18 — PARTLY RESOLVED, one chair step away.** The `(id, organization_id)` index is not
+a defect and never was: an index that carries the row's own `id` cannot be held by a removed row, and
+`scripts/check-soft-delete-unique.ts` now says so (identity exclusion, `--self-test`). The org-scoped
+NAME index becomes partial on `deleted_at is null` in
+`migrations/chair_step_2026_09_18_db_guard_findings_non_additive.sql`, which needs the owner at a
+terminal (JUDGMENT §5) because a DROP INDEX is non-additive. The pre-existing `(created_by, name)`
+index stays exact and frozen in the baseline: the client still HARD-deletes folder rows
+(scripts/client-hard-delete-allowlist.json, DD-119) and its one upsert infers that index, so the
+workbench lane owns the switch to soft delete + a partial key together.
 
 **Latent, not yet biting — say so honestly.** `workbench.note_folders` carries
 `deleted_at`, and THREE of its unique indexes have no `WHERE deleted_at IS NULL`:
@@ -623,27 +1025,37 @@ entries stay open. The error was sizing the class by *the guard's unacked backlo
 instead of by the live database — the backlog is a sample of recent DDL, never the
 population.
 
-**Not all 240 are defects, and this entry does not claim they are.** D262 already
-established the carve-out: a table whose `organization_id` IS its row identity
-(`iam.system_orgs`, `iam.org_industries`, `iam.organization_preferences`,
-`iam.api_keys`) is correctly un-backstopped. The finding is that **the ratio is
-unmeasured** — 240 tables match the predicate the guard treats as a defect, no one
-has separated the correct-by-design ones from the real gaps, and the guard cannot
-ever surface them because it only watches new DDL.
+**None of the 240 is a defect for lacking a backstop.** Under
+`../common-docs/projects/no-db-assigned-org/PLAN.md` (owner ruling: the database refuses an
+absent org and never chooses one; "a trigger or column default filling the org" and "a release
+guard treating an automatic org backstop as healthy" are defects), NOT NULL with no trigger and
+no default is the **target shape**. D262's org-keyed identity carve-out (`iam.system_orgs`,
+`iam.org_industries`, `iam.organization_preferences`, `iam.api_keys`) needs no writer change at
+all. What is unmeasured is **writer coverage** — whether every writer to the rest sends an
+explicit `organization_id` — and a guard that only tails new DDL cannot measure it.
 
-**Fix, in this order:**
+Re-run live 2026-09-14 (same trigger predicate over non-partition base/partitioned tables):
+**414** backstopped · **8** column-default only · **313** neither · **735** total.
 
-1. Classify the 240 — org-keyed identity (correct), inherits from a parent (wants
-   `inherit_org_from_parent`), or standalone org-scoped (wants `_stamp_org_default`).
-   The 131 `hr.*` tables are one decision, not 131, since they share a write path.
-2. Attach the backstop where it is wanted, per class, largest schema first.
-3. **Give the guard a census mode** so this cannot recur: a check that runs the
-   predicate against the whole database and compares against a declared exemption
-   list, rather than only tailing new DDL. Without step 3 the next steward run is
-   blind again, and the same undercount happens.
+**The fix (corrected 2026-09-14 to the PLAN, as D303 was; the earlier "classify, then attach
+`inherit_org_from_parent` / `_stamp_org_default` where wanted" plan contradicted it and must
+not be executed):**
 
-Guard rows acked 2026-09-09 with `p_reason` citing this entry; they re-fire on the
-next DDL touch until the triggers exist.
+1. **Never attach a backstop to a no-backstop table.** The open work per table is writer proof:
+   every insert/upsert/RPC carries an explicit org, and a child copies its parent's org
+   application-side before constructing the write (PLAN rules 1, 3 and 4). Direct-Supabase
+   writers are PLAN **FE-T05**, org-writing database functions **DB-T04**, aidream services
+   **AD-T02**. The 131 `hr.*` tables share a write path — one proof, not 131.
+2. **The backstopped tables are the debt.** Fix each family's writers, then detach per
+   **DB-T06** (`_stamp_org_default`) and **DB-T07** (parent/specialized assigners); the
+   column-default tables are **DB-T05**.
+3. **Census mode, pointed the right way:** the guard censuses the whole database for
+   assignment growth, not for missing backstops — **DB-T01** (inventory), **DB-T02** (invert
+   `platform._ddl_guard`, remove `org_not_null_no_backstop`), **DB-T03** (release/ORM gates
+   become `no_org_assignment`).
+
+Guard rows acked 2026-09-09 with `p_reason` citing this entry; they re-fire on the next DDL
+touch until DB-T02 removes the rule. Ack them as correct-by-law; never answer one with a trigger.
 
 ### D299 — ESLint is broken repo-wide: `eslint-plugin-react` crashes on ESLint 10
 
@@ -1282,7 +1694,7 @@ the deploy train once the file is committed) applies it, then re-checks `pnpm ch
 browser RLS plan — a routing change, not the fix; the direct PostgREST read stays trapped until the
 migration lands. **Live check 2026-09-12 05:50 UTC on the exact failing route:** the page loads, no `useEnsureCloudFile` error, and file metadata comes through the server boundary — but `features/pdf-extractor/studio/hooks/usePdfStudioDocs.ts:173` still does ONE direct PostgREST read of `files.files` (40 ids, `id, deleted_at`), 145 ms at idle as the admin, i.e. still on the trapped plan; only the migration closes it.
 
-### D262 — seven `organization_id NOT NULL` tables have NO org backstop: an org-forgetting write returns 500 (2026-08-26)
+### D262 — seven `organization_id NOT NULL` tables with no org backstop are the correct shape; their writers must be proven to send an explicit org (2026-08-26)
 
 Found by the docs-steward's daily `platform.ddl_guard_log` read (skill step 7c), triaged live
 against the database, not against docs.
@@ -1303,19 +1715,30 @@ All seven have `organization_id` **NOT NULL, no column default, and no `_stamp_o
 
 **The scope guards are not backstops.** Each of those five `validate_*` functions was read live
 (`pg_proc.prosrc`): none assigns `NEW.organization_id`. They REJECT a mismatched scope; they never
-supply a missing one. So a caller that omits `organization_id` still hits the NOT NULL and the
-write 500s — exactly the failure `org_not_null_no_backstop` exists to prevent.
+supply a missing one — which is correct. A caller that omits `organization_id` hits the NOT NULL
+and is refused: the outcome `../common-docs/projects/no-db-assigned-org/PLAN.md` requires (owner
+ruling: the database never chooses an org; a trigger filling it is a defect). The defect, where one
+exists, is that caller.
 
 This is NOT the D241 false positive (fixed 2026-08-21, OID comparison) and NOT the `iam` org-keyed
-residue D241 names — those four are correctly un-backstopped because `organization_id` is their row
-identity. These seven inherit their org from a parent (site, brand, mandate) and should stamp it.
+residue D241 names — those four need no writer change because `organization_id` is their row
+identity. These seven take their org from a parent (site, brand, mandate).
 
-**Fix:** attach `inherit_org_from_parent` (or `_stamp_org_default` where there is no parent) in a
-migration per table, then re-run `pnpm check:ddl-guard-log`. The `seo.*`/`web.*` offering tables
-were created 2026-08-25/26 and are in-flight — fix them in the branch that is building them.
+**The fix (corrected 2026-09-14 to the PLAN, as D303 was; the earlier "attach
+`inherit_org_from_parent` / `_stamp_org_default`" recommendation contradicted it and must not be
+executed):**
 
-Guard rows acked 2026-08-26 with `p_reason` citing this entry; they will re-fire on the next DDL
-touch until the triggers exist.
+1. **Never attach a backstop to these seven.** Re-verified live 2026-09-14: all seven still carry no
+   assignment trigger and no column default — the target shape.
+2. **Prove the writers.** Every insert/upsert/RPC on each table puts an explicit `organization_id`
+   in its payload, copying the parent site's/brand's/mandate's org application-side before the write
+   (PLAN rules 1 and 4). Direct-Supabase writers are PLAN **FE-T05**, org-writing database functions
+   **DB-T04**, aidream services **AD-T02**.
+3. **The guard rule is the defect:** `org_not_null_no_backstop` rewards a backstop — **DB-T02**
+   inverts `platform._ddl_guard`; **DB-T03** inverts the release/ORM gates.
+
+Guard rows acked 2026-08-26 with `p_reason` citing this entry; they re-fire on the next DDL touch
+until DB-T02 removes the rule. Ack them as correct-by-law; never answer one with a trigger.
 
 ### D263 — nine kill-list columns nobody is tracking: `is_public` x5, `is_deleted` x3, `org_id` x1 (2026-08-26)
 
@@ -3267,6 +3690,13 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D330** — an expression index on an RLS table is unusable by every client read (`->>` is not LEAKPROOF, so the qual can never be an index condition). FIXED 2026-09-17 by CS-30: the identity moved into real columns `files.files.artifact_kind` / `provider_session_id` (`migrations/20260917_files_artifact_identity_columns.sql` + `…_backfill_and_index.sql` + `…_column_grants.sql`, all ledgered), the server's upload door stamps them (`aidream packages/matrx-files/matrx_files/artifact_identity.py`), the panel's read filters them, and the useless index was dropped through the chair step `migrations/inverse/files_coding_session_artifact_index_drop.sql`. `pnpm check:artifact-read-latency` now refuses a returning `metadata->>` FILTER on that read by name. The two genuine siblings (`idx_cld_files_derived_from`, `idx_cld_files_variant_key`) stay: server-side readers bypass RLS. Remainder is D331, a different cause.
+- **D328 — frontend release blocked by additive entity vocabulary and duplicate lockfile mappings.** Fixed in `eae8f85f09`, `17272e64a6`, and `7e35664b69`; package `@ai-matrx/associations@0.9.22` adopted, frozen install and live gate passed, and production `ed6c73ae5fc8` served the independently verified podcast repair on 2026-09-17.
+
+- **D327 — the server read the merged payload where it meant the Expert's words, and the orchestrator's own notices were indistinguishable from her turns.** Both halves closed in aidream `23fa31d6b`. Reader: `masterwork_corpus/corpus.py` now selects `role` + `user_content` and projects through the platform's ONE rule (`matrx_ai.config.human_authored_text`), so the Scout's seeded cue is neither quoted nor counted, and a row with nothing human in it is not a turn. Writer: the four orchestrator gates build their injected turns through the new `host_authored_user_turn()` (empty `user_content` + `authored_by: host`), never NULL; `dynamic_drain` stamps both of its halves. Siblings moved onto the same projection: the chat-import distiller, the coding-session title, `vision_interview.transcript_message_text`. Guards proven failing then passing: `packages/matrx-ai/tests/test_host_authored_user_turns.py` (5) and `aidream/services/masterwork_corpus/tests/test_corpus_reads_the_humans_words.py` (4). Backfill after a read-only census — 89 provable historical gate notices stamped, 8 ambiguous rows deliberately untouched (`db/migrations/ai_085_host_authored_user_turns_are_stamped.sql`, applied and verified live). **Open remainder, filed not fixed:** matrx-rag's `sources.py` indexes `content` for every role, so RAG-retrieved text can still carry an agent-seeded template as the human's turn — matrx-rag sits below matrx-ai and cannot import the projection, so closing it needs its own injected seam. 2026-09-16.
+
+- **D325 — `live-ingest-lane.test.tsx`'s 7 red rejoin cases: every assertion was RIGHT, the FAKE was lying.** The suite's `useMasterworkRun` mock returned a hand-written subset of `MasterworkRunHandle` with no `runId` — a state the real hook cannot produce on a rejoin (`rejoinDurableRun` writes `runId: pointer.runId` in the same `setState` that sets `status: "rejoining"`). When `6d424b231d` made the close honest, the reopen latch started asking `shouldReopenForRun(run.runId, dismissed)`, which correctly refuses to reopen a run it cannot identify — so the seven cases failed against the fake's impossible state, not the product. **No product code was wrong and no assertion was rewritten.** The fake is now typed `MasterworkRunHandle<IngestSummary>`, so a forgotten field is a type error instead of a twelve-hour read (it immediately caught a second lie: the settled result was missing `alreadyDistilled`). Three guards added for the behaviour nothing asserted, each proven failing-then-passing against a mutation: a close during a live rejoined run really closes and survives a reconnect flicker; Stop is drawn only over a run in flight and reaches the real handle; and `useDurableRun.cancel.test.tsx` proves a stopped run clears its pointer so a reload rejoins nothing. Live on the preview as admin@admin.com: started a source ingest on a disposable Rulebook, reloaded mid-run, the dialog reopened itself on the right lane showing "Source split into 1 chunk(s). Distilling rules from each…" / "Picking this back up — it kept working while you were away." with a live Stop. 2026-09-15.
+
 - **D311 — the associations boot probe INVOKED 26 RPCs (14 of them writes) on every page load; 25 answered 400.** `AssociationsProvider`'s default `probeSchema` runs the package's `assertDemandedSchema`, which asks whether each demanded function exists by CALLING it with sentinel args. Its "dev only" gate was `process.env.NODE_ENV`, which esbuild bakes to `true` under `platform:"browser"`, so it ran in production too. Switched off at the host, then closed at the class: **@ai-matrx/associations 0.9.0 deletes the probe and the `probeSchema` knob** — a write RPC is never invoked to ask whether it exists, and PGRST202 at real call sites already screams `demanded_schema_violation` with the same remedy. Guard `features/scopes/host/__tests__/noBootRpcProbe.test.tsx` plus the package's own pair; live 25→0 on `/administration/billing/spend`, 0 on `/administration`. 2026-09-12.
 
 - **D314 — THE MERGE-ONLY REMOVAL CLASS: a reset that could never reset.** `setContextEntries` upserts every incoming key and deletes none, so `setContextEntries({ conversationId, entries: [] })` — what `clearContext()` and `resetConversation()` in `features/agent-apps/hooks/useAgentApp.ts` both used — cleared nothing: resetting a conversation in an agent app left the previous turn's context values in place and they leaked into the next conversation. Census of every `*.slice.ts` in `features/agents/redux/execution-system/` found ONE sibling live: `setOverrides` is merge-only too, and `ColumnOverridesEditor.tsx`'s `clearKey` "removed" an override by re-sending the map without the key — the per-column Clear chip on `/agents/battle/settings` was a silent no-op. **FIXED 2026-09-12**: the two agent-app call sites dispatch `clearInstanceContext(conversationId)`; `clearKey` dispatches `resetOverride({ conversationId, key })`. Merge semantics are untouched (≈30 call sites depend on them) and both reducers now carry a MERGE-ONLY contract note naming the real removal actions. Guard: `features/agents/redux/execution-system/instance-context/__tests__/context-reset-is-real.test.ts` — real reducers in a real store pin the merge/clear semantics, plus a repo-wide scan that fails on any caller passing an empty payload to a merge-only action or deleting a key from a copied map and re-sending it. Proven failing-then-passing: 2 of 8 red against the pre-fix files, naming `useAgentApp.ts:600/686` and `ColumnOverridesEditor.tsx:77`; 8/8 green after. Live-verified on the running app as admin@admin.com at `/agents/battle/settings`: set Max output tokens 1234 (header chip `max=1234 (1)`), clicked Clear override, field reverted to the agent default and the chip returned to `Agent defaults`. 2026-09-12.
@@ -3981,3 +4411,248 @@ user-scoped, not platform-admin. Whether a user-scoped, RLS-by-user route may ru
 ambient organization is a genuinely different question from the admin one, and the answer binds
 the tenancy model, so it was not decided by either agent. Decides: whoever owns matrx-connect
 auth admission.
+
+### D313 — The content plan's AI runs view lists nothing while the site's runs exist (2026-09-14)
+
+Found by independent live verification of the site brief on datadestruction.com
+(web.site `38eff4c9-b021-451a-b995-7d9b3d17db5e`). A "Draft brief" run completed
+(`chat.agent_run 641fee79-682c-4b04-81ad-1c1388b13344`, kind `content_plan.brief`,
+edged `web_site → agent_run` in `platform.associations 29d7ef6d…`, role `ai_run`,
+same org), yet `…/content/plan/datadestruction-com/ai-runs` says "No AI runs yet."
+Silent empty, no error. Reader chain: aidream `services/content_plan/ai_runs.py:213`
+→ `agent_runs/__init__.py:147` → `matrx-orm/associations.py:515-519`, whose
+`_load_gated` drops rows it deems unreachable WITHOUT an `actor_id` being passed —
+so every run is dropped and the list lies. Not fixed here (it is the ORM's
+association gate, shared by every association read; the fix must pass the actor
+and be proven on this view). Class: a gated read that receives no actor must
+FAIL loudly, never return an empty list that reads as "nothing exists".
+
+
+### D326 — Every display-override setter on `instanceUIState` silently drops the write (2026-09-16) — FIXED 2026-09-16
+
+Found while fixing the Masterwork interview's generic hero (jobs-bar-2026-09-16, lanes-a item 24).
+`setDisplayNameOverride`, `setDisplayDescriptionOverride` and `setDisplayIconNameOverride` in
+[`features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts`](./features/agents/redux/execution-system/instance-ui-state/instance-ui-state.slice.ts)
+are all `const entry = state.byConversationId[id]; if (entry) { … }`. A launcher hands a surface
+its `conversationId` BEFORE `createInstanceFull` writes that row, which is exactly when a
+mount-once effect fires — so the override is discarded, nothing is logged, and the surface keeps
+the generic "Ready to run" hero while its code reads as though it set one. Verified live on
+2026-09-16: the dispatch ran and the screen did not change; gating the same dispatch on the row's
+existence made it land.
+
+**This is not one surface.** `features/masterwork/conduct/ConductorPanel.tsx` sets the identical
+three overrides on mount for the same reason and has the same race — so the Conductor lane's own
+"who is in the room" fix is, as written, a no-op whenever the row lands late. Fixed in
+`ScoutInterviewPanel.tsx` by gating on the row (`instanceReady`); NOT fixed at the slice, because
+every setter in that file shares the pattern and creating a partial entry from one of them would
+invent an instance with none of its required fields. Class: **a reducer that cannot apply a write
+must not swallow it** — either queue it for the instance that is coming, or raise.
+
+**FIXED at the slice, 2026-09-16.** All 44 setters now go through ONE write path,
+`stageOrApply`: when the entry is missing it creates it at the slice's own documented defaults
+(the canonical factory is `initInstanceUIState` itself, so a provisional entry is COMPLETE, never
+partial — which is what blocked this fix before), applies the write, logs a `console.error`
+naming the action, and records the written fields in a new `pendingByConversationId` ledger.
+`initInstanceUIState` — which replaces the whole entry — then REPLAYS those fields for every
+field the creation did not state itself, and clears the ledger; `destroyInstance` clears it too,
+so a staged write is never replayed onto a later instance with the same id. Toggles and nested
+merges read through `readField`, which sees the staged value. The local `instanceReady` gates in
+`ScoutInterviewPanel.tsx` and `ConductorPanel.tsx` are GONE — one path remains.
+
+Guard:
+`features/agents/redux/execution-system/instance-ui-state/__tests__/no-write-is-dropped-before-the-instance-lands.test.ts`
+— behaviour (write → create → still there; creation's own value wins; toggles and merges; no
+replay after destroy) plus a source census that fails if any setter returns to `if (entry)`.
+Proven failing against the pre-fix slice (4 of 6 failed), passing after.
+
+Verified live 2026-09-16 on `/masterwork/<id>/interview` with the workaround removed: the console
+carries `setDisplayNameOverride arrived … before its UI-state entry existed` followed by
+`… was created after 3 write(s) … they were replayed on top of the new entry`, and the hero reads
+"Your interviewer" — not "Ready to run". `setDisplayMode` hits the same race on that screen and is
+now kept as well.
+
+---
+
+## A map-valued knob cannot be written safely from a client — the DOOR has no merge and no precondition (2026-09-17, F-9)
+
+Found while fixing the Detail primitive's per-record-type setting (Bugbot, frontend PR 228).
+`platform.knob_override_set(p_value jsonb)` REPLACES the whole value, offers no per-entry merge and
+exposes no `updated_at` to guard on, so a knob that holds a map of per-thing exceptions
+(`ui.detail.presentation_by_type` = `{"file":"docked"}`) can only be changed by a client-side
+read-modify-write. `setUserKnobMapEntry` (`lib/scoped-config/service.ts`) closes the two failure
+modes a client CAN close — a failed read refuses the write instead of merging into `{}`, and the
+base is re-read past the 60s cache — and its header says the rest plainly: **two writers inside one
+round trip still lose the loser's entries, and nothing on the client can see it.** `guardedUpdate`
+cannot ride this because the write is an RPC through the key's declared door, not a table update.
+Closing it needs a per-entry merge (or an optimistic precondition) AT THE DOOR: a
+`platform.knob_override_merge(p_feature, p_key, p_entry_key, p_entry_value, …)`, or an
+`p_if_unchanged_at` argument on the existing door. Not mine to add — it is a migration against a
+client-callable `SECURITY DEFINER` function, and no map-valued knob today has enough writers for
+the race to be likely.
+
+Sibling not fixed: `components/matrx/resizable/MatrxDynamicPanel.tsx` still reserves
+`var(--header-height)` (the pre-shell 2.5rem token) on its MOBILE header padding and mobile content
+height, where the app shell's header is `--shell-header-h`. `SidePanelSurface` never reaches that
+path (it uses a Drawer on mobile), so it is not the same instance — but every other direct
+`MatrxDynamicPanel` consumer that renders under the shell on a touch device is off by 4px there.
+## ~~A typed-but-unsent chat message does not survive a reload~~ **FIXED 2026-09-17**
+
+Found while closing the Masterwork reload-survival class (cold walk 6). Every capture LANE now
+keeps its in-progress work through `features/masterwork/sitting/`, and the census that proves it
+turned up one lane it cannot reach: the Scout interview room and the Conductor room hold their
+in-progress work in the shared chat composer, and a message typed there and not yet sent is gone
+after a browser reload. Measured live on a brand-new Rulebook: 198 characters typed into the
+interview composer, reload, field empty, nothing said.
+
+`features/agents/redux/execution-system/instance-user-input/input-draft-protection.ts` is emphatic
+that this draft is "the single most valuable, irreplaceable piece of data in the app" and protects
+it against every in-session clear — but the slice is in-memory only, so the protection ends at the
+tab. The same is true of `/chat` and every other composer surface; this is not a Masterwork defect
+and must not be patched inside Masterwork.
+
+NOT FIXED HERE, deliberately: persisting that slice is a platform change touching every streaming
+surface in the product, and getting it wrong re-opens exactly the class that file exists to guard
+(a restore racing a submit could resurrect a message the user already sent). It needs its own
+session, with the composer's owners, and a forcing-function test that a restore can never
+re-submit. `features/masterwork/sitting/lanePersistence.ts` declares the two rooms `server-write`,
+which is true of the TURNS and is not a claim about the composer.
+
+**FIXED as the platform primitive it is, 2026-09-17.** The durable half of the composer draft is
+`features/agents/redux/execution-system/instance-user-input/composer-draft-store.ts` (storage,
+submit generations, tombstones) driven by `composer-draft.middleware.ts`, the ONE writer, in the
+store's middleware chain. It watches the actions every composer already dispatches — so the
+guarantee is a property of conversation state, not of one component, and `/chat`, the interview
+room, the Conductor, agent run and every embedded conversation inherit it. The restore is a
+two-step compare-and-apply (`peekComposerDraft` → `applyComposerDraft`), and `AgentTextarea`
+mounts it through `useComposerDraftRestore` + `ComposerDraftNotice` — a restore is never silent
+("We put your unsent draft back (N characters)"), and a browser that refuses storage says so
+instead of pretending.
+
+The resurrection hazard the entry names is closed by CLEAR-BEFORE-SEND: `markInputSubmitted` bumps
+a per-conversation submit generation and lays a `{sent:true}` tombstone BEFORE the request leaves,
+every write carries its generation and is refused when storage holds a newer one, and a peeked
+token is re-validated at apply time against both the record and the live generation. Clears follow
+the SLICE, not the action's intent, so a next-message draft `clearUserInput` preserved (and a
+failed send's kept text) stays restorable.
+
+TWO KEYS, found live while verifying: a room the person has not spoken in yet mints a client-only
+conversation id and mints a DIFFERENT one after a reload (the Conductor), so a surface may
+register an alias — `AgentTextarea` passes its `surfaceKey`, e.g.
+`masterwork-conduct:<rulebookId>` — that every write, tombstone and clear is mirrored to and that
+a restore falls back to. Knob: `userPreferences.prompts.restoreUnsentDrafts`, default ON, in
+Settings → AI → Assistants → Composing; a preferences blob written before the key existed reads
+as ON.
+
+Guards (proven failing-then-passing):
+`features/agents/redux/execution-system/instance-user-input/__tests__/an-unsent-draft-survives-a-reload.test.ts`
+— ten cases over the real middleware, slice, storage and thunk, with a reload modelled as
+"discard the store and every in-memory generation, keep sessionStorage". Removing the write from
+the middleware and the generation check from the thunk fails 4 of 8; removing the surface alias
+fails the Conductor case.
+
+Verified live on the preview as `admin@admin.com`: `/chat/b69c1397-…` (221 characters typed →
+reload → back, with the notice; send → tombstone `{"v":"","gen":1,"sent":true}` → record cleared →
+reload → empty box, no notice), `/masterwork/2bd1f094-…/interview` (197 characters back after a
+reload and Continue), `/masterwork/2bd1f094-…/conduct` (199 characters back through the surface
+alias, on a re-minted conversation id).
+
+**`/chat/new` and the handoff line, same session.** The first pass left one door open: `/chat/new`
+mounts its own hero composer (`NewChatLandingInput`, not `AgentTextarea`), so the restore never ran
+there — and the landing mints a client-only conversation id that is re-minted on every reload. The
+hero composer now mounts `ComposerDraftNotice` itself, and the surface alias (`chat:<agentId>`)
+carries the draft until the first send hands over to the real conversation id.
+
+That handoff is now THE RULE for every surface, not a `/chat` special case, because a surface key is
+stable per SURFACE and `/chat` uses ONE key for every conversation with an agent — keyed on that
+alone, a landing draft would surface inside an unrelated conversation.
+`useComposerDraftRestore` registers and consults the alias ONLY while the conversation has no
+messages, and RELEASES it at the first turn (dropping the alias record when it is that send's
+tombstone, so the surface is never left looking permanently "already sent"). Unmount flushes the
+pending keystroke BEFORE the alias is released — otherwise a draft typed in the last 400ms would
+land under the conversation key alone, the one key a re-minted room never asks for again.
+
+Census: every one of the 13 `AgentConversationColumn` mounts passes a `surfaceKey`, so every
+`AgentTextarea`-based composer inherits the alias; `NewChatLandingInput` was the only composer with
+its own textarea that mounts before its conversation exists (`NewChatLandingInputShell` is a static
+skeleton with no state).
+
+Guard: `__tests__/the-surface-alias-is-only-for-an-unstarted-conversation.test.tsx` runs the hook
+for real in React over the real `instanceUserInput` + `messages` reducers and the real middleware.
+Removing the `hasMessages` gate lets a landing draft into a conversation that already has messages;
+removing the release leaves the tombstone under the surface key. Both proven failing, then passing.
+Verified live: `/chat/new` — 202 characters typed → reload (id re-minted) → back with the notice,
+restored from `matrx.composer-draft.surface.chat:6b6b4e45-…`; then send → tombstone on the
+conversation key while the alias record is released → reload → empty box, no notice, no records.
+
+Left behind deliberately: staged resource chips (pasted images, files) are still in-memory only —
+`ManagedResource` carries upload lifecycle state and object URLs, so persisting it is not the
+cheap half of this job and would need its own design.
+
+---
+
+## `callApi` stops type-checking a request body the moment the path has a path parameter (2026-09-17, Claude Fable 5.1, found while building `features/source-library`)
+
+**Every `callApi` call whose `path` contains a `{param}` segment has an UNCHECKED request body.**
+`ApiCallConfig.body` is typed `OperationRequestBody<PathOperation<P, M>>`, and with `pathParams`
+present in the same object literal, `P` fails to infer from the `path` literal and falls back to its
+constraint `keyof paths`. `PathOperation<keyof paths, M>` then resolves to `never`, so `body?: never`
+— i.e. `undefined` — and TypeScript reports the perfectly correct body as
+`Type '…' is not assignable to type 'undefined'`.
+
+It is not a corner case: **about 100 of this repo's ~157 `tsc` errors are this one shape**, including
+nine inside `lib/api/call-api.ts`'s own convenience wrappers (`callAgentStart` line 1550,
+`callPromptStart` line 1769, and seven others). Because the slot collapses to `undefined`, no body
+passed on one of those paths is checked against the generated schema at all — a probe with
+explicit type arguments on `/ai/agents/{agent_id}` immediately surfaced a real one
+(`client_tools` is not a property of that request body, and the repo passes it).
+
+**The likely fix is one word:** make `pathParams` a non-inferring position, so `P` can only come
+from `path`:
+
+```ts
+pathParams?: NoInfer<ExtractPathParams<P & string>>;   // TS 5.4+, and this repo is on TS 6
+```
+
+**Why it was not done here.** Closing it un-hides ~100 previously-unchecked bodies at once, some of
+which are genuinely wrong (see `client_tools`), across features this lane does not own. That is a
+repo-wide repair with its own verification, not a side effect of a feature branch.
+
+**What this lane did instead:** `features/source-library/api.ts` passes explicit type arguments on
+its five path-parameterised calls (`callApi<"/media/libraries/{library_id}", "PATCH">({…})`), which
+restores real checking at those call sites — no cast, no suppression. Anyone writing a new
+`callApi` call with `pathParams` and a body should do the same until the primitive is fixed.
+
+## 2026-09-18 — `scripts/aidream-contract-pin.json` pins a commit that is not on aidream `main`
+
+`pnpm sync-types` refused every checkout: the pin `62fa56114` existed only on aidream branch
+`claude/workflow-studio-query-client-u67xw6`. **Resolved 2026-09-18 (evening):** the same change
+(the legal/print attribution values) is on aidream `main` as `dee241f38c` (content byte-identical
+in all four files), so the pin now names that commit and the offline sync passes its pin check.
+What still stops a regeneration on a box without credentials: step 1 (`pnpm db-types`) needs
+`SUPABASE_ACCESS_TOKEN`, and the checkout emit (`uv run python scripts/generate_types.py all
+--direct`) imports the app, which raises `DatabaseConfigError` without the five
+`SUPABASE_MATRIX_*` variables. Run `pnpm sync-types` on a credentialed machine; until then the
+topical map's three run clients (`map-pages.ts`, `map-regions.ts`, `map-intents.ts`) carry
+transcribed bodies with a red test naming the remedy. Found by the topical-map UI build (P0-A).
+
+## 2026-09-18 — `udt_bulk_write`'s delete op HARD-DELETES a soft-deletable row
+
+`public.udt_bulk_write`'s `{op:"delete"}` runs `DELETE FROM workbench.udt_dataset_rows WHERE
+id = … AND table_id = …` — a real destroy — even though the table carries `deleted_at`. That is
+the DD-119 class ("a registered entity carrying `deleted_at` is REMOVED, never destroyed, from a
+client"), one layer further in: `pnpm check:client-hard-delete` scans for supabase-js `.delete()`
+calls, so an RPC that destroys on the client's behalf is invisible to it. Every dataset-row
+delete in the product goes through this op (`features/data-tables/bulk-row-actions.ts`, the grid's
+row menu, `replaceTable`'s delete-all, and now an accepted `remove` proposal), so a deleted row is
+unrecoverable and `udt_dataset_row_versions` keeps only the versions, not the row.
+
+**Not fixed here** because flipping the op to a soft delete changes behaviour for every existing
+caller at once — the readers (`get_user_table_complete`, `get_full_table`, `udt_column_facets`,
+the realtime subscription) would each need a `deleted_at is null` filter in the same change, and
+`udt_datasets`' own delete path has the same shape. That is a data-tables repair with its own
+verification, not a side effect of the list-change-proposals feature.
+
+**What this lane did instead:** the proposal reviewer's confirm dialog says exactly what happens —
+"This DELETES the row … outright — it is gone from <list>, not archived, and this cannot be
+undone" — rather than a generic warning that implies recovery. Found by building
+`features/list-change-proposals/`.

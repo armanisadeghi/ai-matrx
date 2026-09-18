@@ -20,6 +20,7 @@
 // never got the structure.
 
 import { supabase } from "@/utils/supabase/client";
+import { operationFailed } from "@/utils/errors";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import type { RulebookRow, RulebookRule } from "../types";
 import { applySettlement } from "./settlement";
@@ -61,7 +62,7 @@ export async function settleTension(opts: {
       .eq("id", opts.rulebookId)
       .is("deleted_at", null)
       .maybeSingle();
-    if (error) throw error;
+    if (error) throw operationFailed("record your answer", error);
     if (!data) return { status: "not_found" };
 
     const row = data as Pick<RulebookRow, "id" | "version" | "metadata" | "rules">;

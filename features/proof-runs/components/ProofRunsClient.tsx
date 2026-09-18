@@ -20,11 +20,9 @@ import { OrganizationRequiredNotice } from "@/features/organizations/components/
 import {
   Coins,
   FlaskConical,
-  History,
   Pencil,
   Plus,
   PlayCircle,
-  RefreshCw,
   ShieldCheck,
   Trash2,
   Zap,
@@ -79,6 +77,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatDurationMs, formatDurationSeconds } from "@ai-matrx/kit/format";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { ADMIN_PROOF_RUNS_SURFACE_NAME, createAdminProofRunsScope } from "@/features/surfaces/manifests/admin-proof-runs.manifest";
 
 const MODES: { value: ProofRunMode; label: string; hint: string }[] = [
   {
@@ -105,6 +107,45 @@ function verdictClass(verdict: string | null): string {
     return "text-red-700 dark:text-red-300 border-red-500/30 bg-red-500/10";
   return "text-amber-700 dark:text-amber-300 border-amber-500/30 bg-amber-500/10";
 }
+
+const proofRunColumns: MatrxColumnDef<ProofRunSummary>[] = [
+  {
+    id: "started",
+    header: "Started",
+    accessorFn: (row) => row.started_at ?? "",
+    width: 170,
+    className: "truncate",
+    cell: (row) =>
+      row.started_at ? (
+        <span className="truncate text-muted-foreground">
+          {new Date(row.started_at).toLocaleString()}
+        </span>
+      ) : (
+        "—"
+      ),
+  },
+  {
+    id: "check",
+    header: "Check",
+    accessorKey: "check_slug",
+    width: 180,
+    className: "truncate",
+    cell: (row) => <span className="truncate">{row.check_slug}</span>,
+  },
+  { id: "mode", header: "Mode", accessorKey: "mode", cell: (row) => <span className="whitespace-nowrap uppercase text-muted-foreground">{row.mode}</span> },
+  { id: "verdict", header: "Verdict", accessorFn: (row) => row.verdict ?? row.status, cell: (row) => <span className={cn("rounded-full border px-1.5 py-px text-[10px] font-medium", verdictClass(row.verdict ?? null))}>{row.verdict ?? row.status}</span> },
+  { id: "cost", header: "Cost", accessorKey: "cost_usd", align: "right", cell: (row) => <span className="font-mono whitespace-nowrap">{formatUsd(row.cost_usd, { digits: 4 })}</span> },
+  { id: "duration", header: "Took", accessorKey: "duration_ms", align: "right", cell: (row) => <span className="whitespace-nowrap text-muted-foreground">{formatDurationMs(row.duration_ms ?? 0, { style: "compact" })}</span> },
+  { id: "trigger", header: "Trigger", accessorKey: "trigger_source", cell: (row) => <span className="whitespace-nowrap text-muted-foreground">{row.trigger_source}</span> },
+  {
+    id: "summary",
+    header: "Summary",
+    accessorKey: "summary",
+    width: 320,
+    className: "truncate",
+    cell: (row) => <span className="truncate text-muted-foreground">{row.summary}</span>,
+  },
+];
 
 export default function ProofRunsClient() {
   const [checks, setChecks] = useState<ProofCheckStatus[]>([]);
@@ -263,6 +304,7 @@ export default function ProofRunsClient() {
       : 0;
 
   return (
+    <SurfaceRuntimeProvider surfaceName={ADMIN_PROOF_RUNS_SURFACE_NAME} getScope={() => createAdminProofRunsScope({ proof_checks: checks, recent_runs: runs, open_run: openRun ?? undefined })}>
     <div className="space-y-4 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
@@ -299,10 +341,6 @@ export default function ProofRunsClient() {
               />
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => void refresh()}>
-            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-            Refresh
-          </Button>
         </div>
       </div>
 
@@ -590,89 +628,31 @@ export default function ProofRunsClient() {
       </Card>
 
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <History className="h-4 w-4" />
-            Recent runs
-          </CardTitle>
-          <CardDescription>
-            Live and replay runs, newest first. Open one to see every proof it
-            rests on.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-xs">
-              <thead className="text-left text-muted-foreground">
-                <tr className="border-b border-border">
-                  <th className="py-1.5 pr-3 font-medium">Started</th>
-                  <th className="py-1.5 pr-3 font-medium">Check</th>
-                  <th className="py-1.5 pr-3 font-medium">Mode</th>
-                  <th className="py-1.5 pr-3 font-medium">Verdict</th>
-                  <th className="py-1.5 pr-3 font-medium">Cost</th>
-                  <th className="py-1.5 pr-3 font-medium">Took</th>
-                  <th className="py-1.5 pr-3 font-medium">Trigger</th>
-                  <th className="py-1.5 font-medium">Summary</th>
-                </tr>
-              </thead>
-              <tbody>
-                {runs.map((row) => (
-                  <tr
-                    key={row.id}
-                    onClick={() => void openRunDetail(row.id)}
-                    className={cn(
-                      "cursor-pointer border-b border-border/60 hover:bg-muted/50",
-                      openRun?.id === row.id && "bg-muted",
-                    )}
-                  >
-                    <td className="py-1.5 pr-3 whitespace-nowrap text-muted-foreground">
-                      {row.started_at
-                        ? new Date(row.started_at).toLocaleString()
-                        : "—"}
-                    </td>
-                    <td className="py-1.5 pr-3 whitespace-nowrap">
-                      {row.check_slug}
-                    </td>
-                    <td className="py-1.5 pr-3 whitespace-nowrap uppercase text-muted-foreground">
-                      {row.mode}
-                    </td>
-                    <td className="py-1.5 pr-3 whitespace-nowrap">
-                      <span
-                        className={cn(
-                          "rounded-full border px-1.5 py-px text-[10px] font-medium",
-                          verdictClass(row.verdict ?? null),
-                        )}
-                      >
-                        {row.verdict ?? row.status}
-                      </span>
-                    </td>
-                    <td className="py-1.5 pr-3 whitespace-nowrap font-mono">
-                      {formatUsd(row.cost_usd, { digits: 4 })}
-                    </td>
-                    <td className="py-1.5 pr-3 whitespace-nowrap text-muted-foreground">
-                      {formatDurationMs(row.duration_ms ?? 0, { style: "compact" })}
-                    </td>
-                    <td className="py-1.5 pr-3 whitespace-nowrap text-muted-foreground">
-                      {row.trigger_source}
-                    </td>
-                    <td className="py-1.5 text-muted-foreground">
-                      {row.summary}
-                    </td>
-                  </tr>
-                ))}
-                {runs.length === 0 && !loading ? (
-                  <tr>
-                    <td
-                      colSpan={8}
-                      className="py-4 text-center text-muted-foreground"
-                    >
-                      No runs yet.
-                    </td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
+        <CardContent className="space-y-2 pt-4">
+          <p className="text-xs text-muted-foreground">
+            Live and replay runs, newest first. Open one to see every proof it rests on.
+          </p>
+          <MatrxDataTable
+            tableId="admin/proof-runs"
+            isLoading={loading && runs.length === 0}
+            isFetching={loading && runs.length > 0}
+            detail={{ enabled: false }}
+            data={runs}
+            columns={proofRunColumns}
+            getRowId={(row) => row.id}
+            pageSize={25}
+            selectedId={openRun?.id}
+            onSelectedIdChange={(id) => {
+              if (!id) setOpenRun(null);
+            }}
+            onRowOpen={(row) => void openRunDetail(row.id)}
+            emptyState={{ title: "No runs yet." }}
+            toolbar={{
+              title: "Recent runs",
+              searchPlaceholder: "Search recent runs…",
+              refresh: { onRefresh: refresh },
+            }}
+          />
 
           {openRun ? (
             <div className="space-y-2 rounded-md border border-border p-3">
@@ -720,5 +700,6 @@ export default function ProofRunsClient() {
         </CardContent>
       </Card>
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

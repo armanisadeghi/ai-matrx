@@ -15,13 +15,14 @@ import {
 } from "@/components/ui/collapsible";
 import { BasicMarkdownContent } from "@/components/mardown-display/chat-markdown/BasicMarkdownContent";
 import { cn } from "@/lib/utils";
-import type { PcArticle } from "@/features/podcasts/types";
+import type { PcArticle, PcArticleDisplayRow} from "@/features/podcasts/types";
 
 export function EpisodeShowNotes({
   article,
   className,
 }: {
-  article: PcArticle;
+  /** A signed-out reader's row has no identity columns (DD-230). */
+  article: PcArticleDisplayRow;
   className?: string;
 }) {
   const [open, setOpen] = useState(false);

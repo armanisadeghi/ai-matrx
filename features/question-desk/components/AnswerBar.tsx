@@ -67,6 +67,16 @@ export interface AnswerBarProps {
    */
   textareaRef: RefObject<ProTextareaElement | null>;
   onTranscriptionComplete: (text: string) => void;
+  /**
+   * 🚨 THE LATE REFUSAL. `startDictation()` returns `{started:true}` as soon as
+   * its five pre-checks pass; a microphone the browser then DENIES rejects
+   * afterwards, inside the recorder. Without this the denial reached only a
+   * transient toast and the `role="alert"` slot above these buttons — the one
+   * built for refusals — stayed empty (V2 finding 3, 2026-09-14). The field
+   * reports every such failure through `onTranscriptionError`, and it lands in
+   * the SAME alert state as every other refusal on this surface.
+   */
+  onTranscriptionError: (message: string) => void;
   audio: DictationAudio;
   onOpenWrite: () => void;
   /** Open the box and start its microphone — the V key's other door. */
@@ -108,6 +118,7 @@ export function AnswerBar(props: AnswerBarProps) {
     draftFromVoice,
     textareaRef,
     onTranscriptionComplete,
+    onTranscriptionError,
     audio,
     onOpenWrite,
     onAnswerByVoice,
@@ -204,6 +215,7 @@ export function AnswerBar(props: AnswerBarProps) {
                 value={draftText}
                 onChange={(event) => onDraftChange(event.target.value)}
                 onTranscriptionComplete={onTranscriptionComplete}
+                onTranscriptionError={onTranscriptionError}
                 placeholder="In your own words, typed or spoken. It is recorded exactly as you give it."
                 autoGrow
                 minHeight={96}

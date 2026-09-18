@@ -114,8 +114,30 @@ Live users: [`run-headless-agent-json.ts`](../redux/execution-system/thunks/run-
 | Layer | What it does |
 |---|---|
 | **Runtime** — [`launch-agent-execution.thunk.ts`](../redux/execution-system/thunks/launch-agent-execution.thunk.ts) Step 5 | Headless + `autoRun: false` without `callerExecutes` → runs anyway, `console.error` naming the fix. |
-| **Authoring** — `pnpm check:autorun-headless` | Flags the literal config wherever it is written. In `check:release-gates`, blocking in both modes. |
-| **Behavioural** — `autorun-is-a-ui-control.test.ts` | Pins all four cases through the real thunk, including "interactive + `autoRun:false` still OPENS the component". |
+| **Runtime** — `resolveInterfaceOnlyFlag` in [`run-ui-utils.ts`](../utils/run-ui-utils.ts) | The same refusal for every OTHER interface-only flag (below): headless + `true` → treated as `false`, `console.error` naming the flag and the source. |
+| **Authoring** — `pnpm check:headless-ui-flags` | Flags the literal config wherever it is written, for `autoRun` and the three siblings. In `check:release-gates`, blocking in both modes. |
+| **Behavioural** — `autorun-is-a-ui-control.test.ts` | Pins all eight cases through the real thunk, including "interactive + `autoRun:false` still OPENS the component" and "interactive + `showPreExecutionGate` still HOLDS the send". |
+
+## The flag was never special — its siblings get the same treatment
+
+Ruled 2026-09-12, by the same two laws that produced the `autoRun` repair
+(nothing fails silently; fix the class, never the instance). Three more flags
+on `AgentExecutionConfig` are user-interface controls by the identical
+definition, and can be set the identical meaningless way on a mode that paints
+nothing — `INTERFACE_ONLY_LAUNCH_FLAGS` in
+[`run-ui-utils.ts`](../utils/run-ui-utils.ts):
+
+| Flag on a headless mode | What honouring it would do |
+|---|---|
+| `showPreExecutionGate: true` | **Repeats the defect, not just the nonsense** — the launch returns early behind a gate overlay nobody can ever press, so the run is deleted rather than deferred. |
+| `showVariablePanel: true` | Paints a panel on a surface that paints nothing. |
+| `allowChat: true` | Offers a composer that does not exist. |
+
+All three are resolved through `resolveInterfaceOnlyFlag`: precedence is
+unchanged (caller literal → the shortcut's or job's stored answer), and on a
+headless mode a `true` becomes `false` and screams by name. As with `autoRun`,
+an omitted or `false` flag says nothing — leaving a UI flag off a UI-less mode
+is the sane thing to write.
 
 ## If you are about to change what `autoRun` means
 

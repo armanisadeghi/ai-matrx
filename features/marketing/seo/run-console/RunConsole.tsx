@@ -43,7 +43,8 @@ import {
   UserCheck,
 } from "lucide-react";
 import AppLink from "@/components/navigation/AppLink";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { hasRunHistoryParams } from "./runHistoryFilters";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { ContentTransferSurfaceProvider } from "@ai-matrx/design-system/content-transfer";
@@ -531,8 +532,13 @@ function TopicPlacementConsole({
   // THE RESULT VIEW. Routed (a `basePath` was supplied), the URL is the truth
   // and a tab click is a navigation — so the screen survives a reload, a share
   // and the back button. Unrouted, it is local state exactly as before.
-  const [localResultView, setLocalResultView] = useState<ResultView>(
-    resultView(view),
+  // A shared Run history link (its `rh_*` filters / open run) lands on that tab
+  // on an unrouted mount too, never on "This run" with the filters invisible.
+  const searchParams = useSearchParams();
+  const [localResultView, setLocalResultView] = useState<ResultView>(() =>
+    resultView(
+      view ?? (hasRunHistoryParams(searchParams) ? "history" : undefined),
+    ),
   );
   const activeResultView = basePath ? resultView(view) : localResultView;
   const onResultViewChange = (next: string) => {

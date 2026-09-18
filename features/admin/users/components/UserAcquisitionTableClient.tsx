@@ -3,7 +3,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AppLink from "@/components/navigation/AppLink";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertTriangle, Cpu, ExternalLink, Route, X } from "lucide-react";
+import { AlertTriangle, Ban, Cpu, ExternalLink, Route, ShieldCheck, X } from "lucide-react";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { toast } from "@/lib/toast";
+import { GuestBlockDialog } from "./GuestBlockDialog";
+import { blockGuest, unblockGuest } from "../lib/guestBlock";
+import {
+  guestAccessState,
+  type GuestAccess,
+  type GuestAccessState,
+} from "../lib/guestAccess";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
@@ -54,6 +63,17 @@ const VERDICT = {
   converted: ["Converted", "text-emerald-700 bg-emerald-500/10"],
 } as const;
 
+const GUEST_ACCESS_LABEL: Record<GuestAccessState | "none", string> = {
+  allowed: "Allowed",
+  blocked: "Blocked",
+  block_expired: "Block ended",
+  none: "No guest record",
+};
+
+function guestAccessKey(row: AdminUserAcquisitionRow): GuestAccessState | "none" {
+  return row.guest_access ? guestAccessState(row.guest_access) : "none";
+}
+
 function fmtDate(value: string | null): string {
   return value ? new Date(value).toLocaleString() : "—";
 }
@@ -102,6 +122,77 @@ export function UserAcquisitionTableClient() {
   const [journey, setJourney] = useState<AcquisitionJourney | null>(null);
   const [journeyLoading, setJourneyLoading] = useState(false);
   const [journeyError, setJourneyError] = useState<string | null>(null);
+  const [blockTarget, setBlockTarget] =
+    useState<AdminUserAcquisitionRow | null>(null);
+  const [accessPending, setAccessPending] = useState<string | null>(null);
+
+  const applyAccess = useCallback((access: GuestAccess) => {
+    setRows((current) =>
+      current.map((row) =>
+        row.guest_access?.guest_id === access.guest_id
+          ? { ...row, guest_access: access }
+          : row,
+      ),
+    );
+  }, []);
+
+  const submitBlock = useCallback(
+    async (args: { reason: string | null; blockedUntil: string | null }) => {
+      const target = blockTarget;
+      if (!target?.guest_access) return;
+      setAccessPending(target.guest_access.guest_id);
+      try {
+        const access = await blockGuest({
+          guestId: target.guest_access.guest_id,
+          ...args,
+        });
+        applyAccess(access);
+        setBlockTarget(null);
+        toast.success(
+          access.blocked_until
+            ? `Guest access blocked for ${target.display_name} until ${fmtDate(access.blocked_until)}`
+            : `Guest access blocked for ${target.display_name} until unblocked`,
+        );
+      } catch (caught) {
+        toast.error(
+          caught instanceof Error
+            ? `Block failed: ${caught.message}`
+            : "Block failed",
+        );
+      } finally {
+        setAccessPending(null);
+      }
+    },
+    [applyAccess, blockTarget],
+  );
+
+  const requestUnblock = useCallback(
+    async (row: AdminUserAcquisitionRow) => {
+      const access = row.guest_access;
+      if (!access) return;
+      const ok = await confirm({
+        title: `Unblock guest access: ${row.display_name}`,
+        description:
+          "Signed-out requests from this browser are accepted again on their next call, and the normal daily guest limit applies. The block and its reason stay in this guest's block history.",
+        confirmLabel: "Unblock",
+      });
+      if (!ok) return;
+      setAccessPending(access.guest_id);
+      try {
+        applyAccess(await unblockGuest({ guestId: access.guest_id }));
+        toast.success(`Guest access restored for ${row.display_name}`);
+      } catch (caught) {
+        toast.error(
+          caught instanceof Error
+            ? `Unblock failed: ${caught.message}`
+            : "Unblock failed",
+        );
+      } finally {
+        setAccessPending(null);
+      }
+    },
+    [applyAccess],
+  );
 
   const openJourney = useCallback(async (row: AdminUserAcquisitionRow) => {
     setSelected(row);
@@ -204,6 +295,7 @@ export function UserAcquisitionTableClient() {
             result.peopleCost += row.total_cost;
             result[row.identity_state] += 1;
           }
+          if (row.guest_access?.block_active) result.blocked += 1;
           return result;
         },
         {
@@ -214,6 +306,7 @@ export function UserAcquisitionTableClient() {
           people: 0,
           localTests: 0,
           bots: 0,
+          blocked: 0,
           peopleCost: 0,
         },
       ),
@@ -265,6 +358,86 @@ export function UserAcquisitionTableClient() {
         filter: "select",
         width: 105,
         cell: (row) => stateBadge(row.identity_state),
+      },
+      {
+        id: "guest_access",
+        accessorFn: (row) => GUEST_ACCESS_LABEL[guestAccessKey(row)],
+        header: "Guest access",
+        filter: "select",
+        width: 250,
+        cell: (row) => {
+          const access = row.guest_access;
+          if (!access) {
+            return (
+              <span className="text-xs text-muted-foreground">
+                No guest record
+              </span>
+            );
+          }
+          const busy = accessPending === access.guest_id;
+          const state = guestAccessState(access);
+          return (
+            <div className="flex min-w-0 items-center gap-1.5">
+              {state === "blocked" ? (
+                <Badge
+                  variant="outline"
+                  className="shrink-0 border-rose-500/40 bg-rose-500/10 text-rose-700"
+                >
+                  Blocked
+                </Badge>
+              ) : (
+                <span
+                  className={`shrink-0 text-xs ${state === "block_expired" ? "text-muted-foreground" : ""}`}
+                >
+                  {GUEST_ACCESS_LABEL[state]}
+                </span>
+              )}
+              <span
+                className="min-w-0 truncate text-[11px] text-muted-foreground"
+                title={access.blocked_reason ?? undefined}
+              >
+                {state === "blocked"
+                  ? access.blocked_until
+                    ? `until ${fmtDate(access.blocked_until)}`
+                    : "until unblocked"
+                  : state === "block_expired"
+                    ? fmtDate(access.blocked_until)
+                    : ""}
+                {state === "blocked" && access.blocked_reason
+                  ? ` · ${access.blocked_reason}`
+                  : ""}
+              </span>
+              {state === "blocked" ? (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  className="ml-auto h-6 shrink-0 gap-1 px-2 text-xs"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    void requestUnblock(row);
+                  }}
+                >
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  {busy ? "Unblocking…" : "Unblock"}
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy}
+                  className="ml-auto h-6 shrink-0 gap-1 px-2 text-xs text-rose-700 hover:text-rose-800"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setBlockTarget(row);
+                  }}
+                >
+                  <Ban className="h-3.5 w-3.5" /> Block
+                </Button>
+              )}
+            </div>
+          );
+        },
       },
       {
         id: "traffic_kind",
@@ -448,7 +621,7 @@ export function UserAcquisitionTableClient() {
         width: 105,
       },
     ],
-    [openJourney],
+    [accessPending, openJourney, requestUnblock],
   );
 
   return (
@@ -477,7 +650,7 @@ export function UserAcquisitionTableClient() {
           </Button>
         </div>
       ) : null}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-7">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-8">
         {[
           ["Likely people", totals.people],
           ["Guests", totals.guest],
@@ -485,6 +658,7 @@ export function UserAcquisitionTableClient() {
           ["Converted", totals.converted],
           ["Local / agent", totals.localTests],
           ["Bots", totals.bots],
+          ["Blocked guests", totals.blocked],
           ["People LLM cost", fmtCost(totals.peopleCost)],
         ].map(([label, value]) => (
           <div key={label} className="rounded-lg border bg-card p-3">
@@ -597,6 +771,9 @@ export function UserAcquisitionTableClient() {
               landing_page: row.landing_path,
               referrer: row.referrer,
               cost: row.total_cost,
+              guest_access: GUEST_ACCESS_LABEL[guestAccessKey(row)],
+              guest_blocked_until: row.guest_access?.blocked_until ?? null,
+              guest_blocked_reason: row.guest_access?.blocked_reason ?? null,
             }),
             listAttributes: (visible) => ({
               identities: visible.length,
@@ -606,6 +783,18 @@ export function UserAcquisitionTableClient() {
         />
         </NonEditableContextMenu>
       </div>
+      {blockTarget ? (
+        <GuestBlockDialog
+          open
+          label={blockTarget.display_name}
+          fingerprintHint={blockTarget.guest_fingerprint_hint}
+          pending={accessPending !== null}
+          onOpenChange={(open) => {
+            if (!open) setBlockTarget(null);
+          }}
+          onConfirm={(args) => void submitBlock(args)}
+        />
+      ) : null}
       {selected ? (
         <SidePanelSurface
           title={selected.display_name}

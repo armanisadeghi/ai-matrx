@@ -451,29 +451,19 @@ export function isSystemPath(path: string | null | undefined): boolean {
 }
 
 /**
- * True when `path` is a FastFire side-product row — either the canonical
- * hidden root (`system-files/fastfire/...`) or a legacy user-namespace
- * straggler (`FastFire/...`) awaiting backfill.
+ * THE VISIBILITY RULE IS THE DATABASE'S, NOT THIS FILE'S.
+ *
+ * `isHiddenFromUserTree()` and `isFastFirePath()` used to live here and were a
+ * SECOND copy of the server's rule — the browser hid top-level `FastFire/**`
+ * that the server called user-visible, so the sync daemon wrote those bytes to
+ * disk while the browser refused to show them (folder-sync DECISIONS D16,
+ * SPEC-SERVER §1.4 consumer 2). They are deleted.
+ *
+ * Rows that arrive through `get_user_file_tree` are already filtered by
+ * `files.is_user_visible_path` — never filter them again. Realtime payloads,
+ * which bypass the RPC, use the parity-tested mirror in
+ * `features/files/utils/user-visible.ts`.
  */
-export function isFastFirePath(path: string | null | undefined): boolean {
-  if (!path) return false;
-  return (
-    path === CloudFolders.SYSTEM_FASTFIRE ||
-    path.startsWith(`${CloudFolders.SYSTEM_FASTFIRE}/`) ||
-    path === "FastFire" ||
-    path.startsWith("FastFire/")
-  );
-}
-
-/**
- * True when a path must never surface in the user's file tree, folder
- * browser, or Recents. Covers backend infra (`isSystemPath`) plus app-
- * capture side products (`isFastFirePath`). Education / Transcripts UIs
- * reach these rows by `file_id`, never by browsing.
- */
-export function isHiddenFromUserTree(path: string | null | undefined): boolean {
-  return isSystemPath(path) || isFastFirePath(path);
-}
 
 /**
  * True when a path holds **system-managed user content** — files that

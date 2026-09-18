@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -153,6 +154,27 @@ export default function SettingTable({
   onCreate,
   onRetry,
 }: SettingTableProps) {
+  const searchParams = useSearchParams();
+  if (searchParams.get("tablePreview") === "defaults") {
+    const fields = Array.from(new Set(settings.flatMap((row) => Object.keys(row))));
+    const defaultColumns: MatrxColumnDef<AiSetting>[] = fields.map((field) => ({
+      accessorKey: field as keyof AiSetting,
+      header: field.replaceAll("_", " "),
+    }));
+    return (
+      <div className="flex h-full min-h-0 flex-col">
+        {error ? <p role="alert">{error}</p> : null}
+        <MatrxDataTable
+          data={settings}
+          columns={defaultColumns}
+          getRowId={(row) => row.id}
+          tableId="ai-settings/package-defaults"
+          toolbar={{ title: "AI Settings — package defaults" }}
+          isLoading={isLoading}
+        />
+      </div>
+    );
+  }
   const columns: MatrxColumnDef<AiSetting>[] = [
     {
       accessorKey: "key",
@@ -217,7 +239,7 @@ export default function SettingTable({
     },
   ];
   return (
-    <div className="flex h-full min-h-0 flex-col px-3 pt-2">
+    <div className="flex h-full min-h-0 flex-col">
       {error && settings.length > 0 ? (
         <div
           role="alert"
@@ -235,7 +257,7 @@ export default function SettingTable({
         isFetching={isLoading && settings.length > 0}
         columns={columns}
         getRowId={(item) => item.id}
-        pageSize={25}
+        pageSize={50}
         pageSizeOptions={[10, 25, 50, 100]}
         defaultSort={null}
         onRowOpen={onSelect}
@@ -266,6 +288,10 @@ export default function SettingTable({
         toolbar={{
           title: "Settings Vocabulary",
           searchPlaceholder: "Search settings…",
+          intelligentSearch: {
+            roles: { key: "name", description: "description" },
+            scopes: [{ id: "value_type", label: "Type", fields: ["value_type"] }],
+          },
           refresh: { onRefresh: onRetry },
           add: { onAdd: onCreate },
         }}

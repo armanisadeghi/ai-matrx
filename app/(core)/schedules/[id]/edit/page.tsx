@@ -6,6 +6,7 @@ import { use } from "react";
 import Link from "next/link";
 import { Eye, Loader2, Pencil, Plus } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import { EntityModeHeader } from "@/features/shell/components/header/templates/EntityModeHeader";
 import { useTaskDetail } from "@/features/scheduling/hooks/useTaskDetail";
 import { useScheduledTasks } from "@/features/scheduling/hooks/useScheduledTasks";
@@ -18,7 +19,7 @@ interface Props {
 
 export default function EditSchedulePage({ params }: Props) {
   const { id } = use(params);
-  const { task, status, error } = useTaskDetail(id);
+  const { task, status, error, retry } = useTaskDetail(id);
   const { tasks } = useScheduledTasks();
 
   return (
@@ -54,7 +55,12 @@ export default function EditSchedulePage({ params }: Props) {
           ) : status === "error" || !task ? (
             <Alert variant="destructive">
               <AlertTitle>Couldn&apos;t load schedule</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription className="space-y-3">
+                <p>{error}</p>
+                <Button type="button" variant="outline" size="sm" onClick={retry}>
+                  Retry
+                </Button>
+              </AlertDescription>
             </Alert>
           ) : (
             <ScheduleForm task={task} />

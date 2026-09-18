@@ -6,6 +6,7 @@
 
 import type { RunDetail, RunLiveness } from "./run-types";
 import { trueLiveness } from "./run-truth";
+import { canRerunPodcastSource } from "@/features/podcasts/generator/sourceReadiness";
 
 export interface RecoveryState {
   kind: RunLiveness;
@@ -26,9 +27,10 @@ export function deriveRecoveryState(detail: RunDetail | null): RecoveryState {
   // offer Resume / Re-run over an episode that already exists — a re-run is the
   // most expensive action in the product, and the banner is what invites it.
   const kind = trueLiveness(detail);
-  const canResume = kind === "completed" ? false : !!detail.recovery?.resumable;
+  const canRecover = kind !== "completed" && canRerunPodcastSource(detail.request);
+  const canResume = canRecover && !!detail.recovery?.resumable;
   const canRerun =
-    kind === "completed" ? false : !!detail.recovery?.can_rerun_from_source;
+    canRecover && !!detail.recovery?.can_rerun_from_source;
   const showBanner =
     kind === "stalled" || kind === "failed" || kind === "cancelled" || kind === "draft";
   return { kind, canResume, canRerun, showBanner };

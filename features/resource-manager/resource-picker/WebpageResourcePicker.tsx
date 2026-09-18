@@ -29,6 +29,7 @@ import { WebpageSnapshotView } from "@/features/resource-manager/webpage/Webpage
 import { formatCount } from "@ai-matrx/kit/format";
 import type { PreFetchedUrl } from "@/types/python-generated/stream-events";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { isYouTubeChannelUrl, parseYouTubeUrl } from "@/lib/media/youtube";
 
 interface WebpageResourcePickerProps {
   onBack: () => void;
@@ -63,17 +64,21 @@ function normalizeUrl(url: string): string {
   return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
 }
 
-// Detect URL type — tolerates bare domains (no protocol)
-function detectUrlType(url: string): "youtube" | "image" | "file" | "webpage" {
+// Detect URL type — tolerates bare domains (no protocol).
+//
+// YouTube recognition goes through the ONE canonical parser in
+// `lib/media/youtube.ts`, whose own header says not to re-implement it
+// anywhere else. The local `hostname.includes("youtube.com")` copy this
+// replaced could not tell a WATCH url from a channel page, so the box refused
+// both with the same sentence.
+export function detectUrlType(
+  url: string,
+): "youtube" | "youtube_channel" | "image" | "file" | "webpage" {
   try {
     const urlObj = new URL(normalizeUrl(url));
 
-    if (
-      urlObj.hostname.includes("youtube.com") ||
-      urlObj.hostname.includes("youtu.be")
-    ) {
-      return "youtube";
-    }
+    if (parseYouTubeUrl(urlObj.toString())) return "youtube";
+    if (isYouTubeChannelUrl(urlObj.toString())) return "youtube_channel";
 
     const imageExtensions = [
       ".jpg",
@@ -125,8 +130,10 @@ export function WebpageResourcePickerCore({
   const [url, setUrl] = useState(initialUrl || "");
   const [showPreview, setShowPreview] = useState(false);
   const [suggestedType, setSuggestedType] = useState<
-    "youtube" | "image_url" | "file_url" | null
+    "youtube" | "youtube_channel" | "image_url" | "file_url" | null
   >(null);
+  // A stage is never silent: the box empties, so it has to say what it took.
+  const [stagedYouTube, setStagedYouTube] = useState(false);
   const [editedContent, setEditedContent] = useState<string>("");
   const [charLimit, setCharLimit] = useState<number>(0);
   const [previewTab, setPreviewTab] = useState("pretty");
@@ -161,14 +168,41 @@ export function WebpageResourcePickerCore({
   const handleScrape = async (rawUrl?: string) => {
     const target = rawUrl ?? url;
     if (!target.trim()) return;
+    setStagedYouTube(false);
 
     const normalized = normalizeUrl(target);
     setUrl(normalized);
 
     const detectedType = detectUrlType(normalized);
 
+    // A YOUTUBE VIDEO IS NOT A DEAD END HERE.
+    //
+    // This box used to refuse every YouTube URL with "this box reads web
+    // pages only. Use Upload or Add file to bring it in." — advice that is
+    // false (neither takes a URL) and unnecessary: a host that can stage a
+    // URL sends it to the same server ingest lane, and that lane already
+    // branches to the time-anchored YouTube transcript reader
+    // (`scraper_client/page_capture.py` -> `capture_youtube_transcript`).
+    // A non-technical Expert lost a whole trial to this wall on 2026-09-15.
     if (detectedType === "youtube") {
+      if (onFileUrl) {
+        const parsed = parseYouTubeUrl(normalized);
+        onFileUrl(
+          normalized,
+          parsed ? `YouTube video ${parsed.videoId}` : normalized,
+        );
+        setUrl("");
+        setSuggestedType(null);
+        setStagedYouTube(true);
+        return;
+      }
       setSuggestedType("youtube");
+      return;
+    }
+    // A channel or profile page is genuinely not a source — say exactly that,
+    // instead of the same sentence a readable video used to get.
+    if (detectedType === "youtube_channel") {
+      setSuggestedType("youtube_channel");
       return;
     }
     if (detectedType === "image") {
@@ -304,6 +338,16 @@ export function WebpageResourcePickerCore({
                 </p>
               </div>
 
+              {/* A stage is never silent — the box just emptied, so say what
+                  it took and what will happen to it. */}
+              {stagedYouTube && (
+                <p className="rounded border border-emerald-500/20 bg-emerald-500/10 p-2 text-xs text-emerald-700 dark:text-emerald-400">
+                  Added the video. We read its transcript with timestamps, so
+                  every rule it suggests points back at the moment it came
+                  from.
+                </p>
+              )}
+
               {/* Suggestion to switch type — ALWAYS spoken. A host without
                   `onSwitchTo` gets the honest refusal instead of silence
                   (nothing fails silently). */}
@@ -312,18 +356,31 @@ export function WebpageResourcePickerCore({
                   <div className="flex items-start gap-2 p-2 border border-blue-500/20 bg-blue-500/10 rounded">
                     <AlertCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                     <p className="text-xs text-blue-600 dark:text-blue-400">
-                      This appears to be a{" "}
-                      {suggestedType === "youtube"
-                        ? "YouTube video"
-                        : suggestedType === "image_url"
-                          ? "image"
-                          : "file"}
-                      {onSwitchTo
-                        ? "."
-                        : " — this box reads web pages only. Use Upload or Add file to bring it in."}
+                      {suggestedType === "youtube_channel" ? (
+                        <>
+                          That is a YouTube channel page, not a video. Paste
+                          the link to one video and we will read its transcript
+                          with timestamps.
+                        </>
+                      ) : (
+                        <>
+                          This appears to be a{" "}
+                          {suggestedType === "youtube"
+                            ? "YouTube video"
+                            : suggestedType === "image_url"
+                              ? "image"
+                              : "file"}
+                          {/* Never advice we have not verified: the old copy
+                              sent people to Upload / Add file, neither of
+                              which takes a URL. */}
+                          {onSwitchTo
+                            ? "."
+                            : " — and this box cannot bring it in. Add it from the Rulebook's own Resources panel, which reads videos, or paste the text instead."}
+                        </>
+                      )}
                     </p>
                   </div>
-                  {onSwitchTo && (
+                  {onSwitchTo && suggestedType !== "youtube_channel" && (
                     <Button
                       size="sm"
                       className="w-full text-xs h-7"
@@ -342,7 +399,7 @@ export function WebpageResourcePickerCore({
               )}
 
               {/* Failure — plain words, a remedy the person can press, and the
-                  engineer's report only behind "Details". Never a stage or a
+                  engineer's report only behind "Technical details". Never a stage or a
                   stack as the body (W44). */}
               {hasError && failure && (
                 <ScrapeFailureNotice

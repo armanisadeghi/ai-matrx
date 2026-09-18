@@ -36,11 +36,39 @@ export interface NonEditableSelectionRange {
 
 export type SelectionRange = EditableSelectionRange | NonEditableSelectionRange;
 
+/**
+ * Native number/date-like inputs deliberately expose no text selection API:
+ * their `selectionStart` and `selectionEnd` are `null`, and calling
+ * `setSelectionRange` throws. A context-menu edit must still work, so the
+ * whole current value is its only valid editable range.
+ */
+export function getEditableSelectionOffsets(
+  target: HTMLTextAreaElement | HTMLInputElement,
+): { start: number; end: number } {
+  try {
+    const start = target.selectionStart;
+    const end = target.selectionEnd;
+    if (start !== null && end !== null) return { start, end };
+  } catch {
+    // Inputs without a selection API (for example number) use the full value.
+  }
+  return { start: 0, end: target.value.length };
+}
+
+function supportsSelectionRange(
+  target: HTMLTextAreaElement | HTMLInputElement,
+): boolean {
+  try {
+    return target.selectionStart !== null && target.selectionEnd !== null;
+  } catch {
+    return false;
+  }
+}
+
 export function captureTextareaSelection(
   target: HTMLTextAreaElement | HTMLInputElement,
 ): CapturedSelection {
-  const start = target.selectionStart || 0;
-  const end = target.selectionEnd || 0;
+  const { start, end } = getEditableSelectionOffsets(target);
   const text = target.value.substring(start, end);
   return {
     text,
@@ -95,6 +123,7 @@ export function restoreTextareaSelection(
   end: number,
   delayMs = 150,
 ): void {
+  if (!supportsSelectionRange(element)) return;
   setTimeout(() => {
     element.focus();
     element.setSelectionRange(start, end);
@@ -153,6 +182,6 @@ export function spliceInputValue(
     element.value.substring(end);
   element.value = newValue;
   const caret = start + replacement.length;
-  element.setSelectionRange(caret, caret);
-  return newValue;
+  if (supportsSelectionRange(element)) element.setSelectionRange(caret, caret);
+  return element.value;
 }

@@ -48,6 +48,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import process from "node:process";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 import {
   AGENT_SYNC_FIELDS,
@@ -706,10 +707,10 @@ async function main(): Promise<number> {
 // Run only when invoked as a CLI — importing this module (jest) must not execute.
 if (/check-agent-sync-fields\.ts$/.test(process.argv[1] ?? "")) {
   main()
-    .then((code) => process.exit(code))
+    .then((code) => exitAfterDrain(code))
     .catch((err: unknown) => {
       console.error("check-agent-sync-fields: unexpected error");
       console.error(err);
-      process.exit(2);
+      exitAfterDrain(2);
     });
 }

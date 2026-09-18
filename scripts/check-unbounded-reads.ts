@@ -42,6 +42,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SCAN_DIRS = ["scripts", "lib", "features", "app", "utils"];
@@ -242,4 +243,4 @@ function main(): number {
   return 0; // ALWAYS advisory — scream, never block.
 }
 
-process.exit(main());
+exitAfterDrain(main());

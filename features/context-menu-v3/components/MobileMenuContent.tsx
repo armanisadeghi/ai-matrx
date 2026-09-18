@@ -400,7 +400,7 @@ export default function MobileMenuContent(props: MobileMenuContentProps) {
         {
           kind: "action",
           id: "spoken-summary",
-          label: "Summarize for listening",
+          label: "Summarize without playing",
           icon: Headphones,
           iconClass: "text-violet-500",
           disabled: listenDisabled,

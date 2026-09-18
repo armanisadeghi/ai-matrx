@@ -38,6 +38,7 @@ import {
 import { QuestionCategoryChip } from "./QuestionCategoryChip";
 import { questionStatus } from "./QuestionCard";
 import type { InterviewQuestionRow } from "../types";
+import { withoutRepeatedLead } from "@/lib/copy/withoutRepeatedLead";
 
 export interface AnswerQuestionWindowProps {
   question: InterviewQuestionRow;
@@ -151,7 +152,8 @@ export function AnswerQuestionWindow({
           </p>
           {question.missing_part && (
             <p className="text-xs leading-snug text-muted-foreground">
-              Still missing: {question.missing_part}
+              Still missing:{" "}
+              {withoutRepeatedLead(question.missing_part, "Still missing")}
             </p>
           )}
         </div>

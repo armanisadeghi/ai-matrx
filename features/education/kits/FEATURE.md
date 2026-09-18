@@ -141,6 +141,10 @@ same anchor and whatever is made lands in THIS kit.
 
 ## Change log
 
+- **2026-09-14** — **Kit phone actions meet the 44px touch floor.** The kit overview's
+  shortcuts, full-kit door, and missing-format chips, plus the hub's Material and Make more
+  from it doors, are at least 44px on phones while their compact desktop sizing remains intact.
+
 - **2026-09-11** — **Kit counts now fail closed.** `listKits` scans the complete
   canonical library without a 25k ceiling and throws if any artifact-family
   origin lookup fails. The education home and kit index keep their count or
@@ -157,7 +161,7 @@ same anchor and whatever is made lands in THIS kit.
   cards, per-artifact counts / coverage / accuracy / due work / last activity, and honest
   untracked-format detail. Added an exact-id filter to the canonical library RPC so the hub can
   reuse its KPI fold without a full-library scan. The Education home kit cards now expose four
-  labeled, 40px mobile destinations plus a working “Open all N study aids” door instead of an
+  labeled, 44px mobile destinations plus a working “Open all N study aids” door instead of an
   unlabeled icon strip; desktop exposes every type by name.
 
 - **2026-08-25** — **Making more stays in the kit.** `MakeMoreFromKit` replaces the

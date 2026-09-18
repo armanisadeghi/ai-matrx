@@ -40,7 +40,11 @@ import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setTimeout as delay } from 'node:timers/promises';
 
-import { assertServerMeetsContractPin } from './aidream-contract-pin.mjs';
+import {
+    assertCheckoutMeetsContractPin,
+    assertServerMeetsContractPin,
+    readContractPin,
+} from './aidream-contract-pin.mjs';
 import { normalizeOpenApiDocument } from './typegen-openapi-normalize.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -54,6 +58,12 @@ function getArg(name, fallback) {
 }
 
 const fastMode = args.includes('--fast');
+const preflightOnly = args.includes('--preflight-only');
+const contractPinPath = getArg('--contract-pin-path', null);
+if (contractPinPath && !preflightOnly) {
+    console.error('  ✗ --contract-pin-path is test-only and requires --preflight-only.');
+    process.exit(2);
+}
 const useLocal = fastMode || args.includes('--local');
 const explicitUrl = getArg('--url', null);
 const useLive = args.includes('--live');
@@ -67,7 +77,7 @@ const LOCAL_BACKEND_URL = 'http://localhost:8000';
 const backendUrl = explicitUrl ?? (useLocal ? LOCAL_BACKEND_URL : LIVE_BACKEND_URL);
 const outDir = resolve(PROJECT_ROOT, 'types/python-generated');
 
-const AIDREAM_ROOT = resolve(PROJECT_ROOT, '../aidream');
+const AIDREAM_ROOT = resolve(getArg('--aidream-root', resolve(PROJECT_ROOT, '../aidream')));
 const AIDREAM_SYNC_SCRIPT = resolve(AIDREAM_ROOT, 'scripts/sync-types.mjs');
 const AIDREAM_GENERATED_DIR = resolve(AIDREAM_ROOT, 'aidream/api/generated');
 const DROP_GUARD = resolve(__dirname, 'typegen-drop-guard.mjs');
@@ -201,6 +211,21 @@ console.log(`  Contract from: ${sourceLabel}`);
 console.log(`  Mode:          ${modeLabel}`);
 console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
+// Refuse a stale contract source before any database generation or other
+// side effect. A preflight failure must be both fast and read-only.
+if (useCheckout) {
+    assertCheckoutMeetsContractPin(
+        AIDREAM_ROOT,
+        contractPinPath ? readContractPin(resolve(contractPinPath)) : readContractPin(),
+    );
+} else if (!useLocal) {
+    await assertServerMeetsContractPin(backendUrl);
+}
+if (preflightOnly) {
+    console.log('  ✓ Contract-source preflight complete; generation intentionally skipped.\n');
+    process.exit(0);
+}
+
 // ── Step 1: Supabase database types ────────────────────────────────────────
 
 if (fastMode) {
@@ -232,11 +257,6 @@ if (fastMode) {
 // ── Step 2: Python API types ───────────────────────────────────────────────
 
 console.log('  Step 2: Getting the API contract...\n');
-
-// A remote server may be the source only if it already contains the pinned commit.
-if (!useCheckout && !useLocal) {
-    await assertServerMeetsContractPin(backendUrl);
-}
 
 // Everything lands in staging first: nothing in types/python-generated/ is
 // touched until the drop guard has seen the new schema.

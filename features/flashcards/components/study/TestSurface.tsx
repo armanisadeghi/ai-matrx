@@ -28,10 +28,12 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import { useQuizStudy } from "../../data/useQuizStudy";
 import { StudyDeckHeader } from "./StudyDeckHeader";
 import CardFaceContent from "@/components/mardown-display/blocks/flashcards/CardFaceContent";
+import { useFlashcardMandates } from "../../data/mandate-disclosure";
 
 const EDU_BASE = "/education/flashcards";
 
 export function TestSurface({ setId }: { setId: string }) {
+  useFlashcardMandates(["makeQuizItems"]);
   const router = useRouter();
   const study = useQuizStudy({ setId, withSession: true });
   const title = study.set?.name ?? "Test";

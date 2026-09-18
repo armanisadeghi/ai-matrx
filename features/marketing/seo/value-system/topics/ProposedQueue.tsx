@@ -1,22 +1,20 @@
 "use client";
 
 /**
- * Proposals — what the assigner placed but is NOT sure about, waiting for a
- * person.
+ * Proposals — what the assigner placed on this site's offerings but is NOT
+ * sure about, waiting for a person.
  *
  * P12 in one screen: agents apply, humans win. A placement at or above the
  * `confidence_floor` knob is a ruling; below it, the keyword still lands on the
- * tree (a candidate an expert can correct beats an empty tree) but it is
- * flagged here until someone confirms it or replaces it. Confirming stamps the
- * placement as the site's own; "Move to another topic…" writes
- * `assigned_by='human'` through the EXISTING write, which takes the keyword off
- * the agent's list forever.
+ * offering (a candidate an expert can correct beats an empty list) but it is
+ * flagged here until someone confirms it or replaces it. Confirming
+ * (`seo.gsc_confirm_keyword_offering`) makes the placement this site's own
+ * ruling; "Move to another offering…" writes through the ONE placement write,
+ * which takes the keyword off the agent's list forever.
  *
- * P26 — ONE TABLE. This was a hand-rolled row list with unsortable numbers. It
- * is now the canonical keyword table, configured by ONE base filter
- * (`placement: "proposed"`), which is why that filter exists on
- * `seo.gsc_perf_breakdown` at all: a surface is a configuration, never a second
- * query with a poorer contract.
+ * P26 — ONE TABLE. This is the canonical keyword table, configured by ONE base
+ * filter (`placement: "proposed"`), which is why that filter exists on
+ * `seo.gsc_perf_breakdown` at all.
  */
 
 import { Check, Network } from "lucide-react";
@@ -30,13 +28,14 @@ import {
   type KeywordTableSurface,
 } from "@/features/marketing/seo/keyword-table/KeywordTable";
 import type { KeywordRowsResult } from "@/features/marketing/seo/keyword-table/useKeywordRows";
-import { confirmKeywordTopics } from "./data";
+import { confirmKeywordOfferings } from "@/features/marketing/seo/keyword-workbench/data";
+import { useSiteOrganizationId } from "@/features/marketing/seo/keyword-workbench/hooks/useSiteOfferings";
 
 const SURFACE: KeywordTableSurface = {
   id: "seo-proposed-queue",
   label: "Proposed placement",
   listLabel: "Placements awaiting confirmation",
-  location: "Marketing — Offering tree — Proposals",
+  location: "Marketing — Offerings — Proposals",
   prefix: "pq",
   defaultColumns: ["key", "topic", "clicks", "impressions", "value_band"],
   baseFilters: { placement: "proposed" },
@@ -47,7 +46,7 @@ const SURFACE: KeywordTableSurface = {
 
 /**
  * How sure the assigner was. It rides the SHARED placement read
- * (`gsc_keyword_topics_for`) that the Offering column already needs, so this
+ * (`gsc_keyword_offerings_for`) that the Offering column already needs, so this
  * column costs no extra query.
  */
 function confidenceColumn(
@@ -61,9 +60,9 @@ function confidenceColumn(
     align: "right",
     width: 110,
     mobileHidden: true,
-    accessorFn: (row) => data.serviceFor(row)?.confidence ?? null,
+    accessorFn: (row) => data.offeringFor(row)?.confidence ?? null,
     cell: (row) => {
-      const confidence = data.serviceFor(row)?.confidence;
+      const confidence = data.offeringFor(row)?.confidence;
       if (confidence == null) {
         return (
           <span className="rounded border border-warning/40 px-1 py-px text-[10px] text-warning">
@@ -91,12 +90,21 @@ export function ProposedQueue({
   brandId: string;
   onChanged: () => void;
 }) {
+  const organization = useSiteOrganizationId(siteId);
+
   const confirm = async (
     keywordIds: string[],
     refresh: () => Promise<void>,
   ) => {
     try {
-      const results = await confirmKeywordTopics(siteId, keywordIds);
+      if (!organization.data) {
+        throw new Error("This site is still loading — try again in a moment.");
+      }
+      const results = await confirmKeywordOfferings({
+        organizationId: organization.data,
+        siteId,
+        keywordIds,
+      });
       await refresh();
       onChanged();
       toast.success(
@@ -120,7 +128,7 @@ export function ProposedQueue({
           The assigner placed these — is it right?
         </h2>
         <p className="hidden text-[11px] text-muted-foreground sm:block">
-          They are already on the tree. Confirming makes them yours.
+          They are already placed. Confirming makes them yours.
         </p>
       </div>
 

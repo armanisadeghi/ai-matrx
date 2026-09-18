@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDurationSeconds } from "@ai-matrx/kit/format";
-import { Fragment, useEffect, useState, useCallback } from "react";
+import { Fragment, useEffect, useRef, useState, useCallback } from "react";
 import { readAllRows } from "@ai-matrx/data/db";
 import { createClient } from "@/utils/supabase/client";
 import { isJsonObject } from "@/types/json";
@@ -53,9 +53,10 @@ import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import AppLink from "@/components/navigation/AppLink";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/slices/userSlice";
+import { useSandboxLifecycleSubmission } from "@/lib/sandbox/useSandboxLifecycleSubmission";
+import { useSandboxLifecycleTerminalInvalidation } from "@/lib/sandbox/useSandboxLifecycleTerminalInvalidation";
 import { AdminUserRef } from "@/features/admin/users/components/AdminUserRef";
 import { sandboxInstanceSummary, formatSandboxTimestamp } from "@/lib/sandbox/format";
-import { toast } from "@/lib/toast";
 import type {
   SandboxInstanceRow as SandboxInstance,
   SandboxAccessResponse,
@@ -177,8 +178,11 @@ export default function AdminSandboxManagementPage() {
   const [deleteTarget, setDeleteTarget] = useState<SandboxInstance | null>(
     null,
   );
-  const [deleting, setDeleting] = useState(false);
-  const [stoppingIds, setStoppingIds] = useState<Set<string>>(new Set());
+  const lifecycleReservations = useAppSelector((state) => state.sandboxLifecycle.reservations);
+  const { submit: submitLifecycle } = useSandboxLifecycleSubmission();
+  const fetchGeneration = useRef(0);
+  const lifecycleViewerRef = useRef(viewerUserId);
+  lifecycleViewerRef.current = viewerUserId;
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
 
   const [sshDialogOpen, setSshDialogOpen] = useState(false);
@@ -191,6 +195,7 @@ export default function AdminSandboxManagementPage() {
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const fetchInstances = useCallback(async () => {
+    const generation = fetchGeneration.current;
     try {
       const supabase = createClient();
       // The current account's RLS-authorized scope. Counts and local filters
@@ -203,14 +208,18 @@ export default function AdminSandboxManagementPage() {
           .range(from, to),
         { label: "admin.sandbox_instances" },
       );
+      if (generation !== fetchGeneration.current) return;
       setAccessibleSandboxes(rows);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
+      if (generation === fetchGeneration.current) setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
-      setLoading(false);
+      if (generation === fetchGeneration.current) setLoading(false);
     }
   }, []);
+
+  useEffect(() => { fetchGeneration.current += 1; }, [viewerUserId]);
+  useSandboxLifecycleTerminalInvalidation(() => fetchInstances(), () => lifecycleViewerRef.current === viewerUserId);
 
   useEffect(() => {
     setLoading(true);
@@ -226,53 +235,13 @@ export default function AdminSandboxManagementPage() {
   };
 
   const handleStop = async (instance: SandboxInstance) => {
-    setStoppingIds((prev) => new Set(prev).add(instance.id));
-    try {
-      const resp = await fetch(`/api/admin/sandbox/${instance.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "stop" }),
-      });
-      if (!resp.ok) {
-        const body = await resp.json().catch(() => ({}));
-        throw new Error(body.error || `Failed to stop (HTTP ${resp.status})`);
-      }
-      await fetchInstances();
-      toast.success(`Sandbox ${instance.sandbox_id} stopped`);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to stop";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setStoppingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(instance.id);
-        return next;
-      });
-    }
+    const result = await submitLifecycle({ rowId: instance.id, sandboxId: instance.sandbox_id, kind: "stop" });
+    if (!result.admitted) setError(result.reason === "already_pending" ? "A sandbox operation is already pending for this target." : "Sandbox lifecycle is still connecting to your account.");
   };
 
-  const handleDelete = async () => {
-    if (!deleteTarget) return;
-    setDeleting(true);
-    try {
-      const resp = await fetch(`/api/admin/sandbox/${deleteTarget.id}`, {
-        method: "DELETE",
-      });
-      if (!resp.ok && resp.status !== 204) {
-        const body = await resp.json().catch(() => ({}));
-        throw new Error(body.error || `Failed to delete (HTTP ${resp.status})`);
-      }
-      setAccessibleSandboxes((prev) => prev.filter((i) => i.id !== deleteTarget.id));
-      toast.success(`Sandbox ${deleteTarget.sandbox_id} deleted`);
-      setDeleteTarget(null);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Failed to delete";
-      setError(msg);
-      toast.error(msg);
-    } finally {
-      setDeleting(false);
-    }
+  const handleDelete = async (target: SandboxInstance) => {
+    const result = await submitLifecycle({ rowId: target.id, sandboxId: target.sandbox_id, kind: "delete" });
+    if (!result.admitted) setError(result.reason === "already_pending" ? "A sandbox operation is already pending for this target." : "Sandbox lifecycle is still connecting to your account.");
   };
 
   const handleRequestSsh = async (instance: SandboxInstance) => {
@@ -361,6 +330,8 @@ export default function AdminSandboxManagementPage() {
   const expandedInstance = expandedRow
     ? instances.find((i) => i.id === expandedRow)
     : undefined;
+  const isLifecycleReserved = (id: string) => lifecycleReservations.some((reservation) => reservation.row_id === id);
+  const deleteTargetBusy = !!deleteTarget && isLifecycleReserved(deleteTarget.id);
 
   const getAdminSandboxScope = () =>
     createAdminSandboxScope({
@@ -646,9 +617,9 @@ export default function AdminSandboxManagementPage() {
                                   variant="outline"
                                   size="sm"
                                   onClick={() => handleStop(instance)}
-                                  disabled={stoppingIds.has(instance.id)}
+                                  disabled={isLifecycleReserved(instance.id)}
                                 >
-                                  {stoppingIds.has(instance.id) ? (
+                                  {isLifecycleReserved(instance.id) ? (
                                     <Loader2 className="w-3 h-3 mr-1 animate-spin" />
                                   ) : (
                                     <Square className="w-3 h-3 mr-1" />
@@ -683,9 +654,14 @@ export default function AdminSandboxManagementPage() {
                                   aria-label="Delete sandbox"
                                   title="Delete sandbox"
                                   onClick={() => setDeleteTarget(instance)}
+                                  disabled={isLifecycleReserved(instance.id)}
                                   className="text-destructive hover:text-destructive"
                                 >
-                                  <Trash2 className="w-3 h-3" />
+                                  {isLifecycleReserved(instance.id) ? (
+                                    <Loader2 className="w-3 h-3 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-3 h-3" />
+                                  )}
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>Delete sandbox</TooltipContent>
@@ -808,7 +784,7 @@ export default function AdminSandboxManagementPage() {
       <ConfirmDialog
         open={!!deleteTarget}
         onOpenChange={(open) => {
-          if (!open && !deleting) setDeleteTarget(null);
+          if (!open && !deleteTargetBusy) setDeleteTarget(null);
         }}
         title="Delete Sandbox"
         description={
@@ -822,8 +798,12 @@ export default function AdminSandboxManagementPage() {
         }
         confirmLabel="Delete"
         variant="destructive"
-        busy={deleting}
-        onConfirm={handleDelete}
+        busy={deleteTargetBusy}
+        onConfirm={() => {
+          const target = deleteTarget;
+          setDeleteTarget(null);
+          if (target) void handleDelete(target);
+        }}
       />
 
       {/* SSH access dialog */}

@@ -16,7 +16,7 @@
  * the other at the same time — see `features/data-tables/FEATURE.md`.
  */
 import { supabase } from "@/utils/supabase/client";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { requireOrganizationContext } from "@/lib/api/organization-context";
 
 import type {
   DocumentRow,
@@ -32,7 +32,7 @@ export type CreateDocumentArgs = {
   description?: string | null;
   /** Origin label for the document itself, mirrors `udt_documents.source`. */
   source?: "created" | "imported_docx" | "imported_md" | "imported_txt";
-  organizationId?: string | null;
+  organizationId: string;
   projectId?: string | null;
   taskId?: string | null;
   isPublic?: boolean;
@@ -47,6 +47,19 @@ export type CreateDocumentArgs = {
 export async function createDocument(
   args: CreateDocumentArgs,
 ): Promise<ServiceResult<DocumentRow>> {
+  let organizationId: string;
+  try {
+    organizationId = requireOrganizationContext(undefined, args.organizationId);
+  } catch (error) {
+    return {
+      success: false,
+      error:
+        error instanceof Error
+          ? error.message
+          : "Select an organization before creating a document.",
+    };
+  }
+
   const { data: userData, error: userErr } = await supabase.auth.getUser();
   if (userErr || !userData?.user) {
     return {
@@ -54,9 +67,6 @@ export async function createDocument(
       error: userErr?.message ?? "not authenticated",
     };
   }
-
-  // Org is NOT NULL — ride the explicit org if given, else the active org.
-  const organizationId = await ensureOrgId(args.organizationId);
 
   const { data, error } = await supabase
     .schema("workbench")

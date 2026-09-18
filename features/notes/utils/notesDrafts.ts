@@ -20,6 +20,13 @@ import { getNoteLiveContent } from "./noteLiveContent";
 
 export const NOTES_DRAFT_NAMESPACE = "note";
 
+/**
+ * Capture reason recorded when a note is deleted while it still holds text the
+ * database does not (audit N-21). `NoteDraftRecoveryBanner` maps it to the
+ * sentence the user reads; `deleteNote` is the only writer.
+ */
+export const NOTE_DELETED_DRAFT_REASON = "note-deleted";
+
 type StateWithNotes = {
   notes?: NotesSliceState;
   userAuth?: { id?: string | null };
@@ -36,6 +43,14 @@ type StateWithNotes = {
  *   that reads Redux alone silently truncates the rescue, and a brand-new note
  *   typed into for under a second is not even `_dirty` yet.
  */
+/**
+ * When set, a capture collects ONLY these notes. A capture made for one note's
+ * sake (a delete) must not re-stamp every other note's draft with that note's
+ * reason — the recovery banner on an unrelated note would then say "the note
+ * was deleted". Set only for the duration of one synchronous capture.
+ */
+let captureOnlyNoteIds: ReadonlySet<string> | null = null;
+
 export function collectNoteDrafts(state: StateWithNotes): LocalDraftInput[] {
   const records = state.notes?.notes;
   if (!records) return [];
@@ -50,6 +65,7 @@ export function collectNoteDrafts(state: StateWithNotes): LocalDraftInput[] {
   const drafts: LocalDraftInput[] = [];
   for (const record of Object.values(records) as NoteRecord[]) {
     if (!record) continue;
+    if (captureOnlyNoteIds && !captureOnlyNoteIds.has(record.id)) continue;
     const live = getNoteLiveContent(record.id);
     const stored = record.content ?? "";
     const content = live ?? stored;
@@ -84,6 +100,17 @@ export function registerNotesDraftSource(
 /** Snapshot now — call before anything that discards the editor's buffer. */
 export function captureNoteDrafts(reason: string): LocalDraft[] {
   return captureDrafts(reason);
+}
+
+/** Snapshot ONE note's unsaved work, leaving every other draft untouched.
+ *  Notes is the only registered draft source, so the filter is exact. */
+export function captureNoteDraftFor(noteId: string, reason: string): LocalDraft[] {
+  captureOnlyNoteIds = new Set([noteId]);
+  try {
+    return captureDrafts(reason);
+  } finally {
+    captureOnlyNoteIds = null;
+  }
 }
 
 export function getNoteDraft(

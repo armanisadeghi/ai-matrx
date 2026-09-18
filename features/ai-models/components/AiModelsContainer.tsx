@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import AiModelTable from "./AiModelTable";
 import AiModelTabBar from "./AiModelTabBar";
 import AiModelDetailPanel from "./AiModelDetailPanel";
@@ -34,6 +35,8 @@ export default function AiModelsContainer() {
   const [models, setModels] = useState<AiModel[]>([]);
   const [providers, setProviders] = useState<AiProvider[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const loadGeneration = useRef(0);
   const [selectedModel, setSelectedModel] = useState<AiModel | null>(null);
   const [isNewModel, setIsNewModel] = useState(false);
   const [panelOpen, setPanelOpen] = useState(false);
@@ -54,18 +57,23 @@ export default function AiModelsContainer() {
   } = useTabUrlState();
 
   const loadData = useCallback(async () => {
+    const generation = ++loadGeneration.current;
     setIsLoading(true);
     try {
       const [fetchedModels, fetchedProviders] = await Promise.all([
         aiModelService.fetchAll(),
         aiModelService.fetchProviders(),
       ]);
+      if (generation !== loadGeneration.current) return;
+      setLoadError(null);
       setModels(fetchedModels);
       setProviders(fetchedProviders);
     } catch (err) {
+      if (generation !== loadGeneration.current) return;
       console.error("Failed to load AI models", err);
+      setLoadError("Could not load the model catalog. Retry to refresh the data.");
     } finally {
-      setIsLoading(false);
+      if (generation === loadGeneration.current) setIsLoading(false);
     }
   }, []);
 
@@ -175,7 +183,11 @@ export default function AiModelsContainer() {
     closePanel();
   };
 
+  const duplicatingModels = useRef(new Set<string>());
   const handleDuplicate = async (model: AiModel) => {
+    if (duplicatingModels.current.has(model.id)) return;
+    duplicatingModels.current.add(model.id);
+    const notice = toast.loading(`Duplicating ${model.common_name || model.name}…`);
     try {
       const {
         id: _id,
@@ -194,8 +206,15 @@ export default function AiModelsContainer() {
       });
       setModels((prev) => [duplicate, ...prev]);
       openModel(duplicate);
+      toast.success("Model duplicated", { id: notice });
     } catch (err) {
       console.error("Duplicate failed", err);
+      toast.error("Could not duplicate model", {
+        id: notice,
+        description: err instanceof Error ? err.message : "Please try again.",
+      });
+    } finally {
+      duplicatingModels.current.delete(model.id);
     }
   };
 
@@ -291,6 +310,12 @@ export default function AiModelsContainer() {
       isEditable={false}
     >
       <div className="flex flex-col h-full min-h-0">
+        {loadError && (
+          <div role="alert" className="flex shrink-0 items-center gap-2 border-b border-destructive/30 bg-destructive/5 px-2 py-1 text-sm">
+            <span className="min-w-0 flex-1">{loadError}{models.length > 0 ? " Previously loaded models remain visible." : ""}</span>
+            <Button type="button" variant="outline" size="sm" disabled={isLoading} onClick={() => void loadData()}>Retry</Button>
+          </div>
+        )}
         {/* Tab bar + audit button */}
         <div className="flex items-center shrink-0 bg-card">
           <div className="flex-1 min-w-0">
