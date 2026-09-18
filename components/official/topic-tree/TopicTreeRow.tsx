@@ -207,8 +207,10 @@ export function TopicTreeRow({
         ) : null}
       </span>
 
+      {/* Actions are visible wherever there is no hover to reveal them (touch):
+          the house pattern hides them until hover only on a device that CAN hover. */}
       {row.actions ? (
-        <span className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100">
+        <span className="flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity focus-within:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
           {row.actions}
         </span>
       ) : null}

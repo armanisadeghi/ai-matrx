@@ -1,21 +1,24 @@
 "use client";
 
 /**
- * TEXT — `seo.map_outline`, exactly what an agent receives, read-only and
- * copyable (vision §2.1: "exactly what an agent receives, copyable, read-only").
+ * TEXT — the map as a MARKDOWN TREE a person can read (Arman, 2026-09-18: "the
+ * text version should be a markdown tree … human readable and actually really
+ * nice for viewing and understanding").
  *
- * This screen is deliberately NOT a rendering of the map: it is the bytes the
- * agent is handed, so what the person reads here and what the agent read are
- * provably the same thing. Two controls change WHICH bytes — never how they
- * look: the focus (which topic the neighbourhood is built around) and the
- * sizing overrides (`p_overrides`, this preview only). Copy hands the same
- * bytes to a person or to an agent.
+ * The document is built from the SAME store tree the outline renders
+ * (`buildMapMarkdown`), so the two can never disagree, and it renders through
+ * the one markdown pipeline (`MarkdownStream`, not a hand-rolled renderer).
+ * Focus narrows it to one branch. Copy hands a person the markdown; "Copy for
+ * AI" hands an agent the bytes `seo.map_outline` produces — exactly what an
+ * agent receives, sized by the sizing overrides in this preview only.
  */
 
 import { useState } from "react";
 
+import MarkdownStream from "@/components/MarkdownStream";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { AssistStrip } from "@/features/assists/components/AssistStrip";
+import { useAppSelector } from "@/lib/redux/hooks";
 
 import {
   TopicalMapEmpty,
@@ -23,9 +26,18 @@ import {
   TopicalMapLoading,
 } from "../components/TopicalMapStates";
 import type { MapViewProps } from "../components/TopicalMapWorkspaceBody";
-import { useMapOutline } from "../hooks";
+import { mapOutline } from "../data";
+import { withTopicalMapErrors } from "../errors";
+import { useMapTree, useTopicalMap } from "../hooks";
 import { useTopicalMapKnobs } from "../knobs";
+import {
+  selectMapLoadedIncludes,
+  selectMapRootSlugs,
+  selectMapTopicsBySlug,
+} from "../redux/selectors";
 import type { MapTopicSearchHit } from "../types";
+import { OUTLINE_TREE_INCLUDE } from "./OutlineView";
+import { buildMapMarkdown } from "./outline/text/mapMarkdown";
 import { TextFocusPicker } from "./outline/text/TextFocusPicker";
 import { TextOverridesPopover, type OutlineOverrides } from "./outline/text/TextOverridesPopover";
 
@@ -36,30 +48,49 @@ export function TextView({ mapId, siteId }: MapViewProps) {
   const [overrides, setOverrides] = useState<OutlineOverrides>({});
   const { knobs, loading: knobsLoading, error: knobsError } = useTopicalMapKnobs();
 
+  // The same read (same key) every tree view makes — one fetch, one cache.
+  const tree = useMapTree(mapId, { include: [...OUTLINE_TREE_INCLUDE], siteId: siteId ?? undefined });
+  const map = useTopicalMap(mapId);
+  const topics = useAppSelector(selectMapTopicsBySlug(mapId));
+  const rootSlugs = useAppSelector(selectMapRootSlugs(mapId));
+  const loadedIncludes = useAppSelector(selectMapLoadedIncludes(mapId));
+
   const hasOverrides = Object.keys(overrides).length > 0;
-  const outline = useMapOutline(mapId, {
-    siteId: siteId ?? undefined,
-    focusSlug: focus?.slug ?? undefined,
-    ...(hasOverrides ? { overrides } : {}),
-  });
+  const markdown = tree.isPending || tree.isError
+    ? ""
+    : buildMapMarkdown(topics, rootSlugs, {
+        mapName: map.data?.name ?? null,
+        focusSlug: focus?.slug ?? null,
+        countsLoaded: loadedIncludes.includes("counts"),
+      });
 
   const controls = (
     <div className="flex flex-wrap items-center gap-1.5">
       <TextFocusPicker mapId={mapId} focus={focus} onChange={setFocus} />
       {knobsError ? (
         <span className="text-[11px] text-destructive" title={knobsError.message}>
-          Sizing overrides unavailable: the map settings could not be read.
+          Agent sizing overrides unavailable: the map settings could not be read.
         </span>
       ) : knobs ? (
         <TextOverridesPopover knobs={knobs} overrides={overrides} onChange={setOverrides} />
       ) : knobsLoading ? null : null}
       <div className="ml-auto">
-        {outline.data && outline.data.trim() ? (
+        {markdown ? (
           <CopyButtons
-            label="Agent outline"
+            label={focus ? `Topical map — ${focus.name}` : "Topical map"}
             size="sm"
-            human={() => outline.data}
-            agent={() => outline.data}
+            human={() => markdown}
+            // What an agent is handed: seo.map_outline's own bytes, focused and
+            // sized exactly as the run would be — never a re-rendering of them.
+            agent={() =>
+              withTopicalMapErrors("seo.map_outline", () =>
+                mapOutline(mapId, {
+                  siteId: siteId ?? undefined,
+                  focusSlug: focus?.slug ?? undefined,
+                  ...(hasOverrides ? { overrides } : {}),
+                }),
+              )
+            }
           />
         ) : null}
       </div>
@@ -74,33 +105,42 @@ export function TextView({ mapId, siteId }: MapViewProps) {
           Text view
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          This is the map exactly as an agent receives it (seo.map_outline), not a
-          rendering of it.
+          The map as a markdown tree — the same topics the outline shows, readable as a document.
           {focus ? ` Focused on "${focus.name}".` : ""}
-          {hasOverrides ? " Sized with this preview's overrides, not the settings." : ""}
+          {" "}Copy for AI hands an agent the outline it would actually receive
+          {hasOverrides ? ", sized with this preview's overrides" : ""}.
         </p>
         <div className="mt-3">{controls}</div>
 
-        {outline.isPending ? (
-          <TopicalMapLoading what="the agent outline" />
-        ) : outline.isError ? (
+        {tree.isPending ? (
+          <TopicalMapLoading what="this map's topics" />
+        ) : tree.isError ? (
           <div className="mt-3">
-            <TopicalMapFailed what="the agent outline" error={outline.error} />
+            <TopicalMapFailed what="this map's topics" error={tree.error} />
           </div>
-        ) : !outline.data.trim() ? (
+        ) : !markdown ? (
           <div className="mt-3">
             <TopicalMapEmpty
-              title="The outline is empty"
-              detail="seo.map_outline returned nothing, which means this map has no topics an agent could be shown yet."
+              title={focus ? "That topic is not in the loaded map" : "This map has no topics yet"}
+              detail={
+                focus
+                  ? "The focused topic is not among the topics this map loaded; pick another or clear the focus."
+                  : "Nothing has been generated or added. A map builder run, or an agent using the topical_map tool, fills the tree; until then there is genuinely nothing to show."
+              }
             />
           </div>
         ) : (
-          <pre
-            className="mt-3 min-h-0 flex-1 overflow-auto whitespace-pre-wrap rounded-lg bg-muted/40 p-3 font-mono text-xs"
-            aria-label="The outline an agent receives"
+          <div
+            className="mt-3 min-h-0 flex-1 overflow-auto rounded-lg bg-muted/40 p-4"
+            aria-label="The map as a markdown tree"
           >
-            {outline.data}
-          </pre>
+            <MarkdownStream
+              content={markdown}
+              isStreamActive={false}
+              hideCopyButton
+              allowFullScreenEditor={false}
+            />
+          </div>
         )}
       </section>
     </div>
