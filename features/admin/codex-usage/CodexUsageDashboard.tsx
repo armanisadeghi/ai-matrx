@@ -14,6 +14,7 @@ import {
 import {
   readCodexUsage,
   readCodexUsageAllowance,
+  CodexUsageCollectionBusyError,
   type CodexUsageAllowance,
   type CodexUsageGrouping,
   type CodexUsageMetrics,
@@ -30,6 +31,12 @@ type RangePreset = "today" | "yesterday" | "last-12-hours" | "custom";
 
 type TimeRange = { start: string; end: string };
 type LoadMode = "selection" | "refresh" | "continue";
+type UsageLoad = {
+  generation: number;
+  mode: LoadMode;
+  range: TimeRange;
+  presence: ReturnType<typeof useDesktopPresence>;
+};
 type UsageScope =
   | { kind: "model"; model: string | null; effort?: string | null }
   | { kind: "project"; project: string | null }
@@ -277,6 +284,8 @@ export function CodexUsageDashboard() {
   const [error, setError] = useState<string | null>(null);
   const requestGeneration = useRef(0);
   const allowanceGeneration = useRef(0);
+  const activeLoad = useRef(false);
+  const queuedLoad = useRef<UsageLoad | null>(null);
 
   async function load(mode: LoadMode) {
     const generation = ++requestGeneration.current;
@@ -294,58 +303,71 @@ export function CodexUsageDashboard() {
       }
       return;
     }
-    const refresh = mode !== "selection";
-    refresh ? setRefreshing(true) : setLoading(true);
-    const allowanceRequest = ++allowanceGeneration.current;
-    void readCodexUsageAllowance(presence)
-      .then((nextAllowance) => {
-        if (allowanceRequest === allowanceGeneration.current) {
-          setAllowance(nextAllowance);
-          setAllowanceError(
-            nextAllowance.status === "unavailable"
-              ? (nextAllowance.reason ?? null)
+    const request = { generation, mode, range, presence };
+    if (activeLoad.current) {
+      // A local collection owns one bounded scan at a time. Keep only the
+      // newest range so quick date edits cannot send stale competing reads.
+      queuedLoad.current = request;
+      mode === "selection" ? setLoading(true) : setRefreshing(true);
+      return;
+    }
+    activeLoad.current = true;
+    let nextRequest: UsageLoad | null = request;
+    while (nextRequest) {
+      const refresh = nextRequest.mode !== "selection";
+      refresh ? setRefreshing(true) : setLoading(true);
+      const allowanceRequest = ++allowanceGeneration.current;
+      void readCodexUsageAllowance(nextRequest.presence)
+        .then((nextAllowance) => {
+          if (allowanceRequest === allowanceGeneration.current) {
+            setAllowance(nextAllowance);
+            setAllowanceError(
+              nextAllowance.status === "unavailable"
+                ? (nextAllowance.reason ?? null)
+                : null,
+            );
+          }
+        })
+        .catch((cause) => {
+          if (allowanceRequest === allowanceGeneration.current) {
+            setAllowance(null);
+            setAllowanceError(
+              cause instanceof Error ? cause.message : "Allowance is unavailable.",
+            );
+          }
+        });
+      try {
+        const next = await readCodexUsage(nextRequest.presence, {
+          ...nextRequest.range,
+          grouping: "model",
+          refresh,
+        });
+        if (nextRequest.generation === requestGeneration.current) {
+          setSnapshot(next);
+          setResumeRange(
+            next.coverage.can_resume === true
+              ? { start: next.range.start, end: next.range.end }
               : null,
           );
+          setError(null);
         }
-      })
-      .catch((cause) => {
-        if (allowanceRequest === allowanceGeneration.current) {
-          setAllowance(null);
-          setAllowanceError(
-            cause instanceof Error
-              ? cause.message
-              : "Allowance is unavailable.",
+      } catch (cause) {
+        if (nextRequest.generation === requestGeneration.current) {
+          setError(
+            cause instanceof CodexUsageCollectionBusyError
+              ? "Another connected view is collecting usage. Try refresh again when that collection finishes."
+              : cause instanceof Error
+                ? cause.message
+                : "Matrx Local could not provide usage right now.",
           );
         }
-      });
-    try {
-      const next = await readCodexUsage(presence, {
-        ...range,
-        grouping: "model",
-        refresh,
-      });
-      if (generation !== requestGeneration.current) return;
-      setSnapshot(next);
-      if (next.coverage.can_resume === true) {
-        setResumeRange({ start: next.range.start, end: next.range.end });
-      } else {
-        setResumeRange(null);
       }
-      setError(null);
-    } catch (cause) {
-      if (generation === requestGeneration.current) {
-        setError(
-          cause instanceof Error
-            ? cause.message
-            : "Matrx Local could not provide usage right now.",
-        );
-      }
-    } finally {
-      if (generation === requestGeneration.current) {
-        setLoading(false);
-        setRefreshing(false);
-      }
+      nextRequest = queuedLoad.current;
+      queuedLoad.current = null;
     }
+    activeLoad.current = false;
+    setLoading(false);
+    setRefreshing(false);
   }
 
   useEffect(() => {
