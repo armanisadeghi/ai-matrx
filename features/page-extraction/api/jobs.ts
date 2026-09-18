@@ -10,6 +10,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { docprocDb } from "@/utils/supabase/docprocDb";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
+import { OrganizationContextError } from "@ai-matrx/agents/matrx";
 import type {
   PageExtractionJob,
   PageExtractionJobInsert,
@@ -52,16 +53,57 @@ export async function getJob(jobId: string): Promise<PageExtractionJob | null> {
   return (data ?? null) as PageExtractionJob | null;
 }
 
+/**
+ * Create a template.
+ *
+ * 🚨 THE ORGANIZATION IS CARRIED FROM THE PARENT FILE, NEVER LEFT TO A
+ * TRIGGER. `docproc.page_extraction_jobs` sits behind BOTH the parent-inherit
+ * trigger and `public._stamp_org_default`: a row sent without an organization
+ * is inherited from its parent when the DB can find one and filed in the
+ * WRITER'S PERSONAL organization when it cannot. Either way nothing in this
+ * app decided it, which is what the law forbids — the organization is READ and
+ * carried, never invented below the boundary
+ * (common-docs/policies/context-is-carried-never-rebuilt.md).
+ *
+ * So: the caller's explicit organization wins; otherwise the PARENT FILE's own
+ * organization is read and carried (the template belongs where the document
+ * it extracts from belongs); and if the parent cannot answer, the write
+ * REFUSES with the remedy rather than letting a trigger pick a workspace the
+ * person never chose.
+ */
 export async function createJob(
   input: PageExtractionJobInsert,
 ): Promise<PageExtractionJob> {
+  const organizationId =
+    input.organization_id ?? (await parentFileOrganizationId(input.file_id));
   const { data, error } = await db
     .from(TABLE)
-    .insert(input)
+    .insert({ ...input, organization_id: organizationId })
     .select("*")
     .single();
   if (error) throw error;
   return data as PageExtractionJob;
+}
+
+/** The organization of the file this template extracts from. */
+async function parentFileOrganizationId(fileId: string): Promise<string> {
+  const { data, error } = await supabase
+    .schema("files")
+    .from("files")
+    .select("organization_id")
+    .eq("id", fileId)
+    .maybeSingle();
+  if (error) throw error;
+  const organizationId = data?.organization_id ?? null;
+  if (!organizationId) {
+    // Never a trigger's guess, and never silent: say which organization is
+    // missing and how to supply it.
+    throw new OrganizationContextError(
+      "organization_context_required",
+      "This extraction template has no organization to be filed under — the file it reads could not be found, or names none. Open the file from the organization it belongs to and try again.",
+    );
+  }
+  return organizationId;
 }
 
 /**

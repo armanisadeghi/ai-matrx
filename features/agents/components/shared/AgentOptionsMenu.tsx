@@ -1,6 +1,8 @@
 "use client";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { duplicateAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { invalidateAgentCache } from "@/features/agents/redux/agent-definition/invalidate-agent-cache.thunk";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
@@ -185,9 +187,15 @@ function SoonBadge() {
   );
 }
 
-async function convertToTemplate(agentId: string): Promise<void> {
+async function convertToTemplate(
+  agentId: string,
+  organizationId: string,
+): Promise<void> {
   const response = await fetch(`/api/agents/${agentId}/convert-to-template`, {
     method: "POST",
+    // The template is filed in the organization the person selected — the
+    // route refuses without it rather than filing in a personal workspace.
+    headers: applyOrganizationContextHeader({}, organizationId),
   });
   if (!response.ok) {
     const data = await response
@@ -328,6 +336,9 @@ export function AgentOptionsMenu({
   // Admin actions (incl. "Find Usages (Admin)") are super-admin only. The
   // server RPCs enforce is_super_admin() regardless; this hides the entry.
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  // The organization a converted template is filed in — carried to the
+  // route as `X-Organization-Id`, never resolved into a personal one.
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
   const adminItems = isSuperAdmin ? ADMIN_ITEMS : [];
 
   const runRefreshServerCache = useCallback(async () => {
@@ -446,9 +457,17 @@ export function AgentOptionsMenu({
         "[AGENT OPTIONS MENU] Converting to template, Agent ID:",
         agentId,
       );
+      if (!selectedOrganizationId) {
+        // The route files the template in the admitted organization and
+        // refuses without one — say so rather than send a request that 400s.
+        toast.error(
+          "No organization is selected, so this template has nowhere to be filed. Choose the organization you are working in from the avatar menu and try again.",
+        );
+        return;
+      }
       setIsConverting(true);
       try {
-        await convertToTemplate(agentId);
+        await convertToTemplate(agentId, selectedOrganizationId);
       } catch (err) {
         toast.error(
           err instanceof Error ? err.message : "Failed to save as template",
@@ -738,6 +757,9 @@ function MobileMenuContent({
   // Admin actions (incl. "Find Usages (Admin)") are super-admin only. The
   // server RPCs enforce is_super_admin() regardless; this hides the entry.
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  // The organization a converted template is filed in — carried to the
+  // route as `X-Organization-Id`, never resolved into a personal one.
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
   const adminItems = isSuperAdmin ? ADMIN_ITEMS : [];
 
   const handleItem = async (label: string) => {
@@ -797,9 +819,17 @@ function MobileMenuContent({
       onClose();
       void onTriggerRefreshCache();
     } else if (label === "Convert to Template") {
+      if (!selectedOrganizationId) {
+        // The route files the template in the admitted organization and
+        // refuses without one — say so rather than send a request that 400s.
+        toast.error(
+          "No organization is selected, so this template has nowhere to be filed. Choose the organization you are working in from the avatar menu and try again.",
+        );
+        return;
+      }
       setIsBusy(true);
       try {
-        await convertToTemplate(agentId);
+        await convertToTemplate(agentId, selectedOrganizationId);
       } catch (err) {
         toast.error(
           err instanceof Error ? err.message : "Failed to save as template",

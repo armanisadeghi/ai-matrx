@@ -35,6 +35,9 @@ export async function logTranscriptionError(entry: TranscriptionErrorLog): Promi
     const supabase = createAdminClient();
 
     await supabase.schema('ops').from('system_error').insert({
+      // org-fallback-deliberate: ops.system_error is the platform's own error
+      //   ledger — a transcription failure belongs to the platform, and the row
+      //   carries no tenant work
       organization_id: await resolveSystemOrgId(supabase),
       kind: 'audio_transcription',
       source_app: 'matrx-frontend',

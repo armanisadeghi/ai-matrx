@@ -168,6 +168,8 @@ function failedLibrary(overrides: Partial<LibraryRow> = {}): LibraryRow {
 
 const IDLE_SYNC: SyncState = {
     phase: "idle",
+    skippedTotal: 0,
+    skippedByReason: {},
     startedAt: null,
     finishedElapsedMs: null,
     listed: 0,

@@ -15,6 +15,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import {
+  presentOrganizationRefusal,
+  organizationRefusalMessage,
+} from "@/lib/organizations/organizationRefusalToast";
 import type { Database, Json } from "@/types/database.types";
 import {
   PERSISTENCE_MESSAGE_SOURCE_ASSISTANT,
@@ -104,13 +108,35 @@ export async function ensureConversation(
     total_interruptions: 0,
   };
 
+  // 🚨 THE REFUSAL MUST NOT ESCAPE THE RESULT CONTRACT. Every function here
+  // returns `{ ok: false, error }` — but `ensureOrgId` THROWS (2026-09-17),
+  // so a missing organization blew straight past every caller's `if (!ok)`
+  // branch and out of a voice session that shows no error UI at all: the
+  // conversation simply never existed and the transcript went nowhere. Speak
+  // it, then answer in the shape the caller reads.
+  let organizationId: string;
+  try {
+    organizationId = await ensureOrgId(undefined);
+  } catch (err) {
+    if (presentOrganizationRefusal(err, {
+      subject: "This voice conversation",
+      act: "saved",
+    })) {
+      return { ok: false, error: organizationRefusalMessage({
+        subject: "This voice conversation",
+        act: "saved",
+      }) };
+    }
+    throw err;
+  }
+
   const insert: CxConversationInsert = {
     id: conversationId,
     // Canonical ownership column (replaces the dropped `user_id`). The
     // `_stamp_actor` trigger also defaults this from auth.uid() on insert.
     created_by: user.id,
     // Root entity (no org-inherit trigger) — org is NOT NULL; resolve it.
-    organization_id: await ensureOrgId(undefined),
+    organization_id: organizationId,
     is_ephemeral: false,
     status: "active",
     source_app: PERSISTENCE_SOURCE_APP,
@@ -151,7 +177,23 @@ export async function persistTurns(
   // chat.message inherits org from its conversation via DB trigger, but the
   // regenerated type requires it. Voice conversations are personal-org (see
   // ensureConversation), so this matches the parent.
-  const orgId = await ensureOrgId(undefined);
+  let orgId: string;
+  try {
+    orgId = await ensureOrgId(undefined);
+  } catch (err) {
+    // Same contract as ensureConversation: never a throw out of a
+    // result-returning writer, never a silently lost transcript.
+    if (presentOrganizationRefusal(err, {
+      subject: "This transcript",
+      act: "saved",
+    })) {
+      return { ok: false, error: organizationRefusalMessage({
+        subject: "This transcript",
+        act: "saved",
+      }) };
+    }
+    throw err;
+  }
 
   const rows: CxMessageInsert[] = opts.turns.map((turn, idx) => {
     const voiceMeta: Record<string, Json> = {

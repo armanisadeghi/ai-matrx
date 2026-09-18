@@ -16,7 +16,10 @@ import activeRequestsReducer, {
   upsertRenderBlock,
   appendTimeline,
 } from "../active-requests.slice";
-import { selectUnifiedSlots } from "../active-requests.selectors";
+import {
+  selectUnifiedSlotRange,
+  selectUnifiedSlots,
+} from "../active-requests.selectors";
 import { StreamBlockAccumulator } from "../../utils/stream-block-accumulator";
 import { assembleMessageParts } from "../../utils/assemble-cx-content-blocks";
 import { upsertToolLifecycle } from "../active-requests.slice";
@@ -103,6 +106,57 @@ test("text -> tool -> text -> tool -> text keeps strict order", () => {
     "tool:call_2",
     "render_block", // "Here is the final answer."
   ]);
+});
+
+test("an acknowledged steer freezes the prior assistant segment and gives later tool output a new range", () => {
+  const store = makeStore();
+  const dispatch = (a: unknown) => store.dispatch(a as never);
+  dispatch(createRequest({ requestId: REQ, conversationId: CONV }));
+  const acc = new StreamBlockAccumulator(REQ, (payload) =>
+    upsertRenderBlock(payload),
+  );
+
+  textRun(acc, dispatch, "Before the steering message.\n");
+  dispatch(closeTextRun({ requestId: REQ, timestamp: 1 }) as unknown as never);
+  acc.finalize(dispatch);
+  // A transient phase slot is present at the boundary, then disappears when
+  // post-steer content lands. The range must use source timeline positions,
+  // not the mutable unified-slot array index.
+  dispatch(
+    appendTimeline({
+      requestId: REQ,
+      entry: {
+        kind: "phase",
+        seq: 0,
+        timestamp: 1,
+        data: { phase: "processing" },
+      },
+    }) as unknown as never,
+  );
+
+  // process-stream does this at injection_consumed after flushing the live
+  // text block. This is the slot boundary persisted on the pre-steer row.
+  const boundary =
+    store.getState().activeRequests.byRequestId[REQ].timeline.length;
+  acc.breakTextBlock(dispatch);
+  toolEvent(store, acc, dispatch, "call_after_steer", "web_search");
+  textRun(acc, dispatch, "After the steering message.\n");
+  dispatch(closeTextRun({ requestId: REQ, timestamp: 1 }) as unknown as never);
+  acc.finalize(dispatch);
+
+  const before = selectUnifiedSlotRange(
+    REQ,
+    0,
+    boundary,
+  )(store.getState() as AnyState);
+  const after = selectUnifiedSlotRange(
+    REQ,
+    boundary,
+  )(store.getState() as AnyState);
+  expect(before).toHaveLength(1);
+  expect(before.every((slot) => slot.kind !== "tool")).toBe(true);
+  expect(after.some((slot) => slot.kind === "tool")).toBe(true);
+  expect(after).toHaveLength(2);
 });
 
 test("server render_block -> tool -> text keeps the block BEFORE the tool", () => {

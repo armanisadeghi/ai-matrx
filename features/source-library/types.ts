@@ -282,6 +282,15 @@ export type SyncEvent =
           elapsed_ms: number;
           quota_units_spent: number;
           metrics: LibraryMetrics;
+          /**
+           * What the catalogue LEFT OUT, and why. A blog crawl reaches taxonomy
+           * pages, pagination, nav widgets and assets; waitbutwhy.com reported 346
+           * "Posts" against its own sitemap's 202 and nothing on screen could have
+           * said so. Absent or empty means nothing was discarded — never "we did
+           * not look", which is why the server sends `{}` rather than omitting it.
+           */
+          skipped_by_reason: Record<string, number>;
+          skipped_total: number;
       })
     | (SyncEventBase & {
           type: "library.sync.unavailable";

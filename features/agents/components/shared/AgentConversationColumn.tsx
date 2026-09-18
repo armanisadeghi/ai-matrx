@@ -17,7 +17,6 @@ import type { VariablesPanelStyle } from "../inputs/variable-input-variations/va
 import { OlderMessagesSentinel } from "./OlderMessagesSentinel";
 import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsksZone";
 import { ServerOperationBanner } from "@/features/agents/runtime-reconnect/ServerOperationBanner";
-import { LiveTurnBar } from "./LiveTurnBar";
 import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
@@ -538,11 +537,6 @@ export function AgentConversationColumn({
               cards and typing into the input are independent actions. */}
           {/* Server-truth reconnect indicator: a non-terminal /runtime
               operation exists for this conversation (survives refresh). */}
-          {/* 🚨 ALWAYS-VISIBLE LIVE STATE. Pinned here, above the composer,
-              because this is the one region of the column that never scrolls
-              away — see ./LiveTurnBar.tsx for the two-minute silence it
-              closes. */}
-          {isLiveRequest && <LiveTurnBar conversationId={displayId} />}
           <ServerOperationBanner conversationId={displayId} />
           <PendingAsksZone conversationId={displayId} />
           <ProposedDirectivesZone conversationId={displayId} />

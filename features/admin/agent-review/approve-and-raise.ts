@@ -59,6 +59,16 @@ export type ApproveAndRaiseInput = {
   /** What the human typed. It becomes the conversation note AND the item. */
   note: string;
   /**
+   * The organization the reviewer is acting in, read from Redux by the surface
+   * and CARRIED into the filing. `submitFeedback` is a Server Action, which
+   * carries no `X-Organization-Id` header, so the selection travels here as an
+   * argument and the action refuses an empty one. It is checked BEFORE the
+   * approval runs: a note that cannot be filed must not approve the row first
+   * and then report `approved_not_raised` on every attempt.
+   * common-docs/policies/context-is-carried-never-rebuilt.md rule 4.
+   */
+  organizationId: string | null | undefined;
+  /**
    * Retry after `approved_not_raised`: the row is already approved and the note
    * is already in its conversation, so only the filing runs again.
    */
@@ -73,6 +83,7 @@ export async function approveAndRaise({
   row,
   userId,
   note,
+  organizationId,
   alreadyApproved = false,
 }: ApproveAndRaiseInput): Promise<ApproveAndRaiseResult> {
   const trimmed = note.trim();
@@ -82,6 +93,17 @@ export async function approveAndRaise({
       reason:
         "Write the note you want to raise. Approve on its own is the button for a review with nothing to raise.",
     };
+  }
+
+  const trimmedOrganizationId = organizationId?.trim() ?? "";
+  if (trimmedOrganizationId.length === 0) {
+    const reason =
+      "Select an organization before raising a note \u2014 the feedback item is filed under one organization. Pick yours from the avatar menu.";
+    // On the retry lane the row is already approved; the honest answer is
+    // still "approved, not raised", never "not approved".
+    return alreadyApproved
+      ? { status: "approved_not_raised", reason }
+      : { status: "not_approved", reason };
   }
 
   if (!alreadyApproved) {
@@ -109,6 +131,7 @@ export async function approveAndRaise({
       feedback_type: "bug",
       route: reviewItemPath(row.id),
       description: trimmed,
+      organization_id: trimmedOrganizationId,
       metadata: { [RAISED_FROM_REVIEW_ROW_KEY]: row.id },
     });
   } catch (filingError) {

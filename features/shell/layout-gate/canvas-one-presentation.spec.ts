@@ -23,15 +23,21 @@
  *      chat route's rect equals the document route's rect, to the pixel.
  *   2. OPENING THE CANVAS MOVES NO SHELL HEADER BUTTON — every button in the
  *      shell header's cluster keeps its exact rect, canvas closed vs open, on
- *      both routes. (`:root[data-canvas-open]` hides the avatar with
- *      `visibility`, which reserves its box; a rule that used `display` — or a
- *      presentation that reflowed the header row — would go red here.)
+ *      both routes. Two things have to hold for that: `:root[data-canvas-open]`
+ *      hides the avatar with `visibility`, which reserves its box; and
+ *      `CanvasShellHeaderToggle` keeps its SLOT while the canvas is open (the
+ *      canvas pane's header owns the control then) instead of unmounting and
+ *      pulling every button left of it 44px sideways. Measured live on
+ *      2026-09-17 before that fix: Records 887.59 closed against 931.59 open.
  *
- * PROVEN FAILING BEFORE PASSING: set `MATRX_LAYOUT_GATE_MUTATION=dock` and the
- * chat fixture is built the way the rejected dock built it (in-flow column,
- * `padding-top: var(--shell-header-h)`). Case 1 goes RED — the canvas pane
- * header sits 44px lower and hundreds of pixels narrower on chat than on a
- * document route — which is precisely the difference the owner saw.
+ * PROVEN FAILING BEFORE PASSING, two switches:
+ *   `MATRX_LAYOUT_GATE_MUTATION=dock` builds the chat fixture the way the
+ *   rejected dock built it (in-flow column, `padding-top: var(--shell-header-h)`).
+ *   Case 1 goes RED — the canvas pane header sits 44px lower and hundreds of
+ *   pixels narrower on chat than on a document route.
+ *   `MATRX_LAYOUT_GATE_MUTATION=unmount-slot` drops the canvas toggle's slot
+ *   while the canvas is open, as the component did until 2026-09-17. Case 2
+ *   goes RED on both routes with every button left of it moved 44px.
  *
  * WHY A REAL BROWSER: jsdom computes no layout and this defect IS layout. The
  * repo's own `styles/shell.css` is loaded off disk; no server, no network.
@@ -69,17 +75,37 @@ const TAILWIND_SUBSET = `
  * an auto-margined row of buttons ending in `.shell-user-menu-wrapper`, the
  * one element `:root[data-canvas-open="true"]` targets.
  */
-const HEADER = `
+/**
+ * The shell header's right-hand cluster, as the app builds it: an auto-margined
+ * row ending in the canvas toggle's slot and `.shell-user-menu-wrapper`, the one
+ * element `:root[data-canvas-open="true"]` targets.
+ *
+ * `slot` mirrors `CanvasShellHeaderToggle`: it renders the live control when the
+ * canvas is closed and an inert placeholder of the SAME width when it is open,
+ * because the canvas pane's own header owns the control then.
+ */
+function header(canvas: "closed" | "open") {
+  const dropSlot = MUTATION === "unmount-slot" && canvas === "open";
+  const slot = dropSlot
+    ? ""
+    : canvas === "open"
+      ? `<div data-canvas-header-slot="reserved" data-header-button="canvas-slot"
+             style="width:44px;height:44px;visibility:hidden;pointer-events:none"></div>`
+      : `<div data-canvas-header-slot="control" data-header-button="canvas-slot"
+             style="width:44px;height:44px"><button style="width:44px;height:44px">C</button></div>`;
+  return `
   <header class="shell-header" data-testid="shell-header">
     <div style="display:flex; align-items:center; gap:8px; margin-left:auto; height:100%">
       <button data-header-button="records" style="width:72px;height:28px">Records</button>
       <button data-header-button="canvas" style="width:72px;height:28px">Canvas</button>
+      ${slot}
       <div class="shell-user-menu-wrapper" data-header-button="avatar" style="width:28px;height:28px">
         <button style="width:28px;height:28px">A</button>
       </div>
     </div>
   </header>
 `;
+}
 
 /**
  * THE CANONICAL CANVAS. One markup, used by every route: the global overlay
@@ -170,7 +196,7 @@ async function mount(
   await page.setContent(
     `<!doctype html><html><body>
       <div class="shell-root" data-pathname="/${route}">
-        ${HEADER}
+        ${header(canvas)}
         <main class="shell-main" data-testid="shell-main">${body}</main>
       </div>
       ${overlayCanvas}
@@ -268,6 +294,7 @@ for (const route of ["chat", "document"] as const) {
     expect(Object.keys(closed).sort()).toEqual([
       "avatar",
       "canvas",
+      "canvas-slot",
       "records",
     ]);
 

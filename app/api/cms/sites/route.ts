@@ -293,20 +293,30 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        // The org a site is created into must be one the caller actually
-        // belongs to — a client-supplied id is never trusted. Omitting it is
-        // allowed and yields an owner-only site (fail closed, never a widening);
-        // the UI always sends the caller's active org.
-        if (organizationId !== undefined && organizationId !== null) {
-          if (
-            typeof organizationId !== "string" ||
-            !caller.memberOrgIds.includes(organizationId)
-          ) {
-            return NextResponse.json(
-              { error: "You are not a member of that organization." },
-              { status: 403 },
-            );
-          }
+        // 🚨 A SITE IS CREATED IN AN ORGANIZATION, NAMED BY THE CALLER.
+        // Omitting it was "allowed" and read as owner-only — but the column is
+        // trigger-stamped, so a NULL is filed in the CREATOR'S PERSONAL
+        // organization: not owner-only, just a tenant nobody chose and no
+        // teammate can see. The caller names it, it must be one they actually
+        // belong to (a client-supplied id is never trusted), and a request
+        // without one is refused with the remedy.
+        // common-docs/policies/context-is-carried-never-rebuilt.md
+        if (typeof organizationId !== "string" || !organizationId.trim()) {
+          return NextResponse.json(
+            {
+              error:
+                "No organization was named for this site, so nothing was created. A website belongs to the company, not to whoever clicked New — choose the organization you are working in and try again.",
+              code: "organization_context_required",
+            },
+            { status: 400 },
+          );
+        }
+        const siteOrganizationId = organizationId.trim();
+        if (!caller.memberOrgIds.includes(siteOrganizationId)) {
+          return NextResponse.json(
+            { error: "You are not a member of that organization." },
+            { status: 403 },
+          );
         }
 
         if (visibility !== undefined && !isCmsVisibility(visibility)) {
@@ -335,7 +345,7 @@ export async function POST(request: NextRequest) {
             domain: domain || null,
             owner_user_id: user.id, // Always set to authenticated user
             created_by: user.id, // Audit stamp; ownership can transfer, this cannot
-            organization_id: organizationId ?? null,
+            organization_id: siteOrganizationId,
             // A company's website is org work — `personal` would hide it from
             // the very teammates this feature exists to include.
             visibility: visibility ?? "internal",

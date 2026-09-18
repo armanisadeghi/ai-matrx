@@ -169,6 +169,26 @@ path updates the node's `STATE.md` in the same session.
   header. Its own gate (`features/shell/layout-gate/shell-scroll-runway.spec.ts`)
   now models the canonical world and measures the composer instead of a docked
   column.
+  AND THE SHIFT ITSELF, found by the live check the same day: with the parallel
+  layer gone, `CanvasShellHeaderToggle` still UNMOUNTED while the canvas was
+  open, so every shell-header button to its left moved 44px sideways on every
+  open and close — measured on production-equivalent build at 1280x720,
+  Records at `x = 887.59` closed against `x = 931.59` open, on the chat route
+  AND on `/artifacts`. The canvas pane's header owns the control while the
+  canvas is open, but its BOX must stay: the component now renders an inert
+  `data-canvas-header-slot="reserved"` placeholder there, the same trick
+  `:root[data-canvas-open="true"] .shell-user-menu-wrapper` already uses for
+  the avatar. Re-measured after: every one of the nine header button rects and
+  the header box itself are byte-identical open vs closed, on both routes, and
+  the canvas surface is `sheet` at `[512, 0, 768, 720]` on both.
+  Guard: the layout gate's case 2, with `MATRX_LAYOUT_GATE_MUTATION=unmount-slot`
+  proven RED on both routes and both viewports.
+
+- `2026-09-17` — **Share and score refusals reach the person.** `useCanvasShare` rendered the raw transport sentence ("Select an organization before sending this request.") beside a Share button that could only fail again; `useCanvasScore` recorded nothing and said nothing. Both now speak the refusal with its remedy (`lib/organizations/organizationRefusalToast.ts`), and a score that fails for any other reason is spoken too rather than leaving the leaderboard silently unchanged.
+
+- `2026-09-17` — **`canvasArtifactService.upsertDiscoveryIndex` can no longer write a NULL organization.** `organizationId` was `let organizationId: string | null = null` — a shape that reads as "maybe NULL", and a NULL on `chat.artifact` means `public._stamp_org_default` files the row in the writer's personal workspace. It is now a non-nullable `string`: a chat row takes its conversation's organization (a conversation without one is refused and logged, not written), and a non-chat row takes the SELECTED organization via `ensureOrgId`, which throws `OrganizationContextError` when there is none. Guard: `pnpm check:organization-context`.
+
+- `2026-09-17` — **A canvas save that refuses for want of an organization SAYS SO; it is never a silent `false`.** Four services caught the new `OrganizationContextError` and returned a falsy value with only a `console.error` — a dead click: the quiz never persisted, the viewer state never saved, the artifact never reached the discovery index, and nothing on screen said why. `quiz-adapter.ts` and `canvasItemStateService.ts` now re-throw that ONE error class, and `useArtifactState.flush` — the boundary that owns the save — toasts the remedy; `canvasArtifactService.upsertDiscoveryIndex` re-throws it too, which both materialization callers already collect into the `errors` they return. `useCanvasItems.save` and `maps/service.createMap` replaced their generic "Failed to save" with the same remedy sentence, so `NewMapDialog` shows it verbatim. Every other error path is byte-for-byte unchanged. `canvas.canvas_item_state` and `education.quiz_sessions` were already carrying the selected organization; the defect here was purely the swallowed refusal. Law: `../../common-docs/policies/context-is-carried-never-rebuilt.md`.
 
 - `2026-09-15` — **A LIVE PANE IS ALWAYS REACHABLE.** An independent reviewer
   reloaded a bound chat that also held an agent-created document, clicked

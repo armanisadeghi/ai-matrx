@@ -152,6 +152,20 @@ Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tas
 
 ## Change log
 
+- `2026-09-17` — **`createTask` no longer dies silently when no organization is selected.** `services/taskService.ts` caught the refusal and returned `null` with a `console.error`, so the task simply never appeared — a dead click. It now names the remedy in a toast at the moment of the click and keeps the `null` return: `createTask` has a dozen callers across modals, thunks, an inline context field and the projects task list, several of which do not catch, so a re-throw would have traded a dead click for an unhandled rejection. The stale "fall back to the cached personal org" comment is gone — `ensureOrgId` has had no personal-organization rung since 2026-09-17. `workspace.task_user_state` has no `organization_id` column at all (verified live), so `taskUserStateService` is correctly untouched. Law: `../../common-docs/policies/context-is-carried-never-rebuilt.md`.
+
+- `2026-09-17` — **The organization a task or project is filed under is the one the person SELECTED.**
+  `QuickTasksWorkspaceProvider` seeded the window's org with `appOrgId ?? orgs[0]` — the first
+  organization in the membership list, which can be a membership in someone ELSE's personal
+  workspace. It now seeds from the selected organization only; with none selected `QuickTasksMain`
+  renders `OrganizationRequiredNotice` (picker attached) instead of a quick-add box whose write
+  would be refused, and the sidebar cascade still lets the person choose. `projectService.createProject`
+  stopped writing `resolvePersonalOrgId()` unconditionally — a project is a workspace-scoped,
+  shareable record, so it is created in the selected organization and `requireSelectedOrgId()`
+  refuses with the one recognised `OrganizationContextError` when there is none; `ImportTasksModal`
+  names that refusal instead of its generic "try again" toast.
+  Law: `../../../common-docs/policies/context-is-carried-never-rebuilt.md`.
+
 - `2026-09-13` — **The initial `/tasks` hierarchy read has a terminal path.**
   `get_user_full_context` now aborts after 20 seconds and dispatches the
   existing retryable error state instead of leaving task workspaces in an

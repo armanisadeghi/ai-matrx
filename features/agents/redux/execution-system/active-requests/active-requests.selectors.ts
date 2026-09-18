@@ -134,7 +134,8 @@ export const selectProviderRetry =
   (state: RootState): ProviderRetryPayload | null =>
     state.activeRequests.byRequestId[requestId]?.providerRetry ?? null;
 
-export const selectProviderRetryHistory = (requestId: string) =>
+export const selectProviderRetryHistory =
+  (requestId: string) =>
   (state: RootState): ProviderRetryPayload[] | undefined =>
     state.activeRequests.byRequestId[requestId]?.providerRetryHistory;
 
@@ -275,7 +276,8 @@ export const selectCurrentPhase =
     state.activeRequests.byRequestId[requestId]?.currentPhase ?? null;
 
 /** Full phase history — existing state reference, so no memoization is needed. */
-export const selectPhaseHistory = (requestId: string) =>
+export const selectPhaseHistory =
+  (requestId: string) =>
   (state: RootState): Phase[] | undefined =>
     state.activeRequests.byRequestId[requestId]?.phaseHistory;
 
@@ -757,13 +759,16 @@ export type UnifiedSlot =
        */
       blockType?: string;
       seq: number;
+      /** Stable source index in the request timeline. */
+      timelineIndex?: number;
     }
-  | { kind: "tool"; callId: string; seq: number }
+  | { kind: "tool"; callId: string; seq: number; timelineIndex?: number }
   | {
       kind: "status";
       label: string;
       statusKind: "phase" | "info";
       seq: number;
+      timelineIndex?: number;
     }
   // A reasoning (thinking) run, pinned to its chronological position in the
   // turn. `chunkStartIndex`/`chunkEndIndex` are indices into the request's
@@ -778,6 +783,7 @@ export type UnifiedSlot =
       chunkStartIndex: number;
       chunkEndIndex?: number;
       seq: number;
+      timelineIndex?: number;
     }
   // A stream `error` event that occurred MID-TURN (content follows it in the
   // timeline). It is interleaved here so it holds its chronological position
@@ -786,7 +792,7 @@ export type UnifiedSlot =
   // FATAL error (no content after it — the stream died) is intentionally NOT
   // emitted as a slot: it stays the trailing failed-turn render in
   // `AgentAssistantMessage`, which keeps the Retry affordance untouched.
-  | { kind: "error"; seq: number };
+  | { kind: "error"; seq: number; timelineIndex?: number };
 
 /**
  * Render-block types that need the unified-slot rendering path even when
@@ -949,6 +955,8 @@ export const selectUnifiedSlots = (requestId: string) =>
       const emittedFileIds = new Set<string>();
       let nextSeq = 0;
       let pendingStatus: UnifiedSlot | null = null;
+      let pendingStatusTimelineIndex = 0;
+      let currentTimelineIndex = 0;
       // Tracks how many blocks from renderBlockOrder have been emitted into slots.
       // Used by both text_end and reasoning_end to emit their respective blocks.
       let lastEmittedBlockIndex = 0;
@@ -965,7 +973,11 @@ export const selectUnifiedSlots = (requestId: string) =>
         if (!pendingError || errorEmitted) return;
         pendingError = false;
         errorEmitted = true;
-        slots.push({ kind: "error", seq: nextSeq++ });
+        slots.push({
+          kind: "error",
+          seq: nextSeq++,
+          timelineIndex: currentTimelineIndex,
+        });
       };
 
       const pushBlock = (blockId: string) => {
@@ -995,10 +1007,13 @@ export const selectUnifiedSlots = (requestId: string) =>
           blockId,
           blockType: blocksMap[blockId]?.type,
           seq: nextSeq++,
+          timelineIndex: currentTimelineIndex,
         });
       };
 
-      for (const entry of timeline) {
+      for (let index = 0; index < timeline.length; index++) {
+        const entry = timeline[index];
+        currentTimelineIndex = index;
         if (entry.kind === "text_start") {
           pendingStatus = null;
         } else if (entry.kind === "text_end") {
@@ -1025,6 +1040,7 @@ export const selectUnifiedSlots = (requestId: string) =>
             chunkStartIndex: entry.chunkStartIndex,
             chunkEndIndex: entry.chunkEndIndex,
             seq: nextSeq++,
+            timelineIndex: currentTimelineIndex,
           });
           // Reasoning render blocks (server `type:"reasoning"` blocks) land in
           // renderBlockOrder outside any text_end range — emit the ones that
@@ -1075,6 +1091,7 @@ export const selectUnifiedSlots = (requestId: string) =>
             kind: "tool",
             callId: entry.data.call_id,
             seq: nextSeq++,
+            timelineIndex: currentTimelineIndex,
           });
         } else if (entry.kind === "phase") {
           const label = PHASE_LABELS[entry.data.phase];
@@ -1085,6 +1102,7 @@ export const selectUnifiedSlots = (requestId: string) =>
               statusKind: "phase",
               seq: nextSeq,
             };
+            pendingStatusTimelineIndex = currentTimelineIndex;
           } else {
             pendingStatus = null;
           }
@@ -1095,6 +1113,7 @@ export const selectUnifiedSlots = (requestId: string) =>
             statusKind: "info",
             seq: nextSeq,
           };
+          pendingStatusTimelineIndex = currentTimelineIndex;
         } else if (entry.kind === "data") {
           // Media data events (image_output / audio_output / video_output)
           // create standalone render blocks that aren't covered by any
@@ -1177,6 +1196,7 @@ export const selectUnifiedSlots = (requestId: string) =>
           // chunkEndIndex deliberately absent — the run is open; the renderer
           // reads reasoningChunks from the start index to the live end.
           seq: nextSeq++,
+          timelineIndex: timeline.length,
         });
         for (let i = lastEmittedBlockIndex; i < blockOrder.length; i++) {
           pushBlock(blockOrder[i]);
@@ -1185,6 +1205,7 @@ export const selectUnifiedSlots = (requestId: string) =>
 
       if (pendingStatus) {
         pendingStatus.seq = nextSeq++;
+        pendingStatus.timelineIndex = pendingStatusTimelineIndex;
         slots.push(pendingStatus);
       }
 
@@ -1195,11 +1216,30 @@ export const selectUnifiedSlots = (requestId: string) =>
           blockId,
           blockType: blocksMap[blockId]?.type,
           seq: i,
+          timelineIndex: timeline.length,
         }));
       }
 
       return slots;
     },
+  );
+
+/**
+ * One assistant segment within a live request. Inbox steering can split a
+ * single request into user-visible assistant ranges; rendering the whole
+ * request on each side duplicates post-steer tools and text.
+ */
+export const selectUnifiedSlotRange = (
+  requestId: string,
+  start = 0,
+  end?: number,
+) =>
+  createSelector(selectUnifiedSlots(requestId), (slots): UnifiedSlot[] =>
+    slots.filter(
+      (slot) =>
+        (slot.timelineIndex ?? 0) >= start &&
+        (end === undefined || (slot.timelineIndex ?? 0) < end),
+    ),
   );
 
 /**
@@ -1447,7 +1487,8 @@ export const selectWorkflowNodeStreams = (requestId: string) => {
   const cached = workflowNodeStreamsSelectorCache.get(requestId);
   if (cached) return cached;
   const selector = createSelector(
-    (state: RootState) => state.activeRequests.byRequestId[requestId]?.nodeStreams,
+    (state: RootState) =>
+      state.activeRequests.byRequestId[requestId]?.nodeStreams,
     (streams): WorkflowNodeStreamEntry[] => {
       if (!streams) return [];
       return Object.values(streams).sort((a, b) =>
@@ -1538,10 +1579,9 @@ export const selectFirstTypedDataPayload =
   };
 
 /** All data payloads as the existing typed state reference. */
-export const selectAllTypedDataPayloads = (requestId: string) =>
-  (
-    state: RootState,
-  ): (TypedDataPayload | UntypedDataPayload)[] | undefined =>
+export const selectAllTypedDataPayloads =
+  (requestId: string) =>
+  (state: RootState): (TypedDataPayload | UntypedDataPayload)[] | undefined =>
     state.activeRequests.byRequestId[requestId]?.dataPayloads;
 
 /** Distinct data types received for this request. Memoized. */

@@ -28,7 +28,7 @@ import {
 } from "@/lib/redux/selectors/userSelectors";
 import { getUsageStatusDirect } from "@/features/files/api/direct";
 import { fetchPlanStatus } from "@/features/entitlements/plan-service";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import type { StorageUsageResponse } from "@/features/files/types";
 import { extractErrorMessage } from "@/utils/errors";
 
@@ -136,7 +136,10 @@ export function useStorageQuota(
   const userId = useAppSelector(selectUserId);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
   const authReady = useAppSelector(selectAuthReady);
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // The EXPLICIT active org — the plan describes the organization the user
+  // chose. With none, no plan is fetched and none is shown (the effect below
+  // already refuses on null) rather than quoting a personal workspace's plan.
+  const organizationId = useAppSelector(selectOrganizationId);
   const active = enabled && authReady && isAuthenticated && !!userId;
   // D11: storage limits and the plan behind them come from billing, metered to
   // the organization. `files.account_tiers` is being retired; its `tier_name`

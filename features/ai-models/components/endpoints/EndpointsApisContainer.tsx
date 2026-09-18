@@ -749,6 +749,9 @@ export default function EndpointsApisContainer() {
       };
       let saved: AiEndpoint;
       if (endpointIsNew) {
+        // org-fallback-deliberate: an endpoint is a row of the platform's AI
+        //   catalog, identical for every organization; the surface lives in the
+        //   admin-gated (admin) route group
         const organization_id = await resolveSystemOrgId();
         saved = await aiModelService.createEndpoint({
           ...payload,
@@ -812,6 +815,9 @@ export default function EndpointsApisContainer() {
       };
       let saved: AiApi;
       if (apiIsNew) {
+        // org-fallback-deliberate: an API record is a row of the platform's AI
+        //   catalog, identical for every organization; the surface lives in the
+        //   admin-gated (admin) route group
         const organization_id = await resolveSystemOrgId();
         saved = await aiModelService.createApi({ ...payload, organization_id });
       } else if (selectedApi) {

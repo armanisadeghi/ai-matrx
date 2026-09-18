@@ -83,11 +83,19 @@ export async function sendAndLogSms(options: SendSmsOptions & {
     .select('organization_id')
     .eq('id', conversationId)
     .single();
-  const organizationId = await resolveOrgIdForUserServer(
-    supabase,
-    sentByUserId,
-    parentConversation?.organization_id,
-  );
+  // 🚨 THE MESSAGE TAKES ITS PARENT CONVERSATION'S ORGANIZATION, AND REFUSES
+  // WHEN THE PARENT CANNOT BE READ. The third argument used to be a preference
+  // rather than a requirement, so an unreadable or missing conversation sent
+  // the row to the SENDER'S personal workspace instead of the thread's tenant.
+  // common-docs/policies/context-is-carried-never-rebuilt.md rule 4.
+  const organizationId = parentConversation?.organization_id ?? "";
+  if (!organizationId) {
+    return {
+      success: false,
+      error:
+        "That SMS conversation could not be read, so nothing was sent. Reopen the conversation and try again.",
+    };
+  }
 
   // 🚨 THE SUPPRESSION CHECK LIVES HERE, in the one Twilio chokepoint, because
   // a check a caller can skip will eventually be skipped. Every outbound SMS in
@@ -169,6 +177,9 @@ export async function sendNotificationSms(options: {
   const supabase = createAdminClient();
 
   // All rows written below belong to the notified user's org.
+  // org-fallback-deliberate: a notification SMS belongs to the notified
+  //   person's own workspace; this runs on an admin client with no session and
+  //   no selected organization
   const organizationId = await resolveOrgIdForUserServer(supabase, userId);
 
   // Get user's SMS notification preferences

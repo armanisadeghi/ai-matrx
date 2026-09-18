@@ -26,6 +26,7 @@ import type { AssociationsDataSource } from "@ai-matrx/associations";
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 import { associationsErrorSink } from "./errorSink";
 import { getAssociationsEntityOverlay } from "@/features/scopes/registry/entityRegistry";
 
@@ -100,9 +101,17 @@ export function getAssociationsStore(): AssociationsStore {
       identity: {
         requireUserId,
         // Org for created rows/edges (CategorySelect/CategoryTagPicker
-        // create paths). `ensureOrgId(null)` resolves the active org and
-        // falls back LOUDLY to the personal org — pre-extraction semantics.
-        ensureOrgId: () => ensureOrgId(null),
+        // create paths). `ensureOrgId(null)` resolves the SELECTED
+        // organization and REFUSES when there is none — the personal-org
+        // fallback was deleted on 2026-09-17, so this port now throws where
+        // it used to invent. The package's errorSink reaches the Error
+        // Inspector, which is an ADMIN surface: the person creating the
+        // category would see a category that simply never appeared. So the
+        // refusal is spoken here, and rethrown so the package still fails.
+        ensureOrgId: () =>
+          withOrganizationRefusalShown("created", () => ensureOrgId(null), {
+            subject: "This item",
+          }),
       },
       errorSink: associationsErrorSink,
       entityOverlay: getAssociationsEntityOverlay(),

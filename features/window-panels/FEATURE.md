@@ -100,6 +100,13 @@ The rule, and why it is not a style preference:
 
 ## Change Log
 
+- **2026-09-17** — **A feedback report is filed in the organization the person is
+  acting in.** `submitFeedback` resolved the submitter's PERSONAL organization
+  server-side; a Server Action carries no `X-Organization-Id` header, so
+  `CreateFeedbackInput` now carries `organization_id` and `FeedbackWindow`
+  reads it from `selectOrganizationId` and refuses — with the text preserved —
+  when nothing is selected. Guard: `pnpm check:organization-context`.
+
 - 2026-09-14 — **Dialog-to-WindowPanel interaction census.** Repaired twelve dialogs that launched a child WindowPanel behind a blocking modal or auto-dismissed when the child received its first click. Coexisting hosts now use the design-system's `modal={false}` z-layer contract and prevent outside interaction from dismissing the host; blocking overwrite confirmations close before launching the diff window. `window-launching-dialogs.test.ts` pins every audited host and both confirmation handoffs.
 
 - 2026-09-14 — **`impactBatchWindow` carries `posture` and `focusAgentId`** (Agent Change Impact I6): the opener, the controller block, the window's `onCollectData` and the metadata `defaultData`/`preservation.dataKeys` all grew the two keys, so a post-edit panel opened through the per-person read door and scoped to one agent restores as such. Title reads "Change impact — this agent" in that case.
@@ -410,6 +417,7 @@ interface WindowRegistryEntry {
 2. Every `kind: "window"` has `mobilePresentation`.
 3. `slug` and `overlayId` are each unique across the registry.
 4. Every `urlSync.key` has a hydrator in `initUrlHydration.ts` (dev-time assertion), and every hydrator key has a registry `urlSync.key` — a hydrator without one opens from the URL but never writes back, and the writer then waits 5 s for a registration that never comes.
+5. **A window nobody opened may only open itself where it lives.** Any code that raises a window UNBIDDEN (a timer, a once-a-day mount, a boot-time check — anything that is not a person clicking) must ask `mayRaiseUnbidden(overlayId, pathname)` in `utils/mayRaiseUnbidden.ts` first, and the answer comes from `unbiddenHome` on that window's registry entry. Default deny: no `unbiddenHome`, no self-raising anywhere, and the refusal is warned on the console naming the window. Away from home it is a DEFERRAL, so a raiser must not spend its own once-a-day bookkeeping on a refusal — the window raises on the viewer's next visit to a home route. This governs unbidden raises ONLY: clicking an opener works on every route, always. (D11, 2026-09-17: the daily spend window opened over the `/exports` drop zone. The fix is the primitive, never a route blocklist.)
 
 ### How to add a new overlay
 

@@ -13,23 +13,35 @@
 // Failure is loud, not silent: if the cadence knob cannot be read this logs and
 // does nothing, rather than guessing a cadence.
 //
+// WHERE it may do this is NOT decided here (D11, 2026-09-17). The window
+// declares its home in the window registry and `mayRaiseUnbidden` answers;
+// this mount only obeys. Away from home the raise is DEFERRED, not spent:
+// `recordShown()` is not called, `raised` stays false, and the effect re-runs
+// on the next navigation — so the viewer still sees it once, on a surface
+// where it belongs, later the same day.
+//
 // Doc: features/admin/spend/FEATURE.md
 
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
 import { useOpenDailySpendWindow } from "@/features/overlays/openers/dailySpendWindow";
+import { mayRaiseUnbidden } from "@/features/window-panels/utils/mayRaiseUnbidden";
 
 import { recordShown, shouldShow } from "./dailySpendPopoverState";
 import { useSpendPopoverKnobs } from "./useSpendPopoverKnobs";
+
+const OVERLAY_ID = "dailySpendWindow";
 
 export function DailySpendPopoverMount(): null {
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const { knobs, loading, error } = useSpendPopoverKnobs();
   const openWindow = useOpenDailySpendWindow();
+  const pathname = usePathname();
   const raised = useRef(false);
 
   useEffect(() => {
@@ -52,10 +64,20 @@ export function DailySpendPopoverMount(): null {
       return;
     }
 
+    // Not our call to make: the registry says where this window may open
+    // itself, and the primitive already announced any refusal.
+    const verdict = mayRaiseUnbidden(OVERLAY_ID, pathname);
+    if (!verdict.allowed) {
+      // Deliberately NOT marking it raised and NOT calling recordShown():
+      // a deferral must cost the viewer nothing. When they land on the
+      // dashboard or an administration page later today, this runs again.
+      return;
+    }
+
     raised.current = true;
     recordShown();
     openWindow();
-  }, [isSuperAdmin, knobs, loading, error, openWindow]);
+  }, [isSuperAdmin, knobs, loading, error, openWindow, pathname]);
 
   return null;
 }

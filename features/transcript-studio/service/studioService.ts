@@ -45,6 +45,54 @@ const db = supabase as unknown as LooseSupabase;
 // `schema(name: string)`, so the loose shape rejected every callsite (TS2345).
 type ServerSupabaseClient = SupabaseClient<Database>;
 
+// ── The session's organization ────────────────────────────────────────
+//
+// 🚨 EVERY CHILD ROW LIVES IN ITS SESSION'S TENANT. A segment, document, run
+// or settings row belongs to the session that owns it, so its organization is
+// the SESSION's — never the organization the person happens to have selected
+// while the recorder is running, and never a database default. The value is
+// read once per session and reused: it cannot change under a session, and
+// re-resolving it per write is how a long recording ends up split across two
+// organizations. A session with no organization refuses, by name, with the
+// remedy — it never falls back to a personal workspace.
+const sessionOrganizationIds = new Map<string, Promise<string>>();
+
+async function sessionOrganizationId(sessionId: string): Promise<string> {
+  const cached = sessionOrganizationIds.get(sessionId);
+  if (cached) return cached;
+  const pending = (async () => {
+    const { data, error } = await db
+      .schema("transcripts")
+      .from("studio_sessions")
+      .select("organization_id")
+      .eq("id", sessionId)
+      .maybeSingle();
+    if (error) {
+      throw new Error(
+        `[studio] could not read the session's organization: ${error.message}`,
+      );
+    }
+    const organizationId =
+      (data as { organization_id: string | null } | null)?.organization_id ??
+      null;
+    if (!organizationId) {
+      throw new Error(
+        `[studio] session ${sessionId} is not filed in an organization, so its rows have nowhere to live. Reopen it from an organization workspace.`,
+      );
+    }
+    return organizationId;
+  })();
+  // A failed read must not be remembered as this session's answer.
+  sessionOrganizationIds.set(
+    sessionId,
+    pending.catch((err) => {
+      sessionOrganizationIds.delete(sessionId);
+      throw err;
+    }),
+  );
+  return sessionOrganizationIds.get(sessionId) as Promise<string>;
+}
+
 // ── Mappers ───────────────────────────────────────────────────────────
 
 export interface SessionRow {
@@ -524,6 +572,7 @@ export async function insertRecordingSegment(
     .from("studio_recording_segments")
     .insert({
       session_id: input.sessionId,
+      organization_id: await sessionOrganizationId(input.sessionId),
       segment_index: input.segmentIndex,
       t_start: input.tStart,
       started_at: input.startedAt,
@@ -744,7 +793,12 @@ async function getOrCreateWorkingDocumentImpl(
     .schema("transcripts")
     .from("studio_documents")
     .upsert(
-      { session_id: sessionId, kind, title },
+      {
+        session_id: sessionId,
+        organization_id: await sessionOrganizationId(sessionId),
+        kind,
+        title,
+      },
       { onConflict: "session_id,kind", ignoreDuplicates: true },
     )
     .select("*")
@@ -782,6 +836,7 @@ export async function upsertStudioDocument(
 ): Promise<import("../types").StudioDocument> {
   const row: Record<string, unknown> = {
     session_id: sessionId,
+    organization_id: await sessionOrganizationId(sessionId),
     kind,
     content: patch.content,
   };
@@ -890,6 +945,7 @@ export async function insertAgentRun(
 ): Promise<import("../types").AgentRun> {
   const insert: Record<string, unknown> = {
     session_id: input.sessionId,
+    organization_id: await sessionOrganizationId(input.sessionId),
     column_idx: input.columnIdx,
     shortcut_id: input.shortcutId,
     trigger_cause: input.triggerCause,
@@ -1574,34 +1630,35 @@ export interface UpsertSessionSettingsInput {
 export async function upsertSessionSettings(
   input: UpsertSessionSettingsInput,
 ): Promise<import("../types").SessionSettings & { showPriorModules: boolean }> {
-  const update: Record<string, unknown> = {
+  const settingsRow: Record<string, unknown> = {
     session_id: input.sessionId,
+    organization_id: await sessionOrganizationId(input.sessionId),
   };
   if (input.cleaningShortcutId !== undefined)
-    update.cleaning_shortcut_id = input.cleaningShortcutId;
+    settingsRow.cleaning_shortcut_id = input.cleaningShortcutId;
   if (input.cleaningIntervalMs !== undefined)
-    update.cleaning_interval_ms = input.cleaningIntervalMs;
+    settingsRow.cleaning_interval_ms = input.cleaningIntervalMs;
   if (input.conceptShortcutId !== undefined)
-    update.concept_shortcut_id = input.conceptShortcutId;
+    settingsRow.concept_shortcut_id = input.conceptShortcutId;
   if (input.conceptIntervalMs !== undefined)
-    update.concept_interval_ms = input.conceptIntervalMs;
-  if (input.moduleId !== undefined) update.module_id = input.moduleId;
+    settingsRow.concept_interval_ms = input.conceptIntervalMs;
+  if (input.moduleId !== undefined) settingsRow.module_id = input.moduleId;
   if (input.moduleShortcutId !== undefined)
-    update.module_shortcut_id = input.moduleShortcutId;
+    settingsRow.module_shortcut_id = input.moduleShortcutId;
   if (input.moduleIntervalMs !== undefined)
-    update.module_interval_ms = input.moduleIntervalMs;
+    settingsRow.module_interval_ms = input.moduleIntervalMs;
   if (input.columnWidths !== undefined)
-    update.column_widths = input.columnWidths;
+    settingsRow.column_widths = input.columnWidths;
   if (input.showPriorModules !== undefined)
-    update.show_prior_modules = input.showPriorModules;
+    settingsRow.show_prior_modules = input.showPriorModules;
   if (input.contextItems !== undefined)
-    update.context_items = input.contextItems;
-  if (input.customSlots !== undefined) update.custom_slots = input.customSlots;
+    settingsRow.context_items = input.contextItems;
+  if (input.customSlots !== undefined) settingsRow.custom_slots = input.customSlots;
 
   const { data, error } = await db
     .schema("transcripts")
     .from("studio_session_settings")
-    .upsert(update, { onConflict: "session_id" })
+    .upsert(settingsRow, { onConflict: "session_id" })
     .select("*")
     .single();
   if (error || !data) {

@@ -332,6 +332,17 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+
+- 2026-09-17 — **The associations `ensureOrgId` port speaks its refusal.** The port resolved the active organization with a loud personal-org fallback; that fallback was deleted platform-wide on 2026-09-17 and the port now THROWS. The package's `errorSink` reaches the admin Error Inspector, not the person, so a category created with no organization selected would simply never have appeared. The port is wrapped in `withOrganizationRefusalShown`: the person is told, and the package still fails.
+
+- 2026-09-17 — **A template applies to the organization the person selected, never `organizations[0]`.**
+  `TemplatesGalleryPanel` computed its apply target as "the active organization, else the first in
+  the list", so the Apply link (and the surface's `template_target_organization_id`) could point at
+  a co-membership — including someone else's personal workspace — while writing scope types and
+  context items there. The target is now the selected organization or nothing; with nothing, the
+  catalog still browses and a compact `OrganizationRequiredNotice` carries the picker.
+  Law: `../../common-docs/policies/context-is-carried-never-rebuilt.md`.
+
 - 2026-09-12 — **D311: the associations boot probe invoked 26 RPCs — 14 of them WRITES — on every
   page load, and 25 of them answered 400.** `AssociationsProvider` defaults `probeSchema` to the
   package's `assertDemandedSchema`, which asks whether each demanded function exists by CALLING it

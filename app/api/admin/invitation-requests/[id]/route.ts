@@ -96,6 +96,9 @@ export async function PATCH(
           code: invitationCode,
           invitation_request_id: params.id,
           created_by: authUser.id,
+          // org-fallback-deliberate: an invitation code is issued by the platform
+          //   before the invitee belongs to any organization; the route is behind
+          //   checkIsSuperAdmin
           organization_id: SYSTEM_ORGANIZATION_ID,
           visibility: "personal",
           expires_at: expiresAt.toISOString(),

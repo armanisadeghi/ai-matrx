@@ -29,7 +29,7 @@ import { transcribeAudioFile } from "@/features/audio/services/speechApi";
 import { toAudioFile } from "@ai-matrx/browser-audio/core";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectEffectiveOrganizationId,
+  selectOrganizationId,
   selectOrgBootstrapResolved,
 } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
@@ -54,7 +54,10 @@ interface QueueEntry {
 }
 
 export function AnswerQueue() {
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE: this read
+  // `organization_id ?? personal_organization_id`, so with no organization
+  // selected the queue answered questions against the PERSONAL workspace's items.
+  const organizationId = useAppSelector(selectOrganizationId);
   const [queue, setQueue] = useState<QueueEntry[] | null>(null);
   // 🚨 "NO ORG YET" IS NOT "STILL READING" — the class MandatesConsole and
   // useMandateInputSurface already fixed. `queue` starts null and null renders the

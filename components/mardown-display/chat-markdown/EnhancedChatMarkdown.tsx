@@ -25,7 +25,7 @@ import { InlineThinkingSlot } from "./internal-handlers/InlineThinkingSlot";
 import {
   selectAccumulatedTextWithCitationMarkers,
   selectIsReasoningStreaming,
-  selectUnifiedSlots,
+  selectUnifiedSlotRange,
   selectAllRenderBlocks,
   selectToolLifecycleMap,
   selectLiveCitationMarkersByBlockId,
@@ -80,6 +80,8 @@ export interface ServerProcessedBlock {
 
 export interface ChatMarkdownDisplayProps {
   requestId?: string;
+  streamSlotStart?: number;
+  streamSlotEnd?: number;
   /** Turn ID for DB-loaded turn rendering */
   turnId?: string;
   /** Conversation ID for DB-loaded turn rendering */
@@ -372,6 +374,8 @@ export const EnhancedChatMarkdownInternal: React.FC<
   ChatMarkdownDisplayProps
 > = ({
   requestId,
+  streamSlotStart,
+  streamSlotEnd,
   turnId,
   conversationId,
   content,
@@ -428,8 +432,11 @@ export const EnhancedChatMarkdownInternal: React.FC<
   );
 
   const unifiedSlotsSelector = useMemo(
-    () => (requestId ? selectUnifiedSlots(requestId) : _selectEmptySlots),
-    [requestId],
+    () =>
+      requestId
+        ? selectUnifiedSlotRange(requestId, streamSlotStart, streamSlotEnd)
+        : _selectEmptySlots,
+    [requestId, streamSlotStart, streamSlotEnd],
   );
   const unifiedSlots = useAppSelector(unifiedSlotsSelector);
 
@@ -491,16 +498,19 @@ export const EnhancedChatMarkdownInternal: React.FC<
   // video_output). Without the media check, a pure-image stream (no text
   // run at all) falls through to the plain-content branch and renders
   // nothing, even though the slot is sitting right there.
-  const hasUnifiedSpecial = unifiedSlots.some(
-    (s) =>
-      s.kind === "tool" ||
-      s.kind === "status" ||
-      s.kind === "error" ||
-      s.kind === "thinking" ||
-      (s.kind === "render_block" &&
-        s.blockType !== undefined &&
-        SPECIAL_RENDER_BLOCK_TYPES.has(s.blockType)),
-  );
+  const hasUnifiedSpecial =
+    streamSlotStart !== undefined ||
+    streamSlotEnd !== undefined ||
+    unifiedSlots.some(
+      (s) =>
+        s.kind === "tool" ||
+        s.kind === "status" ||
+        s.kind === "error" ||
+        s.kind === "thinking" ||
+        (s.kind === "render_block" &&
+          s.blockType !== undefined &&
+          SPECIAL_RENDER_BLOCK_TYPES.has(s.blockType)),
+    );
 
   const hasDbInterleavedSpecial = messageInterleavedContent.some(
     (s) => s.type === "db_tool" || s.type === "thinking",
@@ -621,7 +631,13 @@ export const EnhancedChatMarkdownInternal: React.FC<
         return null;
       },
     });
-  }, [isSettled, groupedSlots, toolLifecycleMap, renderBlocksMap, machineFramesVisible]);
+  }, [
+    isSettled,
+    groupedSlots,
+    toolLifecycleMap,
+    renderBlocksMap,
+    machineFramesVisible,
+  ]);
 
   const workGroupedSegments = useMemo((): Array<
     GroupedSegment | AgentWorkFold<GroupedSegment>

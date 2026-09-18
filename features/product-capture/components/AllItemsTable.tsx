@@ -42,7 +42,7 @@ import {
 } from "../item-actions";
 import { useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectEffectiveOrganizationId,
+  selectOrganizationId,
   selectOrgBootstrapResolved,
 } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
@@ -86,7 +86,10 @@ function formatWhen(iso: string): string {
 
 export function AllItemsTable() {
   const router = useRouter();
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE: this read
+  // `organization_id ?? personal_organization_id`, so with no organization
+  // selected the table listed the PERSONAL workspace's captures as if they were the organization's.
+  const organizationId = useAppSelector(selectOrganizationId);
 
   const isMobile = useIsMobile();
   const [rows, setRows] = useState<ItemTableRow[] | null>(null);

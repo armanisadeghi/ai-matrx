@@ -54,6 +54,7 @@ import {
   selectScopeSelectionsContext,
 } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 
 function normalizeProjectIdForCreate(projectId: string | null): string | null {
   if (!projectId || projectId === UNASSIGNED_PROJECT_ID) return null;
@@ -133,7 +134,7 @@ export function QuickTasksWorkspaceProvider({
   children: React.ReactNode;
 }) {
   const dispatch = useAppDispatch();
-  const { orgs, isSuccess } = useNavTree();
+  const { isSuccess } = useNavTree();
   const selectedOrgId = useAppSelector(selectQuickTasksSelectedOrgId);
   const appOrgId = useAppSelector(selectOrganizationId);
   const showAllProjects = useAppSelector(selectShowAllProjects);
@@ -157,12 +158,19 @@ export function QuickTasksWorkspaceProvider({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dispatch]);
 
+  // Seed the window's org from the organization the PERSON selected — never
+  // from whichever organization sorted first in their membership list. A
+  // membership in someone else's personal workspace can sort first, and this
+  // value scopes both the list and the org every task created here is filed
+  // under (`QuickTasksMain`). Boot is total, so a null selection here means
+  // genuinely unresolved: the window then shows the organization-required
+  // state (below) beside the cascade picker, and invents nothing.
+  // Law: common-docs/policies/context-is-carried-never-rebuilt.md.
   useEffect(() => {
-    if (isSuccess && !selectedOrgId) {
-      const initialOrgId = appOrgId ?? orgs[0]?.id ?? null;
-      if (initialOrgId) dispatch(setQuickTasksSelectedOrgId(initialOrgId));
+    if (isSuccess && !selectedOrgId && appOrgId) {
+      dispatch(setQuickTasksSelectedOrgId(appOrgId));
     }
-  }, [dispatch, isSuccess, orgs, selectedOrgId, appOrgId]);
+  }, [dispatch, isSuccess, selectedOrgId, appOrgId]);
 
   return <>{children}</>;
 }
@@ -387,6 +395,17 @@ export function QuickTasksMain({ surfaceDraftRef }: QuickTasksMainProps = {}) {
       dispatch(setQuickTasksSelectedTaskId(newId));
     },
   });
+
+  // No organization selected → say so with the picker attached instead of
+  // offering a quick-add box whose write would be refused. The cascade in the
+  // sidebar remains, so the person can also pick there.
+  if (!selectedTask && !organizationId) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center h-full bg-card/50">
+        <OrganizationRequiredNotice what="Tasks" />
+      </div>
+    );
+  }
 
   if (!selectedTask) {
     return (

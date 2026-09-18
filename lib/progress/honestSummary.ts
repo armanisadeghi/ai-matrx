@@ -20,9 +20,39 @@
 // caller can opt out, because the canonical renderer applies this to whatever
 // description it was handed.
 //
-// This is a platform primitive, not the Build's private repair: every
-// non-token run surface (builds, illustration runs, visibility reports,
-// imports, audits) renders the same shape and inherits the same honesty.
+// 🚨 AND A SUMMARY MUST KNOW WHAT SHAPE OF RUN IT IS SUMMARISING.
+//
+// `common-docs/projects/acquisition-frontier/own-files/VERIFICATION.md` §9.1,
+// 2026-09-18: over a seventeen-source Masterwork dump that ran every source and
+// finished, this file wrote *"Stopped — “Untitled File” failed. Nothing after
+// it will run."* Both halves were false. The run had not stopped, and the
+// fifteen sources "after" the failed one were never after it at all — they were
+// running beside it. The sentence was right for the surface it was written
+// against (a Build's ordered milestones) and wrong for every surface that fans
+// a run out over a pile, which is most of them: a dump of files, a visibility
+// report across engines, an illustration pass across cards.
+//
+// So the run's SHAPE is a required input, not a default. A `sequence` is
+// ordered and a failure genuinely stops what follows. A `fan_out` runs its
+// steps independently and one failure costs exactly one step — saying otherwise
+// tells a person fifteen files were lost when they were not, which is how a
+// correct, completed, paid run got reported as a platform failure.
+
+/**
+ * How a run's steps relate to each other — and therefore what ONE failure
+ * among them actually means.
+ *
+ * * `sequence` — ordered milestones. Step N+1 needs step N, so a failure
+ *   really does stop everything after it (a Masterwork Build, an import's
+ *   read → parse → write ladder).
+ * * `fan_out` — independent units over a pile. Every step was launched
+ *   regardless of its neighbours, so one failure costs one unit and nothing
+ *   else (a dump of files, a report across engines, a pass across cards).
+ *
+ * There is no default. A surface that cannot say which one it is has not
+ * looked at its own run.
+ */
+export type RunShape = "sequence" | "fan_out";
 
 /**
  * The structural shape of a rendered progress step. Deliberately NOT imported
@@ -52,23 +82,45 @@ export function failedSteps(
 /**
  * The honest sentence for a run that has a failed step — or null when nothing
  * on screen has failed, which is the caller's cue to keep its own sentence.
+ *
+ * `shape` decides what the failure MEANS, and there is deliberately no default:
+ * see the file header.
  */
 export function failureSummary(
   steps: readonly ProgressStep[],
+  shape: RunShape,
   remedy: string = DEFAULT_FAILURE_REMEDY,
 ): string | null {
   const failed = failedSteps(steps);
   if (failed.length === 0) return null;
 
   const [first, ...rest] = failed;
-  const alsoFailed =
-    rest.length === 0
-      ? ""
-      : rest.length === 1
-        ? " Another step failed too."
-        : ` ${rest.length} other steps failed too.`;
 
-  return `Stopped — “${first.label}” failed.${alsoFailed} Nothing after it will run. ${remedy}`;
+  if (shape === "sequence") {
+    const alsoFailed =
+      rest.length === 0
+        ? ""
+        : rest.length === 1
+          ? " Another step failed too."
+          : ` ${rest.length} other steps failed too.`;
+    return `Stopped — “${first.label}” failed.${alsoFailed} Nothing after it will run. ${remedy}`;
+  }
+
+  // FAN-OUT. Every other step was launched independently of this one, so the
+  // only true statement is how many of the pile did not work — never "stopped",
+  // never "nothing after it will run".
+  const others = steps.length - failed.length;
+  const rest0f =
+    others === 0
+      ? ""
+      : others === 1
+        ? " The other one is unaffected."
+        : ` The other ${others} are unaffected.`;
+  const headline =
+    failed.length === 1
+      ? `“${first.label}” didn’t work.`
+      : `${failed.length} of ${steps.length} didn’t work, starting with “${first.label}”.`;
+  return `${headline}${rest0f} ${remedy}`;
 }
 
 /**
@@ -77,12 +129,15 @@ export function failureSummary(
  */
 export function honestProgressSummary({
   steps,
+  shape,
   description,
   remedy,
 }: {
   steps: readonly ProgressStep[];
+  /** Ordered milestones, or independent units over a pile. No default. */
+  shape: RunShape;
   description?: string | undefined;
   remedy?: string | undefined;
 }): string | undefined {
-  return failureSummary(steps, remedy) ?? description;
+  return failureSummary(steps, shape, remedy) ?? description;
 }

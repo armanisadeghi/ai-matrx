@@ -19,6 +19,7 @@
  */
 
 import { supabase } from "@/utils/supabase/client";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { operationFailed } from "@/utils/errors";
 import type { Json } from "@/types/database.types";
 import type { AppMetadata } from "../types";
@@ -93,24 +94,21 @@ export async function createGenerationDraft(
     updated_at: now,
   };
 
-  // `app.definition.organization_id` is NOT NULL with no DB default — resolve
-  // the acting user's personal org the same way every other app-creation path
-  // does (POST /api/agent-apps, the duplicate route).
-  const { data: personalOrgId, error: orgError } = await supabase.rpc(
-    "ensure_personal_organization",
-    { p_user_id: input.userId },
-  );
-  if (orgError || !personalOrgId) {
-    throw new Error(
-      orgError?.message || "Failed to resolve personal organization",
-    );
-  }
+  // THE APP IS FILED IN THE ORGANIZATION THE PERSON SELECTED. It used to
+  // resolve their PERSONAL organization through `ensure_personal_organization`
+  // — which is why all 96 live `app.definition` rows sit in their creator's
+  // private workspace, invisible to the team they built the app for.
+  // `ensureOrgId` reads the selection (joining store hydration first) and
+  // refuses with `OrganizationContextError` when there is none; the caller
+  // surfaces that refusal with its remedy.
+  // Law: common-docs/policies/context-is-carried-never-rebuilt.md rule 4.
+  const organizationId = await ensureOrgId(undefined);
 
   const { data, error } = await supabase
     .schema("app")
     .from("definition")
     .insert({
-      organization_id: personalOrgId,
+      organization_id: organizationId,
       // Canonical RLS std_insert on app.definition requires created_by = auth.uid().
       created_by: input.userId,
       agent_id: input.agentId,

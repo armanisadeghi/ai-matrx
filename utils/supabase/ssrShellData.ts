@@ -31,7 +31,8 @@ export interface SSRShellData {
   /**
    * The resolved EXPLICIT active org (default-if-member → only-org → null).
    * Null is intentional — the signal the UI uses to nudge the user to pick
-   * one; the personal org still rides along via selectEffectiveOrganizationId.
+   * one. Nothing substitutes the personal org for it: surfaces read
+   * `selectOrganizationId` and fail closed, so null means the UI asks.
    */
   active_organization_id: string | null;
   /** The user's active org memberships (thin shape). */

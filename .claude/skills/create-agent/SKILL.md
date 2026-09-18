@@ -20,6 +20,13 @@ hyper-specialized — the exact instructions, the exact variables, the exact con
 exact tools, and the exact response shape it needs to produce one specific deliverable
 with near-perfect reliability. **Nothing more, nothing less.**
 
+🚨 **This skill is never run on an agent's own authority.** No agent creates, rewrites, or
+tunes a platform agent's instructions or a mandate's prompt by itself — the loop runs
+problem → Arman vision session → mandate brief → the agent-generation agent → results read
+WITH him on small real data → he edits and re-runs. Read
+[`agents-never-author-agents.md`](/policies/agents-never-author-agents.md) before using
+anything below.
+
 - **Specificity is the product.** A great agent takes a complex task and makes it easy by
   being highly specific — so specific that small models match the best models on earth.
 - **Duplication is NOT a concern.** Five thousand agents, hundreds nearly identical with

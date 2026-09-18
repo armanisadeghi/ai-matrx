@@ -29,6 +29,7 @@ import { createSubtaskThunk } from "@/features/tasks/redux/thunks";
 import { HierarchyCascade } from "@/features/agent-context/components/hierarchy-selection/HierarchyCascade";
 import { EMPTY_SELECTION } from "@/features/agent-context/components/hierarchy-selection/types";
 import { toast } from "@/lib/toast";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import type { TaskItemType } from "@/components/mardown-display/blocks/tasks/TaskChecklist";
 
 interface ImportTasksModalProps {
@@ -177,7 +178,14 @@ export default function ImportTasksModal({
       }, 500);
     } catch (error) {
       console.error("Import failed:", error);
-      toast.error("Failed to import tasks. Please try again.");
+      // A refused import because no organization is selected is a different
+      // fact from a failed one, and "try again" would fail identically
+      // forever — so it is named, with the remedy.
+      toast.error(
+        isOrganizationRequiredError(error)
+          ? "Nothing was imported because no organization is selected. Pick the organization these tasks belong to from the avatar menu, then import again."
+          : "Failed to import tasks. Please try again.",
+      );
       setIsImporting(false);
     }
   };

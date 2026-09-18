@@ -4,21 +4,19 @@
  * The ONE cloud boundary for captured media (plan §5 invariant 7): bytes go
  * through `fileHandler.upload` only — no capture-specific storage, no
  * `/api/camera/*` routes. Folder paths come from `folderForCaptures` (never
- * hand-rolled) and are ORG-NAMESPACED — captures file under the EFFECTIVE org
- * (`Captures/<orgId>/{Photos|Videos|Audio}`) so each workspace gets a DISTINCT
- * global folder path (the server pins one folder path per user to one org; a
- * flat `Captures/Videos` cannot exist under two orgs). "Effective" org =
- * explicit selection, else the user's personal org — so a user with no org
- * explicitly selected (the common soft-enforced state) STILL gets a nested
- * path, never the flat `Captures/Videos`. The flat path is only the pre-boot /
- * test fallback (no store, or org bootstrap unresolved).
+ * hand-rolled) and are ORG-NAMESPACED — captures file under the EXPLICIT
+ * active org (`Captures/<orgId>/{Photos|Videos|Audio}`) so each workspace gets
+ * a DISTINCT global folder path (the server pins one folder path per user to
+ * one org; a flat `Captures/Videos` cannot exist under two orgs). An upload is
+ * a WRITE, so there is no personal-workspace fallback: the uploader waits for
+ * the workspace (bounded) and, when none is selected, REFUSES with the
+ * workspace's own sentence — nothing is uploaded and the surface says why.
  *
- * Visibility stays `personal` either way (`resolveDefaultVisibility` keys on
- * the `Captures` prefix). Org is filing, not access: personal files are
+ * Visibility stays `personal` (`resolveDefaultVisibility` keys on the
+ * `Captures` prefix). Org is filing, not access: personal files are
  * owner-gated regardless of org, so the org-in-path is doctrine-safe and is
- * what makes the folder collision-free. With an org resolved we
- * `inheritActiveScope: true` so the folder+file row are owned by that org,
- * matching the path segment.
+ * what makes the folder collision-free. `inheritActiveScope: true` makes the
+ * folder+file row owned by that org, matching the path segment.
  *
  * `metadata.capture` is validated with `isCaptureMetadata` BEFORE any bytes
  * leave — a payload carrying a deviceId/groupId/label or a malformed variant
@@ -30,9 +28,7 @@ import {
   folderForCaptures,
   resolveDefaultVisibility,
 } from "@/features/files/utils/folder-conventions";
-import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import type { RootState } from "@/lib/redux/store";
+import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import type { NormalizedFile } from "@/features/files/handler/types";
 import {
   isCaptureMetadata,
@@ -41,20 +37,20 @@ import {
 import { recordCaptureFailure } from "@/features/media-capture/runtime/mediaCaptureDiagnostics";
 
 /**
- * The org id captures file under. Uses the EFFECTIVE org (explicit selection,
- * else the user's personal org) — the same fallback the API/scope layer is
- * meant to use (`selectEffectiveOrganizationId` doc). This matters: a user with
- * no org EXPLICITLY selected (the common soft-enforced state) still resolves to
- * their personal org, so the capture path is ALWAYS org-namespaced and NEVER
- * the flat `Captures/Videos` — which is what a stale, mis-scoped flat folder
- * would collide with. Null only before the org bootstrap resolves (or in tests
- * with no store), where we fall back to the flat path + no inherit.
+ * The org a capture files under: the EXPLICIT active organization, waited for
+ * while the bootstrap is still in flight and refused by name when there is
+ * none. It used to read the effective org — explicit selection ELSE the user's
+ * personal workspace — so a capture taken with no organization selected was
+ * silently filed into a personal workspace nobody chose, with only the folder
+ * path (never on screen) recording where it went. An upload is a write: with
+ * no organization it refuses and says so instead.
  */
-function activeOrganizationId(): string | null {
-  const store = getStoreSingleton();
-  if (!store) return null;
-  const state = store.getState() as RootState;
-  return selectEffectiveOrganizationId(state);
+async function requireCaptureOrganizationId(): Promise<string> {
+  const workspace = await awaitEffectiveOrganizationId();
+  if (workspace.status !== "ready") {
+    throw new Error(`[capture-uploader] ${workspace.reason}`);
+  }
+  return workspace.organizationId;
 }
 
 /**
@@ -92,7 +88,7 @@ export async function uploadCapture(
     );
   }
 
-  const activeOrgId = activeOrganizationId();
+  const activeOrgId = await requireCaptureOrganizationId();
   const folderPath = captureFolderFor(args.capture.artifact_kind, activeOrgId);
   try {
     const uploaded = await fileHandler.upload(
@@ -102,12 +98,10 @@ export async function uploadCapture(
         visibility: resolveDefaultVisibility(folderPath),
         fileName: args.file.name,
         metadata: { capture: args.capture },
-        // Org is filing, not access: inherit the active scope ONLY when an org
-        // is selected, so the org-namespaced folder+file row are owned by that
-        // org (matching the path segment). With no active org the flat legacy
-        // path belongs to the personal org — do NOT inherit. Visibility stays
-        // `personal` regardless (owner-gated), so this is doctrine-safe.
-        inheritActiveScope: activeOrgId ? true : false,
+        // Org is filing, not access: the folder+file row are owned by the org
+        // whose segment the path carries. Visibility stays `personal`
+        // regardless (owner-gated), so this is doctrine-safe.
+        inheritActiveScope: true,
         ...(args.onProgress ? { onProgress: args.onProgress } : {}),
       },
     );

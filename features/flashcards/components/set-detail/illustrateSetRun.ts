@@ -236,6 +236,9 @@ export function toProgressState(
   const noun = state.face === "front" ? "front" : "back";
   return {
     title: `Illustrating ${setName}`,
+    // One row per CARD, every one sourced independently of its neighbours —
+    // a card that finds nothing costs that card and nothing else.
+    shape: "fan_out",
     description:
       state.cards.length === 0
         ? "Finding expert images on the open web…"

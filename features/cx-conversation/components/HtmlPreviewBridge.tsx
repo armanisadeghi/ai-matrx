@@ -15,6 +15,8 @@ import {
   selectOrganizationId,
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
+import { toast } from "@/lib/toast";
+import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 
 interface HtmlPreviewBridgeProps {
   content: string;
@@ -113,7 +115,31 @@ export function HtmlPreviewBridge({
         ).unwrap();
         artifactIdRef.current = artifact.id;
       } catch (err) {
-        console.error("[HtmlPreviewBridge] Failed to register artifact:", err);
+        // 🚨 THE PAGE EXISTS, THE LINK DOES NOT — say so.
+        //
+        // `registerArtifactThunk` began THROWING the organization refusal on
+        // 2026-09-17 (`chat.artifact` carries `_stamp_org_default`, so a row
+        // sent without an organization is filed in the writer's personal
+        // workspace silently). This catch swallowed it into `console.error`
+        // and then opened the page, so the person saw a published page, had no
+        // idea the conversation link was never written, and lost it. A silent
+        // misfile became a silent LOSS — worse than what the refusal replaced.
+        //
+        // The page itself DID get created upstream, so hiding it would be a
+        // second lie. What must not happen is the surface implying the link
+        // was saved.
+        if (
+          !presentOrganizationRefusal(err, {
+            subject: "This page",
+            act: "linked to the conversation",
+          })
+        ) {
+          console.error("[HtmlPreviewBridge] Failed to register artifact:", err);
+          toast.error("This page is not linked to the conversation", {
+            description:
+              "The page itself was published, but recording it against this message failed, so it will not appear here next time. Try publishing again.",
+          });
+        }
       }
 
       dispatch(setActivePageId(newPageId));
@@ -138,7 +164,20 @@ export function HtmlPreviewBridge({
           title: savedResult.metaTitle,
         }),
       ).catch((err) => {
-        console.error("[HtmlPreviewBridge] Failed to update artifact:", err);
+        // Same class as the registration catch above: the page was
+        // re-published, the record of it was not. Never silent.
+        if (
+          !presentOrganizationRefusal(err, {
+            subject: "This page's record",
+            act: "updated",
+          })
+        ) {
+          console.error("[HtmlPreviewBridge] Failed to update artifact:", err);
+          toast.error("This page's record was not updated", {
+            description:
+              "The page was re-published, but its title and link here still show the previous version.",
+          });
+        }
       });
     },
     [dispatch],
@@ -198,7 +237,6 @@ export function HtmlPreviewBridge({
             newContent: mergeEditedText(existing, markdownContent),
           }),
         ).unwrap();
-      const { toast } = await import("@/lib/toast");
       toast.success("Saved");
     },
     [callbackGroupId, conversationId, messageId, dispatch, store],

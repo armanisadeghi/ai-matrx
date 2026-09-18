@@ -162,6 +162,21 @@ function member<T extends string>(value: unknown, field: string, fallback: T): T
     return (read ?? fallback) as T;
 }
 
+/**
+ * A `{reason: count}` breakdown. Every value must be a number — a reason whose
+ * count is not a number is a shape this screen cannot add up, and printing "202
+ * posts, [object Object] skipped" is worse than printing nothing.
+ */
+function countsByReason(value: unknown, field: string): Record<string, number> {
+    if (value === undefined || value === null) return {};
+    const row = obj(value, field);
+    const out: Record<string, number> = {};
+    for (const [reason, count] of Object.entries(row)) {
+        out[reason] = num(count, `${field}.${reason}`);
+    }
+    return out;
+}
+
 /** A free-form JSON object (`settings`, `result`, `params_schema`). */
 function optObj(value: unknown, field: string): Record<string, unknown> | null {
     if (value === undefined || value === null) return null;
@@ -932,6 +947,15 @@ export function parseSyncEvent(payload: unknown, standIns: string[]): EventRead<
                             row.quota_units_spent,
                             `${type}.quota_units_spent`,
                         ),
+                        // A server build older than this one sends neither field.
+                        // Absent is read as "nothing was discarded" rather than
+                        // refused, because a missing account of skips must never
+                        // cost a person the catalogue they just watched arrive.
+                        skipped_by_reason: countsByReason(
+                            row.skipped_by_reason,
+                            `${type}.skipped_by_reason`,
+                        ),
+                        skipped_total: number(row.skipped_total, `${type}.skipped_total`),
                         metrics: parseLibraryMetrics(row.metrics, `${type}.metrics`, standIns),
                     },
                 };

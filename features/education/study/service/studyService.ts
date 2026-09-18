@@ -156,14 +156,24 @@ function isOverrideAttemptResult(
 export const studyService = {
   // ─── SESSIONS ───────────────────────────────────────────────────────────
   /**
-   * Open a study session. `organization_id` is omitted unless `orgId` is given,
-   * so the `_stamp_org_default` trigger fills the creator's personal org.
+   * Open a study session. The organization is ALWAYS on the wire: the caller's
+   * explicit `orgId`, else the organization the person has SELECTED. Leaving it
+   * off let `public._stamp_org_default` file the session into the owner's
+   * PERSONAL organization no matter which organization they were working in —
+   * the silent misfile. No selection = an honest refusal, nothing written.
+   * Law: common-docs/policies/context-is-carried-never-rebuilt.md.
    */
   async createSession(
     input: NewSessionInput,
   ): Promise<StudyResult<StudySessionRow>> {
+    let organizationId: string;
+    try {
+      organizationId = await ensureOrgId(input.orgId ?? null);
+    } catch (e) {
+      return fail("createSession", e);
+    }
     const payload = {
-      ...(input.orgId ? { organization_id: input.orgId } : {}),
+      organization_id: organizationId,
       mode: input.mode,
       source_kind: input.sourceKind ?? null,
       source_set_id: input.sourceSetId ?? null,

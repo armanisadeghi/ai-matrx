@@ -10,6 +10,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type {
   MediaResult,
@@ -42,6 +43,14 @@ function describeError(error: unknown): string {
 }
 
 function fail<T>(context: string, error: unknown): MediaResult<T> {
+  // A missing organization is a REFUSAL the person can fix, not a service
+  // failure to log and hide: the transport's own sentence ("Select an
+  // organization before sending this request.") is an instruction to a
+  // programmer, so the remedy sentence replaces it and the console noise is
+  // dropped. Law: common-docs/policies/context-is-carried-never-rebuilt.md.
+  if (isOrganizationRequiredError(error)) {
+    return { data: null, error: "Select an organization before saving \u2014 every record is filed under one organization. Pick yours from the avatar menu." };
+  }
   console.error(`[studyMediaService] ${context}:`, describeError(error));
   return { data: null, error: `${context}: ${describeError(error)}` };
 }

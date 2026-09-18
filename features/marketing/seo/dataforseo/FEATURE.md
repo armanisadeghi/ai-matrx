@@ -5,7 +5,8 @@ Status: **working development demo** at `/demos/seo-dataforseo` (full/dev build 
 This is the direct test surface for `matrx-seo`'s DataForSEO API. The browser talks directly
 to the SEO target selected by the canonical API service router with the current Supabase
 access token; there is no Next.js proxy or page-specific server setting. The active
-organization comes from `selectEffectiveOrganizationId`.
+organization comes from `selectOrganizationId` — the organization the user explicitly
+selected, with no personal-workspace fallback (`client.ts`, `DataForSeoLab.tsx`).
 
 ## Contract
 

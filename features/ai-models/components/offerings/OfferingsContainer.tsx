@@ -201,6 +201,9 @@ export default function OfferingsContainer() {
       if (isNew) {
         // organization_id is required — every new offering is homed in the
         // global system org (same pattern as Providers/Endpoints).
+        // org-fallback-deliberate: an offering is a row of the platform's AI
+        //   catalog, identical for every organization; the surface lives in the
+        //   admin-gated (admin) route group
         const organization_id = await resolveSystemOrgId();
         saved = await aiModelService.createOffering({
           ...payload,
