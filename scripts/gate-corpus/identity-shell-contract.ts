@@ -117,11 +117,316 @@ export const NOT_A_SECRET: Readonly<Record<string, string>> = {
   "auth.users.email_confirmed_at":
     "a timestamp. It says WHEN a row confirmed an address, never what the address is, and " +
     "GoTrue reads it to decide whether the identity is confirmed at all.",
+  "crm.contact_medium.phone_country":
+    "an ISO country code ('US', 'GB'). It matches the deny-list's /phone/ pattern because the " +
+    "word is in its name, and it is the one part of a telephone number that identifies a " +
+    "COUNTRY rather than a subscriber. The number itself lives in value_raw / value_key / " +
+    "display_value, all three of which are synthesised.",
   "auth.oauth_clients.token_endpoint_auth_method":
     "an OAuth 2.0 protocol constant naming HOW a client authenticates " +
     "('client_secret_basic' / 'none'), not a credential. It is NOT NULL with no default, and " +
     "the extension and desktop lanes read it back.",
 } as const;
+
+
+/**
+ * 🚨 THE PERSONAL-DATA TABLES — DENY BY DEFAULT.
+ *
+ * `auth.users` taught this file one lesson and `auth.oauth_clients` taught it a
+ * second: an ALLOW-list of forbidden names covers the column somebody
+ * remembered, never the one they added. `crm.party` and the four tables its
+ * record page reads are the first tables in the copy set whose subject IS a
+ * person — 1,905 real parties, their names, birth dates, bios, addresses, phone
+ * numbers and email addresses — so the rule on them is inverted: **every copied
+ * column must be either SYNTHESISED or EXEMPT, and a column that is neither is a
+ * violation.** Adding a column to one of these tables fails the guard until
+ * somebody writes down which it is.
+ *
+ * THE CENSUS BELOW IS NOT THE GUARD'S ONLY DEFENCE AGAINST ITSELF. A declared
+ * column list rots the moment production grows a column, and a stale list here
+ * would read green while copying a person's new value. So `restore-graph.ts`
+ * asserts at RUN TIME, against production's own catalogue, that each of these
+ * tables has exactly these columns and refuses the whole copy when it does not
+ * (`PERSONAL_DATA_TABLES` is imported there for exactly that). The list is the
+ * text half of a claim whose other half is measured.
+ */
+export const PERSONAL_DATA_TABLES: Readonly<Record<string, readonly string[]>> = {
+  "crm.party": [
+    "id", "party_kind", "display_name", "sort_name", "name_key", "aka", "first_name",
+    "middle_name", "last_name", "preferred_name", "name_prefix", "name_suffix", "pronouns",
+    "date_of_birth", "headline", "legal_name", "primary_domain", "industry_id", "employee_band",
+    "founded_year", "tax_id", "registration_number", "bio", "avatar_file_id", "timezone",
+    "locale", "canonical_id", "source_party_id", "source_synced_at", "locked_fields",
+    "expert_status", "claimed_by", "claimed_at", "assigned_to", "lifecycle_stage_id",
+    "lifecycle_stage_changed_at", "became_customer_at", "rating_id", "source", "source_detail",
+    "do_not_contact", "do_not_contact_reason", "linked_organization_id",
+    "primary_employer_party_id", "job_title", "attributes", "organization_id", "created_by",
+    "updated_by", "created_at", "updated_at", "deleted_at", "version", "metadata", "visibility",
+    "record_class", "created_by_tier", "created_by_system", "updated_by_tier",
+    "updated_by_system", "field_provenance",
+  ],
+  "crm.affiliation": [
+    "id", "party_id", "employer_party_id", "title", "department", "seniority", "is_primary",
+    "is_current", "start_date", "end_date", "source", "confidence", "organization_id",
+    "created_at", "updated_at", "created_by", "updated_by", "deleted_at", "version", "metadata",
+  ],
+  "crm.contact_medium": [
+    "id", "channel", "platform_slug", "value_raw", "value_key", "display_value", "external_id",
+    "handle", "profile_url", "line_type", "phone_country", "calling_time_zone",
+    "is_role_address", "mx_valid", "verification_status", "verified_at", "bounce_type",
+    "bounce_count", "first_bounced_at", "last_bounced_at", "complaint_at", "unsubscribed_at",
+    "dnc_state", "dnc_checked_at", "suppressed_at", "suppression_reason",
+    "suppression_expires_at", "details", "organization_id", "created_by", "updated_by",
+    "created_at", "updated_at", "deleted_at", "version", "metadata", "visibility",
+    "is_contactable", "consent_basis", "consent_source", "consent_source_url",
+    "consent_recorded_at", "consent_evidence_at", "consent_expires_at", "consent_jurisdiction",
+    "consent_evidence", "subscriber_kind", "source_disclosed_at",
+  ],
+  "crm.address": [
+    "id", "party_id", "purpose_code", "purpose_id", "label", "line1", "line2", "line3",
+    "locality", "region", "postal_code", "plus4", "country_code", "formatted_address",
+    "latitude", "longitude", "timezone", "place_id", "geo_source", "verification_status",
+    "is_primary", "valid_from", "valid_to", "source", "organization_id", "created_at",
+    "updated_at", "created_by", "updated_by", "deleted_at", "version", "metadata",
+  ],
+  "crm.party_contact_point": [
+    "id", "party_id", "medium_id", "purpose_code", "purpose_id", "label", "extension",
+    "is_primary", "is_identity_key", "affiliation_id", "address_id", "valid_from", "valid_to",
+    "opt_out_at", "opt_out_source", "last_contacted_at", "source", "confidence", "sort_order",
+    "organization_id", "created_at", "updated_at", "created_by", "updated_by", "deleted_at",
+    "version", "metadata", "channel",
+  ],
+};
+
+/**
+ * STRUCTURALLY-NAMED COLUMNS, EXEMPT BY PATTERN — each with the reason its
+ * shape, not its table, makes it safe. Without these the `NOT_PERSONAL` map
+ * below would be 132 entries of "a uuid", which is a list nobody reads and
+ * therefore a list that protects nobody. A uuid key, a clock reading, a flag or
+ * a counter cannot carry a person's name.
+ */
+export const STRUCTURAL_EXEMPTIONS: readonly {
+  readonly pattern: RegExp;
+  readonly why: string;
+}[] = [
+  { pattern: /^id$/, why: "the primary key the whole copy is keyed on" },
+  { pattern: /_id$/, why: "a uuid key, never a value a person typed" },
+  { pattern: /_at$/, why: "a clock reading, not a fact about a person" },
+  { pattern: /^is_/, why: "a flag with two values" },
+  { pattern: /_count$/, why: "a counter" },
+  { pattern: /^version$/, why: "the optimistic-concurrency counter" },
+  { pattern: /^visibility$/, why: "the platform's own visibility enum" },
+  { pattern: /^sort_order$/, why: "an ordering integer" },
+  { pattern: /^position$/, why: "an ordering integer" },
+  { pattern: /^confidence$/, why: "a 0–100 score our own matcher wrote" },
+  { pattern: /_seconds$/, why: "a duration" },
+  {
+    pattern: /^(valid_from|valid_to|start_date|end_date)$/,
+    why: "a validity date — when a row applied, never who it applies to",
+  },
+  { pattern: /^founded_year$/, why: "a year an ORGANIZATION was founded" },
+  { pattern: /^do_not_contact$/, why: "a boolean suppression flag" },
+  { pattern: /^attempt_number$/, why: "a counter" },
+  { pattern: /^mx_valid$/, why: "a boolean: whether a domain had an MX record" },
+];
+
+/**
+ * 🚨 THE 45 COLUMNS THAT ARE NEITHER SYNTHESISED NOR STRUCTURAL, each with the
+ * reason it names nobody. Exact keys, `<schema>.<table>.<column>` — never a
+ * pattern, so widening this is one line per column in a diff a reviewer cannot
+ * miss. Most are controlled vocabularies the CHECK constraints on these tables
+ * enforce, which is why they cannot be made up: a stand-in would raise 23514.
+ */
+export const NOT_PERSONAL: Readonly<Record<string, string>> = {
+  // ── crm.party
+  "crm.party.party_kind":
+    "one of exactly two words, 'person' or 'organization', enforced by " +
+    "party_party_kind_check — and the two facet CHECK constraints are written against " +
+    "it, so it cannot be made up.",
+  "crm.party.employee_band":
+    "a size bucket of the employer, not of a person.",
+  "crm.party.timezone":
+    "an IANA zone name; it names a region of the earth, not a person, and REC-40's read " +
+    "returns it.",
+  "crm.party.locale":
+    "a BCP 47 language tag ('en-US'). It names a language and a region, which billions of " +
+    "people share.",
+  "crm.party.locked_fields":
+    "a text[] of COLUMN NAMES of this table — the governance guard reads it — never a " +
+    "value.",
+  "crm.party.expert_status":
+    "one of 'registered' / 'approved' / 'vetted', enforced by " +
+    "party_expert_status_check.",
+  "crm.party.claimed_by":
+    "the uuid of the USER who claimed the profile — a foreign key into auth.users, " +
+    "whose own rows are id-only shells on this branch. It says who did something, never " +
+    "who the row is about.",
+  "crm.party.assigned_to":
+    "the uuid of the USER the record is assigned to — a foreign key into auth.users, " +
+    "not a fact about the party.",
+  "crm.party.source":
+    "the name of the SYSTEM a row came from, never who it is about.",
+  "crm.party.created_by":
+    "a uuid foreign key into auth.users naming WHO wrote the row — auth.users is copied " +
+    "here as id-only shells, so it names nobody.",
+  "crm.party.updated_by":
+    "a uuid foreign key into auth.users naming WHO last wrote the row — the same " +
+    "id-only shells; it is a fact about our system, not about the person.",
+  "crm.party.record_class":
+    "'contact' or 'discovered', enforced by party_record_class_check.",
+  "crm.party.created_by_tier":
+    "which provenance tier wrote the row — code, ai or human. A fact about our own writer.",
+  "crm.party.created_by_system":
+    "the name of the system that wrote the row.",
+  "crm.party.updated_by_tier":
+    "which provisioning tier last wrote the row.",
+  "crm.party.updated_by_system":
+    "the name of the system that last wrote the row.",
+  // ── crm.affiliation
+  "crm.affiliation.seniority":
+    "a seniority band, a controlled vocabulary of about six words.",
+  "crm.affiliation.source":
+    "the name of the SYSTEM a row came from — an importer, a scraper, a form — never who " +
+    "the row is about.",
+  "crm.affiliation.created_by":
+    "a uuid foreign key into auth.users naming WHO wrote the row — auth.users is copied " +
+    "here as id-only shells, so it names nobody.",
+  "crm.affiliation.updated_by":
+    "a uuid foreign key into auth.users naming WHO last wrote the row — the same " +
+    "id-only shells; it is a fact about our system, not about the person.",
+  // ── crm.contact_medium
+  "crm.contact_medium.channel":
+    "'email' / 'phone' / 'social' — WHICH kind of medium, never the medium itself.",
+  "crm.contact_medium.platform_slug":
+    "the social platform's name ('linkedin'), not the account on it.",
+  "crm.contact_medium.line_type":
+    "'mobile' / 'landline' / 'voip' — what KIND of line the number is, never the number.",
+  "crm.contact_medium.phone_country":
+    "an ISO country code — the dialling COUNTRY, not the subscriber. The number itself is in " +
+    "value_raw / value_key / display_value, all synthesised.",
+  "crm.contact_medium.calling_time_zone":
+    "an IANA zone name ('America/Chicago') — a region of the earth, read to decide when it is " +
+    "polite to call.",
+  "crm.contact_medium.verification_status":
+    "a controlled vocabulary of verification outcomes.",
+  "crm.contact_medium.bounce_type":
+    "'hard' / 'soft' — how a delivery failed, a fact about our own sending.",
+  "crm.contact_medium.dnc_state":
+    "a do-not-call registry verdict.",
+  "crm.contact_medium.created_by":
+    "a uuid foreign key into auth.users naming WHO wrote the row — auth.users is copied " +
+    "here as id-only shells, so it names nobody.",
+  "crm.contact_medium.updated_by":
+    "a uuid foreign key into auth.users naming WHO last wrote the row — the same " +
+    "id-only shells; it is a fact about our system, not about the person.",
+  "crm.contact_medium.consent_basis":
+    "the legal basis word ('consent', 'legitimate_interest').",
+  "crm.contact_medium.consent_jurisdiction":
+    "a jurisdiction code ('US-CA', 'EU') — WHICH law governs the consent, not who gave it.",
+  "crm.contact_medium.subscriber_kind":
+    "'individual' / 'business' — which consent regime applies to the medium.",
+  // ── crm.address
+  "crm.address.purpose_code":
+    "which SLOT the address fills ('billing', 'home'), never where it is.",
+  "crm.address.country_code":
+    "an ISO 3166 country code — the one part of an address that identifies nobody.",
+  "crm.address.geo_source":
+    "the name of the GEOCODER that resolved the address, never the address it resolved.",
+  "crm.address.verification_status":
+    "a controlled vocabulary of verification outcomes.",
+  "crm.address.source":
+    "the name of the SYSTEM a row came from — an importer, a scraper, a form — never who " +
+    "the row is about.",
+  "crm.address.created_by":
+    "a uuid foreign key into auth.users naming WHO wrote the row — auth.users is copied " +
+    "here as id-only shells, so it names nobody.",
+  "crm.address.updated_by":
+    "a uuid foreign key into auth.users naming WHO last wrote the row — the same " +
+    "id-only shells; it is a fact about our system, not about the person.",
+  // ── crm.party_contact_point
+  "crm.party_contact_point.purpose_code":
+    "which SLOT the point fills ('work', 'home'), never the point itself.",
+  "crm.party_contact_point.source":
+    "the name of the SYSTEM a row came from — an importer, a scraper, a form — never who " +
+    "the row is about.",
+  "crm.party_contact_point.created_by":
+    "a uuid foreign key into auth.users naming WHO wrote the row — auth.users is copied " +
+    "here as id-only shells, so it names nobody.",
+  "crm.party_contact_point.updated_by":
+    "a uuid foreign key into auth.users naming WHO last wrote the row — the same " +
+    "id-only shells; it is a fact about our system, not about the person.",
+  "crm.party_contact_point.channel":
+    "'email' / 'phone' — WHICH kind of point; contact_point_primary_key is unique over " +
+    "it.",
+};
+
+/**
+ * DENY BY DEFAULT over `PERSONAL_DATA_TABLES`: on a table whose subject is a
+ * person, a copied column is SYNTHESISED, or STRUCTURAL, or has a written reason
+ * in `NOT_PERSONAL` — and anything else is a violation with the person's real
+ * value already on the wire.
+ */
+export function checkPersonalDataTables(source: string): IdentityShellViolation[] {
+  const v: IdentityShellViolation[] = [];
+  const entries = new Map(copyEntries(source).map((e) => [e.table, e.text]));
+  for (const [table, census] of Object.entries(PERSONAL_DATA_TABLES)) {
+    const text = entries.get(table);
+    if (text === undefined) {
+      v.push({
+        code: "personal-table-is-not-in-the-copy-set",
+        detail:
+          `${table} is declared a personal-data table but COPY_TABLES no longer names it. Either ` +
+          `it stopped being copied — in which case delete it from PERSONAL_DATA_TABLES and say so ` +
+          `— or the entry was renamed and this guard is now watching nothing.`,
+      });
+      continue;
+    }
+    // A `columns` shell would mean the census below is not what gets copied, and
+    // this guard would be judging a list the run does not use.
+    const shell = columnList(text);
+    if (shell.length) {
+      v.push({
+        code: "personal-table-has-a-shell-list",
+        detail:
+          `${table} declares a \`columns\` shell list. This guard judges the FULL column census ` +
+          `in PERSONAL_DATA_TABLES; a shell means the two disagree about what is copied, and the ` +
+          `disagreement is where a personal column hides. Copy the whole table (synthesised) or ` +
+          `teach this guard about shells.`,
+      });
+      continue;
+    }
+    const synth = synthesizeMap(text);
+    const note = disclosure(text);
+    for (const c of census) {
+      if (synth[c]) {
+        if (note && !note.includes(c))
+          v.push({
+            code: "disclosure-omits-a-synthesised-column",
+            detail:
+              `${table}'s disclosure never names "${c}", which is synthesised rather than copied.`,
+          });
+        continue;
+      }
+      if (STRUCTURAL_EXEMPTIONS.some((s) => s.pattern.test(c))) continue;
+      if (NOT_PERSONAL[`${table}.${c}`]) continue;
+      v.push({
+        code: "copies-a-personal-column",
+        detail:
+          `${table} copies "${c}" straight from production, and ${table} is a table whose subject ` +
+          `is a PERSON. On these tables a column is synthesised, or structural, or carries a ` +
+          `written reason in NOT_PERSONAL. "${c}" is none of the three, so this copy would put ` +
+          `1,905 real values on a rehearsal branch with a public PostgREST API.`,
+      });
+    }
+    if (Object.keys(synth).length && !note) {
+      v.push({
+        code: "no-disclosure",
+        detail: `${table} has no columnsNote, so the run announces nothing about what it took.`,
+      });
+    }
+  }
+  return v;
+}
 
 /** The `COPY_TABLES` literal, as source text — nothing else in the file counts. */
 function copyTablesBlock(source: string): string | null {
@@ -137,7 +442,7 @@ function copyEntries(source: string): { table: string; text: string }[] {
   const block = copyTablesBlock(source);
   if (block === null) return [];
   const out: { table: string; text: string }[] = [];
-  const starts = [...block.matchAll(/table: "([a-z_]+\.[a-z_]+)"/g)];
+  const starts = [...block.matchAll(/table: "([a-z0-9_]+\.[a-z0-9_]+)"/g)];
   for (let i = 0; i < starts.length; i++) {
     const from = starts[i]!.index!;
     const to = i + 1 < starts.length ? starts[i + 1]!.index! : block.length;
@@ -155,7 +460,7 @@ function authUsersEntry(source: string): string | null {
 function columnList(entry: string): string[] {
   const m = entry.match(/columns:\s*\[([\s\S]*?)\]/);
   if (!m) return [];
-  return [...m[1]!.matchAll(/"([a-z_]+)"/g)].map((x) => x[1]!);
+  return [...m[1]!.matchAll(/"([a-z0-9_]+)"/g)].map((x) => x[1]!);
 }
 
 /** `synthesize: { name: `expr`, … }` → name → the expression's source text. */
@@ -164,7 +469,7 @@ function synthesizeMap(entry: string): Record<string, string> {
   if (!m) return {};
   const out: Record<string, string> = {};
   for (const line of m[1]!.split("\n")) {
-    const k = line.match(/^\s*([a-z_]+)\s*:\s*(.+?),?\s*$/);
+    const k = line.match(/^\s*([a-z0-9_]+)\s*:\s*(.+?),?\s*$/);
     if (k) out[k[1]!] = k[2]!;
   }
   return out;
@@ -272,6 +577,43 @@ export function checkAuthSecretColumns(source: string): IdentityShellViolation[]
       }
     }
   }
+  // THE SAME DENY-LIST, OVER THE PERSONAL-DATA TABLES. `crm.*` is not `auth.*`,
+  // but a `password_hash` or an `api_token` column added to `crm.party`
+  // tomorrow is the same failure with a different schema name — and it would be
+  // caught by the new deny-by-default rule only until somebody wrote it a
+  // reason. Refusing it by NAME as well means the old rule still covers the
+  // table nobody has thought about yet. The auth-only arms above (a missing
+  // `columns` list, the shell contract) deliberately do NOT run here: these
+  // tables are copied whole, on purpose, and `checkPersonalDataTables` is what
+  // judges their census.
+  for (const { table, text } of copyEntries(source)) {
+    if (!(table in PERSONAL_DATA_TABLES)) continue;
+    const synth = synthesizeMap(text);
+    for (const c of PERSONAL_DATA_TABLES[table]!) {
+      const hit = SECRET_COLUMN_PATTERNS.find((p) => p.pattern.test(c));
+      if (!hit) continue;
+      if (NOT_A_SECRET[`${table}.${c}`]) continue;
+      const e = synth[c];
+      if (!e) {
+        v.push({
+          code: "copies-a-secret-column",
+          detail:
+            `${table} copies "${c}" straight from production, and its name says it holds ` +
+            `${hit.what}. No secret or credential column is ever read from production into the ` +
+            `branch — the rule is not about the auth schema, it is about the column.`,
+        });
+        continue;
+      }
+      if (CREDENTIAL_PATTERNS.some((p) => p.test(c)) && /"[a-z_]+"/.test(e)) {
+        v.push({
+          code: "synthetic-credential-is-not-a-constant",
+          detail:
+            `${table} synthesises "${c}" as ${e}, which reads a column of the production row. A ` +
+            `credential's stand-in must be a CONSTANT.`,
+        });
+      }
+    }
+  }
   return v;
 }
 
@@ -362,5 +704,11 @@ function authUsersShell(source: string): IdentityShellViolation[] {
 
 /** The live file. */
 export function checkRestoreGraphFile(path: string): IdentityShellViolation[] {
-  return checkIdentityShell(readFileSync(path, "utf8"));
+  const source = readFileSync(path, "utf8");
+  // `checkPersonalDataTables` is deliberately NOT part of `checkIdentityShell`:
+  // it judges the WHOLE live copy set against a declared census, so it reports a
+  // missing table — which is meaningless against the miniature fixtures the auth
+  // arms are tested with, and would drown their assertions in noise. The live
+  // file is judged by all three.
+  return [...checkIdentityShell(source), ...checkPersonalDataTables(source)];
 }
