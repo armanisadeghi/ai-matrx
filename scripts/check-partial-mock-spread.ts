@@ -144,6 +144,7 @@ function report(findings: Finding[]): void {
 /** Plant the violation in a scratch file, prove it is caught, delete it. */
 function selfTest(): void {
   const dir = mkdtempSync(path.join(tmpdir(), "partial-mock-spread-"));
+  let verdict: { ok: boolean; message: string };
   try {
     const good = path.join(dir, "good.test.ts");
     writeFileSync(
@@ -163,40 +164,42 @@ function selfTest(): void {
     const plantedFindings = findViolations(readFileSync(bad, "utf8"), "bad");
 
     if (cleanFindings.length !== 0) {
-      console.error(
-        "SELF-TEST FAIL: the spread form was reported as a violation.",
-      );
-      exitAfterDrain(1);
-      return;
-    }
-    if (plantedFindings.length !== 1) {
-      console.error(
-        `SELF-TEST FAIL: the planted truncating mock was NOT caught ` +
+      verdict = {
+        ok: false,
+        message:
+          "SELF-TEST FAIL: the spread form was reported as a violation.",
+      };
+    } else if (plantedFindings.length !== 1) {
+      verdict = {
+        ok: false,
+        message:
+          `SELF-TEST FAIL: the planted truncating mock was NOT caught ` +
           `(${plantedFindings.length} findings).`,
-      );
-      exitAfterDrain(1);
-      return;
+      };
+    } else {
+      verdict = {
+        ok: true,
+        message:
+          "SELF-TEST PASS: the truncating mock is caught, the spread form is not.",
+      };
     }
-    console.log(
-      "SELF-TEST PASS: the truncating mock is caught, the spread form is not.",
-    );
-    exitAfterDrain(0);
   } finally {
+    // Before any exit: `exitAfterDrain` calls `process.exit`, which never
+    // unwinds a `finally`, so the scratch directory would survive it.
     rmSync(dir, { recursive: true, force: true });
   }
+  if (verdict.ok) console.log(verdict.message);
+  else console.error(verdict.message);
+  exitAfterDrain(verdict.ok ? 0 : 1);
 }
 
 function main(): void {
-  if (process.argv.includes("--self-test")) {
-    selfTest();
-    return;
-  }
+  if (process.argv.includes("--self-test")) selfTest();
   const findings = sweep(trackedTestFiles());
   if (findings.length > 0) {
     report(findings);
     console.error(`\n${findings.length} truncating mock(s) of a guarded module.`);
     exitAfterDrain(1);
-    return;
   }
   console.log(
     `PASS check:partial-mock-spread — every jest.mock of ${GUARDED_MODULES.join(", ")} spreads the real module.`,
