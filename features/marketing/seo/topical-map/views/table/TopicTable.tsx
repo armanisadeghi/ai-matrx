@@ -82,9 +82,9 @@ import {
   setTableHierarchy,
   toggleExpanded,
 } from "../../redux/slice";
-import type { MapTopicPatch } from "../../types";
 import { buildTopicMenuSection } from "../../ui/topicMenuSection";
 import { buildMapTableColumns, type MapTableColumnContext } from "./columns";
+import { topicPatchesFromEdits } from "./editPatches";
 import { rollupTopicIntents } from "./intentRollup";
 import { OpenPagesAction } from "./OpenPagesAction";
 import {
@@ -318,20 +318,13 @@ export function TopicTable({ mapId, siteId, host, readOnly, knobs }: TopicTableP
 
   // ── Writes from the table ────────────────────────────────────────────────
   const saveEdits = async (edits: CellEditsMap) => {
-    const patches: MapTopicPatch[] = [];
-    for (const [slug, fields] of Object.entries(edits)) {
-      const patch: MapTopicPatch = { slug };
-      const name = fields.topic ?? fields.name;
-      if (typeof name === "string" && name.trim().length > 0) patch.name = name.trim();
-      if ("description" in fields) {
-        const description = fields.description;
-        patch.description =
-          typeof description === "string" && description.trim().length > 0
-            ? description
-            : null;
-      }
-      if (patch.name !== undefined || patch.description !== undefined) patches.push(patch);
-    }
+    // A cleared name is REFUSED, not dropped: the table toasts "Changes saved"
+    // on any resolve, so returning quietly told the person an edit landed while
+    // the old name stayed on screen. Throwing puts the refusal in front of them
+    // ("Couldn't save: A topic needs a name.") and keeps the draft to fix.
+    const decision = topicPatchesFromEdits(edits);
+    if ("refusal" in decision) throw new Error(decision.refusal);
+    const patches = decision.patches;
     if (patches.length === 0) return;
     const result = await patchTopics.mutateAsync(patches);
     // Per-edit failures: the function's own sentence, one per refused edit.

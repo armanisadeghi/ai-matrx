@@ -352,4 +352,30 @@ describe("TopicTable", () => {
     expect(props.columns.map((column) => column.id)).toEqual(["topic", "facets"]);
     expect(props.toolbar?.actions).toBeTruthy();
   });
+
+  describe("an inline edit that clears a topic's name", () => {
+    // The table toasts "Changes saved" on any resolve. Before this, saveEdits
+    // dropped the blank name, built no patches and returned — green toast, old
+    // name still on screen. It must REJECT, and nothing may reach the server.
+    it("rejects with the sentence and sends no patch", async () => {
+      const props = render(makeStore());
+      const onSave = props.edit?.onSave;
+      if (!onSave) throw new Error("The table was given no edit handler");
+      await expect(
+        Promise.resolve(onSave({ "live-here": { topic: "   " } }, [])),
+      ).rejects.toThrow("A topic needs a name.");
+      expect(patchMutateAsync).not.toHaveBeenCalled();
+    });
+
+    it("still saves a real name", async () => {
+      patchMutateAsync.mockResolvedValue({ updated: ["live-here"], errors: [] });
+      const props = render(makeStore());
+      const onSave = props.edit?.onSave;
+      if (!onSave) throw new Error("The table was given no edit handler");
+      await onSave({ "live-here": { topic: "Live HERE" } }, []);
+      expect(patchMutateAsync).toHaveBeenCalledWith([
+        { slug: "live-here", name: "Live HERE" },
+      ]);
+    });
+  });
 });
