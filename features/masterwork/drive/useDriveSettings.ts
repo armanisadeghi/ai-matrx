@@ -1,4 +1,5 @@
 "use client";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 // features/masterwork/drive/useDriveSettings.ts
 //
@@ -31,8 +32,10 @@ export const KNOB_AUTO_RECONNECT = "masterwork.drive.auto_reconnect";
 export const KNOB_SPOKEN_STATUS = "masterwork.drive.spoken_status";
 
 export interface DriveSettingsValues {
-  /** Mandate key of the interviewer that conducts a drive. */
-  interviewerMandateKey: string;
+  /** Mandate key of the interviewer that conducts a drive. Typed (V-L6a): the
+   * knob's VALUE is a real mandate key, so it enters the typed world here at
+   * the config boundary and stays typed all the way to `useMandate`. */
+  interviewerMandateKey: AnyMandateKey;
   /** How long a paused drive stays the SAME interview. */
   resumeWindowMinutes: number;
   /** Whether "pause" / "carry on" / "I'm done" are honoured as commands. */
@@ -135,14 +138,14 @@ export function useDriveSettings(
   return settings;
 }
 
-export function readMandateKey(value: unknown): string {
+export function readMandateKey(value: unknown): AnyMandateKey {
   if (typeof value !== "string" || value.trim().length === 0) {
     throw new Error(
       `${KNOB_INTERVIEWER_MANDATE_KEY} resolved to ${JSON.stringify(value)} — ` +
         "it must name the mandate of the interviewer that conducts a drive.",
     );
   }
-  return value.trim();
+  return storedMandateKey(value.trim());
 }
 
 export function readPositiveNumber(key: string, value: unknown): number {

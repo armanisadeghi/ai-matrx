@@ -16,6 +16,7 @@ import { ReactReduxContext } from "react-redux";
 import { UserCog } from "lucide-react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectIsAdmin } from "@/lib/redux/slices/userSlice";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import {
   Tooltip,
   TooltipContent,
@@ -23,8 +24,13 @@ import {
 } from "@/components/ui/tooltip";
 
 export interface AgentCreditProps {
-  /** The mandate key this surface resolves through, e.g. "masterwork.scout". */
-  mandate: string;
+  /**
+   * The mandate key this surface resolves through, e.g. "masterwork.scout".
+   * Typed, never `string` (V-L6a, 2026-09-17): this credit names the job to the
+   * Expert and links to its admin, so a retired key here would show a real
+   * person a dead mandate. A wrong key fails `pnpm type-check` instead.
+   */
+  mandate: AnyMandateKey;
   /** The agent bound to it today (display only — the mandate is the truth). */
   agent?: string;
 }

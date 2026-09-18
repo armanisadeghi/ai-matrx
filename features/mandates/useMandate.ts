@@ -14,6 +14,7 @@ import {
   type ResolvedMandate,
 } from "./service";
 import { extractErrorMessage } from "@/utils/errors";
+import type { AnyMandateKey } from "./mandate-key";
 
 export interface MandateState {
   mandate: ResolvedMandate | null;
@@ -61,11 +62,24 @@ interface UseMandateOptions {
   optional?: boolean;
 }
 
+/**
+ * 🚨 THE KEY IS TYPED, NEVER `string` (V-L6a, 2026-09-17). `""` is the one
+ * accepted non-key: the documented disabled sentinel for callers whose
+ * affordance may not render, since hooks run unconditionally. A key that
+ * arrives as an unknown string (a URL segment, a stored preference, a row)
+ * gets narrowed with `isMandateKey` at that boundary — never by widening this
+ * parameter back to `string`.
+ */
 export function useMandate(
-  mandateKey: string,
+  mandateKey: AnyMandateKey | "",
   options: UseMandateOptions = {},
 ): MandateState {
   const hasMandateKey = mandateKey.trim().length > 0;
+  // The sentinel narrowed ONCE, so every carrier call below gets a real key
+  // and not `AnyMandateKey | ""` — the compiler, not a comment, enforces it.
+  const resolvableKey: AnyMandateKey | null = hasMandateKey
+    ? (mandateKey as AnyMandateKey)
+    : null;
   const [state, setState] = useState<
     MandateState & { key: string; epoch: number; organizationRetries: number }
   >({
@@ -109,12 +123,12 @@ export function useMandate(
     // Callers with an optional resolution lane still invoke hooks
     // unconditionally. The empty key is their disabled sentinel, not a
     // mandate identity: never turn it into a zero-row database read.
-    if (!hasMandateKey) return;
+    if (resolvableKey === null) return;
 
     let cancelled = false;
     const resolution = options.optional
-      ? resolveMandate(mandateKey, { optional: true })
-      : resolveMandate(mandateKey);
+      ? resolveMandate(resolvableKey, { optional: true })
+      : resolveMandate(resolvableKey);
     resolution
       .then((mandate) => {
         if (!cancelled) {

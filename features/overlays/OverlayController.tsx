@@ -14,6 +14,8 @@
 "use client";
 
 import { isPreparedResourceIdentity } from "@/features/agents/components/chat/usePreparedResourceSeed";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
+import { isMandateKey } from "@ai-matrx/agents/mandates";
 import type { ReactNode } from "react";
 import { lazyOverlay } from "@/features/overlays/boundary/lazyOverlay";
 import { useEffect } from "react";
@@ -2506,7 +2508,9 @@ export default function OverlayController() {
               typeof data?.mandateId === "string" ? data.mandateId : null
             }
             mandateKey={
-              typeof data?.mandateKey === "string" ? data.mandateKey : null
+              typeof data?.mandateKey === "string"
+                ? storedMandateKey(data.mandateKey)
+                : null
             }
             mandateLabel={
               typeof data?.mandateLabel === "string" ? data.mandateLabel : null
@@ -3235,7 +3239,9 @@ export default function OverlayController() {
             }
             initialAutoRun={data?.initialAutoRun === true}
             mandateKey={
-              typeof data?.mandateKey === "string" ? data.mandateKey : null
+              typeof data?.mandateKey === "string"
+                ? storedMandateKey(data.mandateKey)
+                : null
             }
             surfaceName={
               typeof data?.surfaceName === "string" ? data.surfaceName : null
@@ -5633,7 +5639,9 @@ export default function OverlayController() {
                 : null
             }
             mandateKey={
-              typeof data?.mandateKey === "string" ? data.mandateKey : ""
+              typeof data?.mandateKey === "string"
+                ? storedMandateKey(data.mandateKey)
+                : ""
             }
             files={
               (Array.isArray(data?.files) ||
@@ -7224,7 +7232,11 @@ export default function OverlayController() {
                 : []) as CodeEditorAgentConfig[]
             }
             defaultPickerMandateKey={
-              typeof data?.defaultPickerMandateKey === "string"
+              // PROVEN DECLARED, not cast: the overlay `data` bag is untyped, and
+              // the code editor's picker only offers code-declared editing jobs.
+              // A stale key from a persisted window therefore falls back to
+              // `agents[0]` instead of selecting a job that no longer exists.
+              isMandateKey(data?.defaultPickerMandateKey)
                 ? data.defaultPickerMandateKey
                 : undefined
             }

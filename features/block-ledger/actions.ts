@@ -3,201 +3,126 @@
 // features/block-ledger/actions.ts
 //
 // The two things a person does with a block: run it again, or hand it to their own
-// browser. Both are WRITES, so both go through aidream — the client never invents a
-// second door past the ladder law, the per-rung knobs or the Library landing.
+// browser. Both are WRITES, and every write on this surface goes to aidream.
 //
-// 🚨 EVERY OUTCOME IS A SENTENCE. A bulk action that half-worked says how many, which
-// half, and the first reason given. A capability the server does not have yet says so
-// in plain words and calls it ours to fix — never a red error a person would try to
-// solve (`common-docs/policies/...` fourth law: a screen is absent or honest).
+// 🚨 THIS FILE PERFORMS NO DATABASE WRITE, AND MUST NEVER GROW ONE.
+// `platform.acquisition_block` is the `ledger` variant: 33 of this database's 40
+// active ledger tables give `authenticated` SELECT and nothing else, because a
+// ledger's rows are the server's account of what happened. The first version of
+// this file marked rows `retrying` with supabase-js and got
+// `42501 permission denied for table acquisition_block` on EVERY press — silently,
+// into the console, where nobody saw it until an independent verifier pressed the
+// button for the first time (2026-09-18). The fix was not the grant the error
+// invites; it was moving the write behind the server, which is where it now lives
+// (`aidream/api/routers/block_ledger.py`, `POST /blocks/retry` and
+// `POST /blocks/handoffs`). Guard: `pnpm check:client-writes-are-granted`.
+//
+// 🚨 EVERY OUTCOME IS A SENTENCE, AND IT IS THE SERVER'S. The endpoints answer with
+// the sentence they want a person to read — how many ran, how many came back, what
+// was left alone and why. This file does not compose a second one that could
+// disagree with the rows the server just wrote.
 
 import { BackendApiError } from "@/lib/api/errors";
-import { postJson, postNdjson } from "@/lib/python-client";
-import { supabase } from "@/utils/supabase/client";
-import { CAPTURE_HANDOFFS_PATH } from "@/features/capture-ladder/sendToOwnBrowser";
-import { ENDPOINTS } from "@/lib/api/endpoints";
+import { postJson } from "@/lib/python-client";
 import type { AcquisitionBlock } from "./types";
-import { canGoToYourBrowser, isRetryable } from "./types";
 
 export interface BlockActionOutcome {
   sentence: string;
-  /** True when the list should re-read itself — counts and statuses moved. */
+  /** True when the list should re-read itself — rows moved. */
   refresh: boolean;
 }
 
-function plural(n: number, one: string, many: string): string {
-  return n === 1 ? `1 ${one}` : `${n} ${many}`;
+interface RetryResponse {
+  retried?: number;
+  readable?: number;
+  still_blocked?: number;
+  refused?: Array<{ block_id?: string; why?: string }>;
+  sentence?: string;
+}
+
+interface HandoffResponse {
+  queued?: number;
+  batch_id?: string | null;
+  refused?: Array<{ block_id?: string; why?: string }>;
+  sentence?: string;
+}
+
+/** What a failed call says, always in words, never a bare code. */
+function refusalSentence(error: unknown, whenAbsent: string): string {
+  if (error instanceof BackendApiError && error.status === 404) {
+    return (
+      "This server does not have the block actions switched on yet, so nothing " +
+      "was changed. Nothing for you to do — this one is ours."
+    );
+  }
+  const said =
+    error instanceof BackendApiError
+      ? error.userMessage || error.detail
+      : error instanceof Error
+        ? error.message
+        : "";
+  return said ? `${whenAbsent} ${said}` : whenAbsent;
 }
 
 /**
  * RETRY — run the blocked inputs back through the ladder, from rung 1.
  *
- * This is not a "mark as fixed" button: it really re-fetches, through the same
- * `/scraper/quick-scrape` the batch screen uses, which means the ladder runs, the
- * server browser escalates if it can, and anything that fails again lands back in
- * this register with its count one higher. Nothing here writes a verdict — the
- * engines do.
- *
- * Blocks whose only lawful route crosses DRM, a paywall, someone else's login or a
- * permission we never requested are NOT retried. Re-running those would spend the
- * organization's quota to reproduce the same refusal, so they are reported as
- * skipped, by name.
+ * The server really re-fetches, spends the organization's scraping budget, and writes
+ * the outcome onto each row it touched: the attempt before it runs, `resolved` when
+ * the wall is gone, and back to `open` when it is not. Anything that hits a wall
+ * again is recorded by the ledger's own seam while the scrape runs.
  */
 export async function retryBlocks(
   rows: AcquisitionBlock[],
 ): Promise<BlockActionOutcome> {
-  const retryable = rows.filter(isRetryable);
-  const skipped = rows.length - retryable.length;
-  const webPages = retryable.filter(
-    (row) => row.source_type === "web_page" && /^https?:\/\//.test(row.input_ref),
-  );
-  const notAddressable = retryable.length - webPages.length;
-
-  if (webPages.length === 0) {
+  if (rows.length === 0) {
+    return { sentence: "Nothing was selected, so nothing was retried.", refresh: false };
+  }
+  try {
+    const { data } = await postJson<RetryResponse>("/blocks/retry", {
+      block_ids: rows.map((row) => row.id),
+    });
     return {
-      sentence:
-        skipped > 0
-          ? `Nothing was retried. ${plural(skipped, "block needs", "blocks need")} a decision rather than another attempt, and the rest are not web addresses this server can fetch again on its own.`
-          : "Nothing was retried: none of these is a web address the server can fetch again on its own. A file or a connected account is fixed where it came from, not by another attempt.",
+      sentence: data?.sentence || "The retry ran.",
+      // Even a run that retried nothing may have refused things worth re-reading.
+      refresh: true,
+    };
+  } catch (error) {
+    return {
+      sentence: refusalSentence(
+        error,
+        "Nothing was retried and the blocks are unchanged.",
+      ),
       refresh: false,
     };
   }
-
-  await markRetrying(webPages.map((row) => row.id));
-
-  let readable = 0;
-  let stillBlocked = 0;
-  try {
-    for await (const event of postNdjson<{ urls: string[] }>(
-      ENDPOINTS.scraper.quickScrape,
-      { urls: webPages.map((row) => row.input_ref) },
-    )) {
-      // The stream's shape belongs to the scraper, not to this register; all
-      // this action needs is the tally, and the ledger itself is re-read after.
-      const record = event as unknown as Record<string, unknown>;
-      const data = (record.data ?? record) as Record<string, unknown>;
-      if (typeof data.success === "boolean") {
-        if (data.success) readable += 1;
-        else stillBlocked += 1;
-      }
-    }
-  } catch (error) {
-    const said =
-      error instanceof BackendApiError
-        ? error.userMessage || error.detail
-        : error instanceof Error
-          ? error.message
-          : "";
-    return {
-      sentence: said
-        ? `The retry stopped: ${said} The blocks are unchanged.`
-        : "The retry stopped and the server did not say why. The blocks are unchanged — you can press it again.",
-      refresh: true,
-    };
-  }
-
-  const parts = [
-    `Ran ${plural(webPages.length, "page", "pages")} through the ladder again.`,
-  ];
-  if (readable > 0) parts.push(`${readable} came back readable.`);
-  if (stillBlocked > 0)
-    parts.push(
-      `${stillBlocked} hit the same wall — those rows now show one more occurrence.`,
-    );
-  if (notAddressable > 0)
-    parts.push(
-      `${plural(notAddressable, "block was", "blocks were")} left alone: not a web address.`,
-    );
-  if (skipped > 0)
-    parts.push(
-      `${plural(skipped, "block needs", "blocks need")} a decision, not another attempt, so ${skipped === 1 ? "it was" : "they were"} skipped.`,
-    );
-
-  return { sentence: parts.join(" "), refresh: true };
 }
 
 /**
  * SEND TO MY BROWSER — hand the page to the extension's rung.
  *
- * The endpoint is the capture ladder's own (`POST /capture/handoffs`). When that
- * lane's server half is not on this deployment yet, the 404 is answered with the
- * plain sentence rather than a red error: the person did nothing wrong and there
- * is nothing for them to do.
+ * The server queues through the capture ladder's own `enqueue` (one door, one place
+ * the ladder law lives) and then names the new handoff on the block it came from, so
+ * the row can be followed afterwards instead of guessed at.
  */
 export async function sendBlocksToOwnBrowser(
   rows: AcquisitionBlock[],
 ): Promise<BlockActionOutcome> {
-  const eligible = rows.filter(canGoToYourBrowser);
-  const skipped = rows.length - eligible.length;
-
-  if (eligible.length === 0) {
-    return {
-      sentence:
-        "None of these is a page your own browser could read. A browser beats a sign-in, a paywall or a bot wall — it does not beat a missing file, a DRM-protected book or a permission we never asked for.",
-      refresh: false,
-    };
+  if (rows.length === 0) {
+    return { sentence: "Nothing was selected, so nothing was queued.", refresh: false };
   }
-
   try {
-    const { data } = await postJson<{
-      created?: unknown[];
-      refused?: Array<{ url?: string; why?: string }>;
-    }>(CAPTURE_HANDOFFS_PATH, {
-      urls: eligible.map((row) => row.input_ref),
+    const { data } = await postJson<HandoffResponse>("/blocks/handoffs", {
+      block_ids: rows.map((row) => row.id),
     });
-
-    const queued = Array.isArray(data?.created)
-      ? data.created.length
-      : eligible.length;
-    const refusedRows = Array.isArray(data?.refused) ? data.refused : [];
-
-    const parts = [
-      `${plural(queued, "page is", "pages are")} now waiting for your browser. Open the Matrx extension and it will read ${queued === 1 ? "it" : "them"}.`,
-    ];
-    if (refusedRows.length > 0)
-      parts.push(
-        `${plural(refusedRows.length, "was", "were")} not queued — the first reason given was “${refusedRows[0]?.why ?? "no reason given"}”.`,
-      );
-    if (skipped > 0)
-      parts.push(
-        `${plural(skipped, "block", "blocks")} in your selection ${skipped === 1 ? "is" : "are"} not something a browser can beat, so ${skipped === 1 ? "it was" : "they were"} left alone.`,
-      );
-
-    return { sentence: parts.join(" "), refresh: true };
-  } catch (error) {
-    if (error instanceof BackendApiError && error.status === 404) {
-      return {
-        sentence:
-          "Sending pages to your own browser is not switched on for this server yet, so nothing was queued. Nothing for you to do — this one is ours.",
-        refresh: false,
-      };
-    }
-    const said =
-      error instanceof BackendApiError
-        ? error.userMessage || error.detail
-        : error instanceof Error
-          ? error.message
-          : "";
     return {
-      sentence: said
-        ? `Nothing was queued: ${said}`
-        : "Nothing was queued and the server did not say why. Nothing was lost — you can press it again.",
+      sentence: data?.sentence || "The pages were sent to your browser.",
+      refresh: true,
+    };
+  } catch (error) {
+    return {
+      sentence: refusalSentence(error, "Nothing was queued."),
       refresh: false,
     };
   }
-}
-
-/** Say out loud that a retry is running, so the list never looks idle mid-action. */
-async function markRetrying(ids: string[]): Promise<void> {
-  if (ids.length === 0) return;
-  const { error } = await supabase
-    .schema("platform")
-    // @ts-expect-error — the register is read and written by name; see service.ts
-    .from("acquisition_block")
-    .update({ status: "retrying", last_retry_at: new Date().toISOString() } as never)
-    .in("id", ids);
-  // A status stamp that did not land is not worth failing a retry over — the
-  // retry itself is the thing the person asked for, and the engines write the
-  // real verdict. It is still said out loud rather than swallowed.
-  if (error) console.warn("block ledger: could not mark rows retrying", error);
 }

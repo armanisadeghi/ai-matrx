@@ -1,4 +1,4 @@
-import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * Chat new-page configuration — the agents wired to the landing surface.
@@ -17,8 +17,9 @@ import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
  */
 
 export interface ChatQuickAction {
-  /** Canonical `agent.mandate.mandate_key` (`chat.quick_*`). */
-  mandateKey: string;
+  /** Canonical `agent.mandate.mandate_key` (`chat.quick_*`), typed — a chip
+   * naming a key that no longer exists fails `pnpm type-check` (V-L6a). */
+  mandateKey: MandateKey;
   /** Chip label as the user sees it. */
   label: string;
 }

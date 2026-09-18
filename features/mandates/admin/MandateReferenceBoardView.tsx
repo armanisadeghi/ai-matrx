@@ -23,6 +23,7 @@
  */
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -34,8 +35,14 @@ import {
   selectOrgBootstrapResolved,
 } from "@/lib/redux/slices/appContextSlice";
 import {
+  errorRowsHref,
   fetchMandateReferenceBoard,
+  formatBytes,
   formatRepoList,
+  formatSeconds,
+  formatUsd,
+  type MandatePatrolRun,
+  type MandatePatrolSection,
   type MandateReferenceBoard,
   type MandateReferenceBoardRepo,
 } from "./references";
@@ -166,6 +173,255 @@ function RepoCard({ repo }: { repo: MandateReferenceBoardRepo }) {
   );
 }
 
+/**
+ * THE PATROL TABLE — the top of the board, and the answer to Arman's one
+ * instruction when he turned the 4-hourly schedule on (2026-09-17): *"if there
+ * is a cost, make sure it's tracked and easy for me to see."*
+ *
+ * Data, no prose. Every number is READ off `scheduler.sch_run` — the patrol
+ * records its own cost there — so this table and the run ledger cannot disagree.
+ *
+ * The three things it must never do:
+ *  * print **$0.00** for a run nobody priced. Container time has no configured
+ *    rate; `no rate set` is the truth and `formatUsd` owns that decision.
+ *  * present a duration the BOARD derived from two timestamps as one the patrol
+ *    measured — a derived cell is marked.
+ *  * show an empty table when the numbers are simply unreadable. A scheduler
+ *    outage says so in red.
+ */
+function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
+  return (
+    <section className="space-y-2" aria-label="Scheduled patrol">
+      <div className="flex flex-wrap items-center gap-3">
+        <h2 className="text-sm font-semibold">Scheduled patrol</h2>
+        {patrol.enabled && patrol.trigger_enabled ? (
+          <Badge variant="outline">enabled</Badge>
+        ) : (
+          <Badge variant="destructive">
+            {patrol.enabled ? "trigger disabled" : "disabled — nothing re-scans"}
+          </Badge>
+        )}
+        <code className="text-xs">{patrol.tool_name}</code>
+        {patrol.schedule ? (
+          <span className="text-xs text-muted-foreground">{patrol.schedule}</span>
+        ) : (
+          <span className="text-xs text-destructive">
+            no trigger — this task has no schedule
+          </span>
+        )}
+        {patrol.runs_failed > 0 ? (
+          <span className="text-xs text-destructive">
+            {patrol.runs_failed} of {patrol.runs_counted} run
+            {patrol.runs_counted === 1 ? "" : "s"} failed
+          </span>
+        ) : null}
+      </div>
+
+      {patrol.read_error ? (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-md border border-destructive p-3 text-sm"
+        >
+          <AlertTriangle
+            className="mt-0.5 size-4 shrink-0 text-destructive"
+            aria-hidden="true"
+          />
+          <span>{patrol.read_error}</span>
+        </div>
+      ) : null}
+
+      <div className="overflow-x-auto rounded-md border border-border">
+        <table className="w-full text-xs">
+          <tbody className="divide-y divide-border">
+            <tr>
+              <th scope="row" className="px-3 py-1.5 text-left font-medium">
+                Next due
+              </th>
+              <td className="px-3 py-1.5">
+                {patrol.next_due_at
+                  ? new Date(patrol.next_due_at).toLocaleString()
+                  : "not scheduled"}
+              </td>
+              <th scope="row" className="px-3 py-1.5 text-left font-medium">
+                Last run
+              </th>
+              <td className="px-3 py-1.5">
+                {patrol.last_run_at
+                  ? new Date(patrol.last_run_at).toLocaleString()
+                  : "never"}
+              </td>
+              <th scope="row" className="px-3 py-1.5 text-left font-medium">
+                Enabled
+              </th>
+              <td className="px-3 py-1.5">
+                {patrol.enabled_at
+                  ? new Date(patrol.enabled_at).toLocaleString()
+                  : "—"}
+              </td>
+            </tr>
+            <tr>
+              <th scope="row" className="px-3 py-1.5 text-left font-medium">
+                Total runtime
+              </th>
+              <td className="px-3 py-1.5">
+                {formatSeconds(patrol.cumulative_wall_seconds)}
+              </td>
+              <th scope="row" className="px-3 py-1.5 text-left font-medium">
+                Total compute
+              </th>
+              <td className="px-3 py-1.5">
+                {formatUsd(patrol.cumulative_compute_cost_usd)}
+                <span className="ml-1 text-muted-foreground">
+                  ({patrol.cumulative_vcpu_seconds} vCPU-s)
+                </span>
+              </td>
+              <th scope="row" className="px-3 py-1.5 text-left font-medium">
+                Total model spend
+              </th>
+              <td className="px-3 py-1.5">
+                ${patrol.cumulative_model_spend_usd.toFixed(2)}
+                <span className="ml-1 text-muted-foreground">
+                  over {patrol.runs_counted} run
+                  {patrol.runs_counted === 1 ? "" : "s"}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      {/* The one sentence on this table, and it is load-bearing: it is what
+          stops "no rate set" being read as "broken" or as "$0.00". */}
+      <p className="text-xs text-muted-foreground">{patrol.cost_note}</p>
+
+      <div className="overflow-x-auto rounded-md border border-border">
+        <table className="w-full text-xs">
+          <thead className="border-b border-border text-left text-muted-foreground">
+            <tr>
+              <th scope="col" className="px-3 py-2 font-medium">Started</th>
+              <th scope="col" className="px-3 py-2 font-medium">Status</th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">Wall</th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">CPU</th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">Compute</th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">Model</th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">Rows</th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">Filed</th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">Resolved</th>
+              <th scope="col" className="px-3 py-2 text-right font-medium">Clone</th>
+              <th scope="col" className="px-3 py-2 font-medium">Revision</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {patrol.runs.length > 0 ? (
+              patrol.runs.map((run: MandatePatrolRun) => {
+                const href = errorRowsHref(run);
+                const broken = run.failed_legs.length > 0;
+                return (
+                  <tr key={run.run_id} className={broken ? "bg-destructive/5" : undefined}>
+                    <td className="whitespace-nowrap px-3 py-2">
+                      {run.started_at
+                        ? new Date(run.started_at).toLocaleString()
+                        : run.due_at
+                          ? `due ${new Date(run.due_at).toLocaleString()}`
+                          : "—"}
+                    </td>
+                    <td className="px-3 py-2">
+                      {broken ? (
+                        <span className="text-destructive">
+                          {run.status} — {run.failed_legs.join(", ")}
+                        </span>
+                      ) : (
+                        run.status
+                      )}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 text-right">
+                      {formatSeconds(run.wall_seconds)}
+                      {run.seconds_source === "derived_from_timestamps" ? (
+                        <span
+                          className="ml-1 text-muted-foreground"
+                          title="Derived from this run's own start and finish times — the patrol did not record its duration on this run."
+                        >
+                          ~
+                        </span>
+                      ) : null}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 text-right">
+                      {formatSeconds(run.cpu_seconds)}
+                    </td>
+                    <td
+                      className="whitespace-nowrap px-3 py-2 text-right"
+                      title={[
+                        run.compute_cost_note,
+                        run.vcpu_seconds === null || run.vcpu_seconds === undefined
+                          ? null
+                          : `${run.vcpu_seconds} vCPU-seconds (${run.cpu_count_source ?? "source unrecorded"})`,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    >
+                      {formatUsd(run.compute_cost_usd)}
+                    </td>
+                    <td
+                      className="whitespace-nowrap px-3 py-2 text-right"
+                      title={run.model_spend_evidence ?? undefined}
+                    >
+                      {run.model_spend_usd === null || run.model_spend_usd === undefined
+                        ? "—"
+                        : `$${run.model_spend_usd.toFixed(2)}`}
+                    </td>
+                    <td className="px-3 py-2 text-right">{run.rows_submitted ?? "—"}</td>
+                    <td className="px-3 py-2 text-right">
+                      {/* The link from a run to the defects IT filed. */}
+                      {run.error_rows_filed !== null &&
+                      run.error_rows_filed !== undefined &&
+                      href ? (
+                        <Link
+                          href={href}
+                          className="underline underline-offset-2"
+                          title={`The ${run.error_rows_filed} error row(s) this run filed (request_id ${run.error_rows_request_id})`}
+                        >
+                          {run.error_rows_filed}
+                        </Link>
+                      ) : (
+                        (run.error_rows_filed ?? "—")
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-right">
+                      {run.error_rows_resolved ?? "—"}
+                    </td>
+                    <td className="whitespace-nowrap px-3 py-2 text-right">
+                      {formatBytes(run.git_clone_bytes)}
+                    </td>
+                    <td className="px-3 py-2">
+                      {run.revision ? (
+                        <code className="[overflow-wrap:anywhere]">
+                          {run.revision.slice(0, 12)}
+                        </code>
+                      ) : (
+                        <span className="text-muted-foreground">nothing scanned</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan={11} className="px-3 py-2 text-muted-foreground">
+                  {patrol.read_error
+                    ? "The runs could not be read — see the message above."
+                    : patrol.enabled
+                      ? "No run recorded yet. The first one appears here after the next due time."
+                      : "The patrol is disabled, so there are no runs and nothing re-scans on its own."}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}
+
 export function MandateReferenceBoardView() {
   const dispatch = useAppDispatch();
   // 🚨 `callApi` refuses to send without an explicitly SELECTED organization,
@@ -286,6 +542,29 @@ export function MandateReferenceBoardView() {
 
       {board ? (
         <>
+          {/* TOP OF THE BOARD, deliberately: the patrol is what keeps everything
+              below it true, and its cost is what Arman asked to be able to see.
+              A server that does not report the section says so — it never
+              silently renders a board with no patrol on it. */}
+          {board.patrol ? (
+            <PatrolRunsTable patrol={board.patrol} />
+          ) : (
+            <div
+              role="status"
+              className="flex items-start gap-2 rounded-md border border-border p-3 text-sm"
+            >
+              <AlertTriangle
+                className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <span>
+                This server did not report the scheduled patrol, so its state and
+                cost are unknown here — not zero. Everything below is still the
+                measured reference data.
+              </span>
+            </div>
+          )}
+
           <div
             role="status"
             className="rounded-md border border-border p-3 text-sm"

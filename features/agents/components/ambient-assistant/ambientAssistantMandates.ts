@@ -1,14 +1,24 @@
-import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+/**
+ * THE AMBIENT LADDER — typed, not just imported (V-L6a, 2026-09-17).
+ *
+ * The lookup tables used to be `Record<string, string>`: they read their values
+ * out of `MANDATE_KEYS`, but nothing stopped a hand-typed or stale value on
+ * either side, and nothing stopped the chain handing a plain `string` down to
+ * `useMandate`. `MandateKey` is now the value type end to end, so a renamed or
+ * retired guidance key fails `pnpm type-check` here, at the ladder, instead of
+ * arriving at `GET /mandates/{key}/resolution` as a 404 the user never sees.
+ */
+import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
 
 const SYSTEM_AMBIENT_MANDATE = MANDATE_KEYS.ambient__page_guidance;
 
-const MODULE_AMBIENT_MANDATES: Readonly<Record<string, string>> = {
+const MODULE_AMBIENT_MANDATES: Readonly<Record<string, MandateKey>> = {
   data: MANDATE_KEYS.data__page_guidance,
   education: MANDATE_KEYS.education__page_guidance,
   notes: MANDATE_KEYS.notes__page_guidance,
 };
 
-const EDUCATION_SECTION_MANDATES: Readonly<Record<string, string>> = {
+const EDUCATION_SECTION_MANDATES: Readonly<Record<string, MandateKey>> = {
   admin: MANDATE_KEYS.education__admin_guidance,
   "audio-study": MANDATE_KEYS.education__audio_study_guidance,
   classes: MANDATE_KEYS.education__classes_guidance,
@@ -42,9 +52,9 @@ const EDUCATION_SECTION_MANDATES: Readonly<Record<string, string>> = {
 };
 
 export interface AmbientAssistantMandateChain {
-  system: string;
-  module?: string;
-  page?: string;
+  system: MandateKey;
+  module?: MandateKey;
+  page?: MandateKey;
 }
 
 /**

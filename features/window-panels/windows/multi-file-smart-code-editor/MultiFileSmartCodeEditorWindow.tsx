@@ -1,4 +1,5 @@
 "use client";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * MultiFileSmartCodeEditorWindow
@@ -78,8 +79,13 @@ export interface MultiFileSmartCodeEditorWindowProps {
   // From overlay `data`:
   /** The JOB to launch (`agent.mandate` key, e.g. `code_editor.code_edit`) —
    *  resolved by `launchAgentExecution` so the binding's agent AND settings
-   *  apply. Never an agent id. Required. */
-  mandateKey: string;
+   *  apply. Never an agent id. Required.
+   *
+   *  `""` is the overlay's ABSENT value (the `data` bag is untyped, so an
+   *  opener that forgot the key reaches here as an empty string). It is
+   *  refused loudly at launch rather than resolving nothing — see the launch
+   *  effect below. */
+  mandateKey: AnyMandateKey | "";
   /** Initial file set. */
   files: CodeFile[];
   /** Optionally pin which file starts active. Defaults to `files[0]`. */
@@ -284,12 +290,24 @@ export function MultiFileSmartCodeEditorWindow({
   useEffect(() => {
     if (launchedIdRef.current) return undefined;
 
+    // NOTHING FAILS SILENTLY: an opener that reached here without a key gets a
+    // named refusal, not a window that quietly never launches.
+    if (!mandateKey) {
+      emit({
+        type: "agent-error",
+        message:
+          "This editor was opened without a job to run (no mandate key), so there is nothing to launch. Reopen it from the surface that owns the edit.",
+      });
+      return undefined;
+    }
+    const launchKey = mandateKey;
+
     let cancelled = false;
     (async () => {
       try {
         const result = await dispatch(
           launchAgentExecution({
-            mandateKey,
+            mandateKey: launchKey,
             surfaceKey: SMART_CODE_EDITOR_SURFACE_KEY,
             sourceFeature: "code-editor",
             apiEndpointMode: "agent",

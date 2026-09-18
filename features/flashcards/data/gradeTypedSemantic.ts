@@ -12,6 +12,7 @@
 // the similarity fallback is already on screen, so failure costs nothing.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import {
   coerceGradeVerdict,
@@ -51,7 +52,7 @@ export function gradeTypedSemantic(ctx: {
   expectedAnswer: string;
   learnerAnswer: string;
   /** Override the mandate (rare — testing only). */
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
 }) {
   return async (
     dispatch: AppDispatch,

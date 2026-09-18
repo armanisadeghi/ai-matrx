@@ -1,4 +1,5 @@
 "use client";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * AgentRunWindow
@@ -320,7 +321,7 @@ interface AgentRunBodyProps {
   initialToolsOpen?: boolean;
   initialAutoRun?: boolean;
   /** THE MANDATE DOOR — see `OpenAgentRunWindowOptions.mandateKey`. */
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
   /** Adopt a mounted surface — see `OpenAgentRunWindowOptions.surfaceName`. */
   surfaceName?: string | null;
 }
@@ -674,7 +675,7 @@ interface AgentRunWindowProps {
   initialToolsOpen?: boolean;
   initialAutoRun?: boolean;
   /** THE MANDATE DOOR — see `OpenAgentRunWindowOptions.mandateKey`. */
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
   /** Adopt a mounted surface — see `OpenAgentRunWindowOptions.surfaceName`. */
   surfaceName?: string | null;
   /**
@@ -757,7 +758,7 @@ function AgentRunWindowInner({
   initialResourceIdentity: { userId: string; organizationId: string } | null;
   initialToolsOpen: boolean;
   initialAutoRun: boolean;
-  mandateKey: string | null;
+  mandateKey: AnyMandateKey | null;
   surfaceName: string | null;
   seedNonce: number | null;
 }) {

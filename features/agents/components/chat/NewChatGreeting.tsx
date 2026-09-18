@@ -10,6 +10,7 @@ import {
   type ChatQuickAction,
 } from "./chat-quick-actions.config";
 import { useMandateSet } from "@/features/mandates/useMandateSet";
+import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
 import { stageChatAgentSwitch } from "./begin-fresh-chat";
 import { NewChatLandingInput } from "./NewChatLandingInput";
 import { ChatConnectorStrip } from "@/features/connectors/ChatConnectorStrip";
@@ -44,12 +45,14 @@ interface NewChatGreetingProps {
  * Chip catalog lives in `chat-quick-actions.config.ts`.
  */
 
-const ALL_QUICK_ACTION_KEYS: readonly string[] = [
+const ALL_QUICK_ACTION_KEYS: readonly MandateKey[] = [
   ...PRIMARY_QUICK_ACTIONS,
   ...SECONDARY_QUICK_ACTIONS,
 ].map((action) => action.mandateKey);
 
-const OPTIONAL_QUICK_ACTION_KEYS: readonly string[] = ["chat.quick_org_chart"];
+const OPTIONAL_QUICK_ACTION_KEYS: readonly MandateKey[] = [
+  MANDATE_KEYS.chat__quick_org_chart,
+];
 
 export function NewChatGreeting({
   sourceConversationId,

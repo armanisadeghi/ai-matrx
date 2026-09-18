@@ -1,4 +1,5 @@
 "use client";
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
@@ -31,7 +32,7 @@ export interface AICodeEditorModalV2Props {
   currentCode: string;
   language: string;
   /** Explicit editing job (mandate key). Overrides `promptKey`. */
-  mandateKey?: string;
+  mandateKey?: MandateKey;
   promptKey?: CodeEditorPromptKey;
   onCodeChange: (newCode: string) => void;
   selection?: string;

@@ -9,12 +9,13 @@ import {
   type ResolvedMandate,
 } from "./service";
 import type { MandateState } from "./useMandate";
+import type { AnyMandateKey } from "./mandate-key";
 
 export type MandateSetState = Readonly<Record<string, MandateState>>;
 
 export interface UseMandateSetOptions {
   /** Deliberately unassigned keys still refuse but are not system errors. */
-  optionalKeys?: readonly string[];
+  optionalKeys?: readonly AnyMandateKey[];
   /**
    * RESOLVE ONLY WHAT THIS SURFACE ACTUALLY RUNS. Defaults to `true`.
    *
@@ -38,8 +39,8 @@ export interface UseMandateSetOptions {
 }
 
 export function shouldReportMandateSetFailure(
-  key: string,
-  optionalKeys: readonly string[] = [],
+  key: AnyMandateKey,
+  optionalKeys: readonly AnyMandateKey[] = [],
 ): boolean {
   return !optionalKeys.includes(key);
 }
@@ -53,16 +54,22 @@ const PENDING: MandateState = {
   organizationPending: false,
 };
 
-function pendingSet(keys: readonly string[]): Record<string, MandateState> {
+function pendingSet(
+  keys: readonly AnyMandateKey[],
+): Record<string, MandateState> {
   const out: Record<string, MandateState> = {};
   for (const key of keys) out[key] = PENDING;
   return out;
 }
 
-const EMPTY_KEYS: readonly string[] = [];
+const EMPTY_KEYS: readonly AnyMandateKey[] = [];
 
+/**
+ * 🚨 THE KEYS ARE TYPED, NEVER `string[]` (V-L6a, 2026-09-17): a typo'd member
+ * of the list must fail `pnpm type-check`, not resolve to a 404 at run time.
+ */
 export function useMandateSet(
-  requestedKeys: readonly string[],
+  requestedKeys: readonly AnyMandateKey[],
   options: UseMandateSetOptions = {},
 ): MandateSetState {
   const enabled = options.enabled ?? true;
@@ -94,9 +101,14 @@ export function useMandateSet(
 
   const epoch = state.epoch;
   useEffect(() => {
-    const listed = keyList.length > 0 ? keyList.split(SEPARATOR) : [];
-    const optionalKeys = optionalKeyList
-      ? optionalKeyList.split(SEPARATOR)
+    // The keys were typed on the way in; the join/split round-trip (the effect
+    // keys on a stable string, never on array identity) is the only thing that
+    // erased it, so it is restored here rather than letting `string` back into
+    // a carrier.
+    const listed: AnyMandateKey[] =
+      keyList.length > 0 ? (keyList.split(SEPARATOR) as AnyMandateKey[]) : [];
+    const optionalKeys: AnyMandateKey[] = optionalKeyList
+      ? (optionalKeyList.split(SEPARATOR) as AnyMandateKey[])
       : [];
     if (listed.length === 0) return undefined;
     let cancelled = false;

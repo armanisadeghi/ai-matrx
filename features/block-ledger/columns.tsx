@@ -11,6 +11,7 @@
 // service whitelists; the rest declare `sortable: false` rather than offering a
 // control that would quietly fall back to "most recent".
 
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import {
   Muted,
@@ -228,6 +229,46 @@ export const BLOCK_COLUMNS: EntityColumnSpec<AcquisitionBlock>[] = [
           {labelFor(STATUS_LABELS, row.status)}
         </Badge>
       ),
+    },
+  },
+  {
+    id: "acted",
+    label: "What we did",
+    phone: "meta",
+    column: {
+      id: "acted",
+      header: "What we did",
+      accessorFn: (row) => row.retry_count,
+      sortable: false,
+      width: 190,
+      // 🚨 THE ROW SAYS WHAT WAS DONE TO IT. An independent verifier pressed both
+      // buttons and could not tell afterwards that anything had happened — the
+      // retry was not counted and the handoff it created was not named. Both are
+      // written by the server now, and this is where a person reads them.
+      cell: (row) => {
+        const tried =
+          row.retry_count > 0
+            ? `Tried again ${row.retry_count === 1 ? "once" : `${row.retry_count}×`}`
+            : "";
+        if (!tried && !row.handoff_id) return <Muted>Not yet</Muted>;
+        return (
+          <div className="flex min-w-0 flex-col gap-0.5 text-xs">
+            {tried && (
+              <span className="text-muted-foreground" title={row.last_retry_at ?? undefined}>
+                {tried}
+              </span>
+            )}
+            {row.handoff_id && (
+              <Link
+                href="/capture/needs-you"
+                className="truncate text-primary underline-offset-2 hover:underline"
+              >
+                Waiting in your browser
+              </Link>
+            )}
+          </div>
+        );
+      },
     },
   },
   {

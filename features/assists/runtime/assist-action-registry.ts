@@ -19,6 +19,7 @@
 import type { OpenAgentRunWindowOptions } from "@/features/overlays/openers/agentRunWindow";
 import type { SourceFeature } from "@/types/python-generated/source-attribution";
 import type { Assist } from "../types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 export type AssistActionResult =
   | { ok: true; result?: unknown }
@@ -33,7 +34,7 @@ export interface AssistActionContext {
   /** Start a strict mandate-backed run and return once it is safely underway. */
   runMandate: (opts: {
     assistId: string;
-    mandateKey: string;
+    mandateKey: AnyMandateKey;
     sourceFeature: SourceFeature;
     variables: Record<string, string>;
     workingMessage: string;

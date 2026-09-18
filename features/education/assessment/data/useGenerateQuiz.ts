@@ -1,4 +1,5 @@
 "use client";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 // features/education/assessment/data/useGenerateQuiz.ts
 //
@@ -58,7 +59,7 @@ function isFromSourceVars(
 
 export interface UseGenerateQuizResult {
   generate: (
-    mandateKey: string,
+    mandateKey: AnyMandateKey,
     vars: GenerateQuizVariables | GenerateFromSourceVariables,
   ) => Promise<GeneratedQuiz>;
   isGenerating: boolean;
@@ -195,7 +196,7 @@ export function useGenerateQuiz(): UseGenerateQuizResult {
     useLiveAgentRun();
 
   async function generate(
-    mandateKey: string,
+    mandateKey: AnyMandateKey,
     vars: GenerateQuizVariables | GenerateFromSourceVariables,
   ): Promise<GeneratedQuiz> {
     const fromSource = isFromSourceVars(vars);

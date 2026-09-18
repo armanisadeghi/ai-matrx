@@ -13,6 +13,7 @@
 // (`runHeadlessAgentJson`, D126).
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { studyService } from "@/features/education/study/service/studyService";
 import type { ReviewResult } from "@/features/flashcards/types";
@@ -34,7 +35,7 @@ export interface MicroCoachContext {
   /** This learner's prior attempts on this card (newest first), if any. */
   priorAttempts?: unknown[];
   /** Override the micro-coach mandate (rare — testing only). */
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
 }
 
 /** The tip text this lane's agent produced (the `study_tip` kind — `__kind`

@@ -16,7 +16,7 @@
  */
 
 import type { paths } from "@/types/python-generated/api-types";
-import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * HOW a pass is started. Two shapes, because the engines genuinely differ:
@@ -64,7 +64,7 @@ export interface ConsoleEngine {
    */
   autonomyCapability: string;
   /** The agents this engine runs, named on the page (NO SECRET AI). */
-  agents: Array<{ mandateKey: string; does: string }>;
+  agents: Array<{ mandateKey: MandateKey; does: string }>;
 }
 
 export const TOPIC_PLACEMENT_ENGINE: ConsoleEngine = {

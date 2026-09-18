@@ -21,10 +21,15 @@ jest.mock("./service", () => ({
 
 // eslint-disable-next-line import/first
 import { useMandateSet } from "./useMandateSet";
+// eslint-disable-next-line import/first
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
+// Real declared keys, read from the vocabulary — the carriers are typed
+// `MandateKey` since V-L6a, and a fixture that hand-typed them would be the
+// mirror the guard exists to prevent.
 const KEYS = [
-  "messaging.conversation_catch_up",
-  "messaging.conversation_summary",
+  MANDATE_KEYS.messaging__conversation_catch_up,
+  MANDATE_KEYS.messaging__conversation_summary,
 ];
 
 describe("useMandateSet — enabled", () => {

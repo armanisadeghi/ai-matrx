@@ -7,12 +7,13 @@
 // `{ value, requestId, conversationId }` result with a live-UI handle.
 
 import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 import type { AppDispatch, AppStore } from "@/lib/redux/store";
 
 export interface RunAgentExtractionOpts {
   /** The MANDATE to run — resolved live to the DB-bound generator agent. */
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** Stable surface key for this generation surface (telemetry + variable scope). */
   surfaceKey: string;
   /** Feature tag (e.g. "education-ingest"). */

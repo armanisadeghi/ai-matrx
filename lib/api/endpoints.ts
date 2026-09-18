@@ -2,6 +2,8 @@
 // Single source of truth for all Python FastAPI backend endpoint paths.
 // Import ENDPOINTS from this file — never hardcode paths.
 
+import type { DynamicMandateKey, MandateKey } from "@ai-matrx/agents/mandates";
+
 /**
  * All backend API endpoint paths.
  *
@@ -66,7 +68,15 @@ export const ENDPOINTS = {
      * 404 `{code: "mandate_unfulfilled"}` when the mandate cannot be resolved —
      * surfaced verbatim, never swallowed into a client-side re-resolve.
      */
-    mandateStart: (mandateKey: string) => `/ai/mandates/${mandateKey}` as const,
+    mandateStart: (
+      /**
+       * 🚨 TYPED, NEVER `string` (V-L6a, 2026-09-17). This is the execute path
+       * itself: a stale key here becomes `404 mandate_unfulfilled` on a live
+       * surface, so the compiler holds it. `DynamicMandateKey` covers the
+       * DB-authored `app.*` / `shortcut.*` jobs that legitimately run here.
+       */
+      mandateKey: MandateKey | DynamicMandateKey,
+    ) => `/ai/mandates/${mandateKey}` as const,
 
     /**
      * POST — Continue any existing conversation (Guest OK)
