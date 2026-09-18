@@ -28,6 +28,12 @@
 // shown here is preview only and is never persisted or sent.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/utils/supabase/client";
+import { readFileSizesByIds } from "@/features/files/filesDb";
+import {
+  fileSourceSizeLabel,
+  EMPTY_FILE_SIZE_LABEL,
+} from "./fileSourceSizeLabel";
 import Link from "next/link";
 import {
   ChevronDown,
@@ -425,6 +431,53 @@ export function RulebookSourcesPanel({
     [rulebook.rules],
   );
 
+  /**
+   * File sizes for the Resources card (VERIFICATION.md §12, 2026-09-18): a
+   * zero-byte upload rendered identically to a real one — filename + bare
+   * "Files" subtitle, no size, no "(empty)". `readFileSizesByIds` is a
+   * direct RLS-authorized Supabase read (no server round trip needed for a
+   * handful of size_bytes columns); `fileSourceSizeLabel` turns a result
+   * into the honest subtitle, including calling out an empty file plainly.
+   */
+  const fileSourceIds = useMemo(
+    () =>
+      sourceLinks
+        .filter((l) => l.token === "file")
+        .map((l) => l.resourceId),
+    [sourceLinks],
+  );
+  const [fileSizesById, setFileSizesById] = useState<
+    Map<string, number | null>
+  >(new Map());
+  useEffect(() => {
+    if (fileSourceIds.length === 0) return;
+    // Only fetch ids we haven't resolved yet — sizes don't change once a
+    // file has landed, so this never re-fetches ids already in state.
+    const missing = fileSourceIds.filter((id) => !fileSizesById.has(id));
+    if (missing.length === 0) return;
+    let cancelled = false;
+    void readFileSizesByIds(supabase, missing).then((sizes) => {
+      if (cancelled) return;
+      setFileSizesById((prev) => {
+        const next = new Map(prev);
+        for (const id of missing) {
+          next.set(id, sizes.get(id) ?? null);
+        }
+        return next;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [fileSourceIds, fileSizesById]);
+  const sizeForLink = useCallback(
+    (token: string, resourceId: string): string | null => {
+      if (token !== "file") return null;
+      return fileSourceSizeLabel(fileSizesById.get(resourceId));
+    },
+    [fileSizesById],
+  );
+
   const stagedUrls = useMemo(() => dumpUrlSources(rulebook), [rulebook]);
 
   /**
@@ -820,6 +873,7 @@ export function RulebookSourcesPanel({
                       titleFor({ token, id, label })
                     }
                     detailFor={detailForLink}
+                    sizeFor={sizeForLink}
                     sectionsFor={sectionsFor}
                     onRedistillSection={(resource, section, label) =>
                       void redistillSection(resource, section, label)
@@ -989,6 +1043,7 @@ export function RulebookSourcesPanel({
                     titleFor({ token, id, label })
                   }
                   detailFor={detailForLink}
+                    sizeFor={sizeForLink}
                   sectionsFor={sectionsFor}
                   onRedistillSection={(resource, section, label) =>
                     void redistillSection(resource, section, label)
@@ -1011,6 +1066,7 @@ export function RulebookSourcesPanel({
                 stagedUrls={stagedUrls}
                 titleFor={(token, id, label) => titleFor({ token, id, label })}
                 detailFor={detailForLink}
+                    sizeFor={sizeForLink}
                 sectionsFor={sectionsFor}
                 status={links.status}
                 error={links.error}
@@ -1112,6 +1168,7 @@ function SourceRows({
   stagedUrls,
   titleFor,
   detailFor,
+  sizeFor,
   sectionsFor,
   onRedistillSection,
   running,
@@ -1132,6 +1189,14 @@ function SourceRows({
   titleFor: (token: string, id: string, label: string | null) => string;
   /** The second line of a row — what a pasted source says about itself. */
   detailFor?: (metadata: unknown) => string | null;
+  /**
+   * The file-size half of that second line: a real size ("1.5 KB") or, for
+   * a genuinely empty upload, a plain call-out — never a bare "Files" label
+   * that leaves an empty file indistinguishable from a real one
+   * (VERIFICATION.md §12, 2026-09-18). `null` while unresolved or for a
+   * non-file source, so it never displaces `info.labelPlural`.
+   */
+  sizeFor?: (token: string, resourceId: string) => string | null;
   /** What each part of this source produced — empty when it has no parts. */
   sectionsFor?: (sourceKey: string) => SourceSectionYield[];
   /** Read ONE part of this source again (canEdit only). */
@@ -1179,6 +1244,8 @@ function SourceRows({
         const key = attachedKey(link.token, link.resourceId);
         const unsupported = UNSUPPORTED_TOKENS.has(link.token);
         const detail = detailFor?.(link.metadata) ?? null;
+        const size = sizeFor?.(link.token, link.resourceId) ?? null;
+        const empty = size === EMPTY_FILE_SIZE_LABEL;
         return (
           <li
             key={key}
@@ -1207,8 +1274,16 @@ function SourceRows({
                     {detail}
                   </span>
                 ) : info ? (
-                  <span className="text-[10px] text-muted-foreground">
+                  <span
+                    className={cn(
+                      "text-[10px]",
+                      empty
+                        ? "text-amber-600 dark:text-amber-500"
+                        : "text-muted-foreground",
+                    )}
+                  >
                     {info.labelPlural}
+                    {size ? ` · ${size}` : ""}
                   </span>
                 ) : null}
                 {unsupported ? (
