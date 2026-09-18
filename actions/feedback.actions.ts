@@ -85,6 +85,35 @@ export async function submitFeedback(
       };
     }
 
+    const admin = createAdminClient();
+
+    // The insert below runs through the admin client, so RLS never asks
+    // whether the submitter belongs to the organization they named. Ask the
+    // ONE membership predicate ourselves (`iam.has_org_access_for` — every
+    // `is_org_member` wrapper delegates to it, and its EXECUTE is revoked from
+    // `authenticated`, so only this client can reach it). Without this a
+    // crafted request could file a report into any tenant's queue.
+    const { data: isMember, error: membershipError } = await admin
+      .schema("iam")
+      .rpc("has_org_access_for", { p_org: organizationId, p_user_id: user.id });
+    if (membershipError) {
+      console.error(
+        "Error checking organization membership for feedback:",
+        membershipError,
+      );
+      return {
+        success: false,
+        error: `Could not confirm your membership in that organization: ${membershipError.message}`,
+      };
+    }
+    if (isMember !== true) {
+      return {
+        success: false,
+        error:
+          "You are not a member of the organization this feedback names \u2014 pick one of yours from the avatar menu and send it again.",
+      };
+    }
+
     // Get user metadata for username
     const username = user.user_metadata?.username || user.email || "Anonymous";
 
@@ -93,7 +122,6 @@ export async function submitFeedback(
     const categoryId = isAdmin && input.category_id ? input.category_id : null;
     const assignedTo = isAdmin && input.assigned_to ? input.assigned_to : null;
 
-    const admin = createAdminClient();
     const { data, error } = await admin
       .schema("users")
       .from("user_feedback")
