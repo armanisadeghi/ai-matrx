@@ -25,8 +25,11 @@ import { resolve } from "node:path";
 
 import { MAPPING_STATES } from "./honest-states";
 
+// A parity CHECK SCRIPT (run by hand / release gates), never a Next.js
+// module; its root is the sibling matrx-local checkout, which is dynamic, so
+// the trace boundary is declared explicitly — see docs/BUILD-TIME-TURBOPACK.md.
 const ARTIFACT = resolve(
-  process.cwd(),
+  /* turbopackIgnore: true */ process.cwd(),
   "../matrx-local/crates/matrx-sync/contracts/honest_states.json",
 );
 
