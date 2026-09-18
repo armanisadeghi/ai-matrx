@@ -51,6 +51,7 @@ import GoogleMarketingResultBlock, {
 import {
   RecordDoor,
   WRITE_CLAIM_KEYS,
+  isSubstantiveValue,
   readWriteClaim,
   type WriteClaimState,
 } from "@/components/mardown-display/blocks/google-kinds/google-result-shared";
@@ -2216,5 +2217,79 @@ describe("V-24 NEW-2: an empty read inside a stated frame says so, and names the
     );
     expect(markup).toContain("1,234");
     expect(markup).not.toContain("This read returned no rows");
+  });
+});
+
+/**
+ * 🚨 V-24 NEW-2, THE NESTING GAP (Cursor Bugbot on `11aaca7c`, review 5247021300).
+ *
+ * F-109's `isSubstantiveValue` asked only whether a record had KEYS, so
+ * `data: { rows: [] }` — the very shape this suite's own marketing fixtures use,
+ * and what a GA4 read with no rows returns once it is wrapped — counted as
+ * content and the empty-read sentence never fired on it. The fix only reached
+ * the flat `rows: []` / `data: []` spellings; one level of nesting walked
+ * straight past it, which is the instance-not-the-class failure in the guard
+ * itself.
+ *
+ * THE RULE, recursive and in the ONE predicate: a record is substantive only if
+ * at least one of its own values is; an array only if at least one element is;
+ * a number or a boolean always is, a blank string never is. So
+ * `hasSubstantiveContent`, the `value.data` check and the residual pass all
+ * inherit it at every depth, and the frame sentence prints for a nested empty
+ * read exactly as it does for a flat one.
+ */
+describe("V-24 NEW-2 (nested): an empty answer is empty at every depth", () => {
+  const framed = {
+    __kind: MARKETING_KIND,
+    action: "traffic_summary",
+    site: "example.com",
+    start_date: "2026-09-01",
+    end_date: "2026-09-15",
+  };
+
+  const render = (data: unknown) =>
+    mount(
+      <GoogleMarketingResultBlock
+        content={JSON.stringify({ ...framed, data })}
+        metadata={undefined}
+      />,
+    );
+
+  it("data: { rows: [] } is an empty read, and the sentence names the window", () => {
+    const markup = render({ rows: [] });
+    expect(markup).toContain("This read returned no rows");
+    expect(markup).toContain("example.com, 2026-09-01 to 2026-09-15");
+    expect(markup).not.toContain("the window above");
+  });
+
+  it("data: { rows: [], totals: {} } is still empty — an empty branch is not a fact", () => {
+    const markup = render({ rows: [], totals: {} });
+    expect(markup).toContain("This read returned no rows");
+  });
+
+  it("one real row inside data.rows is content — the card never calls that empty", () => {
+    const markup = render({ rows: [{ sessions: 1 }] });
+    expect(markup).not.toContain("This read returned no rows");
+    expect(markup).toContain("Sessions");
+  });
+
+  it("a nested scalar is content too, however deep the tool wrapped it", () => {
+    const markup = render({ summary: { sessions: 1234 } });
+    expect(markup).not.toContain("This read returned no rows");
+    // `ResultValue` prints a nested scalar as the tool sent it (no grouping).
+    expect(markup).toContain("1234");
+  });
+
+  /**
+   * THE PREDICATE ITSELF, read directly: the class is a recursion, not four
+   * spellings, and a blank string at the bottom of a nest is still nothing.
+   */
+  it("the predicate is recursive, with numbers and booleans always substantive", () => {
+    expect(isSubstantiveValue({ rows: [] })).toBe(false);
+    expect(isSubstantiveValue({ a: { b: { c: [] } } })).toBe(false);
+    expect(isSubstantiveValue({ a: { b: { c: [{ d: "" }] } } })).toBe(false);
+    expect(isSubstantiveValue({ a: { b: { c: [{ d: 0 }] } } })).toBe(true);
+    expect(isSubstantiveValue({ a: { b: { c: [{ d: false }] } } })).toBe(true);
+    expect(isSubstantiveValue([[], [{}], [{ x: null }]])).toBe(false);
   });
 });
