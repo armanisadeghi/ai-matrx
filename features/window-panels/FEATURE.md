@@ -410,6 +410,7 @@ interface WindowRegistryEntry {
 2. Every `kind: "window"` has `mobilePresentation`.
 3. `slug` and `overlayId` are each unique across the registry.
 4. Every `urlSync.key` has a hydrator in `initUrlHydration.ts` (dev-time assertion), and every hydrator key has a registry `urlSync.key` — a hydrator without one opens from the URL but never writes back, and the writer then waits 5 s for a registration that never comes.
+5. **A window nobody opened may only open itself where it lives.** Any code that raises a window UNBIDDEN (a timer, a once-a-day mount, a boot-time check — anything that is not a person clicking) must ask `mayRaiseUnbidden(overlayId, pathname)` in `utils/mayRaiseUnbidden.ts` first, and the answer comes from `unbiddenHome` on that window's registry entry. Default deny: no `unbiddenHome`, no self-raising anywhere, and the refusal is warned on the console naming the window. Away from home it is a DEFERRAL, so a raiser must not spend its own once-a-day bookkeeping on a refusal — the window raises on the viewer's next visit to a home route. This governs unbidden raises ONLY: clicking an opener works on every route, always. (D11, 2026-09-17: the daily spend window opened over the `/exports` drop zone. The fix is the primitive, never a route blocklist.)
 
 ### How to add a new overlay
 
