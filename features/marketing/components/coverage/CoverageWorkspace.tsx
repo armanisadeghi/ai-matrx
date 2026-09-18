@@ -16,6 +16,7 @@ import { PAGE_PROVENANCES } from "@/features/marketing/data/service";
 import { COVERAGE_FILTER_COPY } from "@/features/marketing/lib/coverage";
 import { webCopy } from "@/features/marketing/lib/copy-payloads";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { TopicGapsTile } from "@/features/marketing/seo/topical-map/linkins/TopicGapsTile";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { jsonExportItem } from "@/components/agent-copy/export";
 import type {
@@ -334,6 +335,9 @@ export function CoverageWorkspace() {
                 siteDomain={site.domain}
                 location={pageLocation}
               />
+              {/* The fourth column of the coverage question: the MAP's topics
+                  that should have a page on this site and have none. */}
+              <TopicGapsTile siteId={site.id} brandSeg={brandId} />
             </div>
           </section>
 

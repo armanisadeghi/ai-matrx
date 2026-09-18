@@ -53,6 +53,10 @@ import {
 export const KEYWORD_CORE_COLUMNS = [
   { id: "key", label: "Keyword" },
   { id: "topic", label: "Offering" },
+  // The keyword's home on the brand's TOPICAL MAP (`site_keyword_value.topic_id`
+  // → `seo.map_topic`). `topic` above is the Offering and keeps its id for
+  // saved views; this is the map (placement §7 #1).
+  { id: "map_topic", label: "Map topic" },
   { id: "traffic_class", label: "Class" },
   // C10 — WHICH branch a local search belongs to. Opt-in, because a
   // single-location business has one answer for every row and a column that
@@ -78,6 +82,7 @@ const CORE_IDS = new Set<string>(KEYWORD_CORE_COLUMNS.map((c) => c.id));
 export const WORKBENCH_DEFAULT_COLUMNS: KeywordCoreColumnId[] = [
   "key",
   "topic",
+  "map_topic",
   "traffic_class",
   "clicks",
   "impressions",

@@ -2,7 +2,7 @@
   {
     "file": "features/mandates/authoring/constants.ts",
     "key": "mandate.goal_writer",
-    "reason": "origin='user' — Arman created this mandate himself in the console on 2026-08-31 (live, bound, fully mapped). A user-created row can never appear in a generated union built from code declarations."
+    "reason": "origin='user' \u2014 Arman created this mandate himself in the console on 2026-08-31 (live, bound, fully mapped). A user-created row can never appear in a generated union built from code declarations."
   },
   {
     "file": "features/surfaces/manifests/mandate-workspace.manifest.ts",
@@ -12,12 +12,12 @@
   {
     "file": "features/mandates/authoring/constants.ts",
     "key": "mandates.kind_converter",
-    "reason": "DELIBERATELY UNASSIGNED — no mandate.definition row exists (verified live 2026-09-10; only a soft-deleted 'mandates.goal_writer' shares the plural prefix). This is the documented honest-refusal posture: the affordance renders disabled naming the missing key until someone creates it, and features/mandates/authoring/AutomationButton.test.tsx pins that behaviour with the case 'a key with no row at all'. Not a dead reference to delete — the refusal is the feature."
+    "reason": "DELIBERATELY UNASSIGNED \u2014 no mandate.definition row exists (verified live 2026-09-10; only a soft-deleted 'mandates.goal_writer' shares the plural prefix). This is the documented honest-refusal posture: the affordance renders disabled naming the missing key until someone creates it, and features/mandates/authoring/AutomationButton.test.tsx pins that behaviour with the case 'a key with no row at all'. Not a dead reference to delete \u2014 the refusal is the feature."
   },
   {
     "file": "features/surfaces/manifests/content-plan.manifest.ts",
     "key": "seo.strategy.site_brief.generate",
-    "reason": "Declared in aidream 97a8b3223 (2026-09-14, seo.strategy.site_brief.generate — the site brief writer); its mandate.definition row lands with that deploy + mandate sync, and @ai-matrx/agents 0.12.2 predates it. Remove this row once the package publishes the key and the manifest switches to MANDATE_KEYS."
+    "reason": "Declared in aidream 97a8b3223 (2026-09-14, seo.strategy.site_brief.generate \u2014 the site brief writer); its mandate.definition row lands with that deploy + mandate sync, and @ai-matrx/agents 0.12.2 predates it. Remove this row once the package publishes the key and the manifest switches to MANDATE_KEYS."
   },
   {
     "file": "features/masterwork/components/detail/MeetingScavengerDialog.tsx",
@@ -27,16 +27,41 @@
   {
     "file": "features/masterwork/sorting/service.ts",
     "key": "masterwork.sort_case_writer",
-    "reason": "Declared in aidream and LIVE (mandate.definition row, origin='code', enabled, created 2026-09-15; verified live 2026-09-17), but the installed @ai-matrx/agents predates it, so the generated union cannot carry it yet. The literal reaches the typed carriers through dbAuthoredMandateKey() — nothing here is typed string. Remove this row and switch to MANDATE_KEYS.masterwork__sort_case_writer once the package republishes."
+    "reason": "Declared in aidream and LIVE (mandate.definition row, origin='code', enabled, created 2026-09-15; verified live 2026-09-17), but the installed @ai-matrx/agents predates it, so the generated union cannot carry it yet. The literal reaches the typed carriers through dbAuthoredMandateKey() \u2014 nothing here is typed string. Remove this row and switch to MANDATE_KEYS.masterwork__sort_case_writer once the package republishes."
   },
   {
     "file": "features/masterwork/sorting/service.ts",
     "key": "masterwork.sort_distiller",
-    "reason": "Same as masterwork.sort_case_writer — the other half of the sorting round, declared in aidream and live (mandate.definition row, origin='code', enabled, created 2026-09-15; verified live 2026-09-17), absent from the installed package's union. Swap for MANDATE_KEYS.masterwork__sort_distiller when it republishes."
+    "reason": "Same as masterwork.sort_case_writer \u2014 the other half of the sorting round, declared in aidream and live (mandate.definition row, origin='code', enabled, created 2026-09-15; verified live 2026-09-17), absent from the installed package's union. Swap for MANDATE_KEYS.masterwork__sort_distiller when it republishes."
   },
   {
     "file": "features/masterwork/drive/useDriveSettings.ts",
     "key": "masterwork.drive.interviewer_mandate_key",
-    "reason": "NOT A MANDATE KEY — it is the platform.feature_knob key whose VALUE is a mandate key (no mandate.definition row exists, verified live 2026-09-17). The guard is positional and the constant's name contains 'mandate', so the knob id lands in a mandate-key position; the knob's value is typed at its boundary by readMandateKey() -> storedMandateKey(). Named here rather than hidden, so the false-positive class is on the record instead of being coded around."
+    "reason": "NOT A MANDATE KEY \u2014 it is the platform.feature_knob key whose VALUE is a mandate key (no mandate.definition row exists, verified live 2026-09-17). The guard is positional and the constant's name contains 'mandate', so the knob id lands in a mandate-key position; the knob's value is typed at its boundary by readMandateKey() -> storedMandateKey(). Named here rather than hidden, so the false-positive class is on the record instead of being coded around."
+  },
+  {
+    "file": "features/surfaces/manifests/marketing-topical-map.manifest.ts",
+    "key": "seo.page_mapper",
+    "reason": "declared in aidream d2b14cee; package republish pending"
+  },
+  {
+    "file": "features/surfaces/manifests/marketing-topical-map.manifest.ts",
+    "key": "seo.page_intent_proposer",
+    "reason": "declared in aidream d2b14cee; package republish pending"
+  },
+  {
+    "file": "features/marketing/seo/topical-map/mandateKeys.ts",
+    "key": "seo.map_curation",
+    "reason": "Declared in aidream d2b14cee (2026-09-18, the Topical Map Agent, seo.map_curation); package republish pending \u2014 @ai-matrx/agents on npm predates the key, so MANDATE_KEYS.seo__map_curation does not exist yet. The ONE literal lives in this constants file (CONTRACTS.md \u00a76 amendment); the manifest agentRole, the map window and the canvas body import it. Remove this row and switch the constant to MANDATE_KEYS on adoption."
+  },
+  {
+    "file": "features/marketing/seo/topical-map/panel/topicCuration.ts",
+    "key": "seo.topic_curation",
+    "reason": "Declared in aidream d2b14cee (2026-09-18, the Topical Map Topic Agent); package republish pending \u2014 @ai-matrx/agents on npm predates the regenerated key set. Remove this row and swap the literal for MANDATE_KEYS.seo__topic_curation once the package publishes the key."
+  },
+  {
+    "file": "features/surfaces/manifests/marketing-topical-map.manifest.ts",
+    "key": "seo.topic_curation",
+    "reason": "Same declared-but-unpublished mandate as features/marketing/seo/topical-map/panel/topicCuration.ts, named here so the surface manifest discloses the topic panel's fixed job."
   }
 ]

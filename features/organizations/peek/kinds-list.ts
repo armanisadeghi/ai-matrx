@@ -45,6 +45,7 @@ export const PEEK_KINDS = [
   "sandbox_instance",
   "project",
   "organization",
+  "seo_map_topic",
 ] as const;
 
 const PEEK_KIND_SET: ReadonlySet<string> = new Set(PEEK_KINDS);

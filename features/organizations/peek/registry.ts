@@ -31,6 +31,7 @@ import QuizPeek from "./kinds/QuizPeek";
 import SandboxPeek from "./kinds/SandboxPeek";
 import ProjectPeek from "./kinds/ProjectPeek";
 import OrganizationPeek from "./kinds/OrganizationPeek";
+import SeoMapTopicPeek from "./kinds/SeoMapTopicPeek";
 import type { PeekProps } from "./types";
 import { PEEK_KINDS } from "./kinds-list";
 
@@ -58,6 +59,7 @@ export const PEEK_REGISTRY: Record<
   sandbox_instance: SandboxPeek,
   project: ProjectPeek,
   organization: OrganizationPeek,
+  seo_map_topic: SeoMapTopicPeek,
   // Add new kinds here as their peek components land.
 };
 

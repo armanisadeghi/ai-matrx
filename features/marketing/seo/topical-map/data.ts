@@ -44,6 +44,10 @@ import type {
   PageIntentSource,
   PageIntentsListOptions,
   PageIntentsResult,
+  PageMappingStatus,
+  PageMappingWantedTopic,
+  PageMappingWantedTopicHeldBack,
+  PagesWithoutTopicResult,
   PageMapTopicsInput,
   PageMapTopicsSource,
   SetPageIntentsItem,
@@ -708,4 +712,104 @@ export async function listTopicGaps(mapId: string, siteId?: string | null): Prom
     ...(siteId === null || siteId === undefined ? {} : { p_site_id: siteId }),
   });
   return assertData(response.data as unknown as MapTopicGapsResult, response.error);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// The page-mapping ledger — the four reads behind the pages workspace
+// (CONTRACTS §8). Site-scoped, because the ledger is: `seo.page_mapping_queue`
+// rows belong to a site, and the map is only what that site currently uses.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * `seo.page_mapping_status` — one site's mapping ledger, rolled up.
+ *
+ * The function is `RETURNS TABLE` over an ungrouped aggregate, so it answers
+ * with EXACTLY ONE row, always — a site with an empty ledger returns zeros
+ * rather than nothing. An empty array therefore means the contract changed
+ * underneath this reader and is raised rather than silently read as "no pages"
+ * (which a screen would render as a finished, fully-mapped site).
+ */
+export async function pageMappingStatus(siteId: string): Promise<PageMappingStatus> {
+  const response = await (await seoDb()).rpc("page_mapping_status", { p_site_id: siteId });
+  const rows = assertData(response.data, response.error, "read this site's mapping status");
+  const row = rows[0];
+  if (!row) {
+    throw new Error(
+      "seo.page_mapping_status returned no row for this site. It is an ungrouped " +
+        "aggregate and must always return exactly one — read this as a broken " +
+        "contract, never as a site with nothing to map.",
+    );
+  }
+  return row;
+}
+
+/**
+ * `seo.page_mapping_wanted_topics` — what the mapper says this map is MISSING,
+ * biggest traffic first.
+ *
+ * THE BAR is two pages asking for the same subject, or one page we have
+ * actually crawled. A suggestion that rests on a single uncrawled URL is not
+ * dropped: it comes back from {@link pageMappingWantedTopicsHeldBack} with the
+ * sentence saying what would promote it. `limit` is clamped to 1..200 by the
+ * function (25 when omitted).
+ */
+export async function pageMappingWantedTopics(
+  siteId: string,
+  limit?: number | null,
+): Promise<PageMappingWantedTopic[]> {
+  const response = await (await seoDb()).rpc("page_mapping_wanted_topics", {
+    p_site_id: siteId,
+    ...(limit === null || limit === undefined ? {} : { p_limit: limit }),
+  });
+  return assertData(response.data, response.error, "read this site's wanted topics");
+}
+
+/**
+ * `seo.page_mapping_wanted_topics_held_back` — the suggestions that did NOT
+ * clear the bar, each carrying `held_back_because`.
+ *
+ * A surface that shows the wanted list and hides this one is lying by
+ * omission: these are subjects the system decided about and is sitting on.
+ */
+export async function pageMappingWantedTopicsHeldBack(
+  siteId: string,
+  limit?: number | null,
+): Promise<PageMappingWantedTopicHeldBack[]> {
+  const response = await (await seoDb()).rpc("page_mapping_wanted_topics_held_back", {
+    p_site_id: siteId,
+    ...(limit === null || limit === undefined ? {} : { p_limit: limit }),
+  });
+  return assertData(response.data, response.error, "read this site's held-back topics");
+}
+
+/**
+ * `seo.list_pages_without_topic` — every active page of a site that sits on no
+ * live topic of its map, most clicks first.
+ *
+ * Paged, and the page is part of the answer: `total` counts every bare page
+ * while `items` carries this slice (the function clamps `limit` to 1..1000,
+ * defaulting to 200, and `offset` to >= 0). `p_limit` and `p_offset` are
+ * REQUIRED arguments of this function — unlike its siblings it declares no
+ * defaults — so both are always sent, and null is sent as null so the
+ * function's own COALESCE picks the default.
+ *
+ * A site that uses no topical map raises P0002, and a site the caller may not
+ * view raises 42501 — access before existence, so a foreign site and an
+ * invented one are deliberately indistinguishable.
+ */
+export async function listPagesWithoutTopic(
+  siteId: string,
+  limit?: number | null,
+  offset?: number | null,
+): Promise<PagesWithoutTopicResult> {
+  const response = await (await seoDb()).rpc("list_pages_without_topic", {
+    p_site_id: siteId,
+    p_limit: limit ?? (null as unknown as number),
+    p_offset: offset ?? (null as unknown as number),
+  });
+  return assertData(
+    response.data as unknown as PagesWithoutTopicResult,
+    response.error,
+    "read this site's unmapped pages",
+  );
 }

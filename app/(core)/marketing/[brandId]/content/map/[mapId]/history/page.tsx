@@ -1,8 +1,8 @@
 // One map's workspace — HISTORY: what left the map, and who sent it there
-// (`seo.list_map_history`, U6's read). Rejecting never deletes.
-// See ../page.tsx: the screen is a route, the body is the ONE canonical workspace.
+// (`seo.list_map_history`). Rejecting never deletes.
+// See ../page.tsx: the screen is a route, the adapter is the ONE route host.
 
-import { TopicalMapWorkspaceBody } from "@/features/marketing/seo/topical-map/components/TopicalMapWorkspaceBody";
+import { TopicalMapRouteBody } from "@/features/marketing/seo/topical-map/components/TopicalMapRouteBody";
 
 export default async function BrandTopicalMapHistoryPage({
   params,
@@ -10,5 +10,5 @@ export default async function BrandTopicalMapHistoryPage({
   params: Promise<{ mapId: string }>;
 }) {
   const { mapId } = await params;
-  return <TopicalMapWorkspaceBody mapId={mapId} />;
+  return <TopicalMapRouteBody mapId={mapId} />;
 }

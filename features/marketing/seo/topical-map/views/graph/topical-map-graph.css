@@ -1,0 +1,65 @@
+/* features/marketing/seo/topical-map/views/graph/topical-map-graph.css
+ *
+ * Theme React Flow's built-in Controls and MiniMap with the app's semantic
+ * tokens so they read correctly in BOTH light and dark. Scoped to this drawing
+ * by the `.topical-map-graph` class on the ReactFlow root — the same pattern as
+ * `features/agents/orchestras/components/orchestra-builder-canvas.css`, which
+ * this file is modelled on. Higher specificity than React Flow's single-class
+ * defaults, and imported after its stylesheet.
+ *
+ * Without this the controls are React Flow's own white-on-white buttons and the
+ * minimap a hard-coded grey: invisible in dark mode, which is a state that is
+ * there and cannot be seen. */
+
+.topical-map-graph .react-flow__controls {
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.12);
+}
+
+.topical-map-graph .react-flow__controls-button {
+  background-color: hsl(var(--card));
+  border-bottom: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.topical-map-graph .react-flow__controls-button:hover {
+  background-color: hsl(var(--muted));
+}
+
+.topical-map-graph .react-flow__controls-button svg {
+  fill: currentColor;
+}
+
+.topical-map-graph .react-flow__minimap {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.topical-map-graph .react-flow__minimap-mask {
+  fill: hsl(var(--muted) / 0.55);
+}
+
+.topical-map-graph .react-flow__minimap-node {
+  fill: hsl(var(--muted-foreground) / 0.6);
+  stroke: none;
+}
+
+/* The tree's connectors. React Flow's default edge stroke is a fixed #b1b1b7,
+ * which disappears against a dark canvas. */
+.topical-map-graph .react-flow__edge-path {
+  stroke: hsl(var(--border));
+  stroke-width: 1.5;
+}
+
+.topical-map-graph .react-flow__edge.topical-map-facet-edge .react-flow__edge-path {
+  stroke: hsl(var(--muted-foreground) / 0.45);
+  stroke-dasharray: 4 4;
+}
+
+.topical-map-graph .react-flow__attribution {
+  display: none;
+}

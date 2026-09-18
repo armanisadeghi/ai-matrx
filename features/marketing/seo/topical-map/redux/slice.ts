@@ -13,7 +13,7 @@
 // and feed this slice; the slice owns what the user has chosen and what an
 // optimistic write has provisionally changed.
 
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, current, isDraft, type PayloadAction } from "@reduxjs/toolkit";
 
 import {
   isRootedMapTree,
@@ -24,7 +24,10 @@ import {
   type PageIntentsResult,
 } from "../types";
 import {
+  emptyMapPageFilters,
   emptyMapTopicFilters,
+  type MapPageFilters,
+  type MapSiblingSort,
   type MapTopicFilters,
   type MapViewKey,
   type NormalizedMapTopic,
@@ -51,9 +54,22 @@ export function createWorkspaceState(mapId: string): TopicalMapWorkspaceState {
     siteId: null,
     groupBy: null,
     intentsByPageId: {},
+    coverageByPageId: {},
     intentSiteByPageId: {},
     duplicateIntents: 0,
     optimistic: [],
+    pageFilters: emptyMapPageFilters(),
+    checkedPageIds: [],
+    // "structure" is the honest default: it draws what the map IS. The
+    // convergence encoding draws where pages are MOVING, which is a reading of
+    // intent data a workspace may not have loaded yet.
+    graph: { focusSlug: null, encodingMode: "structure" },
+    // `hierarchy: true` — the table is a table OF A TREE. Flattening by default
+    // would silently drop the one thing the map is about; the user turns it off.
+    // `columns: null` is "the knob's default set", never "no columns".
+    table: { hierarchy: true, columns: null },
+    review: { cursorSlug: null, cursorPageId: null },
+    siblingSort: "sort_order",
   };
 }
 
@@ -139,7 +155,11 @@ function snapshot(
   const before: Record<string, NormalizedMapTopic> = {};
   for (const slug of slugs) {
     const topic = ws.topicsBySlug[slug];
-    if (topic) before[slug] = structuredClone(topic);
+    // Inside a reducer `topic` is an Immer draft (a Proxy), and structuredClone
+    // throws DataCloneError on a Proxy — which made every optimistic rename and
+    // move fail before the RPC was called (Lane A, 2026-09-18). `current` gives
+    // the plain object the draft stands for.
+    if (topic) before[slug] = structuredClone(isDraft(topic) ? current(topic) : topic);
   }
   return before;
 }
@@ -288,11 +308,16 @@ const topicalMapSlice = createSlice({
       const ws = workspace(state, action.payload.mapId);
       if (action.payload.replace) {
         ws.intentsByPageId = {};
+        ws.coverageByPageId = {};
         ws.intentSiteByPageId = {};
       }
       for (const item of action.payload.result.items as PageIntentItem[]) {
         if (item.intent) ws.intentsByPageId[item.page.id] = item.intent;
         else delete ws.intentsByPageId[item.page.id];
+        // ROUND 22: an EMPTY list is stored, never skipped. "Covers nothing
+        // live" and "we never listed this page" are different answers, and a
+        // missing key is the only way a reader could tell them apart.
+        ws.coverageByPageId[item.page.id] = item.current_topics.map((topic) => topic.slug);
         if (item.page.site_id) ws.intentSiteByPageId[item.page.id] = item.page.site_id;
       }
       ws.duplicateIntents = action.payload.result.duplicate_intents;
@@ -422,7 +447,98 @@ const topicalMapSlice = createSlice({
       ws.optimistic = ws.optimistic.filter((candidate) => candidate.opId !== edit.opId);
     },
 
-    /** Drops one map's workspace. Called when a map is deleted, never on unmount. */
+    // ── CONTRACTS §3 additions ───────────────────────────────────────────────
+
+    /** Merges the named keys into the pages workspace's filters. */
+    setPageFilters(
+      state,
+      action: PayloadAction<{ mapId: string; filters: Partial<MapPageFilters> }>,
+    ) {
+      const ws = workspace(state, action.payload.mapId);
+      ws.pageFilters = { ...ws.pageFilters, ...action.payload.filters };
+    },
+
+    clearPageFilters(state, action: PayloadAction<{ mapId: string }>) {
+      workspace(state, action.payload.mapId).pageFilters = emptyMapPageFilters();
+    },
+
+    setCheckedPages(state, action: PayloadAction<{ mapId: string; ids: string[] }>) {
+      workspace(state, action.payload.mapId).checkedPageIds = [
+        ...new Set(action.payload.ids),
+      ];
+    },
+
+    togglePageChecked(state, action: PayloadAction<{ mapId: string; id: string }>) {
+      const ws = workspace(state, action.payload.mapId);
+      const index = ws.checkedPageIds.indexOf(action.payload.id);
+      if (index === -1) ws.checkedPageIds.push(action.payload.id);
+      else ws.checkedPageIds.splice(index, 1);
+    },
+
+    setGraphFocus(state, action: PayloadAction<{ mapId: string; slug: string | null }>) {
+      workspace(state, action.payload.mapId).graph.focusSlug = action.payload.slug;
+    },
+
+    setGraphEncodingMode(
+      state,
+      action: PayloadAction<{ mapId: string; mode: "structure" | "convergence" }>,
+    ) {
+      workspace(state, action.payload.mapId).graph.encodingMode = action.payload.mode;
+    },
+
+    setTableHierarchy(
+      state,
+      action: PayloadAction<{ mapId: string; hierarchy: boolean }>,
+    ) {
+      workspace(state, action.payload.mapId).table.hierarchy = action.payload.hierarchy;
+    },
+
+    /** `null` restores the `table_default_columns` knob's set — it never means "none". */
+    setTableColumns(
+      state,
+      action: PayloadAction<{ mapId: string; columns: string[] | null }>,
+    ) {
+      workspace(state, action.payload.mapId).table.columns = action.payload.columns;
+    },
+
+    /**
+     * Moves one or both review cursors. An OMITTED key is left alone; an
+     * explicit `null` clears that cursor. `{ slug: null }` must be able to mean
+     * "the topic deck is finished" without also throwing away where the page
+     * deck was, which is why this reads `in` rather than `!== undefined` on a
+     * merged object.
+     */
+    setReviewCursor(
+      state,
+      action: PayloadAction<{
+        mapId: string;
+        slug?: string | null;
+        pageId?: string | null;
+      }>,
+    ) {
+      const ws = workspace(state, action.payload.mapId);
+      if ("slug" in action.payload) ws.review.cursorSlug = action.payload.slug ?? null;
+      if ("pageId" in action.payload) {
+        ws.review.cursorPageId = action.payload.pageId ?? null;
+      }
+    },
+
+    setSiblingSort(
+      state,
+      action: PayloadAction<{ mapId: string; sort: MapSiblingSort }>,
+    ) {
+      workspace(state, action.payload.mapId).siblingSort = action.payload.sort;
+    },
+
+    /**
+     * Drops one map's workspace. Called when a map is deleted, never on unmount.
+     *
+     * 🚨 THE SELECTOR CACHE IS NOT STATE, so this reducer cannot clear it — a
+     * reducer that reached into a module-level Map would be a side effect in a
+     * pure function. Whoever dispatches this ALSO calls
+     * `evictMapSelectorCache(mapId)` from `./selectors`, which is where that
+     * cache lives and the only file that may touch it (CONTRACTS §3, R16).
+     */
     mapClosed(state, action: PayloadAction<{ mapId: string }>) {
       delete state.maps[action.payload.mapId];
     },
@@ -497,6 +613,16 @@ export const {
   optimisticLayout,
   optimisticCommitted,
   optimisticRolledBack,
+  setPageFilters,
+  clearPageFilters,
+  setCheckedPages,
+  togglePageChecked,
+  setGraphFocus,
+  setGraphEncodingMode,
+  setTableHierarchy,
+  setTableColumns,
+  setReviewCursor,
+  setSiblingSort,
   mapClosed,
 } = topicalMapSlice.actions;
 

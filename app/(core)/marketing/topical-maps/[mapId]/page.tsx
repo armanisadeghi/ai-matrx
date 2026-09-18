@@ -22,6 +22,7 @@ import { notFound, redirect } from "next/navigation";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { marketingSeg } from "@/features/marketing/lib/keys";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { TopicalMapDoorBody } from "@/features/marketing/seo/topical-map/door/TopicalMapDoorBody";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { createClient } from "@/utils/supabase/server";
 import { webDb } from "@/utils/supabase/webDb";
@@ -94,66 +95,44 @@ export default async function TopicalMapDoor({
     );
   }
 
-  // Record-only lane: the standalone read-only view. The topics come from
-  // `seo.map_outline`, which is access-checked on the map itself — the same
-  // grant that opened this page opens it.
-  const outline = await supabase
-    .schema("seo")
-    .rpc("map_outline", { p_map_id: mapId, p_overrides: {} });
-
+  // Record-only lane: the standalone read-only view (R7). The REAL workspace
+  // views render here, brand-free (`MapLinkProvider brand={null}` inside the
+  // adapter) and read-only (every write control absent). The topics come from
+  // the same `seo.*` reads the brand workspace uses — each access-checked on
+  // the map itself, so the grant that opened this page opens them.
   return (
-    <main className="h-full overflow-y-auto bg-textured p-4 sm:p-6">
-      <div className="mx-auto grid max-w-4xl gap-4">
-        <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
-          <header className="flex flex-wrap items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                Topical map
-              </p>
-              <h1 className="truncate text-xl font-semibold">{map.name}</h1>
-              {map.description ? (
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {map.description}
-                </p>
-              ) : null}
-            </div>
+    <main className="flex h-full min-h-0 flex-col overflow-hidden bg-textured pt-[var(--shell-header-h)]">
+      <section className="mx-4 mt-4 rounded-xl border border-border bg-card p-4 shadow-sm sm:mx-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Topical map · read-only
+            </p>
+            <h1 className="truncate text-xl font-semibold">{map.name}</h1>
+            {map.description ? (
+              <p className="mt-1 text-sm text-muted-foreground">{map.description}</p>
+            ) : null}
+            <p className="mt-1 text-xs text-muted-foreground">
+              Status: {map.status}. You can read this map but not the brand it belongs to, so
+              nothing here can be changed — editing lives in the brand&apos;s workspace.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
             <ShareButton
               resourceType="seo_topical_map"
               resourceId={map.id}
               resourceName={map.name}
+              variant="outline"
+              size="sm"
             />
-          </header>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Status: {map.status}. You can read this map but not the brand it
-            belongs to, so this is the standalone view — editing lives in the
-            brand&apos;s workspace.
-          </p>
-        </section>
-
-        <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
-          <h2 className="font-semibold">Topics</h2>
-          {outline.error ? (
-            // The function's own sentence, unaltered: these refusals are written
-            // for the person reading them.
-            <p role="alert" className="mt-2 whitespace-pre-wrap text-sm text-destructive">
-              {outline.error.message}
-            </p>
-          ) : outline.data && String(outline.data).trim() ? (
-            <pre className="mt-3 max-h-[60vh] overflow-auto whitespace-pre-wrap rounded-lg bg-muted/40 p-3 font-mono text-xs">
-              {String(outline.data)}
-            </pre>
-          ) : (
-            <p className="mt-2 text-sm text-muted-foreground">
-              This map has no topics yet, so there is nothing to show.
-            </p>
-          )}
-        </section>
-
-        <p className="text-sm">
-          <Link href="/marketing" className="underline">
-            Back to Marketing
-          </Link>
-        </p>
+            <Link href="/marketing" className="text-sm underline">
+              Marketing
+            </Link>
+          </div>
+        </div>
+      </section>
+      <div className="mx-4 mb-4 mt-3 min-h-0 flex-1 rounded-xl border border-border bg-card shadow-sm sm:mx-6 sm:mb-6">
+        <TopicalMapDoorBody mapId={map.id} revealSlug={topic ?? null} />
       </div>
     </main>
   );

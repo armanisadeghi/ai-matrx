@@ -1,11 +1,13 @@
 // One map's workspace — the OUTLINE view, which is the index.
 //
-// A view is a ROUTE, not a tab — the same shape the content plan uses. The body
-// is the ONE canonical workspace; it reads the active screen from this path and
-// takes selection, expansion, filters and the site in scope from the
-// topical-map Redux slice, which is what makes them survive the switch.
+// A view is a ROUTE, not a tab — the same shape the content plan uses. Every
+// one of the six screens renders the SAME adapter: `TopicalMapRouteBody` reads
+// the screen from this path, the brand from the route tree and `?site=` /
+// `?topic=` from the URL, then hands the canonical workspace body its props.
+// Selection, expansion, filters and the site in scope live in the topical-map
+// Redux slice, which is what makes them survive the switch.
 
-import { TopicalMapWorkspaceBody } from "@/features/marketing/seo/topical-map/components/TopicalMapWorkspaceBody";
+import { TopicalMapRouteBody } from "@/features/marketing/seo/topical-map/components/TopicalMapRouteBody";
 
 export default async function BrandTopicalMapOutlinePage({
   params,
@@ -13,5 +15,5 @@ export default async function BrandTopicalMapOutlinePage({
   params: Promise<{ mapId: string }>;
 }) {
   const { mapId } = await params;
-  return <TopicalMapWorkspaceBody mapId={mapId} />;
+  return <TopicalMapRouteBody mapId={mapId} />;
 }

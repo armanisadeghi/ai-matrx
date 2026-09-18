@@ -25,6 +25,7 @@ import {
   ListChecks,
   PanelTop,
   Pencil,
+  Network,
   RotateCcw,
 } from "lucide-react";
 
@@ -185,6 +186,12 @@ export function buildPageMenuSection(opts: {
   openDrilldown: OpenDrilldown;
   onDismiss?: () => void;
   onRestore?: () => void;
+  /**
+   * The site's topical-map PAGES workspace (placement §7 #2, "map these
+   * pages"). Null when the site uses no map or the read has not resolved — the
+   * item is then omitted, never a dead entry.
+   */
+  mapPagesHref?: string | null;
   /** THE CONSISTENCY STEP — see `features/context-menu-v3/utils/availability.ts`. */
   unavailable?: AvailabilityMap;
 }): ContextMenuExtraSection {
@@ -212,6 +219,15 @@ export function buildPageMenuSection(opts: {
       label: "Open page workspace",
       icon: ExternalLink,
       href: marketingRoutes.sitePage(null, siteId, pageId),
+    });
+  if (opts.mapPagesHref)
+    items.push({
+      kind: "link",
+      id: "page-map-destination",
+      label: "Decide its place on the topical map",
+      icon: Network,
+      description: "The site's pages workspace — keep, move, merge, redirect or rewrite this page",
+      href: opts.mapPagesHref,
     });
   if (opts.onRestore)
     items.push({
