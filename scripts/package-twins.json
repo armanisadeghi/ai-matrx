@@ -191,26 +191,6 @@
       ],
       "shapeCensus": [
         {
-          "file": "features/crm/components/sending-identities/SendingIdentityDetailPage.tsx",
-          "reason": "IS a duration formatter, and cannot be collapsed by this session: it renders a two-sided RANGE (\"3-7 minutes, varied\") with the unit word stated ONCE at the end. @ai-matrx/kit/format has no range voice, and calling the formatter per side produces \"3 min-7 min minutes\". The honest fix is a range voice in kit, which is the kit package's own program."
-        },
-        {
-          "file": "features/hindsight/components/FindingEffectivenessPanel.tsx",
-          "reason": "IS a duration formatter, on a voice @ai-matrx/kit/format does not have. It prints ONE coarsest unit with a BARE SECONDS tier below a minute and NO seconds above it (45s -> 90m -> 5h -> 3d). `compact` always keeps a seconds tier under an hour (\"30m 00s\"), `coarse` never prints seconds at all (\"< 1 min\"), and no option reaches the shape in between. Collapsing it onto either style changes what a live screen reads, so the honest fix is a new kit style \u2014 a decision for the kit package's own program \u2014 not a silent re-voicing by the lane that taught this guard the seconds base. Loud and ratcheted: the moment kit grows that voice and this body goes, the entry FAILS as stale."
-        },
-        {
-          "file": "features/marketing/crawler/crawl-cadence.ts",
-          "reason": "IS a duration formatter (minutes -> prose cadence), and cannot be collapsed by this session: it returns the BARE SINGULAR NOUN (\"Every minute\", \"the 60 minutes minimum\") where kit's `long` voice always prints the numeral (\"1 minute\"). Both caller sentences break on the numeral. The honest fix is a numeral-less option in kit, which is the kit package's own program."
-        },
-        {
-          "file": "features/masterwork/record/MonologueRecorder.tsx",
-          "reason": "IS a duration formatter, and cannot be collapsed by this session: it renders a deliberately over-estimated RANGE (\"about N-2N minutes\") with a ceil-outward rounding that is the promise the copy makes. kit has no range voice and no way to render \"N-2N minutes\"."
-        },
-        {
-          "file": "features/transcripts/utils/dateFormatting.ts",
-          "reason": "IS a relative-time formatter, and cannot be collapsed by this session: it prints a capitalised \"Yesterday\" as a WORD plus long-form weeks/months/years. kit's `long` voice has no \"Yesterday\" tier and `intl` lowercases and localises it; the file's own header documents the divergence as deliberate. The honest fix is a kit tier, which is the kit package's own program."
-        },
-        {
           "file": "components/layout/AuthSessionWatcher.tsx",
           "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
@@ -223,8 +203,16 @@
           "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
+          "file": "features/capture-ladder/types.ts",
+          "why": "IS a duration formatter, and cannot be collapsed by this session: `describeEstimate` returns the BARE SINGULAR NOUN (\"about a minute\") where @ai-matrx/kit/format's `long` voice always prints the numeral (\"about 1 minute\"). That is the identical blocker already recorded for features/marketing/crawler/crawl-cadence.ts, and the sentence is the promise this row's copy makes. Loud and ratcheted: the moment kit grows a bare-singular tier, or the copy accepts the numeral, this entry FAILS as stale."
+        },
+        {
           "file": "features/content-ir/sandbox/browser/base-url.ts",
           "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
+        },
+        {
+          "file": "features/crm/components/sending-identities/SendingIdentityDetailPage.tsx",
+          "reason": "IS a duration formatter, and cannot be collapsed by this session: it renders a two-sided RANGE (\"3-7 minutes, varied\") with the unit word stated ONCE at the end. @ai-matrx/kit/format has no range voice, and calling the formatter per side produces \"3 min-7 min minutes\". The honest fix is a range voice in kit, which is the kit package's own program."
         },
         {
           "file": "features/exports/components/IndexProgress.tsx",
@@ -243,8 +231,16 @@
           "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
         },
         {
+          "file": "features/hindsight/components/FindingEffectivenessPanel.tsx",
+          "reason": "IS a duration formatter, on a voice @ai-matrx/kit/format does not have. It prints ONE coarsest unit with a BARE SECONDS tier below a minute and NO seconds above it (45s -> 90m -> 5h -> 3d). `compact` always keeps a seconds tier under an hour (\"30m 00s\"), `coarse` never prints seconds at all (\"< 1 min\"), and no option reaches the shape in between. Collapsing it onto either style changes what a live screen reads, so the honest fix is a new kit style \u2014 a decision for the kit package's own program \u2014 not a silent re-voicing by the lane that taught this guard the seconds base. Loud and ratcheted: the moment kit grows that voice and this body goes, the entry FAILS as stale."
+        },
+        {
           "file": "features/mandates/admin/references.ts",
           "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
+        },
+        {
+          "file": "features/marketing/crawler/crawl-cadence.ts",
+          "reason": "IS a duration formatter (minutes -> prose cadence), and cannot be collapsed by this session: it returns the BARE SINGULAR NOUN (\"Every minute\", \"the 60 minutes minimum\") where kit's `long` voice always prints the numeral (\"1 minute\"). Both caller sentences break on the numeral. The honest fix is a numeral-less option in kit, which is the kit package's own program."
         },
         {
           "file": "features/masterwork/capture-plan/planner.ts",
@@ -257,6 +253,10 @@
         {
           "file": "features/masterwork/encore/benchFacts.ts",
           "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
+        },
+        {
+          "file": "features/masterwork/record/MonologueRecorder.tsx",
+          "reason": "IS a duration formatter, and cannot be collapsed by this session: it renders a deliberately over-estimated RANGE (\"about N-2N minutes\") with a ceil-outward rounding that is the promise the copy makes. kit has no range voice and no way to render \"N-2N minutes\"."
         },
         {
           "file": "features/notes/redux/autoSaveMiddleware.ts",
@@ -273,6 +273,10 @@
         {
           "file": "features/source-library/format.ts",
           "why": "IS the duration capability and has not been collapsed yet. This session's collapse was bounded to the money, count and relative-time bodies the tenth adversarial review named plus the byte-size and name-lane regrowth it surfaced; the duration backlog is listed here so it is READ OUT every run and RATCHETED shrink-only. A debt, not an exemption."
+        },
+        {
+          "file": "features/transcripts/utils/dateFormatting.ts",
+          "reason": "IS a relative-time formatter, and cannot be collapsed by this session: it prints a capitalised \"Yesterday\" as a WORD plus long-form weeks/months/years. kit's `long` voice has no \"Yesterday\" tier and `intl` lowercases and localises it; the file's own header documents the divergence as deliberate. The honest fix is a kit tier, which is the kit package's own program."
         },
         {
           "file": "lib/progress/estimateSentence.ts",
