@@ -24,6 +24,8 @@ import KindInstanceRender from "@/features/content-ir/studio/components/KindInst
 import { DbEmitRenderer } from "@/features/workflow-emit/DbEmitRenderer";
 import type { EmitMode } from "@/features/workflow-emit/types";
 
+import { WorkflowDocumentActions } from "../components/WorkflowDocumentActions";
+import { workflowDocumentText } from "../workflow-document-text";
 import { routeEmission, type RoutableEmission } from "./emission-routing";
 
 /** Everything the two renderers need, over and above the routing fields. */
@@ -73,35 +75,44 @@ export function EmissionRender({
   variant = "bare",
 }: EmissionRenderProps) {
   const route = routeEmission(emission);
+  const documentText = workflowDocumentText(emission.payload);
 
   if (route.via === "kind") {
     // `component_ref` is IGNORED here, deliberately (SPEC §3.1): a registered
     // kind's component outranks an author's per-node override.
     return (
-      <KindInstanceRender
-        kind={route.kind}
-        value={emission.payload}
-        showRoutingNote={false}
-        variant={variant}
-      />
+      <>
+        <KindInstanceRender
+          kind={route.kind}
+          value={emission.payload}
+          showRoutingNote={false}
+          variant={variant}
+        />
+        <WorkflowDocumentActions content={documentText} />
+      </>
     );
   }
 
   return (
-    <DbEmitRenderer
-      componentRef={emission.componentRef}
-      mode={asEmitMode(emission.mode)}
-      payload={emission.payload}
-      title={emission.title}
-      nodeId={emission.nodeId}
-      runId={runId}
-      seq={emission.seq ?? index}
-      isPersisted={emission.persisted}
-      presentation={emission.presentation ?? undefined}
-      kind={emission.kind}
-      kindOk={emission.kindOk}
-      metadata={emission.metadata}
-    />
+    <>
+      <DbEmitRenderer
+        componentRef={emission.componentRef}
+        mode={asEmitMode(emission.mode)}
+        payload={emission.payload}
+        title={emission.title}
+        nodeId={emission.nodeId}
+        runId={runId}
+        seq={emission.seq ?? index}
+        isPersisted={emission.persisted}
+        presentation={emission.presentation ?? undefined}
+        kind={emission.kind}
+        kindOk={emission.kindOk}
+        metadata={emission.metadata}
+      />
+      {emission.componentRef === null && (
+        <WorkflowDocumentActions content={documentText} />
+      )}
+    </>
   );
 }
 

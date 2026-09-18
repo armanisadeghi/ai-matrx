@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
+import MarkdownStream from "@/components/MarkdownStream";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { LiveRunDisplay } from "@/features/agents/components/live-run/LiveRunDisplay";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
@@ -35,6 +36,8 @@ import {
 } from "@ai-matrx/content-ir/wire";
 
 import { SettledOutputBody } from "./SettledOutputBody";
+import { workflowDocumentText } from "../workflow-document-text";
+import { WorkflowDocumentActions } from "./WorkflowDocumentActions";
 
 import {
   InterruptQuestion,
@@ -429,9 +432,11 @@ export function InvocationBody({
       );
     }
     return (
-      <p className="whitespace-pre-wrap text-xs text-muted-foreground">
-        {stripProtocolTags(invocation.textTail)}
-      </p>
+      <MarkdownStream
+        content={stripProtocolTags(invocation.textTail)}
+        isStreamActive={working}
+        hideCopyButton
+      />
     );
   }
   if (laneOwnsDisplay && working) {
@@ -456,12 +461,15 @@ export function InvocationBody({
         value={invocation.output ?? invocation.wrapper}
         header={<KindShapeDriftNote invocation={invocation} />}
       >
-        <KindInstanceRender
-          kind={NODE_OUTCOME_KIND}
-          value={invocation.wrapper}
-          showRoutingNote={false}
-          variant="bare"
-        />
+        <>
+          <KindInstanceRender
+            kind={NODE_OUTCOME_KIND}
+            value={invocation.wrapper}
+            showRoutingNote={false}
+            variant="bare"
+          />
+          <WorkflowDocumentActions content={workflowDocumentText(invocation.output)} />
+        </>
       </StructuredValueTabs>
     );
   }
@@ -481,29 +489,36 @@ export function InvocationBody({
         value={invocation.output}
         header={<KindShapeDriftNote invocation={invocation} />}
       >
-        <KindInstanceRender
-          kind={invocation.outputKind}
-          value={invocation.output}
-          showRoutingNote={false}
-          // The readout cell already draws the titled card — a second border +
-          // background + padding here is the box-in-a-box (THE WRAPPER LAW).
-          variant="bare"
-          unroutableFallback={<SettledOutputBody output={invocation.output} />}
-        />
+        <>
+          <KindInstanceRender
+            kind={invocation.outputKind}
+            value={invocation.output}
+            showRoutingNote={false}
+            // The readout cell already draws the titled card — a second border +
+            // background + padding here is the box-in-a-box (THE WRAPPER LAW).
+            variant="bare"
+            unroutableFallback={<SettledOutputBody output={invocation.output} />}
+          />
+          <WorkflowDocumentActions content={workflowDocumentText(invocation.output)} />
+        </>
       </StructuredValueTabs>
     );
   }
   if (invocation.textTail) {
     return (
-      <p className="whitespace-pre-wrap text-xs text-muted-foreground">
-        {stripProtocolTags(invocation.textTail)}
-      </p>
+      <MarkdownStream
+        content={stripProtocolTags(invocation.textTail)}
+        hideCopyButton
+      />
     );
   }
   if (invocation.phase === "settled" && invocation.output) {
     return (
       <StructuredValueTabs value={invocation.output}>
-        <SettledOutputBody output={invocation.output} />
+        <>
+          <SettledOutputBody output={invocation.output} />
+          <WorkflowDocumentActions content={workflowDocumentText(invocation.output)} />
+        </>
       </StructuredValueTabs>
     );
   }
