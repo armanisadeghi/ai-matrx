@@ -65,7 +65,6 @@ jest.mock("@/features/google-workspace/service", () => ({
   appendGoogleDocument: jest.fn(),
   approvalQueueHref: () => "/approvals",
   isGoogleWorkspaceInputError: () => false,
-  readGoogleDocument: jest.fn(),
   readGoogleSheet: jest.fn(),
   registerSelectedGoogleFile: jest.fn(),
   sendReviewedGmail: jest.fn(),
@@ -262,11 +261,22 @@ it("brings the Record into existence through the server's door when there is non
   });
 });
 
-it("says so, and opens nothing, when the Record cannot be reached", async () => {
-  readError = "permission denied for table google_document";
-  await clickOpen();
-  expect(mockOpenDetail).not.toHaveBeenCalled();
-  expect(mockToastError).toHaveBeenCalledWith(
-    "permission denied for table google_document",
-  );
-});
+it(
+  "says a plain sentence, never the raw PostgREST message, and opens nothing " +
+    "when the Record cannot be reached (Cursor Bugbot, PR 228)",
+  async () => {
+    readError = "permission denied for table google_document";
+    await clickOpen();
+    expect(mockOpenDetail).not.toHaveBeenCalled();
+    // The raw PostgREST sentence is not one a person can act on — it never
+    // reaches the toast. The same shape `readGoogleDocumentRow` gives this
+    // class of failure (`documents/service.ts`, F-60): a plain sentence with
+    // a remedy, the raw response kept only as `cause` for devtools.
+    expect(mockToastError).toHaveBeenCalledWith(
+      "AI Matrx could not check whether this file already has a record here. Try again; if it keeps happening, tell us.",
+    );
+    expect(mockToastError).not.toHaveBeenCalledWith(
+      expect.stringContaining("permission denied"),
+    );
+  },
+);

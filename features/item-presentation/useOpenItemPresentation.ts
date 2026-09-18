@@ -130,6 +130,12 @@ export function useOpenItemPresentation() {
         // (F-40). The only party window, `CrmCreatePartyWindow`, creates a NEW
         // record — never route an existing one there.
         case "party":
+        // A connected Google Doc/Sheet/Slides record and a synced calendar
+        // event: both registrations own their detail via `refineDetail`
+        // (`features/google-workspace/documents/itemType.tsx` and
+        // `calendar/itemType.tsx`) and have no bespoke window (F-63).
+        case "google_document":
+        case "calendar_event":
           return openGenericDetail();
         default:
           return openGenericDetail();

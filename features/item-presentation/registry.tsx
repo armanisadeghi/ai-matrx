@@ -149,7 +149,9 @@ export type ItemOpenKind =
   | { kind: "conversation" }
   | { kind: "message" }
   | { kind: "email" }
-  | { kind: "party" };
+  | { kind: "party" }
+  | { kind: "google_document" }
+  | { kind: "calendar_event" };
 
 // ---------------------------------------------------------------------------
 // Enrichment helpers

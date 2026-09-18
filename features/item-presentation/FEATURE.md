@@ -164,6 +164,28 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
 
 ## Change log
 
+- 2026-09-18 — **F-63: the two Google item types open from a card, and every registration is
+  censused for it.** Lane F-58 found that `GOOGLE_DOCUMENT_ITEM_TYPE`
+  (`features/google-workspace/documents/itemType.tsx`) and `CALENDAR_EVENT_ITEM_TYPE`
+  (`features/google-workspace/calendar/itemType.tsx`) declared every field `ItemTypeConfig`
+  offers except `open` — so `useOpenItemPresentation("google_document", id)` and its calendar
+  equivalent returned `false`, and an agent-emitted card for either record could not be clicked
+  open at all (no error, no disabled look — the action button simply never rendered, law 4).
+  Both registrations now declare `open: { kind: "google_document" }` /
+  `open: { kind: "calendar_event" }`; `ItemOpenKind` gained both discriminants and
+  `useOpenItemPresentation.ts` routes both to `openGenericDetail()` — the Detail primitive each
+  registration already owns via `refineDetail`, exactly the path `party` (F-40) and every other
+  non-bespoke type take. New census
+  `__tests__/every-registered-type-opens-or-says-why-not.test.ts` walks all 24 registered
+  `KnownItemType`s and asserts each declares `open` (or is named in an allow-list with the
+  reason it stays closed — empty today: every registered type opens). Red-then-green: reverting
+  the two registrations to HEAD fails exactly 3 cases, naming `google_document` and
+  `calendar_event` by name (`config.open` received `undefined`); restoring the fix turns all 3
+  green. `npx jest features/item-presentation features/google-workspace` is green (342 tests)
+  except one pre-existing, unrelated failure in
+  `a-picked-doc-opens-as-its-record.test.tsx` (a permission-denied-message assertion that fails
+  on HEAD before this lane's changes too — not touched here). No screen was seen.
+
 - 2026-09-18 — **F-60: a refusal is followed by its remedy, never by the product's promise (N8).**
   `productHealth` answers with the product's PROMISE as its `reason` in the two states where
   nothing is refusing anything, and the strip printed that reason whatever the state while never

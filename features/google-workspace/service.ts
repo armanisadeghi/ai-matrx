@@ -200,24 +200,6 @@ export async function createGoogleSheet(
   return writeOutcome(response, selectedFile);
 }
 
-export async function readGoogleDocument(
-  connectionId: string,
-  fileId: string,
-): Promise<GoogleDocumentContent> {
-  const response = await postGoogleBackend(
-    "/api/google-workspace/documents/read",
-    { connection_id: connectionId, file_id: fileId },
-    "Unable to read the selected Google Doc.",
-  );
-  const body = await responseRecord(response);
-  return {
-    fileId: requiredString(body, "file_id"),
-    title: requiredString(body, "title"),
-    text: requiredString(body, "text"),
-    truncated: booleanValue(body, "truncated"),
-  };
-}
-
 export async function appendGoogleDocument(
   connectionId: string,
   fileId: string,

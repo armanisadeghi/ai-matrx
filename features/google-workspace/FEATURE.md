@@ -408,6 +408,28 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 ## Change log
 
+- `2026-09-18` — **F-63: both item cards open; `readGoogleDocument` retired; `calendar_event`
+  has a connector product.** Three findings, each fixed at the class:
+  - `documents/itemType.tsx` and `calendar/itemType.tsx` now declare `open` (see
+    `features/item-presentation/FEATURE.md`'s F-63 entry for the full detail and the census that
+    proves it for every registered item type, both Google types included).
+  - `readGoogleDocument` in `service.ts` (the read half of the old "Read selected Doc" /
+    "Text to append" textarea F-58 already deleted) had no caller left anywhere — verified by
+    grepping the whole repo, which turned up only the two test files' `jest.mock` fixtures. Under
+    no-legacy it is deleted along with those two mock entries
+    (`a-picked-doc-opens-as-its-record.test.tsx`, `a-connected-deck-has-a-row-and-a-door.test.tsx`);
+    `readGoogleDocumentRow` (the Record's own typed read, a different function) is untouched.
+  - `calendar_event` is now a recognized `GoogleConnectionResourceType`
+    (`features/marketing/google/types.ts`'s `GOOGLE_MARKETING_RESOURCE_TYPES`) — the server
+    (aidream lane F-62) declared it attachable with `record_table: "communication.calendar_event"`,
+    and `isGoogleConnectionResourceType` previously said no to it, which is the exact shape of
+    failure `google_presentation` hit in V13-3 (a type outside the list makes
+    `connectionResource` throw and takes the whole inventory read down with it). Its connector
+    product is `calendar` — already the product `productKeyFor` resolves it to, via the existing
+    `calendar_event` alias in `features/item-presentation/sourceHealth.ts`; this entry closes the
+    other half. `every-attachable-type-has-a-product.test.ts`'s cross-repo leg, logged as a
+    pre-existing failure in F-60's own change-log entry above, is green.
+
 - `2026-09-18` — **F-60: the Doc panel and its strip — plain failures with remedies, actions
   that act in place, and a Google link derived from the file id.** Five findings of
   `common-docs/projects/google-native/VERIFY-U-W1-U-W2.md` (N7, N8, N9, N12, N14), each fixed

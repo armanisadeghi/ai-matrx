@@ -244,6 +244,11 @@ export const GOOGLE_DOCUMENT_ITEM_TYPE: ItemTypeConfig = {
   type: GOOGLE_DOCUMENT_TYPE,
   label: "Google file",
   icon: FileText,
+  // 🚨 F-63 — the discriminant this registration was missing: without it,
+  // `useOpenItemPresentation("google_document", id)` returned `false` and an
+  // agent-emitted Google item card could not open. Opens through the Detail
+  // primitive (`refineDetail` below), same as every non-bespoke record type.
+  open: { kind: "google_document" },
   accent: {
     text: "text-sky-600 dark:text-sky-400",
     bg: "bg-sky-500/10",

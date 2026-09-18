@@ -95,11 +95,23 @@ export type GoogleCapabilityMetadata =
 /**
  * The resource types that are NOT Picker-chosen Workspace files — each
  * discovered from the provider's own API rather than chosen by a person.
+ *
+ * `calendar_event` (F-63): the server declared it attachable in
+ * `aidream/services/conversation_attachments/attachable_resource_kinds.json`
+ * (`record_table: "communication.calendar_event"`) — a synced agenda row, never
+ * Picker-chosen — and its connector product is `calendar`
+ * (`features/connectors/provider-config.ts`), already the product
+ * `productKeyFor` resolves it to via the `calendar_event` alias in
+ * `features/item-presentation/sourceHealth.ts`. Without an entry here,
+ * `isGoogleConnectionResourceType("calendar_event")` was `false`, and
+ * `connectionResource` throws on any type outside this list — the same class
+ * of failure `google_presentation` hit in V13-3.
  */
 const GOOGLE_MARKETING_RESOURCE_TYPES = [
   "search_console_property",
   "analytics_property",
   "youtube_channel",
+  "calendar_event",
 ] as const;
 
 /**

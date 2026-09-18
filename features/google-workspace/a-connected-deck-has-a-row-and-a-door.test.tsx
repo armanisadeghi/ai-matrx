@@ -65,7 +65,6 @@ jest.mock("@/features/google-workspace/service", () => ({
   appendGoogleDocument: jest.fn(),
   approvalQueueHref: () => "/approvals",
   isGoogleWorkspaceInputError: () => false,
-  readGoogleDocument: (...args: unknown[]) => mockReadDocument(...args),
   readGoogleSheet: (...args: unknown[]) => mockReadSheet(...args),
   registerSelectedGoogleFile: jest.fn(),
   sendReviewedGmail: jest.fn(),

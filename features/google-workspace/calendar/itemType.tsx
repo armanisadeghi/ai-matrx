@@ -127,6 +127,11 @@ export const CALENDAR_EVENT_ITEM_TYPE: ItemTypeConfig = {
   type: CALENDAR_EVENT_TYPE,
   label: "Calendar event",
   icon: CalendarDays,
+  // 🚨 F-63 — the discriminant this registration was missing: without it,
+  // `useOpenItemPresentation("calendar_event", id)` returned `false` and an
+  // agent-emitted calendar item card could not open. Opens through the Detail
+  // primitive (`refineDetail` below), same as every non-bespoke record type.
+  open: { kind: "calendar_event" },
   accent: {
     text: "text-blue-600 dark:text-blue-400",
     bg: "bg-blue-500/10",
