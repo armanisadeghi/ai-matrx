@@ -8,7 +8,23 @@
  * Canonical nouns only: Library, Source, Action. Nothing here coins a noun.
  */
 
-export type MediaAdapter = "youtube" | "podcast_rss" | "drive_folder";
+/**
+ * Every adapter the running server declares (aidream `media_catalog/models.py`,
+ * `AdapterKey`). This list was two behind on 2026-09-18 — `blog_feed` and
+ * `slide_deck` had shipped and the paste box was already advertising them —
+ * which is how a blog Library ended up rendering under YouTube's vocabulary.
+ */
+export type MediaAdapter =
+    | "youtube"
+    | "podcast_rss"
+    | "blog_feed"
+    | "slide_deck"
+    | "drive_folder"
+    | "onedrive_drive"
+    | "outlook_mail"
+    | "outlook_calendar"
+    | "teams_chat"
+    | "google_picked_files";
 export type LibraryKind = "channel" | "playlist";
 /**
  * THE PLATFORM'S OWN ENUM SPELLING, and it is not the one that reads naturally.

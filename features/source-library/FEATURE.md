@@ -105,9 +105,13 @@ running on the server. Guard: `__tests__/unreadable-shapes.test.tsx`.
 | `catalog/` | The Sources inside one Library (service + columns + config). Facet counts come from `GET …/metrics` over the SAME filter, so a chip never counts the 25 rows on screen. No scope tabs: the Library IS the scope. |
 | `components/` | `CatalogPasteBox` · `LibrariesFrontDoor` · `LibraryPage` · `LibraryMetricsHeader` · `JobPanel` · `SourceDetailPanel` · `ActionRunDialog` · `RulebookParamPicker` |
 | `hooks/` | `useLibrarySync` · `useJob` · `useActionRegistry` · `useActionRunner` |
+| `vocabulary.ts` | 🚨 **What this Library's Sources are CALLED, and which axes exist for them.** The header used to print YouTube's words over everyone's counts — a podcast read "LONG VIDEOS 886", a blog read "UNCLASSIFIED 10,563". The words now come from the Library's adapter, a tile whose axis does not exist for that kind holds its space silently instead of printing a zero, and an adapter this file has never heard of gets NEUTRAL words, never YouTube's. |
 | `redux/sourceLibrarySlice.ts` | The live half — a CACHE over the server's mount reads, never the truth, never persisted. |
 | `settings/` | The server's knobs (§9), rendered entirely from the server's declaration. |
 | `__tests__/three-laws.test.tsx` | The three guards, each with its RED mutation written down. |
+| `__tests__/honest-on-the-real-wire.test.tsx` | The shapes the LIVE server sends (`caption_languages: null`, the `{"library": …}` envelope, the platform visibility enum, a partial jsonb `metrics` blob) and the paste box's keyboard. |
+| `__tests__/not-yet-is-not-a-failure.test.tsx` | The organization resolves a beat after first render: no call is made without one, the transport's `organization_context_required` never becomes a sentence, and a read that started earlier can never overwrite the one on screen. |
+| `__tests__/every-kind-speaks-its-own-words.test.tsx` | Every adapter `vocabulary.ts` declares, rendered — only YouTube may use YouTube's words. |
 
 ## Doors in
 
@@ -126,7 +130,34 @@ Live, signed in as `admin@admin.com` via `pnpm dev-login /libraries`. Screenshot
 at 1440 and 390 in both themes live in
 `../../../common-docs/projects/media-source-catalog/screen/`.
 
+## THE VOCABULARY RULE
+
+One Library primitive spans YouTube, podcasts, blogs, decks, mailboxes, calendars,
+chats and folders. **Never hardcode a source-kind word in a component** — read it from
+`sourceVocabulary(library)`. Two halves, and the second is the one that gets forgotten:
+a better word must not drag an invented number behind it. The server's §5 metrics carry
+no word count and the blog adapter sets no duration, so a blog has NO length axis and
+those tiles are absent — not "0 min", not a skeleton. The slot keeps its height so
+nothing moves; the claim is gone. The day the server publishes a word count,
+`vocabulary.ts` is the only file that changes.
+
 ## Change log
+
+- `2026-09-18` — **The header speaks the Library's own words, and a not-yet stops
+  looking like a failure.** New `vocabulary.ts` picks the nouns and the axes from
+  the Library's adapter: a podcast is counted in Episodes with a Total listening
+  time, a blog in Posts with no length axis at all, decks/messages/events/files/
+  conversations each get their own noun, and an unknown adapter gets neutral words
+  rather than YouTube's — a tile whose axis does not exist holds its space silently
+  instead of printing a zero. `types.ts` caught up with the server's adapter list
+  (`blog_feed`, `slide_deck` and the five connected-account adapters were missing).
+  Separately, the metrics/library reads no longer fire before the active
+  organization resolves, the transport's `organization_context_required` is
+  recognised as a not-yet instead of being recorded as "Select an organization
+  before sending this request", both entity-list services say "Still opening your
+  workspace" and stay retryable, and every metrics read takes a ticket so a stale
+  answer cannot overwrite the one on screen. Guards:
+  `not-yet-is-not-a-failure.test.tsx` and `every-kind-speaks-its-own-words.test.tsx`.
 
 - `2026-09-17` — **Every response narrowed; the `unwrap<T>()` cast is gone.**
   Added `contract.ts` (the parsers + `MediaApiError`/`MediaContractError`) on
