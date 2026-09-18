@@ -55,16 +55,14 @@ const STRICT = process.argv.includes("--strict");
 
 /** Where a closed picker is most expensive: surfaces where users teach the system. */
 const SCAN_GLOBS = [
-  "features/marketing/**/*.tsx",
-  "features/agents/**/components/**/*.tsx",
-  "features/scopes/**/*.tsx",
-  // The scope SYSTEM tree holds the context-item pickers; it was never
-  // scanned, which is how ContextItemPicker (the agent-variable binding
-  // control) offered "No items on this scope type" with no way to add one
-  // until Arman hit it on 2026-09-18.
-  "features/scope-system/**/*.tsx",
-  "features/organizations/**/*.tsx",
-  "features/content-ir/**/*.tsx",
+  // The WHOLE UI. Until 2026-09-18 this listed four feature trees, and a
+  // by-name hand census over the rest found only half of what this detector
+  // finds — a mapped choice list lives in files named Field, Crumb, Workspace,
+  // Section, not only *Picker. The law is a platform law; the sweep is too.
+  "features/**/*.tsx",
+  "components/**/*.tsx",
+  "app/**/*.tsx",
+  "lib/**/*.tsx",
 ];
 
 /**
