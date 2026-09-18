@@ -43,7 +43,9 @@ import { kindRegistry } from "../registry/kind-registry";
 import { envelopeFromCompleteValue, IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import type { KindComponentProjection } from "../registry/schema-source-kind-components";
 import GoogleWorkspaceResultBlock from "@/components/mardown-display/blocks/google-kinds/GoogleWorkspaceResultBlock";
-import GoogleMarketingResultBlock from "@/components/mardown-display/blocks/google-kinds/GoogleMarketingResultBlock";
+import GoogleMarketingResultBlock, {
+  PROMOTED as MARKETING_PROMOTED,
+} from "@/components/mardown-display/blocks/google-kinds/GoogleMarketingResultBlock";
 
 jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
   ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
@@ -374,6 +376,41 @@ const FIXTURES: Fixture[] = [
       "start date 2026-08-01",
       "about three days behind",
       "The numbers",
+      // THE F-86 FINDING: `site_id` sat in PROMOTED (so MetaStrip/LeftoverFields
+      // skipped it) while no branch ever printed it — a Search Console answer
+      // that never named WHICH site the numbers belonged to.
+      "site 3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    ],
+  },
+  {
+    name: "a marketing read names which site the numbers belong to, with every promoted scalar printed somewhere",
+    kind: MARKETING_KIND,
+    Component: GoogleMarketingResultBlock,
+    data: {
+      action: "read_google_analytics",
+      source: "persisted",
+      google_account: "owner@example.com",
+      site_id: "7c6a1f5e-4b8e-4c2d-9a1c-9e0b2f5d8a41",
+      channel_id: "UC456",
+      returned_count: 88,
+      count_unit: "rows",
+      truncated: false,
+      completeness: "complete_within_requested_bound",
+      freshness: "Data through 2026-08-25.",
+      limit_note: "Stored GA4 landing-page rows only — this read never calls Google.",
+      note: "GA4 applies thresholding — say so when you quote these numbers.",
+      verdict: "GA4 is installed and reporting.",
+      data: { rows: [{ date: "2026-08-25", sessions: 40 }] },
+    },
+    visible: [
+      // The site the numbers belong to, printed in the same ChipRow as the
+      // channel chip — the reader's first question about any number here.
+      "site 7c6a1f5e-4b8e-4c2d-9a1c-9e0b2f5d8a41",
+      "channel UC456",
+      "owner@example.com",
+      "Stored GA4 landing-page rows only",
+      "GA4 applies thresholding",
+      "GA4 is installed and reporting.",
     ],
   },
   {
@@ -600,6 +637,67 @@ describe("the two Google tool-result kinds route to their own component", () => 
     );
     expect(markup).toContain("No record yet");
     expect(markup).not.toContain("in AI Matrx");
+  });
+
+  /**
+   * THE CENSUS: a promoted-but-unprinted key is the defect class F-86 found on
+   * `site_id`. For every scalar key `GoogleMarketingResultBlock.PROMOTED`
+   * carries and this fixture actually sets, that value must appear somewhere
+   * in the rendered output — never silently absorbed by `MetaStrip`/
+   * `LeftoverFields` skipping it with nothing printing it in its place.
+   * Structural keys (`bounds`, `data`, `checks`, `containers`) render their
+   * CONTENTS rather than their own raw value and are asserted by the fixtures
+   * above; boolean/enum keys (`truncated`, `completeness`, `has_ga4`, …) render
+   * as a translated phrase rather than their raw token, also asserted above.
+   * This test owns the plain-string promoted keys.
+   */
+  it("no promoted scalar key in google_marketing_result ever vanishes from what a reader sees", () => {
+    const fixture = FIXTURES.find(
+      (f) =>
+        f.name ===
+        "a marketing read names which site the numbers belong to, with every promoted scalar printed somewhere",
+    )!;
+    kindRegistry.upsertDefinition({
+      kind: fixture.kind,
+      schema: null,
+      schemaSource: "content_ir",
+      tier: "warm",
+    });
+    componentRegistry.ingestDbRows([registeredRow(fixture.kind)]);
+    const routed = applyIrKindRoute(kindBlock(fixture.kind, fixture.data));
+    const markup = mount(
+      <GoogleMarketingResultBlock content={routed.content} metadata={routed.metadata} />,
+    );
+
+    const STRUCTURAL_OR_TRANSLATED = new Set([
+      "action",
+      "source",
+      "bounds",
+      "data",
+      "checks",
+      "containers",
+      "truncated",
+      "completeness",
+      "has_ga4",
+      "has_conversion_tag",
+      "has_consent",
+      "caveats",
+      "returned_count",
+      "count_unit",
+    ]);
+    const censusedKeys: string[] = [];
+    for (const key of MARKETING_PROMOTED) {
+      if (STRUCTURAL_OR_TRANSLATED.has(key)) continue;
+      const value = fixture.data[key];
+      if (typeof value !== "string" || value.length === 0) continue;
+      censusedKeys.push(key);
+      expect(markup).toContain(value);
+    }
+    // The census itself must have exercised something — an empty loop would
+    // pass vacuously and prove nothing.
+    expect(censusedKeys).toEqual(
+      expect.arrayContaining(["google_account", "site_id", "channel_id", "limit_note", "note", "verdict", "freshness"]),
+    );
   });
 
   it("an unknowable completeness never reads as complete", () => {

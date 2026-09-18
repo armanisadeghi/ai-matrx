@@ -60,12 +60,18 @@ import {
 import {
   Bounds,
   CountedFact,
+  RecordDoor,
   ServerSentence,
   TruncationChip,
   readRows,
 } from "./google-result-shared";
 
-const PROMOTED = [
+/**
+ * Exported so the render-leg test suite can census it directly — a promoted
+ * key with no matching print statement is the exact defect this list guards
+ * against (a `site_id` sat here, unprinted, until F-86).
+ */
+export const PROMOTED = [
   "action",
   "source",
   "google_account",
@@ -195,6 +201,16 @@ const GoogleMarketingResultBlock: React.FC<ResultKindBlockProps> = ({
         ) : null}
         <TruncationChip truncated={value.truncated} completeness={value.completeness} />
         {account ? <StateChip label={account} /> : null}
+        {/* WHICH site the numbers belong to — the reader's first question about
+            any number here. A site is a Record; the door opens it in AI Matrx,
+            and renders nothing when the type has no wired opener, leaving the
+            plain chip as the honest fallback. */}
+        {readText(value.site_id) ? (
+          <span className="inline-flex shrink-0 items-center gap-0.5">
+            <StateChip label={`site ${readText(value.site_id)}`} />
+            <RecordDoor type="site" id={value.site_id} fallbackLabel="site" />
+          </span>
+        ) : null}
         {readText(value.channel_id) ? (
           <StateChip label={`channel ${readText(value.channel_id)}`} />
         ) : null}
