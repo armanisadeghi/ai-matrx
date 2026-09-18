@@ -6,16 +6,28 @@
 // 🚨 WHY THESE ARE HAND-WRITTEN, AND WHAT MUST HAPPEN NEXT.
 // `lib/api/FEATURE.md` rule 1 is that request/response types are DERIVED from
 // `types/python-generated/api-types.ts`, never hand-mirrored — a hand mirror
-// drifts silently. These are a hand mirror, deliberately and temporarily: on
-// 2026-09-17 the live server (sha 47afca2b13) answers
-// `GET /media/export-adapters` with 404 and its `openapi.json` carries none of
-// the seven routes below, so there is nothing to derive from yet. The moment
-// the server side ships, run
-//   node scripts/sync-types.mjs --fast --url https://server.app.matrxserver.com
-// and replace every interface here with
-//   components["schemas"]["…"]
-// aliases. Until then this file is the ONE place the shapes are written down,
-// so there is exactly one thing to delete.
+// drifts silently. These are a hand mirror, deliberately and temporarily.
+//
+// 2026-09-17, later the same day — the note above this line used to say the
+// routes 404 and appear nowhere in `openapi.json`. That is now STALE: all seven
+// ARE published (`/media/export-adapters`, `/media/exports`,
+// `/media/exports/{id}`, and the four `/media/libraries/{id}/…` routes). There
+// is still nothing to derive, for a different reason: every one of them is
+// declared `-> dict[str, Any]` on the server, so its published response schema
+// is `{"type": "object", "additionalProperties": true}` and a generated type
+// would be `Record<string, unknown>`.
+//
+// And a hand mirror DID drift, exactly as the rule warns. `recognised_not_
+// readable` below says `number`; the live server sent a LIST of `{label,
+// block}` objects, and `/exports` died on React's "Objects are not valid as a
+// React child" on every load until `./contract.ts` was written. So:
+//   1. Nothing in this feature may trust these interfaces at runtime — every
+//      response goes through `./contract.ts` first. That stays true even after
+//      step 2.
+//   2. The day the server declares real response MODELS, run
+//        node scripts/sync-types.mjs --fast --url https://server.app.matrxserver.com
+//      and replace every interface here with `components["schemas"]["…"]`
+//      aliases. That is the one thing to delete; the parsers stay.
 //
 // 🚨 THERE IS NO BODY TEXT IN AN ITEM, ON PURPOSE. An export holds other
 // people's words; browsing runs on metadata only. There is no endpoint that
@@ -196,6 +208,17 @@ export interface ExportItem {
 
 /** Every narrowing axis the items endpoint understands. */
 export interface ExportItemFilter {
+  /**
+   * A named preset id from `/media/libraries/{id}/presets`.
+   *
+   * A preset REPLACES the rest of this filter rather than combining with it —
+   * the server ignores the other keys when it is set. That is deliberate: two
+   * of the presets ("my longest replies", "threads I replied to more than
+   * twice") cannot be expressed as column comparisons at all, and letting a
+   * preset half-merge with whatever was already ticked would mean the sentence
+   * the person confirms no longer describes the rows they are looking at.
+   */
+  preset?: string;
   direction?: string;
   kind?: string;
   labels?: string;

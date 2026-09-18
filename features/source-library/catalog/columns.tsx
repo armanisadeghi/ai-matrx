@@ -196,19 +196,23 @@ export const CATALOG_COLUMNS: EntityColumnSpec<VideoRow>[] = [
                         </span>
                     );
                 }
+                // `caption_languages` is null until something probes the track
+                // list (contract §4.2) and nothing does today, so this branch
+                // reads it through a coalesce and never dereferences it. An
+                // unprobed list and an empty one both mean "we cannot name the
+                // languages yet", which is what the title sentence says.
+                const languages = row.caption_languages ?? [];
                 return row.has_captions ? (
                     <span
                         className="inline-flex items-center gap-1 text-foreground"
                         title={
-                            row.caption_languages.length
-                                ? `Caption tracks: ${row.caption_languages.join(", ")}`
+                            languages.length
+                                ? `Caption tracks: ${languages.join(", ")}`
                                 : "YouTube reports captions. Which languages is only known after a check."
                         }
                     >
                         <Captions className="size-3.5" aria-hidden />
-                        {row.caption_languages.length
-                            ? row.caption_languages.slice(0, 2).join(", ")
-                            : "Yes"}
+                        {languages.length ? languages.slice(0, 2).join(", ") : "Yes"}
                     </span>
                 ) : (
                     <span className="inline-flex items-center gap-1 text-muted-foreground">

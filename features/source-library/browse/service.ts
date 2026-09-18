@@ -30,9 +30,9 @@ import { MediaApiError, listLibraries } from "../api";
 import type { LibraryRow, LibraryVisibility } from "../types";
 
 const SCOPE_TO_VISIBILITY: Record<string, LibraryVisibility> = {
-    mine: "private",
+    mine: "personal",
     orgs: "internal",
-    shared: "shared",
+    shared: "link",
     public: "public",
 };
 

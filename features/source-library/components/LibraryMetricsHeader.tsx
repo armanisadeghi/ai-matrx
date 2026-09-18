@@ -89,7 +89,20 @@ function formatLiveClock(ms: number | null | undefined): string {
     return `${minutes}m ${rest.toFixed(1).padStart(4, "0")}s`;
 }
 
-function buildTiles(metrics: LibraryMetrics | null): Tile[] {
+/**
+ * A tile with no number and no prospect of one. `null` means "still coming";
+ * this means "the read failed and we are not going to pretend otherwise".
+ */
+const UNREADABLE = "—";
+
+function buildTiles(metrics: LibraryMetrics | null, unreadable = false): Tile[] {
+    if (metrics === null && unreadable) {
+        return buildTiles(null).map((tile) => ({ ...tile, value: UNREADABLE }));
+    }
+    return buildTilesFromMetrics(metrics);
+}
+
+function buildTilesFromMetrics(metrics: LibraryMetrics | null): Tile[] {
     const kinds = metrics?.counts_by_kind;
     const captions = metrics?.caption_coverage;
     const transcripts = metrics?.transcripts;
@@ -105,7 +118,7 @@ function buildTiles(metrics: LibraryMetrics | null): Tile[] {
             label: `${mediaKindLabel("long")} videos`,
             value: kinds ? formatCount(kinds.long) : null,
             hint: metrics
-                ? `${formatDuration(metrics.length_by_kind.long?.median_seconds ?? null)} median`
+                ? `${formatDuration(metrics.length_by_kind?.long?.median_seconds ?? null)} median`
                 : "Median length",
         },
         {
@@ -113,7 +126,7 @@ function buildTiles(metrics: LibraryMetrics | null): Tile[] {
             label: "Shorts",
             value: kinds ? formatCount(kinds.short) : null,
             hint: metrics
-                ? `${formatDuration(metrics.length_by_kind.short?.median_seconds ?? null)} median`
+                ? `${formatDuration(metrics.length_by_kind?.short?.median_seconds ?? null)} median`
                 : "Median length",
         },
         {
@@ -132,32 +145,32 @@ function buildTiles(metrics: LibraryMetrics | null): Tile[] {
             key: "range",
             label: "Published across",
             value: metrics
-                ? formatDateRange(metrics.date_range.earliest, metrics.date_range.latest)
+                ? formatDateRange(metrics.date_range?.earliest ?? null, metrics.date_range?.latest ?? null)
                 : null,
-            hint: metrics?.date_range.span_days != null
-                ? `${formatCount(metrics.date_range.span_days)} days end to end`
+            hint: metrics?.date_range?.span_days != null
+                ? `${formatCount(metrics.date_range?.span_days)} days end to end`
                 : "First to most recent",
         },
         {
             key: "hours",
             label: "Total length",
-            value: metrics ? formatHours(metrics.length.total_seconds) : null,
+            value: metrics ? formatHours(metrics.length?.total_seconds ?? null) : null,
             hint: metrics
-                ? `${formatDuration(metrics.length.mean_seconds)} mean per video`
+                ? `${formatDuration(metrics.length?.mean_seconds ?? null)} mean per video`
                 : "Every Source added up",
         },
         {
             key: "median",
             label: "Median length",
-            value: metrics ? formatDuration(metrics.length.median_seconds) : null,
+            value: metrics ? formatDuration(metrics.length?.median_seconds ?? null) : null,
             hint: metrics
-                ? `${formatDuration(metrics.length.p90_seconds)} at the 90th percentile`
+                ? `${formatDuration(metrics.length?.p90_seconds ?? null)} at the 90th percentile`
                 : "Half are shorter than this",
         },
         {
             key: "captions",
             label: "Caption coverage",
-            value: captions ? `${captions.coverage_percent.toFixed(1)}%` : null,
+            value: captions ? `${(captions.coverage_percent ?? 0).toFixed(1)}%` : null,
             hint: captions
                 ? `${formatCount(captions.with_captions)} with, ${formatCount(
                       captions.without_captions,
@@ -214,9 +227,12 @@ function MetricTile({ tile }: { tile: Tile }): ReactNode {
 function CadenceChart({
     periods,
     loading,
+    unreadable = false,
 }: {
     periods: LibraryMetrics["cadence_per_month"];
     loading: boolean;
+    /** The metrics read failed — say so instead of drawing an empty month. */
+    unreadable?: boolean;
 }): ReactNode {
     const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
@@ -233,7 +249,9 @@ function CadenceChart({
         }, ${formatHours(p.seconds)}`;
 
     const summary =
-        periods.length === 0
+        unreadable && periods.length === 0
+            ? "The publishing cadence could not be read from the server."
+            : periods.length === 0
             ? "No months to chart yet."
             : `Videos per month, ${formatMonthPeriod(periods[0].period)} to ${formatMonthPeriod(
                   periods[periods.length - 1].period,
@@ -246,7 +264,7 @@ function CadenceChart({
                     Publishing cadence, by month
                 </span>
                 <span className="text-[11px] text-muted-foreground tabular-nums">
-                    {loading ? "" : `${formatCount(periods.length)} months`}
+                    {loading || unreadable ? "" : `${formatCount(periods.length)} months`}
                 </span>
             </div>
 
@@ -262,8 +280,10 @@ function CadenceChart({
                         ))}
                     </div>
                 ) : periods.length === 0 ? (
-                    <div className="flex h-full w-full items-center justify-center rounded-md border border-dashed border-border text-xs text-muted-foreground">
-                        Nothing has been catalogued yet, so there is no cadence to chart.
+                    <div className="flex h-full w-full items-center justify-center rounded-md border border-dashed border-border px-4 text-center text-xs text-muted-foreground">
+                        {unreadable
+                            ? "The numbers behind this chart could not be read, so there is nothing honest to draw."
+                            : "Nothing has been catalogued yet, so there is no cadence to chart."}
                     </div>
                 ) : (
                     <svg
@@ -333,9 +353,12 @@ function CadenceChart({
 
 function TopByViews({
     metrics,
+    unreadable = false,
     onOpenVideo,
 }: {
     metrics: LibraryMetrics | null;
+    /** The metrics read failed — five skeletons forever would be a lie. */
+    unreadable?: boolean;
     onOpenVideo: (videoId: string) => void;
 }): ReactNode {
     const rows = (metrics?.top_by_views ?? []).slice(0, TOP_SLOTS);
@@ -350,6 +373,18 @@ function TopByViews({
             <ul className="mt-1 flex flex-1 flex-col gap-1">
                 {Array.from({ length: TOP_SLOTS }).map((_, index) => {
                     const row = rows[index];
+                    if (!metrics && unreadable) {
+                        return index === 0 ? (
+                            <li
+                                key={index}
+                                className="flex h-11 items-center px-1 text-xs text-muted-foreground"
+                            >
+                                These could not be read from the server.
+                            </li>
+                        ) : (
+                            <li key={index} className="h-11" aria-hidden="true" />
+                        );
+                    }
                     if (!metrics) {
                         return (
                             <li key={index} className="flex h-11 items-center gap-2 px-1">
@@ -514,6 +549,59 @@ function SyncStrip({
         );
     }
 
+    // 🚨 THE ROW REMEMBERS WHAT THE STREAM SAID, AND SO DOES THIS STRIP.
+    // `sync.phase` is only ever about a run THIS tab watched. A catalogue that
+    // failed an hour ago, in another tab, or before a reload lives in the
+    // Library row — `sync_status: "failed"` with the `sync_error` sentence the
+    // server wrote (aidream `media_catalog/libraries.py`, both failure paths).
+    // The list page already prints "Last catalogue failed" from that field; a
+    // detail page that ignores it leaves a person in front of a screen that
+    // will never finish and never explain itself, which is exactly what TED
+    // (5,810 Sources) did on 2026-09-17. So the row's own terminal state is
+    // what this strip says whenever this tab has no run of its own to report.
+    if (library?.sync_status === "failed") {
+        return (
+            <div className="flex min-h-[52px] flex-col justify-center gap-1 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2">
+                <div className="flex items-start gap-2">
+                    <CircleAlert
+                        className="mt-0.5 h-4 w-4 shrink-0 text-destructive"
+                        aria-hidden="true"
+                    />
+                    <p className="text-sm text-foreground">
+                        {library.sync_error ??
+                            "The last attempt to catalogue this Library failed, and the server did not say why."}
+                    </p>
+                </div>
+                <p className="pl-6 text-xs tabular-nums text-muted-foreground">
+                    {library.item_count != null
+                        ? `This Library still holds ${formatCount(library.item_count)} Sources from before that run.`
+                        : "Nothing was catalogued before that run stopped."}
+                </p>
+                <div className="flex h-8 items-center pl-6">
+                    <Button size="sm" variant="outline" onClick={onBringUpToDate}>
+                        <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                        Try again
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    if (library?.sync_status === "syncing") {
+        return (
+            <div className="flex min-h-[52px] items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2">
+                <Loader2
+                    className="h-4 w-4 shrink-0 animate-spin text-muted-foreground"
+                    aria-hidden="true"
+                />
+                <p className="text-sm text-foreground">
+                    This Library is being catalogued right now, started somewhere other
+                    than this tab. Reload to see what the server has listed so far.
+                </p>
+            </div>
+        );
+    }
+
     // idle
     return (
         <div className="flex min-h-[52px] items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2">
@@ -538,6 +626,14 @@ function SyncStrip({
 export function LibraryMetricsHeader(props: {
     library: LibraryRow | null;
     metrics: LibraryMetrics | null;
+    /**
+     * The sentence the metrics read failed with, when it failed and we hold no
+     * numbers. A skeleton is a promise that a number is coming; once the read
+     * has failed that promise is a lie, and an unending one — this is how the
+     * header stops promising and starts explaining.
+     */
+    metricsError?: string | null;
+    onRetryMetrics?: () => void;
     sync: SyncState;
     elapsedMs: number;
     onBringUpToDate: () => void;
@@ -547,7 +643,8 @@ export function LibraryMetricsHeader(props: {
     const { library, metrics, sync, elapsedMs, onBringUpToDate, onOpenVideo } = props;
     const running = sync.phase === "starting" || sync.phase === "listing";
     const disabled = running || props.bringUpToDateDisabled === true;
-    const tiles = buildTiles(metrics);
+    const metricsError = metrics === null ? (props.metricsError ?? null) : null;
+    const tiles = buildTiles(metrics, metricsError !== null);
 
     return (
         <header className="flex w-full flex-col gap-3">
@@ -629,6 +726,27 @@ export function LibraryMetricsHeader(props: {
                 onBringUpToDate={onBringUpToDate}
             />
 
+            {metricsError && (
+                <div className="flex min-h-[44px] flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2">
+                    <AlertTriangle
+                        className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
+                        aria-hidden="true"
+                    />
+                    <p className="min-w-0 text-sm text-foreground">{metricsError}</p>
+                    {props.onRetryMetrics && (
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={props.onRetryMetrics}
+                            className="ml-auto"
+                        >
+                            <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                            Try the numbers again
+                        </Button>
+                    )}
+                </div>
+            )}
+
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
                 {tiles.map((tile) => (
                     <MetricTile key={tile.key} tile={tile} />
@@ -643,13 +761,20 @@ export function LibraryMetricsHeader(props: {
             >
                 <CadenceChart
                     periods={metrics?.cadence_per_month ?? []}
-                    loading={metrics === null}
+                    loading={metrics === null && metricsError === null}
+                    unreadable={metricsError !== null}
                 />
-                {onOpenVideo && <TopByViews metrics={metrics} onOpenVideo={onOpenVideo} />}
+                {onOpenVideo && (
+                    <TopByViews
+                        metrics={metrics}
+                        unreadable={metricsError !== null}
+                        onOpenVideo={onOpenVideo}
+                    />
+                )}
             </div>
 
             <div className="flex h-4 items-center">
-                {metrics !== null && (
+                {metrics !== null && !Number.isNaN(Date.parse(metrics.computed_at ?? "")) && (
                     <p className="text-[11px] text-muted-foreground">
                         <FileText className="mr-1 inline h-3 w-3 align-[-2px]" aria-hidden="true" />
                         {`Computed by the server at ${new Date(metrics.computed_at).toLocaleString()}.`}

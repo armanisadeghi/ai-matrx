@@ -106,6 +106,17 @@ export function toItemFilter(
 ): ExportItemFilter {
   const filter: ExportItemFilter = {};
 
+  // A named preset answers the whole question. It carries filters the client
+  // cannot express (a reply flag, a resolved set of threads) and it owns its own
+  // sort, so it travels alone and the server resolves it. Returning early is
+  // what stops a preset silently combining with a leftover tick and meaning
+  // something other than its name.
+  const preset = selectedValues(filters.preset);
+  if (preset.length > 0) {
+    filter.preset = preset[0];
+    return filter;
+  }
+
   const direction = selectedValues(filters.direction);
   if (direction.length > 0) filter.direction = direction.join(",");
 
