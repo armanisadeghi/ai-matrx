@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useOpenCanvasItem } from "@/features/canvas/hooks/useOpenCanvasItem";
+import { useCanvasArtifactUrlState } from "@/features/canvas/hooks/useCanvasArtifactUrlState";
 import { fetchUserArtifactsThunk } from "@/lib/redux/thunks/artifactThunks";
 import {
   deleteArtifactThunk,
@@ -320,6 +321,13 @@ function ArtifactCard({
 export function CmsArtifactList() {
   const dispatch = useAppDispatch();
   const { openItem } = useOpenCanvasItem();
+  // THE OPEN ARTIFACT IS PART OF THIS PAGE'S ADDRESS. `/artifacts?open=<id>`
+  // survives a reload and follows Back/Forward, exactly as the selected
+  // artifact does in Claude.ai's gallery. Without it the canvas slice — which
+  // is deliberately not persisted — simply dropped whatever was open, and this
+  // route has no persisted tool-call rows to re-derive it from the way chat
+  // does. See `features/canvas/hooks/useCanvasArtifactUrlState.ts`.
+  useCanvasArtifactUrlState();
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();

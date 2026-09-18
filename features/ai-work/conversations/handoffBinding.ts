@@ -54,6 +54,18 @@ export interface HandoffRecord {
    *  context, and how many. Never set together with `carriedMessages`. */
   priorContextConversationId: string | null;
   priorContextMessages: number | null;
+  /** True when NOTHING on the destination tool's side can claim this offer
+   *  yet — the VS Code case today: the extension reads no seed packet and
+   *  spools no hook events, so the offer stays open. An offer nobody can take
+   *  must not look like one that is merely unclaimed, which is how a person
+   *  ends up waiting on a tool that will never answer. */
+  awaitingConsumer: boolean | null;
+  /** The adapter that claims a handoff for that tool, named the way its user
+   *  installs it. */
+  consumer: string | null;
+  /** What is missing while `awaitingConsumer` is true, with the remedy — the
+   *  server's own sentence, rendered verbatim. */
+  consumerWaitingFor: string | null;
 }
 
 function record(value: Json | null): Record<string, Json> | null {
@@ -108,6 +120,12 @@ export function handoffRecord(metadata: Json | null): HandoffRecord | null {
     carriedMessages: count(handoff.carried_messages),
     priorContextConversationId: text(handoff.prior_context_conversation_id),
     priorContextMessages: count(handoff.prior_context_messages),
+    awaitingConsumer:
+      typeof handoff.awaiting_consumer === "boolean"
+        ? handoff.awaiting_consumer
+        : null,
+    consumer: text(handoff.consumer),
+    consumerWaitingFor: text(handoff.consumer_waiting_for),
   };
 }
 

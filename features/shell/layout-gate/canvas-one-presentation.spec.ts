@@ -80,15 +80,19 @@ const TAILWIND_SUBSET = `
  * row ending in the canvas toggle's slot and `.shell-user-menu-wrapper`, the one
  * element `:root[data-canvas-open="true"]` targets.
  *
- * `slot` mirrors `CanvasShellHeaderToggle`: it renders the live control when the
- * canvas is closed and an inert placeholder of the SAME width when it is open,
- * because the canvas pane's own header owns the control then.
+ * `slot` mirrors `CanvasShellHeaderToggle`: an inert placeholder of the SAME
+ * width whenever the canvas has nothing to reopen (`empty`) or is showing
+ * (`open`, where the canvas pane's own header owns the control), and the live
+ * control only in `closed` — an item exists and the canvas is folded away.
  */
-function header(canvas: "closed" | "open") {
-  const dropSlot = MUTATION === "unmount-slot" && canvas === "open";
+function header(canvas: CanvasState) {
+  const dropSlot =
+    (MUTATION === "unmount-slot" && canvas === "open") ||
+    (MUTATION === "first-item" && canvas === "empty");
+  const reserved = canvas === "open" || canvas === "empty";
   const slot = dropSlot
     ? ""
-    : canvas === "open"
+    : reserved
       ? `<div data-canvas-header-slot="reserved" data-header-button="canvas-slot"
              style="width:44px;height:44px;visibility:hidden;pointer-events:none"></div>`
       : `<div data-canvas-header-slot="control" data-header-button="canvas-slot"
@@ -150,6 +154,15 @@ function dockedCanvas() {
 
 type RouteKind = "chat" | "document";
 
+/**
+ * The three states the shell header actually lives through, in order:
+ *   `empty`  — the route has a canvas surface but nothing has been put in it
+ *   `open`   — an item exists and the canvas pane is showing
+ *   `closed` — an item exists and the canvas has been folded away
+ * The header must be pixel-identical in all three.
+ */
+type CanvasState = "empty" | "open" | "closed";
+
 /** The body each route draws. Neither one knows anything about the canvas. */
 function routeBody(route: RouteKind) {
   return route === "chat"
@@ -170,7 +183,7 @@ function routeBody(route: RouteKind) {
 async function mount(
   page: import("@playwright/test").Page,
   route: RouteKind,
-  canvas: "closed" | "open",
+  canvas: CanvasState,
   canvasWidth: number,
 ) {
   // Under the mutation, and ONLY the chat route, the canvas is built the way
@@ -330,5 +343,45 @@ for (const route of ["chat", "document"] as const) {
     await mount(page, route, "open", width);
     expect(await read()).toEqual(closed);
     expect(round(closed[1])).toBe(0);
+  });
+}
+
+/**
+ * CASE 4 — THE FIRST CANVAS ITEM MOVES NO SHELL HEADER BUTTON EITHER.
+ *
+ * Case 2 only compares `closed` (an item exists, canvas folded away) against
+ * `open`. That is the half the 2026-09-17 fix covered. The half it did not:
+ * `empty` — the state every route starts in, before anything has ever been put
+ * in the canvas. The component returned `null` there, so the FIRST item both
+ * created the 44px box and shoved every button left of it, permanently.
+ * Measured live on production 2026-09-18 (review row 34bfd1e8): Records
+ * 1043.39 → 999.39, Canvas 1132 → 1088, Conversation actions 1164 → 1120,
+ * Agents for this page 1192 → 1148.
+ *
+ * `MATRX_LAYOUT_GATE_MUTATION=first-item` drops the slot in the `empty` state,
+ * exactly as the shipped component did → this case goes RED on both routes.
+ */
+for (const route of ["chat", "document"] as const) {
+  test(`the first canvas item moves no shell header button on the ${route} route`, async ({
+    page,
+  }, testInfo) => {
+    const width = sheetWidth(testInfo);
+
+    await mount(page, route, "empty", width);
+    const empty = await headerButtonRects(page);
+    // The slot is on screen before anything has ever been put in the canvas.
+    expect(Object.keys(empty).sort()).toEqual([
+      "avatar",
+      "canvas",
+      "canvas-slot",
+      "records",
+    ]);
+
+    await mount(page, route, "open", width);
+    expect(await headerButtonRects(page)).toEqual(empty);
+
+    // …and folding it away gives back exactly the same row, not a third one.
+    await mount(page, route, "closed", width);
+    expect(await headerButtonRects(page)).toEqual(empty);
   });
 }
