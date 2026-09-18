@@ -119,6 +119,18 @@ export function useEntityListSelection<TRow>({
   // Bumped to abandon an in-flight resolution. A resolution is many sequential
   // requests, so Cancel has to be able to interrupt it between them.
   const resolveGeneration = useRef(0);
+  // A synchronous mirror of `ids`, kept current by every setter below the
+  // instant it commits — not just once per render. `setIds` needs to compare
+  // an incoming length against the TRUE current length even when several
+  // calls land in the same tick (before React has re-rendered and refreshed
+  // the `ids` closure above); reading `ids` there is exactly the stale-closure
+  // bug this file exists to close.
+  const idsRef = useRef<string[]>(ids);
+  // Safety net for any path that lands `ids` without going through one of the
+  // setters above (there is none today, but a future caller of `setIdsState`
+  // must not reopen this bug). A render always happens after a commit, so
+  // this keeps the mirror correct even if a write were ever made directly.
+  idsRef.current = ids;
 
   const liveKey = bulkFilterKey(bulkFilterFromQuery(query));
   const mode = bulkSelectionMode(matched?.key ?? null, liveKey);
@@ -131,12 +143,29 @@ export function useEntityListSelection<TRow>({
     selectableLoaded.length > 0 &&
     selectableLoaded.every((row) => selectedSet.has(getRowId(row)));
 
+  // 🚨 EVERY WRITE BELOW IS A FUNCTIONAL UPDATE, NEVER `setIdsState(ids …)`.
+  //
+  // THE DEFECT THIS CLOSES (VERIFICATION.md round 4, D14). `ids` above is a
+  // snapshot captured at render time. React 18 batches synchronous updates
+  // within one tick, so N rapid clicks — 50 checkboxes ticked faster than a
+  // render can land between them — call this hook's setters N times before a
+  // single re-render happens. Every one of those N calls closed over the SAME
+  // stale `ids`/`selectedSet`, computed "previous ∪ {this one id}" against
+  // that same stale array, and the last call to actually commit won: 50
+  // toggles collapsed to 1 selected row. `setIdsState(prev => …)` reads
+  // REACT'S OWN queued value, not the render closure, so each of the N calls
+  // sees the effect of the ones before it in the same tick — the fix is
+  // mechanical wherever the next set is DERIVED FROM the previous one.
   const setIds = (next: string[]) => {
+    // Any hand edit of the set ends the "everything matching" claim: a
+    // person who unticks one row out of 4,613 no longer has everything, and
+    // the banner must stop saying so rather than be off by one. Compared
+    // against `idsRef` (the true current length), not the render-time `ids`
+    // closure — `setIds` is the table's controlled callback and its own
+    // rapid-fire calls are exactly the pattern this file guards against.
+    if (next.length !== idsRef.current.length) setMatched(null);
+    idsRef.current = next;
     setIdsState(next);
-    // Any hand edit of the set ends the "everything matching" claim: a person
-    // who unticks one row out of 4,613 no longer has everything, and the
-    // banner must stop saying so rather than be off by one.
-    if (next.length !== ids.length) setMatched(null);
     if (next.length === 0) setResolveError(null);
   };
 
@@ -145,20 +174,33 @@ export function useEntityListSelection<TRow>({
     setResolving(null);
     setResolveError(null);
     setMatched(null);
+    idsRef.current = [];
     setIdsState([]);
   };
 
   const toggleId = (id: string) => {
-    setIds(
-      selectedSet.has(id) ? ids.filter((v) => v !== id) : [...ids, id],
-    );
+    setIdsState((prev) => {
+      const next = prev.includes(id)
+        ? prev.filter((v) => v !== id)
+        : [...prev, id];
+      idsRef.current = next;
+      return next;
+    });
+    // A toggle always changes the count by exactly one, so the "everything
+    // matching" claim always ends — no comparison needed, and repeated
+    // `setMatched(null)` calls in the same tick are idempotent.
+    setMatched(null);
   };
 
   const selectLoaded = () => {
     const loadedIds = selectableLoaded.map(getRowId);
-    const merged = [...ids];
-    for (const id of loadedIds) if (!selectedSet.has(id)) merged.push(id);
-    setIdsState(merged);
+    setIdsState((prev) => {
+      const prevSet = new Set(prev);
+      const merged = [...prev];
+      for (const id of loadedIds) if (!prevSet.has(id)) merged.push(id);
+      idsRef.current = merged;
+      return merged;
+    });
     setMatched(null);
   };
 
@@ -169,8 +211,12 @@ export function useEntityListSelection<TRow>({
     }
     // Untick THIS PAGE only — ids ticked on other pages are the user's and
     // survive, exactly as the table's own header checkbox behaves.
-    const loadedIds = new Set(selectableLoaded.map(getRowId));
-    setIdsState(ids.filter((id) => !loadedIds.has(id)));
+    const loadedIdSet = new Set(selectableLoaded.map(getRowId));
+    setIdsState((prev) => {
+      const next = prev.filter((id) => !loadedIdSet.has(id));
+      idsRef.current = next;
+      return next;
+    });
     setMatched(null);
   };
 
@@ -242,9 +288,11 @@ export function useEntityListSelection<TRow>({
       const selectable = collected.filter(
         (row) => isRowSelectable?.(row) ?? true,
       );
+      const resolvedIds = selectable.map(getRowId);
       setResolving(null);
       setMatched({ key, rows: selectable });
-      setIdsState(selectable.map(getRowId));
+      idsRef.current = resolvedIds;
+      setIdsState(resolvedIds);
     })();
   };
 
