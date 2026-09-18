@@ -33,7 +33,6 @@ jest.mock("@/lib/redux/hooks", () => ({
 
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => null,
-  selectEffectiveOrganizationId: () => null,
 }));
 
 jest.mock("@/features/scopes/redux/selectors/tree", () => ({

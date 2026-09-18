@@ -10,8 +10,10 @@
  * reads `organizationId` off that data and refuses to load without it, so the
  * button opened a window that could list and import nothing. The typed opener
  * for the same overlay (`useOpenGoogleTasksImport`, called from
- * `TasksHeaderControls` with `selectEffectiveOrganizationId`) always supplies
- * it; this proves the dialog's button now does too, from the same value.
+ * `TasksHeaderControls` with `selectOrganizationId` — the organization the
+ * person actually selected, never a personal-workspace fallback) always
+ * supplies it when one is selected; this proves the dialog's button now does
+ * too, from the same value.
  *
  * The fixture is a standing Tasks refusal that renews on this press — the same
  * shape `the-refused-row-opens-the-provider-window.test.tsx` uses for Gmail —
@@ -43,13 +45,12 @@ jest.mock("@/lib/redux/hooks", () => ({
 }));
 
 // The organization the dialog would carry for this account — the SAME value
-// `TasksHeaderControls` reads via `selectEffectiveOrganizationId` before
-// calling `useOpenGoogleTasksImport({ organizationId })`.
+// `TasksHeaderControls` reads via `selectOrganizationId` before calling
+// `useOpenGoogleTasksImport({ organizationId })`.
 const ORGANIZATION_ID = "org-77";
 
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
-  selectOrganizationId: () => null,
-  selectEffectiveOrganizationId: () => ORGANIZATION_ID,
+  selectOrganizationId: () => ORGANIZATION_ID,
 }));
 
 jest.mock("@/features/scopes/redux/selectors/tree", () => ({

@@ -63,10 +63,7 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import {
-  selectEffectiveOrganizationId,
-  selectOrganizationId,
-} from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { isGoogleAuthorizationCancelled } from "@/providers/google-provider/GoogleApiProvider";
@@ -503,12 +500,12 @@ export function ConnectorConsentBody({
   const organizations = useAppSelector(selectOrganizationsList);
   const activeOrganizationId = useAppSelector(selectOrganizationId);
   // The organization a first action's window writes into — the same value
-  // the typed openers pass (`TasksHeaderControls`' `selectEffectiveOrganizationId`),
-  // which falls back to the personal org so this is available whenever the
-  // account bootstrap has resolved, not only when the person picked an org.
-  const firstActionOrganizationId = useAppSelector(selectEffectiveOrganizationId);
+  // the typed openers pass (`TasksHeaderControls`' `selectOrganizationId`).
+  // Never a personal-workspace fallback: with none selected, `needs` above
+  // marks the key missing and the row's first-action control is absent
+  // (Law 4 — honest absence, never a dead press).
   const firstActionContext: ConnectorFirstActionContext = {
-    organizationId: firstActionOrganizationId,
+    organizationId: activeOrganizationId,
   };
   const runner = useGoogleConsentRunner();
 

@@ -10,7 +10,7 @@ import { MandateDoorLink } from "@/features/mandates/components/MandateDoorLink"
 import { HrTasksDoor } from "@/features/hr/entry-points/HrTasksDoor";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectSelectedTaskId } from "@/features/tasks/redux/taskUiSlice";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useOpenGoogleTasksImport } from "@/features/overlays/openers/googleImportWindows";
 import { Button } from "@/components/ui/button";
 import { CalendarCheck } from "lucide-react";
@@ -29,7 +29,11 @@ import { CalendarCheck } from "lucide-react";
 export function TasksHeaderControls() {
   const { toggle, isCollapsed } = usePanelControls();
   const selectedTaskId = useAppSelector(selectSelectedTaskId);
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // The organization the import writes into is the one the person selected —
+  // never a personal-workspace fallback. With none selected the control
+  // refuses honestly (disabled, with its reason) instead of opening a window
+  // that would have nothing to write into.
+  const organizationId = useAppSelector(selectOrganizationId);
   const openGoogleTasksImport = useOpenGoogleTasksImport();
   const sidebarCollapsed = isCollapsed("sidebar");
   const listCollapsed = isCollapsed("list");
@@ -78,7 +82,16 @@ export function TasksHeaderControls() {
         size="sm"
         variant="ghost"
         className="ml-1 h-11 shrink-0 gap-1 px-2 text-xs lg:h-7"
-        onClick={() => openGoogleTasksImport({ organizationId })}
+        disabled={!organizationId}
+        title={
+          organizationId
+            ? undefined
+            : "Select an organization before importing Google Tasks."
+        }
+        onClick={() => {
+          if (!organizationId) return;
+          openGoogleTasksImport({ organizationId });
+        }}
       >
         <CalendarCheck className="h-3.5 w-3.5" />
         <span className="max-sm:sr-only">Import from Google Tasks</span>

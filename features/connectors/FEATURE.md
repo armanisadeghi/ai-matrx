@@ -278,6 +278,14 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-18` — F-75: main deleted `selectEffectiveOrganizationId` (the
+  personal-workspace fallback the org-context law forbids). `ConnectorConsentDialog`'s
+  `firstActionOrganizationId` now reads the plain `selectOrganizationId` (the same
+  value already used for `activeOrganizationId`/`mayConnectForOrganization`);
+  with no organization selected, `resolveFirstActionData` already marks the
+  `organizationId` key missing and the row's first-action control (e.g. the
+  Tasks "Import your tasks" link) renders as absent, never a dead press
+  (Law 4). No behavior change when an organization is selected.
 - `2026-09-18` — **F-71: the attach picker renders a Record-backed candidate
   (calendar events) honestly.** aidream lane F-62 made `calendar_event`
   attachable through its OWN Record (`communication.calendar_event`, never a

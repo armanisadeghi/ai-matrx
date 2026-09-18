@@ -161,6 +161,15 @@ Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tas
 
 ## Change log
 
+- `2026-09-18` — F-75: main deleted `selectEffectiveOrganizationId` (the
+  personal-workspace fallback the org-context law forbids). `TasksHeaderControls`'
+  "Import from Google Tasks" button now reads the plain `selectOrganizationId`
+  (the organization the person actually selected) and is `disabled` with a
+  `title` reason ("Select an organization before importing Google Tasks.")
+  when none is selected — the opener is never called, matching the honest-refusal
+  convention `QuickTasksWorkspace`/`GoogleTasksImportPanel` already use for the
+  same missing-organization state. No behavior change when an organization is
+  selected.
 - `2026-09-17` — F-20: **a provenance chip never links to something that is not a
   page.** The chip turned any `source_url` not starting with `/` into "Open
   source", and the Google Tasks import writes
