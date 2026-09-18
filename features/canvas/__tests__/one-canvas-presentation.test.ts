@@ -135,22 +135,40 @@ describe("the canvas has exactly one presentation", () => {
     expect(mounters).toEqual([]);
   });
 
-  it("the shell header's canvas slot is kept, not unmounted, while the canvas is open", () => {
+  it("the shell header's canvas slot is reserved whenever the canvas is available", () => {
     // The control belongs to the canvas pane's header while the canvas is
-    // open, but its BOX must stay in the shell header — unmounting it pulled
-    // every button to its left 44px sideways the moment the canvas opened.
-    // Measured live on 2026-09-17 before this: Records at x = 887.59 closed
-    // against x = 931.59 open, on both the chat and the document route.
+    // open, but its BOX must stay in the shell header. The 2026-09-17 version
+    // of this case asserted `if (!isAvailable || itemCount === 0) return null;`
+    // — which WAS the defect: the slot only existed once an item did, so the
+    // first canvas item both created the box and pulled every button to its
+    // left 44px sideways, and folding never gave it back. Measured live on
+    // production 2026-09-18 (review row 34bfd1e8): Records 1043.39 → 999.39.
+    // The rule now: availability alone reserves the slot.
     const toggle = read("features/canvas/core/CanvasHeaderToggle.tsx");
     expect(toggle).toContain('data-canvas-header-slot="reserved"');
     expect(toggle).toContain('data-canvas-header-slot="control"');
-    // Nothing is left on screen for a route with no canvas content at all.
-    expect(toggle).toContain("if (!isAvailable || itemCount === 0) return null;");
-    // The reserved slot is inert: invisible, unclickable, out of the tab order.
-    const reserved = toggle.slice(toggle.indexOf("if (isOpen) {"));
-    expect(reserved).toContain("invisible pointer-events-none");
-    expect(reserved).toContain("tabIndex={-1}");
-    expect(reserved).toContain("aria-hidden");
+    // Availability is the ONLY thing that can remove the slot.
+    expect(toggle).toContain("if (!isAvailable) return null;");
+    expect(toggle).not.toContain("!isAvailable || itemCount === 0");
+    // Both empty and open reserve the same box, from the same constant.
+    expect(toggle).toContain('<CanvasHeaderSlotSpacer reason="empty" />');
+    expect(toggle).toContain('<CanvasHeaderSlotSpacer reason="open" />');
+    expect(toggle).toContain(
+      'width: "var(--matrx-tap-target-size, 2.75rem)"',
+    );
+    // The spacer is inert and honest — a box, never a dead-looking button.
+    const spacer = toggle.slice(toggle.indexOf("function CanvasHeaderSlotSpacer"));
+    expect(spacer.slice(0, spacer.indexOf("}\n"))).not.toContain("TapButton");
+    expect(spacer).toContain("aria-hidden");
+    // The behavioural half of this law (rendered DOM, not source text):
+    expect(
+      existsSync(
+        path.join(
+          REPO,
+          "features/canvas/__tests__/canvas-header-slot-reserved.test.tsx",
+        ),
+      ),
+    ).toBe(true);
   });
 
   it("the surface card marks exactly one presentation", () => {
