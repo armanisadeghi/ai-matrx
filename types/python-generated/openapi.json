@@ -9038,13 +9038,13 @@
           "Residential Egress"
         ],
         "summary": "Create Pairing",
-        "description": "ANONYMOUS. The helper has no account yet; the code is the whole link.",
+        "description": "ANONYMOUS. The helper has no account yet; the code is the whole link.\n\nThe body is ``{\"registration\": {...}}`` — the same envelope as\n``POST /egress/devices`` — because the helper sends exactly one shape for\nboth doors (proven 2026-09-18: a flat body here answered the real helper\nwith a 422 and no pairing ever started).",
         "operationId": "create_pairing_POST",
         "requestBody": {
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DeviceRegistration"
+                "$ref": "#/components/schemas/RegisterDeviceRequest"
               }
             }
           },

@@ -3839,6 +3839,11 @@ export interface paths {
         /**
          * Create Pairing
          * @description ANONYMOUS. The helper has no account yet; the code is the whole link.
+         *
+         *     The body is ``{"registration": {...}}`` — the same envelope as
+         *     ``POST /egress/devices`` — because the helper sends exactly one shape for
+         *     both doors (proven 2026-09-18: a flat body here answered the real helper
+         *     with a 422 and no pairing ever started).
          */
         post: operations["create_pairing_POST"];
         delete?: never;
@@ -132560,7 +132565,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["DeviceRegistration"];
+                "application/json": components["schemas"]["RegisterDeviceRequest"];
             };
         };
         responses: {
