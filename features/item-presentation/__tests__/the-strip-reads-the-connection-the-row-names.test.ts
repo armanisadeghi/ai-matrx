@@ -87,12 +87,28 @@ const BIGGER = connection(
   BIGGER_ACCOUNT_LAST_CALL,
 );
 
+/**
+ * The picked YouTube channel `web.youtube_video.channel_resource_id` points at
+ * (`users.integration_connection_resources`). It belongs to the SMALL account,
+ * so the ranking would never choose it — lane F-81.
+ */
+const CHANNEL_RESOURCE = {
+  id: "33333333-aaaa-bbbb-cccc-000000000003",
+  connection_id: NAMED.id,
+  resource_type: "youtube_channel",
+  resource_ref: "UC-named-channel",
+  display_name: "Named account's channel",
+  permission_level: null,
+  discovered_at: "2026-09-18T07:00:00Z",
+  metadata: {},
+};
+
 jest.mock("@/features/marketing/google/service", () => ({
   // Inventory order deliberately puts the small account first, so the test
   // cannot pass merely because the ranking happened to return it.
   listGoogleConnectionInventory: jest.fn(async () => ({
     connections: [NAMED, BIGGER],
-    resources: [],
+    resources: [CHANNEL_RESOURCE],
   })),
   listGoogleCapabilities: jest.fn(async () => [
     "drive_files",
@@ -158,5 +174,70 @@ describe("a synced record's health strip and the connection its row names", () =
     expect([NAMED_ACCOUNT_LAST_CALL, BIGGER_ACCOUNT_LAST_CALL]).toContain(
       health?.lastRefreshedAt,
     );
+  });
+});
+
+/**
+ * 🚨 LANE F-81 — A MIRROR MAY NAME ITS CONNECTION SIDE BY THE RESOURCE, AND THE
+ * STRIP STILL ANSWERS FOR THE RIGHT ACCOUNT.
+ *
+ * `web.youtube_video` is the platform's third mirror table and carries NO
+ * connection column at all: it names `channel_resource_id`, an FK to
+ * `users.integration_connection_resources`. The spelling-based census could not
+ * see that column, so the guard was green while the strip had nothing to read for
+ * a YouTube row — F-51 re-armed, latent until U-M3 ships. Listing the column is
+ * only half: a resource id is NOT an account id, so `preferredAccountId` would
+ * have matched nothing and silently ranked. `resolveRowAccountId` takes the one
+ * hop off the inventory both reads already fetch.
+ *
+ * Both accounts here hold Calendar and both are healthy; the resource belongs to
+ * the one with FEWER products, which the ranking would never choose. The product
+ * is Calendar only because this fixture reuses the registered type above — the
+ * column being read is what is under test.
+ */
+describe("a mirror that names a picked resource instead of the connection", () => {
+  const BY_RESOURCE: DetailRow = {
+    id: "bbbbbbbb-1111-2222-3333-555555555555",
+    provider: "google",
+    external_id: "g-video-1",
+    title: "A video",
+    channel_resource_id: CHANNEL_RESOURCE.id,
+  };
+
+  function resourceCtx() {
+    return {
+      ref: { type: "calendar_event", id: BY_RESOURCE.id as string },
+      signal: new AbortController().signal,
+    };
+  }
+
+  it("resolves the resource to the account that owns it, not the account holding the most products", async () => {
+    const health = await sourceHealthProducerFor("calendar_event")(
+      BY_RESOURCE,
+      resourceCtx(),
+    );
+    expect(health).not.toBeNull();
+    expect(health?.lastRefreshedAt).toBe(NAMED_ACCOUNT_LAST_CALL);
+    expect(health?.lastRefreshedAt).not.toBe(BIGGER_ACCOUNT_LAST_CALL);
+  });
+
+  it("announces a connection-side id the inventory does not hold, and still answers honestly", async () => {
+    const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const stranger: DetailRow = {
+        ...BY_RESOURCE,
+        channel_resource_id: "99999999-dead-beef-cccc-999999999999",
+      };
+      const health = await sourceHealthProducerFor("calendar_event")(
+        stranger,
+        resourceCtx(),
+      );
+      expect(warn).toHaveBeenCalled();
+      expect(String(warn.mock.calls[0][0])).toContain("99999999-dead-beef-cccc-999999999999");
+      // Never a claim that the grant is missing while a real account holds it.
+      expect(health?.grant).toBe("ok");
+    } finally {
+      warn.mockRestore();
+    }
   });
 });
