@@ -96,6 +96,20 @@ with no add button at all.
 
 ## Anti-patterns
 
+- **A door to the management page is NOT an add affordance.** Arman, 2026-09-18,
+  on `ContextItemPicker`: "people don't know what a 'Context Item' is when they're
+  in the scopes screen but when they're here, they see it in practice and so this
+  is the time to allow them to create one the right way and we're squandering it."
+  A `+` that opens `/organizations/…/context-items` in a new tab satisfies the
+  detector's regex and the 2026-08-30 P13 run certified exactly that on
+  `ScopeContextTargetPicker` — it is still the dead end. The record is created
+  HERE, through its one write path (`CreateOrgModal` with `initialName`,
+  `createScopeType`, `ContextItemAddForm` inline), and selected. A door is the
+  "manage" companion, never the substitute.
+- **The picker is inside a blocking modal.** A focus-trapping `Dialog` around a
+  picker makes every door a dead end (the window it opens is unreachable). The
+  host becomes a `WindowPanel`; a modal is for a yes/no, never for a workbench.
+
 - A second write path beside the vocabulary's editor "because it was easier here".
 - An "+ Add" that navigates away and loses what they typed.
 - Creating the row but leaving the picker on its placeholder.

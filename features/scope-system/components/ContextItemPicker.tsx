@@ -21,9 +21,28 @@
  * Both kinds resolve identically at run time: `resolve_full_context` emits both
  * into `cell_values` keyed by `context_item_id`, and a binding always stores
  * that id — which is why System items need no new binding machinery.
+ *
+ * P23 — EVERY PICKER TAKES NEW INPUT (Arman, 2026-08-23; re-ruled on THIS
+ * control 2026-09-18: "you cannot lock a user in by offering them something
+ * but then not letting them create a new one of it during selection… people
+ * don't know what a 'Context Item' is when they're in the scopes screen but
+ * when they're here, they see it in practice and so this is the time to allow
+ * them to create one the right way"). Every level of the cascade creates in
+ * place through that record's ONE existing write path, selects the new row
+ * immediately, and never navigates away:
+ *
+ *   organization  → `CreateOrgModal` (the org editor's own form, name prefilled)
+ *   scope type    → `createScopeType` from the typed name (same defaults the
+ *                   Add Scope modal uses; everything else is editable on its page)
+ *   context item  → `ContextItemAddForm` inline, name prefilled — the same form
+ *                   the scope-type page and scope page use
+ *
+ * System items are the P11 case: platform vocabulary curated centrally. The
+ * control SAYS so and offers the live alternative (a Scope item) instead of a
+ * silent refusal.
  */
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -32,10 +51,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  CreatablePicker,
+  type CreatableOption,
+} from "@/components/ui/creatable-picker";
+import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import {
+  createScopeType,
   fetchScopeTypes,
   selectScopeTypesByOrg,
   selectScopeTypesLoadedForOrg,
@@ -48,6 +74,13 @@ import {
   SYSTEM_ITEMS_KEY,
   type ContextItem,
 } from "@/features/scope-system/redux/contextItemsSlice";
+import { pluralize } from "@/features/scopes/utils/pluralize";
+import {
+  contextItemsHref,
+  orgScopesHref,
+} from "@/features/scopes/lib/scopeRoutes";
+import { CreateOrgModal } from "@/features/organizations/components/CreateOrgModal";
+import { ContextItemAddForm } from "./ContextItemAddForm";
 
 export type ContextItemSource = "system" | "scope";
 
@@ -114,6 +147,15 @@ export function ContextItemPicker({
     itemsKey ? selectItemsByType(s, itemsKey) : [],
   );
 
+  const org = orgs.find((o) => o.id === orgId);
+  const scopeType = scopeTypes.find((t) => t.id === scopeTypeId);
+  // Manage doors use the slug when the row has one — the canonical address.
+  const orgSegment = org?.slug || orgId;
+
+  // In-place creation drafts: the text the person typed before "Create …".
+  const [orgDraft, setOrgDraft] = useState<string | null>(null);
+  const [itemDraft, setItemDraft] = useState<string | null>(null);
+
   useEffect(() => {
     if (!isSystem && orgId && !typesLoaded) dispatch(fetchScopeTypes(orgId));
   }, [isSystem, orgId, typesLoaded, dispatch]);
@@ -139,20 +181,83 @@ export function ContextItemPicker({
     });
   };
 
+  const selectItem = (itemId: string) => {
+    const item = items.find((i) => i.id === itemId);
+    if (item) emit({ contextItemId: item.id, itemKey: item.key, item });
+  };
+
+  /** Scope type from a typed name — the Add Scope modal's own defaults. */
+  const createScopeTypeFromName = async (typed: string) => {
+    if (!orgId) return null;
+    try {
+      const created = await dispatch(
+        createScopeType({
+          org_id: orgId,
+          label_singular: typed,
+          label_plural: pluralize(typed),
+          icon: "Folder",
+        }),
+      ).unwrap();
+      toast.success(
+        `Added scope type "${created.label_singular}" — fine-tune it any time from Scopes`,
+      );
+      return created.id;
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to add scope type",
+      );
+      return null;
+    }
+  };
+
+  const orgOptions: CreatableOption[] = orgs.map((o) => ({
+    value: o.id,
+    label: o.name,
+    // CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045
+    hint: o.is_personal ? "personal" : undefined,
+  }));
+
+  const scopeTypeOptions: CreatableOption[] = scopeTypes.map((t) => ({
+    value: t.id,
+    label: t.label_singular,
+    hint: t.label_plural,
+  }));
+
+  const itemOptions: CreatableOption[] = items.map((i) => ({
+    value: i.id,
+    label: i.display_name,
+    hint: i.system_item_class
+      ? `${i.key} · ${CLASS_LABEL[i.system_item_class] ?? i.system_item_class}`
+      : i.key,
+    keywords: i.key,
+  }));
+
+  const itemPlaceholder =
+    !isSystem && !scopeTypeId
+      ? "Pick a scope type first"
+      : items.length === 0
+        ? itemsLoaded
+          ? isSystem
+            ? "No system context items"
+            : "No items yet — type a name to create one"
+          : "Loading…"
+        : "Choose a context item…";
+
   return (
     <div className="space-y-2">
       <div className="space-y-1.5">
         <Label className="text-xs text-muted-foreground">Source</Label>
         <Select
           value={source}
-          onValueChange={(v) =>
+          onValueChange={(v) => {
+            setItemDraft(null);
             emit({
               source: v as ContextItemSource,
               scopeTypeId: "",
               contextItemId: "",
               itemKey: "",
-            })
-          }
+            });
+          }}
           disabled={readonly}
         >
           <SelectTrigger>
@@ -181,57 +286,52 @@ export function ContextItemPicker({
             <Label className="text-xs text-muted-foreground">
               Organization
             </Label>
-            <Select
-              value={orgId}
-              onValueChange={(v) =>
+            <CreatablePicker
+              value={orgId || null}
+              options={orgOptions}
+              onSelect={(v) => {
+                setItemDraft(null);
                 emit({
                   orgId: v,
                   scopeTypeId: "",
                   contextItemId: "",
                   itemKey: "",
-                })
-              }
+                });
+              }}
+              placeholder="Choose an organization…"
+              searchPlaceholder="Search or type a new organization…"
+              noun="organization"
+              onCreateRequiresMore={(typed) => setOrgDraft(typed)}
+              manageAction={{ label: "Manage organizations", href: "/organizations" }}
               disabled={readonly}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Choose an organization…" />
-              </SelectTrigger>
-              <SelectContent>
-                {orgs.map((o) => (
-                  <SelectItem key={o.id} value={o.id}>
-                    {o.name}
-                    {/* CONVERGE: C-3 — is_personal is dropped; the default organization becomes users default_organization_id preference — declared 2026-09-10, Data Doctrine R9–R12. Register: /projects/data-doctrine-adoption/REGISTER.md#DD-045 */}
-                    {o.is_personal ? " (personal)" : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              ariaLabel="Organization"
+            />
           </div>
 
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Scope type</Label>
-            <Select
-              value={scopeTypeId}
-              onValueChange={(v) =>
-                emit({ scopeTypeId: v, contextItemId: "", itemKey: "" })
+            <CreatablePicker
+              value={scopeTypeId || null}
+              options={scopeTypeOptions}
+              onSelect={(v) => {
+                setItemDraft(null);
+                emit({ scopeTypeId: v, contextItemId: "", itemKey: "" });
+              }}
+              placeholder={
+                !orgId ? "Pick an organization first" : "Choose a scope type…"
+              }
+              searchPlaceholder="Search or type a new scope type…"
+              noun="scope type"
+              onCreate={createScopeTypeFromName}
+              manageAction={
+                orgId
+                  ? { label: "Manage scope types", href: orgScopesHref(orgSegment) }
+                  : undefined
               }
               disabled={readonly || !orgId}
-            >
-              <SelectTrigger>
-                <SelectValue
-                  placeholder={
-                    !orgId ? "Pick an organization first" : "Choose a scope type…"
-                  }
-                />
-              </SelectTrigger>
-              <SelectContent>
-                {scopeTypes.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.label_singular}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              loading={Boolean(orgId) && !typesLoaded}
+              ariaLabel="Scope type"
+            />
           </div>
         </>
       )}
@@ -240,53 +340,89 @@ export function ContextItemPicker({
         <Label className="text-xs text-muted-foreground">
           {isSystem ? "System context item" : "Context item"}
         </Label>
-        <Select
-          value={value.contextItemId || ""}
-          onValueChange={(itemId) => {
-            const item = items.find((i) => i.id === itemId);
-            if (item)
-              emit({ contextItemId: item.id, itemKey: item.key, item });
-          }}
+        <CreatablePicker
+          value={value.contextItemId || null}
+          options={itemOptions}
+          onSelect={selectItem}
+          placeholder={itemPlaceholder}
+          searchPlaceholder={
+            isSystem
+              ? "Search system items…"
+              : "Search or type a new context item…"
+          }
+          noun="context item"
+          onCreateRequiresMore={
+            isSystem ? undefined : (typed) => setItemDraft(typed)
+          }
+          lockedNote={
+            isSystem
+              ? "System items are platform truths curated centrally — every user gets the same set."
+              : undefined
+          }
+          lockedAction={
+            isSystem && !readonly
+              ? {
+                  label: "Need your own? Bind a Scope item instead",
+                  onSelect: () =>
+                    emit({
+                      source: "scope",
+                      scopeTypeId: "",
+                      contextItemId: "",
+                      itemKey: "",
+                    }),
+                }
+              : undefined
+          }
+          manageAction={
+            !isSystem && scopeType && orgId
+              ? {
+                  label: `Manage ${scopeType.label_plural} context items`,
+                  href: contextItemsHref(orgSegment, scopeType),
+                }
+              : undefined
+          }
           disabled={readonly || (!isSystem && !scopeTypeId)}
-        >
-          <SelectTrigger>
-            <SelectValue
-              placeholder={
-                !isSystem && !scopeTypeId
-                  ? "Pick a scope type first"
-                  : items.length === 0
-                    ? itemsLoaded
-                      ? isSystem
-                        ? "No system context items"
-                        : "No items on this scope type"
-                      : "Loading…"
-                    : "Choose a context item…"
-              }
-            />
-          </SelectTrigger>
-          <SelectContent>
-            {items.map((i) => (
-              <SelectItem key={i.id} value={i.id}>
-                <span>{i.display_name}</span>
-                <span className="ml-2 font-mono text-xs text-muted-foreground">
-                  {i.key}
-                </span>
-                {i.system_item_class && (
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    {CLASS_LABEL[i.system_item_class] ?? i.system_item_class}
-                  </span>
-                )}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          loading={Boolean(itemsKey) && !itemsLoaded}
+          ariaLabel={isSystem ? "System context item" : "Context item"}
+        />
         {isSystem && (
           <p className="text-[11px] text-muted-foreground">
             Resolves for every user with no scope selection. Ambient items are
             recomputed on every request.
           </p>
         )}
+        {itemDraft !== null && !isSystem && scopeTypeId && scopeType && (
+          <ContextItemAddForm
+            scopeTypeId={scopeTypeId}
+            labelPlural={scopeType.label_plural}
+            initialName={itemDraft}
+            onAdded={(item) => {
+              emit({ contextItemId: item.id, itemKey: item.key, item });
+            }}
+            onClose={() => setItemDraft(null)}
+          />
+        )}
       </div>
+
+      {orgDraft !== null && (
+        <CreateOrgModal
+          isOpen
+          initialName={orgDraft}
+          onClose={() => setOrgDraft(null)}
+          onCreated={(created) => {
+            // The tree selectors feed this picker; refresh so the new org is
+            // an option, then select it in place.
+            void dispatch(ensureScopeTree({ refresh: true }));
+            setItemDraft(null);
+            emit({
+              orgId: created.id,
+              scopeTypeId: "",
+              contextItemId: "",
+              itemKey: "",
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

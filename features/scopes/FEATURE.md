@@ -332,6 +332,27 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-09-18 — **P23 on the context-item binding picker: every level creates in place.**
+  Arman hit `ContextItemPicker` (scope-system) on `/agents/[id]/build` → Edit Variable →
+  Bind to a context item and found "No items on this scope type" with no way to add one
+  ("you cannot lock a user in by offering them something but then not letting them create
+  a new one of it during selection"). Rebuilt every level on `components/ui/creatable-picker`:
+  organization → `Create "…"` hands the typed name to `CreateOrgModal` (new `initialName` +
+  `onCreated`, which selects in place and suppresses the modal's settings-page redirect);
+  scope type → created from the typed name through `createScopeType` with the Add Scope
+  modal's own defaults (`pluralize` moved to `features/scopes/utils/pluralize.ts`); context
+  item → `Create "…"` expands the shared `ContextItemAddForm` inline (new `initialName`),
+  and `onAdded` selects the row immediately; System items carry the P11 locked note and a
+  live "bind a Scope item instead" door; every level has its manage door (new tab). The
+  Edit Variable host moved from a blocking `Dialog` to a page-local `WindowPanel`
+  (`AgentVariableEditorWindow`, drawer on mobile). Live-verified as `admin@admin.com` on
+  the admin workspace: a new scope type and a new item were created from the picker,
+  selected, confirmed in `context.scope_types` / `context.context_items`, then removed.
+  **Detector gap closed:** `check:picker-add` never scanned `features/scope-system/**` (or
+  `features/organizations/**`) — added; the `ScopeContextTargetPicker` allowlist entry
+  ("each record is created on its owning management surface") was deleted because that
+  sentence IS the pattern P23 forbids.
+
 - 2026-09-18 — **Empty scope preview rows are genuine Add controls.** When a scope type already
   has context items but no scopes, the illustrated “Your first …” and “Another …” rows now launch
   the same inline Add flow as the explicit button. The rows are keyboard reachable, and the legacy

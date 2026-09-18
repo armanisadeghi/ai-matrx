@@ -58,6 +58,12 @@ const SCAN_GLOBS = [
   "features/marketing/**/*.tsx",
   "features/agents/**/components/**/*.tsx",
   "features/scopes/**/*.tsx",
+  // The scope SYSTEM tree holds the context-item pickers; it was never
+  // scanned, which is how ContextItemPicker (the agent-variable binding
+  // control) offered "No items on this scope type" with no way to add one
+  // until Arman hit it on 2026-09-18.
+  "features/scope-system/**/*.tsx",
+  "features/organizations/**/*.tsx",
   "features/content-ir/**/*.tsx",
 ];
 
@@ -82,11 +88,6 @@ const ALLOW: Array<{ match: RegExp; reason: string }> = [
   {
     match: /sortDir|SortDirection/i,
     reason: "ascending/descending is not extensible",
-  },
-  {
-    match: /ScopeContextTargetPicker/,
-    reason:
-      "cascades over existing organizations, scope types, scopes, and context items; each record is created on its owning management surface",
   },
   {
     match: /SurfaceSimulatorSelect/,

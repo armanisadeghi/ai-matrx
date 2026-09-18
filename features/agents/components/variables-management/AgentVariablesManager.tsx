@@ -4,7 +4,7 @@
  * AgentVariablesManager
  *
  * Compact chip row used inside the agent builder sidebar. All edits flow
- * through Redux directly via AgentVariableEditorModal. "Add" uses the
+ * through Redux directly via AgentVariableEditorWindow. "Add" uses the
  * instant-create pattern: dispatch a placeholder entity, then open the
  * modal in edit mode on the new variable.
  */
@@ -21,7 +21,7 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { setAgentVariableDefinitions } from "@/features/agents/redux/agent-definition/slice";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import { AgentVariableEditorModal } from "./AgentVariableEditorModal";
+import { AgentVariableEditorWindow } from "./AgentVariableEditorWindow";
 import {
   extractVariableReferences,
   generateNextVariableName,
@@ -250,7 +250,7 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
       )}
 
       {editingName && (
-        <AgentVariableEditorModal
+        <AgentVariableEditorWindow
           agentId={agentId}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
