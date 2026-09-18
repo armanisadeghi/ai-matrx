@@ -54,12 +54,14 @@ import {
   makeSelectConversationHistoryStatus,
   makeSelectGroupedByAgent,
   makeSelectGroupedByDate,
+  selectConversationLanes,
   selectSourceFacets,
 } from "@/features/agents/redux/conversation-history/selectors";
 import { selectIsStreaming } from "@/features/agents/redux/execution-system/selectors/aggregate.selectors";
 import {
   seedScopeSourceFilter,
   setScopeAgentIds,
+  setScopeLanes,
   setScopeGrouping,
   setScopeSearch,
   setScopeSourceFilter,
@@ -84,6 +86,10 @@ import {
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { ConversationSourceFilterTree } from "./ConversationSourceFilterTree";
+import {
+  AllLanesOffNotice,
+  ConversationLaneToggles,
+} from "./ConversationLaneToggles";
 import { ConversationTrashSection } from "./ConversationTrashSection";
 import { ItemRow } from "@/components/official/item/ItemRow";
 import { toast } from "@/lib/toast";
@@ -261,8 +267,18 @@ function useConversationHistoryController(
   // stomp whatever the user just picked in the filter tree.
   const resolvedKey = surfaceId ? JSON.stringify(resolvedSource) : "";
 
+  // LANE gate (Chat | Matrx | Auto | Plugins | Subagents): the viewer's one
+  // persisted choice, applied to every filterable surface. Surfaces without a
+  // `surfaceId` (per-agent lists, /code) carry no gate and no toggles.
+  const enabledLanes = useAppSelector(selectConversationLanes);
+  const lanesKey = surfaceId ? enabledLanes.join(",") : "none";
+  const allLanesOff = !!surfaceId && enabledLanes.length === 0;
+
   useEffect(() => {
     dispatch(setScopeAgentIds({ scopeId, agentIds: agentIds.slice() }));
+    dispatch(
+      setScopeLanes({ scopeId, lanes: surfaceId ? enabledLanes : null }),
+    );
     if (surfaceId) {
       dispatch(
         seedScopeSourceFilter({
@@ -296,6 +312,7 @@ function useConversationHistoryController(
     pageSize,
     excludeKey,
     resolvedKey,
+    lanesKey,
     surfaceId,
   ]);
 
@@ -477,6 +494,7 @@ function useConversationHistoryController(
     favorites,
     resolveHref,
     getSourceMenuCtx,
+    allLanesOff,
   };
 }
 
@@ -534,10 +552,15 @@ const DenseView: React.FC<
     favorites,
     resolveHref,
     getSourceMenuCtx,
+    allLanesOff,
   } = ctl;
 
   const empty =
-    status !== "loading" && count === 0 && !searchTerm.trim() && emptyState;
+    !allLanesOff &&
+    status !== "loading" &&
+    count === 0 &&
+    !searchTerm.trim() &&
+    emptyState;
 
   const showControls =
     showSearch || showGroupingToggle || !!headerActions || !!surfaceId;
@@ -546,6 +569,12 @@ const DenseView: React.FC<
     <div className={cn("flex h-full min-h-0 flex-col", className)}>
       {headerSlot}
       {topSlot}
+
+      {surfaceId && (
+        <div className="shrink-0 px-2 pt-1.5 pb-1">
+          <ConversationLaneToggles />
+        </div>
+      )}
 
       {showControls && (
         <div className="flex shrink-0 items-center gap-1 border-b border-border px-2 py-1">
@@ -611,6 +640,8 @@ const DenseView: React.FC<
             Loading conversations…
           </div>
         )}
+
+        {allLanesOff && <AllLanesOffNotice />}
 
         {empty && <div className="px-1 py-2">{empty}</div>}
 
@@ -781,6 +812,7 @@ const ConsumerView: React.FC<
     favorites,
     resolveHref,
     getSourceMenuCtx,
+    allLanesOff,
   } = ctl;
 
   const favoriteIds = useMemo(
@@ -841,6 +873,12 @@ const ConsumerView: React.FC<
         </div>
       )}
 
+      {surfaceId && (
+        <div className="shrink-0 px-2 pb-1">
+          <ConversationLaneToggles />
+        </div>
+      )}
+
       {!hideSearchAffordance && (
         <div className="flex shrink-0 items-center gap-1 px-1 pb-1">
           {searchOpen ? (
@@ -895,10 +933,16 @@ const ConsumerView: React.FC<
           </div>
         )}
 
-        {status !== "loading" && count === 0 && !searchTerm.trim() && (
-          <div className="px-3 py-6 text-center text-xs text-muted-foreground">
-            No conversations yet.
-          </div>
+        {allLanesOff ? (
+          <AllLanesOffNotice />
+        ) : (
+          status !== "loading" &&
+          count === 0 &&
+          !searchTerm.trim() && (
+            <div className="px-3 py-6 text-center text-xs text-muted-foreground">
+              No conversations yet.
+            </div>
+          )
         )}
 
         {favorites.length > 0 && (

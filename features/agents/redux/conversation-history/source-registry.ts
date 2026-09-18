@@ -374,10 +374,11 @@ export interface SurfaceSourceDefault {
  * empty selections).
  */
 export const SURFACE_DEFAULTS: Record<string, SurfaceSourceDefault> = {
-  // The main /chat sidebar + search: only real chats. Everything else
-  // (transcription, server runs, sub-agents, generic) is reachable through
-  // the filter tree but hidden by default.
-  chat: { includeFeatures: ["chat"] },
+  // The main /chat sidebar + search. No source filter: what /chat shows is
+  // decided by the LANE toggles above the tree (Chat + Matrx by default;
+  // Auto, Plugins and Subagents off — lanes.ts). A feature allow-list here
+  // would silently void the Matrx lane (2026-09-18).
+  chat: { includeFeatures: [] },
   // The floating and full-page agent runner. The list is ALREADY scoped to one
   // agent, so a second (source) filter only hid that agent's own chats that
   // started elsewhere (its Agent Builder drafts) behind an unexplained "1"
@@ -525,7 +526,7 @@ export const FILTERABLE_SURFACES: FilterableSurfaceMeta[] = [
     id: "chat",
     label: "Chat",
     description:
-      "The /chat history sidebar and search. Defaults to your real chats only.",
+      "The /chat history sidebar and search. Defaults to no source filter — the lane toggles decide.",
   },
   {
     id: "code",

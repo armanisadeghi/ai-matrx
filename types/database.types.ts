@@ -5495,6 +5495,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _resolve_tier_legacy: {
+        Args: { p_user: string }
+        Returns: Database["billing"]["Enums"]["tier"]
+      }
       addon_grant: {
         Args: {
           p_capability: string
@@ -5637,6 +5641,14 @@ export type Database = {
           b: Database["billing"]["Enums"]["tier"]
         }
         Returns: Database["billing"]["Enums"]["tier"]
+      }
+      tier_no_downgrade: {
+        Args: never
+        Returns: {
+          legacy_tier: Database["billing"]["Enums"]["tier"]
+          organization_tier: Database["billing"]["Enums"]["tier"]
+          user_id: string
+        }[]
       }
       tier_rank: {
         Args: { p_tier: Database["billing"]["Enums"]["tier"] }
@@ -10675,6 +10687,15 @@ export type Database = {
           user_id: string
         }[]
       }
+      conversation_lane: {
+        Args: {
+          conversation_type: string
+          origin_class: string
+          source_app: string
+          source_feature: string
+        }
+        Returns: string
+      }
       cx_overview_kpis: {
         Args: { p_end?: string; p_start?: string; p_user_id?: string }
         Returns: Json
@@ -10682,6 +10703,10 @@ export type Database = {
       cx_usage_analytics: {
         Args: { p_end?: string; p_start?: string }
         Returns: Json
+      }
+      lane: {
+        Args: { c: Database["chat"]["Tables"]["conversation"]["Row"] }
+        Returns: string
       }
       recompute_user_request_totals: {
         Args: { p_id?: string; p_limit?: number }
@@ -21642,6 +21667,7 @@ export type Database = {
           created_by: string | null
           created_by_system: string | null
           created_by_tier: string | null
+          custom_fields: Json | null
           date_of_birth: string | null
           deleted_at: string | null
           display_name: string
@@ -21705,6 +21731,7 @@ export type Database = {
           created_by?: string | null
           created_by_system?: string | null
           created_by_tier?: string | null
+          custom_fields?: Json | null
           date_of_birth?: string | null
           deleted_at?: string | null
           display_name: string
@@ -21768,6 +21795,7 @@ export type Database = {
           created_by?: string | null
           created_by_system?: string | null
           created_by_tier?: string | null
+          custom_fields?: Json | null
           date_of_birth?: string | null
           deleted_at?: string | null
           display_name?: string
@@ -30555,6 +30583,75 @@ export type Database = {
   }
   history: {
     Tables: {
+      capture_window: {
+        Row: {
+          entity_type: string
+          note: string | null
+          opened_at: string
+          opened_by: string
+        }
+        Insert: {
+          entity_type: string
+          note?: string | null
+          opened_at?: string
+          opened_by?: string
+        }
+        Update: {
+          entity_type?: string
+          note?: string | null
+          opened_at?: string
+          opened_by?: string
+        }
+        Relationships: []
+      }
+      migration_log: {
+        Row: {
+          applied_at: string
+          applied_by: string | null
+          id: string
+          inverse: Json
+          note: string | null
+          organization_id: string
+          row_version_hi: number | null
+          row_version_lo: number | null
+          target_id: string | null
+          target_kind: string
+          undone_at: string | null
+          undone_by: string | null
+          verb: string
+        }
+        Insert: {
+          applied_at?: string
+          applied_by?: string | null
+          id?: string
+          inverse: Json
+          note?: string | null
+          organization_id: string
+          row_version_hi?: number | null
+          row_version_lo?: number | null
+          target_id?: string | null
+          target_kind: string
+          undone_at?: string | null
+          undone_by?: string | null
+          verb: string
+        }
+        Update: {
+          applied_at?: string
+          applied_by?: string | null
+          id?: string
+          inverse?: Json
+          note?: string | null
+          organization_id?: string
+          row_version_hi?: number | null
+          row_version_lo?: number | null
+          target_id?: string | null
+          target_kind?: string
+          undone_at?: string | null
+          undone_by?: string | null
+          verb?: string
+        }
+        Relationships: []
+      }
       row_versions: {
         Row: {
           actor_id: string | null
@@ -31730,9 +31827,144 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assert_watching: {
+        Args: { p_at: string; p_entity_type: string }
+        Returns: undefined
+      }
+      capture_is_open: {
+        Args: { p_organization_id?: string }
+        Returns: boolean
+      }
       ensure_row_version_partitions: {
         Args: { months_ahead?: number }
         Returns: number
+      }
+      grants_at: {
+        Args: { p_at: string; p_resource_id: string; p_resource_type: string }
+        Returns: {
+          granted_to_organization_id: string
+          granted_to_user_id: string
+          is_public: boolean
+          level: string
+          permission_id: string
+          status: string
+        }[]
+      }
+      merge_field_resolve: {
+        Args: {
+          p_key: string
+          p_merge_field_id: string
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: {
+          at: string
+          clock: string
+          field_id: string
+          record_id: string
+          value: Json
+          value_version: number
+        }[]
+      }
+      migration_record: {
+        Args: {
+          p_inverse: Json
+          p_note?: string
+          p_organization_id: string
+          p_target_id: string
+          p_target_kind: string
+          p_verb: string
+        }
+        Returns: string
+      }
+      migration_undo: {
+        Args: { p_log_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      prune: {
+        Args: {
+          p_dry_run?: boolean
+          p_organization_id: string
+          p_scope?: string
+          p_table_id?: string
+        }
+        Returns: Json
+      }
+      record_at: {
+        Args: { p_at: string; p_organization_id: string; p_record_id: string }
+        Returns: Json
+      }
+      record_versions: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: {
+          actor_id: string
+          occurred_at: string
+          operation: string
+          row_data: Json
+          version: number
+        }[]
+      }
+      retention_days: {
+        Args: { p_organization_id: string; p_table_id: string }
+        Returns: number
+      }
+      retention_floor_days: {
+        Args: { p_organization_id?: string }
+        Returns: number
+      }
+      retention_floor_raise: {
+        Args: { p_days: number; p_organization_id: string }
+        Returns: number
+      }
+      retention_set: {
+        Args: { p_days: number; p_organization_id: string; p_table_id: string }
+        Returns: number
+      }
+      snapshot_chain: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: {
+          actor_id: string
+          body: Json
+          label: string
+          occurred_at: string
+          version: number
+        }[]
+      }
+      snapshot_restore: {
+        Args: {
+          p_organization_id: string
+          p_record_id: string
+          p_version: number
+        }
+        Returns: Json
+      }
+      value_as_of: {
+        Args: {
+          p_key: string
+          p_organization_id: string
+          p_record_id: string
+          p_recorded_at?: string
+          p_world_on?: string
+        }
+        Returns: Json
+      }
+      value_in_document: {
+        Args: { p_data: Json; p_key: string; p_world_on: string }
+        Returns: Json
+      }
+      value_undo: {
+        Args: { p_key: string; p_organization_id: string; p_record_id: string }
+        Returns: Json
+      }
+      who_could_see: {
+        Args: { p_at: string; p_organization_id: string; p_record_id: string }
+        Returns: {
+          level: string
+          principal_id: string
+          principal_kind: string
+          via_id: string
+          via_kind: string
+        }[]
       }
     }
     Enums: {
@@ -53151,6 +53383,7 @@ export type Database = {
         }
         Returns: string
       }
+      default_organization_id: { Args: { p_user_id: string }; Returns: string }
       derive_organization_abbreviation: {
         Args: { p_is_personal?: boolean; p_name: string }
         Returns: string
@@ -53443,6 +53676,10 @@ export type Database = {
           table_name: string
           token: string
         }[]
+      }
+      provision_signup_organization: {
+        Args: { p_user_id: string }
+        Returns: string
       }
       record_transfer_refusal: { Args: { p_refusal: Json }; Returns: string }
       rulebook_ids_curated_by: { Args: { p_uid: string }; Returns: string[] }
@@ -60015,16 +60252,20 @@ export type Database = {
           label: string | null
           metadata: Json
           organization_id: string | null
+          origin: string | null
           payload: Json | null
           payload_kind: string | null
           position: number | null
+          relation_field_id: string | null
           role: string | null
           source_id: string
           source_type: string
           target_id: string
           target_type: string
+          updated_at: string | null
           updated_by_system: string | null
           updated_by_tier: string | null
+          version: number | null
         }
         Insert: {
           created_at?: string
@@ -60036,16 +60277,20 @@ export type Database = {
           label?: string | null
           metadata?: Json
           organization_id?: string | null
+          origin?: string | null
           payload?: Json | null
           payload_kind?: string | null
           position?: number | null
+          relation_field_id?: string | null
           role?: string | null
           source_id: string
           source_type: string
           target_id: string
           target_type: string
+          updated_at?: string | null
           updated_by_system?: string | null
           updated_by_tier?: string | null
+          version?: number | null
         }
         Update: {
           created_at?: string
@@ -60057,16 +60302,20 @@ export type Database = {
           label?: string | null
           metadata?: Json
           organization_id?: string | null
+          origin?: string | null
           payload?: Json | null
           payload_kind?: string | null
           position?: number | null
+          relation_field_id?: string | null
           role?: string | null
           source_id?: string
           source_type?: string
           target_id?: string
           target_type?: string
+          updated_at?: string | null
           updated_by_system?: string | null
           updated_by_tier?: string | null
+          version?: number | null
         }
         Relationships: [
           {
@@ -61596,6 +61845,7 @@ export type Database = {
           component_anon_read_via_public_parent: boolean
           confirmation_enabled: boolean
           content_role: string | null
+          custom_fields_enabled: boolean
           data_class: Database["platform"]["Enums"]["data_class"] | null
           data_class_reason: string | null
           default_auto_ingest: boolean
@@ -61631,6 +61881,8 @@ export type Database = {
           taxonomy_node_id: string | null
           title_column: string | null
           token: string
+          type: string | null
+          type_reason: string | null
           user_artifact_kind: string | null
           version_store: string
           version_store_ref: unknown
@@ -61648,6 +61900,7 @@ export type Database = {
           component_anon_read_via_public_parent?: boolean
           confirmation_enabled?: boolean
           content_role?: string | null
+          custom_fields_enabled?: boolean
           data_class?: Database["platform"]["Enums"]["data_class"] | null
           data_class_reason?: string | null
           default_auto_ingest?: boolean
@@ -61687,6 +61940,8 @@ export type Database = {
           taxonomy_node_id?: string | null
           title_column?: string | null
           token: string
+          type?: string | null
+          type_reason?: string | null
           user_artifact_kind?: string | null
           version_store?: string
           version_store_ref?: unknown
@@ -61704,6 +61959,7 @@ export type Database = {
           component_anon_read_via_public_parent?: boolean
           confirmation_enabled?: boolean
           content_role?: string | null
+          custom_fields_enabled?: boolean
           data_class?: Database["platform"]["Enums"]["data_class"] | null
           data_class_reason?: string | null
           default_auto_ingest?: boolean
@@ -61743,6 +61999,8 @@ export type Database = {
           taxonomy_node_id?: string | null
           title_column?: string | null
           token?: string
+          type?: string | null
+          type_reason?: string | null
           user_artifact_kind?: string | null
           version_store?: string
           version_store_ref?: unknown
@@ -64428,6 +64686,7 @@ export type Database = {
           item_id: string
           item_type: string
           max_level: Database["public"]["Enums"]["permission_level"]
+          origin: string | null
           refreshed_at: string
         }
         Insert: {
@@ -64437,6 +64696,7 @@ export type Database = {
           item_id: string
           item_type: string
           max_level: Database["public"]["Enums"]["permission_level"]
+          origin?: string | null
           refreshed_at?: string
         }
         Update: {
@@ -64446,6 +64706,7 @@ export type Database = {
           item_id?: string
           item_type?: string
           max_level?: Database["public"]["Enums"]["permission_level"]
+          origin?: string | null
           refreshed_at?: string
         }
         Relationships: []
@@ -65030,6 +65291,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      schema_client_exposure: {
+        Row: {
+          client_exposed: boolean
+          declared_at: string
+          declared_by: string
+          reason: string
+          schema_name: string
+        }
+        Insert: {
+          client_exposed: boolean
+          declared_at?: string
+          declared_by: string
+          reason: string
+          schema_name: string
+        }
+        Update: {
+          client_exposed?: boolean
+          declared_at?: string
+          declared_by?: string
+          reason?: string
+          schema_name?: string
+        }
+        Relationships: []
       }
       schemas: {
         Row: {
@@ -66432,6 +66717,10 @@ export type Database = {
         }
         Returns: Json
       }
+      assert_relations_door: {
+        Args: { p_organization_id?: string }
+        Returns: undefined
+      }
       assist_admission_decision: {
         Args: { p_source_key: string; p_user_id: string }
         Returns: {
@@ -67307,6 +67596,10 @@ export type Database = {
         Args: { p_kind?: string; p_org_id?: string }
         Returns: Json
       }
+      provision_partition_key_candidates: {
+        Args: { p_spec: Json }
+        Returns: string[]
+      }
       provision_preflight: { Args: never; Returns: Json }
       provision_restricted: {
         Args: { p_org_id?: string; p_spec: Json }
@@ -67407,6 +67700,113 @@ export type Database = {
       refresh_reachability: {
         Args: { p_container_id: string; p_container_type: string }
         Returns: undefined
+      }
+      relation_bindings: { Args: never; Returns: string[] }
+      relation_cardinalities: { Args: never; Returns: string[] }
+      relation_declaration: {
+        Args: { p_field_id: string; p_organization_id: string }
+        Returns: Json
+      }
+      relation_delete_effects: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: {
+          action: string
+          label: string
+          other_id: string
+          other_type: string
+          role: string
+        }[]
+      }
+      relation_field: {
+        Args: {
+          p_field_key: string
+          p_organization_id: string
+          p_record_id: string
+        }
+        Returns: string
+      }
+      relation_flavors: { Args: never; Returns: string[] }
+      relation_history: {
+        Args: { p_association_id: string; p_organization_id: string }
+        Returns: {
+          actor_id: string
+          at_time: string
+          operation: string
+          role: string
+          target_id: string
+          target_type: string
+          version: number
+        }[]
+      }
+      relation_label: {
+        Args: {
+          p_organization_id: string
+          p_target_id: string
+          p_target_type: string
+        }
+        Returns: string
+      }
+      relation_on_delete: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: Json
+      }
+      relation_on_delete_actions: { Args: never; Returns: string[] }
+      relation_set: {
+        Args: {
+          p_field_key: string
+          p_organization_id: string
+          p_record_id: string
+          p_targets: Json
+        }
+        Returns: number
+      }
+      relation_snapshot_of: {
+        Args: {
+          p_organization_id: string
+          p_target_id: string
+          p_target_type: string
+        }
+        Returns: Json
+      }
+      relation_target_modes: { Args: never; Returns: string[] }
+      relation_unset: {
+        Args: {
+          p_field_key: string
+          p_organization_id: string
+          p_record_id: string
+          p_target_id: string
+        }
+        Returns: number
+      }
+      relations_are_on: {
+        Args: { p_organization_id?: string }
+        Returns: boolean
+      }
+      relations_from: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: {
+          binding: string
+          field_id: string
+          flavor: string
+          label: string
+          position: number
+          role: string
+          snapshot: Json
+          target_id: string
+          target_type: string
+        }[]
+      }
+      relations_to: {
+        Args: { p_organization_id: string; p_record_id: string }
+        Returns: {
+          field_id: string
+          flavor: string
+          label: string
+          position: number
+          role: string
+          source_id: string
+          source_type: string
+        }[]
       }
       render_record_name: {
         Args: {
@@ -67518,6 +67918,16 @@ export type Database = {
           updated_at: string
         }[]
       }
+      schema_exposure_violations: {
+        Args: { p_schema?: string }
+        Returns: {
+          detail: string
+          kind: string
+          object_name: string
+          schema_name: string
+        }[]
+      }
+      schema_is_client_exposed: { Args: { p_schema: string }; Returns: boolean }
       set_org_change_policy: {
         Args: {
           p_change_type_key: string
@@ -73943,6 +74353,22 @@ export type Database = {
         }
         Returns: Json
       }
+      get_cx_conversation_lane_counts: {
+        Args: never
+        Returns: {
+          lane: string
+          n: number
+        }[]
+      }
+      get_cx_conversation_lane_facets: {
+        Args: never
+        Returns: {
+          lane: string
+          n: number
+          source_app: string
+          source_feature: string
+        }[]
+      }
       get_cx_conversation_source_facets: {
         Args: never
         Returns: {
@@ -78864,7 +79290,7 @@ export type Database = {
       operation_type: "insert" | "update" | "delete"
       org_role: "owner" | "member" | "admin"
       orientation: "vertical" | "horizontal" | "default"
-      permission_level: "viewer" | "editor" | "admin"
+      permission_level: "viewer" | "commenter" | "editor" | "admin"
       project_role: "owner" | "admin" | "member"
       recipe_status:
         | "live"
@@ -98892,6 +99318,7 @@ export type Database = {
           auto_rag_enabled: boolean
           created_at: string
           created_by: string | null
+          default_organization_id: string | null
           deleted_at: string | null
           metadata: Json
           organization_id: string
@@ -98905,6 +99332,7 @@ export type Database = {
           auto_rag_enabled?: boolean
           created_at?: string
           created_by?: string | null
+          default_organization_id?: string | null
           deleted_at?: string | null
           metadata?: Json
           organization_id: string
@@ -98918,6 +99346,7 @@ export type Database = {
           auto_rag_enabled?: boolean
           created_at?: string
           created_by?: string | null
+          default_organization_id?: string | null
           deleted_at?: string | null
           metadata?: Json
           organization_id?: string
@@ -107972,7 +108401,7 @@ export const Constants = {
       operation_type: ["insert", "update", "delete"],
       org_role: ["owner", "member", "admin"],
       orientation: ["vertical", "horizontal", "default"],
-      permission_level: ["viewer", "editor", "admin"],
+      permission_level: ["viewer", "commenter", "editor", "admin"],
       project_role: ["owner", "admin", "member"],
       recipe_status: [
         "live",

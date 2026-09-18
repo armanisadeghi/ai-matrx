@@ -15,6 +15,12 @@
  *    (checked / indeterminate / empty) from their descendant feature leaves.
  *  - NOTHING checked = no filter = show everything (the browse-all state).
  *
+ * LANES ARE ABOVE THIS TREE. The Chat | Matrx | Auto | Plugins | Subagents
+ * toggles (`ConversationLaneToggles`) are an independent AND gate on the list
+ * query; this tree lists only sources inside the enabled lanes and never
+ * writes the lane gate, so "Select all", presets, "Defaults" and "only" can
+ * never re-admit a lane that is off.
+ *
  * On change it both persists the filter to the scope (`setScopeSourceFilter`,
  * which invalidates the page window) and re-fetches the first page, so the
  * host list just renders `scope.items`.
@@ -314,7 +320,19 @@ export const ConversationSourceFilterTree: React.FC<
     void dispatch(fetchSourceFacets(undefined));
   }, [dispatch]);
 
-  const tree = useMemo(() => buildSourceTree(facets), [facets]);
+  // Only the sources inside the scope's enabled LANES. The lane toggles gate
+  // the list above this tree; listing a source whose lane is off would offer
+  // a checkbox that can only ever select nothing. `includeLanes === null` =
+  // the surface has no lane gate → every facet.
+  const includeLanes = scope.includeLanes;
+  const visibleFacets = useMemo(
+    () =>
+      includeLanes === null
+        ? facets
+        : facets.filter((f) => f.lane !== null && includeLanes.includes(f.lane)),
+    [facets, includeLanes],
+  );
+  const tree = useMemo(() => buildSourceTree(visibleFacets), [visibleFacets]);
 
   // Effective selection: feature allow-list + empty flag, expanding any
   // whole-app selections (includeSourceApps) into their known feature keys so

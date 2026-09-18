@@ -220,9 +220,8 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
           <div className="flex h-[min(70dvh,560px)] flex-col">
             <ChatHistorySidebar
               scopeId={CHAT_HISTORY_SEARCH_SCOPE}
-              // ALLOW-list: the "chat" surface defaults to real chats only
-              // (source_feature = chat-route). Everything else — system runs,
-              // transcription, voice — is reachable via the filter tree.
+              // The "chat" surface: the lane toggles (Chat + Matrx by
+              // default) gate the list; the source tree narrows within them.
               surfaceId="chat"
               activeConversationId={activeConversationId}
               onOpenConversation={() => setChatSearchOpen(false)}
@@ -318,10 +317,9 @@ export default function ChatSidebarMenu({ expanded }: ChatSidebarMenuProps) {
           <ChatHistorySidebar
             scopeId={CHAT_HISTORY_SCOPE}
             activeConversationId={activeConversationId}
-            // ALLOW-list (surface default): "chat" shows only real chats
-            // (source_feature = chat-route). System runs, transcription, and
-            // voice transcripts (which can't be replayed here) are hidden by
-            // default and reachable through the source-filter tree.
+            // The "chat" surface: the lane toggles (Chat + Matrx by
+            // default; Auto, Plugins, Subagents off) gate the list; the
+            // source tree narrows within the enabled lanes.
             surfaceId="chat"
             // The Search chats chrome above is the single search entry
             // point — don't ship a second one inline.
