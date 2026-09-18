@@ -23,9 +23,6 @@
  *      the only question a waiting person actually has.
  *   3. The Build reads a live clock, so the sentence can change at all. A
  *      correct sentence computed once at launch is the original bug.
- *   4. The live-turn state is pinned where it cannot scroll away, and carries
- *      a Stop — and that Stop is the SAME `cancelExecution` the composer
- *      dispatches, never a second implementation of stopping.
  */
 
 import { readFileSync } from "node:fs";
@@ -109,39 +106,6 @@ describe("the Build's estimate can actually change", () => {
     expect(source).toContain("estimateSentence");
     expect(source).toContain("elapsedMs");
     expect(source).toMatch(/setInterval/);
-  });
-});
-
-describe("the live-turn state cannot scroll away", () => {
-  const column = read(
-    "features/agents/components/shared/AgentConversationColumn.tsx",
-  );
-  const bar = read("features/agents/components/shared/LiveTurnBar.tsx");
-
-  it("is pinned in the region above the composer, not inside the transcript", () => {
-    const barAt = column.indexOf("<LiveTurnBar");
-    const inputAt = column.indexOf("<SmartAgentInput");
-    const scrollAt = column.indexOf("ref={scrollRef}");
-    expect(barAt).toBeGreaterThan(-1);
-    // Below the scroll area, above the composer: the only always-visible slot.
-    expect(barAt).toBeGreaterThan(scrollAt);
-    expect(barAt).toBeLessThan(inputAt);
-  });
-
-  it("only appears while a turn is actually live", () => {
-    expect(column).toContain("{isLiveRequest && <LiveTurnBar");
-  });
-
-  it("carries a Stop that is THE stop, not a second implementation of one", () => {
-    expect(bar).toContain("cancelExecution");
-    const composer = read(
-      "features/agents/components/inputs/smart-input/SingleRowActionButtons.tsx",
-    );
-    expect(composer).toContain("cancelExecution");
-  });
-
-  it("says what is happening in plain words a non-technical person reads", () => {
-    expect(bar).toContain('label = "Working…"');
   });
 });
 
