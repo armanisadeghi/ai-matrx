@@ -15,6 +15,52 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D340 — `check:kind-marker-law` cannot tell "ignore the marker while inspecting" from "strip the marker before passing", and is red on `main` for a call site that does the former (2026-09-18)
+
+**Blocking gate, red on `main`, one finding, and I believe the finding is wrong.** The guard
+names `features/workflow-runtime/workflow-document-text.ts:49`:
+
+```
+✗ features/workflow-runtime/workflow-document-text.ts:49  filters the marker key out — `__kind` is part of the data.
+```
+
+Identical on `main` (run 35392537346, head `1ab494a7`) and on this branch, so it is base-branch
+state, not any one PR's.
+
+**What line 49 actually does.** `workflowDocumentText()` decides whether a kindless
+`output.to_frontend` payload carries exactly ONE document field, so that Copy / Save to Notes /
+Save to Task never silently save one field of a multi-field result:
+
+```ts
+const fields = Object.entries(data).filter(([key]) => key !== KIND_KEY);
+if (fields.length !== 1) return null;
+```
+
+The marker is excluded **from a count**, in a function whose return type is `string | null`. No
+object is rebuilt, nothing is stored, passed or rendered without its marker. That is
+accept-and-ignore — the very thing the law's remedy text asks a consumer to do — expressed as a
+filter because counting is how this consumer ignores it.
+
+**Why this is the guard's problem and not the call site's.** Any correct implementation of "does
+this payload have exactly one document field besides its marker" must disregard the marker while
+inspecting. Rewriting the expression only changes which syntax the detector sees; it cannot make
+the semantics stop being "ignore the marker". So the call site cannot be fixed into compliance
+without breaking it: drop the filter and EVERY kinded payload has ≥2 fields, `fields.length !== 1`
+is always true, and the function returns null for every document — the actions silently stop
+working.
+
+**Recommended fix, which I did not make:** teach `scripts/check-kind-marker-law.ts` to separate a
+read-only inspection (a filter/entries whose result is counted, or consumed into a non-object
+return) from a strip (a filter/omit/destructure whose result is re-emitted as the payload). Prove
+it failing-then-passing with both cases as fixtures, including a planted real strip so the
+narrowed detector is shown still to catch it.
+
+**Why I stopped there.** Narrowing a blocking law guard is exactly the kind of change that must not
+be made on one agent's authority mid-task: get it slightly wrong and the guard goes quiet on real
+marker stripping, which is the failure the law exists to prevent, and nobody would see it until
+kinds started disappearing from stored rows. That is a decision for the lane that owns the marker
+law. Until then this gate stays red for every PR in the repo, so it is not a slow-burn item.
+
 ### D339 — `rag.kg_chunks` unique indexes count removed rows: soft-delete a chunk and it can never be re-ingested (2026-09-18)
 
 **Latent, not yet biting — measured, not assumed.** `rag.kg_chunks` carries `deleted_at`,
