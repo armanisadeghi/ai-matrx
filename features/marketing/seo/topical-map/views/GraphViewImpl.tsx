@@ -647,7 +647,7 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} className="opacity-50" />
           <Controls showInteractive={false} className="!shadow-md" />
           <MiniMap pannable zoomable ariaLabel="A small map of the whole drawing" />
-          <Panel position="top-left">
+          <Panel position="top-left" className="!right-0 flex flex-wrap items-start justify-between gap-2">
             <GraphToolbar
               mapId={mapId}
               focusSlug={graph.focusSlug}
@@ -686,8 +686,6 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
               visibleCount={topics.length}
               readOnly={readOnly}
             />
-          </Panel>
-          <Panel position="top-right">
             <GraphLegend
               encoding={encoding}
               mode={mode}
