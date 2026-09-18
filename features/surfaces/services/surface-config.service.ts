@@ -23,6 +23,8 @@ import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandat
  */
 
 import { createClient } from "@/utils/supabase/client";
+import { isJsonObject } from "@/types/json";
+import type { Database } from "@/types/database.types";
 import { fetchMandatePins } from "@/features/mandates/service";
 import type { SurfaceAgentRole } from "@/features/surfaces/types";
 import {
@@ -185,6 +187,150 @@ export interface SurfaceConfigBundle {
   configRows: SurfaceConfigRow[];
 }
 
+// 🚨 A SELECT LIST IS A LITERAL, NEVER AN EXPRESSION.
+// supabase-js parses the select string at the TYPE level. A `uid ? "a" : "b"`
+// argument hands that parser a UNION of two strings, which it cannot parse —
+// it returns `ParserError<"Unexpected input: …">` for the WHOLE query and every
+// column then reads as "does not exist" (15 errors here, 2026-09-18). So the
+// two reads below branch the QUERY and each passes one literal.
+//
+// DD-230: `user_id` and `organization_id` are identity columns `anon` may not
+// read, so a GUEST asking for them got 42501 for the whole query and this
+// bundle threw — the guest surface config never arrived (measured: ten such
+// 401s on production in 24 h). A guest can only ever see global rows, where
+// both are null, so the guest read omits them and fills them in as null.
+const PREF_COLUMNS_SIGNED_IN =
+  "id, surface_name, role_name, agent_id, kind, position, settings, user_id, organization_id, scope_id, updated_at";
+const PREF_COLUMNS_GUEST =
+  "id, surface_name, role_name, agent_id, kind, position, settings, scope_id, updated_at";
+const CONFIG_COLUMNS_SIGNED_IN =
+  "id, surface_name, namespace, config, user_id, organization_id, scope_id, updated_at";
+const CONFIG_COLUMNS_GUEST =
+  "id, surface_name, namespace, config, scope_id, updated_at";
+
+type UiPrefRow = Database["ui"]["Tables"]["ui_surface_agent_pref"]["Row"];
+type UiConfigRow = Database["ui"]["Tables"]["ui_surface_config"]["Row"];
+
+/** What either pref read returns: the guest read omits the identity columns. */
+type SelectedPrefRow = Pick<
+  UiPrefRow,
+  | "id"
+  | "surface_name"
+  | "role_name"
+  | "agent_id"
+  | "kind"
+  | "position"
+  | "settings"
+  | "scope_id"
+  | "updated_at"
+> &
+  Partial<Pick<UiPrefRow, "user_id" | "organization_id">>;
+
+type SelectedConfigRow = Pick<
+  UiConfigRow,
+  "id" | "surface_name" | "namespace" | "config" | "scope_id" | "updated_at"
+> &
+  Partial<Pick<UiConfigRow, "user_id" | "organization_id">>;
+
+const ownerId = (row: { user_id?: string | null }): string | null =>
+  row.user_id ?? null;
+const orgId = (row: { organization_id?: string | null }): string | null =>
+  row.organization_id ?? null;
+
+const toPrefRow = (p: SelectedPrefRow): SurfaceAgentPrefRow => ({
+  id: p.id,
+  surfaceName: p.surface_name,
+  roleName: p.role_name,
+  agentId: p.agent_id,
+  kind: p.kind as "selection" | "roster_item",
+  position: p.position,
+  settings: isJsonObject(p.settings) ? p.settings : {},
+  userId: ownerId(p),
+  organizationId: orgId(p),
+  scopeId: p.scope_id,
+  updatedAt: p.updated_at,
+});
+
+const toConfigRow = (c: SelectedConfigRow): SurfaceConfigRow => ({
+  id: c.id,
+  surfaceName: c.surface_name,
+  namespace: c.namespace,
+  config: c.config,
+  userId: ownerId(c),
+  organizationId: orgId(c),
+  scopeId: c.scope_id,
+  updatedAt: c.updated_at,
+});
+
+/**
+ * 🚨 THE USER TIER IS PERSONAL — filter it to the CURRENT user explicitly.
+ * RLS breadth is NOT a personal-tier filter: a platform admin can read EVERY
+ * user's rows, and org-visibility branches can expose org-mates' rows. Without
+ * this filter those rows enter the tier merge as if they were "the user tier",
+ * so an admin's effective config became a per-field blend of OTHER PEOPLE's
+ * choices (observed: another user's voice + a third user's speed in the
+ * Listening settings, 2026-08-28). A missing session keeps only tier rows with
+ * no user_id (global/org).
+ */
+const mineOrShared =
+  (uid: string | null) =>
+  (row: { userId: string | null }): boolean =>
+    row.userId === null || row.userId === uid;
+
+type SurfaceConfigClient = ReturnType<typeof createClient>;
+
+async function fetchPrefRows(
+  client: SurfaceConfigClient,
+  surfaceName: string,
+  uid: string | null,
+): Promise<SurfaceAgentPrefRow[]> {
+  const keep = mineOrShared(uid);
+  if (uid) {
+    const { data, error } = await client
+      .schema("ui")
+      .from("ui_surface_agent_pref")
+      .select(PREF_COLUMNS_SIGNED_IN)
+      .is("deleted_at", null)
+      .eq("surface_name", surfaceName);
+    if (error) throw error;
+    return (data ?? []).map(toPrefRow).filter(keep);
+  }
+  const { data, error } = await client
+    .schema("ui")
+    .from("ui_surface_agent_pref")
+    .select(PREF_COLUMNS_GUEST)
+    .is("deleted_at", null)
+    .eq("surface_name", surfaceName);
+  if (error) throw error;
+  return (data ?? []).map(toPrefRow).filter(keep);
+}
+
+async function fetchConfigRows(
+  client: SurfaceConfigClient,
+  surfaceName: string,
+  uid: string | null,
+): Promise<SurfaceConfigRow[]> {
+  const keep = mineOrShared(uid);
+  if (uid) {
+    const { data, error } = await client
+      .schema("ui")
+      .from("ui_surface_config")
+      .select(CONFIG_COLUMNS_SIGNED_IN)
+      .is("deleted_at", null)
+      .eq("surface_name", surfaceName);
+    if (error) throw error;
+    return (data ?? []).map(toConfigRow).filter(keep);
+  }
+  const { data, error } = await client
+    .schema("ui")
+    .from("ui_surface_config")
+    .select(CONFIG_COLUMNS_GUEST)
+    .is("deleted_at", null)
+    .eq("surface_name", surfaceName);
+  if (error) throw error;
+  return (data ?? []).map(toConfigRow).filter(keep);
+}
+
 export async function fetchSurfaceConfigBundle(
   surfaceName: string,
 ): Promise<SurfaceConfigBundle> {
@@ -213,7 +359,7 @@ export async function fetchSurfaceConfigBundle(
     );
     return null;
   });
-  const [rolesRes, prefsRes, configRes] = await Promise.all([
+  const [rolesRes, prefs, configRows] = await Promise.all([
     // VIEW LAW: container-scoped by surfaceName (admin-config lookup, platform-wide)
     client
       .schema("ui").from("ui_surface_agent_role")
@@ -222,35 +368,11 @@ export async function fetchSurfaceConfigBundle(
       )
       .eq("surface_name", surfaceName)
       .order("sort_order"),
-    client
-      .schema("ui").from("ui_surface_agent_pref")
-      // DD-230: `user_id` and `organization_id` are identity columns `anon` may
-      // not read, so a GUEST asking for them got 42501 for the whole query and
-      // this bundle threw — the guest surface config the comment above promises
-      // never arrived (measured: ten such 401s on production in 24 h). A guest
-      // can only ever see global rows, where both are null, so the guest read
-      // omits them and fills them in as null.
-      .select(
-        uid
-          ? "id, surface_name, role_name, agent_id, kind, position, settings, user_id, organization_id, scope_id, updated_at"
-          : "id, surface_name, role_name, agent_id, kind, position, settings, scope_id, updated_at",
-      )
-      .is("deleted_at", null)
-      .eq("surface_name", surfaceName),
-    client
-      .schema("ui").from("ui_surface_config")
-      .select(
-        uid
-          ? "id, surface_name, namespace, config, user_id, organization_id, scope_id, updated_at"
-          : "id, surface_name, namespace, config, scope_id, updated_at",
-      )
-      .is("deleted_at", null)
-      .eq("surface_name", surfaceName),
+    fetchPrefRows(client, surfaceName, uid),
+    fetchConfigRows(client, surfaceName, uid),
   ]);
   await systemOrganizationPrimed;
   if (rolesRes.error) throw rolesRes.error;
-  if (prefsRes.error) throw prefsRes.error;
-  if (configRes.error) throw configRes.error;
 
   // Mandate-backed roles: resolve each declared mandateKey to its current
   // holder (agent.mandate, public-visible). A missing/unseeded mandate leaves
@@ -261,24 +383,6 @@ export async function fetchSurfaceConfigBundle(
     .filter((k): k is string => !!k);
   const mandatePins =
     uid && mandateKeys.length > 0 ? await fetchMandatePins(mandateKeys) : {};
-
-  // 🚨 THE USER TIER IS PERSONAL — filter it to the CURRENT user explicitly.
-  // RLS breadth is NOT a personal-tier filter: a platform admin can read
-  // EVERY user's rows, and org-visibility branches can expose org-mates'
-  // rows. Without this filter those rows enter the tier merge as if they
-  // were "the user tier", so an admin's effective config became a per-field
-  // blend of OTHER PEOPLE's choices (observed: another user's voice + a
-  // third user's speed in the Listening settings, 2026-08-28). A missing
-  // session keeps only tier rows with no user_id (global/org).
-  // The guest read omits `user_id`/`organization_id` entirely (DD-230: they are
-  // identity columns `anon` may not select), so read them defensively — absent
-  // means "not mine, not any org's", which is exactly what a guest row is.
-  const ownerId = (row: object): string | null =>
-    ((row as { user_id?: string | null }).user_id ?? null);
-  const orgId = (row: object): string | null =>
-    ((row as { organization_id?: string | null }).organization_id ?? null);
-  const isMineOrShared = (row: object) =>
-    ownerId(row) === null || ownerId(row) === uid;
 
   return {
     surfaceName,
@@ -297,29 +401,8 @@ export async function fetchSurfaceConfigBundle(
       autoRun: r.auto_run as "always" | "never" | "user-choice",
       sortOrder: r.sort_order,
     })),
-    prefs: (prefsRes.data ?? []).filter(isMineOrShared).map((p) => ({
-      id: p.id,
-      surfaceName: p.surface_name,
-      roleName: p.role_name,
-      agentId: p.agent_id,
-      kind: p.kind as "selection" | "roster_item",
-      position: p.position,
-      settings: (p.settings ?? {}) as Record<string, unknown>,
-      userId: ownerId(p),
-      organizationId: orgId(p),
-      scopeId: p.scope_id,
-      updatedAt: p.updated_at,
-    })),
-    configRows: (configRes.data ?? []).filter(isMineOrShared).map((c) => ({
-      id: c.id,
-      surfaceName: c.surface_name,
-      namespace: c.namespace,
-      config: c.config,
-      userId: ownerId(c),
-      organizationId: orgId(c),
-      scopeId: c.scope_id,
-      updatedAt: c.updated_at,
-    })),
+    prefs,
+    configRows,
   };
 }
 

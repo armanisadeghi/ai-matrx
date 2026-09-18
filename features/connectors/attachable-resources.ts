@@ -28,6 +28,7 @@
  * product's vocabulary in the client, where a new provider means a deploy.
  */
 
+import type { components } from "@/types/python-generated/api-types";
 import type { McpAvailability } from "./connection-state";
 
 /**
@@ -41,59 +42,49 @@ import type { McpAvailability } from "./connection-state";
  */
 export type AttachableResourceSource = "inventory" | "live";
 
-/** One kind of thing a connection lets a person attach to a conversation. */
-export interface AttachableResource {
-  /** Canonical resource type, e.g. `github_repository`, `google_sheet`. */
-  resource_type: string;
-  source: AttachableResourceSource;
-  /**
-   * The provider's own plural word for these things — "repositories",
-   * "files", "sheets". The server owns this vocabulary; the client renders it
-   * verbatim so a new provider needs no frontend change.
-   */
-  label: string;
-  /**
-   * How to get MORE of this kind when the list is missing one, in the
-   * server's own words ("Choose more with the Google Picker…", "Open your
-   * agenda and refresh it…"). Absent for a kind the server has not declared
-   * one for yet. For a Record-backed kind (F-71's `calendar_event`) this is
-   * the ONLY door offered — a meeting cannot be hand-picked, so a caller must
-   * never paint a Picker button from this field.
-   */
-  add_more?: string | null;
-  /**
-   * The Record table this kind is backed by (`communication.calendar_event`),
-   * when the server has one — F-62's `AttachableKind.record_table`, declared
-   * on the KIND row itself. Absent/`null` means the kind is a real picker
-   * (a Google Doc, a GitHub repo): something the Google Picker or a live
-   * search can put in the list. The generated `AttachableKindInfo` does not
-   * carry this field yet, so it is added here by hand (client-only) until the
-   * OpenAPI contract catches up — narrow FROM the generated type once it does,
-   * never re-derive "is this kind Record-backed" from a visible candidate: a
-   * search filter or an empty list must never hide that a kind is
-   * Record-backed (F-73).
-   */
-  record_table?: string | null;
-}
+/** The sources this client knows how to search. Anything else is dropped at
+ * ingress by {@link normalizeAttachable} rather than rendered as a chooser we
+ * cannot drive. The wire type is `string` — Python owns the vocabulary. */
+const KNOWN_SOURCES: readonly string[] = [
+  "inventory",
+  "live",
+] satisfies readonly AttachableResourceSource[];
 
 /**
- * The availability row as the server sends it once attachable resources are
- * part of the contract. `attachable` is optional and absent-means-empty, so a
- * server that has not shipped it yet degrades to today's plain chips rather
- * than to a broken screen.
+ * One kind of thing a connection lets a person attach to a conversation.
  *
- * The generated contract NOW carries `attachable` (`AttachableKindInfo`), and it
- * types `source` as a bare `string` because the server's enum does not survive
- * OpenAPI. This type is therefore the generated row with that ONE field narrowed
- * to the two sources the client actually branches on — an `interface … extends`
- * could not narrow it and failed `tsc` with TS2430 the day the property landed.
- * Everything else comes from the generated type, which stays the source of truth.
+ * THE GENERATED TYPE IS THE TRUTH: this is `AttachableKindInfo` from the
+ * OpenAPI contract, carrying `resource_type`, `source`, `label` and the
+ * provider's own `add_more` wording. Never re-declare it here.
+ */
+export type AttachableResource = components["schemas"]["AttachableKindInfo"] & {
+  /**
+   * The Record table this kind is backed by (`communication.calendar_event`),
+   * when the server has one — F-62's `AttachableKind.record_table`, declared on
+   * the KIND row itself (aidream 3eb799d51d, the contract pin's floor). The
+   * generated `AttachableKindInfo` does not carry it until `pnpm sync-types`
+   * is regenerated against that server, so it is the ONE client-side narrowing
+   * of the generated type: delete this member the day the generated row has
+   * it, never re-derive "is this kind Record-backed" from a visible candidate
+   * (F-73) — a search filter or an empty list must never hide it.
+   */
+  record_table?: string | null;
+};
+
+/**
+ * The availability row as the server sends it. `attachable` is optional and
+ * absent-means-empty, so a server that has not shipped it yet degrades to
+ * today's plain chips rather than to a broken screen.
+ *
+ * This WAS a local interface that widened `attachable` while the two halves of
+ * the feature shipped; the generated contract now carries the field, so the
+ * alias is the whole type (2026-09-18). Keep the name — every consumer reads
+ * it — but never re-add a member to it.
  */
 export type AttachableAvailability = Omit<McpAvailability, "attachable"> & {
-  // Absent means empty, and it is never `null` here: an availability row that
-  // was allowed to be null could not be handed back to anything expecting the
-  // generated shape (TS2322 in `useMcpTools`), and every reader below already
-  // takes `null | undefined` for the value itself.
+  // The generated row, with `attachable` carrying the ONE narrowed member above.
+  // Absent means empty, and it is never `null` here (TS2322 in `useMcpTools`
+  // the day it was allowed to be).
   attachable?: AttachableResource[];
 };
 
@@ -129,7 +120,7 @@ export function normalizeAttachable(
       entry.resource_type.length > 0 &&
       typeof entry.label === "string" &&
       entry.label.trim().length > 0 &&
-      (entry.source === "inventory" || entry.source === "live"),
+      KNOWN_SOURCES.includes(entry.source),
   );
 }
 

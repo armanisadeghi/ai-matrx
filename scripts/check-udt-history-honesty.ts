@@ -55,6 +55,7 @@ import process from "node:process";
 import type pg from "pg";
 
 import { connectDirect, DB_VARS, loadDbEnv } from "./lib/direct-db";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const KNOB_FEATURE = "extensibility";
 const KNOB_KEY = "user_tables.history_retention_floor_days";
@@ -76,7 +77,7 @@ function unmeasured(why: string, remedy: string): never {
   console.error(
     "  This is NOT a pass. The gate could not reach the live database.",
   );
-  process.exit(2);
+  exitAfterDrain(2);
 }
 
 /** The whole probe, inside one transaction that is always rolled back. */
@@ -496,7 +497,7 @@ async function main(): Promise<void> {
     console.error(
       "The grid's type change can still empty a cell whose only copy nothing keeps.",
     );
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log("\nGREEN — no value the grid cannot keep is left without a home.");
 }
@@ -512,8 +513,8 @@ main().catch((err: unknown) => {
     )
   ) {
     console.error(`\n  ✗ the database does not carry the honesty yet\n    ${message}\n`);
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.error(message);
-  process.exit(2);
+  exitAfterDrain(2);
 });

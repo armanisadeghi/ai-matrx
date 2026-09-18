@@ -2,6 +2,7 @@ import type {
   SandboxInstanceRow,
   SandboxInstanceDecorations,
 } from "@/types/sandbox";
+import { isJsonObject } from "@/types/json";
 
 /** PostgreSQL permits infinity timestamps; JavaScript Date does not. */
 export function formatSandboxTimestamp(value: string | null): string {
@@ -43,7 +44,20 @@ export interface SandboxNameParts {
   sandbox_id?: string | null;
   tier?: string | null;
   template?: string | null;
-  config?: { tier?: string | null; template?: string | null } | null;
+  /**
+   * The raw `config` JSONB column. It arrives as bare `unknown` (this repo
+   * patches the generated `Json` alias), so it is narrowed at READ time by
+   * `configString` below — never declared as an already-shaped object, which
+   * would force every caller to cast a row it read honestly.
+   */
+  config?: unknown;
+}
+
+/** One string leaf out of the open `config` JSON, or null if it isn't one. */
+function configString(config: unknown, key: "tier" | "template"): string | null {
+  if (!isJsonObject(config)) return null;
+  const value = config[key];
+  return typeof value === "string" ? value : null;
 }
 
 /** How many characters of the row uuid identify a box on screen. */
@@ -67,8 +81,8 @@ export function sandboxShortId(parts: SandboxNameParts): string {
  * Unknown parts drop out; the short id never does.
  */
 export function sandboxDerivedName(parts: SandboxNameParts): string {
-  const template = (parts.template ?? parts.config?.template)?.trim() || null;
-  const tier = (parts.tier ?? parts.config?.tier)?.trim() || null;
+  const template = (parts.template ?? configString(parts.config, "template"))?.trim() || null;
+  const tier = (parts.tier ?? configString(parts.config, "tier"))?.trim() || null;
   const segments = [template, tier].filter(Boolean) as string[];
   segments.push(sandboxShortId(parts));
   // With neither template nor tier known (a pointer with only a row id), say

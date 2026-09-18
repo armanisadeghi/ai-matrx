@@ -48,7 +48,23 @@ export type BridgeReadHealth = {
   tone: "healthy" | "waiting" | "stale" | "error";
 };
 
-export function formatSessionTimestamp(value: string): string {
+/**
+ * A timestamp a person reads, or an honest word when there is none.
+ *
+ * The argument is nullable because its real sources are: a coding-session
+ * binding that has never delivered carries `last_seen_at = null` (the column
+ * is nullable and the list even orders `nullsFirst: false` around it), and a
+ * lease or end time that has not happened yet is null too. Those callers used
+ * to pass the null through an argument typed `string` (or cast it away), so
+ * the screen read "Invalid timestamp" for a row that is simply new — a
+ * screen that lies. "Not recorded" is the truth.
+ */
+export function formatSessionTimestamp(
+  value: string | null | undefined,
+): string {
+  if (value === null || value === undefined || value.trim() === "") {
+    return "Not recorded";
+  }
   const timestampMs = Date.parse(value);
   return Number.isFinite(timestampMs)
     ? new Date(timestampMs).toLocaleString()

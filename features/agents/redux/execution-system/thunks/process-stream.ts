@@ -48,6 +48,7 @@ import {
   isContextTrimmedEvent,
   isInjectionConsumedEvent,
   isCitationEvent,
+  isControlTokenEvent,
   isValueStoredEvent,
   isContextGroomedEvent,
   type ConversationIdData,
@@ -2690,6 +2691,20 @@ export async function processStream({
             }),
           );
         }
+      } else if (isControlTokenEvent(event)) {
+        otherEvents++;
+        // A DECLARED MACHINE LINE NEVER REACHES A PERSON'S SCREEN. aidream
+        // strips `WRAP_RATING: 4` and its siblings out of the visible text at
+        // the streaming emitter and routes the value here instead
+        // (aidream/packages/matrx-connect/matrx_connect/emitters/control_tokens.py).
+        // So the ONLY correct client behaviour is to render nothing: no block,
+        // no timeline entry, no transcript text. The value is not lost — the
+        // whole payload was already preserved verbatim by the appendRawEvent
+        // above, which is where a stage machine or run recorder reads it. This
+        // branch exists so the event is RECOGNISED: without it the exhaustive
+        // `never` check below fired and the token was logged as an
+        // "Unrecognized event type" and appended as an `unknown` timeline
+        // entry — the one place it could still surface to a reader.
       } else if (isInjectionConsumedEvent(event)) {
         otherEvents++;
         // Turn-Boundary Inbox delivery ack — the running agent just drained

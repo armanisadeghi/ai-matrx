@@ -25,13 +25,6 @@ import {
   type GoogleCapabilityKey,
 } from "@/features/marketing/google/service";
 import { googleConnectionLabel } from "@/features/marketing/google/presentation";
-import { isGoogleWorkspaceFileRow } from "@/features/marketing/google/types";
-import {
-  OpenGoogleDocumentRecordButton,
-  hasGoogleDocumentRecord,
-  pickedGoogleRecordResource,
-} from "@/features/google-workspace/documents/openRecord";
-import { googleWorkspaceFileType } from "@/features/google-workspace/resource-types";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type {
   GoogleCapabilityMetadata,
@@ -45,7 +38,6 @@ import {
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { toast } from "@/lib/toast";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import {
@@ -53,7 +45,6 @@ import {
   useGoogleAPI,
 } from "@/providers/google-provider/GoogleApiProvider";
 import { extractErrorMessage } from "@/utils/errors";
-import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
 
 export interface GoogleWorkspaceOverviewBodyProps {
   initialConnectionId?: string | null;
@@ -81,9 +72,6 @@ function GoogleWorkspaceOverviewBodyContent({
   const userId = useAppSelector(selectUserId);
   const organizationContextId = useAppSelector(selectOrganizationId);
   const google = useGoogleAPI();
-  // 🚨 ONE Google authorization window per PERSON — never a per-component
-  // lock, never the raw provider primitive (V-23 NEW-3, lane F-103).
-  const googleAuth = useGoogleAuthorizationWindow();
   const inventory = useGoogleConnectionInventory();
   const capabilities = useGoogleCapabilities();
   const connectGoogle = useConnectGoogle();
@@ -124,7 +112,7 @@ function GoogleWorkspaceOverviewBodyContent({
     setBusy("reconnect");
     try {
       const request = buildGoogleReconnectRequest(selectedConnection);
-      const code = await googleAuth.openAuthorizationWindow(
+      const code = await google.requestAuthorizationCode(
         request.scopes,
         request.loginHint,
       );
@@ -175,45 +163,24 @@ function GoogleWorkspaceOverviewBodyContent({
     setBusy(`capability:${capabilityKey}:${redirect ? "redirect" : "popup"}`);
     try {
       if (redirect) {
-        // 🚨 A PRESS WAITS FOR THE ANSWER, IT NEVER REFUSES ON A RACE
-        // (VERIFY-R7-FIX-WAVE NEW-1). The connection's own organization still
-        // wins when it has one; only the ambient fallback can be mid-boot, and
-        // that is what the bounded platform wait answers — honestly in both
-        // states, with the remedy in its own sentence.
-        // 🚨 THE GATE IS TAKEN BEFORE THE WAIT, NOT AFTER IT (V-23 NEW-3) —
-        // a second press during the organization wait must be refused, not
-        // given a second Google window.
-        const gate = googleAuth.beginAuthorization();
-        try {
-          const redirectOrganizationId =
-            frozenOrganizationContextId ??
-            (await (async () => {
-              const workspace = await awaitEffectiveOrganizationId();
-              if (workspace.status !== "ready")
-                throw new Error(workspace.reason);
-              return workspace.organizationId;
-            })());
-          await googleAuth.openAuthorizationRedirect(
-            request.scopes,
-            {
-              returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`,
-              owner: frozenOwner,
-              organizationContextId: redirectOrganizationId,
-              connectionPurpose: "google_capability",
-              loginHint: request.loginHint,
-              forceConsent: true,
-              targetConnectionId: frozenConnectionId,
-              capabilityKey: frozenCapabilityKey,
-            },
-            gate,
+        if (!frozenOrganizationContextId) {
+          throw new Error(
+            "Choose an organization before continuing with Google in this tab.",
           );
-        } catch (cause) {
-          gate.release();
-          throw cause;
         }
+        await google.startAuthorizationCodeRedirect(request.scopes, {
+          returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+          owner: frozenOwner,
+          organizationContextId: frozenOrganizationContextId,
+          connectionPurpose: "google_capability",
+          loginHint: request.loginHint,
+          forceConsent: true,
+          targetConnectionId: frozenConnectionId,
+          capabilityKey: frozenCapabilityKey,
+        });
         return;
       }
-      const code = await googleAuth.openAuthorizationWindow(
+      const code = await google.requestAuthorizationCode(
         request.scopes,
         request.loginHint,
         { forceConsent: true },
@@ -457,13 +424,16 @@ function CapabilityCatalog({
             connection?.health === "connected" &&
             !permissionGranted,
           );
-          // 🚨 `busy` holds the FULL press key (`capability:<key>:popup` /
-          // `:redirect`). It used to be folded to a boolean with
-          // `busy?.startsWith(...)` and then compared to those strings, which
-          // is never true — so neither button ever showed that its own press
-          // was running, and only a type error nobody ran said so (TS2367).
-          const popupBusyKey = `capability:${capabilityKey}:popup`;
-          const redirectBusyKey = `capability:${capabilityKey}:redirect`;
+          // `busy` holds the EXACT token the enable handler set
+          // (`capability:<key>:popup` / `:redirect`), so the two labels below
+          // compare against those tokens. They used to compare a BOOLEAN
+          // (`busy?.startsWith(...)`) with a string, which is never equal — so
+          // neither "Enabling …" nor "Opening Google…" ever appeared and the
+          // button looked inert for the whole round trip (2026-09-18).
+          const capabilityPopupBusy =
+            busy === `capability:${capabilityKey}:popup`;
+          const capabilityRedirectBusy =
+            busy === `capability:${capabilityKey}:redirect`;
           return (
             <article
               key={capability.key}
@@ -530,34 +500,18 @@ function CapabilityCatalog({
                   </summary>
                   <div className="mt-2 divide-y divide-border/70">
                     {matchingResources.map((resource) => (
-                      <div
+                      <a
                         key={resource.id}
-                        className="flex items-center justify-between gap-2 py-1.5"
+                        href={googleResourceHref(resource)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-between gap-3 py-1.5 text-foreground hover:text-primary"
                       >
-                        <a
-                          href={googleResourceHref(resource)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex min-w-0 flex-1 items-center justify-between gap-3 text-foreground hover:text-primary"
-                        >
-                          <span className="min-w-0 truncate">
-                            {resource.display_name}
-                          </span>
-                          <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-                        </a>
-                        {/*
-                          🚨 A NAMED FILE OPENS HERE TOO (F-58). A Doc or Sheet in
-                          this roster used to offer only its Google link; its AI
-                          Matrx Record is the surface that holds the body, the
-                          refresh and the append.
-                        */}
-                        {hasGoogleDocumentRecord(resource.resource_type) ? (
-                          <OpenGoogleDocumentRecordButton
-                            resource={pickedGoogleRecordResource(resource)}
-                            variant="ghost"
-                          />
-                        ) : null}
-                      </div>
+                        <span className="min-w-0 truncate">
+                          {resource.display_name}
+                        </span>
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                      </a>
                     ))}
                   </div>
                 </details>
@@ -582,7 +536,7 @@ function CapabilityCatalog({
                     onClick={() => onEnableCapability(capability)}
                     disabled={authorizationActionDisabled}
                   >
-                    {busy === popupBusyKey
+                    {capabilityPopupBusy
                       ? `Enabling ${capability.title}…`
                       : `Enable ${capability.title}`}
                   </Button>
@@ -592,7 +546,7 @@ function CapabilityCatalog({
                     onClick={() => onEnableCapability(capability, true)}
                     disabled={authorizationActionDisabled}
                   >
-                    {busy === redirectBusyKey
+                    {capabilityRedirectBusy
                       ? "Opening Google…"
                       : "Continue in this tab"}
                   </Button>
@@ -733,12 +687,10 @@ function UnavailableRequestedAccount({
 function googleResourceHref(resource: GoogleConnectionResource): string {
   const storedLink = resource.metadata.web_view_link;
   if (typeof storedLink === "string" && storedLink) return storedLink;
-  // Workspace files get their door from the ONE file-type record, so a type the
-  // server adds cannot fall through to the Search Console URL below (V13-3).
-  if (isGoogleWorkspaceFileRow(resource))
-    return googleWorkspaceFileType(resource.resource_type).hrefFor(
-      resource.resource_ref,
-    );
+  if (resource.resource_type === "google_document")
+    return `https://docs.google.com/document/d/${encodeURIComponent(resource.resource_ref)}/edit`;
+  if (resource.resource_type === "google_spreadsheet")
+    return `https://docs.google.com/spreadsheets/d/${encodeURIComponent(resource.resource_ref)}/edit`;
   if (resource.resource_type === "youtube_channel")
     return `https://www.youtube.com/channel/${encodeURIComponent(resource.resource_ref)}`;
   if (resource.resource_type === "analytics_property")

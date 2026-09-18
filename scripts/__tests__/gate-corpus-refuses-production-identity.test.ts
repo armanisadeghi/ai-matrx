@@ -73,14 +73,24 @@ describe("A. the refusal bites when the connection IS production", () => {
   });
 
   it("the refusal prints both identifiers, so the reader can tell WHICH cluster answered", async () => {
-    const err = await assertServerMatchesTarget(
+    // The function RESOLVES with the identity it accepted and REJECTS with the
+    // refusal, so the union here is `string | Error` — and a resolved string
+    // would mean the guard did not bite at all. Narrow by proving it threw,
+    // rather than asserting the type away: `as Error` on a resolved value
+    // would have let this test read the identity string's own `.message`
+    // (undefined) and pass nothing.
+    const err: string | Error = await assertServerMatchesTarget(
       serverSaying(ref.parentSystemIdentifier),
       "branch",
       ref,
       "gate-corpus/branch-api.ts",
-    ).catch((e: unknown) => e as Error);
+    ).catch((e: unknown) => (e instanceof Error ? e : new Error(String(e))));
 
-    expect(err).toBeInstanceOf(Error);
+    if (!(err instanceof Error)) {
+      throw new Error(
+        `assertServerMatchesTarget ACCEPTED production's own system_identifier on --target branch; it returned ${err}`,
+      );
+    }
     expect(err.message).toContain(ref.parentSystemIdentifier);
     expect(err.message).toContain(ref.systemIdentifier);
     expect(err.message).toContain("gate-corpus/branch-api.ts");

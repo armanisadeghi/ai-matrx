@@ -71,12 +71,19 @@ case "$MODE" in
     CONTAINER="dd154-pg17-${RANDOM}-${RANDOM}"
     docker run -d --name "$CONTAINER" --network none -e POSTGRES_HOST_AUTH_METHOD=trust postgres:17 >/dev/null || fail "could not start the isolated postgres:17 container"
     PSQL=(docker exec -i "$CONTAINER" psql -U postgres -d postgres -X -v ON_ERROR_STOP=1)
+    # The official image's entrypoint runs initdb against a TEMPORARY server,
+    # stops it, then starts the real one. A bare `SELECT 1` answers during that
+    # temporary window, so the very next statement can meet a dead socket
+    # ("connection to server on socket … failed: No such file or directory",
+    # CI 2026-09-18 08:02Z). Readiness therefore means BOTH: the entrypoint has
+    # logged that its init process is complete AND a query answers after it.
     ready=false
-    for _ in $(seq 1 30); do
-      if "${PSQL[@]}" -Atc 'SELECT 1' >/dev/null 2>&1; then ready=true; break; fi
+    for _ in $(seq 1 60); do
+      if docker logs "$CONTAINER" 2>&1 | grep -q "PostgreSQL init process complete" \
+         && "${PSQL[@]}" -Atc 'SELECT 1' >/dev/null 2>&1; then ready=true; break; fi
       sleep 1
     done
-    [[ $ready == true ]] || fail "isolated postgres:17 container did not become ready within 30 seconds"
+    [[ $ready == true ]] || fail "isolated postgres:17 container did not finish its init process and answer within 60 seconds"
     ;;
   *) fail "DD154_PG_MODE must be native or docker, got: $MODE" ;;
 esac

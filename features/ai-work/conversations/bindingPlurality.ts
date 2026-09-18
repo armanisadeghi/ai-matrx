@@ -110,7 +110,7 @@ export function lastDeliveryLabel(binding: DeliveryFacts): {
     };
   }
   return {
-    text: formatSessionTimestamp(binding.last_seen_at as string),
+    text: formatSessionTimestamp(binding.last_seen_at),
     delivered: true,
   };
 }

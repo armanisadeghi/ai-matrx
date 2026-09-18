@@ -29,6 +29,7 @@ import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MAP_PATH = join(HERE, "campaign-ports.json");
@@ -207,4 +208,4 @@ function main(): number {
     return 0;
 }
 
-process.exit(main());
+exitAfterDrain(main());

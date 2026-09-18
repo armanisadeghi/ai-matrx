@@ -4,6 +4,7 @@ import {
   lookupSandboxAndOrchestrator,
   orchestratorJsonHeaders,
 } from "@/lib/sandbox/orchestrator-routing";
+import { isJsonObject } from "@/types/json";
 
 const TRANSIENT_UPSTREAM_STATUSES = new Set([502, 503, 504]);
 const TOKEN_MINT_MAX_ATTEMPTS = 3;
@@ -14,7 +15,14 @@ const TOKEN_MINT_RETRY_MS = 250;
 // prevents the caller's existing retry/recovery path from running.
 const TOKEN_MINT_ATTEMPT_TIMEOUT_MS = 2_000;
 
-type FetchLike = typeof fetch;
+/**
+ * What this module actually needs from `fetch`: a string URL and an init.
+ * Declared to the real call site rather than aliasing `typeof fetch`, whose
+ * `URL | RequestInfo` input no caller here ever passes — and which made every
+ * honest string-url test double unassignable. Global `fetch` still satisfies
+ * it (a wider parameter is assignable to a narrower one).
+ */
+type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
 type ResponseConsumer<T> = (response: Response) => Promise<T>;
 
 const sleep = (milliseconds: number) =>
@@ -236,6 +244,18 @@ export async function POST(
     }
 
     const tokenPayload = mint.body;
+    if (!isJsonObject(tokenPayload)) {
+      // A 200 that is not a JSON object is a broken orchestrator contract, not
+      // a token. Say so instead of spreading a non-object into the response.
+      console.error(
+        "Orchestrator access-tokens returned a non-object success body:",
+        tokenPayload,
+      );
+      return NextResponse.json(
+        { error: "Sandbox orchestrator returned a malformed access token" },
+        { status: 502 },
+      );
+    }
     return NextResponse.json({
       ...tokenPayload,
       sandbox_id: lookup.sandboxId,

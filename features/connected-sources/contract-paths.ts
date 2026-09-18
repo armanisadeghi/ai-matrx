@@ -27,6 +27,7 @@ import type {
   GooglePresentationResponse,
   GoogleRevisionsResponse,
 } from "./types";
+import type { ContractAheadRoute } from "@/lib/api/contract-ahead-route";
 
 type Json<T> = { content: { "application/json": T } };
 type Ok<T> = { responses: { 200: Json<T> } };
@@ -36,26 +37,26 @@ type GoogleFileBody = Body<{ connection_id: string; file_id: string }>;
 declare module "@/types/python-generated/api-types" {
   interface paths {
     /** Which adapters this person can browse, and why not for the rest. */
-    "/connected-sources/adapters": {
+    "/connected-sources/adapters": ContractAheadRoute<{
       get: Ok<{ adapters: ConnectedAdapterRow[] }>;
-    };
+    }>;
     /** Every adapter that exists, connected or not — the capability map. */
-    "/connected-sources/adapters/catalog": {
+    "/connected-sources/adapters/catalog": ContractAheadRoute<{
       get: Ok<{ adapters: ConnectedAdapterRow[] }>;
-    };
+    }>;
     /** One page of Sources out of a connected account. */
-    "/connected-sources/browse": {
+    "/connected-sources/browse": ContractAheadRoute<{
       post: Body<ConnectedBrowseRequest> & Ok<ConnectedBrowseResponse>;
-    };
+    }>;
     /** The corrections on a picked Google file. */
-    "/connected-sources/google/comments": {
+    "/connected-sources/google/comments": ContractAheadRoute<{
       post: GoogleFileBody & Ok<GoogleCommentsResponse>;
-    };
-    "/connected-sources/google/revisions": {
+    }>;
+    "/connected-sources/google/revisions": ContractAheadRoute<{
       post: GoogleFileBody & Ok<GoogleRevisionsResponse>;
-    };
-    "/connected-sources/google/presentation": {
+    }>;
+    "/connected-sources/google/presentation": ContractAheadRoute<{
       post: GoogleFileBody & Ok<GooglePresentationResponse>;
-    };
+    }>;
   }
 }

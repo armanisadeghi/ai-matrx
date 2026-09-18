@@ -40,6 +40,7 @@ import type {
     ResolveResult,
     VideoListResponse,
 } from "./types";
+import type { ContractAheadRoute } from "@/lib/api/contract-ahead-route";
 
 type Json<T> = { content: { "application/json": T } };
 type Ok<T> = { responses: { 200: Json<T> } };
@@ -50,11 +51,11 @@ type Body<T> = { requestBody: Json<T> };
 declare module "@/types/python-generated/api-types" {
     interface paths {
         /** §2 — resolve any pasted channel / handle / playlist / video input. */
-        "/media/resolve": {
+        "/media/resolve": ContractAheadRoute<{
             post: Body<{ input: string; adapter?: string | null }> & Ok<ResolveResult>;
-        };
+        }>;
         /** §3 — the saved Library record. Creating does NOT enumerate. */
-        "/media/libraries": {
+        "/media/libraries": ContractAheadRoute<{
             get: Ok<LibraryListResponse>;
             post: Body<{
                 input: string;
@@ -67,8 +68,8 @@ declare module "@/types/python-generated/api-types" {
                 sync_now?: boolean;
             }> &
                 Created<LibraryRow>;
-        };
-        "/media/libraries/{library_id}": {
+        }>;
+        "/media/libraries/{library_id}": ContractAheadRoute<{
             get: Ok<LibraryRow>;
             patch: Body<{
                 name?: string;
@@ -78,69 +79,69 @@ declare module "@/types/python-generated/api-types" {
             }> &
                 Ok<LibraryRow>;
             delete: NoContent;
-        };
+        }>;
         /** §4 — the one enumeration door, and the manual "bring up to date". */
-        "/media/libraries/{library_id}/sync": {
+        "/media/libraries/{library_id}/sync": ContractAheadRoute<{
             post: Body<{
                 mode?: "full" | "incremental";
                 classify?: boolean;
                 stream?: boolean;
             }> &
                 Ok<unknown>;
-        };
+        }>;
         /** §6 — classify long / short / live. Streams. */
-        "/media/libraries/{library_id}/classify": {
+        "/media/libraries/{library_id}/classify": ContractAheadRoute<{
             post: Body<{
                 video_ids?: string[] | null;
                 force?: boolean;
                 shorts_threshold_seconds?: number | null;
             }> &
                 Ok<unknown>;
-        };
+        }>;
         /** §4.2 — the MOUNT READ. A client never depends on catching a stream. */
-        "/media/libraries/{library_id}/videos": {
+        "/media/libraries/{library_id}/videos": ContractAheadRoute<{
             get: Ok<VideoListResponse>;
-        };
+        }>;
         /** §5 — metrics, computed server-side over the whole Library. */
-        "/media/libraries/{library_id}/metrics": {
+        "/media/libraries/{library_id}/metrics": ContractAheadRoute<{
             get: Ok<LibraryMetrics>;
-        };
+        }>;
         /** §7.2 — the estimate. Nothing paid runs without it. */
-        "/media/libraries/{library_id}/estimate": {
+        "/media/libraries/{library_id}/estimate": ContractAheadRoute<{
             post: Body<EstimateRequest> & Ok<EstimateResult>;
-        };
+        }>;
         /**
          * §7.3 — every Action runs through this one endpoint (POST), and §7's
          * JOB-DISCOVERY DOOR (GET) is how a durable job is found again when this
          * browser does not know its id: after a reload, on another device, or when
          * the id never arrived because the response was a shape we could not read.
          */
-        "/media/libraries/{library_id}/jobs": {
+        "/media/libraries/{library_id}/jobs": ContractAheadRoute<{
             post: Body<CreateJobRequest> & Created<JobRow>;
             get: Ok<JobListResponse>;
-        };
+        }>;
         /** §7 — the job mount read. */
-        "/media/jobs/{job_id}": {
+        "/media/jobs/{job_id}": ContractAheadRoute<{
             get: Ok<JobDetailResponse>;
-        };
-        "/media/jobs/{job_id}/stream": {
+        }>;
+        "/media/jobs/{job_id}/stream": ContractAheadRoute<{
             get: Ok<unknown>;
-        };
-        "/media/jobs/{job_id}/resume": {
+        }>;
+        "/media/jobs/{job_id}/resume": ContractAheadRoute<{
             post: Ok<{ job: JobRow; reclaimed: number }>;
-        };
-        "/media/jobs/{job_id}/retry-failed": {
+        }>;
+        "/media/jobs/{job_id}/retry-failed": ContractAheadRoute<{
             post: Ok<{ job: JobRow; requeued: number }>;
-        };
-        "/media/jobs/{job_id}/cancel": {
+        }>;
+        "/media/jobs/{job_id}/cancel": ContractAheadRoute<{
             post: Ok<JobRow>;
-        };
+        }>;
         /** §8 — the Action registry. ONE server declaration is enough to appear. */
-        "/media/actions": {
+        "/media/actions": ContractAheadRoute<{
             get: Ok<{ actions: ActionDeclaration[] }>;
-        };
+        }>;
         /** §9 — the knobs, each carrying where its value came from. */
-        "/media/settings": {
+        "/media/settings": ContractAheadRoute<{
             get: Ok<MediaSettingsResponse>;
             put: Body<{
                 scope: "org" | "library";
@@ -148,6 +149,6 @@ declare module "@/types/python-generated/api-types" {
                 values: Record<string, unknown>;
             }> &
                 Ok<MediaSettingsResponse>;
-        };
+        }>;
     }
 }
