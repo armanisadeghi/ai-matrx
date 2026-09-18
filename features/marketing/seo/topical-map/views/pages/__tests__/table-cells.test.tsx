@@ -203,3 +203,48 @@ describe("every column refuses a control the read cannot serve", () => {
     expect(COLUMNS.every((column) => column.filter === false)).toBe(true);
   });
 });
+
+describe("the `Region` cell — the read carries no region, and the column says so", () => {
+  it("stands where the plan puts it, between Impressions and Note", async () => {
+    expect(COLUMNS.map((column) => column.id)).toEqual([
+      "page",
+      "current_topics",
+      "destination",
+      "disposition",
+      "state",
+      "source",
+      "clicks",
+      "impressions",
+      "region",
+      "note",
+    ]);
+  });
+
+  it("renders the stated absence for a recorded row — never a blank cell", async () => {
+    // Every row `seo.list_page_intents` returns is recorded here, and NOT ONE
+    // of them carries a region: the function takes no region argument and its
+    // `web_page` refs are `seo._tm_ref`s without the facet. A blank cell would
+    // read as "this page has no region", which is a different and unknown
+    // fact, so the cell says what is true — nobody measured it on this read.
+    for (const item of ITEMS) {
+      const node = await renderCell("region", item);
+      expect(node.textContent?.trim()).not.toBe("");
+      expect(node.textContent).toContain("—");
+      expect(node.querySelector("[title]")?.getAttribute("title")).toContain(
+        "not measured on this read",
+      );
+    }
+  });
+
+  it("carries the reason on the column HEADER, not only in the cell", async () => {
+    // The person scanning a column of dashes reads the header first, so the
+    // header itself says why every cell is empty and where a region DOES live.
+    const region = COLUMNS.find((column) => column.id === "region");
+    if (!region) throw new Error("There is no region column.");
+    await act(async () => root.render(<>{region.header}</>));
+    const titled = container.querySelector("[title]")?.getAttribute("title") ?? "";
+    expect(container.textContent).toContain("Region");
+    expect(titled).toContain("not measured on this read");
+    expect(titled).toContain("seo.list_page_intents");
+  });
+});

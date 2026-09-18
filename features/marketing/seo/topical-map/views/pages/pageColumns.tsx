@@ -2,8 +2,19 @@
 
 // features/marketing/seo/topical-map/views/pages/pageColumns.tsx
 //
-// The nine columns of the pages triage table. One factory, so the table and any
+// The ten columns of the pages triage table. One factory, so the table and any
 // future host draw the same cells rather than two drifting copies.
+//
+// 🚨 THE `region` COLUMN IS PRESENT AND HONEST, NOT ABSENT AND NOT BLANK.
+// `seo.list_page_intents` takes no region argument and its `web_page` refs
+// (`seo._tm_ref`) carry no region facet — every row of the recorded fixture
+// `redux/__fixtures__/listPageIntentsRound22.ts` confirms it, and the filter
+// bar above the table says the same thing about its own Region control. So the
+// cell prints the em dash every other unmeasured cell prints, with the reason,
+// and the HEADER carries the reason too: a column of dashes with nothing to
+// read would say "these pages have no region", which is a different fact and
+// one nobody measured. Where a region DOES live today is the map's region
+// facet on the TOPIC (`seo.map/regions`), not on the page.
 //
 // 🚨 EVERY COLUMN IS `sortable: false`, AND THAT IS HONESTY, NOT AN OMISSION.
 // `seo.list_page_intents` takes `p_map_id`, `p_site_id`, `p_topic_slug`,
@@ -47,6 +58,15 @@ export interface PageColumnDeps {
   knobs: Pick<TopicalMapKnobs, "intent_colors">;
   links: MapLinks;
 }
+
+/**
+ * Why the region column is a column of dashes. One sentence, shown on the
+ * header and in every cell, naming the read that does not carry it.
+ */
+const REGION_NOT_ON_THIS_READ =
+  "Region is not measured on this read: seo.list_page_intents takes no region " +
+  "argument and the page rows it returns carry no region. A map's regions live " +
+  "on its topics (the region facet), so filter by topic to work region by region.";
 
 /** The em dash every "nothing here" cell uses, with the reason in `title`. */
 function Absent({ why, srOnly }: { why: string; srOnly?: string }) {
@@ -292,6 +312,20 @@ export function pageColumns({
             </span>
           )}
         </span>
+      ),
+    },
+    {
+      id: "region",
+      header: (
+        <span title={REGION_NOT_ON_THIS_READ}>Region</span>
+      ),
+      label: "Region",
+      ...inert,
+      cell: () => (
+        // Not `item.page.region` behind a `?.` — there is no such key on any
+        // row this read returns, and a reader that reached for one would print
+        // a blank cell the day the shape changed under it.
+        <Absent why={REGION_NOT_ON_THIS_READ} srOnly="region not measured on this read" />
       ),
     },
     {
