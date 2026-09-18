@@ -138,7 +138,10 @@ import {
   type MessageRecord,
 } from "../messages/messages.slice";
 import { removeInboxItem } from "../inbox/inbox.slice";
-import { selectMessageCount } from "../messages/messages.selectors";
+import {
+  selectMessageCount,
+  selectNextMessagePosition,
+} from "../messages/messages.selectors";
 import { fromImageOutputData } from "@/features/files/blocks/image/adapters/from-image-output-data";
 import { fromPartialImageData } from "@/features/files/blocks/image/adapters/from-partial-image-data";
 import { getCapabilitiesForConversation } from "@/features/agents/runtime/get-model-capabilities";
@@ -2792,7 +2795,7 @@ export async function processStream({
           const position =
             typeof item.position === "number"
               ? item.position
-              : selectMessageCount(conversationId)(getState());
+              : selectNextMessagePosition(conversationId)(getState());
           inboxTempIdByPosition.set(position, tempId);
           dispatch(
             addOptimisticUserMessage({

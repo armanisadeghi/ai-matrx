@@ -11,7 +11,7 @@
  * modal (placeholder JSON viewer until real modals are built).
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -37,6 +37,11 @@ import type { InstanceContextEntry } from "@/features/agents/types/instance.type
 import type { RootState } from "@/lib/redux/store";
 import { buildVariableDisplayLines } from "@/features/agents/utils/variable-display-lines";
 import type { MessagePart } from "@/types/python-generated/stream-events";
+import { selectIsSuperAdmin } from "@/lib/redux/selectors/userSelectors";
+import {
+  recordTranscriptEvent,
+  shortId,
+} from "@/features/agents/redux/execution-system/messages/transcript-journal";
 
 export function AgentUserMessageContent({
   conversationId,
@@ -268,7 +273,63 @@ export function AgentUserMessage({
   const { isCollapsed, setIsCollapsed, shouldBeCollapsible, measureRef } =
     useCollapsibleMessageText(collapseSignature);
 
-  if (!hasContent) return null;
+  // A user row the model reads but the person never typed: loop-guard
+  // notices, host steers, orchestrator gate notices. The server stamps them
+  // `metadata.authored_by = "host"` with an EMPTY `user_content`, and hiding
+  // them from the transcript is the design (they say "not from the user").
+  const authoredByHost = metadata?.authored_by === "host";
+  const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+
+  // 🚨 A user bubble that renders NOTHING is the "my message disappeared"
+  // defect wearing a different hat. The journal records every empty render
+  // with the shape that produced it so the admin transcript report can name
+  // it; the screen itself says what happened instead of going blank.
+  useEffect(() => {
+    if (hasContent || !record) return;
+    recordTranscriptEvent(
+      conversationId,
+      authoredByHost
+        ? "user_bubble_hidden_host_authored"
+        : "user_bubble_rendered_empty",
+      {
+        id: shortId(messageId),
+        position: record.position,
+        clientStatus: record._clientStatus ?? null,
+        userContentShape: describeUserContentShape(record.userContent),
+        contentParts: Array.isArray(record.content) ? record.content.length : 0,
+        contentTextLength: extractFlatText({
+          ...record,
+          userContent: null,
+        }).length,
+      },
+    );
+  }, [hasContent, record, conversationId, messageId, authoredByHost]);
+
+  if (!hasContent) {
+    if (authoredByHost || !record) return null;
+    const storedTextLength = extractFlatText({
+      ...record,
+      userContent: null,
+    }).length;
+    return (
+      <div
+        className={cn("group relative", compact ? "" : "ml-12")}
+        data-testid="user-message-empty"
+      >
+        <div className="rounded-lg border border-dashed border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          This message has no displayable text.
+          {isSuperAdmin && (
+            <span className="ml-1 font-mono">
+              [{shortId(messageId)} pos {record.position} ·{" "}
+              {record._clientStatus ?? "no-client-status"} · user_content{" "}
+              {describeUserContentShape(record.userContent)} · content{" "}
+              {storedTextLength} chars]
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const containerMargin = compact ? "" : "ml-12";
 
@@ -412,4 +473,26 @@ export function AgentUserMessage({
       </div>
     </div>
   );
+}
+
+/**
+ * Compact shape word for `user_content` — the projection the bubble prefers
+ * over `content` when it is non-null. Shared with the transcript report so
+ * the two never disagree about what "empty" means.
+ */
+export function describeUserContentShape(
+  userContent: unknown,
+): "null" | "empty" | "no_text" | "text" | "non_array" {
+  if (userContent == null) return "null";
+  if (!Array.isArray(userContent)) return "non_array";
+  if (userContent.length === 0) return "empty";
+  const hasText = userContent.some(
+    (part) =>
+      part &&
+      typeof part === "object" &&
+      (part as { type?: unknown }).type === "text" &&
+      typeof (part as { text?: unknown }).text === "string" &&
+      (part as { text: string }).text.trim().length > 0,
+  );
+  return hasText ? "text" : "no_text";
 }

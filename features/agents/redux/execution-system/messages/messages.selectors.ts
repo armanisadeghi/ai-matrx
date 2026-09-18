@@ -10,7 +10,7 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/lib/redux/store";
-import type { MessageRecord } from "./messages.slice";
+import { nextTranscriptPosition, type MessageRecord } from "./messages.slice";
 import type {
   ContentSegment,
   ContentSegmentText,
@@ -156,6 +156,16 @@ export const selectMessageCount =
   (conversationId: string) =>
   (state: RootState): number =>
     state.messages.byConversationId[conversationId]?.orderedIds?.length ?? 0;
+
+/**
+ * The position a new row appended right now will most likely receive from the
+ * server. Derived from the loaded rows' positions, never from their count —
+ * see `nextTranscriptPosition` in the slice for the defect that rule closed.
+ */
+export const selectNextMessagePosition =
+  (conversationId: string) =>
+  (state: RootState): number =>
+    nextTranscriptPosition(state.messages.byConversationId[conversationId]);
 
 export const selectHasMessages =
   (conversationId: string) =>

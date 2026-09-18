@@ -15,6 +15,7 @@ import { SmartAgentInput } from "../inputs/smart-input/SmartAgentInput";
 import type { AttachedContextRailItem } from "../inputs/smart-input/ConversationContextRail";
 import type { VariablesPanelStyle } from "../inputs/variable-input-variations/variable-input-options";
 import { OlderMessagesSentinel } from "./OlderMessagesSentinel";
+import { TranscriptIntegrityCopyButton } from "../messages-display/TranscriptIntegrityCopyButton";
 import { PendingAsksZone } from "@/features/agents/ui-first-tools/ui/PendingAsksZone";
 import { ServerOperationBanner } from "@/features/agents/runtime-reconnect/ServerOperationBanner";
 import { ProposedDirectivesZone } from "@/features/matrx-envelope/components/ProposedDirectivesZone";
@@ -500,6 +501,15 @@ export function AgentConversationColumn({
             <ArrowDown className="w-4 h-4" />
           </button>
         )}
+        <TranscriptIntegrityCopyButton
+          conversationId={displayId}
+          surfaceKey={surfaceKey}
+          effectiveVisibleGroupLimit={
+            deferColdMarkdown
+              ? (chatVisibleGroupLimit ?? CHAT_INITIAL_VISIBLE_GROUPS)
+              : null
+          }
+        />
       </div>
 
       {/* While the landing is showing, suppress the standard input + the

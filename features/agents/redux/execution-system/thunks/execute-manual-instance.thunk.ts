@@ -90,7 +90,10 @@ import type { UserInputPart } from "@/features/agents/types/request.types";
 import type { RequestInitiation } from "@/features/agents/types/instance.types";
 import type { MessageRecord } from "../messages/messages.slice";
 import { isSyntheticAgentId } from "@/features/agents/redux/agent-definition/synthetic-id";
-import { selectMessageCount } from "../messages/messages.selectors";
+import {
+  selectMessageCount,
+  selectNextMessagePosition,
+} from "../messages/messages.selectors";
 // Shared with the ephemeral agent-run path — see utils/wire-transcript.ts.
 import { recordsToMessages } from "../utils/wire-transcript";
 import { generateRequestId } from "../utils/ids";
@@ -695,7 +698,7 @@ export const executeManualInstance = createAsyncThunk<
         }
         if (resourceBlocks.length > 0) content.push(...resourceBlocks);
         userMessageClientTempId = uuidv4();
-        const nextPosition = selectMessageCount(conversationId)(
+        const nextPosition = selectNextMessagePosition(conversationId)(
           getState() as RootState,
         );
         const userMessageMetadata: Json | undefined =
