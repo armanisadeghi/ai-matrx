@@ -54,8 +54,18 @@ export interface DetailCore {
    * every type, including the ones whose header shows none.
    */
   canOpenElsewhere: boolean;
-  /** Human label for the record type ("File"), for a header that must say what this is. */
+  /**
+   * Human label for the record TYPE ("File") — for a statement about the type,
+   * such as the presentation setting's "Every file record now opens as a window".
+   */
   typeLabel: string;
+  /**
+   * What THIS ROW is ("Company" for a `crm.party` row whose `party_kind` is
+   * `organization`, where `typeLabel` says "Person"). The header's type chip and
+   * the stand-in titles use this; `typeLabel` when the registration cannot tell
+   * the difference. See `DetailRecordType.labelForRow`.
+   */
+  recordLabel: string;
   about: string | null;
   fields: DetailField[];
   /**
@@ -90,8 +100,13 @@ function entityTokenOf(recordType: DetailRecordType | null): string | null {
   return recordType?.entityToken ?? null;
 }
 
-/** One console line per subject per tab — a remedy, never a per-render spam. */
-const announced = new Set<string>();
+// One console line per subject per tab — a remedy, never a per-render spam.
+// On `globalThis` under a `Symbol.for` slot, never module scope: the ESM and
+// CJS builds of this package are separate module instances, and a per-module
+// set would announce the same subject once per loader graph.
+const ANNOUNCED_SLOT = Symbol.for("ai-matrx.detail.announced-remedies");
+type AnnouncedSlot = { [ANNOUNCED_SLOT]?: Set<string> };
+const announced: Set<string> = ((globalThis as AnnouncedSlot)[ANNOUNCED_SLOT] ??= new Set<string>());
 function announceOnce(key: string, message: string): void {
   if (announced.has(key)) return;
   announced.add(key);
@@ -104,6 +119,8 @@ function neighbour(list: DetailListContext | null, delta: 1 | -1): DetailRef | n
   if (target < 0 || target >= list.items.length) return null;
   return list.items[target] ?? null;
 }
+
+const DEFAULT_TYPE_MAP_REMEDY = "the host's `resolveType` map (the DetailHostProvider's record-type port)";
 
 export function useDetailCore(
   data: DetailInstanceData,
@@ -132,11 +149,11 @@ export function useDetailCore(
   // stand-in so the presentations can render it as one.
   //
   // 🚨 NEW-1 (VERIFY-U-P1-R2) — `none` IS NOT A LOADED ROW EITHER. A record
-  // type with no `detailSource` resolves to `status: "none"`, and treating that
-  // as a successful load put the registration's invented `Untitled <Label>` in
-  // the header, in foreground weight, with the record's DOORS beside it, above
-  // a body saying no details were available. Every unregistered type — the
-  // agent-emitted type the registry deliberately supports — landed there. Only
+  // type with no `load` resolves to `status: "none"`, and treating that as a
+  // successful load put the registration's invented `Untitled <Label>` in the
+  // header, in foreground weight, with the record's DOORS beside it, above a
+  // body saying no details were available. Every unregistered type — the
+  // agent-emitted type a registry deliberately supports — landed there. Only
   // `ready` is a loaded row; `none` gets the honest absent state below.
   const loadedTitle =
     state.status === "ready" && recordType ? recordType.title(row, data.seed) : null;
@@ -145,19 +162,26 @@ export function useDetailCore(
   // Round 2's fix put "No detail is registered for session records" in the
   // header, which is where the record's NAME goes: the screen named a real
   // record with a developer's sentence, printed a repo path in the body, and
-  // dropped the doors, so a session (or a note reached by `/detail/note/<id>`)
-  // became a named dead end. A record that exists but stores nothing more here
-  // is named from what is certain — its type and its own id — the body says in
-  // one plain sentence that there is nothing more, and the doors stay.
+  // dropped the doors, so a record became a named dead end. A record that
+  // exists but stores nothing more here is named from what is certain — its
+  // type and its own id — the body says in one plain sentence that there is
+  // nothing more, and the doors stay.
   const shortId = data.id.length > 8 ? data.id.slice(0, 8) : data.id;
+  // 🚨 WHAT THIS ROW IS, not what its type is called (chair, 2026-09-18). One
+  // registered type is regularly a family — `crm.party` is 1,432 companies and
+  // 460 persons — so a type-level label says "Person" over a company, in the chip
+  // and in every stand-in title (VERIFY-U-P1-R5, N6). A registration that can
+  // tell from the row answers through `labelForRow`; nothing else changes, and
+  // the presentation pane deliberately keeps `typeLabel`.
+  const recordLabel = (row && recordType?.labelForRow?.(row)) || typeLabel;
   const standInTitle =
     state.status === "not-found"
-      ? `This ${typeLabel.toLowerCase()} could not be found`
+      ? `This ${recordLabel.toLowerCase()} could not be found`
       : state.status === "error"
-        ? `This ${typeLabel.toLowerCase()} could not be loaded`
+        ? `This ${recordLabel.toLowerCase()} could not be loaded`
         : state.status === "none"
-          ? `${typeLabel} ${shortId}`
-          : `Loading this ${typeLabel.toLowerCase()}…`;
+          ? `${recordLabel} ${shortId}`
+          : `Loading this ${recordLabel.toLowerCase()}…`;
   const titleIsStandIn = !loadedTitle && !seedName;
   const title = loadedTitle ?? seedName ?? standInTitle;
   // The record plausibly exists: only a failed or missing read says otherwise.
@@ -175,11 +199,11 @@ export function useDetailCore(
   const about = data.seed?.about?.trim() || null;
   const fields: DetailField[] =
     row && recordType ? recordType.fields(row) : [];
-  // 🚨 PLAN §4 / §5.3 — THE GOOGLE HEALTH STRIP HAS A PRODUCER. The producer is
-  // a field on the registration the HOST wires (it may read the connector's
-  // recorded capability health, which is an async read), so it is resolved here
-  // through one hook rather than called inline — and a producer that fails says
-  // so on the strip instead of leaving the record silent.
+  // 🚨 THE SOURCE HEALTH STRIP HAS A PRODUCER. The producer is a field on the
+  // registration the HOST wires (it may read the connector's recorded
+  // capability health, which is an async read), so it is resolved here through
+  // one hook rather than called inline — and a producer that fails says so on
+  // the strip instead of leaving the record silent.
   const health = useDetailHealth({
     recordType,
     row,
@@ -203,27 +227,27 @@ export function useDetailCore(
   // 🚨 NEW-9 — THE REMEDY GOES WHERE THE DEVELOPER IS. The person sees a plain
   // sentence; the registry instruction is a console warning, once per type per
   // tab, so it is impossible to miss in development and impossible to read on a
-  // screen in production.
+  // screen in production. WHERE the registry is comes from the host's `remedy`
+  // port — this package cannot know a host's file paths.
+  const typeMapRemedy = host.remedy?.typeMap ?? DEFAULT_TYPE_MAP_REMEDY;
   useEffect(() => {
     if (!recordType) {
       announceOnce(
         `no-type:${data.type}`,
         `[detail] Nothing is registered for the record type "${data.type}", so its detail shows ` +
-          "the type, the id and the doors only. Remedy: add an entry for it in the item registry " +
-          "(features/item-presentation/registry.tsx).",
+          `the type, the id and the doors only. Remedy: add an entry for it in ${typeMapRemedy}.`,
       );
       return;
     }
     if (state.status === "none") {
       announceOnce(
         `no-source:${data.type}`,
-        `[detail] The record type "${data.type}" has no \`detailSource\`, so its detail can show ` +
-          "nothing beyond what the opener already knew. Remedy: give the type a `detailSource` in " +
-          "the item registry (features/item-presentation/registry.tsx), or leave it sourceless " +
-          "deliberately and say why there.",
+        `[detail] The record type "${data.type}" has no \`load\` (no single canonical source), so ` +
+          "its detail can show nothing beyond what the opener already knew. Remedy: give the type " +
+          `a load in ${typeMapRemedy}, or leave it sourceless deliberately and say why there.`,
       );
     }
-  }, [recordType, state.status, data.type]);
+  }, [recordType, state.status, data.type, typeMapRemedy]);
 
   // Keep the setting warm for this type so a switch or a neighbour opens
   // without an awaited round-trip.
@@ -260,9 +284,9 @@ export function useDetailCore(
 
   /**
    * 🚨 D1 — LEAVING THE PAGE, ONCE, FOR A DESTINATION THAT EXISTS.
-   * `/detail/<type>/<id>` is reached by a shared deep link as often as by an
-   * in-app push, and a tab opened straight onto it has NO history entry behind
-   * it: `back()` there leaves the person on `about:blank` with the app gone
+   * A detail page is reached by a shared deep link as often as by an in-app
+   * push, and a tab opened straight onto it has NO history entry behind it:
+   * `back()` there leaves the person on `about:blank` with the app gone
    * (VERIFY-U-P1 D1). Round 1 guarded the presentation SWITCH only, and
    * VERIFY-U-P1-R2 reproduced the same failure through the page header's Back
    * chevron and through Escape, because the route handed the presentation a raw
@@ -336,6 +360,7 @@ export function useDetailCore(
     doorsAvailable,
     canOpenElsewhere,
     typeLabel,
+    recordLabel,
     about,
     fields,
     health,

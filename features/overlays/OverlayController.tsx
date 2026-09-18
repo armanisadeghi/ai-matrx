@@ -631,6 +631,13 @@ const GoogleTasksImportWindow = lazyOverlay(
     ),
   { ssr: false },
 );
+const GoogleAgendaWindow = lazyOverlay(
+  () =>
+    import(
+      "@/features/window-panels/windows/google-calendar/GoogleAgendaWindow"
+    ),
+  { ssr: false },
+);
 const DetailDocked = lazyOverlay(
   () => import("@/features/window-panels/windows/detail/DetailDocked"),
   { ssr: false },
@@ -1421,6 +1428,9 @@ export default function OverlayController() {
     ),
     googleTasksImportWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "googleTasksImportWindow"),
+    ),
+    googleAgendaWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "googleAgendaWindow"),
     ),
     detailDocked: useAppSelector((s) =>
       selectIsOverlayOpen(s, "detailDocked"),
@@ -4660,6 +4670,17 @@ export default function OverlayController() {
               typeof data?.organizationId === "string" ? data.organizationId : null
             }
             projectId={typeof data?.projectId === "string" ? data.projectId : null}
+          />
+        );
+      })()}
+
+      {/* googleAgendaWindow — the agenda over synced Calendar events (PLAN §4.6) */}
+      {(() => {
+        if (!isOpenById.googleAgendaWindow) return null;
+        return (
+          <GoogleAgendaWindow
+            isOpen
+            onClose={() => dispatch(closeOverlay({ overlayId: "googleAgendaWindow" }))}
           />
         );
       })()}

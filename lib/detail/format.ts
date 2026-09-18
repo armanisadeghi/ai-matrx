@@ -75,7 +75,7 @@ export function fieldsFromRow(
       key,
       label: titleizeKey(key),
       text: formatted.text,
-      mono: formatted.mono,
+      ...(formatted.mono ? { mono: true } : {}),
       ref: token ? { token, id: raw as string } : null,
     });
   }

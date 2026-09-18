@@ -15,7 +15,7 @@ import { useState } from "react";
 import { DetailHostProvider } from "@/lib/detail/host";
 import { DetailPagePresentation } from "@/lib/detail/presentations";
 import type { DetailInstanceData } from "@/lib/detail/types";
-import { decodeListQuery } from "./detailOverlayData";
+import { decodeListQuery } from "@/lib/detail/presentation";
 import { DETAIL_TYPE_BINDING } from "./detailTypeBinding";
 import { takePageSeed } from "./pageSeedHandoff";
 import { DetailPageShell } from "./shells/DetailPageShell";

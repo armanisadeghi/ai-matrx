@@ -17,15 +17,31 @@ the arrows move between records — `[` / `]` are aliases — and Cmd/Ctrl+Enter
 Champions: Notion (side peek / center peek / full page, per-database "open pages in") and Linear
 (peek, keyboard-first). Bones matched, skin ours.
 
-## Why this directory is a package with a different address
+## 🚨 This directory is a COPY of `@ai-matrx/detail`, and a guard keeps it even
 
-**It is not a package yet, and saying so plainly matters**: `@ai-matrx/detail` does not exist
-on npm, nothing installs it, and no `mv` has been tested. What is true is the BOUNDARY: this
-directory imports nothing from `features/**` or `@/…`, every app-specific capability arrives
-as a port, and the extraction is therefore a move rather than a rewrite. npm publishing was
-not possible from the environment this was built in (no `NPM_TOKEN` / `NODE_AUTH_TOKEN`, no
-auth in `~/.npmrc`), so the publish is **owed** — Arman asked for a package
-(`aidream/apps/shared/detail`), and until it ships this is a package-shaped directory:
+**The package exists.** The `mv` was performed: `@ai-matrx/detail` 0.1.0 lives at aidream
+`apps/shared/detail`, and its own `pnpm typecheck`, `pnpm test` and `pnpm check:package`
+(exports agreement, publint, tarball canary) pass there. **It is not on npm.** The frontend
+adopted it (`ec7ce701`) and the adoption was **reverted** (`32ce9170`, ruling R21), because a
+`"latest"` spec for a package the registry does not have kills the ONE
+`pnpm install --frozen-lockfile` every workspace project shares. Publishing is a human step.
+
+So **this directory is the LIVE code and the package's `src/` is the source of truth for what it
+should say.** A fix goes into BOTH, in the same session. What makes that enforceable rather than
+a promise is `__tests__/the-in-repo-copy-matches-the-package.test.ts`: it diffs all fifteen
+module pairs against the package and fails BY NAME on any difference outside the module-path
+header and relative import specifiers — and it fails as **UNMEASURED**, never green, when the
+aidream checkout is absent. `core/icons.ts` is the ONE deliberate difference (the package inlines
+its glyphs because a package takes no icon-library dependency; this repo is Lucide-only) and its
+own header says so.
+
+That guard exists because of what happened without it: in the fifteen days after the cut, the
+package fixed a reviewed defect — a health producer answering `onReconnect: null` ("a reconnect
+cannot repair this refusal") still got a Reconnect button — and the revert restored the `??` that
+caused it here, so a person was shown a button that could not fix their problem while every suite
+in both repos stayed green (VERIFY-U-P1-R5, N1 / N2).
+
+The boundary the extraction rode on still holds, and is still worth stating:
 
 - **No imports from `features/**` or `@/…` app modules.** Allowed: `react`, `lucide-react`,
   `@ai-matrx/design-system` (`cn`, `Skeleton`), `@ai-matrx/associations` (+ `/react`).
@@ -37,8 +53,9 @@ auth in `~/.npmrc`), so the publish is **owed** — Arman asked for a package
   the window shell never reaches a boot bundle.
 - A missing port **throws naming itself** — never a blank surface.
 
-At extraction time the ports type, the core, the presentations and the keyboard hook move
-verbatim; the host binding stays in this repo and imports from the package instead.
+When the publish lands, adoption is deleting these files and importing `@ai-matrx/detail` /
+`/react` instead; the host binding and the shells stay in this repo. Until then the drift guard
+is the adoption's stand-in.
 
 ## The contract
 

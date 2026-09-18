@@ -22,10 +22,7 @@ import {
   DETAIL_URL_BUDGET_BYTES,
   detailListContextMax,
 } from "../types";
-import {
-  decodeListQuery,
-  encodeListQuery,
-} from "@/features/window-panels/detail/detailOverlayData";
+import { decodeListQuery, encodeListQuery } from "../presentation";
 import { instance, makePorts, mount } from "./harness";
 
 const refs = (n: number) =>

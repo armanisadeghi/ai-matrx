@@ -146,12 +146,15 @@ export function DetailDockedPresentation({ data, onClose }: DetailPresentationPr
 }
 
 /**
- * 🚨 D1 — THE PAGE OWNS ITS OWN EXIT. It takes no `onBack`: the back chevron,
- * Escape and a presentation switch all leave through `core.leave`, the one
- * guarded exit (`canGoBack` → `back()`, otherwise the record's own home). A
- * route that passed its own `router.back()` in here is exactly how a pasted or
- * bookmarked detail link still landed the tab on `about:blank` after round 1's
- * fix (VERIFY-U-P1-R2, D1).
+ * 🚨 D1 — THE PAGE OWNS ITS OWN EXIT. It accepts no `onBack` FROM ITS CALLER: the
+ * route passes none, and this component is what fills the shell's `onBack` slot,
+ * with `core.leave` — so the back chevron, Escape and a presentation switch all
+ * leave through the one guarded exit (`canGoBack` → `back()`, otherwise the
+ * record's own home). A route that passed its own `router.back()` in here is
+ * exactly how a pasted or bookmarked detail link still landed the tab on
+ * `about:blank` after round 1's fix (VERIFY-U-P1-R2, D1). N9 (VERIFY-U-P1-R5):
+ * this sentence used to read "It takes no `onBack`" directly above the line that
+ * passes one, which is the sentence a future agent trusts.
  */
 export function DetailPagePresentation({ data }: { data: DetailInstanceData }) {
   const host = useDetailHost();

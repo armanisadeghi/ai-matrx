@@ -9,15 +9,6 @@
 "use client";
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import {
-  AlertCircle,
-  ExternalLink,
-  History,
-  Link2,
-  RefreshCw,
-  ShieldAlert,
-  ShieldCheck,
-} from "lucide-react";
 import { cn, Skeleton } from "@ai-matrx/design-system";
 import {
   ASSOCIATION_TARGET_TYPES,
@@ -26,11 +17,20 @@ import {
 } from "@ai-matrx/associations";
 import { AssociationCardGrid, PrimaryEntityProvider } from "@ai-matrx/associations/react";
 
-import { useDetailHost } from "../host";
 import { formatWhen } from "../format";
+import type { DetailHistoryEntry, DetailSection, DetailSourceHealth } from "../types";
 import { DetailRecordMeta } from "./DetailHeader";
 import { DetailPresentationPane } from "./DetailPresentationPane";
-import type { DetailHistoryEntry, DetailSection, DetailSourceHealth } from "../types";
+import { useDetailHost } from "../host";
+import {
+  AlertCircleIcon,
+  ExternalLinkIcon,
+  HistoryIcon,
+  Link2Icon,
+  RefreshCwIcon,
+  ShieldAlertIcon,
+  ShieldCheckIcon,
+} from "./icons";
 import type { DetailCore } from "./useDetailCore";
 
 /**
@@ -77,7 +77,7 @@ function Notice({
 }) {
   return (
     <div className="flex flex-col items-center gap-2 py-8 text-center">
-      <AlertCircle
+      <AlertCircleIcon
         className={cn(
           "h-6 w-6",
           tone === "error" && "text-destructive",
@@ -91,6 +91,20 @@ function Notice({
 }
 
 // ─── Source health strip ────────────────────────────────────────────────────
+
+/**
+ * The state in one word, for every grant but `ok`. `blocked` is the word for
+ * "the source refuses and nothing you can click repairs it" (chair, 2026-09-18):
+ * the strip says it, states the reason, and shows no Reconnect.
+ */
+const GRANT_WORD: Record<DetailSourceHealth["grant"], string> = {
+  ok: "OK",
+  expired: "Expired",
+  revoked: "Revoked",
+  missing: "Missing",
+  unknown: "Unknown",
+  blocked: "Blocked",
+};
 
 function HealthStrip({ health }: { health: DetailSourceHealth }) {
   const ok = health.grant === "ok";
@@ -118,11 +132,19 @@ function HealthStrip({ health }: { health: DetailSourceHealth }) {
       data-detail-health
     >
       {ok ? (
-        <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+        <ShieldCheckIcon className="h-3.5 w-3.5 text-primary" />
       ) : (
-        <ShieldAlert className="h-3.5 w-3.5 text-destructive" />
+        <ShieldAlertIcon className="h-3.5 w-3.5 text-destructive" />
       )}
       <span className="font-medium">{health.source}</span>
+      {ok ? null : (
+        <span
+          className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-destructive"
+          data-detail-health-state={health.grant}
+        >
+          {GRANT_WORD[health.grant]}
+        </span>
+      )}
       {health.lastRefreshedAt ? (
         <span>Refreshed {formatWhen(health.lastRefreshedAt)}</span>
       ) : (
@@ -137,7 +159,7 @@ function HealthStrip({ health }: { health: DetailSourceHealth }) {
             disabled={refreshing}
             className="inline-flex h-6 items-center gap-1 rounded px-1.5 hover:bg-accent hover:text-foreground disabled:opacity-50 pointer-coarse:h-10"
           >
-            <RefreshCw className={cn("h-3 w-3", refreshing && "animate-spin")} />
+            <RefreshCwIcon className={cn("h-3 w-3", refreshing && "animate-spin")} />
             Refresh
           </button>
         ) : null}
@@ -157,7 +179,7 @@ function HealthStrip({ health }: { health: DetailSourceHealth }) {
             rel="noreferrer"
             className="inline-flex h-6 items-center gap-1 rounded px-1.5 hover:bg-accent hover:text-foreground pointer-coarse:h-10"
           >
-            <ExternalLink className="h-3 w-3" />
+            <ExternalLinkIcon className="h-3 w-3" />
             Open at source
           </a>
         ) : null}
@@ -250,7 +272,16 @@ function FieldsSection({ core }: { core: DetailCore }) {
             )}
           >
             {field.ref ? (
-              <RefCell value={field.ref.id} label={field.label} token={field.ref.token} />
+              // 🚨 THE DOOR SAYS WHAT IT OPENS (chair, 2026-09-18). This rendered
+              // `field.ref.id` alone, so a field whose text was "Acme Robotics"
+              // printed a truncated uuid. The ref's own `name` wins; otherwise the
+              // field's text, unless that text IS the id and says nothing more.
+              <RefCell
+                value={field.ref.id}
+                label={field.label}
+                token={field.ref.token}
+                name={field.ref.name ?? (field.text === field.ref.id ? null : field.text)}
+              />
             ) : (
               field.text
             )}
@@ -299,7 +330,7 @@ function AssociationsSection({ core }: { core: DetailCore }) {
   if (tokens.length === 0) return null;
   return (
     <section className="space-y-2" data-detail-section="associations">
-      <SectionHeading icon={<Link2 className="h-3 w-3" />}>Linked</SectionHeading>
+      <SectionHeading icon={<Link2Icon className="h-3 w-3" />}>Linked</SectionHeading>
       <PrimaryEntityProvider value={{ type: token, id: core.ref.id, label: core.title }}>
         <AssociationCardGrid tokens={tokens} />
       </PrimaryEntityProvider>
@@ -367,10 +398,17 @@ function HistorySection({ core }: { core: DetailCore }) {
   const actorToken = ACTOR_COLUMNS.map((column) => host.doors.tokenFromColumnName(column)).find(
     (candidate): candidate is string => Boolean(candidate),
   );
+  // 🚨 NEW-23 (VERIFY-U-P1-R5) — AND THE HONEST FALLBACK WAS STILL A BARE UUID
+  // ON EVERY ROW. Nothing was silent, but no host registry gives `actor_id` a
+  // door, so "Changed by 8f3c…-…" was what a brilliant non-technical expert read
+  // on every change of every record. The host's ONE identity resolver answers
+  // first now (`history.ActorName`); the door is next; the id itself is last and
+  // says, in its title, that we could not find the person.
+  const ActorName = host.history.ActorName ?? null;
 
   return (
     <section className="space-y-2" data-detail-section="history">
-      <SectionHeading icon={<History className="h-3 w-3" />}>History</SectionHeading>
+      <SectionHeading icon={<HistoryIcon className="h-3 w-3" />}>History</SectionHeading>
       {state.status === "loading" ? (
         <div className="space-y-1.5" aria-busy="true" aria-label="Loading history">
           <Skeleton className="h-3.5 w-2/3" />
@@ -400,14 +438,23 @@ function HistorySection({ core }: { core: DetailCore }) {
                 <span className="text-[10px] uppercase tracking-wide text-primary">current</span>
               ) : null}
               {entry.actorId ? (
-                actorToken ? (
+                ActorName ? (
+                  <span className="text-muted-foreground" data-detail-history-actor-person>
+                    Changed by <ActorName actorId={entry.actorId} row={core.row} />
+                  </span>
+                ) : actorToken ? (
                   <span className="inline-flex items-center" data-detail-history-actor>
                     <ActorCell value={entry.actorId} label="Changed by" token={actorToken} />
                   </span>
                 ) : (
                   <span className="text-muted-foreground" data-detail-history-actor-raw>
                     Changed by{" "}
-                    <span className="font-mono text-[10px]">{entry.actorId}</span>
+                    <span
+                      className="font-mono text-[10px]"
+                      title="We could not find the person behind this id — this host has bound no identity resolver."
+                    >
+                      {entry.actorId}
+                    </span>
                   </span>
                 )
               ) : (

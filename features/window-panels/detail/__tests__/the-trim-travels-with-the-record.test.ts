@@ -6,12 +6,8 @@
 // docked panel — or take the Undo that reopens a replaced record — and the
 // surface presents 200 records as the whole list, silently. Two fields.
 
-import {
-  readDetailOverlayData,
-  toDetailInstanceData,
-  encodeListQuery,
-  decodeListQuery,
-} from "../detailOverlayData";
+import { readDetailOverlayData, toDetailInstanceData } from "../detailOverlayData";
+import { decodeListQuery, encodeListQuery } from "@/lib/detail/presentation";
 import { overlayPayloadForDetail } from "../openDetailSingleton";
 import type { DetailInstanceData } from "@/lib/detail/types";
 

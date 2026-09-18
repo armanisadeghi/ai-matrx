@@ -40,29 +40,39 @@ import {
 } from "./types";
 
 /**
- * 🚨 NEW-25 (VERIFY-U-P1-R4) — THE SEPARATOR IS ESCAPED, SO THE SPLIT IS NEVER A
- * GUESS. `encodeURIComponent` leaves `.` alone and every spelling of a record in
- * a URL splits on the FIRST dot, so `{type: "gr.ant", id: "x.y"}` came back as
- * `{type: "gr", id: "ant.x.y"}` — a DIFFERENT record, silently, in the page query
- * and in the `?panels=` token alike. `:` is the panel grammar's own separator and
- * `sc-domain:example.com` is already a real Search Console identifier, so both
- * characters are escaped here, on encode, by the ONE encoder — which is what
- * makes the decode unambiguous rather than lucky.
+ * 🚨 NEW-25 (VERIFY-U-P1-R4) / N4 (VERIFY-U-P1-R5) — THE SEPARATORS ARE ESCAPED
+ * WITHOUT A PERCENT, SO NO LATER URL DECODE CAN PUT ONE BACK.
+ *
+ * `encodeURIComponent` leaves `.` alone and every spelling of a record in a URL
+ * splits on the FIRST dot, so `{type: "gr.ant", id: "x.y"}` came back as
+ * `{type: "gr", id: "ant.x.y"}` — a DIFFERENT record, silently. Round 4 escaped
+ * `.` `:` `,` to `%2E` `%3A` `%2C` here, which fixed the `?panels=` token (three
+ * escaping layers, three decodes) and did NOT fix the page presentation's `?l=`
+ * query: an ordinary query parse — `new URL(...).searchParams`, which is the
+ * algorithm the page route's `searchParams` come from — percent-decodes the
+ * value BEFORE `decodeListItems` splits it, so `%2E` was a literal `.` again and
+ * the dotted token still retargeted the record. An id containing a comma was
+ * truncated the same way (VERIFY-U-P1-R5, N4).
+ *
+ * So the escape carries no `%` at all. A ref part is percent-encoding spelled
+ * with `~` as the escape character, over the alphabet `A-Za-z0-9-_~`: it holds
+ * no `.`, `:`, `,` or `%`, which makes it invariant under any number of
+ * percent-decodes and the split unambiguous on every layer. `~` itself is
+ * escaped first (`%7E` → `~7E`), so the grammar is closed.
  */
-const REF_PART_SEPARATORS = /[.:,]/g;
+const PERCENT_ESCAPE_TOO = /[.!~*'()]/g;
 
 /** One half of a `type.id` pair, carrying no character the decoders split on. */
 export function encodeRefPart(value: string): string {
-  return encodeURIComponent(value).replace(
-    REF_PART_SEPARATORS,
-    (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`,
-  );
+  return encodeURIComponent(value)
+    .replace(PERCENT_ESCAPE_TOO, (c) => `%${c.charCodeAt(0).toString(16).toUpperCase()}`)
+    .replace(/%/g, "~");
 }
 
 /** Inverse of `encodeRefPart`; a hand-edited value comes back as its own text. */
 export function decodeRefPart(value: string): string {
   try {
-    return decodeURIComponent(value);
+    return decodeURIComponent(value.replace(/~/g, "%"));
   } catch {
     return value;
   }

@@ -27,6 +27,7 @@ import { MetricsStrip } from "./MetricsStrip";
 import { QuickActions } from "./QuickActions";
 import { PinnedSection } from "./PinnedSection";
 import { DiscoverSection, DISCOVER_WINDOW_SIZE } from "./DiscoverSection";
+import { AgendaPanel } from "@/features/google-workspace/calendar/AgendaPanel";
 
 export function DashboardClient() {
   const { metrics, isLoading, isError } = useDashboardMetrics();
@@ -92,6 +93,11 @@ export function DashboardClient() {
             <DashboardGreeting />
             <MetricsStrip />
             <QuickActions />
+            {/* The agenda over synced Google Calendar events (PLAN §4.6). THE ONE
+                canonical component — the same one the Person record and the
+                window panel render. It renders its own honest empty states, so
+                nothing here gates it. */}
+            <AgendaPanel />
             <PinnedSection />
             <DiscoverSection
               items={rotation.items}

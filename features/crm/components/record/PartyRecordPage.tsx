@@ -44,6 +44,7 @@ import { ContactPointsCard } from "./ContactPointsCard";
 import { AddressesCard } from "./AddressesCard";
 import { EmploymentCard } from "./EmploymentCard";
 import { PartyEmployeeCard } from "@/features/hr/entry-points/PartyEmployeeCard";
+import { PersonUpcomingCard } from "@/features/google-workspace/calendar/PersonUpcomingCard";
 import { InteractionTimeline } from "./InteractionTimeline";
 import { PartyNotes } from "./PartyNotes";
 import { OutreachContactCandidatesCard } from "./OutreachContactCandidatesCard";
@@ -356,6 +357,11 @@ export function PartyRecordPage({ partyId }: Props) {
                   partyId={party.id}
                   partyName={party.display_name}
                 />
+                {/* "Upcoming with this person" (PLAN §4.6): the ONE agenda
+                    component, filtered to this record's own email addresses.
+                    Renders NOTHING when it has none — absent, not a card that
+                    announces an absence. */}
+                <PersonUpcomingCard partyId={party.id} partyName={party.display_name} />
                 <InteractionTimeline
                   partyId={party.id}
                   orgId={party.organization_id}

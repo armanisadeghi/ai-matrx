@@ -57,8 +57,10 @@ import {
   resolveSessionKnob,
   useSessionKnob,
 } from "@/lib/scoped-config/sessionKnob";
+import { HistoryActorName } from "./HistoryActorName";
 import { savePresentation } from "./savePresentation";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   isUuidValue,
   resolveEntityDoors,
@@ -70,7 +72,7 @@ import { supabase } from "@/utils/supabase/client";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
 import { useCloseDetailDocked, useOpenDetailDocked } from "@/features/overlays/openers/detailDocked";
 import { useCloseDetailWindow, useOpenDetailWindow } from "@/features/overlays/openers/detailWindow";
-import { encodeListQuery } from "./detailOverlayData";
+import { encodeListQuery } from "@/lib/detail/presentation";
 import { resolvedListContextMax } from "./listContextCap";
 import { stashPageSeed } from "./pageSeedHandoff";
 
@@ -263,7 +265,28 @@ function RecordDoors({ token, id, name }: { token: string; id: string; name?: st
   return <EntityDoorControls token={token} id={id} name={name} alwaysShowActions />;
 }
 
-function RefCell({ value, label, token }: { value: string; label: string; token: string }) {
+/**
+ * 🚨 A DOOR SAYS WHAT IT OPENS (chair, 2026-09-18). `MatrxUuidCell` can only ever
+ * show a truncated id — it takes no display name — so a field whose value is
+ * "Acme Robotics" printed `9e1d77aa…` and the person had to click to find out
+ * what it was: half a dead end. When the primitive hands over a `name`, this is
+ * `EntityRef`, the platform's ONE named-door primitive (it resolves the route and
+ * the peek from the same registries, so nothing new is wired here). Without a
+ * name there is nothing better to say than the id, and the uuid cell — which
+ * carries the copy control — stays.
+ */
+function RefCell({
+  value,
+  label,
+  token,
+  name,
+}: {
+  value: string;
+  label: string;
+  token: string;
+  name?: string | null;
+}) {
+  if (name && name !== value) return <EntityRef token={token} id={value} name={name} />;
   return <MatrxUuidCell value={value} label={label} token={token} />;
 }
 
@@ -330,7 +353,15 @@ export function DetailHost({ children }: { children: ReactNode }) {
       defaultTokens: ["task", "note", "file", "project"],
       canAnchor: (token) => ANCHOR_TOKENS.has(token),
     },
-    history: { list: listHistory },
+    // 🚨 NEW-23 — WHO MADE THE CHANGE IS A PERSON. `ActorName` is the host's
+    // half: THE existing identity resolver (`useRecordActors` + the official
+    // `resolveUserName`), never a second one. Without it every history row shows
+    // a bare uuid, which is what round 5 found on every record.
+    history: { list: listHistory, ActorName: HistoryActorName },
+    // Where a DEVELOPER goes to register a type — the console remedy the core
+    // prints once per type per tab. The package cannot know a host's file paths,
+    // so the host names its own registry here (the person never sees this).
+    remedy: { typeMap: "the item registry (features/item-presentation/registry.tsx)" },
     notify: {
       error: (message) => toast.error(message),
       success: (message) => toast.success(message),

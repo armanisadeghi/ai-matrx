@@ -22,7 +22,7 @@
 // 🚨 NO SCREEN HAS BEEN SEEN for any of this. The numbers above are arithmetic
 // over the declared widths and the classes, not pixels: this container cannot
 // sign in to any Matrx host. The structural guard is
-// `features/window-panels/detail/__tests__/the-title-never-runs-under-the-actions.test.tsx`.
+// the host's rendered-header guard (matrx-frontend `features/window-panels/detail/__tests__/the-title-never-runs-under-the-actions.test.tsx`).
 //
 // THE LITERALS ARE WRITTEN OUT IN THE JSX AS WELL, because Tailwind generates a
 // utility only for a class it can SEE in source — a class assembled from these

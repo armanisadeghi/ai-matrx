@@ -4,8 +4,8 @@
 // yields three presentations (window | docked | page) from that one
 // registration. Nothing in this file knows how a record is fetched, how a
 // window is drawn, or which app hosts it — every app-specific capability
-// arrives through `DetailHostPorts` (see host.tsx), which is what makes this
-// directory a package waiting for a `mv` rather than a rewrite.
+// arrives through `DetailHostPorts` (see react/host.tsx). This module imports
+// React TYPES only and is legal inside a React Server Component.
 
 import type { ComponentType, ReactNode } from "react";
 
@@ -15,9 +15,11 @@ export type DetailPresentation = (typeof DETAIL_PRESENTATIONS)[number];
 
 /**
  * The knob every presentation decision reads (`platform.feature_knob`,
- * feature `ui.detail`, key `default_presentation`; seeded by
+ * feature `ui.detail`, key `default_presentation`; seeded by matrx-frontend's
  * `migrations/detail_presentation_knob.sql`). Enum of DETAIL_PRESENTATIONS,
- * overridable by organization, table (per record type) and user.
+ * overridable by organization and user. The package never reads the settings
+ * ladder itself — the host resolves this key and answers through the
+ * `usePresentationSetting` / `resolvePresentation` ports.
  */
 export const DETAIL_PRESENTATION_KNOB = "ui.detail.default_presentation";
 
@@ -41,7 +43,7 @@ export const DETAIL_PRESENTATION_BY_TYPE_KNOB = "ui.detail.presentation_by_type"
 /**
  * How many records of the list a detail was opened FROM may ride the page
  * presentation's URL (`platform.feature_knob`, feature `ui.detail`, key
- * `list_context_max_ids`; seeded by
+ * `list_context_max_ids`; seeded by matrx-frontend's
  * `migrations/detail_list_context_max_knob.sql`). Organization-overridable.
  *
  * Why a knob and not a constant: it is a ceiling, and every ceiling here is a
@@ -68,10 +70,10 @@ export const DEFAULT_DETAIL_LIST_CONTEXT_MAX = 100;
  * too early, and nothing bounded the whole address:
  *
  *   * a detail window's deep link measured 5,992 against that 6,000 and reached
- *     the address bar at 7,416, because `UrlPanelManager` writes the `?panels=`
- *     token through `new URLSearchParams(...).toString()`, which re-escapes
- *     every `%` the token's own escaping already produced (a uuid's `-` goes
- *     `-` → `%2D` → `%252D`);
+ *     the address bar at 7,416, because the host's panel-URL writer re-serializes
+ *     the `?panels=` token through `new URLSearchParams(...).toString()`, which
+ *     re-escapes every `%` the token's own escaping already produced (a uuid's
+ *     `-` goes `-` → `%2D` → `%252D`);
  *   * a detail PAGE that also carried an open window was 13,433 characters —
  *     its own `?l=` plus the merged `panels=` — past the 8 KB request line, so
  *     the edge answers 414 and the link is dead (VERIFY-U-P1-R4, NEW-19).
@@ -95,11 +97,11 @@ export const DETAIL_URL_BUDGET_BYTES = 8000;
  * would travel. Measured against the final URL: 100 uuid entries under a short
  * type token cost ~6.7 KB in the window's `?panels=` token (the strictest
  * spelling) and ~4.3 KB in the page query, both inside the budget above; 150
- * costs ~10 KB in the token and does not fit. `migrations/
- * detail_list_context_max_deliverable.sql` lowers the knob's own `max_value`
- * and default to the same number and rewrites its basis text, so the settings
- * screen cannot offer records the URL can never carry. A longer type token
- * still trims below the cap — and still says so.
+ * costs ~10 KB in the token and does not fit. matrx-frontend's
+ * `migrations/detail_list_context_max_deliverable.sql` lowers the knob's own
+ * `max_value` and default to the same number and rewrites its basis text, so
+ * the settings screen cannot offer records the URL can never carry. A longer
+ * type token still trims below the cap — and still says so.
  */
 export const DETAIL_LIST_CONTEXT_MAX_IDS_CEILING = 100;
 
@@ -149,7 +151,7 @@ export interface DetailSeed {
 /**
  * The list the record was opened FROM, so `[` / `]` move to the previous /
  * next record without going back to the list. Plain data — it travels through
- * Redux and the URL.
+ * the host's state store and the URL.
  */
 export interface DetailListContext {
   items: DetailRef[];
@@ -193,8 +195,17 @@ export interface DetailField {
   text: string;
   /** Render in a monospace block (JSON, long identifiers). */
   mono?: boolean;
-  /** This value names another record — render it as a door. */
-  ref?: { token: string; id: string } | null;
+  /**
+   * This value names another record — render it as a door.
+   *
+   * 🚨 AND THE DOOR SAYS WHAT IT OPENS (chair, 2026-09-18). The body used to
+   * render the door from `ref.id` alone, so a field whose `text` was
+   * "Acme Robotics" printed a truncated uuid instead: a door nobody can read is
+   * half a dead end. `name` is the record's own name for the host's `RefCell` to
+   * render; when it is omitted the body falls back to `text` (unless `text` is
+   * the id itself, in which case there is nothing better to say).
+   */
+  ref?: { token: string; id: string; name?: string | null } | null;
 }
 
 /**
@@ -206,11 +217,47 @@ export interface DetailSourceHealth {
   /** Human name of the source ("Google Drive", "Search Console"). */
   source: string;
   lastRefreshedAt?: string | null;
-  grant: "ok" | "expired" | "revoked" | "missing" | "unknown";
+  /**
+   * 🚨 THE GRANT-STATE VOCABULARY. Five of the six say what is wrong with the
+   * CONNECTION; `blocked` says the record cannot be refreshed and NOTHING the
+   * person can click repairs it (chair, 2026-09-18).
+   *
+   *   - `ok`       → the grant behind this record works;
+   *   - `expired`  → it lapsed and a reconnect renews it;
+   *   - `revoked`  → someone withdrew it and a reconnect re-grants it;
+   *   - `missing`  → we never had it, or the record is not shared with us;
+   *   - `unknown`  → we could not check (a read failed) — reconnecting is safe;
+   *   - `blocked`  → the source itself refuses, and no control repairs it: a
+   *                  provider outage, a quota, a platform-configuration fault,
+   *                  a connection the server reports as unavailable. The strip
+   *                  says BLOCKED, states the reason, and offers NO Reconnect —
+   *                  which `reconnectFor` enforces for this word whatever the
+   *                  producer or the host supplies, because a button that
+   *                  cannot work is a control that does nothing (law 4).
+   *
+   * `unknown` used to carry both meanings, so a blocked record was offered the
+   * consent window it could not be repaired by (VERIFY-U-P1-R5, N1's class).
+   */
+  grant: "ok" | "expired" | "revoked" | "missing" | "unknown" | "blocked";
   /** One sentence for the grant state, in the person's language. */
   grantDetail?: string | null;
   openAtSourceHref?: string | null;
-  /** Offered when the grant is not `ok`. The host decides what it does. */
+  /**
+   * The repair offered when the grant is not `ok`. 🚨 THREE-VALUED, AND THE
+   * THREE MEAN DIFFERENT THINGS (Bugbot round 18 on frontend PR 228):
+   *
+   *   - a function  → offer THIS action;
+   *   - `null`      → offer NOTHING: the producer has decided a reconnect
+   *                   would not repair this refusal (a share the owner must
+   *                   grant, a record we own, an unclassified failure) and a
+   *                   Reconnect button would be a control that does nothing;
+   *   - omitted     → the producer has no opinion; the host's `reconnectSource`
+   *                   port supplies the action when it has one.
+   *
+   * `useDetailHealth` honours `null` explicitly — it used to fill the host
+   * action back in with `??`, which reads `null` as "unset", so a synced record
+   * whose refusal a reconnect cannot fix still showed Reconnect.
+   */
   onReconnect?: (() => void) | null;
   /** Offered when the record can be refreshed on demand. */
   onRefresh?: (() => void | Promise<void>) | null;
@@ -278,21 +325,35 @@ export interface DetailRecordType<Row extends DetailRow = DetailRow> {
   load: ((id: string, signal: AbortSignal) => Promise<DetailLoadResult<Row>>) | null;
   /** The title to show; receives the loaded row (or null) and the seed. */
   title: (row: Row | null, seed: DetailSeed | null) => string;
+  /**
+   * 🚨 WHAT THIS ROW IS, WHEN THE TYPE CANNOT SAY (chair, 2026-09-18). `label` is
+   * per TYPE, and a registered type is regularly a family: `crm.party` holds
+   * 1,432 companies and 460 persons, so a type labelled "Person" told a person
+   * that a company is a person — twice on screen, above a field reading
+   * `organization` (VERIFY-U-P1-R5, N6). A registration that can tell the
+   * difference from the row answers here.
+   *
+   * It names the RECORD, so it is used for the header's type chip and for the
+   * stand-in titles ("Company 3f2a1b9c") only. The presentation pane keeps the
+   * type-level `label`, because "Every contact record now opens as a window" is a
+   * statement about the TYPE's setting, not about the row on screen.
+   *
+   * `null` (or omitted) falls back to `label`, then to the raw type token.
+   */
+  labelForRow?: (row: Row | null) => string | null;
   /** The field list for the fields section. */
   fields: (row: Row) => DetailField[];
   /**
-   * 🚨 PLAN §4 — THE SOURCE HEALTH STRIP'S PRODUCER. Source health for a SYNCED
-   * record; omit it, or answer `null`, for a record the platform owns outright.
+   * 🚨 THE SOURCE HEALTH STRIP'S PRODUCER. Source health for a SYNCED record;
+   * omit it, or answer `null`, for a record the platform owns outright.
    *
    * It may be ASYNC, because whether the grant behind a synced record still works
    * is not in the row — it is the connector's recorded per-capability health, read
    * from the server. The host wires this field when it registers the record type
-   * (in matrx-frontend, `resolveItemDetailType`, from the connectors' own
-   * `productHealth`; never a second reader of `capability_health`), and
-   * `useDetailHealth` resolves it. Until 2026-09-17 nothing set it, so the strip
-   * could not render on any record and the §5.3 promise — a refusal anywhere shows
-   * on every dependent record with the same Reconnect — had no witness
-   * (VERIFY-U-P1-R4).
+   * (never a second reader of the connector's health), and `useDetailHealth`
+   * resolves it. Until 2026-09-17 nothing set it, so the strip could not render on
+   * any record and the promise that a refusal anywhere shows on every dependent
+   * record with the same Reconnect had no witness (VERIFY-U-P1-R4).
    */
   health?: DetailHealthProducer<Row> | null;
   /**

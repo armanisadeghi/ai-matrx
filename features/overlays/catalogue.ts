@@ -72,6 +72,13 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  // The agenda over synced Google Calendar events (PLAN §4.6). Singleton: the
+  // agenda is one surface, and opening it again reveals the one window.
+  googleAgendaWindow: {
+    label: "Agenda",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   liveRunWindow: {
     label: "AI Run",
     instanceMode: "multi",

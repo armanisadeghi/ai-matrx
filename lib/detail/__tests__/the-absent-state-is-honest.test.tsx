@@ -83,7 +83,7 @@ describe("a record whose type has no detail source", () => {
     const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
     const m = mountSourceless("session");
     const said = warn.mock.calls.map((c) => c.join(" ")).join("\n");
-    expect(said).toContain("detailSource");
+    expect(said).toContain("has no `load`");
     expect(said).toContain("features/item-presentation/registry.tsx");
     m.unmount();
     warn.mockRestore();

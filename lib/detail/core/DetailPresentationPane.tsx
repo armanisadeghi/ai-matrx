@@ -17,11 +17,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Check, Loader2, Settings2 } from "lucide-react";
 import { cn } from "@ai-matrx/design-system";
 
-import { useDetailHost } from "../host";
 import { DETAIL_PRESENTATIONS, type DetailPresentation } from "../types";
+import { useDetailHost } from "../host";
+import { CheckIcon, LoaderIcon, Settings2Icon } from "./icons";
 import type { DetailCore } from "./useDetailCore";
 
 const WORD: Record<DetailPresentation, string> = {
@@ -161,7 +161,7 @@ export function DetailPresentationPane({ core }: { core: DetailCore }) {
         className="flex w-full items-center gap-1.5 rounded-md px-1 py-1 text-left text-[11px] text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         data-detail-presentation-pane="collapsed"
       >
-        <Settings2 className="h-3 w-3 shrink-0" />
+        <Settings2Icon className="h-3 w-3 shrink-0" />
         <span>
           {setting.error
             ? `Your "open details as" setting could not be read (${setting.error}) — details are opening as ${WORD[core.presentation]}.`
@@ -178,7 +178,7 @@ export function DetailPresentationPane({ core }: { core: DetailCore }) {
       data-detail-presentation-pane="open"
     >
       <h3 className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-        <Settings2 className="h-3 w-3" />
+        <Settings2Icon className="h-3 w-3" />
         How record details open
       </h3>
       <div className="flex flex-wrap gap-1" role="group" aria-label="Open record details as">
@@ -233,9 +233,9 @@ export function DetailPresentationPane({ core }: { core: DetailCore }) {
           className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-xs text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60 pointer-coarse:py-2"
         >
           {state.status === "saving" ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
+            <LoaderIcon className="h-3 w-3 animate-spin" />
           ) : state.status === "saved" ? (
-            <Check className="h-3 w-3" />
+            <CheckIcon className="h-3 w-3" />
           ) : null}
           Save
         </button>

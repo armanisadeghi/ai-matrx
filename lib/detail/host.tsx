@@ -1,10 +1,10 @@
 // lib/detail/host.tsx
 //
-// THE SEAM. Everything this module needs from the app that hosts it arrives
+// THE SEAM. Everything this package needs from the app that hosts it arrives
 // here as ports — the same shape `@ai-matrx/associations` uses. The core and
-// the three presentations import nothing from `features/**`; they ask the host
-// for the record-type map, the presentation setting, the shells (window /
-// docked / page), the doors, history, navigation and notifications.
+// the three presentations import nothing from any host; they ask the host for
+// the record-type map, the presentation setting, the shells (window / docked /
+// page), the doors, history, navigation and notifications.
 //
 // Providers NEST AND MERGE: a light provider at boot binds everything but the
 // shells (so `useOpenDetail` works anywhere), and each presentation's lazily
@@ -14,7 +14,7 @@
 
 "use client";
 
-import { createContext, useContext, type ComponentType, type ReactNode } from "react";
+import { createContext, useContext, type Context, type ComponentType, type ReactNode } from "react";
 
 import type {
   DetailHistoryEntry,
@@ -23,10 +23,11 @@ import type {
   DetailPresentation,
   DetailRecordType,
   DetailRef,
+  DetailRow,
   DetailSeed,
 } from "./types";
 
-/** Props every shell receives; the lib fills the slots, the host owns the chrome. */
+/** Props every shell receives; the package fills the slots, the host owns the chrome. */
 export interface DetailShellSlots {
   /** Accessible plain-text title (window chrome, drawer title, document title). */
   title: string;
@@ -147,8 +148,8 @@ export interface DetailHostPorts {
         list?: DetailListContext | null;
         /**
          * 🚨 NEW-14 (VERIFY-U-P1-R3) — MOVING INSIDE A LIST REPLACES, NEVER
-         * PUSHES. Arrowing to a neighbour on the page called `router.push`, so
-         * twenty records meant twenty Backs and the chevron labelled "Back"
+         * PUSHES. Arrowing to a neighbour on the page pushed a history entry,
+         * so twenty records meant twenty Backs and the chevron labelled "Back"
          * returned to the previous RECORD instead of the list. The record whose
          * history entry is being replaced, so the host can carry its "this tab
          * pushed a detail page" answer (`canGoBack`) forward to the record now
@@ -178,7 +179,18 @@ export interface DetailHostPorts {
     /** The record's own doors (open / new tab / peek) — sibling of the title. */
     RecordDoors: ComponentType<{ token: string; id: string; name?: string | null }>;
     /** A reference inside the record — never a bare uuid. */
-    RefCell: ComponentType<{ value: string; label: string; token: string }>;
+    /**
+     * One id rendered as a door. `name` is the record's own name when the caller
+     * has it — a door showing a truncated uuid is half a dead end (chair,
+     * 2026-09-18), so a host that can name the record renders the name and keeps
+     * the id for the copy control.
+     */
+    RefCell: ComponentType<{
+      value: string;
+      label: string;
+      token: string;
+      name?: string | null;
+    }>;
     tokenFromColumnName: (column: string) => string | null;
     isUuidValue: (value: unknown) => value is string;
     /**
@@ -199,6 +211,21 @@ export interface DetailHostPorts {
   };
   history: {
     list: (token: string, id: string, signal: AbortSignal) => Promise<DetailHistoryEntry[]>;
+    /**
+     * 🚨 NEW-23 (VERIFY-U-P1-R5) — WHO MADE THE CHANGE IS A PERSON, NOT AN ID.
+     * Every history row printed a bare 36-character uuid under "Changed by",
+     * because no `actor` or `user` token has a door in a host's registry: an
+     * identity the UI names that opens nothing and says nothing (the
+     * no-dead-ends class). A host binds its ONE existing identity resolver here
+     * — never a second one — and the row shows the person's name. Optional: a
+     * host that has no directory binds nothing and the row keeps the id under a
+     * title that says what it is, which is honest rather than silent.
+     *
+     * It is given the record's own row too, because the directory a host may
+     * legitimately read is usually the owning organization's members and the
+     * row is where that organization is named.
+     */
+    ActorName?: ComponentType<{ actorId: string; row: DetailRow | null }>;
   };
   notify: {
     error: (message: string) => void;
@@ -206,17 +233,36 @@ export interface DetailHostPorts {
   };
   copyText: (text: string) => Promise<boolean>;
   /**
-   * 🚨 PLAN §5.3 — THE SAME RECONNECT THE CONNECTOR ROWS SHOW. A synced record
-   * whose grant has expired, been revoked or lost a scope offers exactly the
-   * repair the connector surface offers, from the record's own health strip, so a
-   * person never has to go and find the connections screen. Optional: a host that
+   * 🚨 THE SAME RECONNECT THE CONNECTOR ROWS SHOW. A synced record whose grant
+   * has expired, been revoked or lost a scope offers exactly the repair the
+   * connector surface offers, from the record's own health strip, so a person
+   * never has to go and find the connections screen. Optional: a host that
    * cannot open a consent flow binds nothing and the strip states the problem
-   * without offering a control that would not help (law 4).
+   * without offering a control that would not help (law 4). A producer that
+   * answers `onReconnect: null` overrides this for its record — see
+   * `DetailSourceHealth.onReconnect`.
    */
   reconnectSource?: (ref: DetailRef, source: string) => void;
+  /**
+   * Where the developer goes to fix an unregistered or sourceless type — a
+   * phrase for the console remedy the core prints once per type per tab (the
+   * PERSON sees a plain sentence; the developer sees this). Optional: the
+   * default names the `resolveType` port. A host names its own registry, e.g.
+   * "the item registry (features/item-presentation/registry.tsx)".
+   */
+  remedy?: { typeMap: string };
 }
 
-const DetailHostContext = createContext<Partial<DetailHostPorts> | null>(null);
+// 🚨 MODULE-LEVEL STATE IS BANNED IN A DUAL-BUNDLE PACKAGE — the context lives
+// on `globalThis` under a `Symbol.for` slot (the kit `confirm/opener` shape), so
+// the ESM and CJS builds, and the /react and /testing entries, all share ONE
+// context. Two module instances with two contexts is exactly how a test seat's
+// provider stops being visible to the components it mounts.
+const CONTEXT_SLOT = Symbol.for("ai-matrx.detail.host-context");
+type ContextSlot = { [CONTEXT_SLOT]?: Context<Partial<DetailHostPorts> | null> };
+const DetailHostContext: Context<Partial<DetailHostPorts> | null> = ((globalThis as ContextSlot)[
+  CONTEXT_SLOT
+] ??= createContext<Partial<DetailHostPorts> | null>(null));
 
 /**
  * Binds ports. Nested providers merge over their parent, shells included, so
@@ -261,16 +307,16 @@ export function useDetailHost(): DetailHostPorts {
   const ports = useContext(DetailHostContext);
   if (!ports) {
     throw new Error(
-      "[detail] No DetailHostProvider above this component. Mount the host binding " +
-        "(features/window-panels/detail/DetailHost.tsx in matrx-frontend, inside app/Providers.tsx) " +
-        "around the tree that opens or renders record details.",
+      "[detail] No DetailHostProvider above this component. Mount the host binding — a " +
+        "<DetailHostProvider ports={…}> carrying every required port (README → 'Binding the " +
+        "ports') — around the tree that opens or renders record details.",
     );
   }
   const missing = REQUIRED_PORTS.filter((key) => ports[key] === undefined);
   if (missing.length > 0) {
     throw new Error(
       `[detail] DetailHostProvider is missing the port(s): ${missing.join(", ")}. ` +
-        "Bind them in the host's DetailHost.tsx.",
+        "Bind them in the host binding (README → 'Binding the ports').",
     );
   }
   // The context value itself (the provider always sets `shells`), so the
@@ -285,7 +331,7 @@ export function requireResolveType(
   if (!host.resolveType) {
     throw new Error(
       "[detail] No resolveType port is bound. A presentation's entry must pass " +
-        "`resolveType` (features/window-panels/detail/detailTypeBinding.ts) beside its shell.",
+        "`resolveType` (the host's ONE record-type map) beside its shell.",
     );
   }
   return host.resolveType;
@@ -300,7 +346,7 @@ export function requireShell<K extends keyof DetailShells>(
   if (!shell) {
     throw new Error(
       `[detail] No ${which} shell is bound. The ${which} presentation's entry must wrap itself in ` +
-        `<DetailHostProvider ports={{ shells: { ${which} } }}> (see features/window-panels/detail/shells/).`,
+        `<DetailHostProvider ports={{ shells: { ${which} } }}> (README → 'The three shells').`,
     );
   }
   return shell;

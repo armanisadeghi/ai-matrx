@@ -34,17 +34,18 @@
 
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ComponentType } from "react";
 import {
-  AppWindow,
-  Check,
-  ChevronLeft,
-  ChevronRight,
-  Copy,
-  Expand,
-  MoreHorizontal,
-  PanelRight,
-} from "lucide-react";
+  AppWindowIcon,
+  CheckIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CopyIcon,
+  ExpandIcon,
+  MoreHorizontalIcon,
+  PanelRightIcon,
+  type DetailIconProps,
+} from "./icons";
 import { cn } from "@ai-matrx/design-system";
 
 import { useDetailHost } from "../host";
@@ -67,11 +68,11 @@ const TYPE_CHIP =
 const PRESENTATIONS: {
   value: DetailPresentation;
   label: string;
-  Icon: typeof AppWindow;
+  Icon: ComponentType<DetailIconProps>;
 }[] = [
-  { value: "window", label: "Open as window", Icon: AppWindow },
-  { value: "docked", label: "Open docked to the side", Icon: PanelRight },
-  { value: "page", label: "Open as page", Icon: Expand },
+  { value: "window", label: "Open as window", Icon: AppWindowIcon },
+  { value: "docked", label: "Open docked to the side", Icon: PanelRightIcon },
+  { value: "page", label: "Open as page", Icon: ExpandIcon },
 ];
 
 function TypeChip({ core, className }: { core: DetailCore; className?: string }) {
@@ -87,7 +88,10 @@ function TypeChip({ core, className }: { core: DetailCore; className?: string })
       )}
       data-detail-type-chip
     >
-      {core.typeLabel}
+      {/* What THIS ROW is (chair, 2026-09-18): `recordLabel`, not the type's own
+          label — one registered type is regularly a family, and the chip is the
+          place a company was called a Person. */}
+      {core.recordLabel}
     </span>
   );
 }
@@ -218,7 +222,7 @@ export function DetailActions({ core }: { core: DetailCore }) {
             aria-label="Previous record (Up arrow, or left bracket)"
             title="Previous record  ↑ or ["
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeftIcon className="h-4 w-4" />
           </button>
           <span className="px-1 text-[11px] tabular-nums text-muted-foreground">
             {list.context.index + 1}/{list.context.items.length}
@@ -231,7 +235,7 @@ export function DetailActions({ core }: { core: DetailCore }) {
             aria-label="Next record (Down arrow, or right bracket)"
             title="Next record  ↓ or ]"
           >
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRightIcon className="h-4 w-4" />
           </button>
           <span className="mx-1 h-4 w-px bg-border" aria-hidden />
         </>
@@ -267,9 +271,9 @@ export function DetailActions({ core }: { core: DetailCore }) {
           data-detail-copy-id
         >
           {copied ? (
-            <Check className="h-3.5 w-3.5 text-primary" />
+            <CheckIcon className="h-3.5 w-3.5 text-primary" />
           ) : (
-            <Copy className="h-3.5 w-3.5" />
+            <CopyIcon className="h-3.5 w-3.5" />
           )}
         </button>
       </span>
@@ -285,7 +289,7 @@ export function DetailActions({ core }: { core: DetailCore }) {
           aria-expanded={menuOpen}
           data-detail-actions-overflow
         >
-          <MoreHorizontal className="h-4 w-4" />
+          <MoreHorizontalIcon className="h-4 w-4" />
         </button>
         {menuOpen ? (
           <div
@@ -318,7 +322,7 @@ export function DetailActions({ core }: { core: DetailCore }) {
                 void copyId();
               }}
             >
-              <Copy className="h-3.5 w-3.5 shrink-0" />
+              <CopyIcon className="h-3.5 w-3.5 shrink-0" />
               Copy record id
             </button>
           </div>

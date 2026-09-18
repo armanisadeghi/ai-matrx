@@ -3,14 +3,15 @@
 // The overlay-slice shape of a Detail instance, and its parser. The openers
 // write it flat (Redux data must be plain); the controller reads it back by
 // name; the page route builds it from its params. ONE spelling, here.
+//
+// The page presentation's `?l=&i=&lt=` QUERY spelling used to live here too. It
+// is now `encodeListQuery` / `decodeListQuery` in `@/lib/detail/presentation`,
+// beside the `?panels=detail:` token's spelling, so both are cut by the ONE trim
+// and the ONE byte budget — where `@ai-matrx/detail` put it when the primitive
+// became a package. Only the REDUX payload shape is host-side, and that is this
+// file.
 
 import {
-  decodeListItems,
-  encodeListItems,
-  trimListContext,
-} from "@/lib/detail/listContext";
-import {
-  DEFAULT_DETAIL_LIST_CONTEXT_MAX,
   type DetailInstanceData,
   type DetailListContext,
   type DetailRef,
@@ -78,59 +79,4 @@ export function toDetailInstanceData(data: DetailOverlayData): DetailInstanceDat
   const seed =
     data.seedName || data.seedAbout ? { name: data.seedName, about: data.seedAbout } : null;
   return { type: data.type, id: data.id, seed, list };
-}
-
-// ─── Page-route encoding of the list context ────────────────────────────────
-// `/detail/<type>/<id>?l=type.id,type.id&i=<index>&lt=<total>` — the same
-// `type.id` instance key the `?panels=detail:` deep link uses. `lt` is present
-// only when the list was TRIMMED to fit the URL (NEW-7): it is the length of the
-// list the window was cut from, so the detail can say so.
-
-/** `?l=`, `&i=`, `&lt=` and their values — what the query costs beside the list. */
-const PAGE_QUERY_FIXED_BYTES = 40;
-
-/**
- * 🚨 NEW-7 — CAPPED, ALWAYS. `max` is the resolved
- * `ui.detail.list_context_max_ids` knob; the default is used when the host has
- * no answer yet, never "no cap". A 500-row list uncapped produced a >20 KB href
- * no server accepts (VERIFY-U-P1-R2).
- *
- * 🚨 NEW-19 (VERIFY-U-P1-R4) — AND THE BUDGET IS THE WHOLE URL'S. The path this
- * query hangs off is part of the request line, so the caller passes what it
- * costs (`reservedBytes`) and the list gets what is left. Measuring the list
- * alone is how a detail page reached 8,464 characters while the code claimed a
- * 2 KB margin.
- */
-export function encodeListQuery(
-  list: DetailListContext | null | undefined,
-  max: number = DEFAULT_DETAIL_LIST_CONTEXT_MAX,
-  options: { reservedBytes?: number } = {},
-): string {
-  const capped = trimListContext(list, max, {
-    reservedBytes: (options.reservedBytes ?? 0) + PAGE_QUERY_FIXED_BYTES,
-  });
-  if (!capped) return "";
-  // Each `type.id` is encoded, the separators are not: a comma is legal in a
-  // query value, and `%2C` × 200 was 400 bytes of nothing.
-  const l = encodeListItems(capped.items);
-  const trimmed = capped.trimmedFrom ? `&lt=${capped.trimmedFrom}` : "";
-  return `?l=${l}&i=${capped.index}${trimmed}`;
-}
-
-export function decodeListQuery(
-  l: string | null | undefined,
-  i: string | null | undefined,
-  /** `lt` — the length of the list this window was cut from, when it was. */
-  lt?: string | null | undefined,
-): DetailListContext | null {
-  if (!l) return null;
-  const items = decodeListItems(l);
-  if (items.length === 0) return null;
-  const index = Number.parseInt(i ?? "", 10);
-  const total = Number.parseInt(lt ?? "", 10);
-  return {
-    items,
-    index: Number.isFinite(index) && index >= 0 && index < items.length ? index : 0,
-    ...(Number.isFinite(total) && total > items.length ? { trimmedFrom: total } : {}),
-  };
 }

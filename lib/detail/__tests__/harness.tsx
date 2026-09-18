@@ -99,6 +99,9 @@ export function makePorts(overrides: Partial<DetailHostPorts> = {}): StubPorts {
     },
     associations: { defaultTokens: [], canAnchor: () => false },
     history: { list: jest.fn(async () => []) },
+    // The host's own remedy phrase, so the console-remedy assertions test what a
+    // developer in THIS repo actually reads (the package names the port instead).
+    remedy: { typeMap: "the item registry (features/item-presentation/registry.tsx)" },
     notify: { error: jest.fn(), success: jest.fn() },
     copyText: jest.fn(async () => true),
     ...overrides,

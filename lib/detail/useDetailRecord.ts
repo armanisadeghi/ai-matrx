@@ -3,10 +3,18 @@
 // Loads ONE record through its registration's `load`, with an abort on every
 // change and a structured state for every outcome. Nothing throws out of
 // here and nothing is swallowed: an error carries its message to the screen.
+//
+// 🚨 N8 (VERIFY-U-P1-R5) — THE REGISTRATION'S FUNCTION IDENTITY IS NOT A
+// DEPENDENCY. `resolveType` is a host PORT and nothing in the contract says its
+// answer must be cached: a host whose map builds the registration per call hands
+// a fresh `load` every render, and this effect's own `setState` causes the next
+// render — an endless reload of the same record, at the server. `requestKey`
+// (the type, the id and whether there is a source at all) is what identifies a
+// read; the closure is read through a ref.
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { DetailLoadState, DetailRecordType, DetailRow } from "./types";
 
@@ -27,7 +35,11 @@ export function useDetailRecord(
     setState(load && id ? { status: "loading" } : { status: "none" });
   }
 
+  const loadRef = useRef(load);
+  loadRef.current = load;
+
   useEffect(() => {
+    const load = loadRef.current;
     if (!load || !id) return undefined;
     const controller = new AbortController();
     void (async () => {
@@ -47,7 +59,9 @@ export function useDetailRecord(
       }
     })();
     return () => controller.abort();
-  }, [load, id, recordType?.type]);
+    // `requestKey` stands in for `load` (N8): a host is not required to cache it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [requestKey, id]);
 
   return state;
 }
