@@ -69,6 +69,8 @@ import {
   Section,
   StateChip,
   isRecord,
+  leftoverEntries,
+  metaStripEntries,
   readBool,
   readNumber,
   readText,
@@ -237,7 +239,8 @@ export const ServerSentence: React.FC<{
  * THE FIX IS THE TABLE BELOW, encoded ONCE here and read by both Google blocks.
  * `P` = any `would_*` key arrived (non-null); `HOLD` = `dry_run` or
  * `awaiting_approval` read as a real `true`; `X` = ANY claim key — hold OR
- * completion — arrived in a shape that is not a boolean, so we cannot read it;
+ * completion — was STATED ({@link statesClaim}) in a shape that is not a
+ * boolean, an explicit `null` included, so we cannot read it;
  * `C` = any completed-write marker (`appended`, `written`, `created`,
  * `imported`, `sent`) read as a real `true`.
  *
@@ -264,6 +267,15 @@ export const ServerSentence: React.FC<{
  * | n | y    | any | y | `contradictory`   | same                                                     | suppressed    |
  * | y | n/a  | y | n | `unreadable_claim` | nothing is shown as written + names the key AND value    | suppressed    |
  * | n | n    | y | any | `unreadable_claim`| same — an unreadable `appended` is not an absent one     | suppressed    |
+ *
+ * 🚨 `X` INCLUDES AN EXPLICIT `null` (F-109, V-24 NEW-1), and the two halves of
+ * `X` do not rank the same. An unreadable COMPLETION marker (`appended: null`)
+ * asks the very question nothing else in the payload can answer, so it outranks
+ * everything but a contradiction. An unreadable HOLD flag (`dry_run: null`)
+ * ranks BELOW a settled `awaiting_approval: true`, which already tells the
+ * reader nothing was written — a definite answer is never downgraded to "cannot
+ * be read" — and above a preview, so the flag can never leave the screen
+ * unread.
  * | y | awaiting     | n | n | `awaiting_approval` | waiting for a person to approve it              | suppressed    |
  * | n | awaiting     | n | n | `awaiting_approval` | same                                            | suppressed    |
  * | y | dry-run or NONE | n | n | `preview`          | nothing was written — this is a preview          | suppressed    |
@@ -342,14 +354,36 @@ function previewKeysOf(value: Record<string, unknown>): string[] {
 }
 
 /** THE ONE READING of a Google result's write claim. Pure; no React. */
+/**
+ * 🚨 THE ONE READING OF "DID THIS PAYLOAD STATE THIS KEY AT ALL" (F-109, V-24
+ * NEW-1).
+ *
+ * An ABSENT key states nothing. An explicit `null` is a stated value — the
+ * tool declared the key and could not settle it — and the two are NOT the same
+ * fact. Every claim key on both Google kinds is declared `bool | None`, so
+ * `None` is the value a Python tool produces most easily the moment it cannot
+ * tell; excluding it by hand is how `{action:"append_document", title:"Q3
+ * Plan", appended:null}` rendered "Q3 Plan Append document" and nothing else,
+ * with the key withheld from the strip as well because it is a
+ * {@link WRITE_CLAIM_KEYS} member. This is the same distinction
+ * {@link statesCompleteness} already draws for `truncated` (F-99) and it lives
+ * here ONCE for the whole family. (`undefined` is treated as absent: `JSON.parse`
+ * never produces it, so it can only come from a key someone deleted in code.)
+ */
+export function statesClaim(value: Record<string, unknown>, key: string): boolean {
+  return key in value && value[key] !== undefined;
+}
+
 export function readWriteClaim(value: Record<string, unknown>): WriteClaim {
   const previewKeys = previewKeysOf(value);
   const completedKeys = COMPLETED_KEYS.filter((key) => readBool(value[key]) === true);
-  // ONE unreadable rule for the whole boolean claim family (F-104, V-23 NEW-4).
-  const unreadableClaimKeys = [...HOLD_KEYS, ...COMPLETED_KEYS].filter(
-    (key) =>
-      value[key] !== undefined && value[key] !== null && readBool(value[key]) === null,
-  );
+  // ONE unreadable rule for the whole boolean claim family (F-104, V-23 NEW-4),
+  // and an explicit `null` is inside it (F-109, V-24 NEW-1).
+  const unreadable = (key: string) =>
+    statesClaim(value, key) && readBool(value[key]) === null;
+  const unreadableHoldKeys = HOLD_KEYS.filter(unreadable);
+  const unreadableCompletionKeys = COMPLETED_KEYS.filter(unreadable);
+  const unreadableClaimKeys = [...unreadableHoldKeys, ...unreadableCompletionKeys];
   const dryRun = readBool(value.dry_run) === true;
   const awaiting = readBool(value.awaiting_approval) === true;
   const hasPreview = previewKeys.length > 0;
@@ -382,24 +416,30 @@ export function readWriteClaim(value: Record<string, unknown>): WriteClaim {
     };
   }
 
-  // 2. A CLAIM FLAG WE CANNOT READ is not an absent claim flag — and that is as
-  //    true of `appended` as it is of `dry_run`.
-  if (unreadableClaimKeys.length > 0) {
-    const key = unreadableClaimKeys[0];
-    return {
-      ...common,
-      state: "unreadable_claim",
-      nothingWasWritten: true,
-      showsReceiptChips: false,
-      headline: "Nothing is shown as written.",
-      detail:
-        `This answer states "${key}" as ${JSON.stringify(value[key])} rather than true or ` +
-        "false, so whether it already happened cannot be read — and a guess either way " +
-        "would be a lie. Run it again.",
-    };
+  const unreadableClaim = (key: string): WriteClaim => ({
+    ...common,
+    state: "unreadable_claim",
+    nothingWasWritten: true,
+    showsReceiptChips: false,
+    headline: "Nothing is shown as written.",
+    detail:
+      `This answer states "${key}" as ${JSON.stringify(value[key])} rather than true or ` +
+      "false, so whether it already happened cannot be read — and a guess either way " +
+      "would be a lie. Run it again.",
+  });
+
+  // 2. A COMPLETION MARKER WE CANNOT READ can never be settled by anything else
+  //    in the payload — whether the write HAPPENED is exactly the question — so
+  //    it outranks every state but a contradiction.
+  if (unreadableCompletionKeys.length > 0) {
+    return unreadableClaim(unreadableCompletionKeys[0]);
   }
 
-  // 3. A HOLD FOR A PERSON. Said whether or not a preview came with it.
+  // 3. A HOLD FOR A PERSON. Said whether or not a preview came with it, and
+  //    said ABOVE an unreadable hold flag (F-109): `awaiting_approval: true`
+  //    SETTLES the reader's question — nothing was written, a person is holding
+  //    it — so a `dry_run: null` beside it must not downgrade a definite answer
+  //    to "cannot be read".
   if (awaiting) {
     return {
       ...common,
@@ -414,7 +454,15 @@ export function readWriteClaim(value: Record<string, unknown>): WriteClaim {
     };
   }
 
-  // 4. A PREVIEW — because a `would_*` arrived, flag or no flag.
+  // 4. A HOLD FLAG WE CANNOT READ is not an absent hold flag. It ranks below a
+  //    settled hold and ABOVE a preview, because a `would_*` beside an
+  //    unreadable `dry_run` still leaves the flag unread and the key would
+  //    otherwise leave the screen (it is a `WRITE_CLAIM_KEYS` member).
+  if (unreadableHoldKeys.length > 0) {
+    return unreadableClaim(unreadableHoldKeys[0]);
+  }
+
+  // 5. A PREVIEW — because a `would_*` arrived, flag or no flag.
   if (hasPreview || dryRun) {
     return {
       ...common,
@@ -473,14 +521,209 @@ export function readWriteClaim(value: Record<string, unknown>): WriteClaim {
 export function hasSubstantiveContent(
   claim: WriteClaim,
   otherwiseSubstantive: boolean,
-  /**
-   * What the card's OWN residual pass will print — pass
-   * `printsResidualFacts(value, omitKeys)` with the very same `omit` list the
-   * `MetaStrip`/`LeftoverFields` below it are given.
-   */
-  printsResidual = false,
+  /** The whole payload, so the residual pass runs HERE and cannot be passed wrong. */
+  value: Record<string, unknown>,
+  /** The very same `omit` list the `MetaStrip`/`LeftoverFields` below are given. */
+  omit: readonly string[],
 ): boolean {
-  return otherwiseSubstantive || claim.state !== "none" || printsResidual;
+  return (
+    otherwiseSubstantive ||
+    claim.state !== "none" ||
+    printsSubstantiveResidual(value, omit)
+  );
+}
+
+/**
+ * 🚨 A STATED VALUE IS NOT AUTOMATICALLY A STATED FACT (F-109, V-24 NEW-2).
+ *
+ * An empty collection is the SHAPE of an answer with nothing in it, and a blank
+ * string is nothing at all. Counting either as content is how `rows: []` — the
+ * literal thing a GA4 read with no rows returns — made the card believe
+ * something came back. A number or a boolean IS a stated fact, however small.
+ *
+ * 🚨 AND IT IS RECURSIVE (Cursor Bugbot on `11aaca7c`). The first version asked
+ * only whether a record had KEYS, so `data: { rows: [] }` — the same empty GA4
+ * read with the wrapper the tool actually sends — read as content and the
+ * empty-read sentence never fired: four spellings fixed, the class not. A record
+ * is substantive only when one of its own values is, an array only when one of
+ * its elements is, to a bounded depth.
+ */
+/** How far down {@link isSubstantiveValue} looks for one real fact. */
+const MAX_SUBSTANCE_DEPTH = 8;
+
+export function isSubstantiveValue(item: unknown, depth = 0): boolean {
+  if (item === null || item === undefined) return false;
+  if (typeof item === "string") return item.trim() !== "";
+  if (Array.isArray(item) || isRecord(item)) {
+    // A container that is only containers all the way down carries no fact. The
+    // bound stops a cyclic or pathological value from hanging the render; at the
+    // bound we say "substantive" rather than "empty", because a payload this
+    // deep is never the empty read this predicate exists to recognise, and the
+    // safe answer is the one that does not claim nothing came back.
+    if (depth >= MAX_SUBSTANCE_DEPTH) return true;
+    const children = Array.isArray(item) ? item : Object.values(item);
+    return children.some((child) => isSubstantiveValue(child, depth + 1));
+  }
+  return true;
+}
+
+
+/**
+ * 🚨 THE REQUEST'S OWN PARAMETERS ARE THE FRAME, NEVER THE ANSWER (F-109,
+ * V-24 NEW-2).
+ *
+ * The marketing tools echo the question back on the result — the site, the
+ * property, the window, the row cap — and F-104 taught emptiness to come from
+ * what the card PRINTS. The residual pass prints those echoes, so
+ * `{action:"traffic_summary", site:"example.com", start_date:…, end_date:…,
+ * rows:[]}` — the realistic empty GA4 read — read as a card full of facts and
+ * never said no rows came. Only a payload carrying nothing but `action`, which
+ * no tool emits, reached the sentence.
+ *
+ * A frame is what an empty result sits INSIDE. It makes the sentence more
+ * specific ("for example.com, 2026-09-01 to 2026-09-15"); it never makes it
+ * unreachable, and it is printed as the window it names rather than as a fact
+ * that came back.
+ *
+ * Deliberately NOT here: `metrics` / `dimensions`. On a GA4 payload either can
+ * carry the numbers themselves, and a key that might be the answer must never
+ * be demoted to the question — that would trade this lie for a worse one.
+ */
+export const REQUEST_FRAME_KEYS = [
+  "site",
+  "site_url",
+  "site_id",
+  "domain",
+  "property",
+  "property_id",
+  "channel",
+  "channel_id",
+  "container_id",
+  "view_id",
+  "query",
+  "search_query",
+  "start_date",
+  "end_date",
+  "date_range",
+  "since",
+  "until",
+  "window",
+  "period",
+  "days",
+  "row_limit",
+  "limit",
+  "page_size",
+  "offset",
+] as const;
+
+/** The frame keys that state a WINDOW, as opposed to which thing was asked about. */
+const WINDOW_FRAME_KEYS = [
+  "start_date",
+  "end_date",
+  "date_range",
+  "since",
+  "until",
+  "window",
+  "period",
+  "days",
+] as const;
+
+/** The frame keys that name WHICH thing was asked about. Printed first. */
+const SUBJECT_FRAME_KEYS = [
+  "site",
+  "site_url",
+  "site_id",
+  "domain",
+  "property",
+  "property_id",
+  "channel",
+  "channel_id",
+  "container_id",
+  "view_id",
+  "query",
+  "search_query",
+] as const;
+
+export type FrameEntries = Record<string, string | number | boolean>;
+
+/**
+ * The request parameters this payload actually stated, minus anything the card
+ * already prints itself (`omit` — the block's own PROMOTED list).
+ */
+export function statedFrame(
+  value: Record<string, unknown>,
+  omit: readonly string[] = [],
+): FrameEntries {
+  const skip = new Set<string>(omit);
+  const frame: FrameEntries = {};
+  for (const key of REQUEST_FRAME_KEYS) {
+    if (skip.has(key)) continue;
+    const item = value[key];
+    if (
+      (typeof item === "string" && item.trim() !== "") ||
+      typeof item === "number" ||
+      typeof item === "boolean"
+    ) {
+      frame[key] = item;
+    }
+  }
+  return frame;
+}
+
+/**
+ * Whether a WINDOW was stated for this read, by the provider's own `bounds` or
+ * by the request parameters echoed on the payload. Read by `CountedFact` too: a
+ * number whose window nobody stated must say so (V-22, NEW-10).
+ */
+export function statesWindow(
+  value: Record<string, unknown>,
+  bounds: unknown,
+): boolean {
+  return (
+    hasStatedBounds(bounds) ||
+    WINDOW_FRAME_KEYS.some((key) => isSubstantiveValue(value[key]))
+  );
+}
+
+/** "example.com, 2026-09-01 to 2026-09-15" — the frame, said the way it reads. */
+export function frameSentence(frame: FrameEntries): string | null {
+  const parts: string[] = [];
+  for (const key of SUBJECT_FRAME_KEYS) {
+    if (frame[key] !== undefined) parts.push(String(frame[key]));
+  }
+  const start = frame.start_date ?? frame.since;
+  const end = frame.end_date ?? frame.until;
+  if (start !== undefined && end !== undefined) parts.push(`${start} to ${end}`);
+  else if (start !== undefined) parts.push(`from ${start}`);
+  else if (end !== undefined) parts.push(`through ${end}`);
+  const said = new Set<string>([
+    ...SUBJECT_FRAME_KEYS,
+    "start_date",
+    "end_date",
+    "since",
+    "until",
+  ]);
+  for (const [key, item] of Object.entries(frame)) {
+    if (said.has(key)) continue;
+    parts.push(`${saidAs(key)} ${item}`);
+  }
+  return parts.length > 0 ? parts.join(", ") : null;
+}
+
+/**
+ * True when the card will print at least one residual fact that is an ANSWER —
+ * the same passes `MetaStrip`/`LeftoverFields` print from, minus the request
+ * frame and minus empty collections.
+ */
+export function printsSubstantiveResidual(
+  value: Record<string, unknown>,
+  omit: readonly string[],
+): boolean {
+  const skip = [...omit, ...REQUEST_FRAME_KEYS];
+  return (
+    metaStripEntries(value, skip).some(([, item]) => isSubstantiveValue(item)) ||
+    leftoverEntries(value, skip).some(([, item]) => isSubstantiveValue(item))
+  );
 }
 
 /**
@@ -498,17 +741,34 @@ export function hasSubstantiveContent(
  * as empty.
  *
  * The fix is that both halves come from what the card ACTUALLY PRINTED:
- * emptiness is `hasSubstantiveContent(..., printsResidualFacts(value, omit))`
- * over the same omit list the strip is rendered with, and the sentence names a
- * window only when {@link hasStatedBounds} says one was stated.
+ * emptiness is `hasSubstantiveContent(claim, …, value, omit)` — which runs
+ * {@link printsSubstantiveResidual} itself, over the same omit list the strip is
+ * rendered with — and the sentence names a window only when
+ * {@link statesWindow} says one was stated. The residual pass moved INSIDE the
+ * predicate in F-109 so no caller can hand it the wrong one, and the request's
+ * own parameters are excluded from it (see {@link REQUEST_FRAME_KEYS}): the
+ * question a read was asked is not an answer it returned.
  */
-export function emptyReadSentence(windowStated: boolean): string {
-  return windowStated
-    ? "This read returned no rows for the window above. That is an answer, not a " +
-        "failure — widen the window or check the site this question is about."
-    : "This read returned no rows, and no window was stated for it. That is an " +
-        "answer, not a failure — ask again with a window, or check the site this " +
-        "question is about.";
+export function emptyReadSentence(
+  windowStated: boolean,
+  /** {@link frameSentence} of this payload's own request parameters, when it stated any. */
+  frameText: string | null = null,
+): string {
+  const remedy = windowStated
+    ? "widen the window or check the site this question is about"
+    : "ask again with a window, or check the site this question is about";
+  const where = frameText ? `for ${frameText}` : windowStated ? "for the window above" : null;
+  if (!where) {
+    return (
+      "This read returned no rows, and no window was stated for it. That is an " +
+      `answer, not a failure — ${remedy}.`
+    );
+  }
+  const unwindowed = windowStated ? "" : ", and no window was stated for it";
+  return (
+    `This read returned no rows ${where}${unwindowed}. That is an answer, not a ` +
+    `failure — ${remedy}.`
+  );
 }
 
 /**
@@ -683,12 +943,15 @@ export function hasStatedBounds(bounds: unknown): boolean {
  * window, read as a total.
  */
 
-export const Bounds: React.FC<{ bounds: unknown }> = ({ bounds }) => {
+export const Bounds: React.FC<{ bounds: unknown; label?: string }> = ({
+  bounds,
+  label = "asked for",
+}) => {
   const entries = boundsEntries(bounds);
   if (entries.length === 0) return null;
   return (
     <ChipRow>
-      <span className="text-xs text-muted-foreground">asked for</span>
+      <span className="text-xs text-muted-foreground">{label}</span>
       {entries.map(([key, item]) => (
         <StateChip
           key={key}

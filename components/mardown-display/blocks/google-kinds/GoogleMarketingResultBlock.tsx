@@ -52,7 +52,6 @@ import {
   StateChip,
   StillArriving,
   isRecord,
-  printsResidualFacts,
   readBool,
   readKindValue,
   readText,
@@ -68,8 +67,11 @@ import {
   UnmodelledPreviews,
   WRITE_CLAIM_KEYS,
   emptyReadSentence,
-  hasStatedBounds,
+  frameSentence,
   hasSubstantiveContent,
+  isSubstantiveValue,
+  statedFrame,
+  statesWindow,
   noteWithoutRepeatedClaim,
   readBlock,
   readRows,
@@ -228,17 +230,29 @@ const GoogleMarketingResultBlock: React.FC<ResultKindBlockProps> = ({
    * is the ONE place both halves live: this block's own read-branch union,
    * OR any write claim at all (`claim.state !== "none"`).
    */
+  /**
+   * 🚨 THE QUESTION IS NOT AN ANSWER (F-109, V-24 NEW-2). The request's own
+   * parameters — the site, the property, the window — are echoed onto the
+   * result, and the residual pass printed them as facts, so the realistic empty
+   * GA4 read (`rows: []` inside a stated window) printed the question back and
+   * never said no rows came. They are the FRAME: shown as the window they name,
+   * withheld from the strip that prints answers, and named in the sentence.
+   */
+  const frame = statedFrame(value, PROMOTED);
+  const frameKeys = Object.keys(frame);
   /** Merged into `omit` at every render site below: see {@link WRITE_CLAIM_KEYS}. */
-  const omitKeys = [...PROMOTED, ...claim.previewKeys];
-  const windowStated = hasStatedBounds(value.bounds);
+  const omitKeys = [...PROMOTED, ...claim.previewKeys, ...frameKeys];
+  const windowStated = statesWindow(value, value.bounds);
   const substantiveRead = hasSubstantiveContent(
     claim,
     Boolean(verdict) || hasHealthFlag || Boolean(checks) || Boolean(containers) ||
-      (value.data !== undefined && value.data !== null),
+      isSubstantiveValue(value.data),
     // THE SAME PASS THE STRIP BELOW PRINTS FROM (F-104, V-23 NEW-5): a payload
     // whose whole answer arrives as unpromoted keys — `sessions: 1234`,
     // `users: 900` — is not an empty read, and the footer may not say it is.
-    printsResidualFacts(value, omitKeys),
+    // It runs INSIDE the predicate now, so no caller can hand it the wrong pass.
+    value,
+    omitKeys,
   );
 
   return (
@@ -296,6 +310,9 @@ const GoogleMarketingResultBlock: React.FC<ResultKindBlockProps> = ({
       </ChipRow>
 
       <Bounds bounds={value.bounds} />
+      {/* The question this answer was asked, printed as the window it names —
+          never as facts that came back (F-109, V-24 NEW-2). */}
+      {frameKeys.length > 0 ? <Bounds bounds={frame} label="asked about" /> : null}
 
       {/* How old the numbers are — the field that makes a Search Console answer
           honest rather than merely correct. */}
@@ -360,7 +377,9 @@ const GoogleMarketingResultBlock: React.FC<ResultKindBlockProps> = ({
 
       {/* NEVER "for the window above" when no window was stated (V-23 NEW-5). */}
       {!substantiveRead ? (
-        <p className="text-xs text-muted-foreground">{emptyReadSentence(windowStated)}</p>
+        <p className="text-xs text-muted-foreground">
+          {emptyReadSentence(windowStated, frameSentence(frame))}
+        </p>
       ) : null}
 
       <MetaStrip value={value} omit={omitKeys} />

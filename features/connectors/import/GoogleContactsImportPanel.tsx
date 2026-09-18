@@ -168,6 +168,24 @@ export function GoogleContactsImportPanel({
           signal: controller.signal,
         });
         setSearch(result);
+        // 🚨 SET IN THE SAME TICK AS `setSearch`/`setUnfilteredSearch` BELOW,
+        // NEVER FROM A SEPARATE EFFECT KEYED ON `search`. An effect-derived
+        // `seenIds` lands one commit LATER than `unfilteredSearch` — the
+        // reconcile effect below (keyed on both) would then fire first with
+        // the STALE, still-empty `seenIds` and wrongly drop a selection this
+        // very read just confirmed exists, before `seenIds` ever caught up.
+        // Batching all three setters here means the render the reconcile
+        // effect sees always carries the read's own ids already unioned in.
+        setSeenIds((current) => {
+          const next = new Set(current);
+          for (const contact of result.contacts) next.add(contact.external_id);
+          return next;
+        });
+        // Tagged by the TEXT THIS CALL WAS MADE WITH, never by `typedRef` at
+        // resolve time — a keystroke landing while the mount's unfiltered
+        // read is still in flight must not make its own, still-unfiltered
+        // result look like a typed one once it resolves.
+        if (text === "") setUnfilteredSearch(result);
       } catch (cause) {
         if (controller.signal.aborted) return;
         setError(getUserMessage(cause));
@@ -193,8 +211,68 @@ export function GoogleContactsImportPanel({
   }, [query, load]);
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  // 🚨 A SELECTION MAY HOLD ANY ID THE PANEL HAS SEEN THIS SESSION, NEVER ONLY
+  // THE CURRENT PAGE (Bugbot on 75fd614c, review 5246968154 comment 4046052473).
+  // The first fix reconciled `selected` against the LATEST `search` page —
+  // which treated one page as the whole account: a typed query that narrows
+  // the page, or a truncated first page (the search caps at `limit`, default
+  // 50), silently dropped a real, still-existing contact from `selected`,
+  // and finding it again later never restored the selection. `seenIds` is the
+  // UNION of every `external_id` any read has returned since mount (or since
+  // the organization changed — a different Google account has different
+  // ids); reconciliation only ever ADDS to it, so a contact this session has
+  // proven exists stays selected regardless of what a later, narrower read
+  // shows.
+  const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
+  // 🚨 THE UNFILTERED (empty-query) READ, AND ONLY IT, IS "THE WHOLE ACCOUNT" —
+  // a typed-query miss proves nothing about whether a contact exists, only
+  // that it did not match those words. This is the ONE read the "not in this
+  // account" sentence is allowed to reason from, and only when it was not
+  // itself truncated: the service exposes no next-page token or lookup-by-id
+  // (`./service.ts`), so a truncated unfiltered read can prove absence NO
+  // FURTHER than the page it returned.
+  const [unfilteredSearch, setUnfilteredSearch] = useState<ContactSearchResultPending | null>(
+    null,
+  );
+
+  useEffect(() => {
+    // A different organization is a different Google account — nothing seen
+    // under the old one proves anything about this one.
+    setSeenIds(new Set());
+    setUnfilteredSearch(null);
+  }, [effectiveOrganizationId]);
+
+  // A selected id is dropped ONLY once the unfiltered, NOT-truncated read has
+  // settled and still does not carry it — the one read that can actually
+  // prove absence. A typed query's page, or a truncated unfiltered page,
+  // proves nothing, so neither one may remove anything from `selected`.
+  useEffect(() => {
+    if (!unfilteredSearch || unfilteredSearch.truncated) return;
+    setSelected((current) => current.filter((externalId) => seenIds.has(externalId)));
+  }, [unfilteredSearch, seenIds]);
+
   const contacts = search?.contacts ?? [];
   const selectedSet = useMemo(() => new Set(selected), [selected]);
+  // The address named a contact NO read has ever returned, AND the complete
+  // (unfiltered, untruncated) account read has already settled — never fired
+  // off a typed-query miss (that proves nothing) or a truncated read (see
+  // `requestedContactBounded` below for that honest, weaker sentence).
+  const requestedContactMissing = Boolean(
+    initialExternalId &&
+      unfilteredSearch &&
+      !unfilteredSearch.truncated &&
+      !seenIds.has(initialExternalId),
+  );
+  // The unfiltered read was truncated and the address's contact has not
+  // turned up in anything read so far — honestly bounded, never "not in this
+  // account" for a page that never covered the whole one. Clears itself the
+  // moment a later read (e.g. the person searching for it by name) proves the
+  // contact IS there.
+  const requestedContactBounded = Boolean(
+    initialExternalId &&
+      unfilteredSearch?.truncated &&
+      !seenIds.has(initialExternalId),
+  );
 
   const toggle = (externalId: string) => {
     setSelected((current) =>
@@ -650,6 +728,30 @@ export function GoogleContactsImportPanel({
           {warning}
         </p>
       ))}
+      {/* 🚨 THE ADDRESS NAMED A CONTACT THIS READ DID NOT RETURN — said by
+          name, not folded into "no contacts" (V-24). This is the honest
+          reason a link opened here to nothing: never confused with an empty
+          account or a search with no hits. */}
+      {requestedContactMissing ? (
+        <p className="flex items-start gap-2 border-b border-border bg-amber-500/10 px-4 py-2 text-xs text-amber-600 dark:text-amber-400">
+          <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          The contact this link named is not in this account&apos;s readable
+          contacts. It may have been removed from Google, or the link is
+          stale — search for it below, or refresh.
+        </p>
+      ) : requestedContactBounded ? (
+        /* THE HONEST THIRD SENTENCE: the unfiltered read was truncated, so
+           it never covered the whole account — it can say only that the
+           contact has not turned up YET, never that it is absent. Clears on
+           its own the moment a later read (typing its name) proves it is
+           there. */
+        <p className="flex items-start gap-2 border-b border-border bg-amber-500/10 px-4 py-2 text-xs text-amber-600 dark:text-amber-400">
+          <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          We could not find this contact in the first{" "}
+          {unfilteredSearch?.total_read ?? "the"} read — search for it by
+          name below.
+        </p>
+      ) : null}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {!loading && contacts.length === 0 ? (
           <p className="p-6 text-center text-sm text-muted-foreground">
