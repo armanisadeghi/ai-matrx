@@ -1,3 +1,8 @@
+-- based-on: platform.trg_reachability_on_association() 06ce8a5bc6df6c0dd2ab995c5ae44bcb798e13422994476f31d28db312d8e355
+--
+-- (Read off the branch AFTER the up file applied - an inverse declares the body it is about
+-- to overwrite, which is its own up file's, not the one that preceded it. The hash its prose
+-- names, 5a7aa32f..., is the body this file RESTORES, which is a different thing.)
 -- chair-step: the inverse of W1-REL file 5 - it restores `platform.trg_reachability_on_association()`
 -- to the body its `-- based-on:` line names, byte for byte
 -- (5a7aa32fa89b44cf0970a58ef317119ccfbece395db8beebd46536e9b16b46b0), removing the block that
