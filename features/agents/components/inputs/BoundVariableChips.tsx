@@ -15,7 +15,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Link2, ChevronDown, Save } from "lucide-react";
+import { Link2, ChevronDown, Save, X, RotateCcw } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -37,10 +37,14 @@ import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 // globally-triggered agent run resolves its bound variables (the server fills them
 // authoritatively from request.scope_ids). Explicit active-context selection.
 // eslint-disable-next-line no-restricted-syntax -- Surface A: agent-run active-scope selection
-import { addActiveScope } from "@/lib/redux/slices/appContextSlice";
+import {
+  addActiveScope,
+  removeActiveScope,
+} from "@/lib/redux/slices/appContextSlice";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import {
   fetchScopes,
+  selectScopeById,
   selectScopesByType,
   selectScopesLoadedForType,
 } from "@/features/agent-context/redux/scope/scopesSlice";
@@ -49,7 +53,10 @@ import {
   type BoundVarInfo,
 } from "@/features/agents/hooks/useBoundVariableScope";
 import { selectUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
-import { setUserVariableValue } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
+import {
+  clearUserVariableValue,
+  setUserVariableValue,
+} from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { ContextValueInput } from "@/features/scopes/components/reference/ContextValueInput";
 import { variableValueToDisplay } from "@/features/agents/utils/variable-utils";
 import { setScopeContextValue } from "@/features/scope-system/redux/scopeValuesSlice";
@@ -190,6 +197,26 @@ function BoundChip({
   const canWriteBack =
     !!writeScopeId && !!info.binding.contextItemId && hasUserOverride;
 
+  // The scope whose selection put this chip here — removing it from the active context
+  // is the exact inverse of the "Select {ScopeType}" prompt, and returns every variable
+  // it filled to an ordinary input.
+  const activeScopeId = info.sourceScopeId ?? info.activeScopeIdOfType;
+  const activeScopeName = useAppSelector((s) =>
+    activeScopeId ? selectScopeById(s, activeScopeId)?.name : undefined,
+  );
+  const scopeLabel = activeScopeName ?? info.scopeTypeLabel;
+
+  const handleRemoveScope = () => {
+    if (!activeScopeId) return;
+    setOpen(false);
+    dispatch(clearUserVariableValue({ conversationId, name: info.name }));
+    dispatch(removeActiveScope(activeScopeId));
+  };
+
+  const handleRevert = () => {
+    dispatch(clearUserVariableValue({ conversationId, name: info.name }));
+  };
+
   const handleChange = (v: unknown) => {
     dispatch(
       setUserVariableValue({ conversationId, name: info.name, value: v }),
@@ -231,22 +258,38 @@ function BoundChip({
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            "inline-flex items-center gap-1.5 max-w-[260px] rounded-full border border-border bg-muted/60 px-2 py-0.5 text-xs text-foreground transition-colors hover:bg-muted",
-          )}
-          title={`${formatText(info.name)} — auto-filled from ${info.scopeTypeLabel}. Click to override.`}
-        >
-          <Link2 className="h-3 w-3 shrink-0 opacity-70" />
-          <span className="font-medium shrink-0">{formatText(info.name)}</span>
-          <span className="text-muted-foreground truncate">
-            {displayValue || "—"}
-          </span>
-          <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
-        </button>
-      </PopoverTrigger>
+      <span className="inline-flex max-w-[280px] items-center rounded-full border border-border bg-muted/60 text-xs text-foreground">
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              "inline-flex min-w-0 items-center gap-1.5 rounded-l-full py-0.5 pl-2 pr-1 transition-colors hover:bg-muted",
+              !activeScopeId && "rounded-r-full pr-2",
+            )}
+            title={`${formatText(info.name)} — auto-filled from ${scopeLabel}. Click to override.`}
+          >
+            <Link2 className="h-3 w-3 shrink-0 opacity-70" />
+            <span className="font-medium shrink-0">
+              {formatText(info.name)}
+            </span>
+            <span className="text-muted-foreground truncate">
+              {displayValue || "—"}
+            </span>
+            <ChevronDown className="h-3 w-3 shrink-0 opacity-60" />
+          </button>
+        </PopoverTrigger>
+        {activeScopeId && (
+          <button
+            type="button"
+            onClick={handleRemoveScope}
+            className="inline-flex h-full shrink-0 items-center rounded-r-full py-0.5 pl-1 pr-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            aria-label={`Stop using ${scopeLabel}`}
+            title={`Stop using ${scopeLabel} — ${formatText(info.name)} goes back to a normal input`}
+          >
+            <X className="h-3 w-3" />
+          </button>
+        )}
+      </span>
       <PopoverContent
         className="w-80 p-3 rounded-2xl"
         align="start"
@@ -277,6 +320,19 @@ function BoundChip({
             maxHeight={300}
           />
 
+          {hasUserOverride && (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="w-full"
+              onClick={handleRevert}
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+              Revert to the {scopeLabel} value
+            </Button>
+          )}
+
           {canWriteBack && (
             <Button
               type="button"
@@ -288,6 +344,19 @@ function BoundChip({
             >
               <Save className="h-3.5 w-3.5 mr-1.5" />
               {saving ? "Saving…" : `Save to ${info.scopeTypeLabel}`}
+            </Button>
+          )}
+
+          {activeScopeId && (
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="w-full text-muted-foreground"
+              onClick={handleRemoveScope}
+            >
+              <X className="h-3.5 w-3.5 mr-1.5" />
+              Stop using {scopeLabel}
             </Button>
           )}
         </div>
