@@ -68026,6 +68026,12 @@ export type Database = {
         }
         Returns: string
       }
+      reopen_declared_doors: {
+        Args: { p_schema: string }
+        Returns: {
+          reopened: string
+        }[]
+      }
       resolve_assist_producer_policy: {
         Args: { p_source_key: string }
         Returns: {
