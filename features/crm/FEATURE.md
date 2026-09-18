@@ -2,7 +2,7 @@
 
 Cross-repo Public Relations node: /Users/armanisadeghi/code/common-docs/systems/marketing/public-relations/STATE.md (verified truth + proposal in /Users/armanisadeghi/code/common-docs/projects/public-relations/PLAN.md, research in RESEARCH.md) — a journalist pitch is Lane B and media lists/journalist intelligence/coverage are ALREADY this system. Read it before building anything PR-shaped in ANY repo; do not fork `crm.party`, `agent.message_template`, or the send gate for it.
 
-**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live · deals + kanban pipelines live` · **Tier:** `1` · **Last updated:** `2026-08-30`
+**Status:** `db-core live · route + WindowPanels live · outreach lists + call queue live · smart views live · native contact import live · outreach inbox + Chasebox live · deals + kanban pipelines live` · **Tier:** `1` · **Last updated:** `2026-09-18`
 
 Cross-repo system-of-record: `/Users/armanisadeghi/code/common-docs/systems/crm/STATE.md` — read it before touching this feature in ANY repo.
 
@@ -1046,6 +1046,38 @@ module in the folder + the two deleted filenames).
 ---
 
 ## Change log
+
+- 2026-09-18 — **F-47: the word for a party lives in ONE place, the CRM inbox
+  stopped leaving itself, and the Person-door guard became a class guard
+  (VERIFY-U-P1-R5, N5–N7).** Live census: `crm.party` holds 1,892 rows, 460
+  `person` and 1,432 `organization`, no other value and no nulls. **The words:**
+  new `features/crm/party-words.ts` is the ONE resolver — Person · Company, and
+  **Contact** for an unknown or not-yet-loaded kind (the CRM's own existing
+  generic; nothing coined) — keyed by the closed `PARTY_KINDS` vocabulary, so the
+  eight hand-written `party_kind === "person" ? … : …` ternaries have a home and a
+  new kind added to the vocabulary fails the guard instead of silently reading
+  "Person". `PartyPeek` no longer titles every loading record, and every nameless
+  company, "Person". **The dossier:** new `features/crm/party-detail.ts` is the
+  curated field set the Detail primitive shows for a party — the record page's own
+  order and labels (`record-copy.ts`), the ONE contact-points read (new
+  `partyContactPointsQuery`, which `fetchPartyDetail` now also uses so there is
+  one join shape, not two), the ONE suppression rule (`reachability.ts`) and the
+  platform's plain-words map for `visibility` (new `lib/record-words.ts`). It
+  reaches all three presentations as ONE `refineDetail` on the party registration
+  (`refinePartyDetail`), never a second loader or renderer.
+  Plumbing — `version`, `name_key`, `record_class`, provenance, locked fields,
+  bare ids — is never shown. **The doors:** `inbox/useInboxRowActions.tsx`
+  hand-built the party route three times, so opening a reply's contact LEFT the
+  queue, which is the exact defect F-40 filed; it now opens in place through the
+  registered opener (`useOpenItemPresentation`) and takes its copy-link URL from
+  `resolveEntityDoors("party", id)`. `__tests__/person-doors-census.test.ts` was
+  instance-scoped (13 named files, `<Link>`/`<a>` tags only) and silent on that
+  very file; it now walks every `.ts`/`.tsx` under `features/`, `app/` and
+  `components/`, reads every shape a URL can be built in, and fails BY NAME.
+  Red-then-green: it named `useInboxRowActions.tsx` lines 74/135/163 before the
+  fix, green after. Its baseline is a census of 14 files that still hand-build the
+  route, each with its reason, and a listed file that stops matching FAILS — the
+  list can only shrink.
 
 - 2026-09-18 — **F-41: the READ surfaces learned about `purpose`, and the approver
   is told what was set aside and what gets added.** Round-5 verification

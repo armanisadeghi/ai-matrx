@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-09-17`
+**Last updated:** `2026-09-18`
 
 ---
 
@@ -68,11 +68,30 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
   presentation of any kind: no peek, and the only party window CREATES a record.
   The entry here is the whole fix — window / docked / `/detail/party/<id>` from
   this one registration, never a bespoke Person panel. The 360° workspace stays
-  `/crm/<id>`. Its label is "Person" for the whole type, so a COMPANY party's type
-  chip also reads "Person" (its `Kind` field and the dossier's `Party Kind` say
-  otherwise); a per-row label would need `label(row)` in `lib/detail`'s
-  `DetailRecordType`. The peek that goes with it lives in
-  `features/organizations/peek/kinds/PartyPeek.tsx`.
+  `/crm/<id>` and only the entity registry writes that URL down. Its label is the
+  honest generic **"Contact"** — the table holds 460 people and 1,432 companies
+  (live 2026-09-18) and `DetailRecordType.label` is per TYPE, so "Person" was a
+  lie about three rows in four (N6). The SPECIFIC word comes from the ONE resolver
+  `features/crm/party-words.ts` — Person / Company / Contact for an unknown kind —
+  and its dossier is the curated `features/crm/party-detail.ts`, never the generic
+  column dump. **Still owed to the package:** `labelForRow?: (row) => string | null`
+  on `DetailRecordType`, so the header's type chip and the stand-in titles can say
+  the record's own word while `label` keeps answering the type-level settings
+  sentences ("every contact record now opens as a window"). The peek that goes
+  with it lives in `features/organizations/peek/kinds/PartyPeek.tsx`.
+- **A type CURATES its own dossier through `refineDetail`, and through nothing
+  else (2026-09-18, N5/N6).** The default stays the generic formatter (every
+  populated scalar of `select *`, in PostgREST's key order) — right for a type
+  nobody has curated, wrong for one a non-technical expert reads all day. A type
+  that knows better returns a changed `DetailRecordType` from `refineDetail`:
+  `fields` becomes a closed, ordered, human-labelled list; `load` may WRAP the
+  composed loader to merge facts one table cannot carry (a party's contact
+  points, its employer's name) into the row before the title and the fields see
+  it — and that wrapper must never throw, it records the failure on the row and
+  the field list says so; `title` may name a nameless record by its own kind.
+  `refinePartyDetail` (`features/crm/party-detail.ts`) is the worked example. No
+  sibling slots: one refinement hook, one fields section, never a second
+  renderer.
 - **`detailSource` is the only thing the Detail primitive needs.** A type with `detailSource: { table, titleField }` gets a full-record view in all three presentations; a recognized type without one (`session`, `message` — no single canonical table) opens seed-only. See FOUND_DEFECTS D8. The file kinds carry `FILE_DETAIL_SOURCE` (`files.files`) even though their click-through stays the preview window, so a file opened AS A RECORD shows its row.
 - **This registry IS the Detail primitive's type map** (chair ruling 2026-09-17) — never a second registry; `detail.tsx` adapts entries, it does not list them.
 - **Dynamic-table Supabase queries must use `string` variables, never literals.** `supabase.from("literal")` / `.select("*")` resolve the entire schema union and blow TS instantiation depth. `detail.tsx`'s loader and `registry.fetchRow` both pass `string` variables to stay generic.
@@ -101,6 +120,8 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
 ---
 
 ## Change log
+
+- 2026-09-18 — **F-47: a company is no longer called a Person, and a Person's dossier is no longer a column dump (VERIFY-U-P1-R5, N5 + N6).** `crm.party` holds 1,892 rows — 460 `person`, 1,432 `organization`, read live — and every one of them was labelled "Person", twice on screen, above a field reading `organization`. The same `party_kind === "person" ? "Person" : "Company"` ternary was written out eight times across the CRM, so the words now live once in `features/crm/party-words.ts` (Person · Company · **Contact** for an unknown or not-yet-loaded kind, keyed by the closed `PARTY_KINDS` vocabulary so a new live kind is a type error, not a mislabel). This type's label is that honest generic; the record's own word reaches the dossier's Type field, the peek title and the "Untitled Company" stand-in. N5: the real Angie Sadeghi row opened `Version=2 | Name Key=angie sadeghi | … | Party Kind=person | Visibility=internal | Record Class=contact` — her own name tenth — so the party registration now carries a CURATED list (`features/crm/party-detail.ts`): Name, Type, Title, Headline, Legal name, the employer as a door named after the company, Website, Email, Phone (the ONE contact-points read, under the ONE suppression rule), Do not contact, who can see it in plain English (`lib/record-words.ts`), Added, Last updated — and nothing else, ever. It reaches the screen as ONE `refineDetail` (U-W1's hook, landed the same day) — `refinePartyDetail` wraps the composed loader for the extra read, replaces `fields`, and takes over `title` for the per-kind stand-in; no sibling slots were added. Red-then-green over the REAL company row `d3dc196a…` through the REAL type map: with the label and the curated list removed, all 11 assertions of `__tests__/a-company-is-never-called-a-person.test.tsx` fail and every presentation renders "EnvironmentalbusinessoutlookPersonPerson…Version1Name Key…Party Kindorganization…Visibilityinternal"; restored, 11/11 green. **Escalation to `@ai-matrx/detail` (confirmed escalation C):** `DetailRecordType.label` is a `string`, so the header's TYPE CHIP still reads "Contact" for a Person — the package needs `labelForRow?: (row: Row | null) => string | null`, consumed by `useDetailCore` for the chip and the stand-in titles ONLY (the settings pane's "every X opens as…" sentences must keep the type-level `label`). Second, smaller: `DetailField.ref` renders the platform short-uuid cell INSTEAD of the field's `text`, so a door field cannot name what it opens — the employer's name rides the label as a workaround.
 
 - 2026-09-18 — **U-W1: a connected Google file is a registered item type, and a type may now REFINE its detail.** `google_document` joins THE type map (`registry.tsx` + `types.ts`), so `workbench.google_document` — live since 2026-09-17 with no client registration at all — opens as a window, a docked panel or `/detail/google_document/<id>` from ONE entry, and the health strip finally has a synced record to render on (the thing five verification rounds could not judge). The entry itself lives beside its feature (`features/google-workspace/documents/itemType.tsx`); this map is only where the platform learns about it. New optional `ItemTypeConfig.refineDetail(base) => DetailRecordType`, applied in `detail.tsx`: a type that genuinely knows more than a generic composition can say (a synced file's own `sync_status`, a cached body that must not be printed as a field, a composer that writes back to the provider) changes the composed registration in place — ONE registration still, never a second registry, and every presentation inherits it because they all read the same `DetailRecordType`. A type that omits it behaves exactly as before. Red-then-green: with the registry entry removed, 9 of 10 assertions in `features/google-workspace/documents/__tests__/a-linked-document-opens-in-place.test.tsx` fail (neutral fallback, no loader, no body, no composer, no strip) — restored, 10/10 green.
 
