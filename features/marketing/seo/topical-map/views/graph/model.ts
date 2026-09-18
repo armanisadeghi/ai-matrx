@@ -201,3 +201,22 @@ export function visibleTreeEdges(
     (edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target),
   );
 }
+
+/**
+ * Whether one topic is a BRANCH — a topic with at least one visible child.
+ *
+ * 🚨 ONLY A BRANCH RE-FRAMES THE DRAWING (vision §2.2: "Clicking a BRANCH
+ * re-frames on it"). Focusing a LEAF means drawing one card in an empty canvas:
+ * the person loses the shape they were reading, the toolbar's "back to the whole
+ * map" is the only way out, and nothing was gained — a leaf has nothing to show
+ * inside it. A leaf click still SELECTS the topic and opens its panel, which is
+ * what the person was actually asking for.
+ *
+ * "Visible child" is the right test rather than "has a `parent_id` pointing at
+ * it": `childrenByParentId` is built from the tree edges whose target this read
+ * returned, so a topic whose only children are retired is a leaf here — which is
+ * exactly what the drawing would show.
+ */
+export function isBranch(model: GraphModel, topicId: string): boolean {
+  return (model.childrenByParentId.get(topicId)?.length ?? 0) > 0;
+}

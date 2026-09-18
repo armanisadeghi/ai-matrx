@@ -182,3 +182,54 @@ describe("dominantTone", () => {
     expect(dominantTone({ slug: "alpha", page_count: 8, planned_count: 0 }, [])).toBeNull();
   });
 });
+
+describe("the hue legend line — a legend a person can READ", () => {
+  const hueLine = (resolved: { lines: { channel: string; text: string }[] }) =>
+    resolved.lines.find((line) => line.channel === "hue");
+
+  it("tells the person where to look, by the facet's own name", () => {
+    const resolved = resolveEncoding(LIVE, "structure", {
+      facetLabel: "region",
+      valueCount: 5,
+    });
+    expect(hueLine(resolved)?.text).toBe(
+      "Hue — the bar on a topic matches the bar on its region value in the column on the left.",
+    );
+  });
+
+  it("states the collisions out loud once the axis is longer than the palette", () => {
+    // All Green's `region` facet has 255 values and there are six chart tokens.
+    // Two regions WILL share a bar — a person who trusted the colour alone
+    // would be wrong, so the sentence says the column is the key.
+    const resolved = resolveEncoding(LIVE, "structure", {
+      facetLabel: "region",
+      valueCount: 30,
+    });
+    const text = hueLine(resolved)?.text ?? "";
+    expect(text).toContain("in the column on the left.");
+    expect(text).toContain("6 colours repeat across 30 values");
+    expect(text).toContain("the column, not the colour, is the key");
+  });
+
+  it("says nothing it cannot back up when the drawing is grouped by nothing", () => {
+    const resolved = resolveEncoding(LIVE, "structure", { facetLabel: null, valueCount: 0 });
+    expect(hueLine(resolved)?.text).toBe(
+      "Hue — which value of the grouped facet the topic belongs to.",
+    );
+    // …and the same with no context at all.
+    expect(hueLine(resolveEncoding(LIVE, "structure"))?.text).toBe(
+      "Hue — which value of the grouped facet the topic belongs to.",
+    );
+  });
+
+  it("never rewrites an UNKNOWN hue value's own refusal sentence", () => {
+    const resolved = resolveEncoding({ ...LIVE, hue: "rainbow" }, "structure", {
+      facetLabel: "region",
+      valueCount: 30,
+    });
+    const line = resolved.lines.find((entry) => entry.channel === "hue");
+    expect(line?.known).toBe(false);
+    expect(line?.text).toContain("rainbow");
+    expect(line?.text).not.toContain("column on the left");
+  });
+});

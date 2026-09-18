@@ -97,11 +97,14 @@ import { GraphLegend } from "./graph/GraphLegend";
 import { GraphToolbar } from "./graph/GraphToolbar";
 import { autoArrangeTopics, layoutTopics, topLeftOf } from "./graph/layout";
 import {
+  ALL_FACET_VALUE_ID,
   buildGraphModel,
+  isBranch,
   visibleTopicIds,
   visibleTopics,
   visibleTreeEdges,
 } from "./graph/model";
+import { reconcilePosition } from "./graph/reconcile";
 import {
   FacetMoreBody,
   FacetValueBody,
@@ -254,6 +257,24 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
 
   const [revealedValues, setRevealedValues] = useState(FACET_AXIS_REVEAL_STEP);
 
+  /**
+   * The topics THIS SESSION dragged and the server accepted.
+   *
+   * 🚨 A DRAG THAT LANDED IS A PLACEMENT, even though the graph query does not
+   * know it yet: `useSetMapTopicLayout` invalidates `topicRows`, not
+   * `topicalMapKeys.graph(...)`, so `query.data` keeps `auto_layout: true` and
+   * the topic's OLD position until something else refetches the graph. Without
+   * this set, the next recompute — a band change, a regroup, an auto-arrange —
+   * walks the node back to where the server last saw it, in front of the person
+   * who just moved it. A ref rather than state on purpose: it changes nothing on
+   * the screen by itself and must not re-render the canvas mid-drag.
+   *
+   * Filed with the coordinator: `useSetMapTopicLayout` should also invalidate
+   * the graph key on success. When it does, this becomes belt-and-braces rather
+   * than the only guard — it stays correct either way.
+   */
+  const draggedTopicIds = useRef<Set<string>>(new Set());
+
   // ── The convergence rollup ───────────────────────────────────────────────
   //
   // `seo.list_page_intents` is paged (1..1000 a call) and a map can hold
@@ -316,7 +337,14 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
   // hooks above must keep running unconditionally.
   const band: GraphBand = knobs ? bandFor(topics.length, knobs) : "card";
   const geometry = GRAPH_BAND_GEOMETRY[band];
-  const encoding = resolveEncoding(knobs?.graph_encoding ?? null, mode);
+  // The axis is built BEFORE the encoding because the hue legend line names the
+  // facet and the number of values on the column — a legend that cannot say
+  // where to look is a legend nobody can read.
+  const axis = buildFacetAxis(model, visibleIds, revealedValues);
+  const encoding = resolveEncoding(knobs?.graph_encoding ?? null, mode, {
+    facetLabel: axis.facet,
+    valueCount: axis.values.length,
+  });
 
   const positions = layoutTopics({
     topics,
@@ -328,7 +356,6 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
     autoLayout: knobs?.graph_auto_layout ?? true,
   });
   const corner = topLeftOf(positions.values());
-  const axis = buildFacetAxis(model, visibleIds, revealedValues);
   const axisPositions = facetAxisPositions(axis, {
     ...FACET_AXIS_LAYOUT,
     topicsLeft: corner.x,
@@ -340,6 +367,14 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
     (max, topic) => Math.max(max, sizeValueOf(encoding.size, topic.data)),
     0,
   );
+
+  // The slug the synthetic "no value for this facet" bucket goes by. The axis
+  // pill paints itself with `hueBar(value.slug)`, so a topic with no value must
+  // hash the SAME string or the legend's "match the bar in the column on the
+  // left" would be false for exactly the topics that need it most.
+  const allFacetValueSlug =
+    model.facetValues.find((value) => value.id === ALL_FACET_VALUE_ID)?.data.slug ??
+    ALL_FACET_VALUE_ID;
 
   const toneColorFor = (slug: string, pageCount: number, plannedCount: number): string | null => {
     if (!tally || !knobs) return null;
@@ -380,7 +415,7 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
         ringTier: encoding.ring === "tier" ? data.depth : null,
         hueKey:
           encoding.hue === "grouped_facet" && model.groupBy
-            ? (data.facets[model.groupBy] ?? "__none__")
+            ? (data.facets[model.groupBy] ?? allFacetValueSlug)
             : null,
         scale:
           encoding.size === "none"
@@ -390,12 +425,22 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
         // Filled from the zoom context inside the node component.
         showLabel: true,
       };
+      // MATRX-EXCEPTION: React Flow's generic node-data bag again — the band on
+      // the kept node is the one this file wrote there on the previous build.
+      const keptBand = kept ? (kept.data as unknown as TopicFlowData).band : null;
       return {
         id: topic.id,
         type: "topic",
-        // A live position (a drag, or a bring-to-front) always wins over a
-        // recomputed one, so persisting a dragged node never snaps it back.
-        position: kept?.position ?? positions.get(topic.id) ?? topic.position,
+        // WHICH POSITION SURVIVES A REBUILD — the rule, and why, is
+        // `graph/reconcile.ts`. A stored layout or a drag this session is the
+        // person's own placement and is kept in every band; anything else is
+        // kept only while the geometry it was computed in is still on screen.
+        position: reconcilePosition({
+          kept: kept ? { position: kept.position, band: keptBand ?? null } : null,
+          band,
+          computed: positions.get(topic.id) ?? topic.position,
+          placed: data.auto_layout === false || draggedTopicIds.current.has(topic.id),
+        }),
         zIndex: kept?.zIndex,
         draggable: !readOnly,
         data: { band, body } as unknown as Record<string, unknown>,
@@ -558,7 +603,14 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
             const topic = model.topicById.get(node.id);
             if (!topic) return;
             dispatch(selectTopic({ mapId, slug: topic.data.slug }));
-            dispatch(setGraphFocus({ mapId, slug: topic.data.slug }));
+            // 🚨 ONLY A BRANCH RE-FRAMES THE DRAWING (vision §2.2). Focusing a
+            // LEAF draws one card in an empty canvas and takes the person's
+            // place away for nothing — a leaf has no inside to show. Selecting
+            // it and opening its panel is what the click was actually asking
+            // for, and both still happen.
+            if (isBranch(model, node.id)) {
+              dispatch(setGraphFocus({ mapId, slug: topic.data.slug }));
+            }
             openTopicPanel({ mapId, slug: topic.data.slug, siteId });
           }}
           onNodeDragStop={(_event, node) => {
@@ -572,6 +624,11 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
                 layout: { x: node.position.x, y: node.position.y },
               },
               {
+                // The write landed: this topic is PLACED for the rest of the
+                // session, whatever the graph query still says about it.
+                onSuccess: () => {
+                  draggedTopicIds.current.add(topic.id);
+                },
                 // The hook has already rolled the optimistic move back; the
                 // person is owed the database's OWN sentence for why.
                 onError: (error) => toast.error(topicalMapErrorText(error)),

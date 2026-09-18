@@ -26,9 +26,14 @@ import { cn } from "@/lib/utils";
 
 import { TopicCounts } from "../../ui/TopicCounts";
 import { TopicStatusMark } from "../../ui/TopicStatusMark";
-import { intentColorClasses } from "../../ui/intentColorClasses";
+import {
+  intentColorClasses,
+  isMapIntentColorName,
+  type MapIntentColorName,
+} from "../../ui/intentColorClasses";
 import { isResolvedEntityRef, type EntityRef as MapEntityRef } from "../../types";
 import type { GraphBand } from "./bands";
+import { hueBar } from "./hue";
 import type { FacetAxisValue } from "./facetAxis";
 
 /** What every topic body is handed. Set by `GraphViewImpl`'s node builder. */
@@ -75,37 +80,50 @@ function tierRing(depth: number | null): string {
 }
 
 /**
- * The hue by grouped facet value. Six chart tokens, chosen by a stable hash of
- * the value slug so the same region is the same colour on every render and on
- * every machine — a colour that moves when the sort order changes teaches the
- * person nothing.
+ * THE CONVERGENCE FILL, and why it is its own table rather than the dot classes.
+ *
+ * 🚨 A FILL IS NEVER DERIVED FROM `intentColorClasses(...).dot`. Those classes
+ * are a SWATCH: `bg-success` at full strength, which is exactly right for a
+ * 10px dot in the legend and a solid unreadable block behind a card's text.
+ * The first landing composed them with `bg-opacity-10 dark:bg-opacity-20` —
+ * utilities Tailwind 4 REMOVED (opacity is the `/` modifier now), so nothing
+ * lowered the alpha and every coloured card painted solid in both themes.
+ *
+ * So the tones are written out once, here, as real fills: the four filled tones
+ * at `/15` (a tint the foreground text survives in light AND dark), and the two
+ * dashed tones transparent, the way `ui/intentColorClasses.ts` draws them.
+ *
+ * The table is keyed on the same `MapIntentColorName` vocabulary, guarded by
+ * that module's own `isMapIntentColorName`, so a colour added there and not
+ * here fails to compile rather than drawing the wrong thing.
  */
-const HUE_BARS = [
-  "bg-chart-1",
-  "bg-chart-2",
-  "bg-chart-3",
-  "bg-chart-4",
-  "bg-chart-5",
-  "bg-chart-6",
-] as const;
+const INTENT_FILL: Record<MapIntentColorName, string> = {
+  green: "bg-success/15 border-success",
+  amber: "bg-warning/15 border-warning",
+  blue: "bg-info/15 border-info",
+  red: "bg-destructive/15 border-destructive",
+  gray_dashed: "bg-transparent border-dashed border-muted-foreground",
+  purple_dashed: "bg-transparent border-dashed border-primary",
+};
 
-function hueBar(key: string | null): string | null {
-  if (!key) return null;
-  let hash = 0;
-  for (let index = 0; index < key.length; index += 1) {
-    hash = (hash * 31 + key.charCodeAt(index)) % 100000;
-  }
-  return HUE_BARS[hash % HUE_BARS.length];
+/** The treatment for a colour we could not resolve — the same one the swatch uses. */
+const MISSING_INTENT_FILL = INTENT_FILL.gray_dashed;
+
+/**
+ * One convergence tone as a fill. An unknown name gets the `missing` treatment
+ * AND reaches the Error Inspector — the capture lives in `intentColorClasses`,
+ * which is called here for exactly that side effect so there is one place in
+ * the feature that reports an unknown colour name.
+ */
+export function intentFillClasses(name: string): string {
+  if (isMapIntentColorName(name)) return INTENT_FILL[name];
+  intentColorClasses(name);
+  return MISSING_INTENT_FILL;
 }
 
 /** The card/row background: convergence tone first, then the status tint. */
 function fillClasses(data: TopicNodeBodyData): string {
-  if (data.convergenceColor) {
-    const classes = intentColorClasses(data.convergenceColor);
-    // The dot classes carry the tone's own background AND border; at 10% they
-    // tint a card without swallowing the text on either theme.
-    return cn(classes.dot, "bg-opacity-10 dark:bg-opacity-20");
-  }
+  if (data.convergenceColor) return intentFillClasses(data.convergenceColor);
   if (data.fillTone === "status" && data.status === "proposed") return "bg-info/10";
   return "bg-card";
 }
@@ -141,16 +159,25 @@ export function TopicCardBody({ data }: { data: TopicNodeBodyData }) {
       )}
     >
       {hue ? <span className={cn("absolute inset-y-0 left-0 w-1", hue)} aria-hidden /> : null}
+      {/* 🚨 BELOW THE LEGIBILITY FLOOR THE WORDS ARE ABSENT, NOT SHRUNK. The
+          card keeps its frame, its tone and its status mark — the shape of the
+          map survives a zoom-out — and the title and the counts, which at this
+          size would be a smear, are simply not drawn. Zooming in brings them
+          back; nothing here is fake and nothing is truncated. */}
       <div className="flex items-start gap-1.5 pl-1">
-        {/* THE TITLE WRAPS AND IS NEVER TRUNCATED (Arman, 2026-08-20). */}
-        <span className="min-w-0 whitespace-normal break-words text-[13px] font-semibold leading-snug text-foreground">
-          {data.name}
-        </span>
+        {data.showLabel ? (
+          /* THE TITLE WRAPS AND IS NEVER TRUNCATED (Arman, 2026-08-20). */
+          <span className="min-w-0 whitespace-normal break-words text-[13px] font-semibold leading-snug text-foreground">
+            {data.name}
+          </span>
+        ) : null}
         <TopicStatusMark status={data.status} compact />
       </div>
-      <div className="mt-2 pl-1">
-        <TopicCounts counts={countsOf(data)} />
-      </div>
+      {data.showLabel ? (
+        <div className="mt-2 pl-1">
+          <TopicCounts counts={countsOf(data)} />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -168,11 +195,18 @@ export function TopicCompactBody({ data }: { data: TopicNodeBodyData }) {
       )}
     >
       {hue ? <span className={cn("absolute inset-y-0 left-0 w-1", hue)} aria-hidden /> : null}
-      {/* Two lines maximum, still WRAPPED — never an ellipsis that hides which
-          topic this is. */}
-      <span className="min-w-0 flex-1 whitespace-normal break-words pl-1 text-xs font-medium leading-tight text-foreground [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
-        {data.name}
-      </span>
+      {/* Below the legibility floor the row keeps its box, its tone and its
+          page count — a number reads at a size a sentence does not — and the
+          title is absent rather than unreadable. */}
+      {data.showLabel ? (
+        /* Two lines maximum, still WRAPPED — never an ellipsis that hides which
+           topic this is. */
+        <span className="min-w-0 flex-1 whitespace-normal break-words pl-1 text-xs font-medium leading-tight text-foreground [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]">
+          {data.name}
+        </span>
+      ) : (
+        <span className="min-w-0 flex-1" aria-hidden />
+      )}
       <span className="shrink-0 text-[11px] tabular-nums text-muted-foreground">
         {data.pageCount}
       </span>
@@ -264,6 +298,14 @@ export interface FacetValueNodeBodyData {
  * doors. When it names nothing this app can open, the name is a control that
  * filters the outline to this value, which is a real action and not a label.
  * There is no third case where the name just sits there.
+ *
+ * 🚨 THE PILL CARRIES THE SAME HUE BAR AS ITS TOPICS. The hue encoding paints a
+ * topic with `hueBar(<its value's slug>)`; this pill paints itself with
+ * `hueBar(<its own slug>)` — the SAME function on the SAME string, so the bar
+ * on a topic is the bar on its value and the legend can honestly tell the person
+ * to read across. Six chart tokens cannot be 255 distinct colours, and the
+ * legend says so out loud when the axis is longer than six: the column is the
+ * key, the colour is the shortcut.
  */
 export function FacetValueBody({ data }: { data: FacetValueNodeBodyData }) {
   const value = data.value;
@@ -271,14 +313,16 @@ export function FacetValueBody({ data }: { data: FacetValueNodeBodyData }) {
   const resolved = isResolvedEntityRef(ref) ? ref : null;
   const peekable = resolved ? hasPeek(resolved.type) : false;
   const label = value.isAll ? `No ${data.facetLabel} value` : value.name;
+  const hue = hueBar(value.slug);
 
   return (
     <div
       className={cn(
-        "flex w-[190px] items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs shadow-sm",
+        "relative flex w-[190px] items-center gap-1.5 overflow-hidden rounded-full border border-border bg-card py-1 pl-3.5 pr-2.5 text-xs shadow-sm",
         value.topicIds.length === 0 && "opacity-60",
       )}
     >
+      {hue ? <span className={cn("absolute inset-y-0 left-0 w-1", hue)} aria-hidden /> : null}
       {resolved && peekable ? (
         <EntityRef
           token={resolved.type}

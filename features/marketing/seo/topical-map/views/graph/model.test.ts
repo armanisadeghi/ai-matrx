@@ -4,7 +4,7 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 
 import type { MapGraphResult } from "../../types";
 import { focusWorld, groupedWorld, mapGraphResult, world15 } from "./__fixtures__/mapGraph";
-import { buildGraphModel, visibleTopicIds, visibleTreeEdges } from "./model";
+import { buildGraphModel, isBranch, visibleTopicIds, visibleTreeEdges } from "./model";
 
 jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
   captureError: jest.fn(() => "captured"),
@@ -106,5 +106,25 @@ describe("visibleTopicIds", () => {
       expect(visible.has(edge.source)).toBe(true);
       expect(visible.has(edge.target)).toBe(true);
     }
+  });
+});
+
+describe("isBranch — only a branch re-frames the drawing", () => {
+  it("is true for a topic with children and false for a leaf", () => {
+    const model = buildGraphModel(focusWorld());
+    const idOf = (slug: string) => model.topicBySlug.get(slug)?.id ?? "missing";
+
+    // topic-2 is the focus branch: 14 descendants hang off it.
+    expect(isBranch(model, idOf("topic-2"))).toBe(true);
+    // The last topic in that chain has nothing under it — clicking it must
+    // select and open the panel, never draw one card in an empty canvas.
+    const leaf = model.topics.find((topic) => !isBranch(model, topic.id));
+    expect(leaf).toBeDefined();
+    expect(isBranch(model, (leaf as { id: string }).id)).toBe(false);
+  });
+
+  it("is false for an id this drawing does not hold", () => {
+    const model = buildGraphModel(focusWorld());
+    expect(isBranch(model, "not-a-topic")).toBe(false);
   });
 });

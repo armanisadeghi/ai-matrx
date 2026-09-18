@@ -18,6 +18,7 @@ import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { MapGraphEncoding } from "../../knobs";
 import { pageIntentTone } from "../../redux/selectors";
 import type { PageIntentDisposition, PageIntentState } from "../../types";
+import { GRAPH_HUE_BAR_COUNT } from "./hue";
 
 /** The two modes of CONTRACTS §3's `graph.encodingMode`. */
 export type GraphEncodingMode = "structure" | "convergence";
@@ -88,9 +89,41 @@ const RING_TEXT: Record<GraphRingChannel, string> = {
   none: "Ring — no outline is drawn.",
 };
 const HUE_TEXT: Record<GraphHueChannel, string> = {
+  // Replaced below by {@link hueLineText} whenever the drawing knows WHICH facet
+  // it is grouped by — a legend that names no facet and no place to look is a
+  // legend the person cannot use. This entry is the honest fallback for a
+  // drawing that is grouped by nothing this build can name.
   grouped_facet: "Hue — which value of the grouped facet the topic belongs to.",
   none: "Hue — no colour is applied.",
 };
+
+/** What the drawing knows about the axis when the legend is written. */
+export interface GraphHueContext {
+  /** The grouped facet's label, as the axis prints it. Null when unknown. */
+  facetLabel: string | null;
+  /** How many values the axis is currently showing. */
+  valueCount: number;
+}
+
+/**
+ * THE HUE SENTENCE A PERSON CAN ACT ON. Not "which value of the grouped facet
+ * the topic belongs to" — which names a colour system and no way to read it —
+ * but where to LOOK: the same bar is on the value's pill in the column on the
+ * left.
+ *
+ * And when the axis is longer than the palette, the collisions are stated
+ * rather than left to be discovered: six colours across 255 regions means two
+ * regions share a bar, and a person who trusted the colour alone would be
+ * wrong. The column is the key; the colour is the shortcut.
+ */
+export function hueLineText(context: GraphHueContext | undefined): string {
+  if (!context?.facetLabel) return HUE_TEXT.grouped_facet;
+  const base = `Hue — the bar on a topic matches the bar on its ${context.facetLabel} value in the column on the left.`;
+  if (context.valueCount > GRAPH_HUE_BAR_COUNT) {
+    return `${base} ${GRAPH_HUE_BAR_COUNT} colours repeat across ${context.valueCount} values; the column, not the colour, is the key.`;
+  }
+  return base;
+}
 
 function resolveChannel<T extends string>(
   channel: GraphEncodingChannelKey,
@@ -123,15 +156,29 @@ function resolveChannel<T extends string>(
  * reads. `mode` only changes the FILL line: in convergence, fill is taken over
  * by the page-intent colours and the legend must say so instead of describing a
  * status tint that is no longer on the screen.
+ *
+ * `hueContext` is what the drawing knows about the axis right now — the facet's
+ * label and how many values are on it. It only ever makes the HUE line more
+ * specific (see {@link hueLineText}); leaving it out keeps the generic sentence
+ * and changes nothing else.
  */
 export function resolveEncoding(
   encoding: MapGraphEncoding | null | undefined,
   mode: GraphEncodingMode,
+  hueContext?: GraphHueContext,
 ): ResolvedGraphEncoding {
   const size = resolveChannel<GraphSizeChannel>("size", encoding?.size, SIZE_VALUES, SIZE_TEXT);
   const fill = resolveChannel<GraphFillChannel>("fill", encoding?.fill, FILL_VALUES, FILL_TEXT);
   const ring = resolveChannel<GraphRingChannel>("ring", encoding?.ring, RING_VALUES, RING_TEXT);
   const hue = resolveChannel<GraphHueChannel>("hue", encoding?.hue, HUE_VALUES, HUE_TEXT);
+
+  // The hue line is rewritten — never re-classified. An UNKNOWN hue value keeps
+  // its own refusal sentence and its `known: false`; only the recognised
+  // `grouped_facet` line gains the place to look.
+  const hueLine: GraphLegendLine =
+    hue.line.known && hue.value === "grouped_facet"
+      ? { ...hue.line, text: hueLineText(hueContext) }
+      : hue.line;
 
   const fillLine: GraphLegendLine =
     mode === "convergence"
@@ -148,7 +195,7 @@ export function resolveEncoding(
     fill: mode === "convergence" ? "none" : fill.value,
     ring: ring.value,
     hue: hue.value,
-    lines: [size.line, fillLine, ring.line, hue.line],
+    lines: [size.line, fillLine, ring.line, hueLine],
   };
 }
 
