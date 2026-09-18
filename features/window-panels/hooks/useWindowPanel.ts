@@ -85,7 +85,52 @@ function resolveSize(
   return parseFloat(value) || fallback;
 }
 
-function resolvePosition(
+/**
+ * How many windows this page has already placed by default, so the second one
+ * does not land exactly on the first. Page-scoped on purpose: a reload starts
+ * the cascade over, which is what every desktop window manager does.
+ */
+const CASCADE_COUNT = Symbol.for("matrx.windowPanels.defaultCascade");
+const CASCADE_STEP = 28;
+const CASCADE_WRAP = 6;
+
+export function resetDefaultWindowCascade(): void {
+  (globalThis as unknown as Record<symbol, number>)[CASCADE_COUNT] = 0;
+}
+
+function nextCascadeStep(): number {
+  const host = globalThis as unknown as Record<symbol, number>;
+  const seen = host[CASCADE_COUNT] ?? 0;
+  host[CASCADE_COUNT] = seen + 1;
+  return (seen % CASCADE_WRAP) * CASCADE_STEP;
+}
+
+/**
+ * Where a window nobody positioned opens.
+ *
+ * 🚨 WHY THIS IS NOT CENTERED ANY MORE (2026-09-17). The `default` arm used to
+ * return the same rect as `"center"`: horizontally centred, a quarter of the
+ * way down. That is exactly where this app puts a route's primary column, so a
+ * floating window that declared no position landed ON TOP of the one control
+ * the page exists for. It was found on `/exports`, where the auto-opened
+ * "Spend so far today" window covered the drop zone on first load and swallowed
+ * clicks on "Choose a file" — Playwright named it: `WindowPanel … subtree
+ * intercepts pointer events`. Nothing about that was specific to spend or to
+ * exports; every window in the registry that omits `position` had it.
+ *
+ * An explicit `position: "center"` still centres — a window that ASKED to be in
+ * the middle is making a claim about itself, and this is not the place to
+ * overrule it. Only the windows nobody placed move, and they move to the right
+ * gutter beside the content, cascaded so a second one is visible behind the
+ * first, which is what macOS, Figma and Linear do with utility windows.
+ *
+ * Below `NARROW_VIEWPORT` there is no gutter to park in — the content is the
+ * whole screen — so a default window is clamped to the top instead of covering
+ * the middle of the page, and the mobile surfaces take over from there.
+ */
+const NARROW_VIEWPORT = 768;
+
+export function resolvePosition(
   pos: WindowPosition | undefined,
   w: number,
   h: number,
@@ -102,11 +147,23 @@ function resolvePosition(
     case "bottom-right":
       return { x: Math.max(0, vw - w - pad), y: Math.max(0, vh - h - pad) };
     case "center":
-    default:
       return {
         x: Math.max(0, (vw - w) / 2),
         y: Math.max(0, (vh - h) / 4),
       };
+    default: {
+      const cascade = nextCascadeStep();
+      if (vw < NARROW_VIEWPORT) {
+        return {
+          x: Math.max(0, Math.min(vw - w, (vw - w) / 2)),
+          y: Math.max(0, Math.min(vh - h, pad + cascade)),
+        };
+      }
+      return {
+        x: Math.max(0, vw - w - pad - cascade),
+        y: Math.max(0, Math.min(vh - h, pad + cascade)),
+      };
+    }
   }
 }
 
