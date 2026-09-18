@@ -15,6 +15,7 @@ import type {
   MapTopicStatus,
   PageIntentDisposition,
   PageIntentRecord,
+  PageIntentSource,
   PageIntentState,
 } from "../types";
 
@@ -85,6 +86,84 @@ export function emptyMapTopicFilters(): MapTopicFilters {
 }
 
 /**
+ * How siblings are ordered inside every view that walks the tree (CONTRACTS §3).
+ *
+ * `sort_order` is THE TREE'S OWN ORDER — the order `seo.map_tree` returned,
+ * which is the order a person arranged their map in. It is the default for
+ * that reason: every other value is a temporary lens over someone's structure,
+ * never a replacement for it.
+ *
+ * The three count sorts (`pages`, `keywords`, `planned`) order DESCENDING and
+ * put a topic whose count was never loaded LAST — not first, and never as a
+ * zero. `map_tree` omits counts entirely when the tree was read without
+ * `include: ["counts"]` (see {@link NormalizedMapTopic}), so treating absent as
+ * 0 would sort a whole unloaded tree into a confident, wrong order.
+ */
+export type MapSiblingSort = "sort_order" | "name" | "pages" | "keywords" | "planned";
+
+/**
+ * What the pages workspace is narrowed to (CONTRACTS §3).
+ *
+ * Every field is "no filter" when null / "" / false, EXCEPT `traffic`, whose
+ * "no filter" value is the explicit `"all"` — a tri-state that must never be
+ * confused with "we have no traffic reading".
+ */
+export interface MapPageFilters {
+  /** Substring, matched client-side against the page's title, url and summary. */
+  text: string;
+  /** Only pages whose intent or coverage names this topic. */
+  topicSlug: string | null;
+  /** Only pages in this region facet value. */
+  regionSlug: string | null;
+  /** `"low"` = clicks <= the `pages_low_traffic_clicks_max` knob. */
+  traffic: "all" | "low" | "with_traffic";
+  disposition: PageIntentDisposition | null;
+  state: PageIntentState | null;
+  source: PageIntentSource | null;
+  /** The `list_pages_without_topic` tab. */
+  onNoTopic: boolean;
+}
+
+export function emptyMapPageFilters(): MapPageFilters {
+  return {
+    text: "",
+    topicSlug: null,
+    regionSlug: null,
+    traffic: "all",
+    disposition: null,
+    state: null,
+    source: null,
+    onNoTopic: false,
+  };
+}
+
+/** The graph view's own state (CONTRACTS §3). */
+export interface MapGraphState {
+  /** The topic the graph is centred on. Null = the whole map. */
+  focusSlug: string | null;
+  /** What shape and colour encode: the tree, or where pages are converging. */
+  encodingMode: "structure" | "convergence";
+}
+
+/** The table view's own state (CONTRACTS §3). */
+export interface MapTableState {
+  /** Rows keep their parent/child nesting rather than flattening. */
+  hierarchy: boolean;
+  /** Null = the `table_default_columns` knob's set, NEVER "no columns". */
+  columns: string[] | null;
+}
+
+/**
+ * Where a review deck left off. Two cursors, not one: a topic review and a
+ * page-intent review run over different records and a user switching between
+ * them must not lose either place.
+ */
+export interface MapReviewState {
+  cursorSlug: string | null;
+  cursorPageId: string | null;
+}
+
+/**
  * One in-flight optimistic write. `before` is the exact pre-edit state of the
  * touched topics; a rollback restores it byte for byte rather than re-deriving.
  */
@@ -135,6 +214,15 @@ export interface TopicalMapWorkspaceState {
   /** Non-zero means `list_page_intents` had to collapse duplicate edges — say so, never hide it. */
   duplicateIntents: number;
   optimistic: OptimisticEdit[];
+  /** The pages workspace's filters (CONTRACTS §3). */
+  pageFilters: MapPageFilters;
+  /** Bulk selection of PAGES — deliberately separate from `checkedSlugs` (topics). */
+  checkedPageIds: string[];
+  graph: MapGraphState;
+  table: MapTableState;
+  review: MapReviewState;
+  /** How siblings are ordered in every tree walk. */
+  siblingSort: MapSiblingSort;
 }
 
 export interface TopicalMapSliceState {

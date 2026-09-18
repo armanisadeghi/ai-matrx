@@ -16,6 +16,11 @@ import type { RootState } from "@/lib/redux/store";
 import type { MapTopicStatus, PageIntentRecord } from "../types";
 import { createWorkspaceState } from "./slice";
 import type {
+  MapGraphState,
+  MapPageFilters,
+  MapReviewState,
+  MapSiblingSort,
+  MapTableState,
   MapTopicFilters,
   MapViewKey,
   NormalizedMapTopic,
@@ -35,6 +40,47 @@ function cached<T>(key: string, factory: () => T): T {
   const made = factory();
   selectorCache.set(key, made);
   return made;
+}
+
+/**
+ * Drops every cached selector belonging to one map (CONTRACTS §3, R16).
+ *
+ * WHY THIS IS A FUNCTION AND NOT A SUBSCRIPTION. The cache is keyed
+ * `<name>:<mapId>` and `<name>:<mapId>:<slug|pageId>`, so the per-topic and
+ * per-page families grow with every slug a user touches and NOTHING ever
+ * removes them — a workspace closed after a long session leaves one dead
+ * `createSelector` per topic, per page, forever. Two ways to clear them were
+ * available and both were rejected:
+ *
+ *   - clearing inside `mapClosed`. A reducer must be pure; reaching out of the
+ *     draft into a module-level Map is a side effect, and it would also make
+ *     `slice.ts` import `selectors.ts` while `selectors.ts` already imports
+ *     `createWorkspaceState` from `slice.ts` — a cycle.
+ *   - subscribing to the store from here. This module has no store reference
+ *     (it takes `RootState` as an argument, by design), so acquiring one would
+ *     invert the dependency and make every consumer of a selector depend on a
+ *     live store at import time.
+ *
+ * So the cache's owner exports the one door to it, and whoever dispatches
+ * `mapClosed` calls this in the same breath. There is deliberately NO LRU: a
+ * bounded cache would evict a selector a mounted component is still reading
+ * and silently restart its memo, which is the render loop `cached()` exists to
+ * prevent.
+ *
+ * It clears the map-level keys too, not only `topic:${mapId}:` — the workspace
+ * those selectors read is gone, so keeping them caches a function over an
+ * absent map. Reopening the map rebuilds them on first read.
+ */
+export function evictMapSelectorCache(mapId: string): void {
+  const prefix = `:${mapId}`;
+  for (const key of [...selectorCache.keys()]) {
+    const at = key.indexOf(prefix);
+    if (at === -1) continue;
+    const after = key.charAt(at + prefix.length);
+    // `:` → a per-slug/per-page key; "" → the map-level key. Anything else is a
+    // different map whose id merely starts with this one.
+    if (after === ":" || after === "") selectorCache.delete(key);
+  }
 }
 
 /**
@@ -170,6 +216,42 @@ function matchesFilters(topic: NormalizedMapTopic, filters: MapTopicFilters): bo
 }
 
 /**
+ * Orders one sibling list by the workspace's {@link MapSiblingSort}.
+ *
+ * `sort_order` returns the array UNTOUCHED — it is the tree's own order, and
+ * copying it would only cost a new reference per walk.
+ *
+ * A count sort reads the RAW optional field, never `?? 0`: `undefined` means
+ * `map_tree` was read without `include: ["counts"]` for that topic, and such a
+ * topic sorts LAST in every direction rather than claiming a zero it never
+ * reported. `Array.prototype.sort` is stable, so ties — including a whole
+ * unloaded tree — keep the map's own order.
+ */
+function sortedSiblings(
+  slugs: readonly string[],
+  topics: Record<string, NormalizedMapTopic>,
+  sort: MapSiblingSort,
+): readonly string[] {
+  if (sort === "sort_order" || slugs.length < 2) return slugs;
+  const ordered = [...slugs];
+  if (sort === "name") {
+    ordered.sort((a, b) =>
+      (topics[a]?.name ?? a).localeCompare(topics[b]?.name ?? b),
+    );
+    return ordered;
+  }
+  ordered.sort((a, b) => {
+    const left = topics[a]?.[sort];
+    const right = topics[b]?.[sort];
+    if (left === undefined && right === undefined) return 0;
+    if (left === undefined) return 1;
+    if (right === undefined) return -1;
+    return right - left;
+  });
+  return ordered;
+}
+
+/**
  * The flattened rows an outline, a table or a text view draws, in tree order,
  * honouring expansion.
  *
@@ -215,9 +297,13 @@ export function selectVisibleMapTopics(mapId: string) {
         const topic = ws.topicsBySlug[slug];
         if (!topic) return;
         if (filtering && !keep.has(slug)) return;
-        const children = filtering
-          ? topic.childSlugs.filter((child) => keep.has(child))
-          : topic.childSlugs;
+        const children = sortedSiblings(
+          filtering
+            ? topic.childSlugs.filter((child) => keep.has(child))
+            : topic.childSlugs,
+          ws.topicsBySlug,
+          ws.siblingSort,
+        );
         const hasChildren = children.length > 0 || (topic.childrenCount ?? 0) > 0;
         // A filter reveals its own path; without one the user's choice rules.
         const isExpanded = filtering ? hasChildren : expanded.has(slug);
@@ -234,7 +320,10 @@ export function selectVisibleMapTopics(mapId: string) {
         if (isExpanded) for (const child of children) walk(child);
       };
 
-      for (const root of ws.rootSlugs) walk(root);
+      // The roots are siblings of each other, so the same order applies to them.
+      for (const root of sortedSiblings(ws.rootSlugs, ws.topicsBySlug, ws.siblingSort)) {
+        walk(root);
+      }
       return rows;
     }),
   );
@@ -522,4 +611,42 @@ export function pageTopicViewOf(item: {
     hasIntent: item.intent !== null,
     intendedTopicSlug: item.intent?.topic?.slug ?? null,
   };
+}
+
+// ── CONTRACTS §3 additions — one property per selector ─────────────────────
+
+export function selectMapPageFilters(mapId: string) {
+  return cached(`pageFilters:${mapId}`, () =>
+    createSelector([selectMapWorkspace(mapId)], (ws): MapPageFilters => ws.pageFilters),
+  );
+}
+
+export function selectMapCheckedPageIds(mapId: string) {
+  return cached(`checkedPages:${mapId}`, () =>
+    createSelector([selectMapWorkspace(mapId)], (ws) => ws.checkedPageIds),
+  );
+}
+
+export function selectMapGraph(mapId: string) {
+  return cached(`graph:${mapId}`, () =>
+    createSelector([selectMapWorkspace(mapId)], (ws): MapGraphState => ws.graph),
+  );
+}
+
+export function selectMapTable(mapId: string) {
+  return cached(`table:${mapId}`, () =>
+    createSelector([selectMapWorkspace(mapId)], (ws): MapTableState => ws.table),
+  );
+}
+
+export function selectMapReview(mapId: string) {
+  return cached(`review:${mapId}`, () =>
+    createSelector([selectMapWorkspace(mapId)], (ws): MapReviewState => ws.review),
+  );
+}
+
+export function selectMapSiblingSort(mapId: string) {
+  return cached(`siblingSort:${mapId}`, () =>
+    createSelector([selectMapWorkspace(mapId)], (ws): MapSiblingSort => ws.siblingSort),
+  );
 }
