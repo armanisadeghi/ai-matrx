@@ -23,7 +23,6 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Compass, Route } from "lucide-react";
 
-import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 
 import type { MapIntentColors } from "../../knobs";
@@ -105,11 +104,8 @@ export function GraphLegend({
   progress,
   skipped,
 }: GraphLegendProps) {
-  const isMobile = useIsMobile();
-  // On a phone the legend starts folded: the drawing is the thing the person
-  // came for, and a panel covering a third of a 375px screen is not a legend.
-  const [open, setOpen] = useState(!isMobile);
-  const expanded = isMobile ? open : true;
+  // Keep the canvas clear; the same disclosure works on every screen size.
+  const [expanded, setOpen] = useState(false);
 
   return (
     <div className="w-[248px] max-w-[calc(100vw-2rem)] rounded-lg border border-border bg-card/95 p-2 text-xs shadow-md backdrop-blur">
@@ -128,8 +124,7 @@ export function GraphLegend({
           icon={Route}
           onClick={() => onModeChange("convergence")}
         />
-        {isMobile ? (
-          <button
+        <button
             type="button"
             onClick={() => setOpen((value) => !value)}
             aria-expanded={expanded}
@@ -141,8 +136,7 @@ export function GraphLegend({
             ) : (
               <ChevronDown className="h-3.5 w-3.5" aria-hidden />
             )}
-          </button>
-        ) : null}
+        </button>
       </div>
 
       {expanded ? (
