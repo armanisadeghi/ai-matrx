@@ -408,6 +408,20 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 ## Change log
 
+- `2026-09-18` — **F-78: the contract pin now names the field this repo actually reads.**
+  `scripts/aidream-contract-pin.json` sat at aidream `62fa56114` while these surfaces read
+  `record_id` (and `record_sync_status`, `record_sync_status_reason`, `record_absent_reason`)
+  off `SelectedFileResponse`, added in aidream `37600daa78` (F-57, R29). A pin below a field
+  the client reads lets `pnpm sync-types:live` accept a server that answers without it, and
+  the drop guard cannot speak for a field nothing reads off the generated type. The floor is
+  now `37600daa78`. STILL OPEN: `types/python-generated/api-types.ts` predates F-57, so
+  `SelectedGoogleFile` (`types.ts`) and `AttachableResource.record_table`
+  (`features/connectors/attachable-resources.ts`) remain HAND-TYPED TWINS of the contract and
+  nothing forces them to agree. Regenerating needs `pnpm sync-types`, whose offline emit
+  imports `aidream.asgi` and therefore needs the five `SUPABASE_MATRIX_*` platform-database
+  variables (the scraper domain-config store loads at import time); without them
+  `pnpm check:api-types-fresh` answers UNMEASURED, which is never a pass.
+
 - `2026-09-18` — **F-72: the no-append line is chosen by the file's kind (Cursor Bugbot LOW,
   thread 4043568378 on PR 228, commit `2445ceae`, `GoogleDocumentPanel.tsx:622-636`).** F-67's
   append-unsupported branch runs for every non-`document` `mime_kind`, but its sentence always
