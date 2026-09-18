@@ -49,8 +49,12 @@ jest.mock("@/lib/redux/hooks", () => ({
 // `useOpenGoogleTasksImport({ organizationId })`.
 const ORGANIZATION_ID = "org-77";
 
+// The organization gate the surface reads (VERIFY-R7-FIX-WAVE NEW-1): three
+// states, not two. Stood in here with "settled, and this is the selection", so
+// the case under test is unchanged.
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => ORGANIZATION_ID,
+  selectShouldPromptForOrganization: () => false,
 }));
 
 jest.mock("@/features/scopes/redux/selectors/tree", () => ({

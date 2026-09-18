@@ -164,6 +164,31 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
 
 ## Change log
 
+- `2026-09-18` — **F-89 (V-22, NEW-2): the organization question is asked before
+  the record read, and it EXPLAINS an empty answer instead of the provider
+  taking the blame.** Seat-proven, cold load of `/detail/google_document/<id>`
+  signed in: `GET …/google_document?select=*&id=eq.…` at +4231ms, then the
+  organization question (`POST …/rpc/current_personal_org_id`) at +4610ms, and
+  the screen said *"This google file couldn't be found — it may have been moved,
+  deleted, or isn't shared with you."* Three explanations, and the true one —
+  "you have not chosen an organization yet" — was not among them, on the surface
+  F-82 had just made the canonical door, while the in-place opener for the same
+  record was organization-honest. `resolveItemDetailType` now wraps the FINISHED
+  registration's `load`: the question is started BEFORE the read is issued and
+  awaited only when the read comes back empty, and an empty read with nothing
+  selected throws the honest sentence with the remedy. Two deliberate choices,
+  both load-bearing. (1) The wrap sits on the finished registration, not inside
+  `makeLoader`, because `refineDetail` may REPLACE the loader — both Google types
+  do — so a gate in the generic loader is one every refinement walks around.
+  (2) It never gates or delays the read itself: `docs/official/db-rules.md` §6 is
+  explicit that access never depends on the ACTIVE organization (RLS scopes the
+  row to the viewer's memberships), so refusing a read for want of a SELECTION
+  would be exactly the over-tightening that document calls a defect — the answer
+  is used for the empty case only. New
+  `__tests__/the-record-read-asks-the-organization-first.test.ts` (5: order, the
+  honest empty read, an honest not-found WITH an organization, a found row never
+  held up, and the same behaviour through a `refineDetail` that replaces the
+  loader) — 3 RED on HEAD, 5 green after; 148 green across the feature.
 - 2026-09-18 — **F-93: the synced census could not see the sixth synced table, and a door read a
   constant instead of the server's stamp (V-22 NEW-5, NEW-6, NEW-9).** *NEW-5 — the universe of the
   universe.* Everything in `syncedColumns.ts` derives from `types/database.types.ts`, which is

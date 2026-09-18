@@ -416,6 +416,22 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 ## Change log
 
 - `2026-09-18` — **Bugbot MEDIUM on F-95's `f881c9f6`: an unmodelled `would_*` preview is shown, exactly once, never swallowed.** F-95 merged `claim.previewKeys` into both Google blocks' `omit` lists on the belief that `NothingWasWritten` already covers the write-claim family — it only ANNOUNCES that a preview exists, it never prints the change. A `would_*` shape with no dedicated preview section (`would_delete` on the workspace block, and EVERY `would_*` on the marketing block, which is read-only and has no preview sections at all) therefore vanished entirely — worse than the double-print F-95 fixed, since a preview whose content the reader cannot see is a lie about what would happen. Added `UnmodelledPreviews` to `google-result-shared.tsx`: for each `claim.previewKeys` name the caller has not already rendered through a dedicated section (`rendered`, passed per block), it prints ONE generic "The change it would make — `<humanized key>`" section through `ResultValue` at full density. Both blocks now call it (the marketing block passes an empty `rendered` list, since it has no dedicated preview sections at all); `omit` is unchanged (`[...PROMOTED, ...claim.previewKeys]`) because every preview key is now SHOWN somewhere, not hidden. Proven red-then-green in `kind-google-result-families.test.tsx` against `f881c9f6`'s bytes: a `would_delete` fixture and a `would_update` fixture each assert their content appears exactly once, under a preview heading, with no raw leftover of the key.
+- `2026-09-18` — **F-89 (V-22, NEW-1 + NEW-2): the Google surfaces are honest
+  about WHICH of the three organization states they are in.** `AgendaPanel`'s
+  "create a note" press, `GoogleWorkspaceConnectBody`'s connect-in-this-tab and
+  `GoogleWorkspaceOverviewBody`'s enable-capability-in-this-tab each read the
+  selected organization once and refused with a sentence about not having one —
+  a false refusal for the several seconds boot takes to answer. All three now
+  WAIT through `awaitEffectiveOrganizationId` (bounded, no request of its own)
+  and carry its sentence when it settles with nothing; the Overview keeps the
+  connection's own organization first and only waits for the ambient fallback.
+  `GoogleAgentToolsSection` and `ConnectorPromptCard` were already correct — they
+  use the organization as a remount key and a knob scope, never as a refusal —
+  and `calendar/useAgenda.ts` was the one file already reading the three-state
+  hook. NEW-2, the record-open PAGE, is fixed one level up in
+  `features/item-presentation/detail.tsx`: see that file's Change log. Guard:
+  `pnpm check:org-three-states` + `:self-test`, both inside
+  `pnpm check:organization-context`.
 - `2026-09-18` — **F-93: the third Google mirror table got its first door, and the agenda door's
   hardcoded type got its resolver (V-22 NEW-6, NEW-9).** `web.youtube_video` — the third mirror
   beside `workbench.google_document` and `communication.calendar_event`, same shape

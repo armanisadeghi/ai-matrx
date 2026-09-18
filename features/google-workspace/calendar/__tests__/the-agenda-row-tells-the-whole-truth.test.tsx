@@ -28,6 +28,17 @@ const state = {
 
 const noteCalls: unknown[] = [];
 
+// The organization a PRESS files its work in (VERIFY-R7-FIX-WAVE NEW-1): the row
+// waits for the platform's bounded answer instead of refusing on a boot race, so
+// the wait is stood in here with "settled, and here it is".
+jest.mock("@/features/organizations/awaitWorkspace", () => ({
+  awaitEffectiveOrganizationId: async () => ({
+    status: "ready",
+    organizationId: "11111111-2222-3333-4444-555555555555",
+  }),
+  peekEffectiveOrganizationId: () => "11111111-2222-3333-4444-555555555555",
+}));
+
 jest.mock("@/features/google-workspace/calendar/service", () => ({
   readAgendaEvents: async () => state.rows,
   readAttendeePeople: async () => state.people,

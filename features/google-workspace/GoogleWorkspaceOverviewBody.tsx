@@ -45,6 +45,7 @@ import {
   selectUserId,
 } from "@/lib/redux/selectors/userSelectors";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { toast } from "@/lib/toast";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import {
@@ -170,15 +171,22 @@ function GoogleWorkspaceOverviewBodyContent({
     setBusy(`capability:${capabilityKey}:${redirect ? "redirect" : "popup"}`);
     try {
       if (redirect) {
-        if (!frozenOrganizationContextId) {
-          throw new Error(
-            "Choose an organization before continuing with Google in this tab.",
-          );
-        }
+        // 🚨 A PRESS WAITS FOR THE ANSWER, IT NEVER REFUSES ON A RACE
+        // (VERIFY-R7-FIX-WAVE NEW-1). The connection's own organization still
+        // wins when it has one; only the ambient fallback can be mid-boot, and
+        // that is what the bounded platform wait answers — honestly in both
+        // states, with the remedy in its own sentence.
+        const redirectOrganizationId =
+          frozenOrganizationContextId ??
+          (await (async () => {
+            const workspace = await awaitEffectiveOrganizationId();
+            if (workspace.status !== "ready") throw new Error(workspace.reason);
+            return workspace.organizationId;
+          })());
         await google.startAuthorizationCodeRedirect(request.scopes, {
           returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`,
           owner: frozenOwner,
-          organizationContextId: frozenOrganizationContextId,
+          organizationContextId: redirectOrganizationId,
           connectionPurpose: "google_capability",
           loginHint: request.loginHint,
           forceConsent: true,

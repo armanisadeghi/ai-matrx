@@ -33,8 +33,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ConnectorPromptHost } from "@/features/connectors/ConnectorPromptHost";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOpenDetail } from "@/lib/detail/useOpenDetail";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { extractErrorMessage } from "@/utils/errors";
 
 import {
@@ -270,7 +269,6 @@ function AgendaEventRow({
 }) {
   const openDetail = useOpenDetail(CALENDAR_EVENT_TYPE);
   const openNote = useOpenDetail("note");
-  const organizationId = useAppSelector(selectOrganizationId);
   const [savingNote, setSavingNote] = useState(false);
   /** The note this row just created, so it stays reachable after the toast (N10). */
   const [createdNoteId, setCreatedNoteId] = useState<string | null>(null);
@@ -286,15 +284,23 @@ function AgendaEventRow({
   };
 
   const createNote = async () => {
-    if (!organizationId) {
-      toast.error("Choose an organization before creating a note.");
+      // 🚨 A PRESS WAITS FOR THE ANSWER, IT NEVER REFUSES ON A RACE
+      // (VERIFY-R7-FIX-WAVE NEW-1). `organization_id === null` is "boot has not
+      // answered" as often as it is "you have none", and a press that reads the
+      // value once refuses the first case with a sentence about the second. The
+      // platform's bounded wait answers both honestly — and when it settles
+      // with nothing, its own reason is the sentence, remedy included, never
+      // "try again in a moment".
+    const workspace = await awaitEffectiveOrganizationId();
+    if (workspace.status !== "ready") {
+      toast.error(workspace.reason);
       return;
     }
     setSavingNote(true);
     try {
       const result = await createNoteAboutEvent({
         event,
-        organizationId,
+        organizationId: workspace.organizationId,
         partyIds: people.map((person) => person.partyId),
       });
       setCreatedNoteId(result.noteId);

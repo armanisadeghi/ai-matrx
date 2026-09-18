@@ -20,6 +20,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { isEntityTypeToken } from "@ai-matrx/associations";
 
 import { supabase } from "@/utils/supabase/client";
+import { awaitOrganizationForRecordRead } from "@/features/organizations/awaitWorkspace";
 import { fieldsFromRow } from "@/lib/detail/format";
 import type {
   DetailLoadResult,
@@ -58,6 +59,62 @@ function makeLoader(
     if (!data) return { notFound: true };
     // MATRX-EXCEPTION: the untyped client's result for a runtime table.
     return { row: data as unknown as DetailRow };
+  };
+}
+
+/**
+ * 🚨 THE ORGANIZATION QUESTION IS ASKED FIRST, AND IT EXPLAINS AN EMPTY READ —
+ * IT NEVER GATES ONE (VERIFY-R7-FIX-WAVE NEW-2, seat-proven 2026-09-18).
+ *
+ * From the seat, a cold load of `/detail/google_document/<id>` issued
+ *
+ *   +4231ms  GET …/google_document?select=*&id=eq.…
+ *   +4610ms  POST …/rpc/current_personal_org_id      ← the organization question
+ *
+ * — the read went out before anything had asked which organization the person
+ * works in, and when it came back empty the screen blamed the provider:
+ * "it may have been moved, deleted, or isn't shared with you." Three
+ * explanations, and the true one — "you have not chosen an organization yet" —
+ * was not among them, on the surface F-82 had just made the canonical door,
+ * while the in-place opener for the same record was organization-honest.
+ *
+ * WHAT THIS DOES, AND THE ONE THING IT DELIBERATELY DOES NOT DO. The question
+ * is asked BEFORE the read is issued — it is started first, on purpose, so the
+ * answer is in hand by the time the row is. It does NOT hold the read up, and it
+ * does NOT refuse one, because `docs/official/db-rules.md` §6 is explicit that
+ * access never depends on the ACTIVE organization: RLS scopes this row to the
+ * viewer's memberships, so a person who has not picked a working organization
+ * may still legitimately open a record, and gating the read on a selection would
+ * be exactly the over-tightening that document calls a defect. What the answer
+ * is for is the EMPTY case: a row that came back with nothing, while nothing is
+ * selected, is explained by the missing selection and its remedy — never by a
+ * claim about the record.
+ *
+ * WHY THE WRAP IS HERE AND NOT IN `makeLoader`. `refineDetail` may REPLACE the
+ * loader — both Google types do, and so will the next bespoke registration — so
+ * a gate inside the generic loader is a gate every refinement walks around. It
+ * rides whatever `load` the FINISHED registration carries, which is the one
+ * place no registration can get wrong.
+ *
+ * The wait is BOUNDED and issues NO request of its own: it joins the answer the
+ * boot path is already fetching (`orgBootstrapGate`) and gives up on the
+ * `organizations.workspace action_wait_ms` knob.
+ */
+function askTheOrganizationFirst(
+  load: DetailRecordType["load"],
+): DetailRecordType["load"] {
+  if (!load) return null;
+  return async (id, signal) => {
+    // Started before the read, awaited only if the read finds nothing.
+    const organization = awaitOrganizationForRecordRead();
+    const result = await load(id, signal);
+    if (!("notFound" in result)) {
+      void organization.catch(() => undefined);
+      return result;
+    }
+    const answered = await organization;
+    if (answered.status !== "ready") throw new Error(answered.reason);
+    return result;
   };
 }
 
@@ -111,7 +168,13 @@ export function resolveItemDetailType(type: string): DetailRecordType | null {
   // A type that knows more about itself than a generic composition can say
   // refines the base — ONE registration still, never a second registry. See
   // `ItemTypeConfig.refineDetail`.
-  const recordType = recognized && config.refineDetail ? config.refineDetail(base) : base;
+  const refined = recognized && config.refineDetail ? config.refineDetail(base) : base;
+  // The gate rides the FINISHED registration's loader — after refinement, so a
+  // bespoke `load` cannot skip the organization question (see above).
+  const recordType: DetailRecordType = {
+    ...refined,
+    load: askTheOrganizationFirst(refined.load),
+  };
   cache.set(type, recordType);
   return recordType;
 }

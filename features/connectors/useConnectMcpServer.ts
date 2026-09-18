@@ -28,6 +28,7 @@ import { startMcpOAuthPopup } from "@/features/agents/services/mcp-oauth/popup";
 import { githubConnectUrl } from "@/features/github-integration/service";
 import type { McpCatalogEntry } from "@/features/agents/types/mcp.types";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { toast } from "@/lib/toast";
 
 export function useConnectMcpServer() {
@@ -47,12 +48,17 @@ export function useConnectMcpServer() {
         return;
       }
       if (route === "github") {
-        if (!organizationId) {
-          toast.error("Select an organization before connecting GitHub.");
+      // 🚨 A PRESS WAITS FOR THE ANSWER, IT NEVER REFUSES ON A RACE
+      // (VERIFY-R7-FIX-WAVE NEW-1). The bounded platform wait joins the answer
+      // boot is already fetching and, settled with nothing, carries its own
+      // sentence and remedy.
+        const workspace = await awaitEffectiveOrganizationId();
+        if (workspace.status !== "ready") {
+          toast.error(workspace.reason);
           return;
         }
         window.location.assign(
-          githubConnectUrl(window.location.pathname, organizationId),
+          githubConnectUrl(window.location.pathname, workspace.organizationId),
         );
         return;
       }

@@ -15,6 +15,9 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import {
   ArrowRight,
   Check,
@@ -120,6 +123,14 @@ export function GoogleContactsImportPanel({
   initialExternalId = null,
   onImported,
 }: GoogleContactsImportPanelProps) {
+  // 🚨 THREE STATES, AND THE ORGANIZATION THE WINDOW WAS OPENED WITH CAN BE
+  // STALE — see the same block in `GoogleTasksImportPanel`. The prop wins when
+  // it has an answer, the person's own SELECTED organization fills in when it
+  // does not, and with neither this shows the CHECKING beat while boot resolves
+  // and the honest refusal only once boot has settled with nothing
+  // (VERIFY-R7-FIX-WAVE NEW-1, 2026-09-18).
+  const organizationGate = useOrganizationRequired();
+  const effectiveOrganizationId = organizationId ?? organizationGate.organizationId;
   const [query, setQuery] = useState("");
   const [search, setSearch] = useState<ContactSearchResultPending | null>(null);
   const [loading, setLoading] = useState(false);
@@ -144,7 +155,7 @@ export function GoogleContactsImportPanel({
 
   const load = useCallback(
     async (text: string) => {
-      if (!organizationId) return;
+      if (!effectiveOrganizationId) return;
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
@@ -152,7 +163,7 @@ export function GoogleContactsImportPanel({
       setError(null);
       try {
         const result = await searchGoogleContacts({
-          organizationId,
+          organizationId: effectiveOrganizationId,
           query: text,
           signal: controller.signal,
         });
@@ -164,7 +175,7 @@ export function GoogleContactsImportPanel({
         if (!controller.signal.aborted) setLoading(false);
       }
     },
-    [organizationId],
+    [effectiveOrganizationId],
   );
 
   // ONE read on mount, debounced only on later keystrokes. Two effects both
@@ -194,13 +205,13 @@ export function GoogleContactsImportPanel({
   };
 
   const review = async (ids: string[] = selected) => {
-    if (!organizationId || ids.length === 0) return;
+    if (!effectiveOrganizationId || ids.length === 0) return;
     setSelected(ids);
     setBusy(true);
     setError(null);
     try {
       const result = await importGoogleContacts({
-        organizationId,
+        organizationId: effectiveOrganizationId,
         contacts: ids.map((externalId) => ({ externalId })),
         dryRun: true,
       });
@@ -216,12 +227,12 @@ export function GoogleContactsImportPanel({
   };
 
   const apply = async () => {
-    if (!organizationId) return;
+    if (!effectiveOrganizationId) return;
     setBusy(true);
     setError(null);
     try {
       const result = await importGoogleContacts({
-        organizationId,
+        organizationId: effectiveOrganizationId,
         dryRun: false,
         contacts: plans.map((plan) => ({
           externalId: plan.external_id,
@@ -275,14 +286,15 @@ export function GoogleContactsImportPanel({
     });
   };
 
-  if (!organizationId) {
+  if (!effectiveOrganizationId) {
     return (
-      <div className="flex h-full items-center justify-center p-6 text-center">
-        <p className="max-w-sm text-sm text-muted-foreground">
-          Choose the organization these people belong to first — the import
-          writes them into it, and nothing here picks one for you.
-        </p>
-      </div>
+      <OrganizationContextNotice
+        state={organizationGate.organizationState}
+        what="Imported people"
+        title="Choose an organization"
+        description="Choose the organization these people belong to first — the import writes them into it, and nothing here picks one for you."
+        className="flex h-full items-center justify-center"
+      />
     );
   }
 

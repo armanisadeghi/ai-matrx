@@ -278,6 +278,30 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-18` — **F-89 (V-22, NEW-1): every connector surface tells the
+  resolving beat from the refusal.** Five files here derived a terminal
+  organization refusal from a nullable id. The two IMPORT panels
+  (`import/GoogleTasksImportPanel.tsx`, `import/GoogleContactsImportPanel.tsx`)
+  had a second defect on top: the organization arrives as a PROP the opener read
+  at open time, so a window opened while boot was still resolving carried `null`
+  forever and went on saying "Choose the organization these tasks belong to
+  first" after boot had settled. Both now prefer the prop, fall back to the
+  person's own SELECTED organization (the same value the opener would have
+  passed — never a personal-workspace substitution), and render
+  `OrganizationContextNotice` so the waiting beat is a checking state and the
+  refusal is terminal-only; neither fires a Google call in either non-ready
+  state. `ConnectorConsentDialog`'s `FirstAction` — the ONE door out of a
+  consent that just succeeded — used to VANISH whenever the ambient organization
+  was missing, i.e. for the whole of every cold load: it is now disabled with
+  the checking sentence while resolving and disabled with the refusal once
+  settled, absence being honest only for the terminal state. `useLiveConnectors`
+  and `useConnectMcpServer` (the GitHub connect press) and `google-adapter`'s
+  consent runner refused a person who HAS an organization on a boot race; all
+  three now WAIT through `awaitEffectiveOrganizationId` and show its own
+  sentence, remedy included, when it settles with nothing. New
+  `import/__tests__/an-import-panel-waits-for-the-organization.test.tsx` (3,
+  3 RED on HEAD). Guard: `pnpm check:org-three-states`.
+
 - `2026-09-18` — **F-80 (V-21, N4 MED): the Record-backed candidate's two doors
   are touch-sized and distinguishable without hover.** `ResourceAttachPicker`'s
   "open the record" (`ArrowUpRight`) and "join the meeting" (`ExternalLink`)
