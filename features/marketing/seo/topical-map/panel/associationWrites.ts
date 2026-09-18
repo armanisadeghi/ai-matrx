@@ -37,9 +37,12 @@ export async function attachToTopic(args: {
     await associationsService.add({
       sourceType: args.token,
       sourceId: args.id,
-      // The package's target union is the registry's; the topic token is in it,
-      // and the guard at the call site refuses a token that is not.
-      targetType: SEO_MAP_TOPIC_TOKEN as Parameters<typeof associationsService.add>[0]["targetType"],
+      // The package's compile-time target union predates the topic token
+      // (`ASSOCIATION_TARGET_TYPES`); the runtime guard checks canonical tokens,
+      // which `seo_map_topic` is. The union is a package catch-up item, filed.
+      targetType: SEO_MAP_TOPIC_TOKEN as unknown as Parameters<
+        typeof associationsService.add
+      >[0]["targetType"],
       targetId: args.topicId,
       ...(args.organizationId ? { orgId: args.organizationId } : {}),
     }),

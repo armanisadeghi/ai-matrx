@@ -37,8 +37,13 @@ function payloadSiteId(row: MapTopicAssociationResolved): string | null {
 
 export function KeywordsSection({ slug, siteId, keywords }: KeywordsSectionProps) {
   const links = useMapLinks();
-  const sites = new Set(keywords.map((row) => payloadSiteId(row) ?? siteId).filter(Boolean));
-  const workbenchSite = sites.size === 1 ? [...sites][0] ?? null : siteId;
+  const sites = new Set(
+    keywords
+      .map((row) => payloadSiteId(row) ?? siteId)
+      .filter((value): value is string => typeof value === "string"),
+  );
+  const [onlySite] = sites;
+  const workbenchSite: string | null = sites.size === 1 ? (onlySite ?? null) : siteId;
   const workbench = workbenchSite ? links.keywordWorkbench(workbenchSite, slug) : null;
 
   return (

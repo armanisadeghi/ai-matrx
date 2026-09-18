@@ -92,6 +92,7 @@ export default function TopicalMapTopicPanel({
           slug={slug}
           siteId={siteId}
           host="drawer"
+          onClose={onClose}
         />
       </SidePanelSurface>
     );
@@ -115,6 +116,7 @@ export default function TopicalMapTopicPanel({
         slug={slug}
         siteId={siteId}
         host="window"
+        onClose={onClose}
       />
     </WindowPanel>
   );

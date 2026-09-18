@@ -161,11 +161,23 @@ export function AssociationsSection({
             <SheetHeader>
               <SheetTitle>Attach to &ldquo;{topicName}&rdquo;</SheetTitle>
             </SheetHeader>
+            {/* The database refuses a pair nobody registered
+                (`platform.enforce_known_association`, verified live 2026-09-18:
+                only plan_node, web_page, web_youtube_video and facet values pair
+                with a topic today). The refusal names the pair and where to
+                register it; it is shown as the picker's own error line. */}
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Only kinds registered in the relationship rules attach to a topic; a refusal
+              names the pair to register.
+            </p>
             <div className="mt-2 flex min-h-0 flex-1 flex-col">
               <UniversalAssociationPicker
                 attachedKeys={new Set(attachedKeys)}
                 orgId={organizationId}
                 onAttach={async (token: EntityTypeToken, id: string) => {
+                  if (!topicId) {
+                    return { ok: false, error: "This topic's id has not loaded yet; try again in a moment." };
+                  }
                   try {
                     await attachToTopic({ topicId, token, id, organizationId });
                     onChanged();

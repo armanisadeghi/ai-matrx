@@ -36,10 +36,9 @@ export default function SeoMapTopicPeek({ id, open, onClose }: PeekProps) {
       {topic.isPending ? (
         <SuspenseLoader centered={false} message="Loading this topic…" />
       ) : topic.data ? (
-        /* PHASE 0: the body reads the topic out of the topical-map slice, so a
-           peek opened over a map whose tree this session has not loaded says so
-           in words rather than pretending. Lane D makes the body self-loading;
-           this frame does not change when it does. */
+        /* The body loads the map's tree itself when no workspace has (Lane D,
+           2026-09-18), so this peek works on any page. A peek is a quick READ:
+           read-only, every write control absent; edits happen in the panel. */
         <TopicDetailBody
           mapId={topic.data.map_id}
           slug={topic.data.slug}
