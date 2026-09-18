@@ -204,6 +204,68 @@ describe("a Record-backed candidate's row", () => {
   });
 });
 
+describe("V-21: the two doors are touch-sized and distinguishable without hover", () => {
+  // Hostile verifier V-21 (N4 MED, 468e1bd8): both doors were bare
+  // `h-3 w-3` icons with no touch sizing, distinguished only by
+  // `aria-label`/`title` on hover — a mis-tap on "join" opened the record
+  // instead of joining the meeting. Every comparable control in this system
+  // sizes for touch (`AgendaPanel`'s own "Join the meeting" /
+  // "Open in Google Calendar" pair uses `max-sm:min-h-11`).
+
+  it("gives the record-open button a phone-width touch target", async () => {
+    await mount();
+    const openButton = document.body.querySelector(
+      `button[aria-label="Open Quarterly review"]`,
+    );
+    expect(openButton).not.toBeNull();
+    expect(openButton!.className).toMatch(/max-sm:min-h-11/);
+    expect(openButton!.className).toMatch(/max-sm:min-w-11/);
+  });
+
+  it("gives the join-meeting link a phone-width touch target", async () => {
+    await mount();
+    const joinLink = document.body.querySelector(
+      `a[aria-label="Join Quarterly review"]`,
+    );
+    expect(joinLink).not.toBeNull();
+    expect(joinLink!.className).toMatch(/max-sm:min-h-11/);
+    expect(joinLink!.className).toMatch(/max-sm:min-w-11/);
+  });
+
+  it("gives the two doors distinct accessible names that do not depend on hover", async () => {
+    await mount();
+    const openButton = document.body.querySelector(
+      `button[aria-label="Open Quarterly review"]`,
+    );
+    const joinLink = document.body.querySelector(
+      `a[aria-label="Join Quarterly review"]`,
+    );
+    expect(openButton).not.toBeNull();
+    expect(joinLink).not.toBeNull();
+    expect(openButton!.getAttribute("aria-label")).not.toBe(
+      joinLink!.getAttribute("aria-label"),
+    );
+  });
+
+  it("visually distinguishes the outbound join door from the in-place open door", async () => {
+    await mount();
+    const openButton = document.body.querySelector(
+      `button[aria-label="Open Quarterly review"]`,
+    );
+    const joinLink = document.body.querySelector(
+      `a[aria-label="Join Quarterly review"]`,
+    );
+    expect(openButton).not.toBeNull();
+    expect(joinLink).not.toBeNull();
+    // The join door reads as an outbound link (text-primary); the record
+    // door reads as an in-place open (text-muted-foreground) — never the
+    // same class list.
+    expect(joinLink!.className).toMatch(/text-primary/);
+    expect(openButton!.className).not.toMatch(/text-primary/);
+    expect(openButton!.className).not.toBe(joinLink!.className);
+  });
+});
+
 describe("the kind's add_more sentence, never a Picker button for a meeting", () => {
   it("renders the server's own remedy sentence as plain text", async () => {
     await mount();

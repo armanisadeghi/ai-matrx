@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { ExternalLink, Loader2, Mail, Plus } from "lucide-react";
+import { CircleAlert, ExternalLink, Loader2, Mail, Plus } from "lucide-react";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { Button } from "@/components/ui/button";
 import { toast, recordToast } from "@/lib/toast";
@@ -112,9 +112,27 @@ function GoogleWorkspaceConnectBodyContent({
    * read-then-refresh leg `useOpenGoogleDocumentRecord` falls back to. Keyed by
    * the picked-resource id, which is stable across the `inventory.refetch()`
    * that follows registration.
+   *
+   * 🚨 F-77 (V-21 N1) — THE SERVER'S TWO REASONS RIDE ALONG TOO. A registration
+   * that could not write the Record answers `record_id: null` plus a plain
+   * `record_absent_reason` sentence saying why (no Record table for this file
+   * type, no organization named, or the write itself failed); one that could
+   * still answers an optional `record_sync_status_reason` when the status it
+   * kept is not the healthy one. Both used to be parsed off the response
+   * (`service.ts`) and thrown away here — so a person was told a file was
+   * "ready to use" and offered a door to a Record that was never made. Carried
+   * so the row can say the truth instead of a claim the server never made.
    */
   const [freshRecords, setFreshRecords] = useState<
-    Record<string, { record_id: string | null; record_sync_status: string | null }>
+    Record<
+      string,
+      {
+        record_id: string | null;
+        record_sync_status: string | null;
+        record_sync_status_reason: string | null;
+        record_absent_reason: string | null;
+      }
+    >
   >({});
 
   const connections = useMemo(
@@ -248,10 +266,27 @@ function GoogleWorkspaceConnectBodyContent({
         [registered.id]: {
           record_id: registered.recordId,
           record_sync_status: registered.recordSyncStatus,
+          record_sync_status_reason: registered.recordSyncStatusReason,
+          record_absent_reason: registered.recordAbsentReason,
         },
       }));
       await inventory.refetch();
       onFilesPicked?.([registered]);
+      // 🚨 F-77 (V-21 N1) — a Record that could not be written is never called
+      // "ready to use": the file is still picked and usable (its Google link
+      // stays), but the door to a Record that does not exist is not offered,
+      // and the server's own sentence — never a paraphrase — says why.
+      if (!registered.recordId) {
+        toast.warning(
+          `${registered.name} is picked and usable, but its record could not be created.`,
+          {
+            description:
+              registered.recordAbsentReason ??
+              "AI Matrx did not say why. Try picking it again; if it keeps happening, tell us.",
+          },
+        );
+        return;
+      }
       recordToast.success(
         {
           type: registered.resourceType,
@@ -260,6 +295,13 @@ function GoogleWorkspaceConnectBodyContent({
         },
         `${registered.name} is ready to use.`,
       );
+      if (
+        registered.recordSyncStatus &&
+        registered.recordSyncStatus !== "available" &&
+        registered.recordSyncStatusReason
+      ) {
+        toast.info(registered.recordSyncStatusReason);
+      }
     });
 
   return (
@@ -403,44 +445,78 @@ function GoogleWorkspaceConnectBodyContent({
                       ? file.metadata.web_view_link
                       : fileType.hrefFor(file.resource_ref);
                   const Icon = fileType.icon;
+                  // 🚨 F-77 (V-21 N1) — a fresh pick that could not write a
+                  // Record is never offered the door to one that does not
+                  // exist; the plain sentence the server composed is shown
+                  // instead, and the sync reason rides beside a Record that
+                  // was kept but is not in the healthy state.
+                  const fresh = freshRecords[file.id];
+                  const recordAbsent = fresh ? fresh.record_id === null : false;
+                  const showRecordDoor =
+                    hasGoogleDocumentRecord(file.resource_type) &&
+                    !recordAbsent;
+                  const syncReason =
+                    fresh?.record_id &&
+                    fresh.record_sync_status &&
+                    fresh.record_sync_status !== "available"
+                      ? fresh.record_sync_status_reason
+                      : null;
                   return (
                     <div
                       key={file.id}
                       data-row-id={file.id}
-                      className="flex items-center gap-2 border-b border-border/60 px-2.5 py-1.5 last:border-b-0"
+                      className="border-b border-border/60 last:border-b-0"
                     >
-                      <Icon
-                        className={`h-4 w-4 shrink-0 ${fileType.iconClassName}`}
-                      />
-                      <span className="truncate text-sm text-foreground">
-                        {file.display_name}
-                      </span>
-                      {/*
-                        🚨 THE RECORD IS THE DOOR (F-58). A picked file listed
-                        with nothing but its Google link is a named identity with
-                        no AI Matrx surface; this opens it as its Record in the
-                        Detail primitive, in place.
-                      */}
-                      {hasGoogleDocumentRecord(file.resource_type) ? (
-                        <OpenGoogleDocumentRecordButton
-                          resource={pickedGoogleRecordResource({
-                            ...file,
-                            ...freshRecords[file.id],
-                          })}
-                          variant="ghost"
-                          className="ml-auto shrink-0"
+                      <div className="flex items-center gap-2 px-2.5 py-1.5">
+                        <Icon
+                          className={`h-4 w-4 shrink-0 ${fileType.iconClassName}`}
                         />
+                        <span className="truncate text-sm text-foreground">
+                          {file.display_name}
+                        </span>
+                        {/*
+                          🚨 THE RECORD IS THE DOOR (F-58). A picked file listed
+                          with nothing but its Google link is a named identity with
+                          no AI Matrx surface; this opens it as its Record in the
+                          Detail primitive, in place.
+                        */}
+                        {showRecordDoor ? (
+                          <OpenGoogleDocumentRecordButton
+                            resource={pickedGoogleRecordResource({
+                              ...file,
+                              ...freshRecords[file.id],
+                            })}
+                            variant="ghost"
+                            className="ml-auto shrink-0"
+                          />
+                        ) : null}
+                        {typeof link === "string" && link ? (
+                          <a
+                            href={link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`${showRecordDoor ? "" : "ml-auto "}shrink-0 text-muted-foreground hover:text-foreground`}
+                            aria-label={`Open ${file.display_name} in Google`}
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        ) : null}
+                      </div>
+                      {recordAbsent && fresh?.record_absent_reason ? (
+                        <p className="flex items-start gap-1.5 px-2.5 pb-1.5 text-xs text-muted-foreground">
+                          <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
+                          <span className="min-w-0 flex-1">
+                            {file.display_name} is picked and usable, but its
+                            record could not be created:{" "}
+                            {fresh.record_absent_reason}
+                          </span>
+                        </p>
                       ) : null}
-                      {typeof link === "string" && link ? (
-                        <a
-                          href={link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`${hasGoogleDocumentRecord(file.resource_type) ? "" : "ml-auto "}shrink-0 text-muted-foreground hover:text-foreground`}
-                          aria-label={`Open ${file.display_name} in Google`}
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </a>
+                      {syncReason ? (
+                        <p className="flex items-start gap-1.5 px-2.5 pb-1.5 text-xs text-muted-foreground">
+                          <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
+                          <span className="min-w-0 flex-1">{syncReason}</span>
+                        </p>
                       ) : null}
                     </div>
                   );
