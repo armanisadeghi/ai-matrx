@@ -229,7 +229,7 @@ export function TopicLineBody({ data }: { data: TopicNodeBodyData }) {
         )}
       />
       {data.showLabel ? (
-        <span className="max-w-[130px] whitespace-normal break-words text-[11px] leading-tight text-foreground">
+        <span className="max-w-[190px] whitespace-normal break-words text-xs leading-tight text-foreground">
           {data.name}
         </span>
       ) : null}
