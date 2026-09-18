@@ -6,12 +6,16 @@ import ts from "typescript";
 
 const root = process.cwd();
 const allowedConstructorFile = "features/notes/richDocumentSource.ts";
-const ignoredDirectories = new Set([".git", ".next", "node_modules", ".matrx"]);
+// .wt/ and .coldwalk*/ are parked checkouts other lanes leave in the shared
+// tree; scanning them re-reports files the tracked tree already fixed (it
+// halted release 2026-09-18 on four .wt copies of richDocumentSource.ts).
+const ignoredDirectories = new Set([".git", ".next", "node_modules", ".matrx", ".wt", ".claude"]);
+const isIgnoredDirectory = (name) => ignoredDirectories.has(name) || name.startsWith(".coldwalk");
 const sourceExtensions = new Set([".ts", ".tsx"]);
 
 function sourceFiles(directory = root) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    if (entry.isDirectory()) return ignoredDirectories.has(entry.name) ? [] : sourceFiles(join(directory, entry.name));
+    if (entry.isDirectory()) return isIgnoredDirectory(entry.name) ? [] : sourceFiles(join(directory, entry.name));
     return sourceExtensions.has(entry.name.slice(entry.name.lastIndexOf("."))) ? [join(directory, entry.name)] : [];
   });
 }
