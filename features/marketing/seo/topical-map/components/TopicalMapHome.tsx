@@ -163,7 +163,9 @@ export function TopicalMapHome() {
               <p className="mb-4 mt-1 text-sm text-muted-foreground">
                 {extendMapId
                   ? "The author reads the site's crawl, keywords and content plan against the map as it stands and proposes what is missing. New topics land as proposals — nothing goes live until you accept it."
-                  : "Pick where the map starts from. The author never invents an offering the source does not support; add emphasis for what matters most."}
+                  : maps.data && maps.data.length > 0
+                    ? `This starts a NEW map for ${brand.name}. The author reads nothing from the ${maps.data.length === 1 ? "map that already exists" : `${maps.data.length} maps that already exist`} — no topic, slug or description carries over — so a wrong map cannot steer the new one. When the new map is right, point the site at it from its card and retire the old one.`
+                    : "Pick where the map starts from. The author never invents an offering the source does not support; add emphasis for what matters most."}
               </p>
               {extendMapId && maps.isPending ? (
                 <TopicalMapLoading what="the map to extend" />

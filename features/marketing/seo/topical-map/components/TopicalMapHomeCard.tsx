@@ -22,10 +22,11 @@
 import Link from "next/link";
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { BrainCircuit, Link2, Network } from "lucide-react";
+import { Archive, BrainCircuit, Link2, Network } from "lucide-react";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Select,
   SelectContent,
@@ -38,7 +39,7 @@ import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { toast } from "@/lib/toast";
 
 import { topicalMapErrorText } from "../errors";
-import { useMapDiagnostics, useSetSiteMap } from "../hooks";
+import { useDeleteTopicalMap, useMapDiagnostics, useSetSiteMap } from "../hooks";
 import { useMapLinks } from "../links";
 import type { TopicalMap } from "../types";
 import { TopicStatusMark } from "../ui/TopicStatusMark";
@@ -60,7 +61,9 @@ export function TopicalMapHomeCard({
   // access-errors: ok — rendered verbatim below; seo.* writes its refusals for the reader.
   const diagnostics = useMapDiagnostics(map.id);
   const bind = useSetSiteMap();
+  const retire = useDeleteTopicalMap();
   const [pendingSite, setPendingSite] = useState<string>(PICK_SITE);
+  const [retireOpen, setRetireOpen] = useState(false);
 
   const d = diagnostics.data ?? null;
   const usingIds = new Set(d?.sites_using_map ?? []);
@@ -99,8 +102,63 @@ export function TopicalMapHomeCard({
           <Button asChild size="sm">
             <Link href={outline}>Open</Link>
           </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setRetireOpen(true)}
+            title="Retire this map: remove it from the brand so a fresh one can take its place"
+          >
+            <Archive className="h-4 w-4" aria-hidden />
+            Retire
+          </Button>
         </div>
       </header>
+
+      {/* Retire — a destructive click states its consequence first. The map's
+          rows are kept (soft delete), but nothing reads a retired map: its
+          topics, the pages placed on them and every proposed destination stop
+          being shown, and a site still using it would point at nothing — so
+          retiring is refused while any site uses it. */}
+      <ConfirmDialog
+        open={retireOpen}
+        onOpenChange={setRetireOpen}
+        variant="destructive"
+        busy={retire.isPending}
+        title={`Retire "${map.name}"?`}
+        description={
+          usingIds.size > 0 ? (
+            <span>
+              {usingIds.size === 1 ? "One site still uses" : `${usingIds.size} sites still use`} this map
+              {" ("}
+              {[...usingIds].map((id) => siteById.get(id)?.name ?? id).join(", ")}
+              {"). Point each site at another map first (\"Site uses this map\" on that map's card), "}
+              then retire this one. Nothing is changed by this dialog.
+            </span>
+          ) : (
+            <span>
+              This removes the map from {"the brand"}
+              {typeof d?.topics_total === "number" ? ` with its ${d.topics_total} topics` : ""}
+              . Every page placed on its topics and every proposed destination stays recorded
+              with it but is no longer shown anywhere, and there is no restore button yet — an
+              administrator can bring it back. A new map starts empty: the author reads nothing
+              from a retired map. Use this when the map is wrong at the root and you want a clean
+              start.
+            </span>
+          )
+        }
+        confirmLabel="Retire map"
+        confirmDisabled={usingIds.size > 0}
+        onConfirm={() => {
+          retire.mutate(map.id, {
+            onSuccess: () => {
+              setRetireOpen(false);
+              toast.success(`"${map.name}" was retired.`);
+            },
+            onError: (error) => toast.error(topicalMapErrorText(error)),
+          });
+        }}
+      />
 
       {/* Counts — each a door. */}
       {diagnostics.isError ? (
