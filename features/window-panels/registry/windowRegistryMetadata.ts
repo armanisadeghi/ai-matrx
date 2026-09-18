@@ -1760,6 +1760,27 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     ephemeral: true,
   },
 
+  // The site Quick view (F-87): one site's KPI tiles, Search Console trend, top
+  // pages and connection chips, opened from nothing but an id. F-88 gave it a
+  // metadata entry because without one `preservationEnabled` is false, so the
+  // window's `onCollectData` was never called and "Save window state" wrote
+  // nothing — the prop looked like persistence and was inert. Preserved: the
+  // subject is one site id and everything on screen is a fresh read of it.
+  {
+    slug: "site-quick-view-window",
+    overlayId: "siteQuickViewWindow",
+    kind: "window",
+    label: "Site Quick view",
+    defaultData: { siteId: "", siteLabel: "" },
+    mobilePresentation: "drawer",
+    instanceMode: "singleton",
+    preservation: {
+      dataKeys: ["siteId", "siteLabel"],
+      // A restored Quick view with no site is an empty frame, not a window.
+      requiredDataKeys: ["siteId"],
+    },
+  },
+
   // The site discovery panel (KI-040): the canonical `DiscoveryWorkspace` —
   // the Business Discovery Ladder, its proposals queue and the setup doors —
   // beside whatever the person is looking at. Preserved: the ladder's truth is

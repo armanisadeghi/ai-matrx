@@ -4,15 +4,15 @@
  * SiteQuickViewWindow — one site, in place, from nothing but its id.
  *
  * 🚨 F-87 — THE PANEL WRAPS THE CANONICAL COMPONENT. The platform already has a
- * site Quick view: `features/marketing/components/sites/SitePeekWindow.tsx`,
- * the floating panel the Sites portfolio and the Content Plan list open on a
+ * site Quick view: `features/marketing/components/sites/SitePeekBody.tsx`, the
+ * content the Sites portfolio and the Content Plan list show when they open a
  * row (its KPI tiles, its 90-day Search Console trend, its top pages, its
  * connection chips and a door to the full workspace). Nothing here re-renders
  * any of that — a bespoke body would be the second renderer the window-panels
  * law forbids (`features/window-panels/FEATURE.md` § A PANEL WRAPS THE
  * CANONICAL COMPONENT).
  *
- * WHAT THIS ADDS, and only this: the READ. `SitePeekWindow` takes a
+ * WHAT THIS ADDS, and only this: the READ. The Quick view takes a
  * `SiteListRow` — the site row merged with `web.v_site_kpis` and
  * `web.v_site_score` — which a list already holds and a door does not. The
  * canonical single-site read for exactly this shape already exists too
@@ -22,15 +22,28 @@
  * same fetch, made available to every surface that only knows a site's id — an
  * agent's answer about Search Console, a reference chip, a table cell.
  *
- * WHILE THE READ IS IN FLIGHT the window is a panel that says so, and a failed
- * read says THAT with a retry (law 4) — never an empty frame and never a click
- * that appears to do nothing.
+ * 🚨 F-88 — ONE PANEL, FOR THE WINDOW'S WHOLE LIFE. The body swaps; the panel
+ * never does. F-87 shipped this window returning `SitePeekWindow` — a second,
+ * standalone `WindowPanel` carrying no `overlayId` — as soon as the read
+ * resolved, so the `siteQuickViewWindow`-bound panel UNMOUNTED at that moment:
+ * the overlay stopped owning the window on screen (its `onCollectData`, its
+ * tray row, its restore and its close from the `OverlayController` all applied
+ * to a panel that was gone), and the chrome blinked out while the lazy peek
+ * module loaded. The fix is the SLOTS contract read literally — the panel is
+ * the chrome and the content is `children`, so `id`, `overlayId` and
+ * `onCollectData` are constant from the first paint (same shape as the Detail
+ * primitive: `detail/shells/DetailWindowShell.tsx` owns one panel and the
+ * presentation fills it, loading state included).
+ *
+ * WHILE THE READ IS IN FLIGHT the panel says so, and a failed read says THAT
+ * with a retry (law 4) — never an empty frame and never a click that appears to
+ * do nothing.
  */
 
 import { useQuery } from "@tanstack/react-query";
 
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import SitePeekWindow from "@/features/marketing/components/sites/SitePeekWindow";
+import SitePeekBody from "@/features/marketing/components/sites/SitePeekBody";
 import { getSiteListRow } from "@/features/marketing/data/service";
 import { marketingKeys } from "@/features/marketing/data/hooks";
 import {
@@ -61,33 +74,42 @@ export default function SiteQuickViewWindow({
     staleTime: 60_000,
   });
   if (!isOpen) return null;
-  // THE CANONICAL QUICK VIEW, unchanged.
-  if (site.data) return <SitePeekWindow site={site.data} onClose={onClose} />;
   return (
     <WindowPanel
       id="site-quick-view-window"
       overlayId="siteQuickViewWindow"
-      title={siteLabel?.trim() || "Site"}
+      // The row's own name once it is known — the panel identity above is what
+      // persistence and the tray key on, so the title is free to sharpen.
+      title={site.data?.name ?? siteLabel?.trim() ?? "Site"}
       onClose={onClose}
+      // The peek's own geometry from the first paint: a panel that resized
+      // itself when the read landed would move under the person's cursor and
+      // fight the rect the workspace restored.
       width={460}
-      height={320}
-      minWidth={340}
-      minHeight={220}
+      height={620}
+      minWidth={380}
+      minHeight={400}
       position="top-right"
       onCollectData={() => ({ siteId, siteLabel: siteLabel ?? "" })}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">
-        {site.isError ? (
-          <InlineQueryError
-            what="this site"
-            error={site.error}
-            onRetry={() => void site.refetch()}
-          />
-        ) : (
-          <LoadingSurface label="Loading this site…" />
-        )}
-      </div>
+      {site.data ? (
+        // THE CANONICAL QUICK VIEW CONTENT, unchanged — the same component the
+        // two list callers mount inside their own panel.
+        <SitePeekBody site={site.data} />
+      ) : (
+        <div className="min-h-0 flex-1 overflow-y-auto p-3">
+          {site.isError ? (
+            <InlineQueryError
+              what="this site"
+              error={site.error}
+              onRetry={() => void site.refetch()}
+            />
+          ) : (
+            <LoadingSurface label="Loading this site…" />
+          )}
+        </div>
+      )}
     </WindowPanel>
   );
 }
