@@ -142,3 +142,39 @@ describe("a facet position never reaches a topic", () => {
     expect(topics.map((topic) => ({ ...topic.position }))).toEqual(before);
   });
 });
+
+
+describe("company root", () => {
+  it("lays every topic below the same company in the graph hierarchy", () => {
+    const input = { ...inputFor(true), companyRootId: "company" };
+    const positions = autoArrangeTopics(input);
+    const company = positions.get("company")!;
+    const children = new Set(input.treeEdges.map(edge => edge.target));
+    expect(positions.size).toBe(input.topics.length + 1);
+    for (const topic of input.topics.filter(topic => !children.has(topic.id))) {
+      expect(positions.get(topic.id)!.x).toBeGreaterThan(company.x + 240);
+    }
+  });
+
+  it.each([true, false])("keeps stored topics intact with a company anchor (auto=%s)", autoLayout => {
+    const input = { ...inputFor(autoLayout), companyRootId: "company" };
+    const positions = layoutTopics(input);
+    expect(positions.has("company")).toBe(true);
+    for (const topic of input.topics.filter(topic => !topic.data.auto_layout)) {
+      expect(positions.get(topic.id)).toEqual(topic.position);
+      expect(positions.get("company")!.x + 240).toBeLessThan(topic.position.x);
+    }
+  });
+});
+
+
+it("keeps the company left of mixed stored and automatically placed topics", () => {
+  const input = { ...inputFor(true), companyRootId: "company" };
+  input.topics = input.topics.map(topic => topic.data.auto_layout ? topic : {
+    ...topic, position: { x: topic.position.x + 1000, y: topic.position.y },
+  });
+  const positions = layoutTopics(input);
+  for (const topic of input.topics) {
+    expect(positions.get("company")!.x + 240).toBeLessThan(positions.get(topic.id)!.x);
+  }
+});
