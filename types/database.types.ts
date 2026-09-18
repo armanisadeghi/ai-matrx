@@ -53142,6 +53142,15 @@ export type Database = {
           rows_readable_under_refused_parent: number
         }[]
       }
+      converge_legacy_column: {
+        Args: {
+          p_column: string
+          p_execute?: boolean
+          p_schema: string
+          p_table: string
+        }
+        Returns: string
+      }
       derive_organization_abbreviation: {
         Args: { p_is_personal?: boolean; p_name: string }
         Returns: string
@@ -53392,6 +53401,19 @@ export type Database = {
         Returns: boolean
       }
       is_trusted_backend: { Args: never; Returns: boolean }
+      legacy_column_worklist: {
+        Args: never
+        Returns: {
+          canonical_column: string
+          disposition: string
+          legacy_column: string
+          schema_name: string
+          statement: string
+          table_name: string
+          token: string
+          variant: string
+        }[]
+      }
       membership_row_visible: {
         Args: { p_membership_id: string }
         Returns: boolean
@@ -66771,6 +66793,16 @@ export type Database = {
           item_id: string
           item_type: string
           max_level: Database["public"]["Enums"]["permission_level"]
+        }[]
+      }
+      doctrine_shape_vocabulary: {
+        Args: never
+        Returns: {
+          kind: string
+          law: string
+          remedy_type: string
+          sentence: string
+          word: string
         }[]
       }
       door_arg_rule_findings: {
