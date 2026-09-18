@@ -56,12 +56,14 @@ function line(fn: LiveFunction): string {
 }
 
 /** `--based-on-target` / `--target` — WHICH database the hash is measured on. */
-function parseBasedOnTarget(flags: string[]): "production" | "branch" | { bad: string } {
+function parseBasedOnTarget(argv: string[]): "production" | "branch" | { bad: string } {
   let picked: "production" | "branch" = "production";
-  for (const f of flags) {
+  for (let i = 0; i < argv.length; i++) {
+    const f = argv[i]!;
     const m = /^--(?:based-on-)?target(?:=(.*))?$/.exec(f);
     if (!m) continue;
-    const value = m[1];
+    // Both spellings, because a flag that works one way and not the other is a trap.
+    const value = m[1] ?? argv[i + 1];
     if (value === undefined) return { bad: `${f} needs a value: --based-on-target production|branch` };
     if (value !== "production" && value !== "branch")
       return { bad: `--based-on-target ${value} is not a database. Name production or branch.` };
@@ -71,9 +73,17 @@ function parseBasedOnTarget(flags: string[]): "production" | "branch" | { bad: s
 }
 
 async function main(): Promise<number> {
-  const flags = process.argv.slice(2).filter((a) => a.startsWith("--"));
-  const argv = process.argv.slice(2).filter((a) => !a.startsWith("--"));
-  const basedOnTarget = parseBasedOnTarget(flags);
+  const raw = process.argv.slice(2);
+  const basedOnTarget = parseBasedOnTarget(raw);
+  // Drop the flag AND the value it consumed, so the positional argument still resolves.
+  const consumed = new Set<number>();
+  raw.forEach((a, i) => {
+    if (/^--(?:based-on-)?target$/.test(a)) {
+      consumed.add(i);
+      consumed.add(i + 1);
+    } else if (a.startsWith("--")) consumed.add(i);
+  });
+  const argv = raw.filter((_, i) => !consumed.has(i));
   if (typeof basedOnTarget !== "string") {
     console.error(`${C.red}[FAIL]${C.reset} ${basedOnTarget.bad}`);
     return 1;

@@ -41,6 +41,30 @@
 set lock_timeout = '5s';
 set statement_timeout = '600s';
 
+-- ── FIRST: close schema `custom` again, because the provisioner will not build into an
+-- OPEN schema and will not close it for you ──────────────────────────────────────────────
+-- `platform.provision` runs a `schema_exposure` preflight and REFUSES when schema `custom`
+-- holds any grant for `public`, `anon`, `authenticated` or `service_role`, because a store
+-- whose only write path is a door must have no second path for a client to take. `custom` is
+-- DECLARED closed (`platform.schema_client_exposure.client_exposed = false`) and is absent
+-- from `pgrst.db_schemas`, so no client can reach any of it — but TWENTY schemas on this
+-- database carry ALTER DEFAULT PRIVILEGES rows that grant every NEW function and table
+-- automatically, so every sibling lane that landed a `custom.*` function since the last sweep
+-- re-opened the schema on paper without anyone writing a GRANT. Measured 2026-09-18: the
+-- preflight listed the `custom.query_*`, `custom.agg_*` and `custom.trg_*` functions as
+-- EXECUTE-able by all three roles.
+--
+-- So the close runs BEFORE the provision calls and again after them. It restores the declared
+-- posture; it takes nothing away from anything that was ever meant to have it, and nothing
+-- outside schema `custom` is named.
+revoke all on schema custom from public, anon, authenticated, service_role;
+revoke all on all tables in schema custom from public, anon, authenticated, service_role;
+revoke all on all functions in schema custom from public, anon, authenticated, service_role;
+revoke all on all sequences in schema custom from public, anon, authenticated, service_role;
+alter default privileges in schema custom revoke all on tables from public, anon, authenticated, service_role;
+alter default privileges in schema custom revoke all on functions from public, anon, authenticated, service_role;
+alter default privileges in schema custom revoke all on sequences from public, anon, authenticated, service_role;
+
 -- ── DOOR-13 / CUT-N-2: the transactional outbox ───────────────────────────────
 select platform.provision($spec$
 {
@@ -183,10 +207,9 @@ select platform.provision($spec$
 }
 $spec$::jsonb, 'runner');
 
--- ── the posture, restated for the three new relations ─────────────────────────
--- Twenty schemas carry ALTER DEFAULT PRIVILEGES rows that grant every NEW relation
--- automatically, so a new table in `custom` is granted by the default ACL unless this runs.
--- The provisioner already revokes immediately after CREATE TABLE; these are the belt to that
--- brace, and they name only schema `custom`.
+-- ── the posture, restated after the three new relations ───────────────────────
+-- Run a second time because `platform.provision` created three relations between the block
+-- at the top of this file and here, and the default ACL grants every NEW one.
 revoke all on all tables in schema custom from public, anon, authenticated, service_role;
 revoke all on all functions in schema custom from public, anon, authenticated, service_role;
+revoke all on all sequences in schema custom from public, anon, authenticated, service_role;
