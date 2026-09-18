@@ -3788,6 +3788,170 @@ export interface paths {
         patch: operations["proxy_to_local_pc_PATCH"];
         trace?: never;
     };
+    "/egress/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Devices */
+        get: operations["list_devices_GET"];
+        put?: never;
+        /**
+         * Register Device
+         * @description Register THIS computer. The token is returned exactly once, ever.
+         */
+        post: operations["register_device_POST"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/egress/devices/{device_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Device */
+        delete: operations["remove_device_DELETE"];
+        options?: never;
+        head?: never;
+        /** Patch Device */
+        patch: operations["patch_device_PATCH"];
+        trace?: never;
+    };
+    "/egress/pairings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Pairing
+         * @description ANONYMOUS. The helper has no account yet; the code is the whole link.
+         */
+        post: operations["create_pairing_POST"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/egress/pairings/{pairing_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Poll Pairing
+         * @description ``Bearer <pairing_secret>`` — the helper's own poll, not a user JWT.
+         */
+        get: operations["poll_pairing_GET"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/egress/pairings/by-code/{user_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Describe Pairing */
+        get: operations["describe_pairing_GET"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/egress/pairings/by-code/{user_code}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve Pairing */
+        post: operations["approve_pairing_POST"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/egress/pairings/by-code/{user_code}/deny": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Deny Pairing */
+        post: operations["deny_pairing_POST"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/egress/tickets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mint Ticket */
+        post: operations["mint_ticket_POST"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/egress/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Egress Status */
+        get: operations["egress_status_GET"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/on-sign-in": {
         parameters: {
             query?: never;
@@ -37734,6 +37898,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/browser-manager/runs/{run_id}/retry-through-home-computer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Retry Through Home Computer
+         * @description Move this live run's exit to one of the caller's OWN computers.
+         *
+         *     The automatic switch already runs when a navigate lands on a detectable
+         *     challenge; this is the door for the challenge nobody could detect — a
+         *     person or an agent that can SEE the block says so, and the session is
+         *     checkpointed and reopened through their computer with the same run id.
+         *     Contract: ``common-docs/systems/platform/residential-egress/FEATURE.md``.
+         */
+        post: operations["retry_through_home_computer_browser_manager_runs__run_id__retry_through_home_computer_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/browser-manager/runs/{run_id}/control-requests": {
         parameters: {
             query?: never;
@@ -56602,6 +56792,45 @@ export interface components {
             /** Total */
             total: number;
         };
+        /**
+         * CommandEgress
+         * @description How this command reached the internet — announced, never hidden.
+         *
+         *     🚨 CONTROL-PLANE authored (S2 v1.1, additive 2026-09-18). The worker never
+         *     sets it: only the Browser Manager knows that a blocked page was retried
+         *     through the person's own computer. It rides the command reply because that
+         *     is where the agent and the panel read the answer, and rule 5 of
+         *     ``common-docs/systems/platform/residential-egress/FEATURE.md`` says a page
+         *     fetched through a person's computer always says so.
+         */
+        CommandEgress: {
+            /**
+             * Kind
+             * @default residential
+             * @constant
+             */
+            kind?: "residential";
+            /** Device Name */
+            device_name: string;
+            /** Device Id */
+            device_id?: string | null;
+            /** Note */
+            note?: string | null;
+        };
+        /**
+         * CommandEgressUnavailable
+         * @description Why the blocked page could NOT be retried through a person's computer.
+         *
+         *     Also control-plane authored. Never a dead end: the reason is one of the
+         *     contract's (`no_computer`, `offline`, `paused`, `org_forbids`, `feature_off`,
+         *     `no_acting_user`, `unavailable`) and the message is the remedy in words.
+         */
+        CommandEgressUnavailable: {
+            /** Reason */
+            reason: string;
+            /** Message */
+            message: string;
+        };
         /** CommandResponse */
         CommandResponse: {
             /** Ok */
@@ -56660,6 +56889,8 @@ export interface components {
             page_inventory_revision?: number;
             human_required?: components["schemas"]["HumanRequiredSignal"] | null;
             event_facts?: components["schemas"]["ActionEventFacts"] | null;
+            egress?: components["schemas"]["CommandEgress"] | null;
+            egress_unavailable?: components["schemas"]["CommandEgressUnavailable"] | null;
         };
         /** CommentReplyRow */
         CommentReplyRow: {
@@ -62589,6 +62820,31 @@ export interface components {
             issued_at: number;
             /** Jti */
             jti: string;
+        };
+        /**
+         * DeviceRegistration
+         * @description The helper's self-description. The desktop engine sends the same shape.
+         */
+        DeviceRegistration: {
+            /** Instance Id */
+            instance_id: string;
+            /** Instance Name */
+            instance_name: string;
+            /** Platform */
+            platform?: string | null;
+            /** Os Version */
+            os_version?: string | null;
+            /** Hostname */
+            hostname?: string | null;
+            /** Hardware Uuid */
+            hardware_uuid?: string | null;
+            /** Helper Version */
+            helper_version?: string | null;
+            /**
+             * Client Kind
+             * @default helper
+             */
+            client_kind?: string;
         };
         /**
          * DevtoServiceStatus
@@ -85059,6 +85315,16 @@ export interface components {
             ice: components["schemas"]["IceBlock"];
             viewport: components["schemas"]["ViewportBlock"];
         };
+        /** MintTicketRequest */
+        MintTicketRequest: {
+            /** Device Id */
+            device_id?: string | null;
+            /**
+             * Purpose
+             * @default scrape
+             */
+            purpose?: string;
+        };
         /**
          * MintTokenRequest
          * @description Body of ``POST /broker/tokens``.
@@ -95963,7 +96229,12 @@ export interface components {
         };
         /**
          * ProfileView
-         * @description The safe profile facts a caller receives after creating one.
+         * @description The safe profile facts a caller receives after creating one — and the
+         *     same shape a LISTING returns, so "the browser you just made" and "the
+         *     browsers you have" are never two different vocabularies.
+         *
+         *     ``last_started_at`` / ``checkpoint_status`` / ``live`` are the recognisers:
+         *     on a freshly created profile they are honestly None / "none" / False.
          */
         ProfileView: {
             /** Profile Id */
@@ -95981,6 +96252,18 @@ export interface components {
             organization_id: string;
             /** Status */
             status: string;
+            /** Last Started At */
+            last_started_at?: string | null;
+            /**
+             * Checkpoint Status
+             * @default none
+             */
+            checkpoint_status?: string;
+            /**
+             * Live
+             * @default false
+             */
+            live?: boolean;
         };
         /** ProjectInputPart */
         ProjectInputPart: {
@@ -99467,6 +99750,10 @@ export interface components {
              */
             notes?: string[];
         };
+        /** RegisterDeviceRequest */
+        RegisterDeviceRequest: {
+            registration: components["schemas"]["DeviceRegistration"];
+        };
         /** RegisterSelectedFileRequest */
         RegisterSelectedFileRequest: {
             /** Connection Id */
@@ -101614,6 +101901,20 @@ export interface components {
         RetrySubmitRequest: {
             /** Queue Item Id */
             queue_item_id: string;
+        };
+        /**
+         * RetryThroughHomeComputerResponse
+         * @description What happened when a run was moved onto the person's own computer.
+         */
+        RetryThroughHomeComputerResponse: {
+            /** Run Id */
+            run_id: string;
+            /** State */
+            state: string;
+            /** Device Name */
+            device_name: string;
+            /** Note */
+            note: string;
         };
         /**
          * RevertRequest
@@ -110061,6 +110362,12 @@ export interface components {
             activation_key: string;
             /** Runtime Execution Id */
             runtime_execution_id?: string | null;
+            /**
+             * Egress
+             * @default auto
+             * @enum {string}
+             */
+            egress?: "always" | "auto" | "never";
         };
         /** StartRunResponse */
         StartRunResponse: {
@@ -117221,6 +117528,13 @@ export interface components {
              * @description Optional associated task selected by the caller.
              */
             task_id?: string | null;
+        };
+        /** UpdateDeviceRequest */
+        UpdateDeviceRequest: {
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Display Name */
+            display_name?: string | null;
         };
         /** UpdateMessageResponse */
         UpdateMessageResponse: {
@@ -132106,6 +132420,357 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_devices_GET: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+        };
+    };
+    register_device_POST: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterDeviceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_device_DELETE: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                device_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_device_PATCH: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                device_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateDeviceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_pairing_POST: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeviceRegistration"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    poll_pairing_GET: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pairing_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    describe_pairing_GET: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    approve_pairing_POST: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deny_pairing_POST: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mint_ticket_POST: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MintTicketRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    egress_status_GET: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
         };
@@ -184706,6 +185371,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StopRunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_through_home_computer_browser_manager_runs__run_id__retry_through_home_computer_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetryThroughHomeComputerResponse"];
                 };
             };
             /** @description Validation Error */

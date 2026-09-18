@@ -8871,6 +8871,454 @@
         }
       }
     },
+    "/egress/devices": {
+      "get": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "List Devices",
+        "operationId": "list_devices_GET",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Devices Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Register Device",
+        "description": "Register THIS computer. The token is returned exactly once, ever.",
+        "operationId": "register_device_POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDeviceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Register Device Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/devices/{device_id}": {
+      "patch": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Patch Device",
+        "operationId": "patch_device_PATCH",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Device Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDeviceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Patch Device Patch"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Remove Device",
+        "operationId": "remove_device_DELETE",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Device Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Remove Device Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/pairings": {
+      "post": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Create Pairing",
+        "description": "ANONYMOUS. The helper has no account yet; the code is the whole link.",
+        "operationId": "create_pairing_POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceRegistration"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Pairing Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/pairings/{pairing_id}": {
+      "get": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Poll Pairing",
+        "description": "``Bearer <pairing_secret>`` — the helper's own poll, not a user JWT.",
+        "operationId": "poll_pairing_GET",
+        "parameters": [
+          {
+            "name": "pairing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Pairing Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Poll Pairing Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/pairings/by-code/{user_code}": {
+      "get": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Describe Pairing",
+        "operationId": "describe_pairing_GET",
+        "parameters": [
+          {
+            "name": "user_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Describe Pairing Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/pairings/by-code/{user_code}/approve": {
+      "post": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Approve Pairing",
+        "operationId": "approve_pairing_POST",
+        "parameters": [
+          {
+            "name": "user_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Approve Pairing Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/pairings/by-code/{user_code}/deny": {
+      "post": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Deny Pairing",
+        "operationId": "deny_pairing_POST",
+        "parameters": [
+          {
+            "name": "user_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Deny Pairing Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/tickets": {
+      "post": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Mint Ticket",
+        "operationId": "mint_ticket_POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MintTicketRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Mint Ticket Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/status": {
+      "get": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Egress Status",
+        "operationId": "egress_status_GET",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Egress Status Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/auth/on-sign-in": {
       "post": {
         "tags": [
@@ -83477,6 +83925,49 @@
         }
       }
     },
+    "/browser-manager/runs/{run_id}/retry-through-home-computer": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Retry Through Home Computer",
+        "description": "Move this live run's exit to one of the caller's OWN computers.\n\nThe automatic switch already runs when a navigate lands on a detectable\nchallenge; this is the door for the challenge nobody could detect — a\nperson or an agent that can SEE the block says so, and the session is\ncheckpointed and reopened through their computer with the same run id.\nContract: ``common-docs/systems/platform/residential-egress/FEATURE.md``.",
+        "operationId": "retry_through_home_computer_browser_manager_runs__run_id__retry_through_home_computer_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetryThroughHomeComputerResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/browser-manager/runs/{run_id}/control-requests": {
       "post": {
         "tags": [
@@ -128022,6 +128513,69 @@
         ],
         "title": "CombinedRatingSide"
       },
+      "CommandEgress": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "residential",
+            "title": "Kind",
+            "default": "residential"
+          },
+          "device_name": {
+            "type": "string",
+            "title": "Device Name"
+          },
+          "device_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "device_name"
+        ],
+        "title": "CommandEgress",
+        "description": "How this command reached the internet — announced, never hidden.\n\n🚨 CONTROL-PLANE authored (S2 v1.1, additive 2026-09-18). The worker never\nsets it: only the Browser Manager knows that a blocked page was retried\nthrough the person's own computer. It rides the command reply because that\nis where the agent and the panel read the answer, and rule 5 of\n``common-docs/systems/platform/residential-egress/FEATURE.md`` says a page\nfetched through a person's computer always says so."
+      },
+      "CommandEgressUnavailable": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason",
+          "message"
+        ],
+        "title": "CommandEgressUnavailable",
+        "description": "Why the blocked page could NOT be retried through a person's computer.\n\nAlso control-plane authored. Never a dead end: the reason is one of the\ncontract's (`no_computer`, `offline`, `paused`, `org_forbids`, `feature_off`,\n`no_acting_user`, `unavailable`) and the message is the remedy in words."
+      },
       "CommandResponse": {
         "properties": {
           "ok": {
@@ -128205,6 +128759,26 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ActionEventFacts"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "egress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CommandEgress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "egress_unavailable": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CommandEgressUnavailable"
               },
               {
                 "type": "null"
@@ -142441,6 +143015,86 @@
           "jti"
         ],
         "title": "DevLoginResponse"
+      },
+      "DeviceRegistration": {
+        "properties": {
+          "instance_id": {
+            "type": "string",
+            "title": "Instance Id"
+          },
+          "instance_name": {
+            "type": "string",
+            "title": "Instance Name"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform"
+          },
+          "os_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Os Version"
+          },
+          "hostname": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hostname"
+          },
+          "hardware_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hardware Uuid"
+          },
+          "helper_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Helper Version"
+          },
+          "client_kind": {
+            "type": "string",
+            "pattern": "^(desktop_app|helper)$",
+            "title": "Client Kind",
+            "default": "helper"
+          }
+        },
+        "type": "object",
+        "required": [
+          "instance_id",
+          "instance_name"
+        ],
+        "title": "DeviceRegistration",
+        "description": "The helper's self-description. The desktop engine sends the same shape."
       },
       "DevtoServiceStatus": {
         "properties": {
@@ -192083,6 +192737,30 @@
         "title": "MintResponse",
         "description": "S4 §2.1 / §2.2. `endpoint` is DATA — the client never constructs it."
       },
+      "MintTicketRequest": {
+        "properties": {
+          "device_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id"
+          },
+          "purpose": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Purpose",
+            "default": "scrape"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MintTicketRequest"
+      },
       "MintTokenRequest": {
         "properties": {
           "audience": {
@@ -215258,6 +215936,28 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "last_started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Started At"
+          },
+          "checkpoint_status": {
+            "type": "string",
+            "title": "Checkpoint Status",
+            "default": "none"
+          },
+          "live": {
+            "type": "boolean",
+            "title": "Live",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -215271,7 +215971,7 @@
           "status"
         ],
         "title": "ProfileView",
-        "description": "The safe profile facts a caller receives after creating one."
+        "description": "The safe profile facts a caller receives after creating one — and the\nsame shape a LISTING returns, so \"the browser you just made\" and \"the\nbrowsers you have\" are never two different vocabularies.\n\n``last_started_at`` / ``checkpoint_status`` / ``live`` are the recognisers:\non a freshly created profile they are honestly None / \"none\" / False."
       },
       "ProjectInputPart": {
         "properties": {
@@ -223102,6 +223802,19 @@
         ],
         "title": "RegionExtractResponse"
       },
+      "RegisterDeviceRequest": {
+        "properties": {
+          "registration": {
+            "$ref": "#/components/schemas/DeviceRegistration"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "registration"
+        ],
+        "title": "RegisterDeviceRequest"
+      },
       "RegisterSelectedFileRequest": {
         "properties": {
           "connection_id": {
@@ -228453,6 +229166,36 @@
           "queue_item_id"
         ],
         "title": "RetrySubmitRequest"
+      },
+      "RetryThroughHomeComputerResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "device_name": {
+            "type": "string",
+            "title": "Device Name"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run_id",
+          "state",
+          "device_name",
+          "note"
+        ],
+        "title": "RetryThroughHomeComputerResponse",
+        "description": "What happened when a run was moved onto the person's own computer."
       },
       "RevertRequest": {
         "properties": {
@@ -247197,6 +247940,16 @@
               }
             ],
             "title": "Runtime Execution Id"
+          },
+          "egress": {
+            "type": "string",
+            "enum": [
+              "always",
+              "auto",
+              "never"
+            ],
+            "title": "Egress",
+            "default": "auto"
           }
         },
         "additionalProperties": false,
@@ -262612,6 +263365,35 @@
         "type": "object",
         "title": "UpdateCrmFoldSettingsRequest",
         "description": "Partial update — only the fields the user actually changed."
+      },
+      "UpdateDeviceRequest": {
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UpdateDeviceRequest"
       },
       "UpdateMessageResponse": {
         "properties": {
