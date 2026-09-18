@@ -121,7 +121,7 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 | `required` | the memberships WERE read and none is selected | "Select an organization…", with the picker | disabled, "Select an organization before &lt;act&gt;." |
 | `unavailable` | the read FAILED — aborted, thrown, or a degraded `current_personal_org_id()` | "We could not check your organization…", with **Try again** and no picker | disabled, "We could not check which organization you are working in. Try again." |
 
-  The fourth state is recorded on the slice as `orgBootstrapFailure` (a short technical reason; `selectOrgBootstrapFailure`), written only by the boot paths — `appContextPolicy.remote.fetch` and `bootstrapActiveOrganization` — and cleared by any answer, a selection included. `selectShouldPromptForOrganization` is FALSE while it is set, so the red avatar ring and the header reminder stay quiet too: "select an organization" is a claim about memberships, and it may only be made once they have been READ. `retry()` (→ `retryActiveOrgBootstrap`) puts the surfaces back into `resolving` and re-runs the same resolver boot runs. For an ACTION, `awaitEffectiveOrganizationId` / `awaitOrganizationForRecordRead` answer `{status: "unavailable", cause: "unreadable" | "no-selection"}` with the matching sentence. Guard: `pnpm check:org-three-states` fails a module that enumerates `"resolving"` and `"required"` without naming `"unavailable"`.
+  The fourth state is recorded on the slice as `orgBootstrapFailure` (a short technical reason; read through the pure leaf `lib/organizations/orgBootstrapFailure.ts`, which `appContextSlice` re-exports as `selectOrgBootstrapFailure`), written only by the boot paths — `appContextPolicy.remote.fetch` and `bootstrapActiveOrganization` — and cleared by any answer, a selection included. `selectShouldPromptForOrganization` is FALSE while it is set, so the red avatar ring and the header reminder stay quiet too: "select an organization" is a claim about memberships, and it may only be made once they have been READ. `retry()` (→ `retryActiveOrgBootstrap`) puts the surfaces back into `resolving` and re-runs the same resolver boot runs. For an ACTION, `awaitEffectiveOrganizationId` / `awaitOrganizationForRecordRead` answer `{status: "unavailable", cause: "unreadable" | "no-selection"}` with the matching sentence. Guard: `pnpm check:org-three-states` fails a module that enumerates `"resolving"` and `"required"` without naming `"unavailable"`.
 
 - **Canonical org-id resolution for WRITES — `ensureOrgId(orgId)` (`lib/organizations/personalOrg.ts`).** Every org-scoped insert/update/upsert MUST stamp `organization_id` via `await ensureOrgId(orgId?)` — never write a null/optional org to a NOT NULL column, and never re-read the org from an ad-hoc selector at the write site. Resolution order: (1) the explicit `orgId` when a callsite already knows the org; (2) the user's GLOBAL active org from Redux via `getActiveOrgId()` (`lib/organizations/activeOrg.ts`) — so every write rides along the org the user is currently working in; (3) a **LOUD** last-resort fallback to the personal-org RPC (`resolvePersonalOrgId`). Reaching step 3 means the sync engine failed to keep the org present before a write — a defect — so `ensureOrgId` emits `console.error` + `captureError({ source: "org-resolution" })` into the systemwide Error Inspector before falling back (defensive, never silent). **The fallback also REPAIRS the hole** — it dispatches `setPersonalOrganization` with the resolved id, so the scream fires once per session rather than once per write; it never writes `organization_id`, so a later rehydrate or org switch still wins. A recovery that does not repair fires forever (2026-08-17). Server-side: use `ensureOrgIdServer(client, orgId)` (route handlers / Server Actions — never the module cache, which would leak across requests) or `resolveOrgIdForUserServer(client, userId, orgId)` for admin/secret-key writes on behalf of an arbitrary user. Deliberate personal-org-pinned exceptions (do NOT switch to active): `assignHomelessNotesToPersonalOrg` (re-homes to MY org by contract) and `projectService.createProject` (legacy personal-only path; org-scoped projects use `features/projects/service.ts`).
 
@@ -296,6 +296,30 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 ---
 
 ## Change log
+
+- `2026-09-18` — **F-102 follow-up: THE GATE READS ITS INPUTS THROUGH PURE
+  LEAVES.** The fourth state landed by adding a slice selector and
+  `useAppDispatch` to `useOrganizationRequired` — and killed seven suites / 25
+  tests that had been green the commit before (`features/google-workspace/
+  calendar/__tests__/*` ×5, `features/connectors/__tests__/the-tasks-button-
+  opens-with-the-organization`, `features/connectors/import/__tests__/an-import-
+  panel-waits-for-the-organization`) with `TypeError: selector is not a
+  function` and `useAppDispatch is not a function`. None of those surfaces
+  changed: they stand `@/lib/redux/slices/appContextSlice` and
+  `@/lib/redux/hooks` in with the two or three members the gate needed on the
+  day each test was written, and a module mock replaces the module for every
+  importer — so ANY new member the gate reads breaks all of them at once. That
+  is the class, and the class fix is that the gate stops growing dependencies on
+  mocked modules: the failure reason now lives in **`lib/organizations/
+  orgBootstrapFailure.ts`**, a pure leaf that imports nothing (`appContextSlice`
+  imports it and re-exports `selectOrgBootstrapFailure` for ordinary consumers —
+  ONE definition, no twin), and `retry()` dispatches through
+  **`lib/redux/store-singleton.ts`**, another pure leaf, instead of
+  `useAppDispatch` (it screams if no store exists rather than doing nothing).
+  `awaitWorkspace` reads the leaf too. Behaviour is unchanged in all four
+  states. Verified: the exact seven-plus-neighbours command is back to
+  `17 suites / 99 tests` — the pre-break baseline — and no test in the repo
+  needed a line changed.
 
 - `2026-09-18` — **F-102 (V-23, NEW-2 / R37): AN ORGANIZATION READ THAT FAILED IS
   THE FOURTH STATE, AND IT IS NEVER THE REFUSAL.** On a cold load whose Supabase

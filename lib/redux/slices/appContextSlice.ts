@@ -49,6 +49,7 @@ import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import { definePolicy } from "@/lib/sync/policies/define";
 import { getIdentity } from "@/lib/sync/identity";
 import { activeOrgCookie } from "@/lib/organizations/activeOrgCookie";
+import { selectOrgBootstrapFailure } from "@/lib/organizations/orgBootstrapFailure";
 import { markOrgBootstrapResolved } from "@/lib/organizations/orgBootstrapGate";
 import {
   REHYDRATE_ACTION_TYPE,
@@ -441,10 +442,14 @@ export const selectShouldPromptForOrganization = (
 /**
  * Why the organization question has no answer, or null when it has one (or is
  * still being asked). Non-null = the fourth state: `unavailable`.
+ *
+ * DEFINED IN A PURE LEAF (`lib/organizations/orgBootstrapFailure.ts`) and
+ * re-exported here for ordinary Redux consumers. The gate primitive reads it
+ * from the leaf, so a surface test that stands THIS module in with a couple of
+ * selectors does not break the day the gate learns a new field — read that
+ * file's header before moving the definition back.
  */
-export const selectOrgBootstrapFailure = (
-  state: StateWithAppContext,
-): string | null => state.appContext.orgBootstrapFailure;
+export { selectOrgBootstrapFailure };
 
 export const selectScopeSelectionsContext = (
   state: StateWithAppContext,
