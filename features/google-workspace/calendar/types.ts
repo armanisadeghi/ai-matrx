@@ -53,9 +53,19 @@ export const CALENDAR_EVENT_ATTENDEES_KIND = "calendar_event_attendees";
  */
 export interface AttendeePerson {
   partyId: string;
-  /** The attendee email that matched, lower-cased. */
-  email: string;
+  /**
+   * The Person's name as `crm.party` holds it. Null only when the row could not
+   * be read — the door still opens, labelled by the address, never by nothing.
+   */
   displayName: string | null;
+  /**
+   * Which address on the event this Person holds, normalized the way crm
+   * normalizes it (`crm.contact_medium.value_key`). Null when the Person is
+   * linked but none of their stored addresses is on the event any more — the
+   * link is still the fact, so the door still shows; it is simply not attached
+   * to one of the dots.
+   */
+  email: string | null;
 }
 
 /** One group of the agenda: Today, Tomorrow, or a named later day. */

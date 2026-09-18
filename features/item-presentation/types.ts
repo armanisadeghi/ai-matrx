@@ -49,7 +49,12 @@ export type KnownItemType =
   // `workbench.google_document` (PLAN Amendment A2 names the table with Google's
   // own noun). The record is the projection; the picked-resource row stays the
   // authorization boundary (Amendment A1).
-  | "google_document";
+  | "google_document"
+  // One owned Google Calendar event inside the agenda window, mirrored into
+  // `communication.calendar_event` (aidream migration 0766). Read-only toward
+  // Google: `visibility personal` by default (ruling R1), because a person's
+  // agenda is theirs.
+  | "calendar_event";
 
 export type ItemType = KnownItemType | (string & {});
 
