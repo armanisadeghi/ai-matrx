@@ -84,6 +84,11 @@ export const conversationListConfig: EntityListConfig<ConversationBrowseRow> = {
     title: row.title?.trim() || "Untitled conversation",
   }),
   defaultFilters: DEFAULT_CONVERSATION_FILTERS,
+  // A pasted session id, conversation id or commit sha is wherever it is —
+  // a search over the untouched "AI chats" default spans all three buckets
+  // and the chips read "All" (lib/entity-list/useEntityList.ts).
+  searchSpansDefaultFilters: true,
+  searchPlaceholder: "Search titles, ids, session ids, commits…",
   urlState: true,
   useRowActions,
   favorite: {

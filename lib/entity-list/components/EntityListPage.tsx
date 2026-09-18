@@ -229,6 +229,7 @@ export function EntityListPage<TRow>({
     registryToken: config.registryToken,
     urlState: config.urlState,
     supportsArchived: config.supportsArchived !== false,
+    searchSpansDefaultFilters: config.searchSpansDefaultFilters,
     view: {
       sort: effectiveSort.sort,
       direction: effectiveSort.direction,
@@ -652,7 +653,9 @@ export function EntityListPage<TRow>({
           onScopeChange={list.setScope}
           hasFavorites={Boolean(config.favorite)}
           hasArchived={config.supportsArchived !== false}
-          searchPlaceholder={`Search ${config.entityLabel.plural}…`}
+          searchPlaceholder={
+            config.searchPlaceholder ?? `Search ${config.entityLabel.plural}…`
+          }
           deepSearchLabel={config.deepSearch?.label}
           hasCards={Boolean(cardsView)}
           hasRows={Boolean(rowsView)}

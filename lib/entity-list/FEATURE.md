@@ -428,6 +428,17 @@ how that savior page gets built.
 
 ## Change log
 
+- `2026-09-18` — Claude (Fable): **a search spans the surface's default narrowing**
+  (`config.searchSpansDefaultFilters`, `config.searchPlaceholder`). `defaultFilters` is
+  a BROWSING default; a search is a different intent. With the knob on, a search typed
+  over the UNTOUCHED default bag runs over the whole corpus (fetch, counts, facets) and
+  the surface reads the lifted bag back, so a bucket control shows "All". Untouched is
+  recognised by identity — `query.filters` is still the very `defaultFilters` object —
+  never by value, so a chip click that equals the default is still honoured; the URL
+  writes an explicitly-set bag even when it equals the default for the same reason.
+  Why: a Claude Code session id pasted into /work/conversations found nothing — the
+  row sat one bucket over, behind a chip count nobody reads while staring at an empty
+  table. First consumer: `features/ai-work/conversations/listConfig.tsx`.
 - `2026-09-17` — **Bulk selection, as an opt-in capability of the primitive**
   (`config.bulkActions` + `config.bulkSelection`). Per-row checkbox with a 44px
   touch hit area, shift-click range, header select-all, the honest two-meaning
