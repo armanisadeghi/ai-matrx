@@ -129,7 +129,7 @@ export function NeedsYouTray() {
 
       <button
         type="button"
-        onPointerDown={onPointerDown}
+        onPointerDown={isMobile ? undefined : onPointerDown}
         onClick={() => {
           if (suppressClickRef.current) return;
           setOpen((v) => !v);
@@ -137,7 +137,9 @@ export function NeedsYouTray() {
         aria-expanded={open}
         className={cn(
           "group flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-lg backdrop-blur transition-colors",
-          !isMobile && "touch-none cursor-grab active:cursor-grabbing",
+          isMobile
+            ? "touch-pan-y"
+            : "touch-none cursor-grab active:cursor-grabbing",
           dragging && "ring-1 ring-primary/40",
           broken
             ? "border-destructive/40 bg-destructive/10 text-destructive"

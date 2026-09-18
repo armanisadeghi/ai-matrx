@@ -113,5 +113,6 @@ describe("NeedsYouTray dragging", () => {
     expect(launcher?.classList.contains("touch-none")).toBe(false);
     expect(launcher?.classList.contains("cursor-grab")).toBe(false);
     expect(launcher?.classList.contains("active:cursor-grabbing")).toBe(false);
+    expect(launcher?.classList.contains("touch-pan-y")).toBe(true);
   });
 });
