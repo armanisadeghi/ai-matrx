@@ -1,61 +1,98 @@
 "use client";
 
 /**
- * The ONE canonical body of the map workspace, rendered by six thin route
- * files — the shape the content plan already proved
- * (`ContentPlanRouteBody`, restructure 2026-08-29).
+ * THE ONE canonical body of the map workspace (CONTRACTS.md §1, R5).
  *
- * Views are routes, so each switch unmounts this component. Everything the user
- * chose — which topic is selected, which branches are open, the site in scope —
- * lives in the topical-map slice and is therefore still there on the other
- * side. That is U1's done-criterion, and this file is where it is exercised.
+ * 🚨 IT RENDERS NO PAGE CHROME. Its root is `h-full min-h-0 flex flex-col` and
+ * nothing else — no background, no scroll container, no header offset. That is
+ * the whole point of the Phase 0 inversion: the same body has to render inside
+ * a route, a floating window, a drawer, a canvas card and a peek, and four of
+ * those five hosts already own their own frame. A body that carried page chrome
+ * could only ever live on the page (and a window wrapping it would double every
+ * border — "don't wrap a component in wrappers", CLAUDE.md).
  *
- * The bodies below are the U1 harness: real data through the U1 hooks, in the
- * plainest form. U2/U5/U6 replace each one with its real drawing; none of them
- * changes the read or the selector.
+ * The route adapter that owns the chrome is `TopicalMapRouteBody.tsx`. It is
+ * also the ONLY place `useMapWorkspaceParams`, `useMarketingBrand`,
+ * `usePathname` and `useSearchParams` are read for this body — none of them
+ * works, or even resolves, in the other four hosts.
+ *
+ * Views are ROUTES on the page host, so each switch unmounts this component.
+ * Everything the user chose — selection, expansion, the site in scope — lives
+ * in the topical-map slice and is therefore still there on the other side.
  */
 
 import { useEffect } from "react";
-import { useSearchParams } from "next/navigation";
 
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { createMarketingTopicalMapScope } from "@/features/surfaces/manifests/marketing-topical-map.manifest";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 
 import {
-  useMapDiagnostics,
-  useMapHistory,
-  useMapOutline,
-  useMapTree,
-  usePageIntents,
-} from "../hooks";
-import {
-  pageTopicState,
-  pageTopicViewOf,
-  selectMapDuplicateIntents,
+  selectMapExpandedSlugs,
+  selectMapIntentsByPageId,
+  selectMapLoadedAt,
   selectMapSelectedSlug,
   selectMapTotals,
-  selectPagesOnNoTopic,
+  selectVisibleMapTopics,
 } from "../redux/selectors";
-import type { PageTopicState } from "../redux/types";
 import { mapOpened, revealTopic, setSiteId, setView } from "../redux/slice";
 import { isMapViewKey } from "../redux/types";
-import { useMapWorkspaceParams } from "../useMapWorkspaceParams";
-import { MapTopicTreeList } from "./MapTopicTreeList";
-import {
-  TopicalMapEmpty,
-  TopicalMapFailed,
-  TopicalMapLoading,
-} from "./TopicalMapStates";
+import type { MapWorkspaceScreen } from "../useMapWorkspaceParams";
+import { GraphView } from "../views/GraphView";
+import { HistoryView } from "../views/HistoryView";
+import { OutlineView } from "../views/OutlineView";
+import { PagesWorkspace } from "../views/PagesWorkspace";
+import { TableView } from "../views/TableView";
+import { TextView } from "../views/TextView";
 
-/**
- * What `map_tree` is asked for. Every view needs the same projection, so one
- * list serves all of them and the query cache is shared across a view switch —
- * which is also why switching views does not re-fetch.
- */
-const TREE_INCLUDE = ["description", "status", "counts", "facets"];
+/** Where this body is standing. Five hosts, one body (CONTRACTS §1). */
+export type MapHost = "page" | "window" | "drawer" | "canvas" | "peek";
 
-export function TopicalMapWorkspaceBody({ mapId }: { mapId: string }) {
+export interface TopicalMapWorkspaceBodyProps {
+  mapId: string;
+  screen: MapWorkspaceScreen;
+  /** `?site=` or the window's own choice. null = every site the caller may view. */
+  siteId: string | null;
+  host: MapHost;
+  /** A record-only grantee, or a canvas viewer. Every write control is absent, not disabled. */
+  readOnly?: boolean;
+  /**
+   * Page host: the adapter navigates. Window/canvas host: the owner keeps the
+   * screen in its own state.
+   *
+   * Phase 0 has no in-body screen switcher — the shell header owns navigation
+   * on the page, and the window's title-bar switcher is Lane G's — so nothing
+   * below calls this yet. It is declared here because the hosts are built
+   * against this contract, not because it is wired.
+   */
+  onScreenChange?: (screen: MapWorkspaceScreen) => void;
+  /**
+   * The topic to reveal once the tree is loaded (`?topic=` on the page host).
+   * The body never reads the URL itself — see the header.
+   */
+  revealSlug?: string | null;
+}
+
+/** Every view file takes exactly this, and reads the rest from the store. */
+export interface MapViewProps {
+  mapId: string;
+  siteId: string | null;
+  host: MapHost;
+  readOnly: boolean;
+}
+
+const SURFACE_NAME = "matrx-user/marketing-topical-map";
+
+export function TopicalMapWorkspaceBody({
+  mapId,
+  screen,
+  siteId,
+  host,
+  readOnly = false,
+  revealSlug = null,
+}: TopicalMapWorkspaceBodyProps) {
   const dispatch = useAppDispatch();
-  const { screen, siteId } = useMapWorkspaceParams(mapId);
+  const store = useAppStore();
 
   useEffect(() => {
     dispatch(mapOpened({ mapId }));
@@ -69,284 +106,87 @@ export function TopicalMapWorkspaceBody({ mapId }: { mapId: string }) {
     dispatch(setSiteId({ mapId, siteId }));
   }, [dispatch, mapId, siteId]);
 
-  return (
-    <div className="h-full overflow-y-auto overflow-x-hidden bg-textured">
-      <div className="mx-auto grid max-w-5xl gap-4 p-4 pt-[calc(var(--shell-header-h)+1rem)] sm:p-6 sm:pt-[calc(var(--shell-header-h)+1.5rem)]">
-        {screen === "pages" ? (
-          <MapPagesBody mapId={mapId} siteId={siteId} />
-        ) : screen === "history" ? (
-          <MapHistoryBody mapId={mapId} />
-        ) : screen === "text" ? (
-          <MapTextBody mapId={mapId} siteId={siteId} />
-        ) : (
-          <MapTreeBody mapId={mapId} siteId={siteId} view={screen} />
-        )}
-      </div>
-    </div>
-  );
-}
-
-/** Outline, table and graph all read the SAME tree — the point of U1. */
-function MapTreeBody({
-  mapId,
-  siteId,
-  view,
-}: {
-  mapId: string;
-  siteId: string | null;
-  view: string;
-}) {
-  const dispatch = useAppDispatch();
-  const tree = useMapTree(mapId, {
-    include: TREE_INCLUDE,
-    siteId: siteId ?? undefined,
-  });
   // `?topic=<slug>` arrives from the topic id door. Reveal it — expanding every
   // ancestor — once the tree it names is actually loaded, or the reveal walks a
-  // map with no rows in it and silently does nothing.
-  const focusSlug = useSearchParams().get("topic");
-  const treeLoaded = Boolean(tree.data);
+  // map with no rows in it and silently does nothing. `loadedAt` is the slice's
+  // own record of the tree landing, so the body needs no query of its own.
+  const treeLoadedAt = useAppSelector(selectMapLoadedAt(mapId));
   useEffect(() => {
-    if (focusSlug && treeLoaded) dispatch(revealTopic({ mapId, slug: focusSlug }));
-  }, [dispatch, mapId, focusSlug, treeLoaded]);
-  const diagnostics = useMapDiagnostics(mapId, siteId);
-  const totals = useAppSelector(selectMapTotals(mapId));
-  const selectedSlug = useAppSelector(selectMapSelectedSlug(mapId));
+    if (revealSlug && treeLoadedAt) {
+      dispatch(revealTopic({ mapId, slug: revealSlug }));
+    }
+  }, [dispatch, mapId, revealSlug, treeLoadedAt]);
 
-  if (tree.isPending) return <TopicalMapLoading what="this map's topics" />;
-  if (tree.isError) return <TopicalMapFailed what="this map's topics" error={tree.error} />;
+  /**
+   * The surface scope, built at Run time from the live store — never on mount,
+   * and never from a snapshot this component happened to render with.
+   *
+   * ABSENT IS NOT ZERO applies to the emitter too: a count the tree was not
+   * loaded with is OMITTED from `visible_topics`, and `page_intent_total` is
+   * deliberately not emitted at all — the slice holds the rows this workspace
+   * has LISTED, which is not the server's matched total, and an agent told
+   * otherwise would reason about a number nobody measured.
+   */
+  const getScope = () => {
+    const state = store.getState();
+    const totals = selectMapTotals(mapId)(state);
+    const visible = selectVisibleMapTopics(mapId)(state);
+    const intents = selectMapIntentsByPageId(mapId)(state);
+    const intentRows = Object.entries(intents);
+    const selectedSlug = selectMapSelectedSlug(mapId)(state);
+    return createMarketingTopicalMapScope({
+      map_id: mapId,
+      map_screen: screen,
+      ...(siteId ? { site_id: siteId } : {}),
+      ...(totals.topicsTotal > 0 ? { topic_total: totals.topicsTotal } : {}),
+      ...(selectedSlug ? { selected_topic_slug: selectedSlug } : {}),
+      expanded_topic_slugs: [...selectMapExpandedSlugs(mapId)(state)],
+      visible_topics: visible.map((row) => ({
+        slug: row.slug,
+        name: row.name,
+        depth: row.depth,
+        ...(row.topic.status ? { status: row.topic.status } : {}),
+        ...(totals.countsLoaded
+          ? {
+              pages: row.topic.pages ?? 0,
+              planned: row.topic.planned ?? 0,
+              keywords: row.topic.keywords ?? 0,
+            }
+          : {}),
+      })),
+      ...(intentRows.length > 0
+        ? {
+            page_intents: intentRows.map(([pageId, intent]) => ({
+              page_id: pageId,
+              disposition: intent.disposition,
+              state: intent.state,
+              source: intent.source,
+              ...(intent.topic ? { topic_slug: intent.topic.slug } : {}),
+            })),
+          }
+        : {}),
+    });
+  };
 
-  return (
-    <>
-      <section className="rounded-xl border border-border bg-card p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          {view} view
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {totals.topicsTotal} topics · {totals.pages} live pages ·{" "}
-          {totals.planned} planned · {totals.keywords} keywords
-          {totals.proposed > 0 ? ` · ${totals.proposed} proposed` : ""}
-        </p>
-        {/* Selection is slice state, so this line reads the same after a view
-            switch — the visible proof of U1's done-criterion. */}
-        <p className="mt-1 text-sm">
-          Selected topic:{" "}
-          <span className="font-mono">{selectedSlug ?? "none"}</span>
-        </p>
-        <p className="mt-2 text-xs text-muted-foreground">
-          Rendered from the shared store through the U1 selectors. The outline,
-          table and graph drawings are built on top of this same tree.
-        </p>
-      </section>
-
-      {totals.topicsLoaded === 0 ? (
-        <TopicalMapEmpty
-          title="This map has no topics yet"
-          detail="Nothing has been generated or added. A map builder run, or an agent using the topical_map tool, fills the tree; until then there is genuinely nothing to show."
-        />
-      ) : (
-        <MapTopicTreeList mapId={mapId} />
-      )}
-
-      {diagnostics.isError ? (
-        <TopicalMapFailed what="this map's diagnostics" error={diagnostics.error} />
-      ) : diagnostics.data ? (
-        <section className="rounded-xl border border-border bg-card p-4 text-sm">
-          <p className="font-medium">Diagnostics</p>
-          <p className="mt-1 text-muted-foreground">
-            {diagnostics.data.topics_empty} empty · {diagnostics.data.topics_crowded.length}{" "}
-            crowded · {diagnostics.data.topics_proposed.length} still proposed ·{" "}
-            {diagnostics.data.pages_on_no_topic} pages on no topic ·{" "}
-            {diagnostics.data.sites_using_map.length} site(s) using this map
-          </p>
-        </section>
-      ) : null}
-    </>
-  );
-}
-
-/** `seo.map_outline` — exactly what an agent receives, read-only and copyable. */
-function MapTextBody({ mapId, siteId }: { mapId: string; siteId: string | null }) {
-  const outline = useMapOutline(mapId, { siteId: siteId ?? undefined });
-
-  if (outline.isPending) return <TopicalMapLoading what="the agent outline" />;
-  if (outline.isError)
-    return <TopicalMapFailed what="the agent outline" error={outline.error} />;
-
-  if (!outline.data.trim()) {
-    return (
-      <TopicalMapEmpty
-        title="The outline is empty"
-        detail="seo.map_outline returned nothing, which means this map has no topics an agent could be shown yet."
-      />
-    );
-  }
+  const viewProps: MapViewProps = { mapId, siteId, host, readOnly };
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Text view
-      </p>
-      <p className="mt-1 text-xs text-muted-foreground">
-        This is the map exactly as an agent receives it (seo.map_outline), not a
-        rendering of it.
-      </p>
-      <pre className="mt-3 max-h-[60vh] overflow-auto whitespace-pre-wrap rounded-lg bg-muted/40 p-3 font-mono text-xs">
-        {outline.data}
-      </pre>
-    </section>
-  );
-}
-
-/**
- * What each {@link PageTopicState} means, said out loud. U5 draws these with
- * the `intent_colors` knob; this harness list has no colour, so it says the
- * words — a state a screen cannot colour must still be a state a screen names.
- */
-const PAGE_TOPIC_STATE_SENTENCE: Record<PageTopicState, string> = {
-  in_place: "staying where it is",
-  leaving: "leaving the topic it covers",
-  arriving: "arriving at a topic it does not cover yet",
-  on_no_topic: "on no topic and going nowhere",
-  intent_topic_hidden: "its destination left the map — re-route it",
-};
-
-/** `seo.list_page_intents` — the read the bulk convergence workspace (U5) is built on. */
-function MapPagesBody({ mapId, siteId }: { mapId: string; siteId: string | null }) {
-  const intents = usePageIntents(mapId, { siteId });
-  const duplicates = useAppSelector(selectMapDuplicateIntents(mapId));
-  const onNoTopic = useAppSelector(selectPagesOnNoTopic(mapId));
-
-  if (intents.isPending) return <TopicalMapLoading what="this map's pages" />;
-  if (intents.isError)
-    return <TopicalMapFailed what="this map's pages" error={intents.error} />;
-
-  return (
-    <>
-      <section className="rounded-xl border border-border bg-card p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Pages
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {intents.data.total} page(s) · traffic over the last{" "}
-          {intents.data.performance_window_days} days
-          {siteId ? "" : " · every site you can view that uses this map"}
-        </p>
-        {/* ROUND 22: rejecting or retiring a topic does not delete its pages —
-            they land here, on no topic. Saying nothing would let a map quietly
-            shed its pages, which is the defect the migration was written for. */}
-        {onNoTopic.length > 0 ? (
-          <p className="mt-2 text-sm text-muted-foreground">
-            {onNoTopic.length} of these page(s) cover no live topic of this map.
-            A page never vanishes with its topic: rejecting or retiring a topic
-            leaves its pages here to be re-homed.
-          </p>
-        ) : null}
-        {/* ONE INTENT PER PAGE is the contract. A non-zero count means edges had
-            to be collapsed, and the screen says so rather than showing one. */}
-        {duplicates > 0 ? (
-          <p role="alert" className="mt-2 text-sm text-destructive">
-            {duplicates} page(s) carry more than one intent edge. Only the newest
-            is shown for each. That should not happen — one intent per page is
-            enforced by seo.set_page_intents, so another writer created them.
-          </p>
-        ) : null}
-      </section>
-
-      {intents.data.items.length === 0 ? (
-        <TopicalMapEmpty
-          title="No pages are related to this map yet"
-          detail="A page appears here once it covers a topic or carries an intent. The page mapper writes the coverage edges; the intent proposer and the bulk workspace write the intents."
-        />
-      ) : (
-        <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-          {intents.data.items.map((item) => {
-            const state = pageTopicState(pageTopicViewOf(item));
-            return (
-              <li key={item.page.id} className="px-3 py-2 text-sm">
-                <p className="truncate">{item.page.url ?? item.page.label ?? item.page.id}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {/* ROUND 22: `current_topics: []` is a real state — a page
-                      whose only topic was rejected or retired — so it is named,
-                      never rendered as an empty phrase. */}
-                  {item.current_topics.length > 0
-                    ? `covers ${item.current_topics.map((topic) => topic.slug).join(", ")}`
-                    : "on no topic"}
-                  {item.intent ? (
-                    <>
-                      {` · ${item.intent.disposition} → `}
-                      {item.intent.topic ? (
-                        `${item.intent.topic.slug} (${item.intent.state})`
-                      ) : (
-                        /* The intent survives its topic being hidden and the
-                           server stops rendering the topic. A blank cell here
-                           would read as "no destination"; this says what
-                           actually happened and what it means. */
-                        <span className="text-destructive">
-                          a topic that has left the map ({item.intent.state})
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    " · no intent recorded"
-                  )}
-                  {` · ${PAGE_TOPIC_STATE_SENTENCE[state]}`}
-                  {item.page.clicks != null
-                    ? ` · ${item.page.clicks} clicks / ${item.page.impressions ?? 0} impressions`
-                    : ""}
-                </p>
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </>
-  );
-}
-
-/** `seo.list_map_history` — what left the map, and who sent it there (U6's read). */
-function MapHistoryBody({ mapId }: { mapId: string }) {
-  const history = useMapHistory(mapId);
-
-  if (history.isPending) return <TopicalMapLoading what="this map's history" />;
-  if (history.isError)
-    return <TopicalMapFailed what="this map's history" error={history.error} />;
-
-  return (
-    <>
-      <section className="rounded-xl border border-border bg-card p-4">
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          History
-        </p>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {history.data.total} topic(s) rejected or retired. Rejecting never
-          deletes — the row stays and can be restored.
-        </p>
-      </section>
-
-      {history.data.items.length === 0 ? (
-        <TopicalMapEmpty
-          title="Nothing has left this map"
-          detail="No topic has been rejected or retired, so there is nothing to review or restore."
-        />
-      ) : (
-        <ul className="divide-y divide-border rounded-xl border border-border bg-card">
-          {history.data.items.map((entry) => (
-            <li key={`${entry.slug}:${entry.changed_at}`} className="px-3 py-2 text-sm">
-              <p className="truncate">
-                {entry.name}{" "}
-                <span className="font-mono text-xs text-muted-foreground">
-                  {entry.slug}
-                </span>
-              </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {entry.status} · {new Date(entry.changed_at).toLocaleString()}
-                {entry.attachments ? " · still carries attachments" : ""}
-              </p>
-            </li>
-          ))}
-        </ul>
-      )}
-    </>
+    <SurfaceRuntimeProvider surfaceName={SURFACE_NAME} getScope={getScope}>
+      <div className="flex h-full min-h-0 flex-col gap-4">
+        {screen === "pages" ? (
+          <PagesWorkspace {...viewProps} />
+        ) : screen === "history" ? (
+          <HistoryView {...viewProps} />
+        ) : screen === "text" ? (
+          <TextView {...viewProps} />
+        ) : screen === "table" ? (
+          <TableView {...viewProps} />
+        ) : screen === "graph" ? (
+          <GraphView {...viewProps} />
+        ) : (
+          <OutlineView {...viewProps} />
+        )}
+      </div>
+    </SurfaceRuntimeProvider>
   );
 }

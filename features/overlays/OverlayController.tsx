@@ -1091,6 +1091,11 @@ const ToolCallWindowPanel = lazyOverlay(
     import("@/features/tool-call-visualization/window-panel/ToolCallWindowPanel"),
   { ssr: false },
 );
+const TopicalMapTopicPanel = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/marketing/TopicalMapTopicPanel"),
+  { ssr: false },
+);
 const TranscriptStudioWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/transcript-studio/TranscriptStudioWindow").then(
@@ -2113,6 +2118,9 @@ export default function OverlayController() {
     ),
     toolCallWindow: useAppSelector((s) =>
       selectOpenInstances(s, "toolCallWindow"),
+    ),
+    topicalMapTopicPanel: useAppSelector((s) =>
+      selectOpenInstances(s, "topicalMapTopicPanel"),
     ),
     voicePad: useAppSelector((s) => selectOpenInstances(s, "voicePad")),
     voicePadAdvanced: useAppSelector((s) =>
@@ -7225,6 +7233,38 @@ export default function OverlayController() {
                 ? data.conversationId
                 : null
             }
+          />
+        );
+      })}
+
+      {/* topicalMapTopicPanel */}
+      {instancesById.topicalMapTopicPanel.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        // A panel with no map or no slug has no topic to show. Rendering it
+        // would paint an empty frame, so the malformed instance is skipped —
+        // the opener never produces one, and a stale persisted session can.
+        if (typeof data?.mapId !== "string" || typeof data?.slug !== "string") {
+          return null;
+        }
+        if (!data.mapId || !data.slug) return null;
+        return (
+          <TopicalMapTopicPanel
+            key={inst.instanceId}
+            instanceId={inst.instanceId}
+            stackIndex={
+              typeof data.stackIndex === "number" ? data.stackIndex : 0
+            }
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "topicalMapTopicPanel",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            mapId={data.mapId}
+            slug={data.slug}
+            siteId={typeof data.siteId === "string" ? data.siteId : null}
           />
         );
       })}

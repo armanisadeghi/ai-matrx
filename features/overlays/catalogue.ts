@@ -954,6 +954,13 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  // One topic of one topical map. MULTI on purpose: comparing two topics side
+  // by side is the whole reason the panel floats rather than taking over.
+  topicalMapTopicPanel: {
+    label: "Topic",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   transcriptStudioWindow: {
     label: "Transcript Studio Window",
     instanceMode: "singleton",

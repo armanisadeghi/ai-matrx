@@ -2568,6 +2568,30 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     mobilePresentation: "drawer",
     instanceMode: "singleton",
   },
+
+  // ── Topical map: one topic ────────────────────────────────────────────────
+  // A WINDOW on purpose: the map stays visible behind it, so the branch the
+  // topic sits in is still on screen while you read it — and two topics can
+  // float side by side, which is why it is multi-instance. `detail_panel`
+  // (a `seo.topical_map` knob) lets an organization choose the drawer instead;
+  // the component reads it, this metadata describes the window either way.
+  {
+    slug: "topical-map-topic-panel",
+    overlayId: "topicalMapTopicPanel",
+    kind: "window",
+    label: "Topic",
+    defaultData: { mapId: "", slug: "", siteId: null },
+    mobilePresentation: "drawer",
+    instanceMode: "multi",
+    urlSync: { key: "topic" },
+    // Restoring needs all three: without the map id and the slug the panel has
+    // no topic to show, and a restore that opened empty would be worse than
+    // not restoring at all.
+    preservation: {
+      dataKeys: ["mapId", "slug", "siteId"],
+      requiredDataKeys: ["mapId", "slug"],
+    },
+  },
 ];
 
 // ─── Lookup maps ──────────────────────────────────────────────────────────────

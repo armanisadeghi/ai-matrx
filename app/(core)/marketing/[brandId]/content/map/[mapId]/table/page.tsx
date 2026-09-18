@@ -1,7 +1,7 @@
 // One map's workspace — the TABLE view.
-// See ../page.tsx: the view is a route, the body is the ONE canonical workspace.
+// See ../page.tsx: the view is a route, the adapter is the ONE route host.
 
-import { TopicalMapWorkspaceBody } from "@/features/marketing/seo/topical-map/components/TopicalMapWorkspaceBody";
+import { TopicalMapRouteBody } from "@/features/marketing/seo/topical-map/components/TopicalMapRouteBody";
 
 export default async function BrandTopicalMapTablePage({
   params,
@@ -9,5 +9,5 @@ export default async function BrandTopicalMapTablePage({
   params: Promise<{ mapId: string }>;
 }) {
   const { mapId } = await params;
-  return <TopicalMapWorkspaceBody mapId={mapId} />;
+  return <TopicalMapRouteBody mapId={mapId} />;
 }

@@ -13,9 +13,10 @@
  * vocabulary (site, plan node, brief, pipeline) applies to a brand-owned tree
  * of topics, and inheriting it would hand an agent here a site it does not have.
  *
- * Runtime emitter: the workspace body mounts the scope built by
- * `createMarketingTopicalMapScope` below; until it does, this manifest is
- * `partial` and says so.
+ * Runtime emitter: the workspace body (`TopicalMapWorkspaceBody`) mounts the
+ * scope built by `createMarketingTopicalMapScope` below, in every host — page,
+ * window, drawer, canvas, peek — because the provider lives in the body, not in
+ * the route.
  */
 
 import type {
@@ -208,9 +209,9 @@ const surfaceSpecific: SurfaceValue[] = [
 export const marketingTopicalMapManifest: SurfaceManifest = {
   surfaceName: "matrx-user/marketing-topical-map",
   label: "Topical Map",
-  readiness: "stub",
+  readiness: "partial",
   readinessNote:
-    "Declared with the U1 data layer and the route scaffold (2026-09-17). No SurfaceRuntimeProvider is mounted yet and no agent is bound: the view builders (U2/U3/U5/U6) own the emitter, and the map/topic agents are U7. Every value below is declared against the reads that already run.",
+    "The workspace body mounts the SurfaceRuntimeProvider and emits this scope from the live store (2026-09-18): map_id, map_screen, site_id, topic_total, selected_topic_slug, expanded_topic_slugs, visible_topics, and page_intents on the pages screen. The rest fill in as the view builders land — map_outline, map_diagnostics and map_history are read by their screens but not emitted yet, and page_intent_total is deliberately absent because the slice holds the rows this workspace LISTED, not the server's matched total. NO agentRoles: a mandate is declared here only by the lane that ships the control running it (seo.map_author, seo.page_mapper, seo.page_intent_proposer, seo.topic_curation, seo.map_curation), never ahead of its control.",
   urlPattern: "/marketing/[brandId]/content/map/[mapId]",
   intro: `<surface_intro>
 You are in a brand's TOPICAL MAP: the tree of subjects this brand should cover, and the plan for getting its website there. The map decides WHICH pages should exist and WHERE they live; the content plan, a separate surface, decides what one page says.
