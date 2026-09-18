@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { FileUp, X } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { Button } from "@/components/ui/button";
@@ -20,8 +20,8 @@ import {
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import LoadingSpinner from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
+import { RunStages } from "../RunStages";
 import type { paths } from "@/types/python-generated/api-types";
 import type { IngestLane } from "../../browse/approachLane";
 import { useFileUpload } from "@/features/files/handler/hooks/useFileUpload";
@@ -343,6 +343,28 @@ export function IngestSourceDialog({
   );
   const [sourceNote, setSourceNote] = useState("");
   const [uploading, setUploading] = useState(false);
+  /**
+   * WHEN THE UPLOAD BEGAN. The durable run does not exist yet while a file is
+   * going up — nothing is paid for and there is no row — so `run.startedAt` is
+   * null and only this lane knows when the wait actually started. Without it
+   * the first stretch of a big upload is the motionless spinner this whole
+   * change exists to remove.
+   */
+  const [uploadStartedAt, setUploadStartedAt] = useState<number | null>(null);
+
+  /**
+   * The real size of this lane's source, in whichever unit its door counted:
+   * an upload has bytes, a recording has seconds, a paste has words. Nothing
+   * is invented — a lane that knows none of them gets the lane floor.
+   */
+  const ingestSize = useMemo(() => {
+    if (recordedSeconds !== null) return { seconds: recordedSeconds };
+    if (shape === "file" || monologue) {
+      return file ? { bytes: file.size } : {};
+    }
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    return words > 0 ? { words } : {};
+  }, [recordedSeconds, shape, monologue, file, text]);
 
   /**
    * ONE durable run for the paste and upload lanes — they emit the SAME
@@ -371,6 +393,11 @@ export function IngestSourceDialog({
         ? INGEST_FILE_PATH
         : INGEST_PATH,
     parseResult: parseIngestSummary,
+    // 🚨 MEASURED FROM WHAT IS ACTUALLY IN THE BOX. A 558 KB EPUB, an
+    // 8,000-character paste and a 40-minute recording are three different
+    // waits; one constant for all three is what made a correct 8m11s run read
+    // as a hang (acquisition-frontier §7.3).
+    size: ingestSize,
   });
   const running = run.running || uploading;
   const summary = run.result ? describeIngest(run.result) : null;
@@ -381,6 +408,7 @@ export function IngestSourceDialog({
   const reset = () => {
     run.reset();
     setUploading(false);
+    setUploadStartedAt(null);
     setRecordedSeconds(null);
   };
 
@@ -544,6 +572,7 @@ export function IngestSourceDialog({
     // until the server has the file, so a reload during the upload legitimately
     // loses only the upload, and nothing has been paid for yet.
     setUploading(true);
+    setUploadStartedAt(Date.now());
     let fileId: string;
     try {
       // The ONE upload path (features/files) — it creates the cld_files row
@@ -564,6 +593,7 @@ export function IngestSourceDialog({
       return;
     } finally {
       setUploading(false);
+    setUploadStartedAt(null);
     }
 
     await run.launch(
@@ -703,21 +733,19 @@ export function IngestSourceDialog({
           </div>
         ) : running || progress.length > 0 ? (
           <div className="space-y-2">
-            <div className="max-h-52 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/40 p-3">
-              {progress.map((line, i) => (
-                <p key={i} className="text-xs text-muted-foreground">
-                  {line}
-                </p>
-              ))}
-            </div>
-            {running ? (
-              <div className="flex items-start gap-2">
-                <LoadingSpinner size="sm" />
-                <p className="text-xs text-muted-foreground">
-                  {run.waitMessage ?? "Uploading your file…"}
-                </p>
-              </div>
-            ) : null}
+            {/* THE ONE PROGRESS SURFACE — a moving clock, the server's own
+                sentence, the per-source list and the counts it sent. This
+                lane's upload happens before the durable run exists, so the
+                upload line rides in as a stage and `running` covers both. */}
+            <RunStages
+              run={{
+                ...run,
+                running,
+                stages: progress,
+                startedAt: run.startedAt ?? uploadStartedAt,
+              }}
+              waitingMessage="Uploading your file…"
+            />
             {run.running ? (
               <DurableRunInterruption interruption={run.interruption} />
             ) : null}

@@ -136,6 +136,7 @@ const CHAT_IMPORT_DESCRIPTION =
 import { createSittingStore, type SittingBase } from "../../sitting/sitting";
 import { useDialogSitting } from "../../sitting/useDialogSitting";
 import { SittingResumed } from "../../sitting/SittingResumed";
+import { RunStages } from "../RunStages";
 
 interface ChatImportSitting extends SittingBase {
   text: string;
@@ -212,6 +213,8 @@ export function ChatImportDialog({
     rulebookId: rulebook.id,
     path: tab === "matrx" ? INGEST_CONVERSATIONS_PATH : INGEST_CHAT_PATH,
     parseResult: parseIngestSummary,
+    // Three conversations and two hundred are not the same wait.
+    size: { items: selected.size },
   });
   const running = run.running || preparing;
   const summary = run.result ? describeIngest(run.result) : null;
@@ -613,21 +616,7 @@ export function ChatImportDialog({
           </div>
         ) : run.running || run.stages.length > 0 ? (
           <div className="space-y-2">
-            <div className="max-h-52 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/40 p-3">
-              {run.stages.map((line, i) => (
-                <p key={i} className="text-xs text-muted-foreground">
-                  {line}
-                </p>
-              ))}
-            </div>
-            {run.running ? (
-              <div className="flex items-start gap-2">
-                <LoadingSpinner size="sm" />
-                <p className="text-xs text-muted-foreground">
-                  {run.waitMessage}
-                </p>
-              </div>
-            ) : null}
+            <RunStages run={run} />
             {run.running ? (
               <DurableRunInterruption interruption={run.interruption} />
             ) : null}

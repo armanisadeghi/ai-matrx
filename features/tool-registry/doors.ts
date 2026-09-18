@@ -14,7 +14,7 @@
  *     anywhere else was plain text.
  *
  * The fix is the `?feedback=` shape already proven in
- * `app/(admin)/administration/users/feedback/doors.ts`: one deep-link param on
+ * `features/admin/feedback/doors.ts`: one deep-link param on
  * the console's own route, read on mount and kept in step with the selection.
  * Declared once here so no surface hand-writes a query string — and so the
  * console and its callers can never disagree about the param name.

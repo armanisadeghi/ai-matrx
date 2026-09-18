@@ -28044,6 +28044,7 @@ export type Database = {
       }
       files: {
         Row: {
+          artifact_kind: string | null
           canonical_processed_document_id: string | null
           checksum: string | null
           client_modified_at: string | null
@@ -28065,6 +28066,7 @@ export type Database = {
           origin_device_id: string | null
           parent_file_id: string | null
           parent_folder_id: string | null
+          provider_session_id: string | null
           size_bytes: number | null
           storage_uri: string
           updated_at: string
@@ -28074,6 +28076,7 @@ export type Database = {
           width: number | null
         }
         Insert: {
+          artifact_kind?: string | null
           canonical_processed_document_id?: string | null
           checksum?: string | null
           client_modified_at?: string | null
@@ -28095,6 +28098,7 @@ export type Database = {
           origin_device_id?: string | null
           parent_file_id?: string | null
           parent_folder_id?: string | null
+          provider_session_id?: string | null
           size_bytes?: number | null
           storage_uri: string
           updated_at?: string
@@ -28104,6 +28108,7 @@ export type Database = {
           width?: number | null
         }
         Update: {
+          artifact_kind?: string | null
           canonical_processed_document_id?: string | null
           checksum?: string | null
           client_modified_at?: string | null
@@ -28125,6 +28130,7 @@ export type Database = {
           origin_device_id?: string | null
           parent_file_id?: string | null
           parent_folder_id?: string | null
+          provider_session_id?: string | null
           size_bytes?: number | null
           storage_uri?: string
           updated_at?: string
@@ -65938,6 +65944,17 @@ export type Database = {
         Args: { p_src: string }
         Returns: boolean
       }
+      definer_two_id_population: {
+        Args: never
+        Returns: {
+          function_name: string
+          id_arguments: string[]
+          object_ref: string
+          schema_name: string
+          unchecked_id_arguments: string[]
+          unruled_id_arguments: string[]
+        }[]
+      }
       demote_custom_field_index: {
         Args: { p_definition_id: string }
         Returns: Json
@@ -71445,6 +71462,10 @@ export type Database = {
           visibility: string
           workspace_name: string
         }[]
+      }
+      cvx_provider_account_display: {
+        Args: { p_metadata: Json }
+        Returns: string
       }
       cvx_search_score: {
         Args: {

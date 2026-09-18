@@ -15,7 +15,8 @@ import { Button } from "@ai-matrx/design-system";
 
 import { usd } from "../format";
 import { SPEND_DIMENSIONS, type SpendBreakdown, type SpendDimension, type SpendFilters } from "../types";
-import { DIMENSION_LABEL, percent, rowLabel } from "./labels";
+import { DIMENSION_LABEL, rowLabel } from "./labels";
+import { formatPercentFromFraction } from "@ai-matrx/kit/format";
 
 export interface FilterChipsProps {
   filters: SpendFilters;
@@ -62,7 +63,7 @@ export function FilterChips({ filters, data, onRemove, onClear }: FilterChipsPro
       {data ? (
         <span className="ml-auto text-[11px] text-muted-foreground">
           This slice is {usd(cost)} of the {usd(ledger)} the whole window cost (
-          {percent(ledger > 0 ? cost / ledger : 0)}).
+          {formatPercentFromFraction(ledger > 0 ? cost / ledger : 0)}).
         </span>
       ) : null}
     </div>

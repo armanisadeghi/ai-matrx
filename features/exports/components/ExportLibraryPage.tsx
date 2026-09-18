@@ -303,7 +303,8 @@ export function ExportLibraryPage({ libraryId }: { libraryId: string }) {
 
           <IndexProgress state={indexState} onRetry={runIndex} />
 
-          <QuickViews outboundBy={outboundBy} />
+          <QuickViews
+              libraryId={libraryId} outboundBy={outboundBy} />
 
           {/*
             BOTH NUMBERS, ALWAYS. `filtered_total` is what the filter matches

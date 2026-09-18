@@ -1,4 +1,5 @@
 "use client";
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * SmartCodeEditorModal — thin Dialog wrapper around `SmartCodeEditor`.
@@ -19,7 +20,7 @@ export interface SmartCodeEditorModalProps {
   onOpenChange: (open: boolean) => void;
 
   agents: CodeEditorAgentConfig[];
-  defaultPickerMandateKey?: string;
+  defaultPickerMandateKey?: MandateKey;
 
   initialCode?: string;
   language?: string;

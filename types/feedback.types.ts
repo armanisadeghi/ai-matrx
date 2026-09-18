@@ -153,6 +153,14 @@ export interface CreateFeedbackInput {
    */
   category_id?: string | null;
   assigned_to?: string | null;
+  /**
+   * Structured provenance for the item, written to `users.user_feedback.metadata`.
+   * The caller owns the keys; the submit action merges nothing and invents
+   * nothing. Used by "Approve and raise" in the agent review queue, which
+   * stamps `raised_from_review_row: <agent.review_queue id>` so a note raised
+   * while approving a review is traceable back to the row that exposed it.
+   */
+  metadata?: Record<string, Json> | null;
 }
 
 export interface UpdateFeedbackInput {

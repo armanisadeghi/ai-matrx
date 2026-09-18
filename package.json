@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2026",
+  "version": "0.4.2031",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
@@ -153,6 +153,8 @@
     "check:assist-priority": "tsx scripts/check-assist-priority.ts",
     "check:migration-judgment": "tsx scripts/check-migration-judgment.ts",
     "check:migrations": "tsx scripts/check-migrations.ts",
+    "check:client-writes-are-granted": "tsx scripts/check-client-writes-are-granted.ts",
+    "check:client-writes-are-granted:self-test": "tsx scripts/check-client-writes-are-granted.ts --self-test",
     "db:apply": "tsx scripts/apply-migration.ts",
     "db:capture-go-signal": "tsx scripts/gate-corpus/capture-go-signal.ts",
     "db:based-on": "tsx scripts/db-based-on.ts",
@@ -184,6 +186,8 @@
     "check:hardcoded-agents:write": "tsx scripts/check-hardcoded-agents.ts --write",
     "check:mandate-keys": "tsx scripts/check-mandate-keys.ts",
     "check:mandate-keys:self-test": "jest scripts/__tests__/check-mandate-keys.test.ts",
+    "check:mandate-references": "uvx --from matrx-mandate-scan==0.2.2 matrx-mandate-scan check",
+    "check:mandate-references:strict": "uvx --from matrx-mandate-scan==0.2.2 matrx-mandate-scan check --strict",
     "check:collection-validator": "tsx scripts/check-collection-validator.ts",
     "check:collection-ordering": "tsx scripts/check-collection-ordering.ts",
     "check:archetype-expansion": "tsx scripts/check-archetype-expansion.ts",

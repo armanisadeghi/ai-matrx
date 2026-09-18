@@ -1,4 +1,5 @@
 "use client";
+import { storedMandateKey, type AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * Surface config resolution — the canonical reader/writer for agent roles
@@ -168,7 +169,7 @@ export interface SurfaceConfigBundle {
     description: string;
     kind: "single" | "multi";
     defaultAgentId: string | null;
-    mandateKey: string | null;
+    mandateKey: AnyMandateKey | null;
     /**
      * Agent currently holding `mandateKey` (agent.mandate.default_agent_id),
      * resolved at fetch time. Null when the role has no mandateKey or the
@@ -287,7 +288,7 @@ export async function fetchSurfaceConfigBundle(
       description: r.description,
       kind: r.kind as "single" | "multi",
       defaultAgentId: r.default_agent_id,
-      mandateKey: r.mandate_key,
+      mandateKey: r.mandate_key ? storedMandateKey(r.mandate_key) : null,
       mandateAgentId: r.mandate_key
         ? (mandatePins[r.mandate_key]?.agentId ?? null)
         : null,

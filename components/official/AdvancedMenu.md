@@ -1,7 +1,7 @@
 # AdvancedMenu
 
 The shared anchored action menu used by message action bars, content blocks,
-editors, and other kebab/button menus. Canonical page and row context menus use
+editors, and other kebab/button menus. Page and row context menus use
 `features/context-menu-v3`; `AdvancedMenu` is for explicit action-menu triggers.
 
 ## Features

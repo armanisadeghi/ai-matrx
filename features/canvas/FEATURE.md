@@ -15,9 +15,8 @@ the rules an agent editing THIS directory must obey.
 | Layer                                                                          | Where                                                                                            |
 | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
 | Front door (always mounted, owns ⌘\ + availability signalling)                 | `core/CanvasSideSheet.tsx`                                                                       |
-| DOCKED presentation — a resizable column beside a route's own content          | `core/CanvasDock.tsx` (+ heavy half `core/CanvasDockBody.tsx`)                                   |
-| SHEET presentation — overlay slide-in + width resize (fallback / phone)        | `core/CanvasSideSheetImpl.tsx`                                                                   |
-| The content both presentations share — card, vertical split, surface emitter   | `core/CanvasSurface.tsx`                                                                         |
+| THE ONE presentation — overlay slide-in + width resize, identical everywhere   | `core/CanvasSideSheetImpl.tsx`                                                                   |
+| The content it presents — card, vertical split, surface emitter                | `core/CanvasSurface.tsx`                                                                         |
 | Per-pane header chrome + body                                                  | `core/CanvasPane.tsx`                                                                            |
 | The type-keyed renderer switch (+ `titleToString`, `getDefaultTitle`)          | `core/CanvasBody.tsx`                                                                            |
 | Unified artifact renderers (chart, table, quiz, mermaid, …)                    | `artifact-types/renderers/*`                                                                     |
@@ -34,15 +33,25 @@ the rules an agent editing THIS directory must obey.
 
 ## Rules for this directory
 
-- **DOCKED IS THE DEFAULT; THE SHEET IS THE FALLBACK.** A route with room for
-  the canvas wraps its body in `<CanvasDock groupId="…">`: the canvas becomes a
-  resizable column, the route body shrinks, and **nothing the route draws is
-  ever covered**. While any dock is mounted (`dockHosts > 0`,
-  `selectCanvasIsDocked`) the global `CanvasSideSheet` renders NOTHING — the
-  two presentations can never both be on screen. A dock deliberately does not
-  register on a phone, where the full-bleed sheet is still right. Owner
-  standard, 2026-09-13: *"we have an entire Canvas system that gives us a nice
-  adjustable sidebar that can be folded out and in."*
+- 🚨 **THERE IS ONE PRESENTATION AND NO ROUTE OWNS ONE OF ITS OWN.** The
+  canvas is the globally mounted `CanvasSideSheet` — an overlay drawn at the
+  right edge, at z-10000, from y = 0 — and every route gets exactly that one:
+  documents, artifacts, the browser, the sandbox, chat. A route NEVER mounts,
+  wraps, docks or otherwise presents the canvas; it only opens things INTO it
+  through the headless openers. If the canvas genuinely lacks something one
+  route needs, EXTEND `CanvasSideSheetImpl`/`CanvasSurface` for every route —
+  never fork a presentation for one. Owner, 2026-09-16, rejecting exactly such
+  a fork (`CanvasDock`, a docked column the chat route wrapped its body in,
+  which lived 2026-09-14 → 2026-09-17): *"The canvas system set up for the
+  sandboxes completely breaks the core systems for how these canvases work. It
+  adds an unnecessary layer, causes a shift in the top header buttons and
+  creates a mess that clearly shows it is not properly built to be identical to
+  the way the canvas actually works. FOLLOW established patterns."*
+  Guards: `features/canvas/__tests__/one-canvas-presentation.test.ts` (static —
+  no dock module, no dock state, no route mounting a presentation) and
+  `features/shell/layout-gate/canvas-one-presentation.spec.ts` (real-engine
+  rects — the canvas pane header lands at the same place on chat as on a
+  document route, and opening the canvas moves no shell header button).
 - **AN OPEN-IN-CANVAS REQUEST NEVER SILENTLY DOES NOTHING.** Every place a
   request to show something in the canvas can be dropped — no type, no data,
   an unknown type, an artifact that would not persist, a route with no canvas
@@ -53,18 +62,13 @@ the rules an agent editing THIS directory must obey.
   `useCanvas().open` returns a boolean for the same reason. Availability is
   checked with `useCanvasOpenGuard` BEFORE dispatching, because the slice
   happily accepts an open for a route that mounts nothing.
-- **A mounted `CanvasDock` IS a canvas surface.** `selectCanvasIsAvailable` is
-  `isAvailable || dockHosts > 0` — the flag alone is raised only by the
-  idle-deferred `CanvasSideSheet`, so a docked route reported "no canvas here"
-  until that island hydrated.
+- **Availability has ONE source:** `selectCanvasIsAvailable` reads the flag the
+  global front door raises on mount. A second source meant a second
+  presentation, and that is the layer above.
 
-- **Never fork the canvas body per presentation.** Card, vertical split and
-  pane chrome live once in `core/CanvasSurface.tsx`; a presentation owns only
-  placement.
-- **`CanvasDock` keeps its `<Group>` mounted whether the canvas is open or
-  not** — swapping between a bare div and a panel group would remount the whole
-  route body (chat scroll, in-flight streams, input state) on every toggle. The
-  canvas panel is `collapsible` and driven to 0% instead.
+- **Never fork the canvas body.** Card, vertical split and pane chrome live
+  once in `core/CanvasSurface.tsx`; `CanvasSideSheetImpl` owns only placement,
+  width and the Radix Sheet.
 - **react-resizable-panels v4: a bare number is PIXELS.** Percentages must
   carry the unit (`defaultSize={\`${ratio}%\`}`). Invoke the
   `react-resizable-panels-v4` skill before touching any group here.
@@ -126,6 +130,45 @@ path updates the node's `STATE.md` in the same session.
 
 ## Change log
 
+- `2026-09-17` — **THE CANVAS HAS ONE PRESENTATION AGAIN; THE CHAT ROUTE'S
+  PARALLEL LAYER IS GONE.** Owner rejection (review row 34bfd1e8, 2026-09-16,
+  verbatim): *"The canvas system set up for the sandboxes completely breaks the
+  core systems for how these canvases work. It adds an unnecessary layer,
+  causes a shift in the top header buttons and creates a mess that clearly
+  shows it is not properly built to be identical to the way the canvas actually
+  works. FOLLOW established patterns."*
+  Deleted: `core/CanvasDock.tsx`, `core/CanvasDockBody.tsx`,
+  `core/__tests__/CanvasDock.test.tsx`, the slice's `dockHosts` / `dockRatio` /
+  `registerCanvasDock` / `unregisterCanvasDock` / `setCanvasDockRatio` /
+  `selectCanvasIsDocked` / `selectCanvasDockRatio`, the `|| dockHosts > 0` arm
+  of `selectCanvasIsAvailable`, the front door's `isDocked` bail, the
+  `CanvasSurfaceCard` `presentation` prop, and the dock's
+  `paddingTop: var(--shell-header-h)` offset. `ChatRoomClient` now draws a
+  plain body and mounts NO canvas presentation, exactly like every other route;
+  the canvas reaches it through the one global `CanvasSideSheet`.
+  What was CONTENT, not presentation, is untouched: the `sandbox` and
+  `udt_document` content types, `tool-results/`, `revealMemory.ts`,
+  `liveSourceReachability.ts`, and the ≥2 switcher rule (`core/canvasSwitcher.ts`)
+  — that rule already belonged to the canonical canvas, so ours was dropped in
+  favour of it.
+  Measured difference the dock caused, reproduced in Chromium at 1280x720: the
+  canvas pane header sat at `y = 44, width = 494.39` on chat against
+  `y = 0, width = 768` on a document route (390x844: `y = 44, width = 156`
+  against `y = 0, width = 390`).
+  Guards, both proven RED before green:
+  `features/canvas/__tests__/one-canvas-presentation.test.ts` (six static cases
+  over every tracked source) and
+  `features/shell/layout-gate/canvas-one-presentation.spec.ts`
+  (`MATRX_LAYOUT_GATE_MUTATION=dock` rebuilds the rejected shape and the
+  same-place case fails with those exact numbers).
+  KEPT DELIBERATELY: the `styles/shell.css` rule
+  `:root[data-admin-attention] .shell-main:has(> .h-full.overflow-hidden)::after
+  { content: none; }`. It was added alongside the dock but is not chat-specific
+  and not a canvas presentation — it stops ANY full-height route body gaining
+  72px–14rem of slack scroll and sliding its composer under the floating shell
+  header. Its own gate (`features/shell/layout-gate/shell-scroll-runway.spec.ts`)
+  now models the canonical world and measures the composer instead of a docked
+  column.
 
 - `2026-09-17` — **Share and score refusals reach the person.** `useCanvasShare` rendered the raw transport sentence ("Select an organization before sending this request.") beside a Share button that could only fail again; `useCanvasScore` recorded nothing and said nothing. Both now speak the refusal with its remedy (`lib/organizations/organizationRefusalToast.ts`), and a score that fails for any other reason is spoken too rather than leaving the leaderboard silently unchanged.
 
@@ -230,18 +273,16 @@ path updates the node's `STATE.md` in the same session.
 - `2026-09-14` — **an open-in-canvas request can no longer silently do nothing.**
   New `openRequest.ts` (`reportCanvasOpenDrop` + copy) and
   `hooks/useCanvasOpenGuard.ts`; every drop point in the open path announces
-  itself with a remedy instead of returning; `selectCanvasIsAvailable` now
-  counts a mounted dock. Guard:
+  itself with a remedy instead of returning. Guard:
   `features/canvas/__tests__/open-in-canvas-never-silent.test.tsx`.
 
-- `2026-09-14` — **the canvas DOCKS instead of covering.** `CanvasDock` +
-  `CanvasDockBody` give any route a resizable canvas column; `CanvasSurface`
-  holds the body both presentations share; `CanvasSideSheet` stands down while
-  a dock is mounted (`dockHosts` / `dockRatio` in the slice, width persisted to
-  localStorage). The chat route (`ChatRoomClient`) is the first consumer — the
-  overlay had been drawn over the composer, the mic and the send button. Also
-  fixed in passing: the vertical split's `defaultSize={splitRatio}` was
-  **pixels**, not percent, under v4's unit rules.
+- `2026-09-14` — **the canvas DOCKS instead of covering** (`CanvasDock`,
+  `CanvasDockBody`, `dockHosts`/`dockRatio`, a `--shell-header-h` offset, the
+  chat route wrapping its body in the dock). **REVERTED IN FULL on 2026-09-17
+  — see the entry at the top of this log.** What survives from it: the body
+  split into `core/CanvasSurface.tsx`, and the vertical split's
+  `defaultSize={splitRatio}` fixed from **pixels** to percent under v4's unit
+  rules.
 
 - `2026-09-13` — **the bound SANDBOX is a canvas content type** (`sandbox`, NON_PERSISTABLE): Terminal / Files / Activity for a
   conversation's box, rendered by `features/agents/components/chat/sandbox-insight/SandboxCanvasBody`, opened through `useOpenSandboxCanvas`.

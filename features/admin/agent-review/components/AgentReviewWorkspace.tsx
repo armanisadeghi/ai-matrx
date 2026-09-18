@@ -9,6 +9,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  Flag,
   MessageSquareText,
   RotateCcw,
 } from "lucide-react";
@@ -36,6 +37,13 @@ import {
   loadReviewQueueItem,
   recordHumanReviewAction,
 } from "@/features/admin/agent-review/service";
+import {
+  approveAndRaise,
+  type ApproveAndRaiseResult,
+} from "@/features/admin/agent-review/approve-and-raise";
+import { getFeedbackRaisedFromReviewRow } from "@/actions/feedback.actions";
+import { feedbackHref } from "@/features/admin/feedback/doors";
+import type { UserFeedback } from "@/types/feedback.types";
 import {
   EMPTY_REVIEW_REGISTRY,
   loadReviewRegistry,
@@ -82,6 +90,29 @@ export default function AgentReviewWorkspace({
   const [feedback, setFeedback] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // "Approve and raise" spans two systems (the queue + the feedback console),
+  // so its outcome is held explicitly and shown as two facts. A toast alone
+  // would let a half-success — approved, note lost — scroll away unseen.
+  const [raiseOutcome, setRaiseOutcome] = useState<ApproveAndRaiseResult | null>(
+    null,
+  );
+  /** The note kept for a retry after `approved_not_raised`. */
+  const [noteAwaitingRaise, setNoteAwaitingRaise] = useState("");
+  const [raised, setRaised] = useState<UserFeedback[]>([]);
+  const [raisedError, setRaisedError] = useState<string | null>(null);
+
+  /** Everything ever raised from this row — durable proof, not a toast. */
+  async function refreshRaised() {
+    const result = await getFeedbackRaisedFromReviewRow(reviewId);
+    if (result.success && result.data) {
+      setRaised(result.data);
+      setRaisedError(null);
+      return;
+    }
+    setRaisedError(
+      result.error ?? "Notes raised from this review could not be read.",
+    );
+  }
 
   async function refresh() {
     try {
@@ -118,6 +149,33 @@ export default function AgentReviewWorkspace({
               : "Review item failed to load",
           );
         }
+      });
+    return () => {
+      active = false;
+    };
+  }, [reviewId]);
+
+  useEffect(() => {
+    let active = true;
+    getFeedbackRaisedFromReviewRow(reviewId)
+      .then((result) => {
+        if (!active) return;
+        if (result.success && result.data) {
+          setRaised(result.data);
+          setRaisedError(null);
+          return;
+        }
+        setRaisedError(
+          result.error ?? "Notes raised from this review could not be read.",
+        );
+      })
+      .catch((readError: unknown) => {
+        if (!active) return;
+        setRaisedError(
+          readError instanceof Error
+            ? readError.message
+            : "Notes raised from this review could not be read.",
+        );
       });
     return () => {
       active = false;
@@ -237,6 +295,48 @@ export default function AgentReviewWorkspace({
           ? actionError.message
           : "Review action failed",
       );
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  /**
+   * THE ONE ACTION. `alreadyApproved` is the retry lane: the row is already
+   * approved and its conversation already carries the note, so only the filing
+   * runs again — a retry can never approve twice or post the note twice.
+   */
+  async function onApproveAndRaise(alreadyApproved: boolean) {
+    if (!user?.id || !row) return;
+    const note = alreadyApproved ? noteAwaitingRaise : feedback;
+    setSaving(true);
+    try {
+      const result = await approveAndRaise({
+        row,
+        userId: user.id,
+        note,
+        alreadyApproved,
+      });
+      setRaiseOutcome(result);
+      if (result.status === "approved_and_raised") {
+        setNoteAwaitingRaise("");
+        setFeedback("");
+        toast.success("Approved, and your note was raised.");
+      } else if (result.status === "approved_not_raised") {
+        setNoteAwaitingRaise(note.trim());
+        setFeedback("");
+        toast.error(`Approved, but the note was not raised: ${result.reason}`);
+      } else {
+        toast.error(result.reason);
+      }
+      await refresh();
+      await refreshRaised();
+    } catch (actionError) {
+      const reason =
+        actionError instanceof Error
+          ? actionError.message
+          : "Approve and raise failed.";
+      setRaiseOutcome({ status: "not_approved", reason });
+      toast.error(reason);
     } finally {
       setSaving(false);
     }
@@ -420,6 +520,21 @@ export default function AgentReviewWorkspace({
             </Button>
             <Button
               className="h-11 sm:h-9"
+              variant="outline"
+              disabled={
+                saving || status !== "ready_for_human" || !feedback.trim()
+              }
+              title="Approve this review and raise your note as a new feedback item"
+              onClick={() => void onApproveAndRaise(false)}
+            >
+              <Flag className="mr-1.5 h-4 w-4" /> Approve and raise
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Approves this review and files your note as a new feedback item,
+              so a problem this review exposed gets its own thread.
+            </p>
+            <Button
+              className="h-11 sm:h-9"
               variant="ghost"
               disabled={saving || status === "archived"}
               onClick={() =>
@@ -443,6 +558,79 @@ export default function AgentReviewWorkspace({
               </Button>
             ) : null}
           </div>
+
+          {raiseOutcome ? (
+            raiseOutcome.status === "approved_and_raised" ? (
+              <div className="mt-4 rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+                <p className="flex items-start gap-1.5 font-medium">
+                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                  Approved, and your note was raised as a new feedback item.
+                </p>
+                <AppLink
+                  href={raiseOutcome.feedbackHref}
+                  className="mt-2 inline-flex items-start gap-1.5 text-primary hover:underline"
+                >
+                  <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  Open the feedback item
+                </AppLink>
+              </div>
+            ) : raiseOutcome.status === "approved_not_raised" ? (
+              <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                <p className="font-medium">
+                  Approved — but your note was NOT raised.
+                </p>
+                <p className="mt-1">{raiseOutcome.reason}</p>
+                <p className="mt-1 text-xs">
+                  The review is approved and your note is in the discussion
+                  above. Only the new feedback item is missing — retry it here.
+                </p>
+                <Button
+                  className="mt-2 h-9"
+                  size="sm"
+                  variant="outline"
+                  disabled={saving}
+                  onClick={() => void onApproveAndRaise(true)}
+                >
+                  Raise the note again
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                <p className="font-medium">
+                  Nothing was approved and nothing was raised.
+                </p>
+                <p className="mt-1">{raiseOutcome.reason}</p>
+              </div>
+            )
+          ) : null}
+
+          {raised.length > 0 ? (
+            <div className="mt-6 border-t pt-4">
+              <h2 className="text-sm font-semibold">Raised from this review</h2>
+              <ul className="mt-2 space-y-2.5">
+                {raised.map((item) => (
+                  <li key={item.id}>
+                    <AppLink
+                      href={feedbackHref(item.id)}
+                      className="flex items-start gap-1.5 text-sm text-primary hover:underline"
+                    >
+                      <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      <span className="line-clamp-3">{item.description}</span>
+                    </AppLink>
+                    <p className="ml-5 text-xs text-muted-foreground">
+                      {item.feedback_type} · {item.status}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {raisedError ? (
+            <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+              Notes raised from this review could not be read: {raisedError}
+            </div>
+          ) : null}
 
           <div className="mt-6 border-t pt-4">
             <h2 className="text-sm font-semibold">Original target</h2>

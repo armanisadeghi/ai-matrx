@@ -13,6 +13,13 @@
 // navigation instead of a toast.
 //
 // Declared once here so no surface hand-writes the query string.
+//
+// 🚨 IT LIVES IN `features/`, NOT BESIDE THE ROUTE. A Vercel build PARKS whole
+// route groups by renaming `app/(admin)` out of the tree (next.config.js, THE
+// PARK LAW), so a module under `features/` that imports from `app/(admin)/…`
+// is unresolvable the moment anything in a non-admin profile reaches it. The
+// agent review workspace links raised feedback items, so this door had to be
+// somewhere both sides can import.
 
 /** The console route that renders the feedback table + detail dialog. */
 export const FEEDBACK_CONSOLE_ROUTE = "/administration/users/feedback";

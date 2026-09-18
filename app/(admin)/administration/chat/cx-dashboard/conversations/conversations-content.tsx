@@ -23,8 +23,7 @@ import {
   statusBadgeVariant,
 } from "@/features/cx-dashboard/utils/format";
 import {
-  exportToCSV,
-  exportToJSON,
+  buildCxSourcePageExportConfig,
 } from "@/features/cx-dashboard/utils/export";
 import type {
   CxConversation,
@@ -218,8 +217,6 @@ export function ConversationsContent({ result }: Props) {
                       showSearch
                       showStatusFilter
                       statusOptions={["active", "archived"]}
-                      onExportCSV={() => exportToCSV(exportData, "conversations")}
-                      onExportJSON={() => exportToJSON(exportData, "conversations")}
                     />
                   ),
                 },
@@ -241,6 +238,7 @@ export function ConversationsContent({ result }: Props) {
                   `Created: ${r.created_at}`,
                 ].join("\n"),
               rowAttributes: (r) => ({ id: r.id, status: r.status }),
+              export: () => buildCxSourcePageExportConfig(exportData, "conversations"),
             }}
             detail={{
               title: (r) => r.title ?? "Untitled conversation",

@@ -158,6 +158,11 @@ if $STRICT; then
         # ≥3-column dialog grids. The class behind the 2026-09-12 feedback-
         # console report. `pnpm check:phone-layout:self-test` proves it can fail.
         "Phone layout (tables, viewport units, dialog grids)|pnpm check:phone-layout:strict"
+        # MANDATE REFERENCES. Reported, never blocked (D23) — `check` exits 0
+        # without --strict. It also runs in release.sh OUTSIDE --no-gates, so a
+        # release that skips this suite still reports; the entry here is what
+        # makes a manual gate run show the findings too.
+        "Mandate references (every Mandate this build names, and every bypass)|pnpm check:mandate-references"
         "Migration ledger check|pnpm exec tsx scripts/check-migrations.ts --strict"
         # CANONICAL RATCHETS — the two counts from the 2026-08-15 architecture
         # drift audit's enforcement recommendation (item 2). Both read ONE cached

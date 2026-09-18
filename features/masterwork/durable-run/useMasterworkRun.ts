@@ -33,12 +33,28 @@
  * is for.
  */
 
+import { useCallback, useEffect, useRef, useState } from "react";
+
 import type {
   DurableRunHandle,
   DurableRunWire,
 } from "@/lib/durable-run/useDurableRun";
 import { useDurableRun } from "@/lib/durable-run/useDurableRun";
+import type { MeasuredRate, WorkSize } from "@/lib/progress/sizedEstimate";
+import { isEmptyWorkSize, sizedEstimateMs } from "@/lib/progress/sizedEstimate";
 import type { paths } from "@/types/python-generated/api-types";
+
+import {
+  CHAT_INGEST_RATE,
+  CORPUS_INGEST_RATE,
+  DUMP_INGEST_RATE,
+  SOURCE_INGEST_RATE,
+} from "./laneRates";
+import type { IngestProgress } from "./ingestProgress";
+import {
+  EMPTY_INGEST_PROGRESS,
+  reduceIngestProgress,
+} from "./ingestProgress";
 
 export const MASTERWORK_RUN_WIRE: DurableRunWire = {
   pointerPrefix: "matrx.masterwork-run.",
@@ -318,6 +334,56 @@ const EXPECTED_MS: Record<MasterworkRunSurface, number> = {
 };
 
 /**
+ * 🚨 THE LANES THAT CAN MEASURE THEIR OWN RUN, AND MUST.
+ *
+ * `EXPECTED_MS` above is a fact about a LANE. For a lane whose door counts what
+ * the person handed over, stating it as a fact about THIS run is the defect
+ * acquisition-frontier §7.3 recorded: "this usually takes about 2 minutes" over
+ * a correct, paid 8m11s ingest, which an independent verifier reasonably read
+ * as a hang. So these surfaces compute the promise from the real pile
+ * (`lib/progress/sizedEstimate.ts` + `./laneRates.ts`), and `EXPECTED_MS`
+ * remains only their floor for the moment before a size is known.
+ *
+ * A lane is absent from this table when there is genuinely nothing to measure —
+ * a Bench trial, an Audition and a Checkup all work over the Rulebook itself,
+ * not over something just handed in. Adding a surface here without a door that
+ * counts something would put a fabricated size behind a sentence, which is the
+ * same lie in the other direction.
+ */
+const SIZED_RATES: Partial<Record<MasterworkRunSurface, MeasuredRate>> = {
+  ingest: SOURCE_INGEST_RATE,
+  timeline: SOURCE_INGEST_RATE,
+  unfolding: SOURCE_INGEST_RATE,
+  dump: DUMP_INGEST_RATE,
+  corpus: CORPUS_INGEST_RATE,
+  chat: CHAT_INGEST_RATE,
+  meeting: CHAT_INGEST_RATE,
+};
+
+/** The measured rate this surface prices its work with, when it has one. */
+export function rateForSurface(
+  surface: MasterworkRunSurface,
+): MeasuredRate | null {
+  return SIZED_RATES[surface] ?? null;
+}
+
+/**
+ * THE PROMISE for one run: the lane's measured rate applied to the real pile,
+ * never below the lane's own measured floor (a two-line paste still has to pay
+ * for the reader, the dedupe pass and the quote verification).
+ */
+export function expectedMsFor(
+  surface: MasterworkRunSurface,
+  size: WorkSize | null | undefined,
+  override?: number,
+): number {
+  if (typeof override === "number") return override;
+  const rate = SIZED_RATES[surface];
+  if (!rate || isEmptyWorkSize(size)) return EXPECTED_MS[surface];
+  return sizedEstimateMs(rate, size);
+}
+
+/**
  * Every Masterwork pipeline narrates itself with `step` + a human `message` the
  * SERVER wrote for this user. So there is nothing to translate: the stage line
  * IS that message. Anything without one is not a stage and is dropped rather
@@ -356,6 +422,13 @@ export interface UseMasterworkRunOptions<TResult> {
    */
   expectedMs?: number;
   /**
+   * HOW BIG THE PILE IN FRONT OF THIS PERSON IS — files, bytes, pages, words,
+   * recorded seconds. Every lane whose door counts something passes it, and the
+   * duration promise is computed from it instead of from the lane median. See
+   * `SIZED_RATES` above and `lib/progress/sizedEstimate.ts`.
+   */
+  size?: WorkSize | null;
+  /**
    * Every domain event as it lands — for a pipeline that answers in PIECES.
    * The Final Checkup streams one finding at a time so the Expert can start
    * deciding while the rest are still being found.
@@ -377,7 +450,17 @@ export interface UseMasterworkRunOptions<TResult> {
   };
 }
 
-export type MasterworkRunHandle<TResult> = DurableRunHandle<TResult>;
+export interface MasterworkRunHandle<TResult>
+  extends DurableRunHandle<TResult> {
+  /**
+   * THE RUN'S OWN TYPED PROGRESS — a row per resource with a state, the chunk
+   * counts, the running rule total, and the server's labouring sentence while
+   * its heartbeat cannot land. Reduced HERE rather than in each dialog, so
+   * every Masterwork lane inherits the same honest movement instead of the
+   * flat string log that read as frozen (acquisition-frontier §7.3).
+   */
+  progress: IngestProgress;
+}
 
 export function useMasterworkRun<TResult>({
   surface,
@@ -387,19 +470,61 @@ export function useMasterworkRun<TResult>({
   onDomainEvent,
   live,
   expectedMs,
+  size,
 }: UseMasterworkRunOptions<TResult>): MasterworkRunHandle<TResult> {
-  return useDurableRun<TResult>({
+  // 🚨 ONE REDUCER FOR EVERY LANE. A dialog that wanted a file list used to
+  // have to decode the stream itself, which is why fifteen of sixteen never
+  // did and showed a motionless spinner over a working run instead.
+  const [progress, setProgress] = useState<IngestProgress>(
+    EMPTY_INGEST_PROGRESS,
+  );
+  const callerDomainEvent = useRef(onDomainEvent);
+  useEffect(() => {
+    callerDomainEvent.current = onDomainEvent;
+  }, [onDomainEvent]);
+  const handleDomainEvent = useCallback(
+    (
+      name: string,
+      data: Record<string, unknown>,
+      ctx: { rejoin: boolean },
+    ): void => {
+      setProgress((prev) => reduceIngestProgress(prev, name, data));
+      callerDomainEvent.current?.(name, data, ctx);
+    },
+    [],
+  );
+
+  const run = useDurableRun<TResult>({
     wire: MASTERWORK_RUN_WIRE,
     key: `${surface}:${rulebookId}`,
     path,
-    expectedMs: expectedMs ?? EXPECTED_MS[surface],
+    expectedMs: expectedMsFor(surface, size, expectedMs),
     rejoiningMessage:
       "Picking this back up — it kept working while you were away.",
     finalEvent: FINAL_EVENT[surface],
     stageLabels: {},
     stageFallback: STAGE_FALLBACK,
     ...(parseResult ? { parseResult } : {}),
-    ...(onDomainEvent ? { onDomainEvent } : {}),
+    onDomainEvent: handleDomainEvent,
     ...(live ? { live } : {}),
   });
+
+  // A fresh run starts from a clean slate — a REJOIN does not, because the
+  // rejoin snapshot replays this run's own events through the same reducer and
+  // the screen must come back showing what it showed before the reload. So the
+  // slate is wiped at the two places a NEW run begins, and nowhere else.
+  const { launch: startRun, reset: resetRun } = run;
+  const launch = useCallback<DurableRunHandle<TResult>["launch"]>(
+    async (...args) => {
+      setProgress(EMPTY_INGEST_PROGRESS);
+      return startRun(...args);
+    },
+    [startRun],
+  );
+  const reset = useCallback((): void => {
+    setProgress(EMPTY_INGEST_PROGRESS);
+    resetRun();
+  }, [resetRun]);
+
+  return { ...run, launch, reset, progress };
 }

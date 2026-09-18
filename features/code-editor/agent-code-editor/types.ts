@@ -1,3 +1,5 @@
+import type { MandateKey } from "@ai-matrx/agents/mandates";
+
 /**
  * Shared types for the Smart Code Editor.
  */
@@ -19,7 +21,7 @@ export type { CodeFile } from "@/features/code-editor/multi-file-core/types";
  * editor's current code on the first turn ("current_code" | "dynamic_context").
  */
 export interface CodeEditorAgentConfig {
-  mandateKey: string;
+  mandateKey: MandateKey;
   name: string;
   codeVariableKey: string;
 }

@@ -45,6 +45,7 @@ import { AgentDiffViewer } from "@/features/agents/components/diff/AgentDiffView
 import { MandateNotesPanel } from "@/features/mandates/components/MandateNotesPanel";
 import { ProvisionOfferList } from "@/features/mandates/components/ProvisionOfferList";
 import { MandateGoalBlock } from "@/features/mandates/MandateGoalBlock";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 import { goalOfMandate } from "@/lib/supabase/mandateStorage";
 import {
   fetchProvision,
@@ -1846,7 +1847,7 @@ export function MandateDetailView({
           both. `description` is a different, lesser field. */}
       {showGoal ? (
         <MandateGoalBlock
-          mandateKey={row.mandateKey}
+          mandateKey={storedMandateKey(row.mandateKey)}
           storedGoal={goalOfMandate(row.mandate)}
           description={row.mandate.description}
         />

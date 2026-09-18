@@ -14,11 +14,12 @@ import {
   RESPONSE_MODES,
   type ResponseMode,
 } from "./local-agents";
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 
 export interface ResponseModeState {
   mode: ResponseMode;
   /** The mandate key this mode resolves through; null for placeholder modes. */
-  mandateKey: string | null;
+  mandateKey: MandateKey | null;
   /** The resolved agent id, or null while loading / when unresolved / placeholder. */
   agentId: string | null;
   loading: boolean;
@@ -26,10 +27,10 @@ export interface ResponseModeState {
   error: string | null;
 }
 
-const MAPPED_KEYS: readonly string[] = Array.from(
+const MAPPED_KEYS: readonly MandateKey[] = Array.from(
   new Set(
     RESPONSE_MODES.map((mode) => RESPONSE_MODE_MANDATE_MAP[mode]).filter(
-      (key): key is string => key !== null,
+      (key): key is MandateKey => key !== null,
     ),
   ),
 );

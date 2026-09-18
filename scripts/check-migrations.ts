@@ -122,6 +122,29 @@ function sha256(s: string): string {
   return createHash("sha256").update(s, "utf8").digest("hex");
 }
 
+/**
+ * THE LEDGER HOLDS ONE OF **TWO** HASHES OF THE SAME BYTES, and a checker that
+ * knows only one of them invents drift (measured 2026-09-17, CS-30).
+ *
+ * `scripts/apply-migration.ts` writes `sha256(sql)` — the raw bytes. Since
+ * 2026-09-15 `../aidream/db/apply_migrations.py` writes `_checksum(sql)`, which
+ * is `sha256(sql.rstrip())`: a file's trailing newline executes nothing, and
+ * hashing it made an editor that trims one produce permanent, meaningless drift
+ * (seven rows carried exactly that). That runner then compares through
+ * `_checksum_matches`, which accepts EITHER form. This checker did not, so every
+ * file applied from the aidream runner — the ONLY runner that can apply an
+ * autocommit file, so every `CREATE INDEX CONCURRENTLY` migration — reported as
+ * DRIFTED forever. Three of the 68 findings on 2026-09-17 were three migrations
+ * applied ninety minutes earlier and untouched since.
+ *
+ * So the comparison accepts exactly the two forms the two runners write, and
+ * nothing looser. That the two WRITE different forms for the same bytes is the
+ * real defect underneath and is filed, not papered over here.
+ */
+function checksumMatches(sql: string, recorded: string): boolean {
+  return recorded === sha256(sql) || recorded === sha256(sql.replace(/\s+$/, ""));
+}
+
 /** Remove non-executable SQL comments before validating proof structure. */
 function stripSqlComments(sql: string): string {
   return sql
@@ -566,6 +589,9 @@ async function main(): Promise<number> {
   // `-- guard:` / `-- seeds-guards:`) is found at the TOP LEVEL of migrations/.
   const campaignInSweptDir: string[] = [];
   const local = new Map<string, string>(); // filename -> checksum
+  // The bytes themselves, kept because the drift comparison must be able to
+  // hash them BOTH ways the two runners do (see checksumMatches).
+  const localSql = new Map<string, string>();
   const selfLedgering: string[] = []; // files that write the ledger themselves
   for (const f of files) {
     const sql = readFileSync(resolve(MIGRATIONS_DIR, f), "utf8");
@@ -603,6 +629,7 @@ async function main(): Promise<number> {
     }
     if (SELF_LEDGER_RE.test(stripForDetection(sql))) selfLedgering.push(f);
     local.set(f, sha256(sql));
+    localSql.set(f, sql);
   }
 
   // 🚨 ATTACK-5 finding 1. A rehearsal-only file at the TOP LEVEL of migrations/ is
@@ -691,7 +718,7 @@ async function main(): Promise<number> {
     const recorded = ledger.get(f);
     if (recorded === undefined) pending.push(f);
     else if (!SHA256_RE.test(recorded)) unverifiable.push(f);
-    else if (recorded !== sum && !driftOk.has(f)) drifted.push(f);
+    else if (!checksumMatches(localSql.get(f) ?? "", recorded) && !driftOk.has(f)) drifted.push(f);
   }
 
   // ── DD-220: unapplied files that would overwrite a live function body ──────

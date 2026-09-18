@@ -15,6 +15,68 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D332 — Six files under `coding-sessions/` carry no `kind` and no session id, so no session has ever listed them (2026-09-17)
+
+**Status:** open · **Priority:** P3 (six rows, and they are not a regression) · **Repo:** DB rows + whichever writer produced them
+
+Found by the new unstamped-row detector in `pnpm check:artifact-read-latency` while CS-30 was
+checking its own backfill. `select … from files.files where file_path like 'coding-sessions/%'
+and deleted_at is null` returns 50 rows with no `artifact_kind`: 44 are the deploy-gap rows CS-30
+swept (uploaded between the backfill and the upload door's deploy), and **6, all created
+2026-09-14 14:46:50-14:46:57Z, carry no `metadata.kind` AND no `metadata.cli_session_id` at all.**
+They sit under the artifact path prefix, so some coding-session writer produced them, but nothing
+attributes them to a session — the panel could not list them under the old JSONB filter either, so
+this is a pre-existing gap and not something the column change caused.
+
+**To act:** identify the writer that produced those six (the path carries the provider and the
+session id: `coding-sessions/<provider>/<session id>/<relative path>`, so the session id is
+recoverable from `file_path` even though the metadata lost it), then either backfill their identity
+from the path or explain why the row exists without it. Related: CS-20/CS-21 artifact truth
+(`common-docs/projects/coding-agent-bridge/REGISTER.md`).
+
+### D331 — Every client read of `files.files` pays 2.5-6 s of RLS predicate SETUP the moment one examined row is not the reader's own (2026-09-17)
+
+**Status:** open · **Priority:** P1 — it is the whole remaining latency of the coding-session Files tab, and it is not specific to that read · **Repo:** DB (the access system) · **Owner:** the access system's, not a feature lane's
+
+**What.** `files.files`'s `std_select` policy is a ~180-subplan OR chain whose expensive branches
+build several `iam.accessible_entity_ids(...)`-shaped hashed sets. They are built LAZILY — on the
+first row that reaches those branches — so a read whose rows are all the reader's own
+short-circuits on the cheap `created_by = uid` branch and is free, while a read that examines ONE
+foreign row pays the whole setup, once, whatever the row count.
+
+**Measured on production (`db.matrxserver.com`), role `authenticated`, `EXPLAIN (ANALYZE, BUFFERS)`
+on the coding-session artifacts read, all with an Index Cond on the new
+`files_artifact_provider_session_idx` so the plan is not the variable:**
+
+| candidate rows | reader owns them? | time | buffers |
+|---|---|---|---|
+| 0 | n/a | **0.9 ms** | 75 |
+| 2 | yes | **0.1 ms** | — |
+| 377 (188 own, 189 foreign) | mixed | **5,999 ms** | 670,458 hit + 31,263 read |
+| 6,614 (338 own, 6,276 foreign) | mixed | **4,739 ms** warm | 672,911 hit |
+| 377, all foreign, as an ORDINARY user (`test@test.com`) | no | **2,464 ms** | 345,228 |
+
+Note rows 3 and 4: 377 candidates cost the same as 6,614. The cost is the SETUP, not the rows,
+and it is not an admin-only phenomenon. Inside the plan, the expensive nodes are
+`Unique → Merge Append → ProjectSet` over ~29,697 ids (1,990-3,086 ms) plus three `Nested Loop`s
+of 380-780 ms each.
+
+**Consequence.** Through PostgREST against role `authenticated`'s 8 s `statement_timeout` this is
+4.8-5.3 s for one session (20/20 return 200 but with no headroom), and an exact count doubles it:
+`Prefer: count=exact` on the same request returned **0 ok / 20 HTTP 500, 8,119 ms min**, because
+PostgREST computes the count as its own statement and pays the predicate twice. That is why
+`features/ai-work/conversations/artifacts/service.ts` proves completeness with a short page
+instead of `readAllRows`. Guard: `pnpm check:artifact-read-latency` stays RED on its 4 s headroom
+line for a session holding another account's artifacts (it PASSES at 326-618 ms for a 1,373-row
+session the reader owns).
+
+**The fix is in `iam.apply_rls`'s generated predicate, not in any reader** — cheapen or reorder
+those accessible-id sets (CS-27 named this option (d): "make `iam.apply_rls`'s generated predicate
+cheap: this would fix every unindexed read on this table, and belongs to the access system's
+owner"). Do NOT "fix" it in a feature read by adding `created_by = <me>`: that would hide
+artifacts legitimately shared with the reader, which is a screen that lies.
+
+
 ### D328 — `str(ctx.organization_id or …)` turns a missing org into the literal `"None"` at 13 aidream call sites (2026-09-17)
 
 **Status:** open · **Priority:** P3 (latent — near-unreachable today) · **Repo:** aidream (filed here because it was found during this repo's cold-walk-8 round; aidream should take it as an `AD<n>` remainder)
@@ -3455,6 +3517,7 @@ _One line each: `- D## — <short reason> — <date> — delete when: <condition
 
 ## RESOLVED
 
+- **D330** — an expression index on an RLS table is unusable by every client read (`->>` is not LEAKPROOF, so the qual can never be an index condition). FIXED 2026-09-17 by CS-30: the identity moved into real columns `files.files.artifact_kind` / `provider_session_id` (`migrations/20260917_files_artifact_identity_columns.sql` + `…_backfill_and_index.sql` + `…_column_grants.sql`, all ledgered), the server's upload door stamps them (`aidream packages/matrx-files/matrx_files/artifact_identity.py`), the panel's read filters them, and the useless index was dropped through the chair step `migrations/inverse/files_coding_session_artifact_index_drop.sql`. `pnpm check:artifact-read-latency` now refuses a returning `metadata->>` FILTER on that read by name. The two genuine siblings (`idx_cld_files_derived_from`, `idx_cld_files_variant_key`) stay: server-side readers bypass RLS. Remainder is D331, a different cause.
 - **D328 — frontend release blocked by additive entity vocabulary and duplicate lockfile mappings.** Fixed in `eae8f85f09`, `17272e64a6`, and `7e35664b69`; package `@ai-matrx/associations@0.9.22` adopted, frozen install and live gate passed, and production `ed6c73ae5fc8` served the independently verified podcast repair on 2026-09-17.
 
 - **D327 — the server read the merged payload where it meant the Expert's words, and the orchestrator's own notices were indistinguishable from her turns.** Both halves closed in aidream `23fa31d6b`. Reader: `masterwork_corpus/corpus.py` now selects `role` + `user_content` and projects through the platform's ONE rule (`matrx_ai.config.human_authored_text`), so the Scout's seeded cue is neither quoted nor counted, and a row with nothing human in it is not a turn. Writer: the four orchestrator gates build their injected turns through the new `host_authored_user_turn()` (empty `user_content` + `authored_by: host`), never NULL; `dynamic_drain` stamps both of its halves. Siblings moved onto the same projection: the chat-import distiller, the coding-session title, `vision_interview.transcript_message_text`. Guards proven failing then passing: `packages/matrx-ai/tests/test_host_authored_user_turns.py` (5) and `aidream/services/masterwork_corpus/tests/test_corpus_reads_the_humans_words.py` (4). Backfill after a read-only census — 89 provable historical gate notices stamped, 8 ambiguous rows deliberately untouched (`db/migrations/ai_085_host_authored_user_turns_are_stamped.sql`, applied and verified live). **Open remainder, filed not fixed:** matrx-rag's `sources.py` indexes `content` for every role, so RAG-retrieved text can still carry an agent-seeded template as the human's turn — matrx-rag sits below matrx-ai and cannot import the projection, so closing it needs its own injected seam. 2026-09-16.

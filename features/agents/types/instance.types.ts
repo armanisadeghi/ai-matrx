@@ -20,6 +20,7 @@ import type {
   SystemInstruction,
 } from "./agent-api-types";
 import type { ApplicationScope } from "./scope.types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import type { UserInputPart } from "./request.types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { components } from "@/types/python-generated/api-types";
@@ -1079,8 +1080,13 @@ export interface ManagedAgentOptions {
    * never the run decision.
    *
    * Mutually exclusive with `shortcutId`.
+   *
+   * 🚨 TYPED, NEVER `string` (V-L6a, 2026-09-17). A wrong key here is a 404 at
+   * the mandate door that the user sees only as an agent that never answers,
+   * so it must fail `pnpm type-check` instead. `AnyMandateKey` because a
+   * user-built app's DB-authored `app.*` key launches through this same door.
    */
-  mandateKey?: string;
+  mandateKey?: AnyMandateKey;
   shortcutId?: string;
   manual?: { label?: string; baseSettings?: Partial<LLMParams> };
 

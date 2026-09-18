@@ -30,9 +30,9 @@ import { MediaApiError, listLibraries } from "../api";
 import type { LibraryRow, LibraryVisibility } from "../types";
 
 const SCOPE_TO_VISIBILITY: Record<string, LibraryVisibility> = {
-    mine: "private",
+    mine: "personal",
     orgs: "internal",
-    shared: "shared",
+    shared: "link",
     public: "public",
 };
 
@@ -56,6 +56,23 @@ function visibilityForQuery(query: EntityListQuery): LibraryVisibility[] {
  */
 function rethrowForList(error: unknown): never {
     if (error instanceof MediaApiError) {
+        // 🚨 A NOT-YET NEVER REACHES A PERSON AS A SENTENCE. The transport
+        // refuses every authenticated call until the active organization
+        // resolves, one beat after first render, and its refusal is written for
+        // a developer: "Select an organization before sending this request."
+        // The shell re-asks the moment the organization lands (it is part of
+        // the service key), so this is a retryable, still-starting condition
+        // wearing copy that belongs to nobody on this screen. It gets copy of
+        // its own, and it is always retryable.
+        if (
+            error.code === "organization_context_required" ||
+            error.code === "organization_context_invalid"
+        ) {
+            throw Object.assign(
+                new Error("Still opening your workspace — one moment."),
+                { refused: false, retryable: true, code: error.code },
+            );
+        }
         const missingEndpoint = error.status === 404 && !error.hasServerSentence;
         const message = missingEndpoint
             ? "This server does not answer at the Libraries address yet, so no Library can be listed or created. It arrives with the Media Source Catalog server release; nothing you did caused this."

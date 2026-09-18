@@ -4,7 +4,7 @@
   },
   "permissions": {
     "allow": [
-      "Bash", "Read", "Edit", "Write", "Glob", "Grep",
+      "Bash(git add *)", "Bash(git commit *)", "Bash(git push *)", "Bash(git fetch *)", "Read", "Edit", "Write", "Glob", "Grep",
       "WebFetch", "WebSearch", "NotebookEdit", "Task",
       "mcp__Claude_Code_Remote__*", "mcp__Claude_Docs__*",
       "mcp__Supabase__*", "mcp__Vercel__*",

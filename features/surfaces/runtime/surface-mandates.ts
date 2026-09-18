@@ -1,4 +1,5 @@
 "use client";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * features/surfaces/runtime/surface-mandates.ts
@@ -33,8 +34,10 @@ import { useEffect, useRef } from "react";
 import { useSyncExternalStore } from "react";
 
 export interface SurfaceMandateRef {
-  /** `agent.mandate.mandate_key`, e.g. `seo.topic_assigner`. */
-  mandateKey: string;
+  /** `agent.mandate.mandate_key`, e.g. `seo.topic_assigner` — typed, never
+   * `string` (V-L6a): a surface disclosing a key that no longer exists would
+   * put a dead job in the Agents menu. */
+  mandateKey: AnyMandateKey;
   /** What this agent does HERE, in the surface's own words. */
   does: string;
   /** The surface it was registered from, when the host knows its name. */

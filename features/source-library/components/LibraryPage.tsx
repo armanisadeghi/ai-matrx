@@ -27,7 +27,12 @@ import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/lib/toast";
-import { MediaApiError, getLibrary, getLibraryMetrics } from "../api";
+import {
+    MediaApiError,
+    getLibrary,
+    getLibraryMetrics,
+    isOrganizationNotReady,
+} from "../api";
 import { createCatalogListConfig } from "../catalog/listConfig";
 import { useActionRegistry } from "../hooks/useActionRegistry";
 import { useActionRunner } from "../hooks/useActionRunner";
@@ -78,23 +83,67 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
     const organizationId = useAppSelector(selectOrganizationId);
 
     const [loadError, setLoadError] = useState<string | null>(null);
+    const [metricsError, setMetricsError] = useState<string | null>(null);
+    const [metricsProblems, setMetricsProblems] = useState<string[]>([]);
     const [openVideo, setOpenVideo] = useState<VideoRow | null>(null);
     const [jobIds, setJobIds] = useState<string[]>([]);
     const [listGeneration, setListGeneration] = useState(0);
     const startedRef = useRef(false);
+    // Every metrics read takes a ticket. A read that returns after a newer one
+    // started never writes the screen, so the very first attempt cannot outlive
+    // the successful one behind it.
+    const metricsAttemptRef = useRef(0);
 
     const registry = useActionRegistry();
 
     // Both mount reads name `organizationId` as a dependency for the reason in
     // hooks/useActionRegistry.ts: it resolves after the first render and every
     // server call is refused until it does.
+    // 🚨 A FAILED READ IS NEVER A SKELETON. Swallowing this error left the
+    // header promising numbers that were never coming: on a Library whose
+    // catalogue had failed, every tile and the cadence chart sat in a loading
+    // skeleton forever, with no message, no timeout and no retry. So the
+    // sentence is kept. Numbers we ALREADY hold are still never blanked — the
+    // header only switches to the failure copy while it holds nothing.
+    // 🚨 AND A NOT-YET IS NEVER A FAILURE. The transport is fail-closed and
+    // refuses every authenticated call until the active organization resolves,
+    // a beat after first render — so the FIRST read on a cold load always comes
+    // back "Select an organization before sending this request". Recording that
+    // put a sentence on the screen that was wrong twice over (the person has an
+    // organization; nothing failed) and left it there, because the successful
+    // read behind it had no way to overrule a failure already written. Now the
+    // read does not happen at all until there is an organization to make it
+    // with, the code is ignored if it arrives anyway, and a stale answer cannot
+    // overwrite a newer one.
     const refreshMetrics = useCallback(async () => {
+        if (!organizationId) return;
+        const attempt = ++metricsAttemptRef.current;
         try {
-            const metrics = await getLibraryMetrics(dispatch, libraryId);
+            const { value: metrics, problems } = await getLibraryMetrics(
+                dispatch,
+                libraryId,
+            );
+            if (attempt !== metricsAttemptRef.current) return;
             dispatch(metricsLoaded({ libraryId, metrics }));
-        } catch {
-            // The header keeps whatever the stream gave it and says it is stale
-            // rather than blanking numbers that were true a moment ago.
+            setMetricsError(null);
+            // 🚨 A STAND-IN ANNOUNCES ITSELF. A number the server mislabelled
+            // that this screen could work out from the ones beside it is USED —
+            // the header is not blanked over a redundant field — and said out
+            // loud, here, rather than passed off as the server's own figure.
+            setMetricsProblems(problems);
+        } catch (error) {
+            if (attempt !== metricsAttemptRef.current) return;
+            if (isOrganizationNotReady(error)) {
+                setMetricsError(null);
+                return;
+            }
+            setMetricsError(
+                error instanceof MediaApiError
+                    ? error.status === 404 && !error.hasServerSentence
+                        ? "This server does not answer at the Libraries address yet, so the numbers for this Library cannot be computed. Nothing you did caused this."
+                        : error.message
+                    : "The numbers for this Library could not be read from the server.",
+            );
         }
     }, [dispatch, libraryId, organizationId]);
 
@@ -106,6 +155,9 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
     // Mount reads — the Library row and its metrics, before anything streams.
     useEffect(() => {
         let cancelled = false;
+        // Same not-yet gate as the metrics read: no organization, no call, and
+        // this effect already re-runs the moment one lands.
+        if (!organizationId) return;
         void (async () => {
             try {
                 const row = await getLibrary(dispatch, libraryId);
@@ -114,6 +166,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                 setLoadError(null);
             } catch (error) {
                 if (cancelled) return;
+                if (isOrganizationNotReady(error)) return;
                 // A 404 with no sentence of its own means the endpoint is not
                 // on this server build — not that the Library is missing. The
                 // platform's generic "the server has nothing at that address"
@@ -206,9 +259,24 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                             </p>
                         )}
 
+                        {metricsProblems.map((problem) => (
+                            <p
+                                key={problem}
+                                className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-muted-foreground"
+                            >
+                                <CircleAlert
+                                    className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400"
+                                    aria-hidden
+                                />
+                                {problem}
+                            </p>
+                        ))}
+
                         <LibraryMetricsHeader
                             library={library}
                             metrics={live?.metrics ?? null}
+                            metricsError={metricsError}
+                            onRetryMetrics={() => void refreshMetrics()}
                             sync={sync.sync}
                             elapsedMs={sync.elapsedMs}
                             onBringUpToDate={() => void sync.start("full")}

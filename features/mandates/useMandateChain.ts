@@ -2,9 +2,11 @@
 
 import { useMandate, type MandateState } from "./useMandate";
 import type { AmbientAssistantMandateChain } from "@/features/agents/components/ambient-assistant/ambientAssistantMandates";
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 
 export interface ResolvedMandateChainState extends MandateState {
-  mandateKey: string;
+  /** Typed, never `string` (V-L6a) — this is the rung that actually answered. */
+  mandateKey: MandateKey;
 }
 
 /** Resolve page -> module -> system, treating unbound overrides as optional. */

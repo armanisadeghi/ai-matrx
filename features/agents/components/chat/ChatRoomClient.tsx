@@ -1,4 +1,5 @@
 "use client";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 import { usePreparedResourceSeed } from "./usePreparedResourceSeed";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -44,7 +45,6 @@ import {
 } from "@/features/agents/redux/surfaces/surfaces.slice";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import type { TranscriptAudience } from "@/features/agents/components/shared/transcript-audience";
-import { CanvasDock } from "@/features/canvas/core/CanvasDock";
 import { ChatRoomSkeleton } from "./ChatRoomSkeleton";
 import { SandboxCanvasOpener } from "./sandbox-insight/SandboxCanvasOpener";
 import { ToolResultCanvasOpener } from "@/features/canvas/tool-results/ToolResultCanvasOpener";
@@ -144,7 +144,7 @@ interface ChatRoomClientProps {
    * Omit it on rooms that are genuinely agent-addressed (`/chat/a/[agentId]`,
    * where the user picked THAT agent).
    */
-  mandateKey?: string;
+  mandateKey?: AnyMandateKey;
   /** Surface-owned presentation for variables bound outside the composer. */
   variablesPanelStyle?: VariablesPanelStyle;
   /**
@@ -900,42 +900,43 @@ export function ChatRoomClient({
       isEditable
     >
       <div className="flex h-full flex-col overflow-hidden bg-textured">
-        {/* The Canvas is a RESIZABLE COLUMN here, never an overlay: opening it
-            shrinks the thread instead of covering the composer, the mic and
-            the send button (owner, 2026-09-13 — "a nice adjustable sidebar
-            that can be folded out and in"). `CanvasDock` folds itself away
-            when the canvas is closed and stands down entirely on a phone,
-            where the full-bleed sheet is still the right answer. */}
-        <CanvasDock groupId="chat-canvas-dock" className="flex-1 min-h-0">
-          <div className="h-full min-h-0 overflow-hidden flex">
-            <div className="flex-1 min-w-0 min-h-0 overflow-hidden flex justify-center">
-              <AgentConversationColumn
-                conversationId={conversationId}
-                surfaceKey={surfaceKey}
-                audience={audience}
-                constrainWidth
-                edgeToEdgeScroll
-                deferColdMarkdown={!!conversationIdProp}
-                smartInputProps={{
-                  sendButtonVariant: "blue",
-                  // Lives in the Chat Options (+) → Preferences tab now.
-                  showSubmitOnEnterToggle: false,
-                  variablesPanelStyle,
-                }}
-                landingContent={
-                  typeof landingContent === "function"
-                    ? landingContent(conversationId)
-                    : landingContent
-                }
-                aboveInput={
-                  typeof aboveInput === "function"
-                    ? aboveInput(conversationId)
-                    : aboveInput
-                }
-              />
-            </div>
+        {/* THE CHAT ROUTE HAS NO CANVAS PRESENTATION OF ITS OWN. The canvas is
+            the global `CanvasSideSheet` every other route uses (documents,
+            artifacts, the browser) — mounted once by the shell. A parallel
+            docked column lived here from 2026-09-14 to 2026-09-17 and was
+            rejected by the owner: "The canvas system set up for the sandboxes
+            completely breaks the core systems for how these canvases work. It
+            adds an unnecessary layer… FOLLOW established patterns." A route
+            that wants something the canvas cannot do extends the canonical
+            canvas for EVERY route; it never forks a presentation here. */}
+        <div className="flex-1 min-h-0 overflow-hidden flex">
+          <div className="flex-1 min-w-0 min-h-0 overflow-hidden flex justify-center">
+            <AgentConversationColumn
+              conversationId={conversationId}
+              surfaceKey={surfaceKey}
+              audience={audience}
+              constrainWidth
+              edgeToEdgeScroll
+              deferColdMarkdown={!!conversationIdProp}
+              smartInputProps={{
+                sendButtonVariant: "blue",
+                // Lives in the Chat Options (+) → Preferences tab now.
+                showSubmitOnEnterToggle: false,
+                variablesPanelStyle,
+              }}
+              landingContent={
+                typeof landingContent === "function"
+                  ? landingContent(conversationId)
+                  : landingContent
+              }
+              aboveInput={
+                typeof aboveInput === "function"
+                  ? aboveInput(conversationId)
+                  : aboveInput
+              }
+            />
           </div>
-        </CanvasDock>
+        </div>
       </div>
       {/* The bound sandbox reaches the CANVAS, not a panel of its own: this
           headless watcher opens the Sandbox pane the first time the agent

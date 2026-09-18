@@ -45,6 +45,13 @@ export interface SyncState {
     /** What the client still holds when a sync stopped early. */
     partialTotal: number | null;
     quotaUnitsSpent: number | null;
+    /**
+     * Updates that arrived during this run and could not be read, each already
+     * a sentence. 🚨 NOT A FAILURE AND NOT A SILENCE: the run continues on the
+     * server, so the strip keeps counting AND says what it could not read,
+     * rather than dying on a malformed event or dropping it without a word.
+     */
+    problems: string[];
 }
 
 const EMPTY_SYNC: SyncState = {
@@ -60,6 +67,7 @@ const EMPTY_SYNC: SyncState = {
     retryable: false,
     partialTotal: null,
     quotaUnitsSpent: null,
+    problems: [],
 };
 
 export interface LibraryLiveState {
@@ -97,7 +105,7 @@ const initialState: SourceLibraryState = { byLibraryId: {}, jobsById: {} };
 function emptyLibrary(): LibraryLiveState {
     return {
         library: null,
-        sync: { ...EMPTY_SYNC },
+        sync: { ...EMPTY_SYNC, problems: [] },
         metrics: null,
         streamedVideos: [],
         jobIds: [],
@@ -131,6 +139,27 @@ function ensureJob(state: SourceLibraryState, jobId: string): JobLiveState {
     return state.jobsById[jobId];
 }
 
+/**
+ * Does this blob carry every section `LibraryMetricsHeader` reads? A partial
+ * one is not "some metrics" — it is a crash waiting for the first tile.
+ */
+export function isRenderableMetrics(value: unknown): value is LibraryMetrics {
+    if (!value || typeof value !== "object") return false;
+    const m = value as Record<string, unknown>;
+    const section = (key: string) =>
+        typeof m[key] === "object" && m[key] !== null;
+    return (
+        typeof m.total === "number" &&
+        section("counts_by_kind") &&
+        section("length") &&
+        section("length_by_kind") &&
+        section("date_range") &&
+        section("caption_coverage") &&
+        section("transcripts") &&
+        Array.isArray(m.cadence_per_month)
+    );
+}
+
 const sourceLibrarySlice = createSlice({
     name: "sourceLibrary",
     initialState,
@@ -138,7 +167,18 @@ const sourceLibrarySlice = createSlice({
         libraryLoaded(state, action: PayloadAction<LibraryRow>) {
             const entry = ensureLibrary(state, action.payload.id);
             entry.library = action.payload;
-            if (action.payload.metrics) entry.metrics = action.payload.metrics;
+            // 🚨 A JSONB COLUMN IS NOT A TYPE. `library.metrics` is whatever the
+            // last sync happened to write into `media.source_library.metrics`,
+            // including a shape from an older build or a half-written one from a
+            // run that then failed. Adopting it blind is how the TED Library
+            // crashed the page a second time on 2026-09-17, reading
+            // `length_by_kind.long` off undefined. Only a blob that carries the
+            // sections this screen reads is treated as metrics; anything else
+            // leaves `metrics` null, and the real `GET …/metrics` read — or its
+            // honest failure — is what the header renders.
+            if (isRenderableMetrics(action.payload.metrics)) {
+                entry.metrics = action.payload.metrics;
+            }
         },
 
         metricsLoaded(
@@ -156,6 +196,7 @@ const sourceLibrarySlice = createSlice({
             const entry = ensureLibrary(state, action.payload.libraryId);
             entry.sync = {
                 ...EMPTY_SYNC,
+                problems: [],
                 phase: "starting",
                 startedAt: action.payload.startedAt,
             };
@@ -259,8 +300,19 @@ const sourceLibrarySlice = createSlice({
             }
         },
 
+        /** One update this client could not read, during a run that continues. */
+        syncProblem(
+            state,
+            action: PayloadAction<{ libraryId: string; message: string }>,
+        ) {
+            const sync = ensureLibrary(state, action.payload.libraryId).sync;
+            if (!sync.problems.includes(action.payload.message)) {
+                sync.problems.push(action.payload.message);
+            }
+        },
+
         syncDismissed(state, action: PayloadAction<string>) {
-            ensureLibrary(state, action.payload).sync = { ...EMPTY_SYNC };
+            ensureLibrary(state, action.payload).sync = { ...EMPTY_SYNC, problems: [] };
         },
 
         /** The mount read landed — the truth every stream event is reconciled to. */
@@ -338,6 +390,7 @@ export const {
     metricsLoaded,
     syncRequested,
     syncEvent,
+    syncProblem,
     syncTransportLost,
     syncDismissed,
     jobLoaded,

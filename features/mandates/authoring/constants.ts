@@ -9,8 +9,20 @@
 // singular, his key, live, bound, fully mapped); the plural placeholder row is
 // soft-deleted. Changing a constant here is the entire wiring.
 
+import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
+
+/**
+ * Both keys are DB-authored, not declared in aidream, so the generated union
+ * cannot carry them and `scripts/mandate-keys-allowlist.json` records why for
+ * each. `dbAuthoredMandateKey` is the ONE typed door for exactly that case —
+ * the constants stay real keys the carriers accept, and nothing here is typed
+ * `string` (V-L6a, 2026-09-17).
+ */
+
 /** Rewrites a draft goal into the tight, condensed form (GOAL section). */
-export const GOAL_WRITER_MANDATE_KEY = "mandate.goal_writer";
+export const GOAL_WRITER_MANDATE_KEY =
+  dbAuthoredMandateKey("mandate.goal_writer");
 
 /** Converts descriptive draft inputs into a formal structure (INPUT section). */
-export const KIND_CONVERTER_MANDATE_KEY = "mandates.kind_converter";
+export const KIND_CONVERTER_MANDATE_KEY =
+  dbAuthoredMandateKey("mandates.kind_converter");

@@ -1,3 +1,4 @@
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { shallowEqual } from "react-redux";
@@ -49,7 +50,7 @@ export interface UseAICodeEditorProps {
   currentCode: string;
   language: string;
   /** Explicit editing job (mandate key). Overrides `promptKey`. */
-  mandateKey?: string;
+  mandateKey?: MandateKey;
   promptKey?: CodeEditorPromptKey;
   onCodeChange: (newCode: string) => void;
   selection?: string;

@@ -27,6 +27,25 @@ import { MediaApiError, createLibrary, resolveMediaInput } from "../api";
 import { formatCompactNumber } from "../format";
 import type { ResolveResult } from "../types";
 
+/**
+ * WHAT THIS BOX ACCEPTS — named once, used everywhere below.
+ *
+ * All four source adapters now work end to end. aidream migration 0874 widened
+ * `media.source_library`'s adapter CHECK to admit blog_feed and slide_deck, so the
+ * two that could previously resolve-but-not-save now save. Verified live on
+ * 2026-09-17 before this copy changed: The Tim Ferriss Show, 886 episodes; Seth's
+ * Blog, 10,563 posts.
+ *
+ * 🚨 THIS LIST IS NOT A WISH. Nothing is named here that the server cannot
+ * actually catalogue — a paste that resolves and then fails at insert is the
+ * screen promising something it cannot do. If an adapter is ever taken out of
+ * service, its words come out of these two strings in the same change.
+ */
+const ACCEPTED_INPUTS_LABEL =
+    "YouTube channel, handle, playlist or video link; a podcast name, Apple Podcasts link or RSS feed; a blog, Substack or Medium address; or a SlideShare or Speaker Deck profile";
+const ACCEPTED_INPUTS_PLACEHOLDER =
+    "Paste a YouTube channel, a podcast name or feed, a blog or Substack, or a SlideShare profile";
+
 type Stage =
     | { kind: "idle" }
     | { kind: "resolving" }
@@ -66,7 +85,7 @@ export function CatalogPasteBox({ autoFocus = true }: { autoFocus?: boolean }) {
                 message:
                     error instanceof MediaApiError
                         ? error.message
-                        : "That link could not be read. Paste a YouTube channel address, an @handle, a playlist or any video link.",
+                        : `That could not be read. Paste a ${ACCEPTED_INPUTS_LABEL}.`,
                 remedy: error instanceof MediaApiError ? error.remedy : null,
             });
             return;
@@ -86,6 +105,20 @@ export function CatalogPasteBox({ autoFocus = true }: { autoFocus?: boolean }) {
                 adapter: resolved.adapter,
                 name: resolved.title,
             });
+            // NEVER NAVIGATE TO AN ID WE DO NOT HAVE. A response shape that
+            // drifts (an envelope where a row was promised) used to send people
+            // to `/libraries/undefined`, which is a 404 wearing the costume of
+            // a Library. If the id is missing the Library may well exist, so
+            // say exactly that and send them to the list rather than pretending
+            // nothing was created.
+            if (!library?.id) {
+                setStage({
+                    kind: "failed",
+                    message: `${resolved.title} was sent to the server, but it did not return an address for the new Library, so we cannot open it. Reload this page — if it is in your list, it was saved.`,
+                    remedy: null,
+                });
+                return;
+            }
             // `sync=1` starts the enumeration on the Library page itself, so the
             // rows appear where the person is going to read them.
             router.push(`/libraries/${library.id}?sync=1`);
@@ -103,7 +136,24 @@ export function CatalogPasteBox({ autoFocus = true }: { autoFocus?: boolean }) {
 
     return (
         <div className="w-full">
-            <div
+            {/*
+              * IT IS A REAL FORM, SO ENTER IS THE BROWSER'S JOB AND NOT OURS.
+              * This box used to be a bare <div> with an `onKeyDown` that
+              * compared `event.key === "Enter"` — which works right up until
+              * something upstream hands React a key event it does not
+              * recognize, and then the one instruction on the screen ("paste
+              * and press Enter") silently does nothing. A <form> with a
+              * `type="submit"` button gets implicit submission from the
+              * browser itself, which is also what puts "Go" on an iOS keyboard
+              * and what a screen reader announces. The keydown handler stays as
+              * well: both roads lead to the same `submit()`, and `busy` makes a
+              * double fire a no-op.
+              */}
+            <form
+                onSubmit={(event: React.FormEvent<HTMLFormElement>) => {
+                    event.preventDefault();
+                    void submit();
+                }}
                 className={cn(
                     "flex items-center gap-2 rounded-xl border border-border bg-card p-2 shadow-sm transition-colors",
                     "focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20",
@@ -121,21 +171,24 @@ export function CatalogPasteBox({ autoFocus = true }: { autoFocus?: boolean }) {
                         if (stage.kind === "failed") setStage({ kind: "idle" });
                     }}
                     onKeyDown={(event: React.KeyboardEvent<HTMLInputElement>) => {
-                        if (event.key === "Enter") {
+                        // Belt as well as braces: the form's implicit
+                        // submission already covers Enter. This only matters
+                        // for a composed/synthesised key event that never
+                        // reaches the browser's default action.
+                        if (event.key === "Enter" && !event.nativeEvent.isComposing) {
                             event.preventDefault();
                             void submit();
                         }
                     }}
-                    aria-label="YouTube channel, handle, playlist or video link"
-                    placeholder="Paste a YouTube channel, @handle, playlist or any video link"
+                    aria-label={ACCEPTED_INPUTS_LABEL}
+                    placeholder={ACCEPTED_INPUTS_PLACEHOLDER}
                     className="h-11 border-0 bg-transparent text-base shadow-none focus-visible:ring-0"
                 />
                 <Button
-                    type="button"
+                    type="submit"
                     size="lg"
                     className="h-11 shrink-0 gap-2"
                     disabled={!value.trim() || busy}
-                    onClick={() => void submit()}
                 >
                     {busy ? (
                         <Loader2 className="size-4 animate-spin" aria-hidden />
@@ -148,17 +201,18 @@ export function CatalogPasteBox({ autoFocus = true }: { autoFocus?: boolean }) {
                           ? "Cataloguing"
                           : "Catalogue"}
                 </Button>
-            </div>
+            </form>
 
             <div className="mt-2 min-h-[1.5rem] px-1 text-sm" aria-live="polite">
                 {stage.kind === "idle" && (
                     <span className="text-muted-foreground">
-                        Every video lists in seconds, split into long videos, Shorts and live.
+                        Everything in it lists in seconds — every video, episode,
+                        post or deck, with its dates and lengths.
                     </span>
                 )}
 
                 {stage.kind === "resolving" && (
-                    <span className="text-muted-foreground">Asking YouTube what that is…</span>
+                    <span className="text-muted-foreground">Working out what that is…</span>
                 )}
 
                 {(stage.kind === "resolved" || stage.kind === "creating") && (

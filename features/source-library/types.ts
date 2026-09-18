@@ -8,9 +8,34 @@
  * Canonical nouns only: Library, Source, Action. Nothing here coins a noun.
  */
 
-export type MediaAdapter = "youtube" | "podcast_rss" | "drive_folder";
+/**
+ * Every adapter the running server declares (aidream `media_catalog/models.py`,
+ * `AdapterKey`). This list was two behind on 2026-09-18 — `blog_feed` and
+ * `slide_deck` had shipped and the paste box was already advertising them —
+ * which is how a blog Library ended up rendering under YouTube's vocabulary.
+ */
+export type MediaAdapter =
+    | "youtube"
+    | "podcast_rss"
+    | "blog_feed"
+    | "slide_deck"
+    | "drive_folder"
+    | "onedrive_drive"
+    | "outlook_mail"
+    | "outlook_calendar"
+    | "teams_chat"
+    | "google_picked_files";
 export type LibraryKind = "channel" | "playlist";
-export type LibraryVisibility = "private" | "internal" | "shared" | "public";
+/**
+ * THE PLATFORM'S OWN ENUM SPELLING, and it is not the one that reads naturally.
+ * API-CONTRACT §3 (corrected in 0.2.0): `personal` (mine) · `internal` (my org)
+ * · `link` (anyone with the link) · `public` (world). This file said
+ * `private`/`shared` until 2026-09-17, so every create sent
+ * `visibility: "private"` and the server refused the whole request —
+ * "Input should be 'personal', 'internal', 'link' or 'public'" — which nobody
+ * saw because an organization error fired one call earlier.
+ */
+export type LibraryVisibility = "personal" | "internal" | "link" | "public";
 export type LibrarySyncStatus = "never_synced" | "syncing" | "idle" | "failed";
 
 export type MediaKind = "long" | "short" | "live" | "unknown";
@@ -166,8 +191,16 @@ export interface VideoRow {
     media_kind_signal: MediaKindSignal;
     live_broadcast_content: string | null;
     has_captions: boolean | null;
-    /** [] until a free-lane probe ran — never null. */
-    caption_languages: string[];
+    /**
+     * TWO DIFFERENT FACTS, AND THE SERVER MEANS BOTH (contract §4.2,
+     * `SourceRow.caption_languages`): `[]` is "we probed and there are no
+     * tracks"; `null` is "nobody has ever probed". The free-captions lane that
+     * would populate it is not built yet, so EVERY row on a live channel comes
+     * back `null` today — a client that types this as `string[]` and reads
+     * `.length` takes the whole page down, which is exactly what happened on
+     * the one catalogued Library on 2026-09-17. Never widen this to `string[]`.
+     */
+    caption_languages: string[] | null;
     transcript_status: TranscriptStatus;
     transcript_id: string | null;
     transcript_lane: TranscriptLane | null;
@@ -279,7 +312,13 @@ export const SYNC_TERMINAL_TYPES = [
 
 /** §7.2 — the estimate. Nothing paid runs without this having been shown and confirmed. */
 export interface SelectionDescriptor {
-    video_ids?: string[] | null;
+    /**
+     * `media.selection_item.source_row_id` and the transcript association both
+     * use the catalogued Source id. `video_ids` is a different, legacy-shaped
+     * name used only by the classifier endpoint; sending it here makes
+     * Pydantic fall back to an empty Selection, which means the whole Library.
+     */
+    source_ids?: string[] | null;
     filter?: VideoQuery | null;
 }
 

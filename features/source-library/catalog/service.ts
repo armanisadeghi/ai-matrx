@@ -119,6 +119,23 @@ export function toVideoQuery(
 /** See browse/service.ts: a 404 is a missing endpoint, never a refusal. */
 function rethrow(error: unknown): never {
     if (error instanceof MediaApiError) {
+        // 🚨 A NOT-YET NEVER REACHES A PERSON AS A SENTENCE. The transport
+        // refuses every authenticated call until the active organization
+        // resolves, one beat after first render, and its refusal is written for
+        // a developer: "Select an organization before sending this request."
+        // The shell re-asks the moment the organization lands (it is part of
+        // the service key), so this is a retryable, still-starting condition
+        // wearing copy that belongs to nobody on this screen. It gets copy of
+        // its own, and it is always retryable.
+        if (
+            error.code === "organization_context_required" ||
+            error.code === "organization_context_invalid"
+        ) {
+            throw Object.assign(
+                new Error("Still opening your workspace — one moment."),
+                { refused: false, retryable: true, code: error.code },
+            );
+        }
         const missingEndpoint = error.status === 404 && !error.hasServerSentence;
         const message = missingEndpoint
             ? "This server does not answer at this Library's address yet, so its Sources cannot be listed. It arrives with the Media Source Catalog server release."
@@ -161,25 +178,25 @@ export function createCatalogService(
 
         async fetchFacets(query): Promise<EntityFacets> {
             try {
-                const metrics = await getLibraryMetrics(dispatch, libraryId, {
+                const { value: metrics } = await getLibraryMetrics(dispatch, libraryId, {
                     ...toVideoQuery(query),
                 });
                 return {
                     byKind: {
-                        media_kind: Object.entries(metrics.counts_by_kind)
+                        media_kind: Object.entries(metrics.counts_by_kind ?? {})
                             .filter(([, count]) => count > 0)
                             .map(([value, count]) => ({ value, count })),
                         has_captions: [
                             {
                                 value: "true",
-                                count: metrics.caption_coverage.with_captions,
+                                count: metrics.caption_coverage?.with_captions ?? 0,
                             },
                             {
                                 value: "false",
-                                count: metrics.caption_coverage.without_captions,
+                                count: metrics.caption_coverage?.without_captions ?? 0,
                             },
                         ].filter((option) => option.count > 0),
-                        transcript_status: Object.entries(metrics.transcripts)
+                        transcript_status: Object.entries(metrics.transcripts ?? {})
                             .filter(([, count]) => count > 0)
                             .map(([value, count]) => ({ value, count })),
                     },

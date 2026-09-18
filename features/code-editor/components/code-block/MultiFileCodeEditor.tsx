@@ -1,4 +1,5 @@
 "use client";
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 import { useState, useCallback, useRef } from "react";
 import { extractErrorMessage } from "@/utils/errors";
 import SmallCodeEditor from "./SmallCodeEditor";
@@ -24,7 +25,7 @@ import {
 
 type AIModalConfig = {
   /** The editing job (mandate key) — the DB decides which agent runs it. */
-  mandateKey: string;
+  mandateKey: MandateKey;
   title: string;
 };
 
