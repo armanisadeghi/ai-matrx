@@ -93,6 +93,29 @@ The agent contract is `.claude/skills/agent-review-queue/SKILL.md`; this documen
   share sheet, then clipboard, then the manual copy dialog; the toast only claims
   a copy when a copy actually happened.
 
+- 🚨 **Approve and raise — approving is never the reason a thread dies.**
+  Arman, 2026-09-16, on a row he had already fixed himself: *"this exposes a
+  problem with this system where I have no way of closing this out but then
+  starting a conversation about the problem I'm actually having here. So the
+  only option is to not approve it, even though it's ok to approve now that I
+  fixed it myself."* Approve and Request changes were the only two doors, so a
+  row that deserved approval BUT exposed a separate problem got left
+  un-approved purely to keep a thread alive. **Approve and raise** is one
+  action: it approves through the EXACT path Approve uses
+  (`recordHumanReviewAction`, which also appends the note to the row's own
+  conversation, so the history shows what was raised) and files the same note
+  as a new platform feedback item carrying
+  `metadata.raised_from_review_row = <row id>` and `route` = the row's page.
+  **The two writes cross two systems, so the outcome is never averaged into a
+  boolean** (`approve-and-raise.ts`): `approved_and_raised` shows both facts
+  with a door to the item; `approved_not_raised` says the row IS approved, the
+  note was NOT filed, names the reason, and offers a retry that re-runs ONLY
+  the filing — it can never approve twice or post the note twice;
+  `not_approved` files nothing, so an orphan item can never exist for a row
+  that did not approve. Every visit afterwards shows **Raised from this
+  review** (`getFeedbackRaisedFromReviewRow`), so the link is a durable panel,
+  not a toast that scrolls away. Guard: `approve-and-raise.test.ts`.
+
 ## Agent surfaces
 
 Both routes are agent-aware surfaces, and they are TWO surfaces on purpose: the list can only emit true queue-wide counts because it reads every row, and the item page can only emit the open row's state — neither can honestly promise the other's values.
@@ -144,6 +167,14 @@ A recurring `agent-review-sweep` schedule is PROPOSED, not created, in
 no-unapproved-schedules law.
 
 ## Change log
+
+- 2026-09-17 — Added **Approve and raise** to the review workspace: one action
+  approves the row through the existing Approve path and files the human's note
+  as a new platform feedback item stamped `raised_from_review_row`, ending the
+  false choice between closing a row and keeping a thread alive. The outcome is
+  reported as two separate facts with a retry for the filing half, and a
+  durable "Raised from this review" panel links every item raised from the row.
+  Moved `reviewItemPath` out of the 700-line queue table into `doors.ts`.
 
 - 2026-09-16 — Completed the Agent Review Item declaration for every
   `agent.review_queue` field the workspace loads, added the canonical header

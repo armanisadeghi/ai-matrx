@@ -43,12 +43,8 @@ import {
   ReviewCount,
   reviewCountLabel,
 } from "@/features/admin/agent-review/components/ReviewCount";
+import { reviewItemPath } from "@/features/admin/agent-review/doors";
 
-/** The row's own page — the link every agent owes Arman (see the
- *  `agent-review-queue` skill, THE DIRECT-LINK RULE). */
-export function reviewItemPath(id: string): string {
-  return `/administration/users/agent-review/${id}`;
-}
 
 const FLOW = [
   { statuses: ["submitted"], label: "1. Submitted" },
