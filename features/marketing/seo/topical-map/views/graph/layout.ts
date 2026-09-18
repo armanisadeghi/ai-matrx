@@ -1,6 +1,6 @@
 // features/marketing/seo/topical-map/views/graph/layout.ts
 //
-// WHERE THE TOPICS SIT. dagre top-down over the tree edges of the VISIBLE
+// WHERE THE TOPICS SIT. dagre with vertically stacked siblings over the tree edges of the VISIBLE
 // topics, reconciled with what the person has already arranged by hand.
 //
 // Two sources of truth, and `seo.map_graph` tells them apart for us:
@@ -61,7 +61,9 @@ const UNPLACED_COLUMN_GUTTER = 120;
 function dagrePositions(input: TopicLayoutInput): Map<string, XY> {
   const graph = new dagre.graphlib.Graph();
   graph.setGraph({
-    rankdir: "TB",
+    // Stack roots and siblings down the canvas instead of one wide rank.
+    rankdir: "LR",
+    align: "UL",
     nodesep: input.nodeSep,
     ranksep: input.rankSep,
     marginx: 24,
