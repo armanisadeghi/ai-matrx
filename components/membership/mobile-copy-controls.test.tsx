@@ -78,7 +78,13 @@ describe("membership copy mobile control contract", () => {
       <ExportMenu
         key="export"
         label="Members"
-        items={[{ id: "csv", label: "CSV", filename: "members.csv", build: () => "" }]}
+        items={[
+          {
+            id: "csv",
+            label: "CSV",
+            build: () => ({ content: "", extension: "csv", mime: "text/csv" }),
+          },
+        ]}
       />,
     ],
     [
