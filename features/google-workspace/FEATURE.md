@@ -155,6 +155,54 @@ the first half and silently drop the second, leaving the agent able to name an
 attachment it cannot open. Server half:
 `aidream/services/google_workspace/attachments.py`.
 
+## Docs Plane A/C — the Linked document as a record (`documents/`)
+
+A Doc, Sheet or Drive file a person picked is ALSO a record: `workbench.google_document`
+(aidream migration 0766, live 2026-09-17). `documents/` is its client half and it adds no
+screen of its own — the record opens in THE Detail primitive, registered once in the
+item-presentation type map (`itemType.tsx` → `features/item-presentation/registry.tsx`).
+
+- `types.ts` — the row (from the generated database types) and the refresh response.
+  🚨 The response interface is HAND-TYPED from aidream's `DocumentRecordResponse`
+  (`aidream/api/routers/google_sync.py`) because the `google_sync` routes are not in
+  `types/python-generated/api-types.ts` yet; when `pnpm sync-types` regenerates the contract
+  that interface is DELETED and the generated one imported.
+- `record.ts` — pure: the row → detail-row projection (the health producer looks for a
+  `provider` column and a `connection_id`, and this table has neither — it IS Google's, and
+  spells the connection `synced_via_connection_id`), the staleness rule, the freshness
+  sentence, and the CURATED field list. Never `fieldsFromRow`: the generic formatter would
+  print the whole cached document as a field.
+- `appendBlock.ts` — the ONE composer of the exact block. The preview and the request are the
+  same bytes; the heading is composed here because the client write route takes `text` and
+  appends exactly that (only the AGENT path has a `dry_run`).
+- `service.ts` — `POST /google-sync/documents/refresh` through `postGoogleBackend` (never a
+  hand-rolled fetch), sending the RECORD's own `organization_id`; plus the one Supabase read
+  of the row, used by the loader and after every refresh.
+- `knobs.ts` — `google.refresh.on_open_min_age_seconds` (shared with the Agenda, seeded by
+  lane U-W2) and `google.docs.append_heading` (seeded by
+  `migrations/google_docs_append_heading_knob.sql`), both through `useEffectiveKnob`.
+- `GoogleDocumentPanel.tsx` — the body read view, the four unavailable actions, the Append
+  composer, and refresh-on-open.
+- `refreshBus.ts` — the strip's Refresh and the panel are two components of one panel; a
+  refresh announces itself so the body re-reads instead of the button appearing to do nothing.
+
+🚨 **PLANE C IS TWO ROWS ON PURPOSE.** The picked-resource row
+(`users.integration_connection_resources`) stays the authorization boundary for every
+provider and the record REFERENCES it (`resource_id`, FK `ON DELETE RESTRICT`, unique per
+`(organization_id, resource_id)` while live) — campaign Amendment A1, which supersedes PLAN
+§4.1's earlier "the picked-resource registration row and this Record are ONE row". Never
+collapse them, and never write a record without its resource row.
+
+🚨 **THE STRIP TELLS THE TRUTH ABOUT THE FILE, NOT ONLY THE ACCOUNT.** Google answers 404 or
+403 for a single file that was deleted, moved or un-shared while every other file on the same
+grant keeps refreshing; the server records that on the row (`sync_status = 'unavailable'` with
+its reason) and never deletes the record. So the registration wraps the generic health
+producer: when the row says unavailable, the strip says so in the row's own words whatever the
+account's health is, and the grant word becomes `unknown` rather than `revoked` — a reconnect
+cannot repair a moved file. Of the four actions PLAN §4.1 names, Reconnect and Choose again are
+real doors; Keep as Matrx data and Archive say "not wired up yet" in words, never as a disabled
+button.
+
 ## Invariants
 
 - 🚨 **THE FILE TYPES ARE DECLARED ONCE — `resource-types.ts`.**
@@ -239,6 +287,24 @@ attachment it cannot open. Server half:
 - The frontend and backend canonical scope registries must remain aligned with `common-docs/projects/google-oauth-verification/PLAN.md`.
 
 ## Change log
+
+- 2026-09-18 — **U-W1: Docs Plane A/C — the Linked document opens as a record.** New
+  `documents/` (above): `workbench.google_document` is registered as an item type, so a
+  connected Doc opens in the Detail primitive in all three presentations with curated fields,
+  the cached body, the associations and history sections, a health strip whose subject is the
+  ACCOUNT's grant **and** this file's own `sync_status`, the four unavailable actions
+  (two real doors, two honest "not wired up yet" lines — never a disabled button), refresh on
+  open when `synced_at` is older than `google.refresh.on_open_min_age_seconds` and on demand
+  through the strip, and the Append composer that shows the exact block before it lands.
+  Red-then-green, four suites / 40 assertions: with the registry entry removed 9 of 10
+  registration assertions fail; with the strip taking only the product-level answer the
+  unavailable-file assertion fails; with the heading added after the preview the exact-bytes
+  assertions fail. Two real defects the tests caught in our own code: `Number(null)` is `0`, so
+  a missing knob row became a zero-second refresh floor (one Google call per record opened, for
+  every organization, silently); and the refresh sent no organization, which the server refuses
+  with 422 — it now sends the RECORD's `organization_id`. Not done here and named: the client
+  append route has no `dry_run` (the preview is exact because the client composes the heading),
+  and the two "not wired up yet" actions need a server half.
 
 - `2026-09-17` — **F-37: the reviewed send carries the record, and the server
   writes it.** `sendReviewedGmail` now posts the whole reviewed-send contract

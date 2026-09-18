@@ -39,6 +39,8 @@ import {
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { EnrichedItem, ItemType, KnownItemType } from "./types";
+import type { DetailRecordType } from "@/lib/detail/types";
+import { GOOGLE_DOCUMENT_ITEM_TYPE } from "@/features/google-workspace/documents/itemType";
 import { formatFileSize } from "@ai-matrx/kit/format";
 
 export interface ItemTypeConfig {
@@ -88,6 +90,21 @@ export interface ItemTypeConfig {
    * window, docked and page presentations. Omit for a type with no single
    * canonical table (session/message) — the detail still opens, seed-only.
    */
+  /**
+   * 🚨 THE ONE WAY A TYPE OWNS ITS DETAIL WITHOUT A SECOND REGISTRY.
+   *
+   * `detail.tsx` composes every registration generically (loader, formatted
+   * fields, health producer, frame). A few record types genuinely know more than
+   * a column dump can say — a synced Google file's own `sync_status`, a cached
+   * body that must not be printed as a field, a composer that writes back to the
+   * provider. Such a type refines the generic registration HERE, once, and every
+   * presentation (window, docked, page) inherits the refinement, because they all
+   * read the same `DetailRecordType`.
+   *
+   * It is a refinement, never a replacement: it receives the composed base and
+   * returns it changed. A type that omits it behaves exactly as before.
+   */
+  refineDetail?: (base: DetailRecordType) => DetailRecordType;
   detailSource?: {
     /** Table to `select('*')` from, keyed by `id`. */
     table: string;
@@ -745,6 +762,10 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
         "crm",
       ),
   },
+  // 🚨 U-W1 — A CONNECTED GOOGLE FILE IS A RECORD THAT OPENS. Its registration
+  // lives beside its own feature (`features/google-workspace/documents/`); this
+  // map is where the platform learns about it.
+  google_document: GOOGLE_DOCUMENT_ITEM_TYPE,
 };
 
 async function enrichFile(

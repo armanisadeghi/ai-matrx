@@ -44,7 +44,12 @@ export type KnownItemType =
   // An existing Person (or company) in the CRM — `crm.party`. The CREATE form is
   // a different window; this is the record that already exists, which had no
   // in-place presentation of any kind before F-40.
-  | "party";
+  | "party"
+  // A Google Doc, Sheet or Drive file a person picked, mirrored into
+  // `workbench.google_document` (PLAN Amendment A2 names the table with Google's
+  // own noun). The record is the projection; the picked-resource row stays the
+  // authorization boundary (Amendment A1).
+  | "google_document";
 
 export type ItemType = KnownItemType | (string & {});
 

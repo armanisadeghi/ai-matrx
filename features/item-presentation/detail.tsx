@@ -89,7 +89,7 @@ export function resolveItemDetailType(type: string): DetailRecordType | null {
   const entityToken = doorToken && isEntityTypeToken(doorToken) ? doorToken : null;
   const detailSource = recognized ? config.detailSource : undefined;
 
-  const recordType: DetailRecordType = {
+  const base: DetailRecordType = {
     type,
     label: config.label,
     icon: config.icon,
@@ -108,6 +108,10 @@ export function resolveItemDetailType(type: string): DetailRecordType | null {
     health: sourceHealthProducerFor(type),
     Frame: ItemDetailFrame,
   };
+  // A type that knows more about itself than a generic composition can say
+  // refines the base — ONE registration still, never a second registry. See
+  // `ItemTypeConfig.refineDetail`.
+  const recordType = recognized && config.refineDetail ? config.refineDetail(base) : base;
   cache.set(type, recordType);
   return recordType;
 }

@@ -102,6 +102,8 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
 
 ## Change log
 
+- 2026-09-18 — **U-W1: a connected Google file is a registered item type, and a type may now REFINE its detail.** `google_document` joins THE type map (`registry.tsx` + `types.ts`), so `workbench.google_document` — live since 2026-09-17 with no client registration at all — opens as a window, a docked panel or `/detail/google_document/<id>` from ONE entry, and the health strip finally has a synced record to render on (the thing five verification rounds could not judge). The entry itself lives beside its feature (`features/google-workspace/documents/itemType.tsx`); this map is only where the platform learns about it. New optional `ItemTypeConfig.refineDetail(base) => DetailRecordType`, applied in `detail.tsx`: a type that genuinely knows more than a generic composition can say (a synced file's own `sync_status`, a cached body that must not be printed as a field, a composer that writes back to the provider) changes the composed registration in place — ONE registration still, never a second registry, and every presentation inherits it because they all read the same `DetailRecordType`. A type that omits it behaves exactly as before. Red-then-green: with the registry entry removed, 9 of 10 assertions in `features/google-workspace/documents/__tests__/a-linked-document-opens-in-place.test.tsx` fail (neutral fallback, no loader, no body, no composer, no strip) — restored, 10/10 green.
+
 - 2026-09-17 — **`party` — an existing Person — is registered, so the queue keeps
   its reader.** The approvals contact-import card names the matched Person and
   every ambiguous candidate through `EntityRef token="party"`, and the token had
