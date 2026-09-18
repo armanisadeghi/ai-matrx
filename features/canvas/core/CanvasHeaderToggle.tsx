@@ -57,15 +57,47 @@ function useCanvasHeaderToggle() {
   };
 }
 
-/** Shell header — show when canvas has items but is closed. Sits left of avatar. */
+/**
+ * Shell header — show when canvas has items but is closed. Sits left of avatar.
+ *
+ * WHILE THE CANVAS IS OPEN THE SLOT IS KEPT, NOT REMOVED. The canvas pane's own
+ * header owns this job while it is open, so the control itself must go — but
+ * unmounting the element too made every button to its left jump 44px sideways
+ * the moment the canvas opened or closed. That is the shift the owner named on
+ * 2026-09-16 (*"causes a shift in the top header buttons"*); the parallel
+ * docked column made it plainly visible because the canvas no longer covered
+ * the header. An empty, inert placeholder holds the width instead — exactly the
+ * pattern `:root[data-canvas-open="true"] .shell-user-menu-wrapper` already
+ * uses for the avatar, which hides with `visibility` so its box survives.
+ *
+ * The placeholder exists ONLY for the open/closed transition. With no canvas
+ * content at all there is nothing to reopen and nothing reserves anything, so
+ * an ordinary page never carries a 44px hole in its header.
+ */
 export function CanvasShellHeaderToggle() {
   const { isOpen, isAvailable, itemCount, headlineTitle, reopen } =
     useCanvasHeaderToggle();
 
-  if (isOpen || !isAvailable || itemCount === 0) return null;
+  if (!isAvailable || itemCount === 0) return null;
+
+  if (isOpen) {
+    return (
+      <div
+        className="relative shrink-0 invisible pointer-events-none"
+        data-canvas-header-slot="reserved"
+        aria-hidden
+      >
+        <LayersTapButton
+          onClick={reopen}
+          ariaLabel={`Open canvas — ${headlineTitle}`}
+          tabIndex={-1}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="relative shrink-0">
+    <div className="relative shrink-0" data-canvas-header-slot="control">
       <LayersTapButton
         onClick={reopen}
         ariaLabel={`Open canvas — ${headlineTitle}`}
