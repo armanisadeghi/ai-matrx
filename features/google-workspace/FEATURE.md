@@ -408,6 +408,26 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 ## Change log
 
+- `2026-09-18` — **F-72: the no-append line is chosen by the file's kind (Cursor Bugbot LOW,
+  thread 4043568378 on PR 228, commit `2445ceae`, `GoogleDocumentPanel.tsx:622-636`).** F-67's
+  append-unsupported branch runs for every non-`document` `mime_kind`, but its sentence always
+  named the Sheets A1 range editor — so a record whose kind is `other` (a Slides deck, or any
+  other Drive file the two named kinds don't cover) was pointed at a control that has nothing
+  to do with it. The sentence is now chosen BY `mime_kind`, not by "not a document": `spreadsheet`
+  keeps the existing line naming the range editor; every other non-document kind gets one honest
+  line — this file has no write from AI Matrx — plus the record's own derived Google link
+  (`googleFileHref`, already in this file from F-60, N12; never a second URL builder). Guard test:
+  `documents/__tests__/the-last-two-actions-are-real.test.tsx` adds a direct `other`-kind case
+  and a `describe.each` census over `Record<GoogleDocumentMimeKind, true>` (every value the type
+  can carry, not a hand list — the object literal fails to compile if the union changes) proving
+  the panel renders exactly one of the composer, the range-editor line, or the no-write line, and
+  never the Sheets line for a non-spreadsheet kind. Both new assertions were run red against the
+  pre-fix panel first (the `other` row rendered "A range write on this Sheet lives in Settings →
+  Integrations → Google Workspace") and green after. `pnpm check:parse`, `check:kind-marker-law`,
+  and a full `tsc --noEmit` (completed this run, no OOM) are clean for these files — the 221 lines
+  the full run reported are all pre-existing, unrelated errors (e.g. `lib/api/call-api.ts`), none
+  touching `google-workspace/documents`. No screen was seen — the table still holds zero live rows.
+
 - `2026-09-18` — **F-66, F-60's escalation: the open control names the kind, not just the
   family.** `DetailBody`'s open-at-source control (F-60, same day) derives a label from
   `health.source` alone, which is right for a producer with no opinion but can only ever say

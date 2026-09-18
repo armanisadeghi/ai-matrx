@@ -621,18 +621,47 @@ export function GoogleDocumentPanel({ initialRow }: { initialRow: GoogleDocument
             Google again to add to it there.
           </p>
         ) : row.mime_kind !== "document" ? (
-          // 🚨 Cursor Bugbot (PR 228) — this composer only ever called
-          // `appendGoogleDocument` and was labelled "Add to the end of this doc",
-          // so a Sheet Record (`mime_kind: "spreadsheet"`) presented a write the
-          // Docs API cannot honour and would have failed at Google, not here.
-          // Never guessed from the title: `mime_kind` is the type the row itself
-          // carries. A range write on a Sheet already exists — the bounded A1
-          // range editor at Settings → Integrations → Google Workspace — so this
-          // is a pointer to a real control, not a fake one built here.
+          // 🚨 Cursor Bugbot (PR 228, thread 4043568378) — this composer only
+          // ever called `appendGoogleDocument` and was labelled "Add to the
+          // end of this doc", so ANY non-document record (`mime_kind`
+          // "spreadsheet" or "other") presented a write the Docs API cannot
+          // honour and would have failed at Google, not here. Never guessed
+          // from the title: `mime_kind` is the type the row itself carries.
+          // F-67 fixed `spreadsheet` by pointing at the real A1 range editor,
+          // but the sentence it wrote was hardcoded and ran for `other` too —
+          // a Slides deck or any other Drive file got told about a Sheets
+          // control that does not exist for it. The sentence is now chosen BY
+          // `mime_kind`: spreadsheet keeps the range-editor pointer; every
+          // other non-document kind gets an honest "no write here" line plus
+          // the record's own derived Google link (`googleFileHref`, N12
+          // above) — never a second URL builder.
           <p className="text-xs text-muted-foreground" data-google-document-append-unsupported>
-            Adding to the end of a document is a Google Docs action, and this record is a{" "}
-            {mimeKindLabel(row.mime_kind).toLowerCase()}. A range write on this Sheet lives in
-            Settings → Integrations → Google Workspace, not here.
+            {row.mime_kind === "spreadsheet" ? (
+              <>
+                Adding to the end of a document is a Google Docs action, and this record is a{" "}
+                sheet. A range write on this Sheet lives in Settings → Integrations → Google
+                Workspace, not here.
+              </>
+            ) : (
+              <>
+                Adding to the end of a document is a Google Docs action, and this record is a{" "}
+                {mimeKindLabel(row.mime_kind).toLowerCase()}. AI Matrx has no write for this file
+                type —{" "}
+                {googleFileHref(row) ? (
+                  <a
+                    href={googleFileHref(row) ?? undefined}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline"
+                  >
+                    open it in Google
+                  </a>
+                ) : (
+                  "open it in Google"
+                )}{" "}
+                to make changes there.
+              </>
+            )}
           </p>
         ) : (
           <AppendComposer row={row} heading={appendHeading} />

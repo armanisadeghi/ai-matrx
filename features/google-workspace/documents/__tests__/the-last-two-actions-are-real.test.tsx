@@ -17,7 +17,7 @@ import { createRoot } from "react-dom/client";
 
 import { GoogleDocumentPanel } from "../GoogleDocumentPanel";
 import { DOC_ID, ORG_ID, googleDocumentRow } from "./fixtures";
-import type { GoogleDocumentRow } from "../types";
+import type { GoogleDocumentMimeKind, GoogleDocumentRow } from "../types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -322,3 +322,83 @@ test(
     expect(container.querySelector("[data-google-document-append-unsupported]")).toBeNull();
   },
 );
+
+test(
+  "an 'other' Record (a Slides deck, or any non-Docs/Sheets Drive file) renders no " +
+    "Append composer, never the Sheet line, and offers its own derived Google link " +
+    "(Cursor Bugbot, PR 228, thread 4043568378 — F-72)",
+  async () => {
+    // No stored external_url: forces googleFileHref to derive the Drive
+    // file-view link from external_id, exactly as N12 documents.
+    const other = googleDocumentRow({
+      sync_status: "available",
+      mime_kind: "other",
+      external_url: null,
+    });
+    await mount(other);
+
+    expect(container.querySelector("[data-google-document-append]")).toBeNull();
+    const notice = container.querySelector("[data-google-document-append-unsupported]");
+    expect(notice).not.toBeNull();
+    // The class-level defect: the Sheets range-editor line named for
+    // `spreadsheet` must never render for a row whose kind is `other`.
+    expect(notice?.textContent).not.toContain("range write on this Sheet");
+    expect(notice?.textContent).not.toContain("Settings → Integrations → Google Workspace");
+    expect(notice?.textContent).toContain("AI Matrx has no write for this file type");
+    const link = notice?.querySelector("a");
+    expect(link).not.toBeNull();
+    expect(link?.getAttribute("href")).toBe(
+      `https://drive.google.com/file/d/${other.external_id}/view`,
+    );
+    expect(link?.textContent).toContain("open it in Google");
+  },
+);
+
+/**
+ * 🚨 THE KIND CENSUS — every value `mime_kind` can carry, read from the type
+ * the row declares (`GoogleDocumentMimeKind`), never a hand list guessed from
+ * memory. `Record<GoogleDocumentMimeKind, true>` fails to compile the moment
+ * the union gains or loses a member, so this census cannot silently go stale.
+ *
+ * The panel must render EXACTLY ONE of three things for any row: the real
+ * composer (document), the Sheets range-editor pointer (spreadsheet), or the
+ * honest no-write line (everything else) — and the Sheets line must never
+ * appear for a non-spreadsheet kind. This is red on the pre-fix HEAD for
+ * `mime_kind: "other"` (it rendered the Sheets sentence) and green after.
+ */
+const MIME_KIND_CENSUS: Record<GoogleDocumentMimeKind, true> = {
+  document: true,
+  spreadsheet: true,
+  other: true,
+};
+const ALL_MIME_KINDS = Object.keys(MIME_KIND_CENSUS) as GoogleDocumentMimeKind[];
+
+describe.each(ALL_MIME_KINDS)("mime_kind census — %s", (mimeKind) => {
+  test("renders exactly the control for this kind, and never the wrong one", async () => {
+    const row = googleDocumentRow({ sync_status: "available", mime_kind: mimeKind });
+    await mount(row);
+
+    const composer = container.querySelector("[data-google-document-append]");
+    const unsupported = container.querySelector("[data-google-document-append-unsupported]");
+
+    if (mimeKind === "document") {
+      expect(composer).not.toBeNull();
+      expect(unsupported).toBeNull();
+      return;
+    }
+
+    expect(composer).toBeNull();
+    expect(unsupported).not.toBeNull();
+    const text = unsupported?.textContent ?? "";
+
+    if (mimeKind === "spreadsheet") {
+      expect(text).toContain("range write on this Sheet");
+      expect(text).toContain("Settings → Integrations → Google Workspace");
+    } else {
+      // Every other kind: never the Sheets sentence, only the honest line.
+      expect(text).not.toContain("range write on this Sheet");
+      expect(text).not.toContain("Settings → Integrations → Google Workspace");
+      expect(text).toContain("AI Matrx has no write for this file type");
+    }
+  });
+});
