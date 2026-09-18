@@ -41,7 +41,11 @@ jest.mock("@/lib/python-client", () => ({
 // Imported AFTER the transport mock so the real module graph binds to it.
 import { AdapterCatalog } from "./components/AdapterCatalog";
 import { fetchExportAdapters } from "./api";
-import { ExportContractError, parseAdapterCatalog } from "./contract";
+import {
+  ExportContractError,
+  parseAdapterCatalog,
+  parseExportLibrary,
+} from "./contract";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -155,5 +159,41 @@ describe("every value the screen renders has been checked, not assumed", () => {
     // The drop zone is a sibling and must survive: this component says its own
     // part is unavailable rather than taking the page down.
     expect(container.textContent).toContain("Dropping a file still works");
+  });
+});
+
+describe("the Library read, against the envelope the server actually sends", () => {
+  it("reads the row out of `{library: {…}}` instead of showing an empty card", () => {
+    // Verbatim shape of `GET /media/exports/{id}` (aidream read_export).
+    const library = parseExportLibrary({
+      library: {
+        id: "d2df57ed-ea50-4e59-aa68-64fdc6dd4247",
+        name: "takeout-10k.mbox",
+        adapter: "gmail_mbox",
+        adapter_label: "Gmail / mail archive (.mbox)",
+        sync_status: "completed",
+        item_count: 10000,
+        organization_id: "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f",
+        visibility: "personal",
+      },
+    });
+
+    // THE FAILING HALF: reading the envelope as the row made every field
+    // undefined and the screen said "the export.id ... arrived as nothing at
+    // all" over a Library that had just indexed perfectly.
+    expect(library.id).toBe("d2df57ed-ea50-4e59-aa68-64fdc6dd4247");
+    expect(library.name).toBe("takeout-10k.mbox");
+    expect(library.total_items).toBe(10000);
+    expect(library.status).toBe("completed");
+  });
+
+  it("still reads a bare row, which is what the contract publishes", () => {
+    const library = parseExportLibrary({ id: "abc", name: "x.mbox" });
+    expect(library.id).toBe("abc");
+  });
+
+  it("does not mistake a row that happens to carry a `library` string", () => {
+    const library = parseExportLibrary({ id: "abc", name: "x", library: "not-an-object" });
+    expect(library.id).toBe("abc");
   });
 });

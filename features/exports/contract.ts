@@ -176,8 +176,28 @@ export function parseExportSummary(value: unknown, field = "summary"): ExportSum
   };
 }
 
+/**
+ * One export Library, from `GET /media/exports/{id}` or from the create response.
+ *
+ * 🚨 THE SERVER WRAPS THE ROW, AND SO THIS UNWRAPS IT. `read_export` returns
+ * `{"library": {…}}`, not the row. Reading the envelope as the row makes every
+ * field `undefined`, which on 2026-09-17 showed on the real screen as "the
+ * export.id should be text and arrived as nothing at all" — honest, and still
+ * an empty summary card on a Library that had just indexed perfectly. Accepting
+ * BOTH shapes is the same ruling `features/source-library/api.ts` records for
+ * the same server on the same day: reality is the referee, and a screen does
+ * not get to be right while a person sees nothing.
+ *
+ * It is a strict unwrap, not a guess: only an object carrying a `library` key
+ * whose value is itself an object is treated as an envelope.
+ */
 export function parseExportLibrary(payload: unknown, field = "the export"): ExportLibrary {
-  const row = obj(payload, field);
+  const outer = obj(payload, field);
+  const inner = outer.library;
+  const row =
+    inner !== null && typeof inner === "object" && !Array.isArray(inner)
+      ? (inner as Record<string, unknown>)
+      : outer;
   return {
     id: str(row.id, `${field}.id`),
     name: str(row.name ?? "", `${field}.name`),
