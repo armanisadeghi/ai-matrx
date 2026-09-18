@@ -33,11 +33,83 @@ export type MandateReferenceRow =
 export type MandateReferenceReport =
   components["schemas"]["MandateReferenceReport"];
 export type MandateReferenceBoard =
-  components["schemas"]["MandateReferenceBoard"];
+  components["schemas"]["MandateReferenceBoard"] & {
+    /**
+     * The scheduled patrol section. Declared here rather than read from
+     * `components["schemas"]` for the reason spelled out at
+     * `MandatePatrolSection` below — the generated file predates it.
+     */
+    patrol?: MandatePatrolSection | null;
+  };
 export type MandateReferenceBoardRepo = components["schemas"]["BoardRepo"];
 export type MandateReferenceFinding = components["schemas"]["BoardFinding"];
 export type MandateReferenceConversionRow =
   components["schemas"]["BoardConversionRow"];
+/**
+ * THE PATROL SECTION — the scheduled task's state and what each run cost.
+ *
+ * 🚨 HAND-DECLARED, AND SAYING SO. Every other type in this file is read from
+ * `components["schemas"]`, which is the law here. These two cannot be: the
+ * server already serves `patrol` on `GET /mandates/references/board`
+ * (`aidream/services/mandates/references.py`, models `MandatePatrolSection` and
+ * `PatrolRunRow`), but the checked-in `types/python-generated/api-types.ts`
+ * predates it and regenerating that file is a separate, whole-repo change.
+ * So this is a NAMED, temporary mirror of the server models, not a second
+ * contract: the moment a regeneration lands, delete both declarations and go
+ * back to `components["schemas"]["MandatePatrolSection"]` /
+ * `["PatrolRunRow"]`. A field added on the server and not here shows up as a
+ * missing column, never as a wrong number — nothing below computes anything.
+ */
+export type MandatePatrolRun = {
+  run_id: string;
+  status: string;
+  due_at: string | null;
+  started_at: string | null;
+  finished_at: string | null;
+  wall_seconds: number | null;
+  seconds_source: "recorded" | "derived_from_timestamps" | "unknown";
+  cpu_seconds: number | null;
+  vcpu_seconds: number | null;
+  cpu_count_source: string | null;
+  /** `null` means NO RATE IS CONFIGURED — never "free". See `NO_COST_CELL`. */
+  compute_cost_usd: number | null;
+  compute_cost_note: string | null;
+  model_spend_usd: number | null;
+  model_spend_evidence: string | null;
+  revision: string | null;
+  rows_submitted: number | null;
+  findings: number | null;
+  error_rows_filed: number | null;
+  error_rows_resolved: number | null;
+  error_rows_request_id: string | null;
+  git_clone_bytes: number | null;
+  spend_row: string | null;
+  failed_legs: string[];
+  summary: string | null;
+  error_message: string | null;
+  cost_recorded: boolean;
+};
+
+export type MandatePatrolSection = {
+  tool_name: string;
+  task_id: string;
+  enabled: boolean;
+  schedule: string | null;
+  trigger_enabled: boolean;
+  next_due_at: string | null;
+  last_run_at: string | null;
+  enabled_at: string | null;
+  runs: MandatePatrolRun[];
+  runs_counted: number;
+  runs_failed: number;
+  cumulative_wall_seconds: number;
+  cumulative_vcpu_seconds: number;
+  cumulative_compute_cost_usd: number | null;
+  cumulative_model_spend_usd: number;
+  cost_note: string;
+  /** Present only when the scheduler ledger could not be read. */
+  read_error?: string | null;
+};
 export type RepoScanCompleteness =
   components["schemas"]["RepoScanCompleteness"];
 
@@ -151,3 +223,48 @@ export function formatRepoList(repos: readonly string[]): string {
  * says so rather than letting a single row read as something missing.
  */
 export const SINGLE_SITE_SENTENCE = "one consumption site by design";
+
+/**
+ * THE COST CELL. `null` means NO RATE IS CONFIGURED — it does NOT mean free, and
+ * this is the one place that decides how that reads on screen. Arman, 2026-09-17,
+ * on turning the 4-hourly patrol on: *"if there is a cost, make sure it's tracked
+ * and easy for me to see"* — a "$0.00" in this column would be the lie that makes
+ * the whole table worthless.
+ */
+export const NO_COST_CELL = "no rate set";
+
+export function formatUsd(usd: number | null | undefined): string {
+  if (usd === null || usd === undefined) return NO_COST_CELL;
+  return `$${usd.toFixed(usd < 0.01 && usd > 0 ? 6 : 2)}`;
+}
+
+export function formatSeconds(seconds: number | null | undefined): string {
+  if (seconds === null || seconds === undefined) return "—";
+  if (seconds < 60) return `${seconds.toFixed(1)}s`;
+  const minutes = Math.floor(seconds / 60);
+  return `${minutes}m ${Math.round(seconds - minutes * 60)}s`;
+}
+
+export function formatBytes(bytes: number | null | undefined): string {
+  if (bytes === null || bytes === undefined) return "—";
+  if (bytes === 0) return "0";
+  const units = ["B", "KB", "MB", "GB"];
+  const power = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+  return `${(bytes / 1024 ** power).toFixed(power === 0 ? 0 : 1)} ${units[power]}`;
+}
+
+/**
+ * Where a run's filed defects live. The System Errors page deep-links by
+ * `request_id`, and the patrol records the EXACT id the scanner filed its rows
+ * under — so this link lands on that run's own rows, never an unfiltered list
+ * that merely looks like evidence.
+ */
+export function errorRowsHref(run: MandatePatrolRun): string | null {
+  if (!run.error_rows_request_id) return null;
+  const params = new URLSearchParams({
+    kind: "mandate_reference_defect",
+    request_id: run.error_rows_request_id,
+    hours: "720",
+  });
+  return `/administration/utilities/system-errors?${params.toString()}`;
+}
