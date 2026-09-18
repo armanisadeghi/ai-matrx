@@ -12,6 +12,8 @@ const MarkdownStreamImpl: React.FC<MarkdownStreamProps> = ({
   events,
   taskId,
   requestId,
+  streamSlotStart,
+  streamSlotEnd,
   turnId,
   conversationId,
   type,
@@ -43,6 +45,8 @@ const MarkdownStreamImpl: React.FC<MarkdownStreamProps> = ({
       >
         <StreamAwareChatMarkdown
           requestId={requestId}
+          streamSlotStart={streamSlotStart}
+          streamSlotEnd={streamSlotEnd}
           turnId={turnId}
           conversationId={conversationId}
           content={content}
