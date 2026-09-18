@@ -125,6 +125,11 @@ const config: Config = {
         // This is an explicit Playwright gate that requires a running app and
         // Chromium; Jest owns the unit suite and must not attempt to load it.
         "/features/content-ir/sandbox/browser/",
+        // The shell layout gate (`pnpm test:shell-layout`,
+        // playwright.shell-layout.config.ts) measures real layout rects in
+        // Chromium; under Jest its `@playwright/test` import dies with
+        // "Class extends value undefined" before a single test runs.
+        "/features/shell/layout-gate/",
     ],
     // Restrict to *.test.ts(x) / *.spec.ts(x). Jest's default `testMatch`
     // also globs everything under `**/__tests__/**`, which picked up our
