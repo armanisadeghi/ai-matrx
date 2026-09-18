@@ -1,27 +1,21 @@
 "use client";
 
 /**
- * CanvasSideSheetImpl — the OVERLAY presentation of the canvas.
+ * CanvasSideSheetImpl — THE presentation of the canvas. There is no other one.
  *
- * This is the fallback, not the default. Where a route gives the canvas a real
- * column (`CanvasDock` — the chat does), the canvas is a RESIZABLE SPLIT and
- * this sheet renders nothing: the front door bails on `selectCanvasIsDocked`.
- * An overlay is correct only where there is no room to split — the phone — and
- * on routes that never mounted a dock (marketing, share links, artifact pages).
- *
- * Owner standard (2026-09-13): *"we have an entire Canvas system that gives us
- * a nice adjustable sidebar that can be folded out and in"* — the thread
- * shrinks, nothing is covered. A z-50 sheet drawn over the chat covered the
- * composer, the mic and the send button and cut prose mid-word; that defect is
- * what the dock exists to end.
+ * Every route shows the canvas exactly this way: documents, artifacts, the
+ * browser, the sandbox, chat. A per-route docked column was added for chat on
+ * 2026-09-14 and rejected by the owner on 2026-09-16 — *"adds an unnecessary
+ * layer, causes a shift in the top header buttons… FOLLOW established
+ * patterns."* A capability one route needs (a wider default, a different
+ * resize range) is added HERE, for all of them.
  *
  * NEVER import this module statically (the `@/…Impl` eslint ban enforces it).
  * The only consumer is the thin front door `./CanvasSideSheet.tsx`, which
  * dynamic({ssr:false})-imports it and mounts it ONLY once a canvas item exists.
  *
  * Owned here: placement (right edge), the width drag handle, the Radix Sheet.
- * The card, the vertical split and the pane chrome live in `CanvasSurface.tsx`
- * so the docked presentation is the same content, not a fork.
+ * The card, the vertical split and the pane chrome live in `CanvasSurface.tsx`.
  */
 
 import React, { useCallback, useEffect, useState } from "react";
@@ -172,7 +166,6 @@ export function CanvasSideSheetImpl() {
 
         <div className="h-full">
           <CanvasSurfaceCard
-            presentation="sheet"
             edge={isMobile ? "flush" : "floating"}
             onSplitRatioChange={handleSplitRatioChange}
           />
