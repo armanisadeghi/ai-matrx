@@ -1,21 +1,14 @@
 "use client";
 
 /**
- * CanvasSurface — the canvas CONTENT, independent of how the route presents it.
+ * CanvasSurface — the canvas CONTENT: the glass card, the optional vertical
+ * split, and the per-pane header chrome.
  *
- * There are exactly two presentations and they share this body:
- *
- *   DOCKED (`CanvasDock`)  — a real resizable column beside the route's own
- *                            content. The page shrinks; nothing is covered.
- *                            This is the default wherever a route gives the
- *                            canvas room (chat).
- *   SHEET  (`CanvasSideSheetImpl`) — an overlay drawn over the page. Correct
- *                            only where there is no room to split (phone), and
- *                            on routes that never mounted a dock.
- *
- * Everything below the presentation — the glass card, the optional vertical
- * split, the per-pane header chrome — is identical in both, so it lives here
- * once. `CanvasPane` is untouched by the choice.
+ * THERE IS EXACTLY ONE PRESENTATION — `CanvasSideSheetImpl`, mounted globally
+ * by `CanvasSideSheet`, identical on every route. A second, per-route
+ * presentation (a docked column for chat) existed between 2026-09-14 and
+ * 2026-09-17 and was rejected by the owner as an unnecessary layer. Anything a
+ * route needs from the canvas is built into the one surface, for every route.
  */
 
 import React, { useCallback, useEffect, useRef } from "react";
@@ -72,8 +65,8 @@ export function useCanvasSurfaceScope() {
 }
 
 /**
- * The vertical split (or the single pane). No card chrome, no placement — the
- * presentation owns those.
+ * The vertical split (or the single pane). No card chrome, no placement —
+ * `CanvasSideSheetImpl` owns those.
  */
 export function CanvasPanes({
   onSplitRatioChange,
@@ -134,16 +127,13 @@ export function CanvasPanes({
 /**
  * The glass card that reads as one continuous surface, wrapping the panes.
  * `edge` only changes the border treatment: a desktop sheet floats over the
- * page and gets a rounded, shadowed left edge; a docked column (and a
- * full-bleed phone sheet) is part of the page and gets a plain divider.
+ * page and gets a rounded, shadowed left edge; a full-bleed phone sheet is
+ * part of the page and gets a plain divider.
  */
 export function CanvasSurfaceCard({
-  presentation,
   edge,
   onSplitRatioChange,
 }: {
-  /** How the route is showing the canvas — also the test/DOM marker. */
-  presentation: "sheet" | "docked";
   /** `floating` = rounded + shadowed (overlay); `flush` = plain divider. */
   edge: "floating" | "flush";
   onSplitRatioChange: (topPercent: number) => void;
@@ -162,7 +152,7 @@ export function CanvasSurfaceCard({
             ? "rounded-l-xl border-l border-border shadow-[0_8px_32px_-12px_rgba(0,0,0,0.2)] dark:shadow-[0_8px_32px_-12px_rgba(0,0,0,0.6)]"
             : "border-l border-border",
         )}
-        data-canvas-surface={presentation}
+        data-canvas-surface="sheet"
       >
         <CanvasPanes onSplitRatioChange={onSplitRatioChange} />
       </div>

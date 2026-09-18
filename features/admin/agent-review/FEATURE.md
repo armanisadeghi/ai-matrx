@@ -174,7 +174,10 @@ no-unapproved-schedules law.
   false choice between closing a row and keeping a thread alive. The outcome is
   reported as two separate facts with a retry for the filing half, and a
   durable "Raised from this review" panel links every item raised from the row.
-  Moved `reviewItemPath` out of the 700-line queue table into `doors.ts`.
+  Moved `reviewItemPath` out of the 700-line queue table into `doors.ts`, and
+  moved the feedback console's door to `features/admin/feedback/doors.ts` —
+  a Vercel build parks `app/(admin)` by renaming it, so a `features/` module
+  may never import a door declared beside an admin route.
 
 - 2026-09-16 — Completed the Agent Review Item declaration for every
   `agent.review_queue` field the workspace loads, added the canonical header

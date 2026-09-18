@@ -16,7 +16,8 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { timestamp, usd } from "../format";
 import type { SpendBreakdown, SpendDimension } from "../types";
-import { compactNumber, percent, shortLocal } from "./labels";
+import { compactNumber, shortLocal } from "./labels";
+import { formatPercentFromFraction } from "@ai-matrx/kit/format";
 
 type Cell = React.ReactNode;
 
@@ -172,7 +173,7 @@ export function DigHerePanel({
           r.agent ?? "—",
           r.trigger ?? "—",
           r.requests,
-          percent(r.share),
+          formatPercentFromFraction(r.share),
           usd(r.cost),
         ],
       })),
@@ -466,7 +467,7 @@ export function DigHerePanel({
         <span className="whitespace-nowrap tabular-nums text-muted-foreground">
           {spec.key === "unpriced" || spec.n === 0
             ? "—"
-            : percent(total > 0 ? spec.cost / total : 0)}
+            : formatPercentFromFraction(total > 0 ? spec.cost / total : 0)}
         </span>
       ),
     },

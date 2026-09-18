@@ -65,11 +65,14 @@ import {
   pathHref,
   sourceHref,
 } from "@/features/admin/reporting/source-links";
+import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
 
 const DOCTRINE_HREF =
   "https://github.com/armanisadeghi/ai-matrx/blob/main/.claude/skills/no-dead-ends/SKILL.md";
 
 /** A scan older than this is stale enough that the page must say so. */
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 const STALE_AFTER_DAYS = 7;
 
 /** The one-click fix that ships with the staleness complaint. */
@@ -104,9 +107,17 @@ function deadEndContent(f: DeadEndFinding): string {
 /** The clock never notifies us; the age only needs to be right on mount. */
 const subscribeToNothing = () => () => {};
 
-function ageInDays(iso: string): number {
+/**
+ * How long ago the scan ran, in MILLISECONDS — a number the staleness threshold
+ * COMPARES and nothing renders. Every rendered form of this age goes through
+ * `formatRelativeTime` from `@ai-matrx/kit/format` instead; the body that used
+ * to live here floored the delta into whole days and printed "scanned today"
+ * for a stamp ahead of the clock, and the relative-time shape lane of
+ * `check:package-twins` is what found it.
+ */
+function ageMs(iso: string): number {
   const ms = Date.now() - new Date(iso).getTime();
-  return Number.isFinite(ms) ? Math.max(0, Math.floor(ms / 86_400_000)) : 0;
+  return Number.isFinite(ms) ? Math.max(0, ms) : 0;
 }
 
 interface DeadEndsConsoleProps {
@@ -137,15 +148,15 @@ export function DeadEndsConsole({
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [clickedFinding, setClickedFinding] = useState<DeadEndFinding | null>(null);
   /**
-   * Snapshot age in days. The wall clock is an external system, so it is read
+   * Snapshot age in milliseconds. The wall clock is an external system, so it is read
    * through `useSyncExternalStore` rather than during render — `Date.now()` in
    * a render body is impure and a setState-in-effect would cascade. The
    * snapshot is a whole number of days, so it is stable across re-renders and
    * React's Object.is check never loops. `null` on the server.
    */
-  const scanAgeDays = useSyncExternalStore(
+  const scanAgeMs = useSyncExternalStore(
     subscribeToNothing,
-    () => ageInDays(report.generatedAt),
+    () => ageMs(report.generatedAt),
     () => null,
   );
 
@@ -405,7 +416,7 @@ export function DeadEndsConsole({
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <Header
         report={report}
-        scanAgeDays={scanAgeDays}
+        scanAgeMs={scanAgeMs}
         delta={delta}
         problems={problems}
         historyDrift={historyDrift}
@@ -657,7 +668,7 @@ function filterFindings(
 
 function Header({
   report,
-  scanAgeDays,
+  scanAgeMs,
   delta,
   problems,
   historyDrift,
@@ -666,7 +677,7 @@ function Header({
 }: {
   report: DeadEndReport;
   /** `null` until the client has read the clock (see the console above). */
-  scanAgeDays: number | null;
+  scanAgeMs: number | null;
   delta: number | null;
   /** Ways `report.json`'s totals disagree with its OWN findings list. */
   problems: string[];
@@ -681,7 +692,7 @@ function Header({
   onCopyAll: () => void;
   onCopyRefresh: () => void;
 }) {
-  const stale = scanAgeDays !== null && scanAgeDays >= STALE_AFTER_DAYS;
+  const stale = scanAgeMs !== null && scanAgeMs >= STALE_AFTER_DAYS * DAY_MS;
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div className="flex items-center gap-2">
@@ -693,7 +704,7 @@ function Header({
       </div>
 
       <span className="text-xs text-muted-foreground">
-        {report.totals.filesScanned.toLocaleString()} files scanned
+        {formatCount(report.totals.filesScanned)} files scanned
         {report.commit ? (
           <>
             {" · "}
@@ -708,17 +719,22 @@ function Header({
             </AppLink>
           </>
         ) : null}
-        {scanAgeDays === null
+        {scanAgeMs === null
           ? null
-          : scanAgeDays === 0
-            ? " · scanned today"
-            : ` · scanned ${scanAgeDays}d ago`}
+          : ` · scanned ${formatRelativeTime(Date.now() - scanAgeMs, {
+              style: "short",
+            })}`}
       </span>
 
       {stale && (
         <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-700 dark:text-amber-400">
           <AlertTriangle className="h-3.5 w-3.5" />
-          Snapshot is {scanAgeDays} days old — run{" "}
+          Snapshot is{" "}
+          {formatRelativeTime(Date.now() - (scanAgeMs ?? 0), {
+            style: "long",
+            suffix: false,
+          })}{" "}
+          old — run{" "}
           <code className="font-mono">pnpm check:dead-ends:write</code> and
           commit.
           <button

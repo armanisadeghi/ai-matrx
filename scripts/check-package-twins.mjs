@@ -82,6 +82,12 @@ import {
   formatInputShapeIn,
   selfTestFormatInputShape,
 } from "./format-input-shape.mjs";
+import { moneyShapeIn, selfTestMoneyShape } from "./money-shape.mjs";
+import { countShapeIn, selfTestCountShape } from "./count-shape.mjs";
+import {
+  relativeTimeShapeIn,
+  selfTestRelativeTimeShape,
+} from "./relative-time-shape.mjs";
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
@@ -247,8 +253,74 @@ const SHAPE_RULES = [
       "length says so in its NAME (byteLength, contentLengthBytes), which is " +
       "worth more than an allowlist entry",
   },
+  {
+    id: "money",
+    rowName: "formatUsd",
+    module: "scripts/money-shape.mjs",
+    detect: moneyShapeIn,
+    selfTest: selfTestMoneyShape,
+    what: "a number becoming a MONEY string",
+    fix:
+      "delete the formatter and call formatUsd — `digits: \"adaptive\"` for a " +
+      "per-token or per-call cost (a fixed 2 rounds $0.000004 away to " +
+      '"$0.00", which is the confident-wrong-number failure wearing a ' +
+      "rounding mask), the default 2 for a price a person reads. It is " +
+      "`en-US` pinned on purpose, so the decimal separator never moves under " +
+      "the reader, and it returns an em-dash for a value NOBODY MEASURED — " +
+      "never a confident \"$0.00\". A sum of nullable costs goes through " +
+      "sumKnown first. A `$` in a regex or a shell string never matches this " +
+      "rule (money needs TWO dollars: the literal and the interpolation), and " +
+      "neither does `/ 100` as a percentage step",
+  },
+  {
+    id: "count",
+    rowName: "formatCount",
+    module: "scripts/count-shape.mjs",
+    detect: countShapeIn,
+    selfTest: selfTestCountShape,
+    what: "an integer becoming a grouped or abbreviated display string",
+    fix:
+      "delete the Intl.NumberFormat and call formatCount — grouped digits, " +
+      '"0" for a MEASURED zero, an em-dash for one nobody measured. A ' +
+      "compact \"1.2M\" is `formatCount(n, { style: \"compact\" })`, which " +
+      "reserves \"B\" for billions. A DATE rendered with toLocaleString never " +
+      "matches this rule, and a currency one belongs to the money lane",
+  },
+  {
+    id: "relative-time",
+    rowName: "formatRelativeTime",
+    module: "scripts/relative-time-shape.mjs",
+    detect: relativeTimeShapeIn,
+    selfTest: selfTestRelativeTimeShape,
+    what: "an epoch age becoming a relative string",
+    fix:
+      "delete the arithmetic AND the wording and call formatRelativeTime — " +
+      '`style: "short"` ("2d ago"), `"long"` ("2 days ago") or `"intl"`. It ' +
+      "speaks BOTH directions, so a FUTURE stamp reads \"in 2d\" instead of " +
+      "the \"today\" a `days <= 0` branch prints; pass `suffix: false` for a " +
+      "dense column whose header already says Age or Due, and an explicit " +
+      "`now` in a test. An age used only to pick a BRANCH formats nothing and " +
+      "never matches this rule; an elapsed length with no \"ago\" is " +
+      "formatDurationMs, and is reported there instead",
+  },
 ];
 const SHAPE_MODULES = new Set(SHAPE_RULES.map((r) => r.module));
+
+/**
+ * THE OTHER DISTRIBUTED GUARD BODIES (2026-09-14). `scripts/sync_ts_package_guard.mjs`
+ * copies `check-matrx-packages.mjs` byte-for-byte into every root beside this
+ * file, and it is PORTABLE BY CONSTRUCTION — pure Node stdlib, no install, no
+ * repo-specific import — because it runs before anything is installed. It
+ * therefore CANNOT import `@ai-matrx/kit`, and its one rendered "N minutes ago"
+ * line would otherwise need an identical `shapeAllow` entry in eight separate
+ * registers saying the same sentence. One exclusion beats eight copies of one
+ * reason, and this is the same rule that already exempts the shape modules: a
+ * distributed guard body is not a consumer.
+ */
+const DISTRIBUTED_GUARDS = new Set([
+  "scripts/check-matrx-packages.mjs",
+  "check-matrx-packages.mjs",
+]);
 
 /**
  * Top-level (column-zero) value definitions only. An inner helper inside a
@@ -1068,6 +1140,7 @@ for (const file of trackedFiles()) {
   if (file.startsWith("scripts/package-twins.json")) continue;
   if (file === "scripts/check-package-twins.mjs") continue;
   if (SHAPE_MODULES.has(file)) continue;
+  if (DISTRIBUTED_GUARDS.has(file)) continue;
   let source;
   try {
     source = readFileSync(resolve(ROOT, file), "utf8");

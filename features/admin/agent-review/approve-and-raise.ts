@@ -36,7 +36,7 @@
  */
 
 import { submitFeedback } from "@/actions/feedback.actions";
-import { feedbackHref } from "@/app/(admin)/administration/users/feedback/doors";
+import { feedbackHref } from "@/features/admin/feedback/doors";
 import { reviewItemPath } from "@/features/admin/agent-review/doors";
 import { recordHumanReviewAction } from "@/features/admin/agent-review/service";
 import type { ReviewQueueRow } from "@/features/admin/agent-review/types";
