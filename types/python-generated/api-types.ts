@@ -1675,6 +1675,22 @@ export interface paths {
          *     states whether the next run will actually get tools (and ``reason`` why not,
          *     e.g. an ec2-tier box or a stopped sandbox) — so the client never silently
          *     fails the way the old direct-Supabase write did.
+         *
+         *     **Binding BEFORE the first turn is the normal case, not an edge one.** The
+         *     real flow is: open ``/chat/new``, pick your box, then talk. So this door
+         *     goes through ``ensure_conversation_for_actor`` — it CREATES the row for the
+         *     id the client minted rather than 404ing on it, exactly as the attachments
+         *     door does. Two things make that safe, and both were built for this ruling
+         *     (2026-09-18, feedback 6fae7a84):
+         *
+         *     * adoption on the first turn no longer clears the binding — it is
+         *       ``matrx_ai.db.conversation_gate._ADOPTION_PRESERVED_USER_CHOICE``, state a
+         *       person chose, not a dead attempt's leftovers; and
+         *     * turn-1 arming reads the persisted binding (``sandbox_autobind`` no longer
+         *       skips the lookup for a new conversation), so the run actually gets the box.
+         *
+         *     Before those, persisting here would have been WIPED in silence, which is
+         *     why this door deliberately kept its 404 until now.
          */
         put: operations["bind_conversation_sandbox_ai_conversation__conversation_id__sandbox_put"];
         post?: never;
@@ -1710,6 +1726,22 @@ export interface paths {
          *     states whether the next run will actually get tools (and ``reason`` why not,
          *     e.g. an ec2-tier box or a stopped sandbox) — so the client never silently
          *     fails the way the old direct-Supabase write did.
+         *
+         *     **Binding BEFORE the first turn is the normal case, not an edge one.** The
+         *     real flow is: open ``/chat/new``, pick your box, then talk. So this door
+         *     goes through ``ensure_conversation_for_actor`` — it CREATES the row for the
+         *     id the client minted rather than 404ing on it, exactly as the attachments
+         *     door does. Two things make that safe, and both were built for this ruling
+         *     (2026-09-18, feedback 6fae7a84):
+         *
+         *     * adoption on the first turn no longer clears the binding — it is
+         *       ``matrx_ai.db.conversation_gate._ADOPTION_PRESERVED_USER_CHOICE``, state a
+         *       person chose, not a dead attempt's leftovers; and
+         *     * turn-1 arming reads the persisted binding (``sandbox_autobind`` no longer
+         *       skips the lookup for a new conversation), so the run actually gets the box.
+         *
+         *     Before those, persisting here would have been WIPED in silence, which is
+         *     why this door deliberately kept its 404 until now.
          */
         put: operations["bind_conversation_sandbox_ai_conversations__conversation_id__sandbox_put"];
         post?: never;
@@ -27507,6 +27539,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/dev/login-as": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Dev Login As
+         * @description Mint a real Supabase Auth session for the given user id.
+         */
+        post: operations["dev_login_as_dev_login_as_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/tools/test/list": {
         parameters: {
             query?: never;
@@ -49141,6 +49193,8 @@ export interface components {
             normalized_message_id?: string | null;
             /** Normalized Tool Call Id */
             normalized_tool_call_id?: string | null;
+            /** Subagent Conversation Id */
+            subagent_conversation_id?: string | null;
             /** Error Code */
             error_code?: string | null;
             /** Detail */
@@ -62385,6 +62439,33 @@ export interface components {
             access?: "public_no_auth";
             /** Articles */
             articles: components["schemas"]["DevCommunityArticle"][];
+        };
+        /** DevLoginRequest */
+        DevLoginRequest: {
+            /**
+             * User Id
+             * @description UUID of an existing row in auth.users.
+             */
+            user_id: string;
+            /**
+             * Ttl Seconds
+             * @description Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.
+             * @default 7200
+             */
+            ttl_seconds?: number;
+        };
+        /** DevLoginResponse */
+        DevLoginResponse: {
+            /** Access Token */
+            access_token: string;
+            /** User Id */
+            user_id: string;
+            /** Expires At */
+            expires_at: number;
+            /** Issued At */
+            issued_at: number;
+            /** Jti */
+            jti: string;
         };
         /**
          * DevtoServiceStatus
@@ -115471,6 +115552,27 @@ export interface components {
             /** Transcript Session Ids */
             transcript_session_ids: string[];
         };
+        /**
+         * TranscriptionChapter
+         * @description One chapter the SOURCE container declared, on the transcript's clock.
+         *
+         *     An audiobook, a podcast episode with markers, a recorded lecture exported
+         *     with sections: the container carries the author's own division of the
+         *     material, and it is the only structure a transcript has. Without it a
+         *     nine-hour book is one undifferentiated wall of words and a rule cites
+         *     "at 4:41:02" instead of "Chapter 7". ``index`` is 1-based, in the order
+         *     the container declared them.
+         */
+        TranscriptionChapter: {
+            /** Index */
+            index: number;
+            /** Title */
+            title?: string | null;
+            /** Start */
+            start: number;
+            /** End */
+            end?: number | null;
+        };
         /** TranscriptionFileRequest */
         TranscriptionFileRequest: {
             /**
@@ -123379,6 +123481,8 @@ export interface components {
             duration?: number | null;
             /** Segments */
             segments?: components["schemas"]["TranscriptionSegment"][];
+            /** Chapters */
+            chapters?: components["schemas"]["TranscriptionChapter"][];
             meta: components["schemas"]["TranscriptionMeta"];
         };
         /** TypeResult */
@@ -166665,6 +166769,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["JsonRpcResponse"];
+                };
+            };
+        };
+    };
+    dev_login_as_dev_login_as_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Dev-Login-Secret"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DevLoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DevLoginResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

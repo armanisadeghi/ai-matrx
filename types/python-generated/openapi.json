@@ -3534,7 +3534,7 @@
           "AI"
         ],
         "summary": "Bind Conversation Sandbox",
-        "description": "Bind a sandbox to a conversation (server-authoritative, ownership-scoped).\n\nPersists ``cx_conversation.sandbox_instance_id`` so the agent auto-arms the\nfs/shell/git tools on the next turn. The binding ALWAYS persists when the\ncaller owns both the conversation and the box; ``armed`` in the response\nstates whether the next run will actually get tools (and ``reason`` why not,\ne.g. an ec2-tier box or a stopped sandbox) — so the client never silently\nfails the way the old direct-Supabase write did.",
+        "description": "Bind a sandbox to a conversation (server-authoritative, ownership-scoped).\n\nPersists ``cx_conversation.sandbox_instance_id`` so the agent auto-arms the\nfs/shell/git tools on the next turn. The binding ALWAYS persists when the\ncaller owns both the conversation and the box; ``armed`` in the response\nstates whether the next run will actually get tools (and ``reason`` why not,\ne.g. an ec2-tier box or a stopped sandbox) — so the client never silently\nfails the way the old direct-Supabase write did.\n\n**Binding BEFORE the first turn is the normal case, not an edge one.** The\nreal flow is: open ``/chat/new``, pick your box, then talk. So this door\ngoes through ``ensure_conversation_for_actor`` — it CREATES the row for the\nid the client minted rather than 404ing on it, exactly as the attachments\ndoor does. Two things make that safe, and both were built for this ruling\n(2026-09-18, feedback 6fae7a84):\n\n* adoption on the first turn no longer clears the binding — it is\n  ``matrx_ai.db.conversation_gate._ADOPTION_PRESERVED_USER_CHOICE``, state a\n  person chose, not a dead attempt's leftovers; and\n* turn-1 arming reads the persisted binding (``sandbox_autobind`` no longer\n  skips the lookup for a new conversation), so the run actually gets the box.\n\nBefore those, persisting here would have been WIPED in silence, which is\nwhy this door deliberately kept its 404 until now.",
         "operationId": "bind_conversation_sandbox_ai_conversation__conversation_id__sandbox_put",
         "parameters": [
           {
@@ -3669,7 +3669,7 @@
           "AI"
         ],
         "summary": "Bind Conversation Sandbox",
-        "description": "Bind a sandbox to a conversation (server-authoritative, ownership-scoped).\n\nPersists ``cx_conversation.sandbox_instance_id`` so the agent auto-arms the\nfs/shell/git tools on the next turn. The binding ALWAYS persists when the\ncaller owns both the conversation and the box; ``armed`` in the response\nstates whether the next run will actually get tools (and ``reason`` why not,\ne.g. an ec2-tier box or a stopped sandbox) — so the client never silently\nfails the way the old direct-Supabase write did.",
+        "description": "Bind a sandbox to a conversation (server-authoritative, ownership-scoped).\n\nPersists ``cx_conversation.sandbox_instance_id`` so the agent auto-arms the\nfs/shell/git tools on the next turn. The binding ALWAYS persists when the\ncaller owns both the conversation and the box; ``armed`` in the response\nstates whether the next run will actually get tools (and ``reason`` why not,\ne.g. an ec2-tier box or a stopped sandbox) — so the client never silently\nfails the way the old direct-Supabase write did.\n\n**Binding BEFORE the first turn is the normal case, not an edge one.** The\nreal flow is: open ``/chat/new``, pick your box, then talk. So this door\ngoes through ``ensure_conversation_for_actor`` — it CREATES the row for the\nid the client minted rather than 404ing on it, exactly as the attachments\ndoor does. Two things make that safe, and both were built for this ruling\n(2026-09-18, feedback 6fae7a84):\n\n* adoption on the first turn no longer clears the binding — it is\n  ``matrx_ai.db.conversation_gate._ADOPTION_PRESERVED_USER_CHOICE``, state a\n  person chose, not a dead attempt's leftovers; and\n* turn-1 arming reads the persisted binding (``sandbox_autobind`` no longer\n  skips the lookup for a new conversation), so the run actually gets the box.\n\nBefore those, persisting here would have been WIPED in silence, which is\nwhy this door deliberately kept its 404 until now.",
         "operationId": "bind_conversation_sandbox_ai_conversations__conversation_id__sandbox_put",
         "parameters": [
           {
@@ -55660,6 +55660,66 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/JsonRpcResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dev/login-as": {
+      "post": {
+        "tags": [
+          "Dev Login"
+        ],
+        "summary": "Dev Login As",
+        "description": "Mint a real Supabase Auth session for the given user id.",
+        "operationId": "dev_login_as_dev_login_as_post",
+        "parameters": [
+          {
+            "name": "X-Dev-Login-Secret",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Dev-Login-Secret"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DevLoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
             }
@@ -110139,6 +110199,18 @@
             ],
             "title": "Normalized Tool Call Id"
           },
+          "subagent_conversation_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subagent Conversation Id"
+          },
           "error_code": {
             "anyOf": [
               {
@@ -142064,6 +142136,61 @@
         ],
         "title": "DevCommunityArticleList",
         "description": "Bounded public-article response."
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "user_id": {
+            "type": "string",
+            "title": "User Id",
+            "description": "UUID of an existing row in auth.users."
+          },
+          "ttl_seconds": {
+            "type": "integer",
+            "maximum": 86400,
+            "minimum": 60,
+            "title": "Ttl Seconds",
+            "description": "Requested lifetime, recorded in the audit row. Supabase issues the session and owns its expiry, so the returned `expires_at` is the token's real `exp`, not this value.",
+            "default": 7200
+          }
+        },
+        "type": "object",
+        "required": [
+          "user_id"
+        ],
+        "title": "DevLoginRequest"
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "user_id": {
+            "type": "string",
+            "title": "User Id"
+          },
+          "expires_at": {
+            "type": "integer",
+            "title": "Expires At"
+          },
+          "issued_at": {
+            "type": "integer",
+            "title": "Issued At"
+          },
+          "jti": {
+            "type": "string",
+            "title": "Jti"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "user_id",
+          "expires_at",
+          "issued_at",
+          "jti"
+        ],
+        "title": "DevLoginResponse"
       },
       "DevtoServiceStatus": {
         "properties": {
@@ -258970,6 +259097,48 @@
         ],
         "title": "TranscriptSessionInputPart"
       },
+      "TranscriptionChapter": {
+        "properties": {
+          "index": {
+            "type": "integer",
+            "title": "Index"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "start": {
+            "type": "number",
+            "title": "Start"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "index",
+          "start"
+        ],
+        "title": "TranscriptionChapter",
+        "description": "One chapter the SOURCE container declared, on the transcript's clock.\n\nAn audiobook, a podcast episode with markers, a recorded lecture exported\nwith sections: the container carries the author's own division of the\nmaterial, and it is the only structure a transcript has. Without it a\nnine-hour book is one undifferentiated wall of words and a rule cites\n\"at 4:41:02\" instead of \"Chapter 7\". ``index`` is 1-based, in the order\nthe container declared them."
+      },
       "TranscriptionFileRequest": {
         "properties": {
           "organization_id": {
@@ -276910,6 +277079,13 @@
             },
             "type": "array",
             "title": "Segments"
+          },
+          "chapters": {
+            "items": {
+              "$ref": "#/components/schemas/TranscriptionChapter"
+            },
+            "type": "array",
+            "title": "Chapters"
           },
           "meta": {
             "$ref": "#/components/schemas/TranscriptionMeta"

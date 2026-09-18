@@ -71517,6 +71517,7 @@ export type Database = {
         }
         Returns: string
       }
+      cvx_deep_hits: { Args: { p_search: string }; Returns: string[] }
       cvx_list_facets: {
         Args: {
           p_archived?: string
