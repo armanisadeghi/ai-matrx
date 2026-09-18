@@ -6695,7 +6695,7 @@ export type Database = {
           is_current: boolean
           kms_key_version: string
           metadata: Json
-          nonce: string
+          nonce: string | null
           object_bucket: string
           object_key: string
           organization_id: string
@@ -6713,7 +6713,7 @@ export type Database = {
           verify_failure_detail: string | null
           version: number
           visibility: Database["platform"]["Enums"]["visibility"]
-          wrapped_dek: string
+          wrapped_dek: string | null
         }
         Insert: {
           archive_format_version: number
@@ -6728,7 +6728,7 @@ export type Database = {
           is_current?: boolean
           kms_key_version: string
           metadata?: Json
-          nonce: string
+          nonce?: string | null
           object_bucket: string
           object_key: string
           organization_id: string
@@ -6746,7 +6746,7 @@ export type Database = {
           verify_failure_detail?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
-          wrapped_dek: string
+          wrapped_dek?: string | null
         }
         Update: {
           archive_format_version?: number
@@ -6761,7 +6761,7 @@ export type Database = {
           is_current?: boolean
           kms_key_version?: string
           metadata?: Json
-          nonce?: string
+          nonce?: string | null
           object_bucket?: string
           object_key?: string
           organization_id?: string
@@ -6779,7 +6779,7 @@ export type Database = {
           verify_failure_detail?: string | null
           version?: number
           visibility?: Database["platform"]["Enums"]["visibility"]
-          wrapped_dek?: string
+          wrapped_dek?: string | null
         }
         Relationships: [
           {
@@ -52878,6 +52878,95 @@ export type Database = {
           },
         ]
       }
+      publish_binding: {
+        Row: {
+          bound_at: string
+          bound_by: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          organization_id: string
+          render_mode: string
+          resource_id: string
+          resource_type: string
+          revoked_at: string | null
+          revoked_by: string | null
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          bound_at?: string
+          bound_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          organization_id: string
+          render_mode: string
+          resource_id: string
+          resource_type: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          bound_at?: string
+          bound_by?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          organization_id?: string
+          render_mode?: string
+          resource_id?: string
+          resource_type?: string
+          revoked_at?: string | null
+          revoked_by?: string | null
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      publisher_verification: {
+        Row: {
+          created_at: string
+          evidence: string | null
+          method: string | null
+          organization_id: string
+          updated_at: string
+          verified: boolean
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          evidence?: string | null
+          method?: string | null
+          organization_id: string
+          updated_at?: string
+          verified?: boolean
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          evidence?: string | null
+          method?: string | null
+          organization_id?: string
+          updated_at?: string
+          verified?: boolean
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publisher_verification_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       superseded_policy: {
         Row: {
           id: string
@@ -52982,6 +53071,89 @@ export type Database = {
           resolved_org_id?: string | null
           updated_by?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      world_namespace: {
+        Row: {
+          claimed_at: string
+          claimed_by: string | null
+          created_at: string
+          namespace: string
+          organization_id: string
+          updated_at: string
+        }
+        Insert: {
+          claimed_at?: string
+          claimed_by?: string | null
+          created_at?: string
+          namespace: string
+          organization_id: string
+          updated_at?: string
+        }
+        Update: {
+          claimed_at?: string
+          claimed_by?: string | null
+          created_at?: string
+          namespace?: string
+          organization_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "world_namespace_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      world_publish_admission: {
+        Row: {
+          created_at: string
+          id: string
+          namespace: string
+          organization_id: string
+          published_at: string
+          published_by: string | null
+          ranking_state: string
+          resource_id: string
+          resource_type: string
+          scan_remedy: string
+          scan_state: string
+          updated_at: string
+          verification_method: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          namespace: string
+          organization_id: string
+          published_at?: string
+          published_by?: string | null
+          ranking_state?: string
+          resource_id: string
+          resource_type: string
+          scan_remedy: string
+          scan_state?: string
+          updated_at?: string
+          verification_method?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          namespace?: string
+          organization_id?: string
+          published_at?: string
+          published_by?: string | null
+          ranking_state?: string
+          resource_id?: string
+          resource_type?: string
+          scan_remedy?: string
+          scan_state?: string
+          updated_at?: string
+          verification_method?: string | null
         }
         Relationships: []
       }
@@ -53386,6 +53558,23 @@ export type Database = {
         Args: { p_schema: string; p_table: string; p_token: string }
         Returns: boolean
       }
+      claim_world_namespace: {
+        Args: { p_namespace: string; p_organization_id: string }
+        Returns: {
+          claimed_at: string
+          claimed_by: string | null
+          created_at: string
+          namespace: string
+          organization_id: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "world_namespace"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       class_allows: {
         Args: { p_action: string; p_row_org?: string; p_token: string }
         Returns: boolean
@@ -53510,6 +53699,18 @@ export type Database = {
         Args: { p_id: string; p_token: string }
         Returns: Json
       }
+      emergency_door_lapsed_grants: {
+        Args: never
+        Returns: {
+          audit_id: string
+          expires_at: string
+          granted_to_user_id: string
+          permission_id: string
+          resource_id: string
+          resource_type: string
+          subject_user_id: string
+        }[]
+      }
       emergency_door_open: {
         Args: {
           p_id: string
@@ -53521,6 +53722,7 @@ export type Database = {
       }
       emergency_door_pending: { Args: never; Returns: Json }
       emergency_door_purposes: { Args: never; Returns: Json }
+      emergency_door_sweep: { Args: never; Returns: Json }
       entity_read_equivalence: {
         Args: {
           p_baseline?: string
@@ -53572,6 +53774,13 @@ export type Database = {
         Args: { p_limit?: number }
         Returns: {
           user_id: string
+        }[]
+      }
+      external_principal_card: { Args: { p_user_id?: string }; Returns: Json }
+      external_principal_reach: {
+        Args: { p_resource_type: string; p_user_id?: string }
+        Returns: {
+          resource_id: string
         }[]
       }
       field_sensitivity_level: {
@@ -53710,6 +53919,7 @@ export type Database = {
             }
             Returns: boolean
           }
+      is_external_principal: { Args: { p_user_id?: string }; Returns: boolean }
       is_last_organization: {
         Args: { p_org_id: string; p_user_id: string }
         Returns: boolean
@@ -53820,6 +54030,37 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: string
       }
+      publish_binding_create: {
+        Args: {
+          p_organization_id: string
+          p_render_mode?: string
+          p_resource_id: string
+          p_resource_type: string
+          p_slug: string
+        }
+        Returns: {
+          bound_at: string
+          bound_by: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          organization_id: string
+          render_mode: string
+          resource_id: string
+          resource_type: string
+          revoked_at: string | null
+          revoked_by: string | null
+          slug: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "publish_binding"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      publish_binding_revoke: { Args: { p_slug: string }; Returns: Json }
       publish_to_world: {
         Args: {
           p_discoverable?: boolean
@@ -53856,6 +54097,25 @@ export type Database = {
         }[]
       }
       record_transfer_refusal: { Args: { p_refusal: Json }; Returns: string }
+      reserved_namespace: {
+        Args: never
+        Returns: {
+          namespace: string
+          reason: string
+        }[]
+      }
+      resolve_publish_binding: {
+        Args: { p_slug: string }
+        Returns: {
+          namespace: string
+          notice: string
+          organization_id: string
+          render_mode: string
+          resource_id: string
+          resource_type: string
+          slug: string
+        }[]
+      }
       role_label: { Args: { p_role: string }; Returns: string }
       role_vocabulary_offenders: {
         Args: never
@@ -53988,6 +54248,15 @@ export type Database = {
           field_key: string
         }[]
       }
+      world_publish_admit: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
+      world_publish_announcement: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: Json
+      }
+      world_publish_gap_notice: { Args: never; Returns: string }
     }
     Enums: {
       [_ in never]: never
@@ -61911,6 +62180,345 @@ export type Database = {
           version?: number
         }
         Relationships: []
+      }
+      egress_device: {
+        Row: {
+          app_instance_id: string | null
+          bytes_relayed: number
+          client_kind: string
+          connected: boolean
+          connected_at: string | null
+          connection_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_name: string
+          enabled: boolean
+          gateway_host: string | null
+          gateway_port: number | null
+          helper_version: string | null
+          id: string
+          last_error: string | null
+          last_seen_at: string | null
+          last_used_at: string | null
+          metadata: Json
+          organization_id: string
+          platform: string | null
+          streams_relayed: number
+          token_hash: string
+          token_prefix: string
+          token_rotated_at: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          app_instance_id?: string | null
+          bytes_relayed?: number
+          client_kind: string
+          connected?: boolean
+          connected_at?: string | null
+          connection_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name: string
+          enabled?: boolean
+          gateway_host?: string | null
+          gateway_port?: number | null
+          helper_version?: string | null
+          id?: string
+          last_error?: string | null
+          last_seen_at?: string | null
+          last_used_at?: string | null
+          metadata?: Json
+          organization_id: string
+          platform?: string | null
+          streams_relayed?: number
+          token_hash: string
+          token_prefix: string
+          token_rotated_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          app_instance_id?: string | null
+          bytes_relayed?: number
+          client_kind?: string
+          connected?: boolean
+          connected_at?: string | null
+          connection_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name?: string
+          enabled?: boolean
+          gateway_host?: string | null
+          gateway_port?: number | null
+          helper_version?: string | null
+          id?: string
+          last_error?: string | null
+          last_seen_at?: string | null
+          last_used_at?: string | null
+          metadata?: Json
+          organization_id?: string
+          platform?: string | null
+          streams_relayed?: number
+          token_hash?: string
+          token_prefix?: string
+          token_rotated_at?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "egress_device_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "egress_device_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "egress_device_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "egress_device_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      egress_pairing: {
+        Row: {
+          approved_by: string | null
+          created_at: string
+          created_by: string | null
+          device_id: string | null
+          device_token_ciphertext: string | null
+          expires_at: string
+          id: string
+          metadata: Json
+          organization_id: string
+          registration: Json
+          secret_hash: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          user_code: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          device_id?: string | null
+          device_token_ciphertext?: string | null
+          expires_at: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          registration?: Json
+          secret_hash: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_code: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          device_id?: string | null
+          device_token_ciphertext?: string | null
+          expires_at?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          registration?: Json
+          secret_hash?: string
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          user_code?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "egress_pairing_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "egress_pairing_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "egress_pairing_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "egress_pairing_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "egress_pairing_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "egress_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "egress_pairing_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "egress_pairing_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      egress_ticket: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          device_id: string
+          expires_at: string
+          id: string
+          metadata: Json
+          organization_id: string
+          purpose: string
+          token_hash: string
+          updated_at: string
+          updated_by: string | null
+          used_streams: number
+          user_id: string
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          device_id: string
+          expires_at: string
+          id?: string
+          metadata?: Json
+          organization_id: string
+          purpose: string
+          token_hash: string
+          updated_at?: string
+          updated_by?: string | null
+          used_streams?: number
+          user_id: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          device_id?: string
+          expires_at?: string
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          purpose?: string
+          token_hash?: string
+          updated_at?: string
+          updated_by?: string | null
+          used_streams?: number
+          user_id?: string
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "egress_ticket_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "egress_ticket_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "egress_ticket_device_id_fkey"
+            columns: ["device_id"]
+            isOneToOne: false
+            referencedRelation: "egress_device"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "egress_ticket_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "egress_ticket_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "egress_ticket_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "egress_ticket_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       entity_grants: {
         Row: {
