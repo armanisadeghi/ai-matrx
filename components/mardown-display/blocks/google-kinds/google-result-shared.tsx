@@ -60,6 +60,8 @@ import {
 } from "@/features/item-presentation/registry";
 import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
 import type { ItemType } from "@/features/item-presentation/types";
+import { ResultValue } from "@/features/tool-call-visualization/result-fields/ResultValue";
+import { humanizeKey } from "@/features/tool-call-visualization/result-fields/shape";
 import {
   ChipRow,
   Section,
@@ -448,6 +450,49 @@ export const NothingWasWritten: React.FC<{
         </ChipRow>
       ) : null}
     </div>
+  );
+};
+
+/**
+ * 🚨 EVERY `would_*` THAT ARRIVED IS SHOWN, EXACTLY ONCE (BUGBOT MEDIUM ON
+ * F-95's `f881c9f6`).
+ *
+ * F-95 merged `claim.previewKeys` — every `would_*` key that arrived — into
+ * both blocks' `omit` lists, on the reasoning that `NothingWasWritten` already
+ * covers the write-claim family. It does not: `NothingWasWritten` only
+ * ANNOUNCES that a preview exists ("nothing was written — this is a preview
+ * of the exact change"); it never prints the change itself. A `would_*` shape
+ * with no dedicated preview section — `would_delete` on the workspace block,
+ * and EVERY `would_*` on the marketing block, which has no preview sections
+ * at all because it is read-only — therefore vanished entirely: worse than
+ * the double-print it replaced, because a preview whose content the reader
+ * cannot see is a lie about what would happen.
+ *
+ * THE LAW: a `would_*` key that arrived renders exactly once — by its
+ * dedicated preview section when the block has one for it (the caller passes
+ * those names in `rendered`), otherwise by this ONE generic section here, per
+ * key, labeled by the humanized key and printed through `ResultValue` at full
+ * density. Either way the key then belongs in `omit` (still `claim.previewKeys`,
+ * as before) because it IS shown now, not because it is hidden.
+ */
+export const UnmodelledPreviews: React.FC<{
+  /** The full result value, so an unmodelled `would_*` key can be read off it. */
+  value: Record<string, unknown>;
+  claim: WriteClaim;
+  /** `would_*` names this block already renders through a dedicated section. */
+  rendered: readonly string[];
+}> = ({ value, claim, rendered }) => {
+  const dedicated = new Set(rendered);
+  const remaining = claim.previewKeys.filter((key) => !dedicated.has(key));
+  if (remaining.length === 0) return null;
+  return (
+    <>
+      {remaining.map((key) => (
+        <Section key={key} label={`The change it would make — ${humanizeKey(key)}`}>
+          <ResultValue value={value[key]} density="full" />
+        </Section>
+      ))}
+    </>
   );
 };
 

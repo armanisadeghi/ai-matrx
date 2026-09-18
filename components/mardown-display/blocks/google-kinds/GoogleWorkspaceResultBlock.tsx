@@ -79,6 +79,7 @@ import {
   RecordSyncState,
   ServerSentence,
   TruncationChip,
+  UnmodelledPreviews,
   WRITE_CLAIM_KEYS,
   readBlock,
   readRows,
@@ -149,6 +150,15 @@ export const PROMOTED = [
   "already_imported",
   "skipped",
 ] as const;
+
+/**
+ * The `would_*` names THIS block already renders through a dedicated preview
+ * section below (`AppendPreview`, `SheetWritePreview`/`GenericWritePreview`,
+ * the "file that would be created" section) — passed to `UnmodelledPreviews`
+ * so an unmodelled `would_*` (e.g. `would_delete`) still gets its own generic
+ * preview instead of vanishing into `omit`.
+ */
+const DEDICATED_PREVIEW_KEYS = ["would_append", "would_write", "would_create"] as const;
 
 /** The action's own icon — the fastest "which of my things is this" cue. */
 function headIcon(action: string, value: Record<string, unknown>) {
@@ -464,6 +474,11 @@ const GoogleWorkspaceResultBlock: React.FC<ResultKindBlockProps> = ({
           <ResultValue value={wouldCreate} density="full" />
         </Section>
       ) : null}
+
+      {/* Any `would_*` key this block does not have a dedicated preview for
+          (e.g. `would_delete`) — never dropped, never doubled: see
+          `UnmodelledPreviews` in `google-result-shared.tsx`. */}
+      <UnmodelledPreviews value={value} claim={claim} rendered={DEDICATED_PREVIEW_KEYS} />
 
       {/* A step only the browser can take — stated with what to do, never as a
           failure the agent can retry. */}

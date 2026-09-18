@@ -502,6 +502,28 @@ const FIXTURES: Fixture[] = [
       "GA4 tag",
     ],
   },
+  // BUGBOT MEDIUM (f881c9f6): the marketing block has NO dedicated preview
+  // section at all (its six actions are read-only), so EVERY `would_*` on it
+  // is unmodelled. RED against f881c9f6: "UNIQUE-UPDATE-MARKER-7c3d" is
+  // absent, because `would_update` sat in `omit` with nothing printing it.
+  {
+    name: "BUGBOT MEDIUM (f881c9f6): the marketing block shows an unmodelled would_update preview, not swallowed",
+    kind: MARKETING_KIND,
+    Component: GoogleMarketingResultBlock,
+    data: {
+      action: "update_tag_manager_container",
+      would_update: {
+        container_id: "GTM-123",
+        note: "UNIQUE-UPDATE-MARKER-7c3d",
+      },
+    },
+    visible: [
+      "Nothing was written",
+      "The change it would make",
+      "Would update",
+      "UNIQUE-UPDATE-MARKER-7c3d",
+    ],
+  },
   // ── V-22's HOSTILE SHAPES (VERIFY-R7-FIX-WAVE, findings NEW-8/10/14) ──────
   //
   // Every fixture below is a payload the declared kinds ALLOW and the first
@@ -639,6 +661,35 @@ const FIXTURES: Fixture[] = [
       weird_nested: { deep: "matters" },
     },
     visible: ["99", "matters"],
+  },
+  // ── BUGBOT MEDIUM on F-95's f881c9f6 — an unmodelled would_* still shows ──
+  //
+  // F-95 merged `claim.previewKeys` into the omit list on the reasoning that
+  // `NothingWasWritten` already covers the write-claim family. It only
+  // ANNOUNCES a preview exists; it never prints the change. A `would_*` shape
+  // with no dedicated section (`would_delete` here — this block hand-lists
+  // only `would_append`/`would_write`/`would_create`) vanished entirely: a
+  // preview whose content the reader cannot see is a lie about what would
+  // happen. RED against f881c9f6: "UNIQUE-DELETE-MARKER-9f2a" is absent.
+  {
+    name: "BUGBOT MEDIUM (f881c9f6): an unmodelled would_delete preview is shown, not swallowed",
+    kind: WORKSPACE_KIND,
+    Component: GoogleWorkspaceResultBlock,
+    data: {
+      action: "delete_document",
+      dry_run: true,
+      title: "Old Draft",
+      would_delete: {
+        document_ref: "1Trash",
+        reason: "UNIQUE-DELETE-MARKER-9f2a",
+      },
+    },
+    visible: [
+      "Nothing was written",
+      "The change it would make",
+      "Would delete",
+      "UNIQUE-DELETE-MARKER-9f2a",
+    ],
   },
   {
     name: "NEW-10: a marketing count with no bounds says the window was never stated",
@@ -1234,6 +1285,77 @@ describe("the two Google tool-result kinds route to their own component", () => 
         expect(occurrencesOf("hitl.google.unattended_file_write")).toBe(1);
       },
     );
+  });
+
+  /**
+   * 🚨 BUGBOT MEDIUM ON F-95's `f881c9f6`. `NothingWasWritten` only ANNOUNCES
+   * that a preview exists; it never prints the change. F-95 merged
+   * `claim.previewKeys` into both blocks' `omit` lists on the mistaken belief
+   * that the announcement was the whole story, so an unmodelled `would_*` —
+   * `would_delete` on the workspace block (which hand-lists only
+   * `would_append`/`would_write`/`would_create`), and EVERY `would_*` on the
+   * marketing block (which is read-only and has no dedicated preview section
+   * at all) — vanished between the headline and the leftovers. RED against
+   * `f881c9f6`: the distinctive marker string is absent entirely; GREEN once
+   * `UnmodelledPreviews` (`google-result-shared.tsx`) renders it, exactly
+   * once, under a preview heading.
+   */
+  describe("an unmodelled would_* preview is shown exactly once, never swallowed (BUGBOT MEDIUM on f881c9f6)", () => {
+    const occurrencesOf = (markup: string, needle: string) =>
+      markup.split(needle).length - 1;
+
+    it("google_workspace_result: an unhandled would_delete renders its content once, under a preview heading", () => {
+      const data = {
+        action: "delete_document",
+        dry_run: true,
+        title: "Old Draft",
+        would_delete: { document_ref: "1Trash", reason: "UNIQUE-DELETE-MARKER-9f2a" },
+      };
+      kindRegistry.upsertDefinition({
+        kind: WORKSPACE_KIND,
+        schema: null,
+        schemaSource: "content_ir",
+        tier: "warm",
+      });
+      componentRegistry.ingestDbRows([registeredRow(WORKSPACE_KIND)]);
+      const routed = applyIrKindRoute(kindBlock(WORKSPACE_KIND, data));
+      const markup = mount(
+        <GoogleWorkspaceResultBlock content={routed.content} metadata={routed.metadata} />,
+      );
+
+      // The content is there — RED before the fix, this string never appeared.
+      expect(occurrencesOf(markup, "UNIQUE-DELETE-MARKER-9f2a")).toBe(1);
+      // Under a preview heading, not a bare leftover dump.
+      expect(markup).toContain("The change it would make");
+      // The lead-in line is still present, exactly as before.
+      expect(markup).toContain("Nothing was written");
+      // Never ALSO as a raw leftover: `LeftoverFields`' own heading must not
+      // have picked it up a second time.
+      expect(occurrencesOf(markup, "would_delete")).toBe(0);
+    });
+
+    it("google_marketing_result: an unhandled would_update renders its content once, even though this block has no dedicated preview section", () => {
+      const data = {
+        action: "update_tag_manager_container",
+        would_update: { container_id: "GTM-123", note: "UNIQUE-UPDATE-MARKER-7c3d" },
+      };
+      kindRegistry.upsertDefinition({
+        kind: MARKETING_KIND,
+        schema: null,
+        schemaSource: "content_ir",
+        tier: "warm",
+      });
+      componentRegistry.ingestDbRows([registeredRow(MARKETING_KIND)]);
+      const routed = applyIrKindRoute(kindBlock(MARKETING_KIND, data));
+      const markup = mount(
+        <GoogleMarketingResultBlock content={routed.content} metadata={routed.metadata} />,
+      );
+
+      expect(occurrencesOf(markup, "UNIQUE-UPDATE-MARKER-7c3d")).toBe(1);
+      expect(markup).toContain("The change it would make");
+      expect(markup).toContain("Nothing was written");
+      expect(occurrencesOf(markup, "would_update")).toBe(0);
+    });
   });
 
   /**

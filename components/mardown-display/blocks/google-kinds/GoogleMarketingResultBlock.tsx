@@ -64,12 +64,20 @@ import {
   RecordDoor,
   ServerSentence,
   TruncationChip,
+  UnmodelledPreviews,
   WRITE_CLAIM_KEYS,
   hasStatedBounds,
   readBlock,
   readRows,
   readWriteClaim,
 } from "./google-result-shared";
+
+/**
+ * This block has NO dedicated preview section — its six actions are all
+ * read-only, so a `would_*` key here is always unmodelled and always goes
+ * through `UnmodelledPreviews`'s generic section (empty on purpose).
+ */
+const DEDICATED_PREVIEW_KEYS: readonly string[] = [];
 
 /**
  * Exported so the render-leg test suite can census it directly — a promoted
@@ -235,6 +243,7 @@ const GoogleMarketingResultBlock: React.FC<ResultKindBlockProps> = ({
       </div>
 
       <NothingWasWritten claim={claim} approval={readBlock(value.approval)} />
+      <UnmodelledPreviews value={value} claim={claim} rendered={DEDICATED_PREVIEW_KEYS} />
 
       <ChipRow>
         {/* WHERE the number came from. Never implied. */}
