@@ -43,6 +43,7 @@ import {
 import { StructuredValueTabs } from "@/components/mardown-display/blocks/generic/StructuredValueTabs";
 import { KindSlot } from "@/features/content-ir/react/slot/KindSlot";
 import {
+  selectRequest,
   selectRequestCarriesKindEnvelope,
   selectRequestStreamingPartialValue,
 } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
@@ -249,6 +250,16 @@ function stripProtocolTags(text: string): string {
   return text.replace(/<\/?reasoning>/g, "").trimStart();
 }
 
+// The tracked tail keeps only its last 4 KB. Detect JSON from any window of
+// that tail, including a window cut inside a long string value.
+function looksLikeBareJsonWindow(text: string): boolean {
+  return (
+    /^[[{]/.test(text.trimStart()) ||
+    (text.match(/"\s*:\s*/g)?.length ?? 0) >= 2 ||
+    (text.match(/\\n/g)?.length ?? 0) >= 2
+  );
+}
+
 export function InvocationBody({
   runId,
   invocation,
@@ -325,6 +336,9 @@ export function InvocationBody({
   const lanePartialValue = useAppSelector(
     selectRequestStreamingPartialValue(laneRequestId ?? ""),
   );
+  const laneRawText = useAppSelector(
+    (state) => selectRequest(laneRequestId ?? "")(state)?.currentTextRunRaw,
+  );
   // The step's promised shape: the definition's declaration (threaded by the
   // caller) or the engine's announcement on node_started — which is the ONLY
   // source for SPEC-level kinds like docproc.content.structure.
@@ -340,7 +354,21 @@ export function InvocationBody({
     // performing the arrival. A silhouette that sat still while tokens poured
     // in read as "nothing is happening" for the whole step (Arman,
     // 2026-08-26).
-    if (promisedKind && !laneCarriesKind && working) {
+    // `agent_result` describes the settled node envelope, not the shape of
+    // live prose. Show prose through the canonical renderer, but keep bare
+    // JSON behind the slot until its kind component can render it.
+    // The full live text still has its beginning, so classify by its opening.
+    // The density heuristics are only for a truncated fallback tail; applying
+    // them to full prose would hide an agent's later JSON code example.
+    const bareJson = laneRawText
+      ? /^[[{]/.test(laneRawText.trimStart())
+      : looksLikeBareJsonWindow(invocation.textTail || "");
+    if (
+      promisedKind &&
+      (promisedKind !== "agent_result" || bareJson) &&
+      !laneCarriesKind &&
+      working
+    ) {
       return (
         <KindSlot
           slotKey={`${runId}:${invocation.invocationKey}:lane`}
@@ -381,26 +409,8 @@ export function InvocationBody({
     // silhouette. Prose tails (an agent narrating) stay visible — covering
     // live words with a skeleton would be a downgrade.
     //
-    // 🚨 The tail is END-KEEPING (4000-char cap, head cut first), so once the
-    // cap engages the tail starts MID-STRING and a `^[{[]` test fails at the
-    // exact moment it matters — caught live on 2026-08-26: "Structure
-    // knowledge" printed 4000 chars of raw mid-string JSON
-    // (`rupts the Water Cycle","body":"People alter…`) through this branch.
-    // JSON-ness must be detectable from ANY window of the region: a leading
-    // brace still counts, and so does key-colon density anywhere in the text
-    // (two or more `":` markers — prose essentially never has them).
-    const tail = invocation.textTail;
-    // Three prongs, because the end-keeping window can land ANYWHERE in the
-    // region: a leading brace (window starts at the JSON), key-colon density
-    // (window spans keys), or ≥2 literal `\n` escape sequences — the window
-    // is INSIDE one long string value, where neither other prong can fire
-    // (caught live on 2026-08-26 run 5: "Structure knowledge" showed
-    // `ontinuously.\n\n**Earthquake swarms:** …` — a body string's innards,
-    // escapes and all). Prose never contains a literal backslash-n.
-    const tailIsJson =
-      /^[[{]/.test(tail.trimStart()) ||
-      (tail.match(/"\s*:\s*/g)?.length ?? 0) >= 2 ||
-      (tail.match(/\\n/g)?.length ?? 0) >= 2;
+    // The shared classifier also catches end-keeping windows cut mid-JSON.
+    const tailIsJson = looksLikeBareJsonWindow(invocation.textTail);
     // NO promised kind required. A step with no declared kind (the current
     // notes/summary nodes) used to fall past this guard and dump its raw
     // reasoning + pretty-printed JSON innards through the prose branch —
