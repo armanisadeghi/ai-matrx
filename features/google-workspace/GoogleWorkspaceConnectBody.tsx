@@ -21,6 +21,12 @@ import {
 } from "@/features/marketing/google/hooks";
 import { registerSelectedGoogleFile } from "@/features/google-workspace/service";
 import {
+  OPEN_GOOGLE_RECORD_CONSEQUENCE,
+  OpenGoogleDocumentRecordButton,
+  hasGoogleDocumentRecord,
+  pickedGoogleRecordResource,
+} from "@/features/google-workspace/documents/openRecord";
+import {
   googleWorkspaceFileType,
   googleWorkspacePickLabel,
 } from "@/features/google-workspace/resource-types";
@@ -359,6 +365,13 @@ function GoogleWorkspaceConnectBodyContent({
                   : googleWorkspacePickLabel()}
             </Button>
 
+            {mode === "workspace" &&
+            files.some((file) => hasGoogleDocumentRecord(file.resource_type)) ? (
+              <p className="text-xs text-muted-foreground">
+                {OPEN_GOOGLE_RECORD_CONSEQUENCE}
+              </p>
+            ) : null}
+
             {mode === "workspace" && files.length ? (
               <div className="overflow-hidden rounded-md border border-border">
                 {files.map((file) => {
@@ -381,12 +394,25 @@ function GoogleWorkspaceConnectBodyContent({
                       <span className="truncate text-sm text-foreground">
                         {file.display_name}
                       </span>
+                      {/*
+                        🚨 THE RECORD IS THE DOOR (F-58). A picked file listed
+                        with nothing but its Google link is a named identity with
+                        no AI Matrx surface; this opens it as its Record in the
+                        Detail primitive, in place.
+                      */}
+                      {hasGoogleDocumentRecord(file.resource_type) ? (
+                        <OpenGoogleDocumentRecordButton
+                          resource={pickedGoogleRecordResource(file)}
+                          variant="ghost"
+                          className="ml-auto shrink-0"
+                        />
+                      ) : null}
                       {typeof link === "string" && link ? (
                         <a
                           href={link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="ml-auto shrink-0 text-muted-foreground hover:text-foreground"
+                          className={`${hasGoogleDocumentRecord(file.resource_type) ? "" : "ml-auto "}shrink-0 text-muted-foreground hover:text-foreground`}
                           aria-label={`Open ${file.display_name} in Google`}
                         >
                           <ExternalLink className="h-3.5 w-3.5" />

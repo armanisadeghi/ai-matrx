@@ -164,10 +164,16 @@ describe("the review workspace checks before it claims a write happened", () => 
     "utf8",
   );
 
-  it("branches on the proposal for BOTH of its writes", () => {
+  it("branches on the proposal for its write", () => {
+    // ONE write, since F-58: the Doc append left this bench for the Record's own
+    // Detail composer (the only place that previews the exact block and stamps
+    // the dated heading), so the Sheets range write is all that remains here.
+    // Every write that IS here still checks the 202 before it claims anything.
     const branches = source.match(/if \(outcome\.proposed\)/g) ?? [];
-    expect(branches).toHaveLength(2);
+    expect(branches).toHaveLength(1);
     expect(source).toContain("sentForApproval(outcome.assistId)");
+    // And the bespoke Doc append never comes back.
+    expect(source).not.toContain("appendGoogleDocument");
   });
 
   it("says it was sent for approval, and opens the queue row", () => {
@@ -176,17 +182,19 @@ describe("the review workspace checks before it claims a write happened", () => 
   });
 
   it("never reads a write result without going through the union", () => {
-    // Inside `writeSelected` only. The READ path above it (`readSelected`) is
-    // untouched and still reads `result.text` / `result.values` — narrowing to
-    // the write body is what makes this assertion mean anything.
-    const start = source.indexOf("const writeSelected = ");
+    // Inside `writeSelectedRange` only. The READ path above it
+    // (`readSelectedRange`) is untouched and still reads `result.values` /
+    // `result.range` — narrowing to the write body is what makes this assertion
+    // mean anything.
+    const start = source.indexOf("const writeSelectedRange = ");
     const end = source.indexOf("const sendEmail = ");
     expect(start).toBeGreaterThan(0);
     expect(end).toBeGreaterThan(start);
     const writeBody = source.slice(start, end);
-    // `result.text` / `result.values` / `result.range` were the pre-fix reads;
-    // everything now comes off `outcome.result`, after the branch.
+    // `result.values` / `result.range` were the pre-fix reads; everything now
+    // comes off `outcome.result`, after the branch.
     expect(writeBody).not.toMatch(/(?<!outcome\.)\bresult\.(text|values|range)\b/);
-    expect(writeBody).toContain("outcome.result.text");
+    expect(writeBody).toContain("outcome.result.values");
+    expect(writeBody).toContain("outcome.result.range");
   });
 });

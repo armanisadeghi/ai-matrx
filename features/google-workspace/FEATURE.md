@@ -17,6 +17,12 @@ This is AI Matrx's focused, reviewer-visible Google Workspace product surface. I
 
 - `/google-workspace-review` is the clean production reviewer route.
 - `/user-settings/integrations/google-workspace` renders the same reusable workspace inside user settings.
+- 🚨 **NO SURFACE HERE READS OR WRITES A GOOGLE DOC.** Since F-58 (2026-09-18) every
+  picked-resource list — `GoogleWorkspaceReviewWorkspace.tsx`,
+  `GoogleWorkspaceConnectBody.tsx`, `GoogleWorkspaceOverviewBody.tsx` — offers a Doc or Sheet
+  exactly one in-app action: **open it as its Record** in the Detail primitive, through
+  `documents/openRecord.tsx`. The bench keeps only the bounded Sheets A1-range read/write
+  (there is no canonical range surface yet) and the reviewed-Gmail send.
 - `GoogleWorkspaceReviewRoot.tsx` is the single provider boundary used by both routes.
 - `GoogleWorkspaceConnectBody.tsx` owns the shared connect, account-selection,
   selected-file registration, Drive-import, Picker-broker, and reviewed-Gmail
@@ -186,6 +192,16 @@ item-presentation type map (`itemType.tsx` → `features/item-presentation/regis
   composer, and refresh-on-open.
 - `refreshBus.ts` — the strip's Refresh and the panel are two components of one panel; a
   refresh announces itself so the body re-reads instead of the button appearing to do nothing.
+- `openRecord.tsx` — 🚨 **THE BIRTH DOOR AND THE ONLY WAY IN.** `hasGoogleDocumentRecord`
+  (exactly the two picked types `refresh_document` resolves — a Slides deck has no Record and is
+  never offered the control), `useOpenGoogleDocumentRecord` and
+  `OpenGoogleDocumentRecordButton`. It reads the Record this picked resource already has, and
+  when there is none it refreshes one into existence and opens the id the SERVER returned — the
+  client never inserts into `workbench.google_document`. It does NOT refresh on open: that
+  decision lives once, in `GoogleDocumentPanel`, against
+  `google.refresh.on_open_min_age_seconds` and with the detached guard.
+  `OPEN_GOOGLE_RECORD_CONSEQUENCE` is the sentence every list prints beside the control, because
+  the first open spends a Google call and keeps a copy of the file here.
 
 🚨 **PLANE C IS TWO ROWS ON PURPOSE.** The picked-resource row
 (`users.integration_connection_resources`) stays the authorization boundary for every
@@ -219,7 +235,12 @@ ONE component with three mounts.
   is DELETED and the generated one imported.
 - `record.ts` — pure, no clock of its own: the day grouping, the attendee reader, the freshness
   sentence, the staleness rule, the curated field list, the `google.calendar.agenda_days`
-  parser, the Google Calendar door, and the four unavailable actions as sentences.
+  parser, the Google Calendar door, the four unavailable actions as sentences, THE attendee →
+  People resolver (`resolveAttendeePeople`, one-to-many) and the frozen-row words
+  (`frozenEventNotice`).
+- `OpenItemsCount.tsx` — "2 open deals" beside a Person, ONE component read by both the agenda
+  and the event's Detail (F-59/N4). Capped read, so a count at the cap says "50+"; a failed read
+  says it could not be read rather than claiming zero.
 - `service.ts` — the FOUR doors, each the canonical one: the window read (React → Supabase,
   `mine` scope, through `readAllRows`), `POST /google-sync/calendar/refresh` through
   `postGoogleBackend`, the attendee → Person join over the SERVER's own edges, and create-note
@@ -230,7 +251,9 @@ ONE component with three mounts.
   (`features/dashboard/components/DashboardClient.tsx`), on the Person record through
   `PersonUpcomingCard.tsx` (`features/crm/components/record/PartyRecordPage.tsx`), and as the
   `googleAgendaWindow` panel, which wraps it `variant="bare"` and holds no calendar logic.
-- `CalendarEventSections.tsx` — the detail's attendees section, the read-only section, and (F-52)
+- `CalendarEventSections.tsx` — the detail's attendees section, the read-only section, the
+  Reconnect action (F-59/N11 — the Google connect window IN PLACE, plus the one honest line about
+  why re-picking means nothing for a meeting), and (F-52)
   the availability section: "Keep as AI Matrx data" / "Archive" for an event Google is not
   answering for, ONE generic server pair reused from `documents/service.ts`
   (`detachSyncedRecord` / `archiveSyncedRecord`) with `CALENDAR_EVENT_TABLE`
@@ -264,6 +287,25 @@ writes a `calendar_event → party` edge with role `attendee`. The client reads 
 `crm.party_contact_point` which address a linked Person holds only to decide which RSVP dot the
 door belongs beside — membership is the edge, and a Person whose stored address is no longer on
 the event still gets their door.
+
+🚨 **ONE ATTENDEE ADDRESS CAN BE TWO PEOPLE, AND BOTH ARE DOORS.** Both surfaces built
+`new Map(people.map(p => [p.email, p]))` and computed the leftovers as `!byEmail.has(p.email)`:
+a shared inbox, a role address or a duplicated contact gave two Persons one address, the Map kept
+the LAST, and the complement could not catch the loser because the key was present — one real
+Person vanished with no word (F-59/N3). The join is resolved ONCE, in
+`record.ts`'s `resolveAttendeePeople`, as the one-to-many it is; the leftovers are computed from
+the Persons that RENDERED, never from the key; and `sharedAddressSentence` says when several
+People share an address. Never re-derive this join in a component.
+
+🚨 **A FROZEN EVENT IS MARKED IN THE LIST, NOT ONLY ON ITS RECORD.** A detached or unavailable
+event rendered exactly like a live one in the agenda while the header said "Refreshed … from
+Google" (F-59/N6). `frozenEventNotice` is the ONE judgement and the ONE set of words — the
+agenda row and both record notices read it, so a list and a record can never disagree about a
+row's state. An unrecognised `sync_status` is marked too: it is not `available`.
+
+🚨 **A FILTERED AGENDA HAS ITS OWN EMPTY SENTENCE.** `AgendaPanel` takes `filterLabel` and tells
+`AgendaBody` it is filtered; it never infers it. That is how a Person card with nothing booked
+told a person with a full calendar that their Google Calendar was empty (F-59/N5).
 
 🚨 **THE NOTE EDGE IS WRITTEN `calendar_event → note`, role `about`.** PLAN §4.6 writes it the
 other way round; the one chokepoint types its TARGET against `ASSOCIATION_TARGET_TYPES`, a
@@ -309,7 +351,10 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
   "Created", and never "Connect Google", which is what every caller said before
   the union existed. A 202 that does not name the approval is REFUSED with its
   remedy: the change may be queued or may not exist, and only the queue can say.
-  The one adapter is `writeOutcome`; the guard is `write-gate.test.ts`. Why it
+  The one adapter is `writeOutcome`; the guard is `write-gate.test.ts`. Since F-58 the review
+  bench holds ONE of these writes (the Sheets range); `documents/append` is called from exactly
+  one place in the repository, `documents/GoogleDocumentPanel.tsx`, and
+  `the-append-lives-once.test.ts` censuses the whole tree to keep it that way. Why it
   exists: `gate_mutating_action` wraps the AGENT tool dispatch table only, so
   until 2026-09-17 that knob governed the agent path and a person's own click
   ignored it entirely — a knob that governs nothing (round-2 hostile
@@ -356,6 +401,73 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 - The frontend and backend canonical scope registries must remain aligned with `common-docs/projects/google-oauth-verification/PLAN.md`.
 
 ## Change log
+
+- `2026-09-18` — **F-59: the agenda and the event record stop dropping People, stop reading
+  frozen rows as fresh, and give the note they create a door.** Seven findings of
+  `common-docs/projects/google-native/VERIFY-U-W1-U-W2.md`, each fixed at the class and proven
+  red first (the four new suites failed 15 tests against `HEAD`, then all 84 in
+  `calendar/__tests__` pass):
+  * **N3 (HIGH)** — `resolveAttendeePeople` in `record.ts` is now the ONE attendee → People
+    resolver, one-to-many, and both `AgendaPanel.tsx` and `CalendarEventSections.tsx` render
+    every Person at an address as a door with `sharedAddressSentence` saying so; the Map keyed on
+    the address (and the complement computed from the same key) is deleted from both.
+    Red: `every-person-at-an-address-is-a-door.test.tsx` — "Dana Upton" absent from both
+    surfaces' DOM.
+  * **N4** — `OpenItemsCount` moved out of `CalendarEventSections.tsx` into its own module and
+    the agenda's Person doors carry it, so §4.6's "name as a door AND a count of open items" is
+    true on the list a person actually looks at, from the same source as the record.
+  * **N5** — `AgendaPanel` takes `filterLabel`; a filtered list says "Nothing upcoming with
+    <name> in the next N days" and each empty day says "Nothing with <name>", instead of telling
+    somebody with a full calendar that it is empty. `PersonUpcomingCard.tsx` passes the name.
+  * **N6** — `frozenEventNotice` marks a detached / unavailable / unrecognised row in the agenda
+    with the record's own words and its own reason, on a dashed muted row
+    (`data-agenda-frozen`), so the header's "Refreshed … from Google" stops being false for it.
+  * **N10** — "Create a note" now opens the note it created: the toast carries an "Open the note"
+    action AND the row keeps a door (`data-agenda-note-door`) that outlives the toast, both
+    through the ONE opener (`useOpenDetail("note")`).
+  * **N11** — the event's unavailable notice answers all four of the Doc sibling's actions:
+    Keep + Archive (B-29's pair, unchanged), **Reconnect** through
+    `useOpenGoogleConnectWindow()` — in place, never an anchor out of the primitive — and one
+    honest line saying there is nothing to pick again for a meeting, because an event is not a
+    file anybody chose. A detached event still offers no Reconnect (nothing repairs a choice).
+  * **N15** — `googleCalendarHref` builds the event VIEW
+    (`/calendar/u/0/r/event?eid=<base64url>`), not Google's `eventedit` form, and encodes
+    base64url + UTF-8, so an id whose base64 carries `+` or `/` no longer produces a URL Google
+    cannot decode.
+  Gates: `npx jest features/google-workspace/calendar` 13 suites / 84 tests green;
+  `check:parse`, `check:kind-marker-law`, `check:dead-ends --path=features/google-workspace/calendar`
+  clean; scoped `tsc` over `calendar/**` reports zero errors in these files. **No screen was
+  seen** — no dev server and no Matrx host was reachable from this container.
+
+- `2026-09-18` — **F-58: the Detail primitive is the ONE Doc surface, and a picked Doc now opens
+  as its Record.** Two findings closed from common-docs
+  `/projects/google-native/VERIFY-U-W1-U-W2.md`. **N2** — `GoogleWorkspaceReviewWorkspace.tsx`
+  still shipped a read-only "Read selected Doc" textarea and a raw "Text to append" box calling
+  `appendGoogleDocument` with the textarea's bytes: no preview of the exact block, no dated
+  heading, no `google.docs.append_heading`, no health strip, no Record — and it was the only Doc
+  surface a person could reach, so two implementations of one capability disagreed about what
+  landed in a customer's document. Deleted, not hidden (no-legacy), together with
+  `documentText` / `documentAppend` and the Doc branches of the read and write handlers (now
+  `readSelectedRange` / `writeSelectedRange`, Sheets-only and gated on the ONE file-type record
+  rather than on "not a Doc"). **N1** — `workbench.google_document` was a table with no reachable
+  creator: its only writer is `POST /google-sync/documents/refresh`, whose only callers ran after
+  a row already existed, so the Record was created only from the Record and the live table held
+  0 rows. New `documents/openRecord.tsx` makes the act that already authorized the mirror — the
+  person picking the file — the act that opens it: read the Record for this `resource_id`, else
+  refresh one into existence, then open it in place through THE ONE opener (`useOpenDetail`,
+  window by default). The control is now on all three picked-resource lists
+  (`GoogleWorkspaceReviewWorkspace`, `GoogleWorkspaceConnectBody`,
+  `GoogleWorkspaceOverviewBody`) and states its cost before the click. Guards:
+  `a-picked-doc-opens-as-its-record.test.tsx` (5 cases — the action exists, the two textareas are
+  gone, an existing Record opens with its own identity and spends no Google call, a missing one is
+  born through the server's door and the server's id is what opens, and a failed read says so and
+  opens nothing) and `the-append-lives-once.test.ts` (a tree census: `appendGoogleDocument` is
+  reachable only from `documents/**`, with the detector proven to fail in both directions). Both
+  proven RED against `HEAD:GoogleWorkspaceReviewWorkspace.tsx`. `write-gate.test.ts`'s source
+  guard follows the bench down to one write. **Not verified in a browser: no screen was seen.**
+  Still open and NOT this lane's: the registry entry for `google_document` carries no `open`
+  discriminant, so `useOpenItemPresentation` cannot open an agent-emitted Google file card —
+  that line lives in `documents/itemType.tsx`, a concurrent lane's file.
 
 - `2026-09-18` — **F-52: the calendar event record gets B-29's own pair — "Keep as AI Matrx
   data" and "Archive" — never a second endpoint.** `types.ts` gains the terminal word

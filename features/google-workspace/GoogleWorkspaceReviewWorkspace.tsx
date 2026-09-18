@@ -55,10 +55,8 @@ import {
 import {
   DEFAULT_GOOGLE_SHEET_RANGE,
   SENT_FOR_APPROVAL_MESSAGE,
-  appendGoogleDocument,
   approvalQueueHref,
   isGoogleWorkspaceInputError,
-  readGoogleDocument,
   readGoogleSheet,
   registerSelectedGoogleFile,
   sendReviewedGmail,
@@ -81,6 +79,12 @@ import {
 } from "@/features/google-workspace/connection";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { getGoogleDrivePickerToken } from "@/features/google-workspace/drivePickerToken";
+import {
+  OPEN_GOOGLE_RECORD_CONSEQUENCE,
+  OpenGoogleDocumentRecordButton,
+  hasGoogleDocumentRecord,
+  pickedGoogleRecordResource,
+} from "@/features/google-workspace/documents/openRecord";
 
 type BusyAction =
   | "connect-files"
@@ -157,8 +161,6 @@ export function GoogleWorkspaceReviewWorkspace({
   );
   const [busy, setBusy] = useState<BusyAction>(null);
   const [error, setError] = useState<string | null>(null);
-  const [documentText, setDocumentText] = useState("");
-  const [documentAppend, setDocumentAppend] = useState("");
   const [sheetRange, setSheetRange] = useState(DEFAULT_GOOGLE_SHEET_RANGE);
   const [sheetValues, setSheetValues] = useState("");
   const [emailTo, setEmailTo] = useState("");
@@ -291,29 +293,26 @@ export function GoogleWorkspaceReviewWorkspace({
     });
   };
 
-  const readSelected = () => {
+  /**
+   * The Sheets range read — the ONLY read left on this bench. A Doc is not read
+   * here at all any more: it opens as its Record in the Detail primitive, which
+   * owns the body, the refresh and the append (F-58).
+   *
+   * The reader is still gated on the ONE file-type record rather than assuming
+   * "not a Doc means a Sheet": that fall-through is what the old
+   * `if (Doc) … else sheet` did to a Slides deck — it asked the Sheets API for a
+   * presentation id and showed Google's error as if the deck were broken.
+   */
+  const readSelectedRange = () => {
     if (!activeConnection || !selectedResource) return;
     const fileType = googleWorkspaceFileType(selectedResource.resource_type);
-    // A file type with no client read NEVER falls through to the Sheets
-    // reader. That fall-through is what the old `if Doc … else sheet` did to a
-    // Slides deck: it asked the Sheets API for a presentation id and showed
-    // Google's error as if the deck were broken.
-    if (fileType.clientRead === null) {
-      toast.info(`${fileType.label}s cannot be read on this screen yet.`, {
+    if (fileType.clientRead !== "sheet") {
+      toast.info(`${fileType.label}s are not read on this screen.`, {
         description: fileType.readOnlyNote ?? undefined,
       });
       return;
     }
     void run("read-file", async () => {
-      if (fileType.clientRead === "document") {
-        const result = await readGoogleDocument(
-          activeConnection.id,
-          selectedResource.resource_ref,
-        );
-        setDocumentText(result.text);
-        toast.success("Google Doc loaded.");
-        return;
-      }
       const result = await readGoogleSheet(
         activeConnection.id,
         selectedResource.resource_ref,
@@ -344,31 +343,23 @@ export function GoogleWorkspaceReviewWorkspace({
     });
   };
 
-  const writeSelected = () => {
+  /**
+   * The Sheets range write. THE DOC APPEND IS NOT HERE — the composer that
+   * writes to a Doc lives once, in the Record's Detail panel, where the exact
+   * block is shown before anything reaches Google and the dated heading comes
+   * from `google.docs.append_heading`. A second append path on this bench sent
+   * different bytes to a customer's document (VERIFY-U-W1-U-W2 N2).
+   */
+  const writeSelectedRange = () => {
     if (!activeConnection || !selectedResource) return;
     const fileType = googleWorkspaceFileType(selectedResource.resource_type);
-    if (!fileType.writable) {
-      toast.info(`AI Matrx does not write to ${fileType.label}s.`, {
+    if (fileType.clientRead !== "sheet" || !fileType.writable) {
+      toast.info(`AI Matrx does not write to ${fileType.label}s on this screen.`, {
         description: fileType.readOnlyNote ?? undefined,
       });
       return;
     }
     void run("write-file", async () => {
-      if (fileType.clientRead === "document") {
-        const outcome = await appendGoogleDocument(
-          activeConnection.id,
-          selectedResource.resource_ref,
-          documentAppend,
-        );
-        if (outcome.proposed) {
-          sentForApproval(outcome.assistId);
-          return;
-        }
-        setDocumentText(outcome.result.text);
-        setDocumentAppend("");
-        toast.success("Text appended to the selected Google Doc.");
-        return;
-      }
       const values = sheetValues.split("\n").map((row) => row.split("\t"));
       const outcome = await writeGoogleSheet(
         activeConnection.id,
@@ -704,6 +695,9 @@ export function GoogleWorkspaceReviewWorkspace({
                   </div>
                 ) : (
                   <>
+                    <p className="text-xs text-muted-foreground">
+                      {OPEN_GOOGLE_RECORD_CONSEQUENCE}
+                    </p>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {selectedResources.map((resource) => {
                         const fileType = googleWorkspaceFileType(
@@ -742,81 +736,39 @@ export function GoogleWorkspaceReviewWorkspace({
                                 </span>
                               </span>
                             </button>
-                            <a
-                              href={link}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mr-3 inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
-                              aria-label={`Open ${resource.display_name} in Google`}
-                            >
-                              Open in Google
-                              <ExternalLink className="h-3.5 w-3.5" />
-                            </a>
+                            <div className="mr-3 flex shrink-0 items-center gap-1">
+                              {/*
+                                🚨 ONE ACTION PER FILE, AND IT IS THE RECORD.
+                                Before F-58 a picked Doc's only in-app surface was
+                                a read-only textarea and a raw append box on this
+                                bench; the Record it should have opened could
+                                never be born. This control IS that birth door.
+                              */}
+                              {hasGoogleDocumentRecord(
+                                resource.resource_type,
+                              ) && (
+                                <OpenGoogleDocumentRecordButton
+                                  resource={pickedGoogleRecordResource(
+                                    resource,
+                                  )}
+                                  variant="ghost"
+                                />
+                              )}
+                              <a
+                                href={link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
+                                aria-label={`Open ${resource.display_name} in Google`}
+                              >
+                                Open in Google
+                                <ExternalLink className="h-3.5 w-3.5" />
+                              </a>
+                            </div>
                           </div>
                         );
                       })}
                     </div>
-
-                    {selectedResource?.resource_type === "google_document" && (
-                      <div className="space-y-4 rounded-lg border p-4">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <div>
-                            <p className="font-medium">
-                              {selectedResource.display_name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Read the document or append text at its end.
-                            </p>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            onClick={readSelected}
-                            disabled={busy !== null}
-                          >
-                            {busy === "read-file" && (
-                              <Loader2 className="animate-spin" />
-                            )}
-                            Read selected Doc
-                          </Button>
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="document-content">
-                            Document content
-                          </Label>
-                          <Textarea
-                            id="document-content"
-                            value={documentText}
-                            readOnly
-                            placeholder="The selected document content appears here."
-                            className="min-h-40"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label htmlFor="document-append">
-                            Text to append
-                          </Label>
-                          <ProTextarea
-                            id="document-append"
-                            value={documentAppend}
-                            onChange={(event) =>
-                              setDocumentAppend(event.currentTarget.value)
-                            }
-                            placeholder="Enter the exact text to add to this Doc."
-                          />
-                        </div>
-                        <Button
-                          type="button"
-                          onClick={writeSelected}
-                          disabled={!documentAppend.trim() || busy !== null}
-                        >
-                          {busy === "write-file" && (
-                            <Loader2 className="animate-spin" />
-                          )}
-                          Append this text
-                        </Button>
-                      </div>
-                    )}
 
                     {selectedResource?.resource_type ===
                       "google_spreadsheet" && (
@@ -857,7 +809,7 @@ export function GoogleWorkspaceReviewWorkspace({
                           <Button
                             type="button"
                             variant="outline"
-                            onClick={readSelected}
+                            onClick={readSelectedRange}
                             disabled={!sheetRange.trim() || busy !== null}
                           >
                             {busy === "read-file" && (
@@ -867,7 +819,7 @@ export function GoogleWorkspaceReviewWorkspace({
                           </Button>
                           <Button
                             type="button"
-                            onClick={writeSelected}
+                            onClick={writeSelectedRange}
                             disabled={
                               !sheetRange.trim() ||
                               !sheetValues.trim() ||

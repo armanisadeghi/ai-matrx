@@ -26,6 +26,11 @@ import {
 } from "@/features/marketing/google/service";
 import { googleConnectionLabel } from "@/features/marketing/google/presentation";
 import { isGoogleWorkspaceFileRow } from "@/features/marketing/google/types";
+import {
+  OpenGoogleDocumentRecordButton,
+  hasGoogleDocumentRecord,
+  pickedGoogleRecordResource,
+} from "@/features/google-workspace/documents/openRecord";
 import { googleWorkspaceFileType } from "@/features/google-workspace/resource-types";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type {
@@ -495,18 +500,34 @@ function CapabilityCatalog({
                   </summary>
                   <div className="mt-2 divide-y divide-border/70">
                     {matchingResources.map((resource) => (
-                      <a
+                      <div
                         key={resource.id}
-                        href={googleResourceHref(resource)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-between gap-3 py-1.5 text-foreground hover:text-primary"
+                        className="flex items-center justify-between gap-2 py-1.5"
                       >
-                        <span className="min-w-0 truncate">
-                          {resource.display_name}
-                        </span>
-                        <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-                      </a>
+                        <a
+                          href={googleResourceHref(resource)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex min-w-0 flex-1 items-center justify-between gap-3 text-foreground hover:text-primary"
+                        >
+                          <span className="min-w-0 truncate">
+                            {resource.display_name}
+                          </span>
+                          <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                        </a>
+                        {/*
+                          🚨 A NAMED FILE OPENS HERE TOO (F-58). A Doc or Sheet in
+                          this roster used to offer only its Google link; its AI
+                          Matrx Record is the surface that holds the body, the
+                          refresh and the append.
+                        */}
+                        {hasGoogleDocumentRecord(resource.resource_type) ? (
+                          <OpenGoogleDocumentRecordButton
+                            resource={pickedGoogleRecordResource(resource)}
+                            variant="ghost"
+                          />
+                        ) : null}
+                      </div>
                     ))}
                   </div>
                 </details>
