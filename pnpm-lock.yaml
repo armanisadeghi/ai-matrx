@@ -34,7 +34,7 @@ importers:
         version: 0.9.27(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/browser-audio':
         specifier: latest
-        version: 0.4.0(react@19.3.0)
+        version: 0.4.1(react@19.3.0)
       '@ai-matrx/capture':
         specifier: latest
         version: 0.5.15(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -903,8 +903,8 @@ packages:
       react-dom:
         optional: true
 
-  '@ai-matrx/browser-audio@0.4.0':
-    resolution: {integrity: sha512-uybCvKZPADM5D2z3ZQzWvaDiHd2z3nh6qE7fVUmoeuv/uh1neQPDulerL5nEHXEFoor9cLtRtzCNFxGnSOdcCQ==}
+  '@ai-matrx/browser-audio@0.4.1':
+    resolution: {integrity: sha512-B5zr+xeaU1N7JH2KxF9W/0J0ik0wsE4aejWbJxzy61osIm/2zEuAEUdrODmYSR/jD6yUpQq4LTjs9qK1VyLRMg==}
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -12878,7 +12878,7 @@ snapshots:
       - '@types/react'
       - '@types/react-dom'
 
-  '@ai-matrx/browser-audio@0.4.0(react@19.3.0)':
+  '@ai-matrx/browser-audio@0.4.1(react@19.3.0)':
     optionalDependencies:
       react: 19.3.0
 
