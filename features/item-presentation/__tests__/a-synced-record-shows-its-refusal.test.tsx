@@ -69,6 +69,16 @@ const CONNECTION = {
   capability_health: REFUSED_COLUMN,
 };
 
+/** Same account, but Google (or our own configuration) refuses everything —
+ * V17-1's "blocked" reading, never merely "unusable". No `capability_health`
+ * refusal is needed: `account.blocked` alone outranks every other state. */
+const BLOCKED_CONNECTION = {
+  ...CONNECTION,
+  id: "conn-2",
+  health: "unavailable" as const,
+  capability_health: null,
+};
+
 jest.mock("@/features/marketing/google/service", () => ({
   listGoogleConnectionInventory: jest.fn(async () => ({
     connections: [CONNECTION],
@@ -84,6 +94,13 @@ jest.mock("@/features/marketing/google/service", () => ({
     },
   ]),
 }));
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires -- the mocked
+// module's own factory above, re-imported so a test can swap its resolved
+// value per-mount without a second `jest.mock` block.
+const googleService = jest.requireMock("@/features/marketing/google/service") as {
+  listGoogleConnectionInventory: jest.Mock;
+};
 
 /** A Gmail message mirrored into the platform — the row a Detail would load. */
 const SYNCED_EMAIL: DetailRow = {
@@ -212,6 +229,61 @@ describe("a Gmail-synced record whose grant has been refused", () => {
       .querySelector("[data-detail-health]")!
       .querySelector("a[href]");
     expect(link?.getAttribute("href")).toContain("mail.google.com");
+    m.unmount();
+  });
+});
+
+/**
+ * 🚨 THE `blocked` WORD (chair, 2026-09-18) — `lib/detail/types.ts`'s grant
+ * vocabulary gained a THIRD reading between "reconnect will fix it" (expired
+ * missing / revoked) and "we do not know" (unknown): a source the provider or
+ * our own configuration refuses OUTRIGHT, where no control anywhere repairs
+ * it. `sourceHealth.ts::grantStateFor` used to fold this into `unknown`
+ * because the word did not exist yet — the case a real reconnect button
+ * would offer for nothing. `reconnectFor` in `useDetailHealth.ts` already
+ * refuses a `blocked` grant a press structurally; this pins the PRODUCER side.
+ */
+describe("a synced record the provider (or our own configuration) blocks outright", () => {
+  afterEach(() => {
+    // Every hop the health producer makes re-resolves this mock — restore the
+    // default (the standing-refusal connection) so later files/tests never
+    // inherit the blocked fixture.
+    googleService.listGoogleConnectionInventory.mockImplementation(async () => ({
+      connections: [CONNECTION],
+      resources: [],
+    }));
+  });
+
+  it("renders the BLOCKED state word and offers no Reconnect", async () => {
+    googleService.listGoogleConnectionInventory.mockImplementation(async () => ({
+      connections: [BLOCKED_CONNECTION],
+      resources: [],
+    }));
+    const m = await mountDetail();
+    const strip = m.container.querySelector("[data-detail-health]")!;
+    const stateWord = strip.querySelector("[data-detail-health-state]");
+    expect(stateWord?.getAttribute("data-detail-health-state")).toBe("blocked");
+    expect(strip.textContent).toContain("Blocked");
+    const button = Array.from(strip.querySelectorAll("button")).find((b) =>
+      (b.textContent ?? "").includes("Reconnect"),
+    );
+    expect(button).toBeUndefined();
+    m.unmount();
+  });
+
+  it("positive control — a needs-attention (revoked/expired) connection still offers Reconnect", async () => {
+    // The default mock (CONNECTION) carries a `grant_expired_or_revoked`
+    // refusal — the ordinary "reconnect will fix it" case this file has
+    // pinned since its first commit. Proves the assertions above are not
+    // vacuous: a real Reconnect control still renders when one is warranted.
+    const m = await mountDetail();
+    const strip = m.container.querySelector("[data-detail-health]")!;
+    const stateWord = strip.querySelector("[data-detail-health-state]");
+    expect(stateWord?.getAttribute("data-detail-health-state")).not.toBe("blocked");
+    const button = Array.from(strip.querySelectorAll("button")).find((b) =>
+      (b.textContent ?? "").includes("Reconnect"),
+    );
+    expect(button).toBeDefined();
     m.unmount();
   });
 });

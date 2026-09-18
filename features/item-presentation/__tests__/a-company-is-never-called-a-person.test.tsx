@@ -20,11 +20,14 @@
  * field list (`features/crm/party-detail.ts`) and every place the host controls
  * the word takes it from the ONE resolver (`features/crm/party-words.ts`).
  *
- * WHAT THIS TEST CANNOT CLOSE: the header's TYPE CHIP reads
- * `DetailRecordType.label`, which is per type, so it says "Contact" for a
- * Person and a Company alike. The honest generic beats a lie about three rows
- * in four; the per-row chip needs `labelForRow` in the primitive's contract
- * (escalation C, recorded in this feature's FEATURE.md).
+ * 🚨 F-50 (2026-09-18): the header's TYPE CHIP used to read
+ * `DetailRecordType.label` alone, which is per TYPE, so it said "Contact" for
+ * a Person and a Company alike — honest, but not the word a reader expects
+ * over a name. F-46 added `DetailRecordType.labelForRow` to the primitive's
+ * contract for exactly this (escalation C, recorded in this feature's
+ * FEATURE.md), and `refinePartyDetail` (`features/crm/party-detail.ts`) now
+ * wires it to `partyKindWord`, so the chip below reads "Company" for a
+ * company and "Person" for a person, per ROW, in every presentation.
  */
 
 import * as React from "react";
@@ -258,49 +261,57 @@ function ports(shells: DetailHostPorts["shells"]): DetailHostPorts {
   } as unknown as DetailHostPorts;
 }
 
-const DATA = { type: "party", id: REAL_COMPANY.id, seed: null, list: null };
+function dataFor(id: string) {
+  return { type: "party", id, seed: null, list: null };
+}
 
-const PRESENTATIONS = [
-  {
-    name: "window",
-    shells: {
-      Window: ({ titleNode, actions, children }: DetailWindowShellProps) => (
-        <div data-shell="window">
-          {titleNode}
-          {actions}
-          {children}
-        </div>
-      ),
+function presentationsFor(data: ReturnType<typeof dataFor>) {
+  return [
+    {
+      name: "window",
+      shells: {
+        Window: ({ titleNode, actions, children }: DetailWindowShellProps) => (
+          <div data-shell="window">
+            {titleNode}
+            {actions}
+            {children}
+          </div>
+        ),
+      },
+      node: <DetailWindowPresentation data={data} onClose={() => {}} />,
     },
-    node: <DetailWindowPresentation data={DATA} onClose={() => {}} />,
-  },
-  {
-    name: "docked",
-    shells: {
-      Docked: ({ titleNode, actions, children }: DetailDockedShellProps) => (
-        <div data-shell="docked">
-          {titleNode}
-          {actions}
-          {children}
-        </div>
-      ),
+    {
+      name: "docked",
+      shells: {
+        Docked: ({ titleNode, actions, children }: DetailDockedShellProps) => (
+          <div data-shell="docked">
+            {titleNode}
+            {actions}
+            {children}
+          </div>
+        ),
+      },
+      node: <DetailDockedPresentation data={data} onClose={() => {}} />,
     },
-    node: <DetailDockedPresentation data={DATA} onClose={() => {}} />,
-  },
-  {
-    name: "page",
-    shells: {
-      Page: ({ titleNode, actions, children }: DetailPageShellProps) => (
-        <div data-shell="page">
-          {titleNode}
-          {actions}
-          {children}
-        </div>
-      ),
+    {
+      name: "page",
+      shells: {
+        Page: ({ titleNode, actions, children }: DetailPageShellProps) => (
+          <div data-shell="page">
+            {titleNode}
+            {actions}
+            {children}
+          </div>
+        ),
+      },
+      node: <DetailPagePresentation data={data} />,
     },
-    node: <DetailPagePresentation data={DATA} />,
-  },
-] as const;
+  ] as const;
+}
+
+const DATA = dataFor(REAL_COMPANY.id);
+
+const PRESENTATIONS = presentationsFor(DATA);
 
 describe("the REAL company row, in all three presentations", () => {
   for (const which of PRESENTATIONS) {
@@ -330,5 +341,42 @@ describe("the REAL company row, in all three presentations", () => {
       act(() => root.unmount());
       container.remove();
     });
+  }
+});
+
+// ─── F-50: the header TYPE CHIP itself, per row, in every presentation ───────
+
+const CHIP_CASES = [
+  { label: "Company", row: REAL_COMPANY },
+  { label: "Person", row: REAL_PERSON },
+] as const;
+
+describe("the header's type chip names THIS ROW's own kind, never the type's generic", () => {
+  for (const { label, row } of CHIP_CASES) {
+    for (const which of presentationsFor(dataFor(row.id))) {
+      it(`reads "${label}" for a ${label.toLowerCase()} in the ${which.name} presentation`, async () => {
+        const container = document.createElement("div");
+        document.body.appendChild(container);
+        const root = createRoot(container);
+        await act(async () => {
+          root.render(
+            <DetailHostProvider ports={ports(which.shells)}>{which.node}</DetailHostProvider>,
+          );
+        });
+        for (let i = 0; i < 8; i += 1) {
+          await act(async () => {
+            await Promise.resolve();
+          });
+        }
+        const chip = container.querySelector("[data-detail-type-chip]");
+        expect(chip).not.toBeNull();
+        // RED on HEAD: the chip reads the type's own generic ("Contact") for
+        // every row, because `label` is per TYPE and `crm.party` registers ONE
+        // type for 1,432 companies and 460 people.
+        expect(chip?.textContent?.trim()).toBe(label);
+        act(() => root.unmount());
+        container.remove();
+      });
+    }
   }
 });

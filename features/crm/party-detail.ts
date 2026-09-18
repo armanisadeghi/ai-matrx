@@ -299,6 +299,13 @@ export function refinePartyDetail(base: DetailRecordType): DetailRecordType {
   return {
     ...base,
     fields: (row) => partyDetailFields(row),
+    // 🚨 THE HEADER'S TYPE CHIP, PER ROW (F-50, 2026-09-18). `base.label` is per
+    // TYPE ("Contact" — N6's honest generic for 1,432 companies and 460 people
+    // under one registration) and stays the type-level word for the
+    // presentation-setting copy. `labelForRow` answers what THIS row is, so the
+    // chip reads "Company" over Environmentalbusinessoutlook and "Person" over
+    // Angie Sadeghi instead of the generic both used to share.
+    labelForRow: (row) => (row ? partyKindWord(row.party_kind) : null),
     load: loadRow
       ? async (id: string, signal: AbortSignal): Promise<DetailLoadResult<DetailRow>> => {
           const result = await loadRow(id, signal);

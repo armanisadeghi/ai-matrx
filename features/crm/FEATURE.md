@@ -1047,6 +1047,8 @@ module in the folder + the two deleted filenames).
 
 ## Change log
 
+- 2026-09-18 — **F-50: `refinePartyDetail` gives the header's TYPE CHIP the record's OWN kind, per row.** F-47 shipped the honest per-TYPE generic ("Contact") because `DetailRecordType.label` is a `string`, not a function of the row — so the chip still said "Contact" for both the real company `d3dc196a-3a63-4fae-b2a4-e2605eadb3b2` and a real person, one register entry serving 1,432 companies and 460 people. F-46 landed the escalation (`DetailRecordType.labelForRow?: (row) => string | null`, consumed by `useDetailCore` for the chip and the stand-in titles only); `refinePartyDetail` now sets it to `partyKindWord(row.party_kind)`, so the chip reads "Company" over the company row and "Person" over a person row, in every presentation. `title` already did this for the "Untitled …" stand-in — `labelForRow` is the same word reaching the chip. Red-then-green over the REAL rows through the REAL type map: `features/item-presentation/__tests__/a-company-is-never-called-a-person.test.tsx`'s new `[data-detail-type-chip]` assertions (6 cases: Company/Person × window/docked/page) all read "Contact" before the fix, the type-level generic; restored, all read the row's own kind. 17/17 green in the file.
+
 - 2026-09-18 — **F-48: the census's 14 baselined offenders converted to the
   one door.** F-47's `person-doors-census.test.ts` baseline is now the two
   legitimate entries only (the entity registry's own `hrefFor` and the party

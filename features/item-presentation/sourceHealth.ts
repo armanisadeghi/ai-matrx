@@ -224,11 +224,14 @@ function grantStateFor(health: ConnectorProductHealth): DetailSourceHealth["gran
       return "revoked";
     // Blocked by the provider or by our own configuration: the strip states the
     // reason and `reconnectWouldHelp` gives it no press, because none exists
-    // (V17-1). `unknown` is the only honest word the primitive's grant vocabulary
-    // has for it — "revoked" would tell the person to reconnect something a
-    // reconnect cannot repair.
+    // (V17-1). `blocked` is the primitive's word for exactly this reading
+    // (lib/detail/types.ts, chair 2026-09-18) — "revoked" would tell the
+    // person to reconnect something a reconnect cannot repair, and `unknown`
+    // (this case's word before `blocked` existed) reads as "we cannot tell"
+    // rather than "nothing you do here will help"; `reconnectFor` refuses this
+    // grant a press structurally regardless of what any producer supplies.
     case "unavailable":
-      return "unknown";
+      return "blocked";
     case "refused": {
       const code = health.lastRefusal?.code ?? null;
       if (code === "grant_expired_or_revoked") return "expired";
