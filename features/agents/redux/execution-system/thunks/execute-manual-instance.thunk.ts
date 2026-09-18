@@ -127,6 +127,8 @@ import {
 import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
 import {
   selectProjectId,
+  selectActiveScopeTypeIds,
+  selectScopeSelectionsContext,
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
 import { requireExecutionOrganizationId } from "../utils/required-organization";
@@ -494,6 +496,20 @@ export async function assembleManualRequest(
   const task_id = selectTaskId(state) ?? undefined;
   if (project_id) request.project_id = project_id;
   if (task_id) request.task_id = task_id;
+
+  // Active scope selections — same as assembleRequest. The Builder omits every
+  // scope-BOUND variable from `variables` (selectVariablesForRequest: the server
+  // fills it authoritatively from the active scope), so without scope_ids here a
+  // bound variable had nothing to resolve from and the model received a raw
+  // `{{name}}` placeholder (2026-09-18). The manual route stamps no tags; the
+  // server only reads these ids for this turn's bindings and context block.
+  const scope_ids = Object.values(
+    selectScopeSelectionsContext(state) ?? {},
+  ).filter((id): id is string => !!id);
+  if (scope_ids.length > 0) request.scope_ids = scope_ids;
+  const active_scope_type_ids = selectActiveScopeTypeIds(state) ?? [];
+  if (active_scope_type_ids.length > 0)
+    request.active_scope_type_ids = active_scope_type_ids;
 
   if (selectIsBlockMode(state)) request.block_mode = true;
   if (selectIsSnapshot(state)) request.snapshot = true;
