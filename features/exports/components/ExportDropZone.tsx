@@ -41,8 +41,9 @@ import {
 } from "@/features/files/handler/resumableUploads";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import { createExportLibrary } from "../api";
-import { formatBytes } from "../format";
+
 import { rememberFreshExport } from "../freshExport";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 type Stage =
   | { phase: "idle" }
@@ -233,7 +234,7 @@ export function ExportDropZone({ className }: { className?: string }) {
             />
             {/* Real bytes, both numbers — never a percentage on its own. */}
             <p className="mt-2 text-xs tabular-nums text-muted-foreground">
-              {formatBytes(stage.loaded)} of {formatBytes(stage.total)}
+              {formatFileSize(stage.loaded)} of {formatFileSize(stage.total)}
               {stage.resumable
                 ? " · resumable — if this is interrupted, drop the same file again and it continues"
                 : ""}
@@ -265,7 +266,7 @@ export function ExportDropZone({ className }: { className?: string }) {
             {pendingResumes.slice(0, 3).map((resume) => (
               <li key={resume.urlStorageKey} className="truncate">
                 {resume.metadata.filename ?? "a file"}
-                {resume.size ? ` · ${formatBytes(resume.size)}` : ""}
+                {resume.size ? ` · ${formatFileSize(resume.size)}` : ""}
               </li>
             ))}
           </ul>

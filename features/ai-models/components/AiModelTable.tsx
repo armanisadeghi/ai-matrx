@@ -79,6 +79,7 @@ import {
   ProviderPriceCell,
   type ProviderPriceField,
 } from "./ProviderPriceCell";
+import { formatCount } from "@ai-matrx/kit/format";
 
 // ─── Provider Colors ──────────────────────────────────────────────────────────
 
@@ -120,10 +121,7 @@ function providerColor(name: string | null): string {
 // ─── Cell Helpers ─────────────────────────────────────────────────────────────
 
 function formatNumber(n: number | null): string {
-  if (n === null || n === undefined) return "—";
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
-  return String(n);
+  return formatCount(n, { style: "compact" });
 }
 
 function BoolBadge({

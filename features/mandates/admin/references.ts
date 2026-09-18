@@ -27,6 +27,7 @@ import { requireAuthenticatedSupabaseSession } from "@/utils/supabase/webDb";
 import { callApi } from "@/lib/api/call-api";
 import type { AppDispatch } from "@/lib/redux/store";
 import type { components } from "@/types/python-generated/api-types";
+import { formatFileSize, formatUsd } from "@ai-matrx/kit/format";
 
 export type MandateReferenceRow =
   components["schemas"]["MandateReferenceRow"];
@@ -233,9 +234,23 @@ export const SINGLE_SITE_SENTENCE = "one consumption site by design";
  */
 export const NO_COST_CELL = "no rate set";
 
-export function formatUsd(usd: number | null | undefined): string {
-  if (usd === null || usd === undefined) return NO_COST_CELL;
-  return `$${usd.toFixed(usd < 0.01 && usd > 0 ? 6 : 2)}`;
+/**
+ * AN OPTION-BINDING WRAPPER over `@ai-matrx/kit/format`. What it binds is the
+ * sentence above: an unrated row says "no rate set", never "$0.00".
+ * `digits: "adaptive"` is the package's version of the sub-cent branch this
+ * body carried by hand.
+ */
+/**
+ * AN OPTION-BINDING WRAPPER over `@ai-matrx/kit/format`'s formatUsd, and named
+ * for the CELL rather than the capability on purpose: a local `formatUsd` is a
+ * twin of the package export under its own spelling, and importing the package
+ * one under a second name takes every call site outside the guards that judge
+ * it. What this binds is the sentence above — an unrated row says "no rate
+ * set", never "$0.00" — plus the sub-cent precision the old body branched for
+ * by hand.
+ */
+export function costCell(usd: number | null | undefined): string {
+  return formatUsd(usd, { digits: "adaptive", unknown: NO_COST_CELL });
 }
 
 export function formatSeconds(seconds: number | null | undefined): string {
@@ -243,14 +258,6 @@ export function formatSeconds(seconds: number | null | undefined): string {
   if (seconds < 60) return `${seconds.toFixed(1)}s`;
   const minutes = Math.floor(seconds / 60);
   return `${minutes}m ${Math.round(seconds - minutes * 60)}s`;
-}
-
-export function formatBytes(bytes: number | null | undefined): string {
-  if (bytes === null || bytes === undefined) return "—";
-  if (bytes === 0) return "0";
-  const units = ["B", "KB", "MB", "GB"];
-  const power = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
-  return `${(bytes / 1024 ** power).toFixed(power === 0 ? 0 : 1)} ${units[power]}`;
 }
 
 /**

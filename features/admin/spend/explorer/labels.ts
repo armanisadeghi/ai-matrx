@@ -7,6 +7,7 @@
 // Doc: features/admin/spend/FEATURE.md
 
 import { SPEND_NONE_KEY, type SpendDimension, type SpendDimensionRow } from "../types";
+import { formatCount, formatPercentFromFraction } from "@ai-matrx/kit/format";
 
 export const DIMENSION_LABEL: Record<SpendDimension, string> = {
   organization: "Organization",
@@ -82,23 +83,18 @@ export function identityHref(dim: SpendDimension, key: string): string | null {
   }
 }
 
-/** `1.2M` / `340k` / `812` — tokens are read at a glance, never as 9 digits. */
+/**
+ * `1.2M` / `340k` / `812` — tokens are read at a glance, never as 9 digits.
+ *
+ * AN OPTION-BINDING WRAPPER over kit's compact count voice since 0.14.0. This
+ * body is the one the `formatFileSize` shapeAllow entry named as "the collapse
+ * target waiting on" a compact voice; the voice exists now, and the tiers, the
+ * rounding and the "B is BILLION" contract are the package's.
+ */
 export function compactNumber(value: number): string {
-  if (!Number.isFinite(value)) return "—";
-  const abs = Math.abs(value);
-  if (abs >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)}B`;
-  if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (abs >= 10_000) return `${Math.round(value / 1_000)}k`;
-  if (abs >= 1_000) return `${(value / 1_000).toFixed(1)}k`;
-  return `${Math.round(value)}`;
+  return formatCount(value, { style: "compact" });
 }
 
-export function percent(share: number): string {
-  if (!Number.isFinite(share)) return "—";
-  const p = share * 100;
-  if (p > 0 && p < 1) return "<1%";
-  return `${Math.round(p)}%`;
-}
 
 /** `2026-09-11T17:00` → `Sep 11, 5 PM`; `2026-09-11` → `Sep 11`. */
 export function shortLocal(at: string): string {

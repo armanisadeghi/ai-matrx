@@ -40,16 +40,9 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import {
-  countWithNoun,
-  directionLabel,
-  formatBytes,
-  formatCount,
-  formatDay,
-  formatSpan,
-  topCounts,
-} from "../format";
+import { countWithNoun, directionLabel, formatCount, formatDay, formatSpan, topCounts } from "../format";
 import type { ExportLibrary, ExportSummary } from "../types";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 export interface LibrarySummaryProps {
   library: ExportLibrary | null;
@@ -336,7 +329,7 @@ export function LibrarySummary({
           value={summary ? formatCount(summary.total_words) : "—"}
         />
         {library?.bytes ? (
-          <Stat icon={FileText} label="Archive" value={formatBytes(library.bytes)} />
+          <Stat icon={FileText} label="Archive" value={formatFileSize(library.bytes)} />
         ) : null}
       </div>
 

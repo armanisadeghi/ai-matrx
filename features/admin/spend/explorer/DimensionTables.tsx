@@ -24,21 +24,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
-import { count, timestamp, usd } from "../format";
+import { timestamp, usd } from "../format";
 import {
   SPEND_DIMENSIONS,
   type SpendBreakdown,
   type SpendDimension,
   type SpendDimensionRow,
 } from "../types";
-import {
-  DIMENSION_HINT,
-  DIMENSION_LABEL,
-  compactNumber,
-  identityHref,
-  percent,
-  rowLabel,
-} from "./labels";
+import { DIMENSION_HINT, DIMENSION_LABEL, compactNumber, identityHref, rowLabel } from "./labels";
+import { formatCount, formatPercentFromFraction } from "@ai-matrx/kit/format";
 
 function ShareBar({ share }: { share: number }) {
   return (
@@ -50,7 +44,7 @@ function ShareBar({ share }: { share: number }) {
         />
       </div>
       <span className="w-9 text-right tabular-nums text-muted-foreground">
-        {percent(share)}
+        {formatPercentFromFraction(share)}
       </span>
     </div>
   );
@@ -144,7 +138,7 @@ function columnsFor(
       align: "right",
       cell: (r) => (
         <span className="tabular-nums text-muted-foreground">
-          {count(r.requests)}
+          {formatCount(r.requests)}
         </span>
       ),
     },

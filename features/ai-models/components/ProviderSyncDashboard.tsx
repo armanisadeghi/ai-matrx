@@ -65,7 +65,7 @@ import { cn } from "@/lib/utils";
 import {
   MOBILE_TABLE_FROZEN,
 } from "@/components/official/mobile-table/mobileTable";
-import { formatRelativeTime } from "@/utils/datetime";
+import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -133,7 +133,7 @@ const formatNum = (n?: number | null) =>
   n == null
     ? "—"
     : n >= 1_000_000
-      ? `${(n / 1_000_000).toFixed(1)}M`
+      ? formatCount(n, { style: "compact" })
       : n.toLocaleString();
 
 const formatDate = (d?: string | null) => {
@@ -166,12 +166,19 @@ const STATUS_SORT_ORDER: Record<ComparisonStatus, number> = {
   extra_local: 4,
 };
 
-/** Hours since an ISO timestamp, or null when there is nothing to age. */
-function hoursSince(iso: string | null | undefined): number | null {
+const HOUR_MS = 60 * 60 * 1000;
+
+/**
+ * MILLISECONDS since an ISO timestamp — a number the staleness threshold
+ * COMPARES and nothing renders. Every rendered age on this screen goes through
+ * `formatRelativeTime`; the hours division that used to live here was found by
+ * the relative-time shape lane of `check:package-twins`.
+ */
+function ageMsSince(iso: string | null | undefined): number | null {
   if (!iso) return null;
   const t = Date.parse(iso);
   if (Number.isNaN(t)) return null;
-  return Math.max(0, (Date.now() - t) / 3_600_000);
+  return Math.max(0, Date.now() - t);
 }
 
 function defaultSortDirForColumn(key: ComparisonSortKey): ComparisonSortDir {
@@ -460,7 +467,7 @@ function PriceVerifiedCell({ pricing }: { pricing: ProviderSyncRowPricing }) {
       title={`Price last verified ${pricing.verified_at}`}
     >
       <ShieldCheck className="h-3 w-3" />
-      {days === 0 ? "verified today" : `${days}d ago`}
+      {formatRelativeTime(pricing.verified_at, { style: "short" })}
     </Badge>
   );
 }
@@ -1230,9 +1237,9 @@ function ProviderSection({
   const excluded = statusCounts.excluded;
   const beforeCutoff = statusCounts.before_cutoff;
 
-  const snapshotAgeHours = hoursSince(summary.fetched_at);
+  const snapshotAgeMs = ageMsSince(summary.fetched_at);
   const snapshotStale =
-    snapshotAgeHours != null && snapshotAgeHours >= STALE_SNAPSHOT_HOURS;
+    snapshotAgeMs != null && snapshotAgeMs >= STALE_SNAPSHOT_HOURS * HOUR_MS;
 
   const handleExpand = () => {
     if (expanded) setSelectedComparison(null);

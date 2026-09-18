@@ -34,10 +34,7 @@ export function formatCompactNumber(value: number | null | undefined): string {
     }).format(value);
 }
 
-export function formatCount(value: number | null | undefined): string {
-    if (value == null || !Number.isFinite(value)) return "—";
-    return value.toLocaleString();
-}
+export { formatCount } from "@ai-matrx/kit/format";
 
 /** USD, and never a bare "$0" where "Free" is the honest word. */
 export function formatCost(amount: number, currency = "USD"): string {
