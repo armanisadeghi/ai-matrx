@@ -50,10 +50,10 @@ import {
 } from "@/lib/api/organization-admission";
 import { knobInt } from "@/lib/knobs/featureKnobs";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import {
-  selectOrganizationId,
-  selectOrgBootstrapFailure,
-} from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+// The fourth state's reader is a pure leaf on purpose — see its header. Reading
+// it from the slice would break every surface test that stands the slice in.
+import { selectOrgBootstrapFailure } from "@/lib/organizations/orgBootstrapFailure";
 
 export type WorkspaceResolution =
   | { status: "ready"; organizationId: string }
@@ -111,7 +111,7 @@ export function peekEffectiveOrganizationId(): string | null {
  */
 function peekOrganizationUnreadableReason(): string | null {
   const state = getStoreSingleton()?.getState();
-  return state ? (selectOrgBootstrapFailure(state as never) ?? null) : null;
+  return state ? selectOrgBootstrapFailure(state) : null;
 }
 
 /**

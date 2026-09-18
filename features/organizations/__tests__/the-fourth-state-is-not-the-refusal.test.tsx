@@ -58,13 +58,24 @@ jest.mock("@/lib/redux/thunks/activeOrgBootstrap", () => ({
 const dispatched: unknown[] = [];
 let current: Record<string, unknown>;
 
+// 🚨 DELIBERATELY ONLY `useAppSelector` — the gate must not need a second hook.
+// Every surface test in the repo stands this module in with the members the
+// gate needed when it was written; a gate that grows a `useAppDispatch`
+// dependency kills all of them (it killed seven suites on 2026-09-18). The
+// retry dispatches through the store singleton, a pure leaf, instead.
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (s: unknown) => unknown) =>
     selector({ appContext: current }),
-  useAppDispatch: () => (action: unknown) => {
-    dispatched.push(action);
-    return action;
-  },
+}));
+
+jest.mock("@/lib/redux/store-singleton", () => ({
+  getStoreSingleton: () => ({
+    dispatch: (action: unknown) => {
+      dispatched.push(action);
+      return action;
+    },
+    getState: () => ({ appContext: current }),
+  }),
 }));
 
 /* eslint-disable @typescript-eslint/no-require-imports */

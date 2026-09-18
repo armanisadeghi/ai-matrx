@@ -57,12 +57,23 @@
 // (VERIFY-R7-FIX-WAVE NEW-1, 2026-09-18).
 
 import { useCallback } from "react";
-import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { useAppSelector } from "@/lib/redux/hooks";
 import {
   selectOrganizationId,
-  selectOrgBootstrapFailure,
   selectShouldPromptForOrganization,
 } from "@/lib/redux/slices/appContextSlice";
+// 🚨 THE GATE READS ITS NEW INPUTS THROUGH PURE LEAVES, NEVER THROUGH MORE
+// EXPORTS OF THE APP-CONTEXT SLICE OR MORE HOOKS. Dozens of surfaces render
+// through this hook, and dozens of their tests stand the slice and
+// `@/lib/redux/hooks` in with the two or three members the gate needed on the
+// day they were written. A module mock replaces the module for every importer,
+// so one more slice selector here killed seven suites and 25 tests on
+// 2026-09-18 — surfaces that had not changed at all. The failure reason comes
+// from `lib/organizations/orgBootstrapFailure.ts` (imports nothing) and the
+// retry dispatches through `lib/redux/store-singleton.ts` (imports nothing),
+// so the next thing this gate learns costs no test in the repo a line.
+import { selectOrgBootstrapFailure } from "@/lib/organizations/orgBootstrapFailure";
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { retryActiveOrgBootstrap } from "@/lib/redux/thunks/activeOrgBootstrap";
 
 /**
@@ -134,7 +145,6 @@ export const ORGANIZATION_UNAVAILABLE_DESCRIPTION =
   "could not check. Try again, and if it keeps happening, reload the page.";
 
 export function useOrganizationRequired(): OrganizationRequiredGate {
-  const dispatch = useAppDispatch();
   const organizationId = useAppSelector(selectOrganizationId);
   const organizationRequired = useAppSelector(selectShouldPromptForOrganization);
   // Non-null ONLY when the read failed. `selectShouldPromptForOrganization`
@@ -147,8 +157,17 @@ export function useOrganizationRequired(): OrganizationRequiredGate {
   const resolving = !canLoad && !organizationRequired;
 
   const retry = useCallback(() => {
-    void dispatch(retryActiveOrgBootstrap());
-  }, [dispatch]);
+    const store = getStoreSingleton();
+    if (!store) {
+      // Nothing to retry through. Say so — a button that silently does nothing
+      // is the same lie in a smaller frame (law 4).
+      console.error(
+        "[useOrganizationRequired] retry: no Redux store yet — the organization read cannot be re-run.",
+      );
+      return;
+    }
+    void store.dispatch(retryActiveOrgBootstrap());
+  }, []);
 
   const organizationState: OrganizationState = canLoad
     ? "ready"
