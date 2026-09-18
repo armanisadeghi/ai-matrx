@@ -26,9 +26,7 @@ import {
   TopicalMapLoading,
 } from "../components/TopicalMapStates";
 import type { MapViewProps } from "../components/TopicalMapWorkspaceBody";
-import { mapOutline } from "../data";
-import { withTopicalMapErrors } from "../errors";
-import { useMapTree, useTopicalMap } from "../hooks";
+import { useMapOutline, useMapTree, useTopicalMap } from "../hooks";
 import { useTopicalMapKnobs } from "../knobs";
 import {
   selectMapLoadedIncludes,
@@ -56,6 +54,16 @@ export function TextView({ mapId, siteId }: MapViewProps) {
   const loadedIncludes = useAppSelector(selectMapLoadedIncludes(mapId));
 
   const hasOverrides = Object.keys(overrides).length > 0;
+  // What an agent is handed: seo.map_outline's own bytes, focused and sized as
+  // the run would be — never a re-rendering of them. Read alongside the tree so
+  // Copy for AI can answer synchronously; until it lands the AI copy is absent,
+  // never the markdown standing in for it.
+  const outline = useMapOutline(mapId, {
+    siteId: siteId ?? undefined,
+    focusSlug: focus?.slug ?? undefined,
+    ...(hasOverrides ? { overrides } : {}),
+  });
+  const agentBytes = outline.data && outline.data.trim() ? outline.data : null;
   const markdown = tree.isPending || tree.isError
     ? ""
     : buildMapMarkdown(topics, rootSlugs, {
@@ -80,17 +88,7 @@ export function TextView({ mapId, siteId }: MapViewProps) {
             label={focus ? `Topical map — ${focus.name}` : "Topical map"}
             size="sm"
             human={() => markdown}
-            // What an agent is handed: seo.map_outline's own bytes, focused and
-            // sized exactly as the run would be — never a re-rendering of them.
-            agent={() =>
-              withTopicalMapErrors("seo.map_outline", () =>
-                mapOutline(mapId, {
-                  siteId: siteId ?? undefined,
-                  focusSlug: focus?.slug ?? undefined,
-                  ...(hasOverrides ? { overrides } : {}),
-                }),
-              )
-            }
+            {...(agentBytes ? { agent: () => agentBytes } : { hide: ["ai"] })}
           />
         ) : null}
       </div>

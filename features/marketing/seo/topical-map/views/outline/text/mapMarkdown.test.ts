@@ -6,7 +6,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 
 import reducer, { mapOpened, mapTreeLoaded } from "../../../redux/slice";
-import { selectMapLoadedIncludes, selectMapRootSlugs, selectMapTopicsBySlug } from "../../../redux/selectors";
 import { ALL_GREEN_MAP_ID, ALL_GREEN_WITHOUT_COUNTS, ALL_GREEN_WITH_COUNTS } from "../__fixtures__/mapTreeAllGreen.recorded";
 import { buildMapMarkdown } from "./mapMarkdown";
 
@@ -14,11 +13,12 @@ function load(result: typeof ALL_GREEN_WITH_COUNTS, includes: string[]) {
   const store = configureStore({ reducer: { topicalMap: reducer } });
   store.dispatch(mapOpened({ mapId: ALL_GREEN_MAP_ID }));
   store.dispatch(mapTreeLoaded({ mapId: ALL_GREEN_MAP_ID, result, includes }));
-  const state = store.getState();
+  const ws = store.getState().topicalMap.maps[ALL_GREEN_MAP_ID];
+  if (!ws) throw new Error("the workspace was not opened");
   return {
-    topics: selectMapTopicsBySlug(ALL_GREEN_MAP_ID)(state),
-    roots: selectMapRootSlugs(ALL_GREEN_MAP_ID)(state),
-    countsLoaded: selectMapLoadedIncludes(ALL_GREEN_MAP_ID)(state).includes("counts"),
+    topics: ws.topicsBySlug,
+    roots: ws.rootSlugs,
+    countsLoaded: ws.loadedIncludes.includes("counts"),
   };
 }
 

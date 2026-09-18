@@ -138,7 +138,7 @@ describe("TextView — the recorded All Green tree as a markdown document", () =
     expect(typeof copyProps.agent).toBe("function");
     const human = (copyProps.human as () => string)();
     expect(human).toBe(renderedMarkdown);
-    const agent = await (copyProps.agent as () => Promise<string>)();
+    const agent = (copyProps.agent as () => string)();
     expect(agent).toBe("AGENT OUTLINE BYTES");
     expect(mapOutline).toHaveBeenCalledWith(ALL_GREEN_MAP_ID, { siteId: undefined, focusSlug: undefined });
     act(() => root.unmount());

@@ -60,7 +60,7 @@ const ROWS = [
 describe("the mechanism — a function-component child hears no right-click", () => {
   let host: HTMLDivElement;
   let root: Root;
-  const resolveContextOnOpen = jest.fn(() => null);
+  const resolveContextOnOpen = jest.fn((..._args: unknown[]) => null);
 
   beforeEach(() => {
     resolveContextOnOpen.mockClear();
