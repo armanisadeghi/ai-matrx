@@ -78,6 +78,33 @@ import type {
  */
 export { MediaApiError, MediaContractError } from "./contract";
 
+/**
+ * 🚨 "NOT YET" IS NOT "NO", AND IT IS NEVER A SENTENCE ON A SCREEN.
+ *
+ * The platform transport is fail-closed: it refuses any authenticated request
+ * made before the active organization has resolved, with
+ * `organization_context_required` — "Select an organization before sending
+ * this request." That refusal is aimed at the DEVELOPER; the app context
+ * resolves a beat after first render, so on a cold page load the first read
+ * always trips it and the second read succeeds. Printing it is a lie twice
+ * over: the person has an organization, and nothing is wrong. On 2026-09-18 an
+ * independent re-test watched exactly that sentence sit on a Library page for
+ * the whole visit, because the failure was recorded and the later success
+ * never overwrote it.
+ *
+ * So callers gate their reads on a resolved organization AND treat this code
+ * as "still starting", never as a failure worth a person's attention. A
+ * genuinely org-less account is the platform's problem, not this feature's:
+ * `callApi` opens the workspace picker for that case.
+ */
+export function isOrganizationNotReady(error: unknown): boolean {
+    return (
+        error instanceof MediaApiError &&
+        (error.code === "organization_context_required" ||
+            error.code === "organization_context_invalid")
+    );
+}
+
 function isMediaErrorDetail(value: unknown): value is MediaErrorDetail {
     if (!value || typeof value !== "object") return false;
     const candidate = value as Record<string, unknown>;
