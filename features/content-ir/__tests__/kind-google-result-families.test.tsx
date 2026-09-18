@@ -42,10 +42,20 @@ import { resolveBlockDispatch } from "@/components/mardown-display/chat-markdown
 import { kindRegistry } from "../registry/kind-registry";
 import { envelopeFromCompleteValue, IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import type { KindComponentProjection } from "../registry/schema-source-kind-components";
-import GoogleWorkspaceResultBlock from "@/components/mardown-display/blocks/google-kinds/GoogleWorkspaceResultBlock";
+import GoogleWorkspaceResultBlock, {
+  PROMOTED as WORKSPACE_PROMOTED,
+} from "@/components/mardown-display/blocks/google-kinds/GoogleWorkspaceResultBlock";
 import GoogleMarketingResultBlock, {
   PROMOTED as MARKETING_PROMOTED,
 } from "@/components/mardown-display/blocks/google-kinds/GoogleMarketingResultBlock";
+import {
+  WRITE_CLAIM_KEYS,
+  readWriteClaim,
+  type WriteClaimState,
+} from "@/components/mardown-display/blocks/google-kinds/google-result-shared";
+// The platform's ONE timestamp formatter — the same function the Detail
+// primitive prints every stored instant with. Never a second one here.
+import { formatWhen } from "@/lib/detail/format";
 // The real registry — the door's own gate (F-87 asserts the token it opens on).
 import { getItemConfig } from "@/features/item-presentation/registry";
 
@@ -388,6 +398,10 @@ const FIXTURES: Fixture[] = [
       // rendered nothing at all and the reader was left with the bare id.
       "Open site in AI Matrx",
     ],
+    // NEW-10's other half: this payload DOES state its window, so the unknown-
+    // window phrase must not appear. A warning that fires on a stated window
+    // would train a reader to ignore it.
+    absent: ["window not stated by the provider"],
   },
   {
     name: "a marketing read names which site the numbers belong to, with every promoted scalar printed somewhere",
@@ -488,6 +502,260 @@ const FIXTURES: Fixture[] = [
       "GA4 tag",
     ],
   },
+  // ── V-22's HOSTILE SHAPES (VERIFY-R7-FIX-WAVE, findings NEW-8/10/14) ──────
+  //
+  // Every fixture below is a payload the declared kinds ALLOW and the first
+  // shipped components read wrongly. They are asserted the same way as the
+  // honest ones — through `applyIrKindRoute` → `resolveBlockDispatch`, never the
+  // component imported directly — because a preview that reads as a receipt is
+  // only a defect on the path a reader actually travels.
+  {
+    name: "NEW-8: a would_append with NO dry_run and NO approval flag still leads with nothing was written",
+    kind: WORKSPACE_KIND,
+    Component: GoogleWorkspaceResultBlock,
+    data: {
+      action: "append_document",
+      title: "Q3 Plan",
+      file_id: "1AbC",
+      // No `dry_run`. No `awaiting_approval`. No `note`. This is the shape a new
+      // action, a serializer or an approval path that forgets one flag produces,
+      // and RED it rendered the whole preview of the person's own document with
+      // nothing saying it had not happened.
+      would_append: {
+        position: "end_of_document",
+        after_char: 4211,
+        text: "\nThree risks remain open.",
+        revision_id: "rev-9",
+      },
+    },
+    visible: [
+      "Nothing was written. This is a preview of the exact change.",
+      "This exact block will be appended",
+      "Three risks remain open.",
+    ],
+  },
+  {
+    name: "NEW-8: would_append beside appended names the contradiction and shows no receipt chip",
+    kind: WORKSPACE_KIND,
+    Component: GoogleWorkspaceResultBlock,
+    data: {
+      action: "append_document",
+      title: "Q3 Plan",
+      // BOTH AT ONCE, plus the flag as a string — V-22's probes 10 and 11.
+      dry_run: "true",
+      appended: true,
+      would_append: { position: "end_of_document", text: "One more paragraph." },
+    },
+    visible: [
+      "this answer contradicts itself",
+      "would append",
+      "treating it as a preview; nothing is shown as written",
+      "This exact block will be appended",
+    ],
+    // The green receipt chip itself. RED it sat beside the preview.
+    absent: [">appended</span>"],
+  },
+  {
+    name: "NEW-8: written beside would_write shows both halves of the range and no cells-written chip",
+    kind: WORKSPACE_KIND,
+    Component: GoogleWorkspaceResultBlock,
+    data: {
+      action: "write_sheet",
+      name: "Pipeline",
+      written: true,
+      would_write: {
+        range: "Leads!A2:C3",
+        cells_before: [["old"]],
+        cells_after: [["new"]],
+        rows_before: 1,
+        rows_after: 1,
+        replaces_existing_values: true,
+      },
+    },
+    visible: [
+      "this answer contradicts itself",
+      "would write",
+      "These cells would change",
+    ],
+    absent: [">cells written</span>"],
+  },
+  {
+    name: "NEW-8: a dry_run that arrived as a string is a hold nobody can read, never an absent hold",
+    kind: WORKSPACE_KIND,
+    Component: GoogleWorkspaceResultBlock,
+    data: {
+      action: "create_document",
+      title: "Untitled plan",
+      dry_run: "true",
+    },
+    visible: ["Nothing is shown as written", "rather than true or false"],
+  },
+  {
+    name: "NEW-8: an approval hold carrying no preview says the change is not shown",
+    kind: WORKSPACE_KIND,
+    Component: GoogleWorkspaceResultBlock,
+    data: {
+      action: "create_document",
+      title: "Board update",
+      awaiting_approval: true,
+      approval: {
+        approval_id: "ap-77",
+        knob: "google.workspace.write_approval",
+        mode: "always",
+        waiting_with: "Dana Reed",
+        attended: false,
+      },
+    },
+    visible: [
+      "waiting for a person to approve it",
+      "does not show the change it is holding",
+      "waiting with Dana Reed",
+      "queue id ap-77",
+    ],
+  },
+  {
+    name: "NEW-8: a would_write whose cells arrived as garbage still leads with nothing written and prints the garbage",
+    kind: WORKSPACE_KIND,
+    Component: GoogleWorkspaceResultBlock,
+    data: {
+      action: "write_sheet",
+      name: "Pipeline",
+      would_write: {
+        range: "Leads!A2:C3",
+        cells_before: "OOPS-NOT-AN-ARRAY",
+        cells_after: 7,
+      },
+    },
+    visible: ["Nothing was written", "OOPS-NOT-AN-ARRAY"],
+  },
+  {
+    name: "a read carries keys neither the kind nor the component modelled through to the reader",
+    kind: WORKSPACE_KIND,
+    Component: GoogleWorkspaceResultBlock,
+    data: {
+      action: "read_sheet",
+      rows: [["a", "b"]],
+      unexpected_total_pages: 99,
+      weird_nested: { deep: "matters" },
+    },
+    visible: ["99", "matters"],
+  },
+  {
+    name: "NEW-10: a marketing count with no bounds says the window was never stated",
+    kind: MARKETING_KIND,
+    Component: GoogleMarketingResultBlock,
+    data: {
+      action: "read_google_analytics",
+      source: "persisted",
+      // No `bounds`. `bounds` is OPTIONAL on the declared kind, so this is a
+      // legal payload — and RED it printed "412 rows returned" as if the window
+      // were a fact, while the unknown completeness beside it was announced.
+      returned_count: 412,
+      count_unit: "rows",
+      truncated: null,
+      completeness: null,
+      data: { rows: [{ sessions: 3 }] },
+    },
+    visible: [
+      "412",
+      "rows returned",
+      "window not stated by the provider",
+      "completeness unknown",
+    ],
+    absent: ["complete within the window asked for"],
+  },
+  {
+    name: "a capped read whose completeness the provider cannot state never reads as complete",
+    kind: MARKETING_KIND,
+    Component: GoogleMarketingResultBlock,
+    data: {
+      action: "read_search_console",
+      source: "live_google",
+      bounds: { start_date: "2026-09-01", limit: 50 },
+      returned_count: 50,
+      count_unit: "rows",
+      truncated: true,
+      completeness: null,
+    },
+    visible: ["capped — more exists than is shown"],
+    absent: ["complete within the window asked for", "window not stated by the provider"],
+  },
+  {
+    name: "NEW-14: a freshness this build does not know names the word AND what to do about it",
+    kind: WORKSPACE_KIND,
+    Component: GoogleWorkspaceResultBlock,
+    data: {
+      action: "read_calendar",
+      window_start: "2026-09-18",
+      window_end: "2026-09-25",
+      events: [
+        {
+          event_id: "g-7",
+          title: "Budget review",
+          starts_at: "2026-09-18T15:00:00Z",
+          record_id: "22222222-2222-4222-8222-222222222222",
+          record_table: "communication.calendar_event",
+          // No live mirror produces this word (the CHECK constraint gives
+          // available / unavailable / detached), which is exactly why it must
+          // not print as a bare chip with nothing to do.
+          record_sync_status: "stale",
+        },
+      ],
+    },
+    visible: [
+      "Budget review",
+      "stale",
+      "does not recognise",
+      "Open it here and refresh it, or open it in Google.",
+    ],
+    // NEW-14's other half: the raw instant never reaches a person.
+    absent: ["2026-09-18T15:00:00Z"],
+  },
+  {
+    name: "NEW-14: the terminal kept-as-AI-Matrx-data state offers no refresh, because a refresh is refused",
+    kind: WORKSPACE_KIND,
+    Component: GoogleWorkspaceResultBlock,
+    data: {
+      action: "read_calendar",
+      events: [
+        {
+          event_id: "g-8",
+          title: "Old offsite",
+          starts_at: "2026-09-10T18:30:00Z",
+          record_id: "33333333-3333-4333-8333-333333333333",
+          record_sync_status: "detached",
+        },
+      ],
+    },
+    visible: [
+      "kept as AI Matrx data",
+      "no longer refreshes from Google Calendar",
+    ],
+    absent: ["Open it here and refresh it"],
+  },
+  {
+    name: "NEW-14: an unreadable freshness prefers the server's own sentence over ours",
+    kind: WORKSPACE_KIND,
+    Component: GoogleWorkspaceResultBlock,
+    data: {
+      action: "read_calendar",
+      events: [
+        {
+          event_id: "g-9",
+          title: "Sales sync",
+          record_id: "44444444-4444-4444-8444-444444444444",
+          record_sync_status: "unavailable",
+          record_sync_status_reason:
+            "Google Calendar answered 404 for this event the last time we asked.",
+        },
+      ],
+    },
+    visible: [
+      "not answered by Google",
+      "Google Calendar answered 404 for this event",
+      "Open it here and refresh it, or open it in Google.",
+    ],
+  },
 ];
 
 /** The registered row, as the warm loader projects it. */
@@ -524,6 +792,138 @@ function kindBlock(kind: string, value: Record<string, unknown>) {
 function markerOf(block: { metadata?: Record<string, unknown> }) {
   return block.metadata?.[IR_ROUTE_KEY] as IrRouteMarker | undefined;
 }
+
+/**
+ * 🚨 THE WRITE-CLAIM TRUTH TABLE (V-22, NEW-8).
+ *
+ * The honesty of a Google write answer used to be carried by a FLAG: "Nothing
+ * was written" was gated on `dry_run === true || awaiting_approval === true`
+ * while the preview blocks rendered unconditionally on `would_*`. One missing,
+ * mistyped or forgotten flag therefore turned a preview of the person's own
+ * document into something indistinguishable from a receipt.
+ *
+ * `readWriteClaim` is now the ONE reading both components consult, and it is a
+ * pure function precisely so the table can be asserted directly, row by row,
+ * rather than inferred from markup. The two invariants the table exists for:
+ *
+ *  - a `would_*` key that ARRIVED always yields `nothingWasWritten`, whatever
+ *    the flags say — including a `would_delete` nobody has written yet;
+ *  - a completed-write chip is allowed ONLY in `receipt` and `none`, so a green
+ *    "appended" can never sit beside a preview.
+ */
+describe("readWriteClaim — the one truth table both Google blocks read", () => {
+  const CASES: Array<{
+    said: string;
+    value: Record<string, unknown>;
+    state: WriteClaimState;
+    nothingWasWritten: boolean;
+    showsReceiptChips: boolean;
+  }> = [
+    { said: "an ordinary read", value: { action: "read_sheet" }, state: "none", nothingWasWritten: false, showsReceiptChips: true },
+    { said: "appended", value: { appended: true }, state: "receipt", nothingWasWritten: false, showsReceiptChips: true },
+    { said: "written", value: { written: true }, state: "receipt", nothingWasWritten: false, showsReceiptChips: true },
+    { said: "created", value: { created: true }, state: "receipt", nothingWasWritten: false, showsReceiptChips: true },
+    { said: "imported", value: { imported: true }, state: "receipt", nothingWasWritten: false, showsReceiptChips: true },
+    { said: "sent", value: { sent: true }, state: "receipt", nothingWasWritten: false, showsReceiptChips: true },
+    { said: "not sent", value: { sent: false }, state: "none", nothingWasWritten: false, showsReceiptChips: true },
+    // THE FINDING: a preview with NO flag at all.
+    { said: "would_append alone", value: { would_append: { text: "x" } }, state: "preview", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "would_write alone", value: { would_write: { range: "A1" } }, state: "preview", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "would_create alone", value: { would_create: { name: "x" } }, state: "preview", nothingWasWritten: true, showsReceiptChips: false },
+    // THE CLASS, not the instance: a `would_*` nobody has written yet.
+    { said: "a would_ key this build has never seen", value: { would_delete: { id: "x" } }, state: "preview", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "a would_ key that arrived null", value: { would_append: null }, state: "none", nothingWasWritten: false, showsReceiptChips: true },
+    { said: "would_append with dry_run", value: { would_append: {}, dry_run: true }, state: "preview", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "dry_run with no preview body", value: { dry_run: true }, state: "preview", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "awaiting_approval with a preview", value: { would_write: {}, awaiting_approval: true }, state: "awaiting_approval", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "awaiting_approval with no preview body", value: { awaiting_approval: true }, state: "awaiting_approval", nothingWasWritten: true, showsReceiptChips: false },
+    // BOTH AT ONCE — every combination is the same verdict: claim nothing.
+    { said: "would_append AND appended", value: { would_append: {}, appended: true }, state: "contradictory", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "would_write AND written", value: { would_write: {}, written: true }, state: "contradictory", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "would_create AND created", value: { would_create: {}, created: true }, state: "contradictory", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "would_create AND sent", value: { would_create: {}, sent: true }, state: "contradictory", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "would_write AND imported", value: { would_write: {}, imported: true }, state: "contradictory", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "dry_run AND appended", value: { dry_run: true, appended: true }, state: "contradictory", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "awaiting_approval AND written", value: { awaiting_approval: true, written: true }, state: "contradictory", nothingWasWritten: true, showsReceiptChips: false },
+    // A FLAG WE CANNOT READ is not an absent flag.
+    { said: "dry_run as the string true", value: { dry_run: "true" }, state: "unreadable_hold", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "dry_run as the string true beside appended", value: { dry_run: "true", appended: true }, state: "unreadable_hold", nothingWasWritten: true, showsReceiptChips: false },
+    { said: "awaiting_approval as a number", value: { awaiting_approval: 1, would_append: {} }, state: "unreadable_hold", nothingWasWritten: true, showsReceiptChips: false },
+  ];
+
+  it.each(CASES.map((row) => [row.said, row] as const))(
+    "%s",
+    (_said, row) => {
+      const claim = readWriteClaim(row.value);
+      expect(claim.state).toBe(row.state);
+      expect(claim.nothingWasWritten).toBe(row.nothingWasWritten);
+      expect(claim.showsReceiptChips).toBe(row.showsReceiptChips);
+      // The two are one invariant, stated from both sides: anything that must
+      // say "nothing was written" must never also allow a receipt chip.
+      expect(claim.nothingWasWritten && claim.showsReceiptChips).toBe(false);
+      // A state that leads the block always HAS a line to lead with.
+      expect(Boolean(claim.headline)).toBe(row.nothingWasWritten);
+    },
+  );
+
+  it("a contradiction names BOTH words the answer said, in the answer's own spelling", () => {
+    const claim = readWriteClaim({ would_append: {}, appended: true });
+    expect(claim.previewKeys).toEqual(["would_append"]);
+    expect(claim.completedKeys).toEqual(["appended"]);
+    expect(claim.detail).toContain('"would append"');
+    expect(claim.detail).toContain('"appended"');
+  });
+
+  it("an unreadable hold flag names the value it could not read", () => {
+    const claim = readWriteClaim({ dry_run: "true" });
+    expect(claim.unreadableHoldKeys).toEqual(["dry_run"]);
+    expect(claim.detail).toContain('"dry_run"');
+    expect(claim.detail).toContain('"true"');
+  });
+});
+
+/**
+ * NEW-14, the other half: a machine instant never reaches a person raw, and it
+ * is formatted by the platform's ONE formatter rather than a second one written
+ * here. Asserted against `formatWhen` itself so the expectation cannot drift
+ * from the function every other record field prints its timestamps with.
+ */
+describe("a Google answer's timestamps are formatted for a person", () => {
+  it("an event's starts_at prints through formatWhen, never as the raw ISO string", () => {
+    const iso = "2026-09-19T15:00:00Z";
+    const markup = mount(
+      <GoogleWorkspaceResultBlock
+        content={JSON.stringify({
+          __kind: WORKSPACE_KIND,
+          action: "read_calendar",
+          events: [{ event_id: "g-1", title: "Quarterly review", starts_at: iso }],
+        })}
+        metadata={undefined}
+      />,
+    );
+    expect(markup).toContain(formatWhen(iso));
+    expect(markup).not.toContain(iso);
+  });
+
+  it("a window the tool stated as a plain date is printed as the tool stated it", () => {
+    // A date-only bound is already readable; reformatting it would invent a
+    // time nobody sent.
+    const markup = mount(
+      <GoogleWorkspaceResultBlock
+        content={JSON.stringify({
+          __kind: WORKSPACE_KIND,
+          action: "read_calendar",
+          window_start: "2026-09-18",
+          window_end: "2026-09-25",
+          events: [{ event_id: "g-1", title: "Quarterly review" }],
+        })}
+        metadata={undefined}
+      />,
+    );
+    expect(markup).toContain("2026-09-18");
+    expect(markup).toContain("2026-09-25");
+  });
+});
 
 describe("the two Google tool-result kinds route to their own component", () => {
   // ORDER-SENSITIVE, like the sibling suites: both registries are module
@@ -757,5 +1157,194 @@ describe("the two Google tool-result kinds route to their own component", () => 
     );
     expect(markup).toContain("completeness unknown");
     expect(markup).not.toContain("complete within the window asked for");
+  });
+
+  /**
+   * 🚨 THE WRITE-CLAIM CENSUS (F-95, BUGBOT MEDIUM). `NothingWasWritten`
+   * consumes `approval` plus the whole `WRITE_CLAIM_KEYS` family through
+   * `readWriteClaim` — but until this fix neither block's `PROMOTED` list
+   * omitted them, so `MetaStrip`/`LeftoverFields` printed the very same
+   * `dry_run: true` / `approval: {...}` a reader had just been told about,
+   * as an unlabeled raw leftover: the same fact shown twice.
+   *
+   * This fixture carries a `would_append` preview (asserted separately, since
+   * `would_*` names are open-ended and are omitted dynamically via
+   * `claim.previewKeys` rather than a static list — see `WRITE_CLAIM_KEYS`'s
+   * own comment), `dry_run: true` and an `approval` block, on BOTH blocks.
+   * Each write-claim fact must render EXACTLY ONCE: summarized by
+   * `NothingWasWritten`, never repeated as a raw leftover key/value pair.
+   */
+  describe("the write-claim key family renders once, never twice (F-95)", () => {
+    const CASES = [
+      {
+        name: "google_workspace_result",
+        kind: WORKSPACE_KIND,
+        Component: GoogleWorkspaceResultBlock,
+        promoted: WORKSPACE_PROMOTED,
+      },
+      {
+        name: "google_marketing_result",
+        kind: MARKETING_KIND,
+        Component: GoogleMarketingResultBlock,
+        promoted: MARKETING_PROMOTED,
+      },
+    ] as const;
+
+    it.each(CASES)("$name's PROMOTED list carries every write-claim key", ({ promoted }) => {
+      for (const key of WRITE_CLAIM_KEYS) {
+        expect(promoted).toContain(key);
+      }
+    });
+
+    it.each(CASES)(
+      "$name renders a would_append + awaiting_approval + approval payload's facts exactly once",
+      ({ kind, Component }) => {
+        const data = {
+          action: "probe_action",
+          awaiting_approval: true,
+          would_append: { position: "end_of_document", text: "New paragraph body." },
+          approval: {
+            approval_id: "ap-95",
+            mode: "ask",
+            knob: "hitl.google.unattended_file_write",
+            waiting_with: "the person whose Google account this is",
+          },
+        };
+        kindRegistry.upsertDefinition({ kind, schema: null, schemaSource: "content_ir", tier: "warm" });
+        componentRegistry.ingestDbRows([registeredRow(kind)]);
+        const routed = applyIrKindRoute(kindBlock(kind, data));
+        const markup = mount(<Component content={routed.content} metadata={routed.metadata} />);
+
+        // The claim IS summarized — `NothingWasWritten`'s structured chip row
+        // (`queue id ap-95`, the knob, `waiting_with`) is where these facts
+        // belong, exactly once each.
+        expect(markup).toContain("waiting for a person to approve it");
+        expect(markup).toContain("queue id ap-95");
+        expect(markup).toContain("hitl.google.unattended_file_write");
+
+        // RED before F-95: `approval` and `awaiting_approval` were absent from
+        // `PROMOTED`, so `MetaStrip`/`LeftoverFields` printed the SAME facts a
+        // second time — `awaiting_approval` as a raw "Awaiting approval: true"
+        // scalar, and the whole `approval` object dumped again through
+        // `LeftoverFields`' value viewer, repeating "ap-95" and the knob.
+        expect(markup).not.toContain("Awaiting approval:");
+        const occurrencesOf = (needle: string) =>
+          markup.split(needle).length - 1;
+        expect(occurrencesOf("ap-95")).toBe(1);
+        expect(occurrencesOf("hitl.google.unattended_file_write")).toBe(1);
+      },
+    );
+  });
+
+  /**
+   * 🚨 THE FOOTER PREDICATE (F-95, BUGBOT LOW). "This read returned no rows"
+   * ignored a tracking-health answer: a payload carrying `verdict` and/or
+   * `has_ga4` / `has_conversion_tag` / `has_consent` with an empty or absent
+   * `checks` still printed "no rows" under a real verdict.
+   */
+  describe("the marketing footer's no-rows sentence fires only on a truly empty read (F-95)", () => {
+    it("a verdict with an empty checks array and a real has_ga4 flag is NOT called an empty read", () => {
+      const markup = mount(
+        <GoogleMarketingResultBlock
+          content={JSON.stringify({
+            __kind: MARKETING_KIND,
+            action: "tracking_health",
+            source: "live_google",
+            verdict: "GA4 is installed and reporting.",
+            checks: [],
+            has_ga4: false,
+          })}
+          metadata={undefined}
+        />,
+      );
+      expect(markup).toContain("GA4 is installed and reporting.");
+      expect(markup).not.toContain("This read returned no rows");
+    });
+
+    it("no verdict, no checks, no containers, no data and no has_* flags IS an empty read", () => {
+      const markup = mount(
+        <GoogleMarketingResultBlock
+          content={JSON.stringify({
+            __kind: MARKETING_KIND,
+            action: "read_search_console",
+            source: "persisted",
+            bounds: { start_date: "2026-09-01", limit: 50 },
+          })}
+          metadata={undefined}
+        />,
+      );
+      expect(markup).toContain("This read returned no rows");
+    });
+  });
+});
+
+/**
+ * 🚨 THE CALENDAR DOOR READS THE SERVER'S `record_table` (F-93, V-22 NEW-9).
+ *
+ * The event door used to say `type="calendar_event"` beside `event.record_id`
+ * while the server stamps `record_id`, **`record_table`** and
+ * `record_sync_status` on every event it names
+ * (`aidream/services/google_workspace/tools.py`). V-22 fed an event carrying
+ * `record_table: "media.source_library"` and got an Open control that opens a
+ * `calendar_event` with a foreign id — the V-21 `document → udt_document` defect
+ * in a new place, and exactly the protection a token-driven reader has and a
+ * hardcoded type throws away.
+ *
+ * `RecordDoor` now resolves the stamp through the ONE resolution
+ * (`itemTypeForRecordTable`, derived from the item-presentation type map) and
+ * renders NOTHING when the stamp names a table no item type reads: a door to the
+ * wrong record reads as a fact and is a lie.
+ */
+describe("a calendar event's door obeys the server's record_table (NEW-9)", () => {
+  const event = (extra: Record<string, unknown>) => ({
+    __kind: WORKSPACE_KIND,
+    action: "read_calendar",
+    events: [
+      {
+        event_id: "g-evt-1",
+        title: "Weekly sync",
+        starts_at: "2026-09-18T15:00:00Z",
+        record_id: "812e1df9-e3ff-4a60-b90c-ccfaabe2b88e",
+        ...extra,
+      },
+    ],
+  });
+
+  const render = (value: Record<string, unknown>) => {
+    kindRegistry.upsertDefinition({
+      kind: WORKSPACE_KIND,
+      schema: null,
+      schemaSource: "content_ir",
+      tier: "warm",
+    });
+    componentRegistry.ingestDbRows([registeredRow(WORKSPACE_KIND)]);
+    const routed = applyIrKindRoute(kindBlock(WORKSPACE_KIND, value));
+    expect(markerOf(routed)?.key).toBe(WORKSPACE_KIND);
+    return mount(
+      <GoogleWorkspaceResultBlock
+        content={routed.content}
+        metadata={routed.metadata}
+      />,
+    );
+  };
+
+  it("opens the event when the stamp says it IS a calendar event", () => {
+    const markup = render(event({ record_table: "communication.calendar_event" }));
+    expect(markup).toContain("Open Weekly sync in AI Matrx");
+  });
+
+  it("renders NO door when the stamp names a table no item type reads", () => {
+    // V-22's exact probe. The old door offered "Open" and opened a
+    // `calendar_event` with a `media.source_library` id.
+    const markup = render(event({ record_table: "media.source_library" }));
+    expect(markup).not.toContain("in AI Matrx");
+    // The event itself is still shown — the record is what has no door, not the
+    // answer.
+    expect(markup).toContain("Weekly sync");
+  });
+
+  it("still opens an older payload that carries no stamp at all", () => {
+    const markup = render(event({}));
+    expect(markup).toContain("Open Weekly sync in AI Matrx");
   });
 });

@@ -189,6 +189,50 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
   honest empty read, an honest not-found WITH an organization, a found row never
   held up, and the same behaviour through a `refineDetail` that replaces the
   loader) — 3 RED on HEAD, 5 green after; 148 green across the feature.
+- 2026-09-18 — **F-93: the synced census could not see the sixth synced table, and a door read a
+  constant instead of the server's stamp (V-22 NEW-5, NEW-6, NEW-9).** *NEW-5 — the universe of the
+  universe.* Everything in `syncedColumns.ts` derives from `types/database.types.ts`, which is
+  sound; what nobody checked is that the GENERATED FILE's own universe is a hand-written `--schema`
+  list in `package.json`. Live, **six** tables carry `sync_status`; the sixth,
+  `media.source_library`, is an active and LISTED entity with `sync_status` + `external_id`, a
+  working screen and live rows — and `media` was not in the list, so it appears NOWHERE in the
+  generated types and every leg of the F-54/F-81 machinery was green about a table that, to the
+  type, does not exist. A second schema, `provider`, was missing the same way (two registered
+  entity types). The list now names both, and the script's own post-generation assertions demand
+  both landed (beside `hr` / `esign`). **The regeneration is OWED, not done:** this environment has
+  no `SUPABASE_ACCESS_TOKEN` (`npx supabase gen types` answers
+  `LegacyPlatformAuthRequiredError`), so the committed types still lack both schemas — declared in
+  `SCHEMAS_AWAITING_REGENERATION` with the cost and the exact command (`pnpm db-types`) rather than
+  left to be discovered, and the media entry names in advance what the regeneration will surface:
+  `media.source_library.last_synced_at` plays the freshness role and no candidate list holds that
+  spelling (it cannot be added first — `SyncedRoleColumn` derives from the types). New guard
+  `__tests__/the-generated-types-carry-every-configured-schema.test.ts` fails on any configured
+  schema missing from the committed file and not declared, on a STALE declaration (a schema that
+  landed), and on the synced set differing from `LIVE_SYNCED_TABLES` minus declared-missing schemas
+  — so a new synced table in a generated schema still fails by name, and the day media lands the
+  sixth table joins with no edit. `every-candidate-column-is-a-live-column.test.ts` no longer
+  asserts a hand-typed five-table census; it derives it the same way. Red→green: dropping the
+  `media` declaration fails 3 of 64, naming `--schema media` and the hidden table; 64/64 green
+  with it. *NEW-6 —* `web_youtube_video` is registered here (inline: no feature in this repo owns
+  `web.youtube_video` yet — the `/marketing/tools/youtube` route is keyed on YouTube's own external
+  id), with `open` + `detailSource` (`web.youtube_video` / `title`) and an `enrich` read, so
+  `/detail/web_youtube_video/<id>` shows the record instead of nothing. *NEW-9 — the door's type is
+  the server's `record_table`, never a constant.* Our servers stamp `record_id`, `record_table`
+  (`"schema.table"`) and `record_sync_status`; V-22 fed a calendar payload carrying
+  `record_table: "media.source_library"` to a hardcoded `type="calendar_event"` door and got an
+  Open control for a `calendar_event` with a foreign id. `itemTypeForRecordTable` is the one
+  resolution, derived from THE type map (`detailSource` plus the token's own
+  `ENTITY_TYPE_METADATA` row, because `google_document` owns its load through `refineDetail` and
+  declares no `detailSource`); an unknown table returns `null` so the caller renders NO door, and a
+  bare table name never resolves (`definition` lives in two schemas).
+  `__tests__/a-door-reads-the-servers-record-table.test.ts` replays V-22's attack, 18/18. The
+  consumer is `RecordDoor` (`components/mardown-display/blocks/google-kinds/google-result-shared.tsx`),
+  which now takes the row's `recordTable` and prefers it over the caller's `type` — adopted after
+  F-90's own change landed and explicitly left NEW-9 open — so the class is closed in the shared
+  door rather than at one call site. 421 green across
+  `features/item-presentation` + `features/scopes`; scoped `tsc` clean on every file touched (the
+  whole-repo `pnpm type-check` is UNMEASURED here — the sandbox OOM-kills it at ~80s).
+  No screen was seen.
 
 - 2026-09-18 — **F-87: a Marketing SITE is a registered item type, so a site opens in place — and F-86's door was written against a token nothing resolves.** `web_site` (`web.site`, 49 rows read live) is the Marketing module's central identity, and it had been a registered `platform.entity_types` token with a route (`/marketing/sites/<id>`) and the generic registry peek for months — but it was absent from THIS registry, the type map the Detail primitive reads. So three doors were dead at once: `useOpenItemPresentation("web_site", id)` returned `false`; `resolveItemDetailType("web_site")` resolved the neutral fallback (`load === null`), leaving `/detail/web_site/<id>` — a URL anyone can build — saying nothing about a fully stored record; and every catalog-derived reference chip for the `web_site` noun (`features/matrx-envelope/referenceResolvers.ts`) had the same refusal. On top of that, F-86's new door on the Google marketing answer said `RecordDoor type="site"` — **`site` is not a token anything in this platform resolves** — and `RecordDoor` renders nothing when the type has no wired opener, so the door was absent forever and the reader of "412 clicks" was left with a bare uuid. Fixed as ONE registration on the canonical token, never a twin: `features/marketing/site-item-type.ts` (`WEB_SITE_ITEM_TYPE`) entered here as `web_site`, its `open` discriminant routing to the platform's EXISTING site Quick view rather than a new site screen — `features/window-panels/windows/marketing/SiteQuickViewWindow.tsx` wraps `SitePeekWindow` (the floating panel the Sites portfolio and the Content Plan list already open on a row) and adds only the canonical single-site read `getSiteListRow`, which the Content Plan list already uses for exactly this; a failed read says so with a retry, and the loading state is a panel that says it is loading. `detailSource` (`web.site` / `name`) is still declared and still used for `/detail/web_site/<id>`, the same split a file has beside its bespoke preview window. The registration also carries a CURATED field list (`refineDetail`): `web.site` has five jsonb columns, a `previous_slugs` array, `version` and three image URLs, and the generic `fieldsFromRow` would dump all of them — the N5 defect again — so the record shows Address, Domain, What it is, Status, the owning marketing account as a door on `web_brand` (the generic `brand_id` → "brand" derivation names nothing), who can see it in plain words, Search Console's last read, Added, Last changed, and nothing else. Red-then-green: `__tests__/every-registered-type-opens-or-says-why-not.test.ts` gains `web_site` to its census and fails 2 of 28 against HEAD's registry (`recognized` false, `open` undefined); new `__tests__/a-site-opens-in-place.test.tsx` fails 8/8 on HEAD and passes 8/8 after (registration, loader, title from `name`, the curated list with the plumbing named as absent, the record in all three presentations); new `__tests__/the-one-opener-routes-a-site-to-the-quick-view.test.tsx` pins WHICH opener runs (the Quick view, never the generic detail) and is red on HEAD; `features/content-ir/__tests__/kind-google-result-families.test.tsx` now asserts the door ("Open site in AI Matrx") on both marketing fixtures plus a dedicated case, 3 red on HEAD with the received markup showing the chip and no control, 22/22 green after. `features/scopes/registry/entityRegistry.ts` needed NO change — `web_site` already carries its `hrefFor`. Census of the class: every marketing surface that names a site already draws it as `EntityRef token="web_site"` (13 runtime callsites plus 6 `MarketingAddressUnavailable` route guards), so there were no hand-built identity doors to convert; the two remaining literal `/marketing/sites/${id}` hrefs (`search-console/components/insights/ClassInsights.tsx`, `local/LocalListingsWorkspace.tsx`) are page navigation into the site workspace and were left alone. 143 green across `features/item-presentation`; `check:parse`, `check:kind-marker-law`, `check:canonical-pickers` OK; scoped `tsc` clean on every file this lane touched. No screen was seen.
 

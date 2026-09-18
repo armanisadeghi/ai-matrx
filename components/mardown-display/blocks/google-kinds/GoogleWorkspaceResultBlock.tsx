@@ -76,23 +76,38 @@ import {
   NothingWasWritten,
   OpenInGoogle,
   RecordDoor,
+  RecordSyncState,
   ServerSentence,
   TruncationChip,
+  WRITE_CLAIM_KEYS,
   readBlock,
   readRows,
+  readWhen,
+  readWriteClaim,
 } from "./google-result-shared";
 
-/** Keys the branches below promote themselves, and never repeat in the strip. */
-const PROMOTED = [
+/**
+ * Keys the branches below promote themselves, and never repeat in the strip.
+ *
+ * 🚨 `WRITE_CLAIM_KEYS` replaces the hand-listed `dry_run`, `awaiting_approval`,
+ * `approval`, `appended`, `written`, `created`, `imported`, `sent` — the same
+ * family `readWriteClaim`/`NothingWasWritten` consumes, now ONE source shared
+ * with `GoogleMarketingResultBlock` so the list and the reader can never drift
+ * (F-95). `would_append` / `would_write` / `would_create` stay hand-listed:
+ * they are this tool's own fixed, known `would_*` names, each already rendered
+ * in full by a dedicated preview section below (`AppendPreview` etc.) — a
+ * different reason to omit than the write-claim summary. The render call sites
+ * also merge `claim.previewKeys` into `omit`, so an unmodelled `would_*` name
+ * this list has not caught up to still gets suppressed rather than doubled.
+ */
+export const PROMOTED = [
+  ...WRITE_CLAIM_KEYS,
   "action",
   "google_account",
   "note",
   "limit_note",
   "bounds",
   "truncated",
-  "dry_run",
-  "awaiting_approval",
-  "approval",
   "would_append",
   "would_write",
   "would_create",
@@ -104,24 +119,20 @@ const PROMOTED = [
   "name",
   "file_id",
   "kind",
-  "created",
   "open_in_google",
   "text",
   "total_chars",
   "showing_chars",
   "has_more",
   "next_start_char",
-  "appended",
   "tab",
   "range",
   "rows",
   "row_count",
   "sheet_size",
   "next_range_a1",
-  "written",
   "fields",
   "header_row",
-  "sent",
   "draft",
   "from_email",
   "next_step",
@@ -131,7 +142,6 @@ const PROMOTED = [
   "contacts",
   "field_map",
   "person",
-  "imported",
   "matched_by",
   "task_lists",
   "tasks",
@@ -152,6 +162,14 @@ function headIcon(action: string, value: Record<string, unknown>) {
   if (action.includes("contact")) return action.startsWith("import") ? UserPlus : Contact;
   if (action.includes("task")) return ListChecks;
   return value.created ? CheckCircle2 : Wrench;
+}
+
+/**
+ * A timestamp for a person, or the tool's own text when it is not an instant.
+ * `readWhen` is the platform's ONE formatter; nothing here formats a date twice.
+ */
+function whenText(value: unknown): string | null {
+  return readWhen(value) ?? readText(value);
 }
 
 /** "append_document" → "Append document". The kind carries no display names. */
@@ -323,9 +341,18 @@ const GoogleWorkspaceResultBlock: React.FC<ResultKindBlockProps> = ({
   const action = readText(value.action) ?? "";
   const title = readText(value.title) ?? readText(value.name);
   const account = readText(value.google_account);
-  const dryRun = readBool(value.dry_run) === true;
-  const awaiting = readBool(value.awaiting_approval) === true;
   const approval = readBlock(value.approval);
+
+  /**
+   * 🚨 THE ONE READING of "did this actually change anything" — the truth table
+   * in `google-result-shared.tsx`, never a flag read here. A `would_*` shape
+   * ALWAYS leads with "nothing was written" even when no `dry_run` arrived, and
+   * no completed-write chip below renders unless the claim allows it, so a green
+   * receipt can never sit beside a preview (V-22, NEW-8).
+   */
+  const claim = readWriteClaim(value);
+  /** Merged into `omit` at every render site below: see {@link WRITE_CLAIM_KEYS}. */
+  const omitKeys = [...PROMOTED, ...claim.previewKeys];
 
   const wouldAppend = readBlock(value.would_append);
   const wouldWrite = readBlock(value.would_write);
@@ -383,10 +410,20 @@ const GoogleWorkspaceResultBlock: React.FC<ResultKindBlockProps> = ({
       </div>
 
       <ChipRow>
-        {created ? <StateChip label="created in the user's Drive" tone="good" /> : null}
-        {appended ? <StateChip label="appended" tone="good" /> : null}
-        {written ? <StateChip label="cells written" tone="good" /> : null}
-        {imported ? <StateChip label="imported" tone="good" /> : null}
+        {/* A RECEIPT ONLY WHEN THE CLAIM IS A RECEIPT. `sent === false` is a
+            negation and is always honest, so it is never gated. */}
+        {claim.showsReceiptChips && created ? (
+          <StateChip label="created in the user's Drive" tone="good" />
+        ) : null}
+        {claim.showsReceiptChips && appended ? (
+          <StateChip label="appended" tone="good" />
+        ) : null}
+        {claim.showsReceiptChips && written ? (
+          <StateChip label="cells written" tone="good" />
+        ) : null}
+        {claim.showsReceiptChips && imported ? (
+          <StateChip label="imported" tone="good" />
+        ) : null}
         {sent === false ? <StateChip label="not sent" tone="warn" /> : null}
         {account ? <StateChip label={account} /> : null}
         {tab ? <StateChip label={`tab ${tab}`} /> : null}
@@ -414,7 +451,7 @@ const GoogleWorkspaceResultBlock: React.FC<ResultKindBlockProps> = ({
         ) : null}
       </ChipRow>
 
-      <NothingWasWritten dryRun={dryRun} awaiting={awaiting} approval={approval} />
+      <NothingWasWritten claim={claim} approval={approval} />
 
       {wouldAppend ? <AppendPreview preview={wouldAppend} title={title} /> : null}
       {wouldWrite && (wouldWrite.cells_before !== undefined || wouldWrite.cells_after !== undefined) ? (
@@ -528,14 +565,17 @@ const GoogleWorkspaceResultBlock: React.FC<ResultKindBlockProps> = ({
         <Section
           label={
             readText(value.window_start) && readText(value.window_end)
-              ? `Coming up — ${readText(value.window_start)} to ${readText(value.window_end)}`
+              ? `Coming up — ${whenText(value.window_start)} to ${whenText(value.window_end)}`
               : "Coming up"
           }
         >
           <div className="divide-y divide-border rounded-md border border-border">
             {events.map((event, index) => {
               const name = readText(event.title) ?? "Untitled event";
-              const when = readText(event.starts_at);
+              // A machine instant is formatted for a person through the ONE
+              // formatter; anything that is not an instant prints as the tool
+              // said it (V-22, NEW-14).
+              const when = whenText(event.starts_at);
               return (
                 <div
                   key={readText(event.record_id) ?? readText(event.event_id) ?? index}
@@ -553,12 +593,17 @@ const GoogleWorkspaceResultBlock: React.FC<ResultKindBlockProps> = ({
                       {readText(event.location)}
                     </span>
                   ) : null}
-                  {readText(event.record_sync_status) ? (
-                    <StateChip label={readText(event.record_sync_status) as string} />
-                  ) : null}
+                  <RecordSyncState
+                    status={event.record_sync_status}
+                    reason={event.record_sync_status_reason}
+                  />
                   <OpenInGoogle href={event.html_url} label="In Google" />
+                  {/* 🚨 The TYPE comes from the server's own `record_table`
+                      (F-93, V-22 NEW-9); `calendar_event` is only the answer for
+                      an older payload that carries no stamp. */}
                   <RecordDoor
                     type="calendar_event"
+                    recordTable={event.record_table}
                     id={event.record_id}
                     name={name}
                     fallbackLabel="event"
@@ -686,8 +731,8 @@ const GoogleWorkspaceResultBlock: React.FC<ResultKindBlockProps> = ({
       <ServerSentence text={value.note} />
       <ServerSentence text={value.limit_note} />
 
-      <MetaStrip value={value} omit={PROMOTED} />
-      <LeftoverFields value={value} omit={PROMOTED} />
+      <MetaStrip value={value} omit={omitKeys} />
+      <LeftoverFields value={value} omit={omitKeys} />
     </div>
   );
 };

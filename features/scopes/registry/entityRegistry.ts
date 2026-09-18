@@ -52,11 +52,13 @@ import {
   Layers,
   Layers3,
   LayoutTemplate,
+  Library,
   ListChecks,
   ListOrdered,
   ListTree,
   MailCheck,
   Megaphone,
+  MonitorPlay,
   ListTodo,
   MessagesSquare,
   Mic,
@@ -493,6 +495,47 @@ const ENTITY_OVERLAY: Partial<Record<EntityTypeToken, EntityOverlay>> = {
     Icon: FileText,
     labelPlural: "Google Files",
     hrefFor: (id) => detailRecordHref("google_document", id),
+  },
+
+  // ─── The two synced records F-82 stopped short of (V-22 NEW-6) ─────────────
+  // F-82 registered the two tokens its verifier had named and stopped, so the
+  // census behind it was never run. Live `platform.entity_types` (read
+  // 2026-09-18) carries 99 active + `is_listed` tokens; `media_source_library`
+  // and `web_youtube_video` were two of them with no `hrefFor`, no peek and no
+  // in-place opener — no door in ANY form — while both tables are live, synced
+  // (`sync_status`) entities. `web.youtube_video` is the third Google mirror
+  // table beside `communication.calendar_event` and `workbench.google_document`,
+  // so `<EntityRef token="web_youtube_video">` rendered no controls at all and
+  // the F-64 dead-ends rule could not see a YouTube video.
+  //
+  // The two doors are DIFFERENT on purpose, because the two records are:
+  //
+  //   * a Source Library already HAS a working screen of its own —
+  //     `/libraries/<id>` (`app/(core)/libraries/[id]/page.tsx` →
+  //     `LibraryPage`), whose `GET /media/libraries/{id}` loads exactly this
+  //     row (`source_library_manager_instance.load_item_or_none(id=…)`,
+  //     aidream `api/routers/media_catalog.py:197`). A registry door never
+  //     invents a second presentation when the canonical one exists;
+  //   * a synced YouTube video has NO screen anywhere in this repo
+  //     (`/marketing/tools/youtube/videos/<id>` is keyed on YouTube's own
+  //     external id through `/research/youtube/videos/{video_id}`, NOT on this
+  //     table's uuid — it would open a different thing), so its address is the
+  //     Detail primitive's page presentation, the same form the two Google
+  //     records above use, backed by the registration in
+  //     `features/item-presentation/registry.tsx`.
+  //
+  // Neither table carries a `title_column`, so `RegistryPeek` cannot preview
+  // either one — the address IS the door here (R35: `hrefFor` is the durable
+  // address; a working surface still opens the record in place).
+  media_source_library: {
+    Icon: Library,
+    labelPlural: "Source Libraries",
+    hrefFor: (id) => `/libraries/${encodeURIComponent(id)}`,
+  },
+  web_youtube_video: {
+    Icon: MonitorPlay,
+    labelPlural: "YouTube Videos",
+    hrefFor: (id) => detailRecordHref("web_youtube_video", id),
   },
 
   // ─── Workspaces (containers — also valid as cards) ─────────────────────────

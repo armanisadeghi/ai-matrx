@@ -70,13 +70,47 @@ import {
   ACCOUNT_COLUMNS,
   ACCOUNT_RELATION_CHILD,
   ACCOUNT_RELATION_SEED,
+  LIVE_SYNCED_TABLES,
   PROJECTED_ROLE_COLUMNS,
   REFRESHED_COLUMNS,
   ROLE_COLUMN_SHAPE,
+  SCHEMAS_AWAITING_REGENERATION,
   SYNCED_ROLE_CANDIDATES,
   UNREAD_ROLE_COLUMNS,
   type SyncedRoleColumn,
 } from "../syncedColumns";
+
+/**
+ * 🚨 F-93 / V-22 NEW-5 — THE CENSUS BELOW IS DERIVED, NOT REMEMBERED. It used to
+ * assert a hand-typed list of FIVE synced tables. Live there are SIX: the sixth,
+ * `media.source_library`, lives in a schema the generator was never configured to
+ * emit, so it is absent from `types/database.types.ts` and invisible to every
+ * rule here. The expectations now read the live list minus the schemas declared
+ * missing in `SCHEMAS_AWAITING_REGENERATION`, so the day `pnpm db-types` runs
+ * with `--schema media` the sixth table joins the census with no edit here — and
+ * a synced table in a schema we DO generate still fails by name. The
+ * schema-list-versus-file half is
+ * `the-generated-types-carry-every-configured-schema.test.ts`.
+ */
+const SCHEMA_IS_MISSING = (table: string): boolean =>
+  table.slice(0, table.indexOf(".")) in SCHEMAS_AWAITING_REGENERATION;
+/** The live synced tables the generated types can actually see today. */
+const CENSUSABLE_SYNCED_TABLES = LIVE_SYNCED_TABLES.filter(
+  (table) => !SCHEMA_IS_MISSING(table),
+).sort();
+/**
+ * The live synced tables that MIRROR a provider record (they carry an external
+ * identity), read live 2026-09-18 — `code.code_repositories` and
+ * `commerce.cloud_sync_connection` do not, so no row of theirs reaches the strip.
+ * `media.source_library` carries `external_id`, so it joins the mirrors the day
+ * its schema is generated.
+ */
+const LIVE_MIRROR_TABLES = [
+  "communication.calendar_event",
+  "media.source_library",
+  "web.youtube_video",
+  "workbench.google_document",
+] as const;
 
 /**
  * The narrowness proof. `PROJECTED_ROLE_COLUMNS` typed as
@@ -358,22 +392,14 @@ describe("the ACCOUNT role is recognised by structure, not by spelling (F-81)", 
  * `communication.calendar_event`), so nothing on a screen is wrong yet.
  */
 describe("the synced-table census the strip was measured against", () => {
-  it("is exactly the tables carrying `sync_status` that F-54 censused", () => {
-    expect(SYNCED.map(([table]) => table).sort()).toEqual([
-      "code.code_repositories",
-      "commerce.cloud_sync_connection",
-      "communication.calendar_event",
-      "web.youtube_video",
-      "workbench.google_document",
-    ]);
+  it("is exactly the live synced tables the generated types can see", () => {
+    expect(SYNCED.map(([table]) => table).sort()).toEqual(CENSUSABLE_SYNCED_TABLES);
   });
 
   it("names the provider-record mirrors, the only rows that can reach the strip", () => {
-    expect(MIRRORS.map(([table]) => table).sort()).toEqual([
-      "communication.calendar_event",
-      "web.youtube_video",
-      "workbench.google_document",
-    ]);
+    expect(MIRRORS.map(([table]) => table).sort()).toEqual(
+      LIVE_MIRROR_TABLES.filter((table) => !SCHEMA_IS_MISSING(table)).sort(),
+    );
   });
 
   it("`web.youtube_video` names its connection side, and the strip now reads that column", () => {

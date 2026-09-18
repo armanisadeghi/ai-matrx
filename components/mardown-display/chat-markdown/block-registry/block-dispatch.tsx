@@ -72,6 +72,7 @@ import FileOperationResultBlock from "@/components/mardown-display/blocks/result
 import ValueResultBlock from "@/components/mardown-display/blocks/result-kinds/ValueResultBlock";
 import GoogleWorkspaceResultBlock from "@/components/mardown-display/blocks/google-kinds/GoogleWorkspaceResultBlock";
 import GoogleMarketingResultBlock from "@/components/mardown-display/blocks/google-kinds/GoogleMarketingResultBlock";
+import PlatformRecordBlock from "@/components/mardown-display/blocks/result-kinds/PlatformRecordBlock";
 import MarkdownKindBlock from "@/components/mardown-display/blocks/markdown/MarkdownKindBlock";
 // Lazy shell (next/dynamic ssr:false inside) — Babel/compiler weight ships in
 // its own chunk, fetched only when a block actually routed to a db component.
@@ -274,6 +275,14 @@ export function isBlockLoading(block: {
  *    tool-result renderers. One union kind per tool (fifteen Workspace actions,
  *    six marketing reads), so one component each, reached through that kind's
  *    `kind_component` row on the resolver-only path. Never emitted upstream.
+ *  - `platform_record` — the ONE renderer for the `platform_record` kind, the
+ *    shape `data.read_record` ("Read a Record", matrx-graph) answers with: one
+ *    platform row of ANY registered entity type, read as the run's operator.
+ *    One Record shape for every type by ruling, so one component: the row's
+ *    identity and its door lead, `hidden_fields` are named, and the columns go
+ *    to the platform's value viewer. Reached ONLY via applyIrKindRoute's
+ *    resolver-only path, from that kind's `kind_component` row; never emitted
+ *    upstream, so it has no vocabulary row. Shape-classified by construction.
  *  - `web_analysis_item` — the ONE renderer for the `web_analysis_item`
  *    kind family (the 83 registered `web_*_v1` site-audit checks, which share
  *    one verified shape). Produced ONLY by `applyIrKindRoute`'s resolver-only
@@ -526,6 +535,7 @@ export type FeSynthesizedBlockType =
   | "value_result"
   | "google_workspace_result"
   | "google_marketing_result"
+  | "platform_record"
   | "markdown_stream"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
@@ -702,6 +712,7 @@ export type ShapeBlockType =
   | "value_result"
   | "google_workspace_result"
   | "google_marketing_result"
+  | "platform_record"
   | "markdown_stream"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
@@ -2545,6 +2556,23 @@ const SHAPE_BLOCK_DISPATCH = {
   ),
   google_marketing_result: ({ block, index }) => (
     <GoogleMarketingResultBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+
+  // The `platform_record` route (features/content-ir/react/kind-route.ts
+  // resolver-only path): `data.read_record` reads ONE platform row of any
+  // registered entity type and answers in one generic Record shape, so ONE
+  // component serves every type — the row's identity and its door lead, the
+  // withheld columns are named, and `fields` goes to the platform's value
+  // viewer. The kind was published INACTIVE with no component row while the
+  // engine ignores `is_active`, so until this route existed a Record a workflow
+  // read reached the reader through the generic floor. Reached ONLY via
+  // applyIrKindRoute.
+  platform_record: ({ block, index }) => (
+    <PlatformRecordBlock
       key={index}
       content={block.content}
       metadata={block.metadata}

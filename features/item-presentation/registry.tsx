@@ -27,6 +27,7 @@ import {
   AudioLines,
   File as FileIcon,
   MessagesSquare,
+  MonitorPlay,
   Table2,
   ListChecks,
   BookOpen,
@@ -37,6 +38,7 @@ import {
   Contact,
 } from "lucide-react";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { ENTITY_TYPE_METADATA } from "@ai-matrx/associations";
 
 import type { EnrichedItem, ItemType, KnownItemType } from "./types";
 import type { DetailRecordType } from "@/lib/detail/types";
@@ -153,7 +155,8 @@ export type ItemOpenKind =
   | { kind: "party" }
   | { kind: "google_document" }
   | { kind: "calendar_event" }
-  | { kind: "web_site" };
+  | { kind: "web_site" }
+  | { kind: "web_youtube_video" };
 
 // ---------------------------------------------------------------------------
 // Enrichment helpers
@@ -795,6 +798,53 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
   // the platform learns about it. The key is the canonical entity token
   // (`web_site`), so no `entityToken` alias is needed and no twin exists.
   web_site: WEB_SITE_ITEM_TYPE,
+  // 🚨 V-22 NEW-6 — THE THIRD GOOGLE MIRROR TABLE IS A RECORD THAT OPENS.
+  // `web.youtube_video` is a live, active, `is_listed` entity
+  // (`platform.entity_types.token = 'web_youtube_video'`) and the third mirror
+  // beside `communication.calendar_event` and `workbench.google_document`: same
+  // shape (`external_id`, `external_url`, `synced_at`, `sync_status`), and its
+  // connection side is `channel_resource_id →
+  // users.integration_connection_resources` (read live 2026-09-18). It had no
+  // entry here and none in the entity registry, so a YouTube video had no door
+  // in any form — `/detail/web_youtube_video/<id>`, a URL anyone can build,
+  // showed nothing about a fully stored record.
+  //
+  // It is registered INLINE rather than beside a feature because no feature owns
+  // this table in this repo yet: `/marketing/tools/youtube/videos/<id>` is keyed
+  // on YouTube's own external id via `/research/youtube/videos/{video_id}`, a
+  // different identity. When a YouTube surface lands it takes this entry over,
+  // the way `features/marketing/site-item-type.ts` did for a site.
+  web_youtube_video: {
+    type: "web_youtube_video",
+    label: "YouTube video",
+    icon: MonitorPlay,
+    accent: {
+      text: "text-red-600 dark:text-red-400",
+      bg: "bg-red-500/10",
+      ring: "ring-red-500/20",
+    },
+    // No bespoke window exists, so it opens the Detail primitive — window by
+    // default, docked or page per the person's own setting.
+    open: { kind: "web_youtube_video" },
+    detailSource: { table: "youtube_video", schemaName: "web", titleField: "title" },
+    enrich: (s, id) =>
+      fetchRow(
+        s,
+        "youtube_video",
+        id,
+        "title, description, external_url, sync_status",
+        (r) => ({
+          name: clip(r.title, 80),
+          about: clip(r.description),
+          details: [
+            r.sync_status
+              ? { label: "Sync", value: titleCase(r.sync_status) ?? String(r.sync_status) }
+              : null,
+          ].filter(Boolean) as EnrichedItem["details"],
+        }),
+        "web",
+      ),
+  },
 };
 
 async function enrichFile(
@@ -852,6 +902,70 @@ export function entityTokenForItemType(
   if (typeof type !== "string" || !type) return null;
   const { config, recognized } = getItemConfig(type);
   return recognized ? (config.entityToken ?? type) : type;
+}
+
+/**
+ * 🚨 THE DOOR'S TYPE COMES FROM THE SERVER'S `record_table`, NEVER FROM A
+ * CONSTANT (lane F-93, hostile verifier V-22, finding NEW-9).
+ *
+ * Our servers stamp `record_id`, **`record_table`** (`"schema.table"`, e.g.
+ * `"communication.calendar_event"` — `aidream/services/google_workspace/tools.py`)
+ * and `record_sync_status` onto each row they name. A reader that hardcodes the
+ * item type beside `record_id` is confidently wrong the moment the stamp says
+ * something else: V-22 fed a calendar-shaped payload carrying
+ * `record_table: "media.source_library"` to the agenda door in
+ * `components/mardown-display/blocks/google-kinds/GoogleWorkspaceResultBlock.tsx`
+ * (`<RecordDoor type="calendar_event" id={event.record_id}>`) and got an "Open"
+ * control that opens a `calendar_event` with a foreign id. That is the V-21
+ * `document → udt_document` defect in a new place: the protection a token-driven
+ * reader has — `RecordDoor` renders NOTHING for a type it does not recognise — is
+ * exactly what a hardcoded type throws away.
+ *
+ * This is the one resolution, derived from THE type map itself (`detailSource`'s
+ * schema + table), so a type registered tomorrow is resolvable with no edit here.
+ * An unknown table returns `null`, and a caller must then render no door at all:
+ * a door to the wrong record reads as a fact and is a lie (`no-dead-ends`, rule
+ * 4). It never guesses from a bare table name, because table names repeat across
+ * schemas (`agent.definition` and `mandate.definition`).
+ *
+ * Callers: pass `record_table` when the payload carries one and fall back to the
+ * surface's own type only when it does not.
+ */
+const RECORD_TABLE_TO_ITEM_TYPE: ReadonlyMap<string, KnownItemType> = (() => {
+  const map = new Map<string, KnownItemType>();
+  const add = (key: string, type: KnownItemType): void => {
+    // FIRST registration wins, which is the canonical one: `structured_list` is
+    // declared before its legacy read-only alias `picklist`, and both point at
+    // `workbench.udt_structured_lists`.
+    if (!map.has(key.toLowerCase())) map.set(key.toLowerCase(), type);
+  };
+  for (const [type, config] of Object.entries(REGISTRY) as [
+    KnownItemType,
+    ItemTypeConfig,
+  ][]) {
+    const source = config.detailSource;
+    if (source) add(`${source.schemaName ?? "public"}.${source.table}`, type);
+    // A type may own its load through `refineDetail` and declare no
+    // `detailSource` at all (`google_document` does), so the token's own live
+    // registry row answers too — `ENTITY_TYPE_METADATA` is generated from
+    // `platform.entity_types`, which is where `record_table` comes from in the
+    // first place.
+    const token = config.entityToken ?? type;
+    const meta = (
+      ENTITY_TYPE_METADATA as Record<string, { schema: string; table: string }>
+    )[token];
+    if (meta) add(`${meta.schema}.${meta.table}`, type);
+  }
+  return map;
+})();
+
+export function itemTypeForRecordTable(
+  recordTable: unknown,
+): KnownItemType | null {
+  if (typeof recordTable !== "string") return null;
+  const key = recordTable.trim().toLowerCase();
+  if (!key.includes(".")) return null;
+  return RECORD_TABLE_TO_ITEM_TYPE.get(key) ?? null;
 }
 
 export function getItemConfig(type: ItemType | null | undefined): {
