@@ -436,6 +436,7 @@ export type FeSynthesizedBlockType =
   | "media_block"
   | "video_prompt_options"
   | "map_topic_proposal"
+  | "list_change_proposal"
   | "keyword_research"
   | "keyword_classification_batch"
   | "keyword_serp_intent_analysis"
@@ -610,6 +611,7 @@ export type ShapeBlockType =
   | "item_presentation"
   | "video_prompt_options"
   | "map_topic_proposal"
+  | "list_change_proposal"
   | "keyword_research"
   | "keyword_classification_batch"
   | "keyword_serp_intent_analysis"
@@ -1726,6 +1728,29 @@ const SHAPE_BLOCK_DISPATCH = {
         <BlockComponents.MapTopicProposalBlock
           key={index}
           serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return renderJsonFallback(block, index);
+  },
+
+  // Kind-routed (list_change_proposal_v1 — THE PRIMITIVE: an agent proposes
+  // changes to a list and the person accepts or rejects them right here).
+  // Complete-only, like the proposal above: deciding on a half-parsed list
+  // would write a row the model had not finished. `messageId` is passed
+  // through because that is where the decisions are remembered
+  // (chat.message.metadata); without it the component says so instead of
+  // offering controls whose result would evaporate.
+  list_change_proposal: ({ block, index, messageId }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.ListChangeProposalBlock
+          key={index}
+          serverData={block.serverData}
+          messageId={messageId}
         />
       );
     }
