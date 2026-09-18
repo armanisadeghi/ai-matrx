@@ -317,8 +317,17 @@ function ContextItemsReadyPreview({
             {ghostRows.map((label) => (
               <TableRow
                 key={label}
-                aria-hidden="true"
-                className="opacity-45"
+                role="button"
+                tabIndex={0}
+                aria-label={`Add ${singular}`}
+                onClick={onAdd}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    onAdd();
+                  }
+                }}
+                className="cursor-pointer opacity-45 hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <TableCell className="px-2 font-medium max-w-0">
                   <span className={`truncate block italic ${nameColorClass}`}>
