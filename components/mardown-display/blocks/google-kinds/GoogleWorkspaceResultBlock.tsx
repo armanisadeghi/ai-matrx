@@ -79,23 +79,35 @@ import {
   RecordSyncState,
   ServerSentence,
   TruncationChip,
+  WRITE_CLAIM_KEYS,
   readBlock,
   readRows,
   readWhen,
   readWriteClaim,
 } from "./google-result-shared";
 
-/** Keys the branches below promote themselves, and never repeat in the strip. */
-const PROMOTED = [
+/**
+ * Keys the branches below promote themselves, and never repeat in the strip.
+ *
+ * 🚨 `WRITE_CLAIM_KEYS` replaces the hand-listed `dry_run`, `awaiting_approval`,
+ * `approval`, `appended`, `written`, `created`, `imported`, `sent` — the same
+ * family `readWriteClaim`/`NothingWasWritten` consumes, now ONE source shared
+ * with `GoogleMarketingResultBlock` so the list and the reader can never drift
+ * (F-95). `would_append` / `would_write` / `would_create` stay hand-listed:
+ * they are this tool's own fixed, known `would_*` names, each already rendered
+ * in full by a dedicated preview section below (`AppendPreview` etc.) — a
+ * different reason to omit than the write-claim summary. The render call sites
+ * also merge `claim.previewKeys` into `omit`, so an unmodelled `would_*` name
+ * this list has not caught up to still gets suppressed rather than doubled.
+ */
+export const PROMOTED = [
+  ...WRITE_CLAIM_KEYS,
   "action",
   "google_account",
   "note",
   "limit_note",
   "bounds",
   "truncated",
-  "dry_run",
-  "awaiting_approval",
-  "approval",
   "would_append",
   "would_write",
   "would_create",
@@ -107,24 +119,20 @@ const PROMOTED = [
   "name",
   "file_id",
   "kind",
-  "created",
   "open_in_google",
   "text",
   "total_chars",
   "showing_chars",
   "has_more",
   "next_start_char",
-  "appended",
   "tab",
   "range",
   "rows",
   "row_count",
   "sheet_size",
   "next_range_a1",
-  "written",
   "fields",
   "header_row",
-  "sent",
   "draft",
   "from_email",
   "next_step",
@@ -134,7 +142,6 @@ const PROMOTED = [
   "contacts",
   "field_map",
   "person",
-  "imported",
   "matched_by",
   "task_lists",
   "tasks",
@@ -344,6 +351,8 @@ const GoogleWorkspaceResultBlock: React.FC<ResultKindBlockProps> = ({
    * receipt can never sit beside a preview (V-22, NEW-8).
    */
   const claim = readWriteClaim(value);
+  /** Merged into `omit` at every render site below: see {@link WRITE_CLAIM_KEYS}. */
+  const omitKeys = [...PROMOTED, ...claim.previewKeys];
 
   const wouldAppend = readBlock(value.would_append);
   const wouldWrite = readBlock(value.would_write);
@@ -722,8 +731,8 @@ const GoogleWorkspaceResultBlock: React.FC<ResultKindBlockProps> = ({
       <ServerSentence text={value.note} />
       <ServerSentence text={value.limit_note} />
 
-      <MetaStrip value={value} omit={PROMOTED} />
-      <LeftoverFields value={value} omit={PROMOTED} />
+      <MetaStrip value={value} omit={omitKeys} />
+      <LeftoverFields value={value} omit={omitKeys} />
     </div>
   );
 };

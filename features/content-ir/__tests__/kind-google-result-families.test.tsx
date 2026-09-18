@@ -42,11 +42,14 @@ import { resolveBlockDispatch } from "@/components/mardown-display/chat-markdown
 import { kindRegistry } from "../registry/kind-registry";
 import { envelopeFromCompleteValue, IR_ENVELOPE_KEY } from "@ai-matrx/content-ir";
 import type { KindComponentProjection } from "../registry/schema-source-kind-components";
-import GoogleWorkspaceResultBlock from "@/components/mardown-display/blocks/google-kinds/GoogleWorkspaceResultBlock";
+import GoogleWorkspaceResultBlock, {
+  PROMOTED as WORKSPACE_PROMOTED,
+} from "@/components/mardown-display/blocks/google-kinds/GoogleWorkspaceResultBlock";
 import GoogleMarketingResultBlock, {
   PROMOTED as MARKETING_PROMOTED,
 } from "@/components/mardown-display/blocks/google-kinds/GoogleMarketingResultBlock";
 import {
+  WRITE_CLAIM_KEYS,
   readWriteClaim,
   type WriteClaimState,
 } from "@/components/mardown-display/blocks/google-kinds/google-result-shared";
@@ -1154,6 +1157,124 @@ describe("the two Google tool-result kinds route to their own component", () => 
     );
     expect(markup).toContain("completeness unknown");
     expect(markup).not.toContain("complete within the window asked for");
+  });
+
+  /**
+   * 🚨 THE WRITE-CLAIM CENSUS (F-95, BUGBOT MEDIUM). `NothingWasWritten`
+   * consumes `approval` plus the whole `WRITE_CLAIM_KEYS` family through
+   * `readWriteClaim` — but until this fix neither block's `PROMOTED` list
+   * omitted them, so `MetaStrip`/`LeftoverFields` printed the very same
+   * `dry_run: true` / `approval: {...}` a reader had just been told about,
+   * as an unlabeled raw leftover: the same fact shown twice.
+   *
+   * This fixture carries a `would_append` preview (asserted separately, since
+   * `would_*` names are open-ended and are omitted dynamically via
+   * `claim.previewKeys` rather than a static list — see `WRITE_CLAIM_KEYS`'s
+   * own comment), `dry_run: true` and an `approval` block, on BOTH blocks.
+   * Each write-claim fact must render EXACTLY ONCE: summarized by
+   * `NothingWasWritten`, never repeated as a raw leftover key/value pair.
+   */
+  describe("the write-claim key family renders once, never twice (F-95)", () => {
+    const CASES = [
+      {
+        name: "google_workspace_result",
+        kind: WORKSPACE_KIND,
+        Component: GoogleWorkspaceResultBlock,
+        promoted: WORKSPACE_PROMOTED,
+      },
+      {
+        name: "google_marketing_result",
+        kind: MARKETING_KIND,
+        Component: GoogleMarketingResultBlock,
+        promoted: MARKETING_PROMOTED,
+      },
+    ] as const;
+
+    it.each(CASES)("$name's PROMOTED list carries every write-claim key", ({ promoted }) => {
+      for (const key of WRITE_CLAIM_KEYS) {
+        expect(promoted).toContain(key);
+      }
+    });
+
+    it.each(CASES)(
+      "$name renders a would_append + awaiting_approval + approval payload's facts exactly once",
+      ({ kind, Component }) => {
+        const data = {
+          action: "probe_action",
+          awaiting_approval: true,
+          would_append: { position: "end_of_document", text: "New paragraph body." },
+          approval: {
+            approval_id: "ap-95",
+            mode: "ask",
+            knob: "hitl.google.unattended_file_write",
+            waiting_with: "the person whose Google account this is",
+          },
+        };
+        kindRegistry.upsertDefinition({ kind, schema: null, schemaSource: "content_ir", tier: "warm" });
+        componentRegistry.ingestDbRows([registeredRow(kind)]);
+        const routed = applyIrKindRoute(kindBlock(kind, data));
+        const markup = mount(<Component content={routed.content} metadata={routed.metadata} />);
+
+        // The claim IS summarized — `NothingWasWritten`'s structured chip row
+        // (`queue id ap-95`, the knob, `waiting_with`) is where these facts
+        // belong, exactly once each.
+        expect(markup).toContain("waiting for a person to approve it");
+        expect(markup).toContain("queue id ap-95");
+        expect(markup).toContain("hitl.google.unattended_file_write");
+
+        // RED before F-95: `approval` and `awaiting_approval` were absent from
+        // `PROMOTED`, so `MetaStrip`/`LeftoverFields` printed the SAME facts a
+        // second time — `awaiting_approval` as a raw "Awaiting approval: true"
+        // scalar, and the whole `approval` object dumped again through
+        // `LeftoverFields`' value viewer, repeating "ap-95" and the knob.
+        expect(markup).not.toContain("Awaiting approval:");
+        const occurrencesOf = (needle: string) =>
+          markup.split(needle).length - 1;
+        expect(occurrencesOf("ap-95")).toBe(1);
+        expect(occurrencesOf("hitl.google.unattended_file_write")).toBe(1);
+      },
+    );
+  });
+
+  /**
+   * 🚨 THE FOOTER PREDICATE (F-95, BUGBOT LOW). "This read returned no rows"
+   * ignored a tracking-health answer: a payload carrying `verdict` and/or
+   * `has_ga4` / `has_conversion_tag` / `has_consent` with an empty or absent
+   * `checks` still printed "no rows" under a real verdict.
+   */
+  describe("the marketing footer's no-rows sentence fires only on a truly empty read (F-95)", () => {
+    it("a verdict with an empty checks array and a real has_ga4 flag is NOT called an empty read", () => {
+      const markup = mount(
+        <GoogleMarketingResultBlock
+          content={JSON.stringify({
+            __kind: MARKETING_KIND,
+            action: "tracking_health",
+            source: "live_google",
+            verdict: "GA4 is installed and reporting.",
+            checks: [],
+            has_ga4: false,
+          })}
+          metadata={undefined}
+        />,
+      );
+      expect(markup).toContain("GA4 is installed and reporting.");
+      expect(markup).not.toContain("This read returned no rows");
+    });
+
+    it("no verdict, no checks, no containers, no data and no has_* flags IS an empty read", () => {
+      const markup = mount(
+        <GoogleMarketingResultBlock
+          content={JSON.stringify({
+            __kind: MARKETING_KIND,
+            action: "read_search_console",
+            source: "persisted",
+            bounds: { start_date: "2026-09-01", limit: 50 },
+          })}
+          metadata={undefined}
+        />,
+      );
+      expect(markup).toContain("This read returned no rows");
+    });
   });
 });
 
