@@ -28,7 +28,14 @@ browsers cache a 308 forever. **Every in-app link points at `/content/map`**
 | `knobs.ts` | All 27 `seo.topical_map` knobs, typed. Enum unions are DERIVED, never retyped (see Knobs). |
 | `map-author.ts` | The wire for `POST /seo/brands/{brand_id}/map/author`: the six source kinds, the request body, `map_topic_proposal_v1` and the result. No screen words. |
 | `useAuthorTopicalMap.ts` | That endpoint as a DURABLE SEO command — stream, rejoin, verbatim errors. |
-| `components/` | The U1 harness screens. U2–U6 replace each body, never the read or the selector. |
+| `components/` | `TopicalMapWorkspaceBody` (host-agnostic, props per `CONTRACTS.md` §1), `TopicalMapRouteBody` (the ONE route adapter that reads brand/pathname), the header, home, states. |
+| `views/` | One file per screen: `OutlineView`, `TableView`, `GraphView` (the feature's ONE dynamic import edge), `TextView`, `PagesWorkspace`, `HistoryView`. |
+| `panel/` | `TopicDetailBody` — the one topic panel body; hosted by overlay `topicalMapTopicPanel` (window or `SidePanelSurface` by the `detail_panel` knob) and by peek kind `seo_map_topic`. |
+| `ui/` | The map UI kit: `TopicStatusMark`, `IntentDot` (+ `intentColorClasses`), `TopicPath`, `TopicCounts`, `FacetChip`, `TopicLabelEditor`, `buildTopicMenuSection`. |
+| `links.tsx` | `MapLinkProvider` / `useMapLinks()` — every door, brand-aware or flat; never a hand-built URL. |
+| `map-author.ts`, `map-pages.ts`, `map-regions.ts`, `map-intents.ts` + `useAuthorTopicalMap`, `useMapPagesRun`, `useMapRegionsRun`, `useProposeIntentsRun` | The four server entries as durable SEO commands (float into `LiveRunWindow`, rejoin on reload). |
+| `CONTRACTS.md` | The frozen Phase 0 contracts every lane builds against (props, store, primitives, file ownership). |
+| Shared (law 5) | `components/official/topic-tree/TopicTree` (store-free tree: virtualised, keyboard, dnd reparent contract) and `components/official/review-deck/ReviewDeck` (one review grammar for proposals and intents). |
 
 ## Four things that are easy to get wrong
 
@@ -83,8 +90,8 @@ fixture would only prove the selector agrees with whoever wrote it.
 
 ## Knobs
 
-`platform.feature_knob`, feature `seo.topical_map`, 27 keys, all overridable by organization,
-brand, site and user. A missing row RAISES by design — there is no code fallback, and
+`platform.feature_knob`, feature `seo.topical_map`, 53 keys, all overridable by organization,
+brand, site and user. Enum vocabularies derive from `features/settings/universal/knobEnumVocabularies.generated.ts`, never hand-typed. A missing row RAISES by design — there is no code fallback, and
 `useTopicalMapKnobs` returns `knobs: null` with the error rather than a guessed default.
 
 🚨 **An enum knob's vocabulary is NEVER retyped here.** Every union comes from
@@ -99,6 +106,8 @@ went blank**. An unknown value now degrades: it is captured for the Error Inspec
 reader falls back to that row's own `default_value`.
 
 ## Change log
+
+- **2026-09-18** — Phase 0 of the UI build (register: `common-docs/projects/table-provisioning/TOPICAL-MAP-UI-REGISTER.md`): round-22 work re-landed after `7d65a1c41d` removed it; 53-knob cached reader; the three run clients + four ledger readers; the body made host-agnostic behind `TopicalMapRouteBody` and `MapLinkProvider`; the topic panel overlay + peek; `TopicTree`, `ReviewDeck`, the UI kit, the store additions for every view; `CONTRACTS.md` frozen. Owed: `api-types.ts` regeneration (contract pin `62fa56114` is not on aidream `main`).
 
 - **2026-09-17** — Round 22 reflected in the data layer: `intent.topic` optional,
   `pageTopicState` / `selectPagesOnNoTopic` added with a recorded-payload test, and the `/pages`
