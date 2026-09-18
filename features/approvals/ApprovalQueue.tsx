@@ -356,21 +356,21 @@ export function ApprovalQueue({
   // Reviewed-alone rows and rows this reader cannot act on are never part of
   // a batch: one is a decision that needs its body read, the other is not the
   // reader's to make.
+  //
+  // 🚨 THIS MUST ASK THE SAME PREDICATE AS THE ROW CHECKBOX AND `individualReview`
+  // — `noLiveAction(item)`, not a second hand-listed set of states. Until
+  // 2026-09-18 this filter named `inFlight`/`unreadable`/`unknownState`/`expired`
+  // by hand and left out `applied_unconfirmed` — a write that already reached
+  // Google with the answer lost. The row itself correctly refused its own
+  // checkbox and its own Approve/Reject over that state (`noDecisionControls`),
+  // but Select All still ticked it and batch Approve resubmitted it, appending
+  // or creating a second copy of a change Google may already have made
+  // (Bugbot PR 228, comment 4042916419 — the exact class B-18/B-25 closed on the
+  // server). One predicate, asked once, so a state added to `noLiveAction`
+  // reaches select-all, batch approve/reject, and the row's own controls at the
+  // same moment.
   const selectable = allItems.filter(
-    (item) =>
-      !item.individualReview &&
-      !item.blocked &&
-      !item.inFlight &&
-      // A row this build cannot read cannot be decided in a batch either — its
-      // effect cannot be listed in the confirm (§ A-N6).
-      !item.unreadable &&
-      // …and neither can a row whose last attempt is in a state this build does
-      // not know: the confirm cannot state what Approve would do (§ V14-4).
-      !item.unknownState &&
-      // An expired proposal cannot be approved at all (the door answers 403), so
-      // it never joins a batch whose Approve would refuse it row by row. Its
-      // Reject stays on the row itself (§ A-N7).
-      !item.expired,
+    (item) => !item.individualReview && !item.blocked && !noLiveAction(item),
   );
   const selectedItems = selectable.filter((item) => selected.has(item.key));
   const allSelected =
