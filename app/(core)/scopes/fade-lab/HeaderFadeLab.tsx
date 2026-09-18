@@ -91,7 +91,7 @@ export default function HeaderFadeLab() {
               <thead
                 className="relative bg-muted"
                 data-matrx-table-sticky-header="true"
-                style={{ position: "sticky", top: headerPx, zIndex: 10 }}
+                style={{ position: "sticky", top: 0, zIndex: 10 }}
               >
                 <tr>
                   <th className="px-3 py-2">
