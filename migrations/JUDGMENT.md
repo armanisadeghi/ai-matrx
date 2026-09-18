@@ -243,8 +243,36 @@ uv run python db/apply_migrations.py --source campaign --only <file>.sql --targe
 - Refused with `--check`, `--rerun`, `--mark-applied`, `--accept-drift`, `--all` and both
   self-tests.
 - At `--target production` the runner additionally reads the **rehearsal branch** and refuses
-  unless the SAME bytes carry a rehearsal ledger row there **and** that `--lane` holds its
-  `campaign_watch.build_lock` row.
+  unless that `--lane` holds its `campaign_watch.build_lock` row there. That is concurrency
+  control between lanes (§4.14), not a rehearsal claim.
+
+### 6a. 🚨 THE REHEARSAL COPY IS NOT A GATE (owner ruling, 2026-09-18)
+
+**A file may be applied to the main database WITHOUT a prior rehearsal ledger row and WITHOUT a
+matching rehearsal checksum.** Both runners used to refuse a campaign production apply unless the
+branch carried a `public._schema_migrations` row for the same basename whose checksum was
+byte-identical to the file about to run. That refusal is removed from both. The rehearsal row is
+still read and printed — "not rehearsed on the copy", "rehearsed with DIFFERENT bytes", or
+"rehearsed, byte-identical" — as **information on the apply line, never a verdict**.
+
+The owner's words: *"we have no production. It's all just dev… All of your work should just go
+live… Caution is dangerous right now."* The copy exists to catch a syntax error quickly. It is
+not a precondition, and a lane that cannot rehearse on it — because the copy has drifted, because
+`platform.provision` refuses there, because another lane moved a fingerprint it has not
+re-recorded — is not blocked from landing on the main database.
+
+**Nothing about the STATEMENTS moved.** Every judgement in §§2–5 still binds every file at every
+target: the additive ALLOW-LIST for a header naming production, the deny-list for a header-less
+file, `guard-unread` and `trigger-guard-unnamed`, the terminal-confirmed `-- chair-step:` class
+(still a real TTY, still the filename typed back, still logged to the ledger), and the
+`-- based-on:` hash check — which was never a branch check at all: it recomputes
+`pg_get_functiondef` on **the database being applied to**, immediately before the file executes.
+Removing the copy as a gate removes exactly one thing: the requirement that the copy saw these
+bytes first.
+
+This changes no `TargetRefusal.code`, so the corpus in §9 is unchanged by it: the rehearsal gate
+was a runtime authorisation read against a live branch, never part of `--judge-only`, and both
+checks still agree line for line.
 
 ## 7. Inverse files
 

@@ -485,20 +485,26 @@ async function ledgerRow(
 
 
 /**
- * A CAMPAIGN FILE MAY LAND ON PRODUCTION ONLY BEHIND ITS OWN REHEARSAL AND ITS OWN
- * LOCK (ATTACK-6 findings 1 and 8).
+ * A CAMPAIGN FILE MAY LAND ON THE MAIN DATABASE BEHIND ITS OWN LANE LOCK.
  *
- * Both facts live on the REHEARSAL BRANCH and nowhere else — that is the database
- * §4.7 names, and it is named here in code so nobody has to read a book to find out:
- *   · the rehearsal is a `public._schema_migrations` row for the SAME basename whose
- *     checksum is the checksum of the bytes about to run on production. §6b.1's "it
- *     is the same file" stops being an assurance and becomes a check;
- *   · the lock is a `campaign_watch.build_lock` row whose `held_by` is this `--lane`.
- *     A lane that failed, stopped, or released its lock cannot land on production,
- *     and two lanes can never apply to the same object at once (§4.14).
+ * 🚨 THE REHEARSAL COPY IS NOT A GATE (owner ruling, 2026-09-18: *"we have no
+ * production. It's all just dev… All of your work should just go live"*). Until
+ * then this function ALSO demanded a `public._schema_migrations` row on the branch
+ * for the same basename with a byte-identical checksum, and refused the apply
+ * without one. That gate is GONE: the rehearsal copy is a fast scratch run to catch
+ * syntax errors, never a precondition. A file may be applied to the main database
+ * with no prior rehearsal ledger row and no matching rehearsal checksum.
  *
- * Read-only on the branch; opens and closes its own connection; refuses on any error
- * rather than assuming. NOTHING about this check is the environment's to decide.
+ * Nothing about the STATEMENTS moved. The additive allow-list, the guard-read rule,
+ * the terminal-confirmed (chair-step) class and the `-- based-on:` hash check —
+ * which is recomputed against THE DATABASE BEING APPLIED TO, immediately before the
+ * file executes — all still judge every campaign file exactly as before.
+ *
+ * What remains here is the LANE LOCK: a `campaign_watch.build_lock` row on the
+ * branch whose `held_by` is this `--lane`. It is concurrency control between lanes
+ * (§4.14 — two lanes never land on one object at once), not a rehearsal claim, so it
+ * stays. Read-only on the branch; opens and closes its own connection; refuses on
+ * any error rather than assuming.
  */
 async function assertCampaignProductionIsAuthorised(
   filename: string,
@@ -525,27 +531,19 @@ async function assertCampaignProductionIsAuthorised(
   });
   try {
     await branch.connect();
+    // The rehearsal row is read for INFORMATION ONLY — never to refuse. See the header.
     const rehearsal = await branch.query<{ checksum: string; applied_at: string }>(
       `select checksum, applied_at::text as applied_at from public._schema_migrations
          where source = $1 and filename = $2`,
       [SOURCE, filename],
     );
     const row = rehearsal.rows[0];
-    if (!row)
-      return (
-        `${filename} has NO rehearsal ledger row on the branch ${branchRef.branchRef}.\n` +
-        `  §6b.1: nothing reaches production that has not passed its exit on the branch. Run\n` +
-        `    pnpm db:apply migrations/${CAMPAIGN_DIRNAME}/${filename} --source ${CAMPAIGN_SOURCE} --target branch --lane ${lane}\n` +
-        `  first, prove the lane's exit there, then come back.`
-      );
-    if (row.checksum !== checksum)
-      return (
-        `${filename} was rehearsed on the branch at ${row.applied_at}, but the bytes have MOVED\n` +
-        `  since: branch ledger ${row.checksum}\n` +
-        `         this file   ${checksum}\n` +
-        `  "It is the same file" is the whole of §6b.1's byte-identity argument. Re-rehearse the\n` +
-        `  current bytes on the branch (--reapply) before landing them on production.`
-      );
+    const rehearsalNote = !row
+      ? `${C.dim}not rehearsed on the copy — applying straight to the main database${C.reset}`
+      : row.checksum !== checksum
+        ? `${C.dim}rehearsed ${row.applied_at} with DIFFERENT bytes (copy ${row.checksum.slice(0, 12)}, ` +
+          `this file ${checksum.slice(0, 12)}) — the copy is not a gate${C.reset}`
+        : `${C.dim}rehearsed on the copy at ${row.applied_at}, byte-identical${C.reset}`;
     const lock = await branch.query<{ held_by: string; taken_at: string; lock_name: string }>(
       `select lock_name, held_by, taken_at::text as taken_at from campaign_watch.build_lock
          where held_by = $1`,
@@ -569,9 +567,8 @@ async function assertCampaignProductionIsAuthorised(
       );
     }
     console.log(
-      `${TAG.ok}campaign authorisation ${C.dim}— rehearsed on the branch at ${row.applied_at}, ` +
-        `byte-identical; lock ${lock.rows.map((r) => r.lock_name).join(", ")} held by ${lane} ` +
-        `since ${lock.rows[0]!.taken_at}${C.reset}`,
+      `${TAG.ok}campaign authorisation ${C.dim}— lock ${lock.rows.map((r) => r.lock_name).join(", ")} ` +
+        `held by ${lane} since ${lock.rows[0]!.taken_at}; ${rehearsalNote}${C.reset}`,
     );
     return null;
   } catch (err) {
@@ -703,8 +700,8 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         `path scans.\n` +
         `  The ONE route to either database is the plan's own command:\n` +
         `    pnpm db:apply ${relative(ROOT, path)} --source ${CAMPAIGN_SOURCE} --target branch --lane <lane>\n` +
-        `  and, after that rehearsal is ledgered on the branch and while this lane holds its\n` +
-        `  campaign_watch.build_lock row, the same file with --target production.\n` +
+        `  and, while this lane holds its campaign_watch.build_lock row, the same file with\n` +
+        `  --target production. A rehearsal on the copy is a convenience, never a precondition.\n` +
         `  Refusing by LOCATION, before its header is read.`,
     );
     return 1;
@@ -724,7 +721,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       `${TAG.fail}${relative(ROOT, path)} is a campaign migration and no --lane was named.\n` +
         `  Every campaign apply is attributable to ONE lane: the lane id is what the\n` +
         `  campaign_watch.build_lock row on the rehearsal branch is checked against before a\n` +
-        `  production apply, and what the rehearsal is read back under. Pass --lane <lane id>.`,
+        `  production apply. Pass --lane <lane id>.`,
     );
     return 1;
   }

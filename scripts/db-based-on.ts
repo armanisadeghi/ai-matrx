@@ -16,6 +16,14 @@
  * The third form is the one to reach for while writing a migration: it reads the
  * file, works out which live functions its `CREATE OR REPLACE` statements would
  * overwrite, and prints exactly the lines that file is missing.
+ *
+ * 🚨 WHICH DATABASE IT MEASURES: `--based-on-target production|branch` (alias
+ * `--target`), default `production` — the main database. A `-- based-on:` line is a
+ * hash of a body on ONE database, and `db:apply` recomputes it against the database
+ * IT is applying to; the two bodies can differ, so a line generated here against the
+ * main database and pasted into a file rehearsed on the copy will refuse there, and
+ * vice versa. Until this flag existed the helper read only the main database and
+ * there was no way to say otherwise.
  */
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -28,7 +36,10 @@ import {
   type LiveFunction,
   type Query,
 } from "./migration-based-on";
-import { connectDirect, DB_VARS, loadDbEnv } from "./lib/direct-db";
+import { connectDirect, DB_VARS, loadDbEnv, type DbEnv } from "./lib/direct-db";
+import { loadBranchDbEnv, loadBranchRef, TargetRefusal } from "./lib/migration-target";
+
+const ROOT = resolve(import.meta.dirname, "..");
 
 const C = {
   reset: "\x1b[0m",
@@ -44,18 +55,54 @@ function line(fn: LiveFunction): string {
   return `-- based-on: ${fn.signature} ${fn.hash}`;
 }
 
+/** `--based-on-target` / `--target` — WHICH database the hash is measured on. */
+function parseBasedOnTarget(flags: string[]): "production" | "branch" | { bad: string } {
+  let picked: "production" | "branch" = "production";
+  for (const f of flags) {
+    const m = /^--(?:based-on-)?target(?:=(.*))?$/.exec(f);
+    if (!m) continue;
+    const value = m[1];
+    if (value === undefined) return { bad: `${f} needs a value: --based-on-target production|branch` };
+    if (value !== "production" && value !== "branch")
+      return { bad: `--based-on-target ${value} is not a database. Name production or branch.` };
+    picked = value;
+  }
+  return picked;
+}
+
 async function main(): Promise<number> {
+  const flags = process.argv.slice(2).filter((a) => a.startsWith("--"));
   const argv = process.argv.slice(2).filter((a) => !a.startsWith("--"));
+  const basedOnTarget = parseBasedOnTarget(flags);
+  if (typeof basedOnTarget !== "string") {
+    console.error(`${C.red}[FAIL]${C.reset} ${basedOnTarget.bad}`);
+    return 1;
+  }
   if (argv.length !== 1) {
     console.log(
-      `${C.bold}pnpm db:based-on <schema.function | schema.function(argtypes) | migrations/file.sql>${C.reset}\n` +
+      `${C.bold}pnpm db:based-on <schema.function | schema.function(argtypes) | migrations/file.sql> [--based-on-target production|branch]${C.reset}\n` +
         `  Prints the \`-- based-on:\` header line(s) for a function, from the live catalogue.\n` +
-        `  Paste them into the migration that replaces the body; db:apply verifies them before it runs.`,
+        `  Paste them into the migration that replaces the body; db:apply verifies them before it runs.\n` +
+        `  --based-on-target (alias --target) picks WHICH database is measured; default production,\n` +
+        `  the main database. db:apply recomputes the hash on the database it applies to, so a line\n` +
+        `  taken from one database and checked against the other refuses when the bodies differ.`,
     );
     return 1;
   }
 
-  const env = loadDbEnv();
+  let env: DbEnv | { missing: string[]; looked: string[] };
+  if (basedOnTarget === "branch") {
+    try {
+      env = { ...loadBranchDbEnv(ROOT, loadBranchRef(ROOT)) };
+    } catch (err) {
+      console.error(
+        `${C.red}[FAIL]${C.reset} ${err instanceof TargetRefusal ? err.message : String(err)}`,
+      );
+      return 2;
+    }
+  } else {
+    env = loadDbEnv();
+  }
   if ("missing" in env) {
     console.error(
       `${C.red}[FAIL]${C.reset} No direct database connection — need ${DB_VARS.join(", ")} in the ` +
@@ -64,7 +111,10 @@ async function main(): Promise<number> {
     );
     return 2;
   }
-  const client = await connectDirect(env, "matrx-frontend db:based-on");
+  console.log(
+    `${C.dim}# measuring on ${basedOnTarget} — ${env.host}/${env.database} (${env.from})${C.reset}`,
+  );
+  const client = await connectDirect(env, `matrx-frontend db:based-on (${basedOnTarget})`);
   const q: Query = async (sql, params) => (await client.query(sql, params as never)).rows;
 
   try {
