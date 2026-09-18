@@ -131,8 +131,16 @@ function ResourceList({ progress }: { progress: IngestProgress }) {
             >
               {row.label}
             </p>
+            {/* 🚨 THE SERVER'S OWN SENTENCE, WHOLE.
+                This line was `truncate`, so the copy-protection refusal —
+                which names the scheme AND the four lawful ways in (a DRM-free
+                copy, photos of the pages, a highlights export, the audiobook)
+                — reached the person as its first six words and an ellipsis.
+                A refusal that hides its remedy is a dead end wearing a
+                sentence (VERIFICATION.md §9.6, 2026-09-18). The label above
+                still truncates; the account of what happened never does. */}
             {row.detail ? (
-              <p className="truncate text-muted-foreground" title={row.detail}>
+              <p className="whitespace-pre-line break-words text-muted-foreground">
                 {row.detail}
               </p>
             ) : null}
@@ -182,7 +190,12 @@ export function RunStages({
 
   // What the wait line SAYS. Order matters and it is not cosmetic:
   //   1. a failed resource outranks everything — `honestProgressSummary` is
-  //      the platform rule that a reassurance may never contradict a red row;
+  //      the platform rule that a reassurance may never contradict a red row.
+  //      It is told `fan_out`, because that is what this list IS: every
+  //      resource in a dump is launched beside its neighbours, so one refused
+  //      book costs one row. Under the old default this printed "Stopped —
+  //      nothing after it will run" over a seventeen-source run that ran all
+  //      seventeen and completed (VERIFICATION.md §9.1/§9.6, 2026-09-18);
   //   2. the server's labouring sentence outranks its stage line, because the
   //      stage line is now stale by definition — the server is telling us it
   //      cannot check in;
@@ -190,6 +203,7 @@ export function RunStages({
   const doing =
     honestProgressSummary({
       steps: progress.resources,
+      shape: "fan_out",
       description:
         progress.labouring ??
         run.stage ??
