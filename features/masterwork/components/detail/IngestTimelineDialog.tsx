@@ -46,7 +46,6 @@ import {
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import LoadingSpinner from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
 import { SERIAL_OBSERVATION_TIMELINE_KIND } from "@/features/content-ir/kinds/serial-observation-timeline";
@@ -237,6 +236,7 @@ export function buildTimelineRequest(input: {
 import { createSittingStore, type SittingBase } from "../../sitting/sitting";
 import { useDialogSitting } from "../../sitting/useDialogSitting";
 import { SittingResumed } from "../../sitting/SittingResumed";
+import { RunStages } from "../RunStages";
 
 interface TimelineSitting extends SittingBase {
   title: string;
@@ -472,23 +472,17 @@ export function IngestTimelineDialog({
           </div>
         ) : running || run.stages.length > 0 ? (
           <div className="space-y-2">
-            <div className="max-h-52 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/40 p-3">
-              {run.stages.map((line, i) => (
-                <p key={i} className="text-xs text-muted-foreground">
-                  {line}
-                </p>
-              ))}
-            </div>
-            {running ? (
-              <div className="flex items-start gap-2">
-                <LoadingSpinner size="sm" />
-                <p className="text-xs text-muted-foreground">
-                  {rejoining
-                    ? "Picking this back up — it kept reading while you were away."
-                    : "Reading the case step by step — this takes a minute."}
-                </p>
-              </div>
-            ) : null}
+            {/* The hand-written "this takes a minute" is gone: the promise is
+                now measured from the case this person actually handed over,
+                and it stops promising once overtaken. */}
+            <RunStages
+              run={{ ...run, running }}
+              waitingMessage={
+                rejoining
+                  ? "Picking this back up — it kept reading while you were away."
+                  : "Reading the case step by step…"
+              }
+            />
           </div>
         ) : (
           <div className="space-y-3">
