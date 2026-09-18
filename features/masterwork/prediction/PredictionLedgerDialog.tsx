@@ -54,7 +54,6 @@ import {
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import LoadingSpinner from "@/components/ui/loading-spinner";
 import { knobBool, knobInt } from "@/lib/knobs/featureKnobs";
 import type { paths } from "@/types/python-generated/api-types";
 import { MasterworkDictationOrigin } from "../MasterworkDictationOrigin";
@@ -78,6 +77,7 @@ import {
   tally,
   type PredictionEntry,
 } from "./scoring";
+import { RunStages } from "@/features/masterwork/components/RunStages";
 
 /**
  * Served by `aidream/aidream/services/distillation/prediction_ledger.py`.
@@ -711,23 +711,10 @@ export function PredictionLedgerDialog({
               <span>{run.error}</span>
             </p>
           ) : null}
-          {running ? (
-            <div className="flex items-start gap-2">
-              <LoadingSpinner size="sm" />
-              <p className="text-xs text-muted-foreground">
-                {run.waitMessage ?? "Reading your calls…"}
-              </p>
-            </div>
-          ) : null}
-          {run.stages.length > 0 ? (
-            <div className="max-h-32 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/40 p-2">
-              {run.stages.map((line, i) => (
-                <p key={i} className="text-xs text-muted-foreground">
-                  {line}
-                </p>
-              ))}
-            </div>
-          ) : null}
+          <RunStages
+            run={{ ...run, running }}
+            waitingMessage="Reading your calls…"
+          />
         </div>
 
         <DialogFooter className="gap-2 sm:justify-between">

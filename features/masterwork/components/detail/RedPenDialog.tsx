@@ -19,7 +19,6 @@ import {
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import LoadingSpinner from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 import type { paths } from "@/types/python-generated/api-types";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
@@ -41,6 +40,7 @@ import {
   parseIngestSummary,
   type IngestSummary,
 } from "./IngestSourceDialog";
+import { RunStages } from "../RunStages";
 
 /**
  * THE RED-PEN LANE — "you already spend your day reviewing other people's work.
@@ -578,21 +578,10 @@ export function RedPenDialog({
           </div>
         ) : running || run.stages.length > 0 ? (
           <div className="space-y-2">
-            <div className="max-h-52 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/40 p-3">
-              {run.stages.map((line, i) => (
-                <p key={i} className="text-xs text-muted-foreground">
-                  {line}
-                </p>
-              ))}
-            </div>
-            {running ? (
-              <div className="flex items-start gap-2">
-                <LoadingSpinner size="sm" />
-                <p className="text-xs text-muted-foreground">
-                  {run.waitMessage ?? "Reading your corrections…"}
-                </p>
-              </div>
-            ) : null}
+            <RunStages
+              run={{ ...run, running }}
+              waitingMessage="Reading your corrections…"
+            />
           </div>
         ) : !marking ? (
           /* ── STEP 1: the piece of work ─────────────────────────────── */
