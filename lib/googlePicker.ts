@@ -93,32 +93,82 @@ export interface GooglePickerOptions {
 }
 
 /**
- * 🚨 BOUNDED, like the Identity Services wait (V-24 NEW-4, lane F-111).
+ * The Picker script attempt currently IN FLIGHT, with the tag it owns.
  *
- * The old version had two ways to hang forever: a script served but stripped
- * of its body never fires `error` and never defines `window.gapi`, and reusing
- * an `existing` tag that had ALREADY loaded waited on a `load` event that was
- * never coming again. Both left the caller's promise pending for the life of
- * the tab. The bound is the same technical readiness limit as the Identity
- * script's — a constant, not an organization knob — and its rejection is a
- * sentence a caller can show.
+ * Module scope on purpose: two picks pressed close together must SHARE one
+ * attempt and one tag, not race two inserts against one bound.
  */
-function loadScript(): Promise<void> {
+let pickerScriptAttempt: {
+  promise: Promise<void>;
+  script: HTMLScriptElement;
+} | null = null;
+
+/**
+ * 🚨 BOUNDED, AND A FAILED ATTEMPT LEAVES NO DEAD TAG BEHIND
+ * (V-24 NEW-4, lane F-111; the retry half from Bugbot review 5247021300).
+ *
+ * Three ways this used to hang or lie, all the same class as the Identity
+ * Services poll:
+ *
+ *   1. `api.js` served but stripped of its body never fires `error` and never
+ *      defines `window.gapi` — the original promise was pending for the life of
+ *      the tab. Fixed by the bound.
+ *   2. reusing an `existing` tag that had ALREADY loaded waited on a `load`
+ *      event that was never coming again. Fixed by the bound.
+ *   3. after a bounded FAILURE the dead tag stayed in the document, so the next
+ *      pick reused it and sat out the whole 20 s again, failing identically —
+ *      the bound made the hang finite but made every retry useless. Fixed here:
+ *      a failed attempt REMOVES the tag it owns on the way out, and a new
+ *      attempt that finds a leftover tag while `window.gapi` is undefined
+ *      replaces it with a fresh insert instead of waiting on it. The one tag
+ *      worth waiting on is one an attempt still in flight owns, and that is
+ *      what {@link pickerScriptAttempt} is for. The provider re-inserts its GIS
+ *      script for exactly this reason.
+ *
+ * The bound and the sentence are the Identity script's, unchanged: a technical
+ * readiness limit on a third-party script, a constant and not an organization
+ * knob.
+ *
+ * Exported because the guard beside it
+ * (`the-picker-script-retry-is-not-a-second-bound.test.ts`) is the witness for
+ * all three, and a pick is far too deep a path to reach this through.
+ */
+export function loadGooglePickerScript(): Promise<void> {
   if (window.gapi) return Promise.resolve();
-  const existing = document.querySelector<HTMLScriptElement>(
-    `script[src="${PICKER_SCRIPT}"]`,
-  );
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    let poll: ReturnType<typeof setTimeout> | undefined;
+  // An attempt still in flight owns a tag that may yet fire: join it.
+  if (pickerScriptAttempt) return pickerScriptAttempt.promise;
+
+  // Any tag still in the document now belongs to no live attempt — it either
+  // errored, or loaded without defining `window.gapi`. Either way it will never
+  // fire another event, so waiting on it would spend the whole bound for
+  // nothing.
+  for (const stale of Array.from(
+    document.querySelectorAll<HTMLScriptElement>(
+      `script[src="${PICKER_SCRIPT}"]`,
+    ),
+  )) {
+    stale.remove();
+  }
+
+  const script = document.createElement("script");
+  let settled = false;
+  let poll: ReturnType<typeof setTimeout> | undefined;
+
+  const promise = new Promise<void>((resolve, reject) => {
     const deadline = Date.now() + GOOGLE_IDENTITY_READY_TIMEOUT_MS;
 
     const finish = (error?: Error) => {
       if (settled) return;
       settled = true;
       if (poll !== undefined) clearTimeout(poll);
-      if (error) reject(error);
-      else resolve();
+      if (pickerScriptAttempt?.script === script) pickerScriptAttempt = null;
+      if (error) {
+        // The dead tag goes out with the failure, so the next pick starts clean.
+        script.remove();
+        reject(error);
+        return;
+      }
+      resolve();
     };
 
     const check = () => {
@@ -134,27 +184,25 @@ function loadScript(): Promise<void> {
       poll = setTimeout(check, GOOGLE_IDENTITY_POLL_INTERVAL_MS);
     };
 
-    const script = existing ?? document.createElement("script");
     script.addEventListener("load", () => check(), { once: true });
     script.addEventListener(
       "error",
       () => finish(new Error(GOOGLE_IDENTITY_UNAVAILABLE_MESSAGE)),
       { once: true },
     );
-    if (!existing) {
-      script.src = PICKER_SCRIPT;
-      script.async = true;
-      document.head.appendChild(script);
-    }
-    // An `existing` tag that already finished loading will never fire another
-    // event; polling under the bound is what notices that, and what notices a
-    // tag that loaded but defined nothing.
+    script.src = PICKER_SCRIPT;
+    script.async = true;
+    document.head.appendChild(script);
+    // A tag can load and define nothing; only the poll notices that.
     check();
   });
+
+  if (!settled) pickerScriptAttempt = { promise, script };
+  return promise;
 }
 
 async function loadPickerNamespace(): Promise<GooglePickerNamespace> {
-  await loadScript();
+  await loadGooglePickerScript();
   const gapi = window.gapi;
   if (!gapi) throw new Error("Google Picker loader is unavailable.");
   await new Promise<void>((resolve, reject) => {
