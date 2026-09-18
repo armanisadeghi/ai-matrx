@@ -1,6 +1,6 @@
 -- target: branch
 --
--- THE INVERSE of `migrations/campaign/w3_doc_the_template_is_a_record.sql` (W3-DOC, REC-68).
+-- THE INVERSE of `migrations/campaign/w3_doc_the_template_is_a_record_v2.sql` (W3-DOC, REC-68).
 --
 -- It restores the prior state exactly: every object this lane created under its own reserved
 -- prefix `doc_` inside schema `custom` is dropped, and NOTHING ELSE IS TOUCHED. This lane
