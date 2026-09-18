@@ -298,3 +298,46 @@ describe("a synced record the provider (or our own configuration) blocks outrigh
     m.unmount();
   });
 });
+
+/**
+ * 🚨 RULING R28 (chair, 2026-09-18), lane F-56 — a synced record's freshness
+ * line reads the provider's own modified time wherever the mirror table
+ * carries one, in the same position for every table.
+ * `communication.calendar_event` carries `external_updated_at` — Google's own
+ * updated time for the event, not our refresh — and F-54 had parked it in
+ * `UNREAD_ROLE_COLUMNS` as an open escalation rather than choosing to read it.
+ * This is the concrete case the escalation named: an event whose `synced_at`
+ * is null. Before the ruling the producer fell through to the connected
+ * account's last recorded call (`health.lastSuccessAt`); after it, the row's
+ * own `external_updated_at` answers, exactly as `workbench.google_document`'s
+ * `external_modified_at` already does for a document that has never been
+ * re-read.
+ */
+describe("ruling R28 — a calendar event's freshness reads Google's own updated time", () => {
+  const CALENDAR_EVENT_ROW: DetailRow = {
+    id: "99999999-8888-7777-6666-555555555555",
+    provider: "google",
+    external_id: "g-event-r28",
+    synced_at: null,
+    external_updated_at: "2026-09-17T09:00:00Z",
+    synced_via_connection_id: CONNECTION.id,
+  };
+
+  afterEach(() => {
+    // Restore the default (gmail-only) connection so later tests never
+    // inherit this describe block's fixture.
+    googleService.listGoogleConnectionInventory.mockImplementation(async () => ({
+      connections: [CONNECTION],
+      resources: [],
+    }));
+  });
+
+  it("reads `external_updated_at` when the row carries no `synced_at`", async () => {
+    const health = await sourceHealthProducerFor("calendar_event")(CALENDAR_EVENT_ROW, {
+      ref: { type: "calendar_event", id: CALENDAR_EVENT_ROW.id as string },
+      signal: new AbortController().signal,
+    });
+    expect(health).not.toBeNull();
+    expect(health?.lastRefreshedAt).toBe("2026-09-17T09:00:00Z");
+  });
+});

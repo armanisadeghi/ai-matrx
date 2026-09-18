@@ -39,6 +39,7 @@ import path from "node:path";
 
 import {
   PROJECTED_ROLE_COLUMNS,
+  REFRESHED_COLUMNS,
   ROLE_COLUMN_SHAPE,
   SYNCED_ROLE_CANDIDATES,
   UNREAD_ROLE_COLUMNS,
@@ -195,6 +196,32 @@ describe("no synced table carries a role column the strip cannot see", () => {
       // entry must go, or it hides a column the strip should be reading live.
       expect(`${name} live: ${SYNCED_COLUMNS.has(name)}`).toBe(`${name} live: false`);
     }
+  });
+});
+
+/**
+ * RULING R28 (chair, 2026-09-18), lane F-56 — a synced record's freshness line
+ * reads the provider's own modified time wherever the mirror table carries
+ * one, in the same position for every table. F-54 found
+ * `communication.calendar_event.external_updated_at` (Google's own updated
+ * time) and parked it in `UNREAD_ROLE_COLUMNS` as an open escalation rather
+ * than choosing to read it. This pins the ruling's answer: the name is read,
+ * not parked. Before the move (HEAD as F-54 left it) the first expectation
+ * fails, naming the missing spelling.
+ */
+describe("ruling R28 — external_updated_at is read, not parked", () => {
+  it("REFRESHED_COLUMNS carries `external_updated_at`, after `synced_at` and `external_modified_at`", () => {
+    expect([...REFRESHED_COLUMNS]).toEqual([
+      "synced_at",
+      "external_modified_at",
+      "external_updated_at",
+    ]);
+  });
+
+  it("UNREAD_ROLE_COLUMNS no longer parks the calendar_event escalation", () => {
+    expect("communication.calendar_event.external_updated_at" in UNREAD_ROLE_COLUMNS).toBe(
+      false,
+    );
   });
 });
 

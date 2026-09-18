@@ -115,22 +115,19 @@ export const ROLE_COLUMN_SHAPE: Readonly<Record<string, RegExp>> = Object.freeze
 
 /**
  * Role-shaped columns on a synced table that the strip deliberately does NOT
- * read, each with the reason. One entry, and it is a real escalation rather than
- * a shrug: reading `communication.calendar_event.external_updated_at` as a
- * freshness would CHANGE what a person sees on an event whose `synced_at` is
- * null (today the strip reports the connected account's last recorded call), and
- * lane F-54's brief says a behaviour change is escalated, never chosen. Named
- * here so the guard stays green on today's truth and the next agent inherits the
- * open question instead of re-discovering it.
+ * read, each with the reason a name lives here instead of in a candidate list.
+ * Empty today: F-54 parked `communication.calendar_event.external_updated_at`
+ * here as an open escalation ("would reading Google's own modified time change
+ * what a person sees?"), and ruling R28 (chair, 2026-09-18) answered it —
+ * every synced table's freshness line reads the provider's own modified time
+ * wherever the mirror table carries one, in the same position for every table
+ * — so lane F-56 moved that name into `REFRESHED_COLUMNS` instead of leaving
+ * it unread. The mechanism stays: the next name a census finds that would
+ * change a screen's behaviour belongs here, with the reason, until the chair
+ * rules on it — never silently added to a candidate list and never silently
+ * dropped.
  */
-export const UNREAD_ROLE_COLUMNS: Readonly<Record<string, string>> = Object.freeze({
-  "communication.calendar_event.external_updated_at":
-    "Google's own last-modified time for the event, NOT when we refreshed it. " +
-    "`synced_at` is the refresh and the strip reads that. Adding this name to " +
-    "REFRESHED_COLUMNS would change what an event with no `synced_at` shows " +
-    "(the account's last recorded call today), so it is an escalation for the " +
-    "chair, not a choice this producer makes — see FEATURE.md, F-54.",
-});
+export const UNREAD_ROLE_COLUMNS: Readonly<Record<string, string>> = Object.freeze({});
 
 /**
  * The column a row names its provider in. `communication.calendar_event` carries
@@ -170,13 +167,24 @@ export const EXTERNAL_ID_COLUMNS = ["external_id"] as const satisfies readonly S
 export const ACCOUNT_COLUMNS = ["synced_via_connection_id"] as const satisfies readonly SyncedRoleColumn[];
 /**
  * Columns holding when we last refreshed the row from the source, most specific
- * first. `synced_at` is the refresh on all three mirror tables;
- * `external_modified_at` (`workbench.google_document`) is Google's own timestamp
- * and answers for a document that has never been re-read. F-54 retired
- * `last_refreshed_at` — no table anywhere — which sat FIRST and therefore looked
- * like the primary answer while never matching anything.
+ * first — `stringColumn` in `sourceHealth.ts` returns the first of these that is
+ * present and non-null, so order IS the ruling. `synced_at` is the refresh on
+ * all three mirror tables and stays first: it is the account's own record of
+ * when it last touched the row, and a row that has one always answers with it.
+ * `external_modified_at` (`workbench.google_document`) is Google's own
+ * modified time and answers for a document that has never been re-read.
+ * `external_updated_at` (`communication.calendar_event`) is Google's own
+ * updated time for the event and joined this list under ruling R28 (chair,
+ * 2026-09-18): a synced record's freshness line reads the provider's own
+ * modified time wherever the mirror table carries one, in the same position
+ * for every table. F-54 parked it in `UNREAD_ROLE_COLUMNS` as an open
+ * escalation ("would this change what an event with no `synced_at` shows?");
+ * R28 answered yes and ruled that the change is correct, so lane F-56 moved
+ * it here. F-54 also retired `last_refreshed_at` — no table anywhere — which
+ * sat FIRST and therefore looked like the primary answer while never matching
+ * anything.
  */
-export const REFRESHED_COLUMNS = ["synced_at", "external_modified_at"] as const satisfies readonly SyncedRoleColumn[];
+export const REFRESHED_COLUMNS = ["synced_at", "external_modified_at", "external_updated_at"] as const satisfies readonly SyncedRoleColumn[];
 /**
  * The column holding where the record lives at the provider.
  * `workbench.google_document` and `web.youtube_video` both spell it
