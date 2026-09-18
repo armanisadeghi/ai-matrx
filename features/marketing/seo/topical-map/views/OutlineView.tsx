@@ -358,25 +358,34 @@ function OutlineBody({ mapId, siteId, readOnly, knobs }: OutlineBodyProps) {
           }}
           extraSections={menuSections}
         >
-          <TopicTree
-            rows={rows}
-            ariaLabel="Topical map outline"
-            density={isMobile ? "comfortable" : "compact"}
-            onSelect={onSelect}
-            onToggleExpand={onToggleExpand}
-            onRenameCommit={onRenameCommit}
-            onMove={onMove}
-            renderHover={
-              knobs.outline_hover_popover
-                ? (row) =>
-                    parsePageRowId(row.id) ? null : (
-                      <TopicHoverCard mapId={mapId} slug={row.id} onOpen={openPanel} />
-                    )
-                : undefined
-            }
-            emptyState="No topic matches this search."
-            className="min-h-0 flex-1"
-          />
+          {/* Radix `asChild` slots the menu's onContextMenu and ref onto a
+              SINGLE element child. `TopicTree` is a function component that
+              forwards neither, so the menu was mounted and inert — every
+              right-click fell through to the page underneath. A DOM element in
+              between takes the handlers and the event bubbles up from the row,
+              the same wrapper `features/scheduling/.../ScheduleList.tsx` uses.
+              `display: contents` keeps the flex chain intact. */}
+          <div className="contents">
+            <TopicTree
+              rows={rows}
+              ariaLabel="Topical map outline"
+              density={isMobile ? "comfortable" : "compact"}
+              onSelect={onSelect}
+              onToggleExpand={onToggleExpand}
+              onRenameCommit={onRenameCommit}
+              onMove={onMove}
+              renderHover={
+                knobs.outline_hover_popover
+                  ? (row) =>
+                      parsePageRowId(row.id) ? null : (
+                        <TopicHoverCard mapId={mapId} slug={row.id} onOpen={openPanel} />
+                      )
+                  : undefined
+              }
+              emptyState="No topic matches this search."
+              className="min-h-0 flex-1"
+            />
+          </div>
         </NonEditableContextMenu>
       </div>
 

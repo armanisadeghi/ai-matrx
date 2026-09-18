@@ -451,104 +451,114 @@ export function TopicTable({ mapId, siteId, host, readOnly, knobs }: TopicTableP
           }}
           extraSections={menuSection ? [menuSection] : []}
         >
-          <MatrxDataTable<MapTableRow>
-            data={rows}
-            columns={columns}
-            getRowId={(row) => row.slug}
-            tableId="topical-map-topics"
-            isFetching={tree.isFetching || intents.isFetching}
-            query={{
-              mode: "controlled-local",
-              state: query,
-              onStateChange: handleQueryChange,
-            }}
-            processLocalRows={processLocalRows}
-            columnState={{
-              order: columnOrder,
-              hidden: hiddenColumns,
-              onChange: (next) =>
-                dispatch(
-                  setTableColumns({
-                    mapId,
-                    columns: next.order.filter((id) => !next.hidden.includes(id)),
-                  }),
+          {/* Radix `asChild` slots the menu's onContextMenu and ref onto a
+              SINGLE element child. `MatrxDataTable` is a function component
+              that forwards neither, so the menu was mounted and inert — every
+              right-click on a row fell through to the page underneath. A DOM
+              element in between takes the handlers and the event bubbles up
+              from the row, the same wrapper
+              `features/scheduling/.../ScheduleList.tsx` uses. `display:
+              contents` keeps the flex chain intact. */}
+          <div className="contents">
+            <MatrxDataTable<MapTableRow>
+              data={rows}
+              columns={columns}
+              getRowId={(row) => row.slug}
+              tableId="topical-map-topics"
+              isFetching={tree.isFetching || intents.isFetching}
+              query={{
+                mode: "controlled-local",
+                state: query,
+                onStateChange: handleQueryChange,
+              }}
+              processLocalRows={processLocalRows}
+              columnState={{
+                order: columnOrder,
+                hidden: hiddenColumns,
+                onChange: (next) =>
+                  dispatch(
+                    setTableColumns({
+                      mapId,
+                      columns: next.order.filter((id) => !next.hidden.includes(id)),
+                    }),
+                  ),
+              }}
+              selectedId={selectedSlug}
+              onSelectedIdChange={(id) => dispatch(selectTopic({ mapId, slug: id }))}
+              detail={{ enabled: false }}
+              window={{ enabled: false }}
+              onRowOpen={(row) => openPanel(row.slug)}
+              selection={{
+                selectedIds: [...checkedSlugs],
+                onSelectedIdsChange: (slugs) => dispatch(setCheckedTopics({ mapId, slugs })),
+                noun: "topic",
+                actions: (selected) => (
+                  <OpenPagesAction mapId={mapId} siteId={siteId} host={host} selected={selected} />
                 ),
-            }}
-            selectedId={selectedSlug}
-            onSelectedIdChange={(id) => dispatch(selectTopic({ mapId, slug: id }))}
-            detail={{ enabled: false }}
-            window={{ enabled: false }}
-            onRowOpen={(row) => openPanel(row.slug)}
-            selection={{
-              selectedIds: [...checkedSlugs],
-              onSelectedIdsChange: (slugs) => dispatch(setCheckedTopics({ mapId, slugs })),
-              noun: "topic",
-              actions: (selected) => (
-                <OpenPagesAction mapId={mapId} siteId={siteId} host={host} selected={selected} />
-              ),
-            }}
-            {...(readOnly ? {} : { edit: { enabled: true, onSave: saveEdits } })}
-            {...(hierarchy && !readOnly
-              ? {
-                  hierarchy: {
-                    rows: allRows,
-                    getParentId: (row: MapTableRow) => row.topic.parentSlug,
-                    itemLabel: (row: MapTableRow) => row.name,
-                    rootDropLabel: "Drop here to make this a root topic",
-                    onMove: async (row: MapTableRow, move: { parentId: string | null }) => {
-                      try {
-                        await moveTopic.mutateAsync({
-                          slug: row.slug,
-                          newParentSlug: move.parentId,
-                        });
-                      } catch (error) {
-                        toast.error(topicalMapErrorText(error));
-                      }
+              }}
+              {...(readOnly ? {} : { edit: { enabled: true, onSave: saveEdits } })}
+              {...(hierarchy && !readOnly
+                ? {
+                    hierarchy: {
+                      rows: allRows,
+                      getParentId: (row: MapTableRow) => row.topic.parentSlug,
+                      itemLabel: (row: MapTableRow) => row.name,
+                      rootDropLabel: "Drop here to make this a root topic",
+                      onMove: async (row: MapTableRow, move: { parentId: string | null }) => {
+                        try {
+                          await moveTopic.mutateAsync({
+                            slug: row.slug,
+                            newParentSlug: move.parentId,
+                          });
+                        } catch (error) {
+                          toast.error(topicalMapErrorText(error));
+                        }
+                      },
+                    },
+                  }
+                : {})}
+              toolbar={{
+                searchPlaceholder: "Search topics…",
+                leading: flipNote,
+                facets: [
+                  {
+                    type: "button-group",
+                    id: "rows",
+                    label: "Rows",
+                    value: hierarchy ? "hierarchy" : "flat",
+                    defaultValue: "hierarchy",
+                    options: [
+                      { value: "hierarchy", label: "Hierarchy" },
+                      { value: "flat", label: "Flat" },
+                    ],
+                    onChange: (value) => {
+                      if (value === "hierarchy" && !hierarchy) goHierarchy();
+                      else if (value === "flat" && hierarchy) goFlat(emptyQuery(filters.text), null);
                     },
                   },
-                }
-              : {})}
-            toolbar={{
-              searchPlaceholder: "Search topics…",
-              leading: flipNote,
-              facets: [
-                {
-                  type: "button-group",
-                  id: "rows",
-                  label: "Rows",
-                  value: hierarchy ? "hierarchy" : "flat",
-                  defaultValue: "hierarchy",
-                  options: [
-                    { value: "hierarchy", label: "Hierarchy" },
-                    { value: "flat", label: "Flat" },
-                  ],
-                  onChange: (value) => {
-                    if (value === "hierarchy" && !hierarchy) goHierarchy();
-                    else if (value === "flat" && hierarchy) goFlat(emptyQuery(filters.text), null);
-                  },
-                },
-              ],
-              actions:
-                tableState.columns !== null ? (
-                  <button
-                    type="button"
-                    onClick={() => dispatch(setTableColumns({ mapId, columns: null }))}
-                    title="Back to the columns this organization shows by default"
-                    className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-                  >
-                    <Columns3 className="h-3.5 w-3.5" aria-hidden />
-                    <RotateCcw className="h-3 w-3" aria-hidden />
-                    Default columns
-                  </button>
-                ) : undefined,
-            }}
-            emptyState={{
-              title: "No topics match",
-              description: hierarchy
-                ? "Clear the search to see every topic."
-                : "Adjust the search or clear the column filters.",
-            }}
-          />
+                ],
+                actions:
+                  tableState.columns !== null ? (
+                    <button
+                      type="button"
+                      onClick={() => dispatch(setTableColumns({ mapId, columns: null }))}
+                      title="Back to the columns this organization shows by default"
+                      className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                    >
+                      <Columns3 className="h-3.5 w-3.5" aria-hidden />
+                      <RotateCcw className="h-3 w-3" aria-hidden />
+                      Default columns
+                    </button>
+                  ) : undefined,
+              }}
+              emptyState={{
+                title: "No topics match",
+                description: hierarchy
+                  ? "Clear the search to see every topic."
+                  : "Adjust the search or clear the column filters.",
+              }}
+            />
+          </div>
         </NonEditableContextMenu>
       </MatrxDataTableHost>
 
