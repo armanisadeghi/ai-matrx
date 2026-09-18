@@ -341,6 +341,7 @@ function EntitySection({
                   name={name}
                   showIcon={false}
                   fill
+                  className="min-w-0 flex-1"
                   labelClassName="min-w-0 flex-1 truncate font-medium text-foreground"
                 />
               ) : (

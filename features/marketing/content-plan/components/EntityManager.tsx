@@ -948,6 +948,7 @@ export function EntityManager({
                     showIcon={false}
                     fill
                     alwaysShowActions
+                    className="min-w-0 flex-1"
                     labelClassName="min-w-0 flex-1 truncate text-sm font-medium text-foreground"
                   />
                   {party.job_title ? (

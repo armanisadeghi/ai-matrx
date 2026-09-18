@@ -273,7 +273,7 @@ export default function TopicExperts() {
                     showIcon={false}
                     fill
                     alwaysShowActions
-                    className="gap-2 px-1 py-1.5 hover:bg-accent"
+                    className="flex w-full gap-2 px-1 py-1.5 hover:bg-accent"
                     labelClassName="min-w-0 flex-1 truncate text-sm text-foreground"
                   >
                     <span className="flex min-w-0 flex-1 items-center gap-2">

@@ -1087,6 +1087,25 @@ module in the folder + the two deleted filenames).
   a row-actions menu, not a bypass of one. Census guard:
   `features/crm/__tests__/person-doors-census.test.ts`.
 
+- 2026-09-18 — **F-43b: fixed F-43's row-layout regression (Bugbot round 23,
+  frontend PR 228, comment 4042451873).** `EntityRef`'s outer wrapper is
+  `inline-flex` (hugs its own text) — right for a table cell, wrong for a row
+  whose OLD markup was itself the row. Three F-43 sites broke this way:
+  `TopicExperts.tsx`'s roster `<Link className="flex items-center gap-2 …">`
+  was a full-width block row inside a `divide-y` stack, so several people
+  wrapped onto one line instead of stacking — fixed by adding `flex w-full`
+  to the `EntityRef`'s own `className` (which overrides the wrapper's
+  `inline-flex` via `cn()`/`tailwind-merge`). `EntityManager.tsx` and
+  `NodeAssociations.tsx`'s old `<Link className="min-w-0 flex-1 …">` WAS the
+  flex item that took the remaining row width, pushing the unlink/detach
+  control to the far edge — `fill` alone only grows the LABEL *inside*
+  `EntityRef`'s wrapper, not the wrapper itself in the OUTER row, so both now
+  also pass `className="min-w-0 flex-1"` on the `EntityRef`. Census of the
+  other eight F-43 sites found no sibling instance of the class: each of
+  them kept `EntityRef` inline inside a `flex-wrap`/prose row exactly as the
+  `Link` it replaced was, with no block/`flex-1`/`w-full` layout to carry.
+  Guard: `components/official/entity-ref/__tests__/full-row-fill.test.tsx`.
+
 - 2026-09-17 — **F-37: the client adopted the reviewed-send spine and STOPPED
   writing the sent record.** The server now gates every recipient, sends, and
   writes the `crm.interaction` row, its association edges and the
