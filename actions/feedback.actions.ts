@@ -104,6 +104,10 @@ export async function submitFeedback(
         status: "new",
         category_id: categoryId,
         assigned_to: assignedTo,
+        // Provenance the caller declared (e.g. `raised_from_review_row`).
+        // `metadata` is NOT NULL with a `{}` default, so an absent input
+        // writes the same empty object the column would have defaulted to.
+        metadata: input.metadata ?? {},
       })
       .select()
       .single();
@@ -824,6 +828,46 @@ export async function getFeedbackById(
       return { success: false, error: "Feedback not found" };
     }
     return { success: true, data: mapUserFeedbackRow(data) };
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "An unexpected error occurred";
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Every feedback item raised from ONE agent review row (admin only).
+ *
+ * "Approve and raise" stamps `metadata.raised_from_review_row` with the
+ * `agent.review_queue` id, so the review workspace can show — on every later
+ * visit, not only in the seconds after the click — that the row was approved
+ * AND what was raised from it, with a door to each item. Without this the link
+ * would exist in the database and nowhere a person can see it.
+ */
+export async function getFeedbackRaisedFromReviewRow(
+  reviewRowId: string,
+): Promise<{ success: boolean; error?: string; data?: UserFeedback[] }> {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: "User not authenticated" };
+
+    if (!(await checkIsUserAdmin(supabase, user.id))) {
+      return { success: false, error: "Admin access required" };
+    }
+
+    const { data, error } = await supabase
+      .schema("users")
+      .from("user_feedback")
+      .select("*")
+      .is("deleted_at", null)
+      .eq("metadata->>raised_from_review_row", reviewRowId)
+      .order("created_at", { ascending: false });
+
+    if (error) return { success: false, error: error.message };
+    return { success: true, data: mapUserFeedbackRows(data ?? []) };
   } catch (error: unknown) {
     const message =
       error instanceof Error ? error.message : "An unexpected error occurred";

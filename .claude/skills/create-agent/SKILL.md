@@ -189,7 +189,7 @@ For structured output, the schema must pass the provider gate: object root,
 `["<type>","null"]` union). Iterate with `validate_schema`; `create_structured` creates
 nothing on failure.
 
-### 7. Immediately override the model
+### 7. Choose the model on evidence — and leave `settings` alone
 
 The builder's default model is never the final answer. `agent_author update` with a
 `model_id` chosen from `agent_catalog list_models`. Current favorites (Arman, 2026-08 —
@@ -200,8 +200,33 @@ verify against `list_models`, favorites change monthly):
   long tool-call chain (cost).
 - **Anthropic Sonnet (current gen)** — intelligence WITH tool calls.
 
-Then tune `settings` for that model (max_tokens, temperature, streaming) and re-check the
-`tools` assignment. 🚨 **The "placeholder collapse" (feedback
+🚨 **AN AGENTIC AGENT IS NOT AN EASY TASK — never pick the lite model for one.** If the
+agent carries three or more executable tools it runs a LOOP: it reads a tool result,
+decides which tool to reach for next, and recovers from its own mistakes, turn after
+turn. A lite/mini model looks fine on the first call and fails on the fourth — silently,
+as a wrong tool choice rather than an error. So: **cheapness is never a reason; a
+side-by-side run is.** Pin a **primary** model (`agent_catalog list_models` — the
+`is_primary` flag is the platform saying it stands behind that model), and when the job
+is genuinely hard, RUN IT TWICE — once on the current-gen Flash, once on Sonnet — and pin
+the winner. The server REFUSES a write that puts three or more tools on a non-primary
+model in the cheapest cost band (`agent_factory.guards.assert_tool_loop_model_fitness`),
+so a lite pin fails loudly instead of shipping. Origin (Arman, 2026-09-16, review row
+`ca931876`): the Sandbox Specialist was born correctly on the primary Flash and re-pinned
+to Flash-Lite with 11 tools **2 minutes and 22 seconds later**, and stayed there for
+eleven versions until he moved it back himself.
+
+🚨 **`settings` is not a tuning exercise — leave it `{"stream": true}`.** Do NOT write
+`temperature`, `max_output_tokens`, `top_p`, or a reasoning knob because the field
+exists. **Absent means the model's own default, and that is the correct value until you
+have MEASURED a better one.** A number you did not measure is a number you invented, and
+it will outlive you on that agent. Write one only when you can say, in the same breath,
+what you ran and what changed — and put that in the `change_note`. (Same review row: the
+agent came back carrying `temperature: 0.2` and a `max_output_tokens` four times smaller
+than its birth value. Neither was asked for, neither was tested. Arman: *"max tokens and
+temperature were added for no reason. It's agents applying bullshit things for no
+reason."*)
+
+Re-check the `tools` assignment. 🚨 **The "placeholder collapse" (feedback
 `0788c8a5`, corrected 2026-08-23):** structured-output runs can stochastically end early
 with schema-VALID JSON whose remaining required fields hold literal "placeholder" strings.
 A controlled A/B on the real translator proved reasoning settings are NOT the cause

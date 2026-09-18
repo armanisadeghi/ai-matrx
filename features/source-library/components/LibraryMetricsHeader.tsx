@@ -222,14 +222,6 @@ function buildTilesFromMetrics(
 }
 
 function MetricTile({ tile }: { tile: Tile }): ReactNode {
-    if (tile.applies === false) {
-        return (
-            <div
-                className={cn("h-[84px]", tile.wide && "col-span-2")}
-                aria-hidden="true"
-            />
-        );
-    }
     return (
         <div
             className={cn(
@@ -813,9 +805,22 @@ export function LibraryMetricsHeader(props: {
             )}
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
-                {tiles.map((tile) => (
-                    <MetricTile key={tile.key} tile={tile} />
-                ))}
+                {/*
+                  * 🚨 THE SLOT COUNT IS FIXED FOR A GIVEN KIND OF SOURCE, and
+                  * that is what the no-pop-in promise is about: once the
+                  * Library row has told us what these Sources ARE, no tile
+                  * appears or disappears while the numbers fill in. A tile
+                  * whose axis does not exist for this kind — Shorts on a
+                  * podcast, a running time on a blog — is not here at all,
+                  * because an empty box is a question a person then has to
+                  * answer. The one change happens when the row lands, in the
+                  * same frame as the title.
+                  */}
+                {tiles
+                    .filter((tile) => tile.applies !== false)
+                    .map((tile) => (
+                        <MetricTile key={tile.key} tile={tile} />
+                    ))}
             </div>
 
             <div

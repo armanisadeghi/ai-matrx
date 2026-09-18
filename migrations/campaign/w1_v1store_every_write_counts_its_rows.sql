@@ -4,6 +4,7 @@
 -- based-on: custom.promote_table(uuid,uuid) 21dd09398fa0155d08eda2ef0ea052cdb5c4b4db88bbc75cda2b9d8a9f07d8e0
 -- based-on: custom._field_definition_write() 0fabd5eb36a16f2e8d21ce83648b70a0a93911a64ca673c64a0f8c6804df0c49
 -- based-on: custom._rule_definition_write() 88015aca80ffd9ecab4446084849b681c71ce12ed4c402c0300f0710fa644dc7
+-- based-on: custom.record_restore(uuid,uuid) cdd7cecfc41d84a3b4d3ec93cdc838b5e0c90b4cc619a03648d21009aec3a123
 --
 -- V1-STORE-FIXES, FINDING 3 — A SUCCESS SENTENCE COUNTS ITS ROWS.
 --
@@ -28,10 +29,17 @@
 --     `external_writes_set` already read `found` / `row_count` and refuse by name;
 --   · `record_write`, `table_declare`, `home_add`, `external_source_declare` only INSERT, and
 --     an INSERT that RLS refuses RAISES (42501) rather than matching nothing.
--- THREE were not, and all three are fixed here:
+-- FOUR were not, and all four are fixed here:
 --   · `custom.promote_table`            — the instance V1-STORE found;
 --   · `custom._field_definition_write`  — the INSTEAD OF writer behind the `custom.field` view;
---   · `custom._rule_definition_write`   — the INSTEAD OF writer behind the `custom.rule` view.
+--   · `custom._rule_definition_write`   — the INSTEAD OF writer behind the `custom.rule` view;
+--   · `custom.record_restore`           — this lane's own, from finding 2. It DID check its
+--     write, but through `returning true into v_found` rather than a row count, so it read as
+--     an offender to the census query that is the guard. A guard nobody can run mechanically
+--     is the thing this campaign keeps finding, so the body was changed to match the class
+--     rather than the census loosened to match the body: `GREEN 3b` now asserts that ZERO
+--     functions in `custom` change rows without reading `row_count`, over the whole schema,
+--     and that query cannot be satisfied by a special case.
 -- The two INSTEAD OF writers are the same defect wearing a worse face: an INSTEAD OF trigger
 -- reports `UPDATE 1` / `DELETE 1` to the client whatever its body did, so a write the store
 -- refused reads to the caller as a write that happened. The view showed the row, so reaching
@@ -50,7 +58,7 @@
 --
 -- IDEMPOTENCE (rule 27): every statement is `CREATE OR REPLACE FUNCTION` or `COMMENT ON`, so
 -- the file applies twice with the same result. THE INVERSE:
--- `migrations/inverse/w1_v1store_success_counts_its_rows_down.sql`, which restores the three
+-- `migrations/inverse/w1_v1store_every_write_counts_its_rows_down.sql`, which restores the three
 -- bodies this file's `-- based-on:` lines declare.
 
 CREATE OR REPLACE FUNCTION custom.promote_table(p_organization_id uuid, p_table_id uuid)
@@ -282,6 +290,43 @@ begin
   return new;
 end;
 $function$;
+
+create or replace function custom.record_restore(p_organization_id uuid, p_record_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path to 'pg_catalog'
+as $$
+declare
+  v_rows bigint;
+begin
+  perform custom.assert_store_door(p_organization_id, 'custom.record_restore');
+
+  if p_organization_id is null or p_record_id is null then
+    raise exception 'custom.record_restore: organization_id and the record id are both required - the store is keyed (organization_id, id)'
+      using errcode = '22004';
+  end if;
+
+  update custom.record
+     set deleted_at = null
+   where organization_id = p_organization_id and id = p_record_id and deleted_at is not null;
+  get diagnostics v_rows = row_count;
+
+  if v_rows = 0 then
+    if exists (select 1 from custom.record r
+                where r.organization_id = p_organization_id and r.id = p_record_id) then
+      raise exception 'That record was not deleted, so there was nothing to bring back.'
+        using errcode = '02000', hint = 'REC-23: it is already here.';
+    end if;
+    raise exception 'There is no record % in this organization.', p_record_id
+      using errcode = '02000',
+            hint = 'REC-23: a record is reversible while its table still keeps its history, and this one is not in this organization at all.';
+  end if;
+end;
+$$;
+
+comment on function custom.record_restore(uuid, uuid) is
+  'REC-23: the undo of custom.record_delete, while the record is still within its table''s retention. It reads its own row count (V1-STORE-FIXES finding 3) so the whole-schema census in scripts/campaign-tests/v1store_fixes_green.sql can see that it does. While custom/system_enabled resolves false it is reachable only by the role that owns the store, through custom.assert_store_door.';
 
 comment on function custom.promote_table(uuid, uuid) is
   'REC-4: moves a Table to heavy (indexed) storage and builds its promoted fields'' indexes. It refuses a Table this organization does not have before it builds anything, and it refuses a write that reached no row rather than reporting success (V1-STORE-FIXES finding 3). While custom/system_enabled resolves false the whole store, this included, takes writes only from the role that owns custom.record - custom.assert_store_door is the one predicate that decides it.';
