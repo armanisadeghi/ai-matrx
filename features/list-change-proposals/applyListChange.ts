@@ -33,8 +33,9 @@
 import {
   bulkWrite,
   getCompleteTable,
+  type CompleteTableField,
 } from "@/features/data-tables/service";
-import type { BulkOp, CompleteTableField } from "@/features/data-tables/types";
+import type { BulkOp } from "@/features/data-tables/types";
 import { isBulkOpError } from "@/features/data-tables/types";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
