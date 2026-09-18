@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import { isUuidShape } from "@ai-matrx/kit/uuid";
 import {
   CMS_SITE_MEMBER_ADD_ACTION,
@@ -326,11 +327,13 @@ async function createRequest(
   }
 
   const mainSupabase = await createMainSupabaseClient();
-  const { data: personalOrgId, error: orgError } = await mainSupabase.rpc(
-    "current_personal_org_id",
-  );
-  if (orgError || !personalOrgId)
-    throw orgError ?? new Error("Personal organization missing");
+  // The requester is asking for access to an organization they are NOT a member
+  // of, so the request row is filed in the one workspace they certainly own —
+  // their own. Read it through the sanctioned server primitive; the
+  // `current_personal_org_id` RPC belongs to lib/organizations/personalOrg.ts
+  // alone. common-docs/policies/context-is-carried-never-rebuilt.md
+  // org-fallback-deliberate: an access request is filed in the requester's own workspace — they are not yet in the organization they are asking to join
+  const personalOrgId = await ensureOrgIdServer(mainSupabase, null);
 
   const href = `/organizations/${organizationId}/settings#members`;
   // Human words, not the internal token — this string is read by the person
@@ -348,6 +351,9 @@ async function createRequest(
     .schema("iam")
     .from("access_requests")
     .insert({
+      // org-fallback-deliberate: the same request as the marked resolve above —
+      //   the requester is not yet in the organization they are asking to join, so
+      //   the row lives in their own workspace
       organization_id: personalOrgId,
       created_by: userId,
       resource_type: "organization",

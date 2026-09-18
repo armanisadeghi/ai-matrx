@@ -83,6 +83,9 @@ export async function purchasePhoneNumber(
 
     // Store in database — owned by the assigned user's org, or the system org
     // for a platform-owned (unassigned) number.
+    // org-fallback-deliberate: a Twilio number belongs to the assigned person
+    //   (their own workspace) or, unassigned, to the platform — this write has no
+    //   request context at all
     const organizationId = await resolveOrgIdForUserServer(supabase, userId);
     const { error: dbError } = await supabase.schema('communication').from('sms_phone_numbers').insert({
       organization_id: organizationId,

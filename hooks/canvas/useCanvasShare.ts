@@ -3,6 +3,10 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import {
+  presentOrganizationRefusal,
+  organizationRefusalMessage,
+} from "@/lib/organizations/organizationRefusalToast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectDisplayName } from "@/lib/redux/slices/userSlice";
 import { createShareLink } from "@/utils/permissions/shareLinks";
@@ -94,8 +98,17 @@ export function useCanvasShare() {
       queryClient.invalidateQueries({ queryKey: ["discover-canvases"] });
     },
     onError: (err: Error) => {
-      setError(err.message || "Failed to create share");
+      // 🚨 NEVER the raw transport sentence. `ensureOrgId` throws
+      // "Select an organization before sending this request." — an
+      // instruction to a programmer, shown beside a Share button that can
+      // only fail again. Speak the refusal with its remedy instead, and put
+      // the same sentence in the inline error so the panel is not blank.
       setShareUrl(null);
+      if (presentOrganizationRefusal(err, { subject: "This canvas", act: "shared" })) {
+        setError(organizationRefusalMessage({ subject: "This canvas", act: "shared" }));
+        return;
+      }
+      setError(err.message || "Failed to create share");
     },
   });
 

@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useAppSelector } from '@/lib/redux/hooks';
 import { selectUserId } from '@/lib/redux/selectors/userSelectors';
+import { selectOrganizationId } from '@/lib/redux/slices/appContextSlice';
 import { supabase } from '@/utils/supabase/client';
 import { operationFailed } from '@/utils/errors';
 import type { TestContext } from '@/features/tool-call-visualization/testing/types';
@@ -58,6 +59,9 @@ export interface UseToolTestContextReturn {
 
 export function useToolTestContext(): UseToolTestContextReturn {
   const userId = useAppSelector(selectUserId);
+  // Carried to the route as `X-Organization-Id` — the test conversation is
+  // filed in the organization the person selected, never a personal one.
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
 
   // ── Real JWT from active Supabase session ──────────────────────────────────
   // This is the only correct token for tool testing. Never use a static/admin token.
@@ -111,6 +115,16 @@ export function useToolTestContext(): UseToolTestContextReturn {
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+      // The route files the conversation in the admitted organization and
+      // refuses without one — carry the selected organization, never let the
+      // server fall back to a personal workspace.
+      if (!selectedOrganizationId) {
+        throw operationFailed(
+          'create a test conversation',
+          'No organization is selected. Choose the organization you are working in from the avatar menu and try again.',
+        );
+      }
+      headers['X-Organization-Id'] = selectedOrganizationId;
 
       const res = await fetch('/api/tool-testing/conversation', { method: 'POST', headers });
       if (!res.ok) {
@@ -122,7 +136,7 @@ export function useToolTestContext(): UseToolTestContextReturn {
     } finally {
       setIsCreatingConversation(false);
     }
-  }, [setConversationId, authToken]);
+  }, [setConversationId, authToken, selectedOrganizationId]);
 
   const buildTestContext = useCallback((): TestContext | undefined => {
     if (!conversationId) return undefined;

@@ -15,6 +15,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Contract types — mirror the agent payload exactly
@@ -199,14 +200,17 @@ export function validateProjectJson(raw: string): ProjectJsonValidation {
  * Create a project (and its full task/subtask tree) from the JSON payload via
  * the `create_project_from_json` RPC — one transaction, RLS-respecting.
  *
- * @param organizationId  null resolves to the user's personal organization.
+ * @param organizationId  null resolves to the organization the person has
+ *   SELECTED. There is no personal-organization fallback: with nothing
+ *   selected the import REFUSES and nothing is written.
+ *   Law: common-docs/policies/context-is-carried-never-rebuilt.md.
  */
 export async function createProjectFromJson(
   payload: ProjectJsonPayload,
   organizationId: string | null,
 ): Promise<CreateProjectFromJsonResult> {
   try {
-    // Never write a null org — fall back to the session-cached personal org.
+    // Never write a null org — the SELECTED organization, or an honest refusal.
     const resolvedOrganizationId = await ensureOrgId(organizationId);
 
     const { data, error } = await supabase.rpc("create_project_from_json", {
@@ -240,6 +244,16 @@ export async function createProjectFromJson(
       subtaskCount: result.subtask_count ?? 0,
     };
   } catch (error: unknown) {
+    // "No organization selected" is a refusal the person can fix; the
+    // transport's own sentence is written for a programmer, so the remedy
+    // replaces it and the console noise is dropped.
+    if (isOrganizationRequiredError(error)) {
+      return {
+        success: false,
+        error:
+          "Select an organization before importing \u2014 every project is filed under one organization. Pick yours from the avatar menu.",
+      };
+    }
     const msg =
       error instanceof Error
         ? error.message

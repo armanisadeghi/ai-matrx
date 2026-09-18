@@ -37,3 +37,17 @@ variables-vs-Context-Policies rules and the teardown plan were centralized into 
   Shortcut's `scopeMappings` translates surface keys into variable / policy names).
 - `lib/redux/slices/appContextSlice.ts` — the global active-context slice (owned there, only
   read here).
+
+## Change Log
+
+
+- 2026-09-17 — **A refused project or task create now REACHES the person.** `createProjectThunk` / `createTaskThunk` resolve the organization through `ensureOrgId`, which stopped falling back to the personal workspace and started THROWING on 2026-09-17. A rejected thunk on its own is a dead Create button, so both writes go through `withOrganizationRefusalShown` (`lib/organizations/organizationRefusalToast.ts`): the person is told the project/task was not created and where to pick an organization, and the throw still propagates so no surface shows a record that was never written. Guard: `pnpm check:org-refusal-honesty` (+ `:self-test`).
+
+- 2026-09-17 — **`useHierarchySelection` no longer auto-selects the first organization.** The
+  `autoSelectFirst` option seeded the org level with `orgs[0]` — whichever organization sorted
+  first, which can be a membership in someone else's personal workspace, and which the projects,
+  tasks and scope reads below it then scoped to. It is now `autoSelectActiveOrg`: it seeds from
+  the organization the person SELECTED (`appContext.organization_id`) when that is one of their
+  memberships, and otherwise leaves the level empty so the cascade's own organization picker is
+  the remedy. No caller passed the old option.
+  Law: `../../../common-docs/policies/context-is-carried-never-rebuilt.md`.

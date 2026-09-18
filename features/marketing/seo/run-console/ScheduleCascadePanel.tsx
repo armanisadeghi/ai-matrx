@@ -167,6 +167,24 @@ export function ScheduleCascadePanel({
 
   const save = useMutation({
     mutationFn: async () => {
+      // 🚨 THE ORGANIZATION IS NEVER SUBSTITUTED. A site-tier row belongs to the
+      // site's OWN organization; when the site is not in the loaded list there
+      // is no honest answer, and the old `?? SYSTEM_ORGANIZATION_ID` filed a
+      // customer's schedule — which spends money on its own cadence — under the
+      // system organization with nothing on screen saying so. Refuse by name
+      // instead; nothing is written and the toast says which site.
+      const resolveOrganizationId = (): string => {
+        if (scope.tier === "system") return SYSTEM_ORGANIZATION_ID;
+        if (scope.tier === "organization") return scope.organizationId;
+        const site = sites.find((candidate) => candidate.id === scope.siteId);
+        if (!site) {
+          throw new Error(
+            `We could not tell which organization the site ${scope.siteId} belongs to, so this schedule was not saved. Reload the console and try again — nothing was written.`,
+          );
+        }
+        return site.organization_id;
+      };
+      const organizationId = resolveOrganizationId();
       const draft: ScheduleDraft = {
         engineSlug: engine.slug,
         tier: scope.tier,
@@ -180,13 +198,7 @@ export function ScheduleCascadePanel({
         sitesPerRun: Math.max(sitesPerRun, 1),
         enabled,
         notes: notes.trim() ? notes.trim() : null,
-        organizationId:
-          scope.tier === "system"
-            ? SYSTEM_ORGANIZATION_ID
-            : scope.tier === "organization"
-              ? scope.organizationId
-              : (sites.find((site) => site.id === scope.siteId)
-                  ?.organization_id ?? SYSTEM_ORGANIZATION_ID),
+        organizationId,
       };
       return saveEngineSchedule(draft, own?.id ?? null);
     },

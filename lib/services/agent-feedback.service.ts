@@ -161,6 +161,9 @@ export async function submitFeedback(
       .insert({
         // External agents have no personal org (no Supabase session); their
         // feedback homes to the global system org.
+        // org-fallback-deliberate: an EXTERNAL agent has no Supabase session and no
+        //   organization at all — the platform is the only tenant that can hold its
+        //   feedback
         organization_id: await resolveSystemOrgId(supabase),
         user_id: userId,
         metadata: agentId

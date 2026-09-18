@@ -7,13 +7,19 @@
 // Reads go direct via supabase-js (RLS owner-scoped). Never throws — every
 // method returns `StudyResult<T>`.
 //
-// Org is omitted on insert: the `_stamp_org_default` trigger fills the creator's
-// personal org, exactly as studyService.createSession relies on.
+// The organization is ALWAYS on the wire. Omitting it let
+// `public._stamp_org_default` file a plan into the OWNER'S PERSONAL
+// organization no matter which organization the person was working in — the
+// silent misfile. The plan row carries the SELECTED organization; its day and
+// block rows carry the PARENT PLAN'S organization, so a re-plan can never move
+// children to a different tenant than their plan.
+// Law: common-docs/policies/context-is-carried-never-rebuilt.md.
 
 "use client";
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { StudyResult } from "../types";
 import type {
   PlanDraft,
@@ -26,7 +32,16 @@ import { fail } from "./serviceError";
 
 const EDU = () => supabase.schema("education");
 
-/** Map a draft plan's top-level fields to the study_plan insert/update payload. */
+/**
+ * Map a draft plan's top-level fields to the study_plan insert/update payload.
+ * `organizationId` is required on INSERT (the write must carry a tenant) and
+ * omitted on UPDATE (a re-plan never moves a plan between organizations).
+ */
+// The plan's own columns, WITHOUT the organization: an insert names the
+// organization at its call site (`{ ...planPayload(draft), organization_id }`)
+// so the row never depends on `public._stamp_org_default` to pick a tenant,
+// and a re-plan UPDATE leaves the plan filed where it already is.
+// common-docs/policies/context-is-carried-never-rebuilt.md
 function planPayload(draft: PlanDraft): Record<string, unknown> {
   return {
     title: draft.title,
@@ -51,11 +66,13 @@ function planPayload(draft: PlanDraft): Record<string, unknown> {
 async function insertDraftChildren(
   planId: string,
   draft: PlanDraft,
+  organizationId: string,
 ): Promise<StudyResult<null>> {
   if (draft.days.length === 0) return { data: null, error: null };
 
   const dayRows = draft.days.map((d) => ({
     plan_id: planId,
+    organization_id: organizationId,
     day_date: d.dayDate,
     target_minutes: d.targetMinutes,
     is_rest_day: d.isRestDay,
@@ -80,6 +97,7 @@ async function insertDraftChildren(
   const blockRows = draft.days.flatMap((d) =>
     d.blocks.map((b) => ({
       plan_id: planId,
+      organization_id: organizationId,
       day_id: dayIdByDate.get(d.dayDate) ?? null,
       day_date: b.dayDate,
       target_kind: b.targetKind,
@@ -215,14 +233,18 @@ export const planService = {
   /** Persist a fresh plan (plan row + all days + blocks). Returns the plan id. */
   async savePlan(draft: PlanDraft): Promise<StudyResult<{ id: string }>> {
     try {
+      const organizationId = await ensureOrgId(undefined);
       const { data: plan, error } = await EDU()
         .from("study_plan")
-        .insert(planPayload(draft) as never)
+        .insert({
+          ...planPayload(draft),
+          organization_id: organizationId,
+        } as never)
         .select("id")
         .single();
       if (error) return fail("savePlan", error);
       const planId = (plan as { id: string }).id;
-      const childRes = await insertDraftChildren(planId, draft);
+      const childRes = await insertDraftChildren(planId, draft, organizationId);
       if (childRes.error) return { data: null, error: childRes.error };
       return { data: { id: planId }, error: null };
     } catch (e) {
@@ -240,6 +262,24 @@ export const planService = {
     draft: PlanDraft,
   ): Promise<StudyResult<{ id: string }>> {
     try {
+      // The re-planned children belong to the PLAN's organization, not to
+      // whichever organization happens to be selected now — the parent record
+      // is the authority for a child row.
+      const { data: planRow, error: planErr } = await EDU()
+        .from("study_plan")
+        .select("organization_id")
+        .eq("id", planId)
+        .single();
+      if (planErr) return fail("regeneratePlan(plan)", planErr);
+      const organizationId = (planRow as { organization_id: string | null })
+        ?.organization_id;
+      if (!organizationId) {
+        return fail(
+          "regeneratePlan",
+          "This plan has no organization on it, so its days and blocks cannot be filed. Reload the plan and try again.",
+        );
+      }
+
       // Blocks first (they FK day rows), then days.
       const delBlocks = await EDU()
         .from("study_plan_block")
@@ -258,7 +298,7 @@ export const planService = {
         .eq("id", planId);
       if (updErr) return fail("regeneratePlan(update)", updErr);
 
-      const childRes = await insertDraftChildren(planId, draft);
+      const childRes = await insertDraftChildren(planId, draft, organizationId);
       if (childRes.error) return { data: null, error: childRes.error };
       return { data: { id: planId }, error: null };
     } catch (e) {

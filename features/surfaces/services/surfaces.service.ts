@@ -284,6 +284,8 @@ export async function createUiClient(args: {
     .schema("ui")
     .from("ui_client")
     .insert({
+      // org-fallback-deliberate: a ui_client row is part of the platform's own
+      //   surface registry, identical for every organization
       organization_id: await resolveSystemOrgId(client),
       visibility: "public",
       name: args.name,
@@ -694,6 +696,8 @@ export async function upsertSurfaceToolDefaults(
       {
         ...patch,
         surface_name: surfaceName,
+        // org-fallback-deliberate: the same platform surface registry as above —
+        //   shipped platform metadata, no tenant
         organization_id: await resolveSystemOrgId(client),
         visibility: "public",
       },

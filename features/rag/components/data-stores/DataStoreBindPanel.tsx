@@ -7,8 +7,12 @@
  *  - see every store they own / are a member of
  *  - toggle membership for the active document (writes
  *    rag.data_store_members rows)
- *  - create a fresh store inline (org-less; admin / org pickers live in
- *    a fuller management surface, future Phase 4F)
+ *  - create a fresh store inline. The new store is filed under the
+ *    organization the person has SELECTED (never org-less: a tenant-less
+ *    knowledge base is invisible to every org-scoped read); with nothing
+ *    selected the create refuses and the panel shows the remedy in its error
+ *    line. Admin / org pickers live in a fuller management surface.
+ *    Law: common-docs/policies/context-is-carried-never-rebuilt.md.
  *
  * RLS handles all filtering — the user only sees stores they're allowed
  * to see, and inserts/deletes succeed only when their auth.uid() matches

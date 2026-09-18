@@ -7,6 +7,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { filesDb } from "@/features/files/filesDb";
+import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
 import type {
   CreateWebhookInput,
   UpdateWebhookInput,
@@ -50,6 +51,17 @@ export async function createWebhook(
   if (userErr || !user) throw new Error("You must be signed in to create a webhook.");
 
   const secret = generateWebhookSecret();
+  // 🚨 A WEBHOOK IS FILED IN AN ORGANIZATION, ALWAYS.
+  // `files.webhooks` carries `public._stamp_org_default`, so the old
+  // `?? null` was not "no organization" — it was the writer's PERSONAL
+  // workspace, chosen by a trigger nobody can see. This surface genuinely
+  // offers the choice: the manager's "org-wide" toggle (WebhooksManager,
+  // shown only when an organization is selected) sends that organization;
+  // leaving it off means "my own events", which IS the person's own
+  // workspace — so we name it, rather than let the trigger guess it.
+  // common-docs/policies/context-is-carried-never-rebuilt.md
+  // org-fallback-deliberate: the person's own workspace is the "my own events" choice the org-wide toggle leaves off
+  const organizationId = input.organization_id ?? (await resolvePersonalOrgId());
   const { data, error } = await filesDb(supabase)
     .from("webhooks")
     .insert({
@@ -57,7 +69,7 @@ export async function createWebhook(
       target_url: input.target_url,
       secret,
       description: input.description ?? null,
-      organization_id: input.organization_id ?? null,
+      organization_id: organizationId,
       event_types: input.event_types ?? null,
       resource_types: input.resource_types ?? null,
       is_active: true,

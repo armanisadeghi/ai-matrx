@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { toGlobalOwnershipWire } from "@/lib/organizations/globalOwnership";
+import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import {
   coerceLegacyCategoryIsActive,
   platformCategoryToLegacyRow,
@@ -11,8 +12,11 @@ import {
 /**
  * POST /api/agent-shortcut-categories/[id]/duplicate
  *
- * Duplicates a shortcut category while preserving the source row's ownership
- * (`user_id`, `organization_id`, `project_id`, `task_id`). The caller may
+ * Duplicates a shortcut category, preserving the source row's ownership
+ * (`user_id`, `organization_id`, `project_id`, `task_id`) EXCEPT where that
+ * would let a non-admin mint a platform-global row: a copy of a system-org
+ * (global) category made by anyone but a super admin lands in the caller's
+ * admitted organization as their own row. See the gate below. The caller may
  * override `label`, `placementType`, and `parentCategoryId`; all other fields
  * (description, iconName, color, sortOrder, isActive, enabledFeatures,
  * metadata) are copied from the source. `id`, `createdAt`, and `updatedAt` are
@@ -126,6 +130,51 @@ export async function POST(
       );
     }
 
+    // 🚨 DUPLICATE IS A WRITE, AND IT OBEYS THE SAME SCOPE GATE AS CREATE.
+    //
+    // Copying `source.organization_id` verbatim was a hole straight through
+    // `applyScopeToInsertPayload`: that helper 403s a non-super-admin who asks
+    // for `scope: "global"`, because the system organization is
+    // `global_readable` and a row filed there is visible to EVERY tenant on
+    // the platform. A global category is readable by definition, so any
+    // signed-in person could open one, press Duplicate, and mint a second
+    // platform-global row — the admin gate on the front door with the back
+    // door propped open.
+    //
+    // WHAT THE PRODUCT MEANS (the choice, stated): Duplicate is "give me my
+    // own copy of this to change", and the categories UI offers it on rows the
+    // person can only read. Refusing outright would leave a dead button on
+    // every global category for everyone but a platform admin — so a
+    // non-admin's copy lands in THEIR admitted organization as THEIR row,
+    // which is what `scope: "user"` means and what the duplicate thunk already
+    // documents ("admins duplicating global categories get global copies and
+    // users stay in their own scope"). A super admin's copy stays global,
+    // deliberately and gated, exactly as `scope: "global"` is.
+    const systemOrgId = await resolveSystemOrgId(supabase);
+    let copyOrganizationId = source.organization_id;
+    let copyUserId: string | null = source.user_id ?? null;
+    if (source.organization_id === systemOrgId) {
+      const isSuperAdmin = await checkIsSuperAdmin(supabase, user.id);
+      if (!isSuperAdmin) {
+        // The organization is ADMITTED at the boundary, never resolved here —
+        // same rule, same header, same refusal copy as the create path.
+        const admittedOrganizationId =
+          request.headers.get("X-Organization-Id")?.trim() || null;
+        if (!admittedOrganizationId) {
+          return NextResponse.json(
+            {
+              error:
+                "No organization was named for this request. Choose the organization you are working in and try again.",
+              code: "organization_context_required",
+            },
+            { status: 400 },
+          );
+        }
+        copyOrganizationId = admittedOrganizationId;
+        copyUserId = user.id;
+      }
+    }
+
     const insertPayload = {
       dimension: "shortcut" as const,
       name: nextLabel,
@@ -134,14 +183,14 @@ export async function POST(
       placement_type: nextPlacementType,
       parent_id: nextParentCategoryId,
       position: nextSortOrder ?? null,
-      organization_id: source.organization_id,
+      organization_id: copyOrganizationId,
       created_by: user.id,
       metadata: {
         ...((source.metadata as Record<string, unknown> | null) ?? {}),
         description: source.description ?? null,
         is_active: sourceIsActive,
         enabled_features: source.enabled_features ?? null,
-        user_id: source.user_id ?? null,
+        user_id: copyUserId,
         project_id: source.project_id ?? null,
         task_id: source.task_id ?? null,
         legacy_table: "shortcut_categories",

@@ -34,7 +34,7 @@ import {
 import type { RouteNavItem } from "@/features/shell/components/header/RouteModeNav";
 import { useSiteOptions } from "@/features/marketing/data/hooks";
 import { ActiveContextLensChip } from "@/features/scopes/components/active-context/ActiveContextLensChip";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useAppSelector } from "@/lib/redux/hooks";
 
 import { planKeys } from "../data/hooks";
@@ -70,7 +70,10 @@ const VIEW_ITEMS: { view: PlanView; label: string; icon: LucideIcon }[] = [
  * is still reachable from the dropdown.
  */
 export function useContentPlanSites() {
-  const orgId = useAppSelector(selectEffectiveOrganizationId);
+  // The EXPLICIT active org, used only to sort the picker (RLS owns what is
+  // listed). With none selected every site the caller can administer still
+  // shows, unsorted — no personal-workspace stand-in decides the order.
+  const orgId = useAppSelector(selectOrganizationId);
   // access-errors: ok — site options for the plan switcher; a failed read only empties the dropdown, the selected plan surface owns its own record errors
   const sites = useSiteOptions();
   const all = sites.data ?? [];

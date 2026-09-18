@@ -14,8 +14,12 @@ import { Camera, ChevronRight, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { CaptureThumb } from "@/features/media-capture/components/CaptureThumb";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 import {
   selectAccessToken,
   selectAuthReady,
@@ -53,7 +57,15 @@ export function intakeAssetsLoadKey(input: {
 }
 
 export function AssetsList() {
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE. This read the
+  // personal-org fallback, so with no organization selected the list quietly
+  // showed the PERSONAL workspace's assets as if they were the org's.
+  const organizationId = useAppSelector(selectOrganizationId);
+  // "No org yet" is not "still reading": `rows` starts null and null renders
+  // the spinner, so the load effect's early return would spin forever. Before
+  // the bootstrap resolves, loading is the truth; after it, the absence is a
+  // settled fact and it is said, with the remedy.
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
   const authReady = useAppSelector(selectAuthReady);
   const userId = useAppSelector(selectUserId);
   const accessToken = useAppSelector(selectAccessToken);
@@ -105,6 +117,12 @@ export function AssetsList() {
       cancelled = true;
     };
   }, [loadKey, organizationId]);
+
+  if (!organizationId && orgBootstrapResolved) {
+    // The canonical honest state — it carries the picker, so this is a remedy
+    // and not a dead end.
+    return <OrganizationRequiredNotice what="Intake assets" />;
+  }
 
   if (rows === null) {
     return (

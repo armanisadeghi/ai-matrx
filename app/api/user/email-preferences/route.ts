@@ -147,6 +147,9 @@ export async function PATCH(request: Request) {
       }
     } else {
       // Create new preferences (scoped to the user's personal org)
+      // org-fallback-deliberate: user_email_preferences is a per-person singleton
+      //   (one row per user_id) — the person's own workspace is its tenant, not
+      //   whichever organization is selected
       const organizationId = await ensureOrgIdServer(supabase, undefined);
       const { error } = await supabase
         .schema("users")

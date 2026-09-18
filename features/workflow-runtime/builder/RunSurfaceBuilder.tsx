@@ -22,7 +22,7 @@ import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { recordUnavailableMessage } from "@/lib/records/recordUnavailable";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 
@@ -51,7 +51,10 @@ interface LoadedWorkflow {
 type MobileView = "build" | "preview";
 
 export function RunSurfaceBuilder({ definitionId }: { definitionId: string }) {
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // The EXPLICIT active org — a run surface is created for the organization
+  // the user chose. With none, `create` already refuses by name and writes
+  // nothing; never a personal-workspace default.
+  const organizationId = useAppSelector(selectOrganizationId);
   const isMobile = useIsMobile();
 
   const [workflow, setWorkflow] = useState<LoadedWorkflow | null>(null);

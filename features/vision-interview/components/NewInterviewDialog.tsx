@@ -14,6 +14,7 @@ import { Input } from "@ai-matrx/design-system";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { toast } from "@/lib/toast";
 import { useDurableDraft } from "@ai-matrx/kit/drafts";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { createSession } from "../service";
 
 interface NewInterviewDialogProps {
@@ -52,8 +53,16 @@ export function NewInterviewDialog({
         router.push(`/masterwork/vision-interview/${session.id}`);
       });
     } catch (err) {
+      // An honest refusal with its remedy — never the transport's programmer
+      // sentence ("Select an organization before sending this request."), which
+      // names no way to fix it. `createSession` fails closed when no
+      // organization is selected (features/vision-interview/service.ts).
       toast.error(
-        err instanceof Error ? err.message : "Could not create the interview.",
+        isOrganizationRequiredError(err)
+          ? "Select an organization before starting an interview \u2014 every interview is filed under one organization. Pick yours from the avatar menu."
+          : err instanceof Error
+            ? err.message
+            : "Could not create the interview.",
       );
     } finally {
       setBusy(false);

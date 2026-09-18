@@ -174,8 +174,14 @@ Arman in the loop.
 - **Access is RLS, not a bespoke gate.** The row is org-scoped `internal` and the surface sits in
   the org's own commerce area alongside `/commerce/labels` — a warehouse lead certifying their own
   printer is the normal case, and a super-admin gate here would be over-tightening (db-rules §6).
-- Every write carries an EXPLICIT `organization_id` from `selectEffectiveOrganizationId`; the
-  wizard refuses with a named remedy when no org or no signed-in user is present.
+- Every write carries an EXPLICIT `organization_id` from the SELECTED active organization
+  (`selectOrganizationId`), never `selectEffectiveOrganizationId` — the personal-org fallback
+  filed intake work in a workspace the person never chose. The wizard refuses with a named
+  remedy when no org or no signed-in user is present, and the capture session
+  (`useIntakeSession`) waits through `awaitEffectiveOrganizationId` (explicit-only) and refuses
+  with the remedy rather than creating a batch. The asset list, the answer queue, the label-batch
+  register and the certified-printer register all show an honest "no organization is selected"
+  state once the org bootstrap has resolved, instead of an empty or forever-spinning screen.
 
 ### The failed-printer gate at print time — a KNOB, never a block in code
 
@@ -410,3 +416,4 @@ On a phone, logged into an org:
   replace would orphan a run). Reused product-capture's generic leaves
   (`InstantProcessSheet`, NotesPanel/VoiceNoteButton/MediaPager/useQrAutoScan) — they move
   here when the prototype retires.
+- 2026-09-17 — **The active organization, never the "effective" one.** Every consumer of `selectEffectiveOrganizationId` here (`AssetsList`, `IntakeAnswerQueue`, `useIntakeSession`, `LabelBatchesPage`, `CertifiedPrintersPage`) now reads `selectOrganizationId` and fails closed: reads show an honest "choose an organization" state gated on `selectOrgBootstrapResolved`, and the capture session refuses to create a batch with no organization (`context-is-carried-never-rebuilt`). Note: `app/(core)/commerce/labels/**` route clients still pass the effective org into these components — converting them belongs to the route lane.

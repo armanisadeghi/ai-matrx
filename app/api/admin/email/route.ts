@@ -174,6 +174,8 @@ export async function POST(request: Request) {
 
     // Log the email send operation
     await adminSupabase.schema("admin").from("admin_email_logs").insert({
+      // org-fallback-deliberate: the admin email log is a platform operations
+      //   record, not one organization's work; the route is behind checkIsSuperAdmin
       organization_id: await resolveSystemOrgId(adminSupabase),
       sent_by: authUser.id,
       recipient_count: recipients.length,

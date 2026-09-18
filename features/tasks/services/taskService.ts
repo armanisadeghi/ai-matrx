@@ -3,6 +3,8 @@ import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
+import { toast } from "@/lib/toast";
 import { getSharedWithMe } from "@/utils/permissions/service";
 import type { PermissionLevel } from "@/utils/permissions/types";
 import type { DbRpcRow } from "@/types/supabase-rpc";
@@ -95,7 +97,10 @@ export async function createTask(
 ): Promise<DatabaseTask | null> {
   try {
     const userId = requireUserId();
-    // Never write a null org — fall back to the cached personal org.
+    // The task carries the caller's explicit organization, else the SELECTED
+    // one. `ensureOrgId` REFUSES when nothing is selected — it never falls back
+    // to a personal organization. Law:
+    // common-docs/policies/context-is-carried-never-rebuilt.md.
     const organizationId = await ensureOrgId(input.organization_id);
     const { data, error } = await workspaceDb(supabase)
       .from("tasks")
@@ -136,6 +141,19 @@ export async function createTask(
 
     return data;
   } catch (error) {
+    // A refusal for "no organization selected" is the person's to fix, and the
+    // null return alone is a DEAD CLICK — the task simply never appears. The
+    // create has a dozen callers across features this module does not own
+    // (modals, thunks, an inline field), several of which do not catch, so the
+    // remedy is said HERE, at the moment of the click, and the null contract is
+    // left intact for every caller.
+    // Law: common-docs/policies/context-is-carried-never-rebuilt.md.
+    if (isOrganizationRequiredError(error)) {
+      toast.error(
+        "Select an organization before creating a task \u2014 every record is filed under one organization. Pick yours from the avatar menu.",
+      );
+      return null;
+    }
     console.error("Exception creating task:", error);
     return null;
   }

@@ -13,6 +13,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type {
   AsResult,
@@ -52,6 +53,14 @@ function describeError(error: unknown): string {
 }
 
 function fail<T>(context: string, error: unknown): AsResult<T> {
+  // A missing organization is a REFUSAL the person can fix, not a service
+  // failure to log and hide: the transport's own sentence ("Select an
+  // organization before sending this request.") is an instruction to a
+  // programmer, so the remedy sentence replaces it and the console noise is
+  // dropped. Law: common-docs/policies/context-is-carried-never-rebuilt.md.
+  if (isOrganizationRequiredError(error)) {
+    return { data: null, error: "Select an organization before saving \u2014 every record is filed under one organization. Pick yours from the avatar menu." };
+  }
   console.error(`[assessmentService] ${context}:`, error);
   return { data: null, error: `${context}: ${describeError(error)}` };
 }
@@ -215,9 +224,14 @@ export const assessmentService = {
 
   // ─── ITEMS ─────────────────────────────────────────────────────────────────
   /**
-   * Insert questions for an assessment. `organization_id` is omitted — the
-   * `_inherit_org` trigger copies it from the parent assessment. Positions are
-   * assigned sequentially from `startPosition` when an item omits its own.
+   * Insert questions for an assessment. Every item CARRIES the parent
+   * assessment's `organization_id` — the `_inherit_org` trigger would copy it,
+   * but a row must never depend on a trigger to choose its tenant: when the
+   * parent cannot be read, this refuses instead of letting
+   * `public._stamp_org_default` file the questions in the writer's personal
+   * workspace. common-docs/policies/context-is-carried-never-rebuilt.md
+   * Positions are assigned sequentially from `startPosition` when an item
+   * omits its own.
    */
   async addItems(
     assessmentId: string,
@@ -227,8 +241,23 @@ export const assessmentService = {
     if (items.length === 0) return { data: [], error: null };
     try {
       const start = opts.startPosition ?? 0;
+      const { data: parent, error: parentError } = await EDU()
+        .from("assessment")
+        .select("organization_id")
+        .eq("id", assessmentId)
+        .maybeSingle();
+      if (parentError) return fail("addItems", parentError);
+      const organizationId = parent?.organization_id ?? "";
+      if (organizationId.length === 0) {
+        return {
+          data: null,
+          error:
+            "This assessment could not be opened, so its questions were not saved. Reopen the assessment and try again.",
+        };
+      }
       const rows = items.map((it, i) => ({
         assessment_id: assessmentId,
+        organization_id: organizationId,
         position: it.position ?? start + i,
         question_type: it.questionType,
         prompt: it.prompt,

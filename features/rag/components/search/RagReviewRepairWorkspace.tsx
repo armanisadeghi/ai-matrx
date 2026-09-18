@@ -43,8 +43,7 @@ import type { RagSearchHit } from "@/features/rag/api/search";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
-import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { ProTextarea } from "@/components/official/ProTextarea";
@@ -265,7 +264,10 @@ function RepairPane({
 }) {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE — the repair creates a
+  // job row and spends on a model run, so it is filed in the organization the
+  // user selected or it refuses.
+  const organizationId = useAppSelector(selectOrganizationId);
   const [repairKind, setRepairKind] = useState<RepairKind>("table");
   const [instructions, setInstructions] = useState(
     REPAIR_KINDS[0].instructions,
@@ -304,9 +306,19 @@ function RepairPane({
 
   const runRepair = async () => {
     if (!agentId || !agent || !wiring.documentVariable || !userId) return;
+    if (!organizationId) {
+      // Fail closed and NAME the remedy. This used to call `ensureOrgId`, which
+      // substitutes the PERSONAL organization: the repair job row — and the
+      // spend behind it — landed in a workspace the person never chose, with
+      // nothing on screen saying so.
+      toast.error(
+        "No organization is selected, so this repair cannot be filed — choose one from the organization picker in the header, then run it again. Nothing was created or spent.",
+      );
+      return;
+    }
     setLaunching(true);
     try {
-      const orgId = await ensureOrgId(organizationId);
+      const orgId = organizationId;
       const insert: PageExtractionJobInsert = {
         file_id: fileId,
         processed_document_id: hit.processed_document_id ?? null,
@@ -450,7 +462,8 @@ function RepairPane({
             !agent ||
             !wiring.documentVariable ||
             !instructions.trim() ||
-            !userId
+            !userId ||
+            !organizationId
           }
           onClick={() => void runRepair()}
         >
@@ -461,6 +474,13 @@ function RepairPane({
           )}
           {busy ? "Reviewing physical pages…" : "Generate correction"}
         </Button>
+        {!organizationId ? (
+          <p role="status" className="text-xs text-muted-foreground">
+            No organization is selected, so a repair cannot be filed anywhere —
+            choose one from the organization picker in the header and this
+            button turns on.
+          </p>
+        ) : null}
 
         {activeRun ? (
           <section className="space-y-2 rounded-lg border border-border/70 bg-background/70 p-3">
