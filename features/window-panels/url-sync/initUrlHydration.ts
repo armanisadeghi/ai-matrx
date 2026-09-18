@@ -380,6 +380,107 @@ export function initUrlHydration() {
     );
   });
 
+  // Topic panel — `?panels=topic:<mapId>|<slug>:s-<siteId>`. The registry has
+  // declared this key since the panel shipped and NOTHING answered it: the
+  // link opened nothing and `UrlPanelManager` logged a warning nobody read
+  // (found by the dev integrity check below, which only screams in a browser).
+  registerPanelHydrator("topic", (dispatch, id, args) => {
+    const [mapId, slug] = (id ?? "").split("|");
+    if (!mapId || !slug) {
+      console.warn(
+        `[UrlPanelManager] ?panels=topic:${id} names no topic — expected topic:<mapId>|<slug>.`,
+      );
+      return;
+    }
+    dispatch(
+      openOverlay({
+        overlayId: "topicalMapTopicPanel",
+        instanceId: id,
+        data: {
+          stackIndex: 0,
+          mapId,
+          slug,
+          siteId: args.s ?? null,
+        },
+      }),
+    );
+  });
+
+  // ── Google-native panels (V-23 / R35) ────────────────────────────────────
+  // Every one of these was reachable ONLY by clicking the surface that raised
+  // it: no address, so no deep link, no verification from the seat, and no way
+  // for the extension or the desktop app to reach the same panel (PLAN §5.7).
+
+  // Agenda — `?panels=agenda` opens the agenda over synced Calendar events.
+  registerPanelHydrator("agenda", (dispatch) => {
+    dispatch(openOverlay({ overlayId: "googleAgendaWindow" }));
+  });
+
+  // Waiting on you — `?panels=approvals` opens the approval queue in place.
+  registerPanelHydrator("approvals", (dispatch) => {
+    dispatch(openOverlay({ overlayId: "approvalsWindow" }));
+  });
+
+  // Import from Google Contacts —
+  // `?panels=google_contacts_import:<externalContactId>:o-<organizationId>`.
+  // The bare key opens the panel with nothing pre-selected.
+  registerPanelHydrator("google_contacts_import", (dispatch, id, args) => {
+    const initialExternalId = getRestorableResourceId(
+      id,
+      "googleContactsImportWindow",
+    );
+    const organizationId = args.o ?? null;
+    dispatch(
+      openOverlay({
+        overlayId: "googleContactsImportWindow",
+        data: { organizationId, initialExternalId },
+      }),
+    );
+  });
+
+  // Import from Google Tasks —
+  // `?panels=google_tasks_import:<projectId>:o-<organizationId>`.
+  registerPanelHydrator("google_tasks_import", (dispatch, id, args) => {
+    const projectId = getRestorableResourceId(id, "googleTasksImportWindow");
+    const organizationId = args.o ?? null;
+    dispatch(
+      openOverlay({
+        overlayId: "googleTasksImportWindow",
+        data: { organizationId, projectId },
+      }),
+    );
+  });
+
+  // Connect Google — `?panels=google_connect` (optionally `:<reason>`).
+  registerPanelHydrator("google_connect", (dispatch, id) => {
+    const reason = getRestorableResourceId(id, "googleConnectWindow");
+    dispatch(
+      openOverlay({
+        overlayId: "googleConnectWindow",
+        data: reason ? { reason } : null,
+      }),
+    );
+  });
+
+  // Site Quick view — `?panels=site_quick_view:<siteId>`. The window's whole
+  // subject is one site, so a token with no id opens nothing rather than an
+  // empty frame (the render site already refuses a missing `siteId`).
+  registerPanelHydrator("site_quick_view", (dispatch, id) => {
+    const siteId = getRestorableResourceId(id, "siteQuickViewWindow");
+    if (!siteId) {
+      console.warn(
+        `[UrlPanelManager] ?panels=site_quick_view:${id} names no site — expected site_quick_view:<siteId>.`,
+      );
+      return;
+    }
+    dispatch(
+      openOverlay({
+        overlayId: "siteQuickViewWindow",
+        data: { siteId, siteLabel: null },
+      }),
+    );
+  });
+
   // ── Dev-only integrity check ─────────────────────────────────────────────
   // Every registry entry that declares `urlSync.key` must have a hydrator
   // registered above. Drift here is silent: `?panels=<key>` would just

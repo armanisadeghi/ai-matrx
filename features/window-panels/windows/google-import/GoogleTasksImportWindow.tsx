@@ -33,6 +33,10 @@ export default function GoogleTasksImportWindow({
       id="google-tasks-import"
       overlayId="googleTasksImportWindow"
       title="Import from Google Tasks"
+      // V-23 / R35 — see the Contacts panel: the destination project and org
+      // ride in `?panels=google_tasks_import:<projectId>:o-<organizationId>`.
+      urlSyncId={projectId ?? "googleTasksImportWindow"}
+      urlSyncArgs={organizationId ? { o: organizationId } : undefined}
       onClose={onClose}
       width={620}
       height={660}
