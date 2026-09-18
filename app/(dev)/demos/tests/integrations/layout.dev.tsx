@@ -6,7 +6,7 @@ export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Integrations",
   title: "Tests",
   description: "Third-party integrations test harness",
-  letter: "In",
+  letter: "ITG",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

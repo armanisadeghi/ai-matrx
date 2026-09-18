@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/demo", {
   titlePrefix: "Code Components",
   title: "Demo",
   description: "Code generator component library demo",
-  letter: "CC",
+  letter: "CGC",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

@@ -5,7 +5,7 @@ export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Slack",
   title: "Tests",
   description: "Slack broker registration and integration tests",
-  letter: "Sl",
+  letter: "SKB",
 });
 
 export default function SlackBrokersLayout({

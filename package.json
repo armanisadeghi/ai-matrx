@@ -210,6 +210,8 @@
     "check:access-errors:write": "tsx scripts/access-errors/check-access-errors.ts --write",
     "check:access-errors:self-test": "tsx scripts/access-errors/narrowed-read.self-test.ts",
     "check:dead-ends": "tsx scripts/dead-ends/check-dead-ends.ts",
+    "check:favicon-letters": "tsx scripts/check-favicon-letters.ts",
+    "check:favicon-letters:self-test": "tsx scripts/check-favicon-letters.ts --self-test",
     "check:dead-ends:write": "tsx scripts/dead-ends/check-dead-ends.ts --write",
     "check:dead-ends:strict": "tsx scripts/dead-ends/check-dead-ends.ts --strict",
     "check:unwired": "tsx scripts/unwired/check-unwired.ts",

@@ -42,7 +42,7 @@ Three route trees have a **fixed color** in `utils/favicon-utils.ts`. The color 
 | ----------------------------------------------- | --------------------- | --------------- | --------------------------------------------------- |
 | `/demo`, `/demos`, `/component-demo`, `/p/demo` | `#ca8a04` warm yellow | path-derived    | Every demo route MUST pass its own unique `letter`  |
 | `/tests`, `/beta`, `/experimental`              | `#65a30d` lime green  | path-derived    | Every test route MUST pass its own unique `letter`  |
-| `/administration`, `/admin`                     | `#4338ca` deep indigo | path-derived    | Every admin route MUST pass its own unique `letter` |
+| `/administration`, `/admin`                     | `#111827` near-black  | path-derived    | Every admin route MUST pass its own unique `letter` |
 
 **The point:** 20 yellow tabs in one browser window must each show a different 2-char badge so you can tell them apart. The color tells you "this is a demo tab" and the letter tells you _which_ demo.
 
@@ -69,34 +69,69 @@ All primary routes use 2-letter favicon codes. The pattern:
 
 **Current primary route assignments** (copy this table when adding new routes):
 
-| Route                       | Letter | Hex Color | Notes               |
-| --------------------------- | ------ | --------- | ------------------- |
-| `/dashboard`                | `Db`   | `#0ea5e9` | Sky blue            |
-| `/agents`                   | `Ag`   | `#f43f5e` | Rose red            |
-| `/ai/prompts`               | `Pb`   | `#a855f7` | Purple              |
-| `/prompt-apps`              | `Pa`   | `#059669` | Dark emerald        |
-| `/p/research`               | `Rs`   | `#7c3aed` | Violet              |
-| `/chat`                     | `Ch`   | `#2563eb` | Deep blue           |
-| `/notes`                    | `No`   | `#d97706` | Amber               |
-| `/tasks`                    | `Tk`   | `#16a34a` | Green               |
-| `/projects`                 | `Pj`   | `#4f46e5` | Indigo              |
-| `/files`                    | `Fi`   | `#0284c7` | Sky-700             |
-| `/transcription/processor`  | `Tr`   | `#9333ea` | Purple-600          |
-| `/transcription/studio`     | `Ts`   | `#9333ea` | Purple-600          |
-| `/data`                     | `Da`   | `#0891b2` | Cyan-600            |
-| `/demo/voice/voice-manager` | `Vo`   | `#ea580c` | Orange-600          |
-| `/image-editing`            | `Im`   | `#0d9488` | Teal-600            |
-| `/scraper`                  | `Ws`   | `#3730a3` | Indigo-800          |
-| `/sandbox`                  | `Sb`   | `#c2410c` | Orange-700          |
-| `/messages`                 | `Mg`   | `#db2777` | Pink-600            |
-| `/settings`                 | `St`   | `#475569` | Slate-600           |
-| `/ai/cockpit`               | `Ac`   | `#7c3aed` | Violet-700          |
-| `/ai/recipes`               | `Rc`   | `#c026d3` | Fuchsia-600         |
-| `/ai/runs`                  | `Ru`   | `#0e7490` | Cyan-700            |
-| `/workflows`                | `Wf`   | `#6d28d9` | Violet-700          |
-| `/demo/*`                   | `De`   | `#ca8a04` | **System override** |
-| `/tests/*`                  | `Tx`   | `#65a30d` | **System override** |
-| `/administration/*`         | `Ad`   | `#4338ca` | **System override** |
+| Route                       | Letter | Hex Color | Notes                              |
+| --------------------------- | ------ | --------- | ---------------------------------- |
+| `/launchpad`                | `LP`   | `#f97316` | Core-hub orange (`CORE_HUB_COLOR`) |
+| `/dashboard`                | `H`    | `#f97316` | Core-hub orange (`CORE_HUB_COLOR`) |
+| `/agents`                   | `AG`   | `#f43f5e` | Rose red (`AGENTS_COLOR`)          |
+| `/agents/[id]/build`        | `AB`   | `#f43f5e` | Agent Builder — inherits the family |
+| `/agent-apps`               | `AA`   | `#059669` | Dark emerald                       |
+| `/agent-apps/[id]/run`      | `AR`   | `#059669` | Agent Runner                       |
+| `/chat`                     | `C`    | `#2563eb` | Deep blue (`CHAT_COLOR`)           |
+| `/notes`                    | `N`    | `#eab308` | Docs yellow (`DOCS_COLOR`)         |
+| `/documents`                | `DO`   | `#eab308` | Docs yellow (`DOCS_COLOR`)         |
+| `/markdown-studio`          | `MD`   | `#eab308` | Docs yellow (`DOCS_COLOR`)         |
+| `/data`                     | `DA`   | `#0891b2` | Sheets cyan (`SHEETS_COLOR`)       |
+| `/files`                    | `F`    | `#0891b2` | Sheets cyan (`SHEETS_COLOR`)       |
+| `/workbooks`                | `WB`   | `#0891b2` | Sheets cyan (`SHEETS_COLOR`)       |
+| `/workflows`                | `WF`   | `#6d28d9` | Violet (`WORKFLOWS_COLOR`)         |
+| `/marketing`                | `Mk`   | `#15803d` | Green (`MARKETING_COLOR`)          |
+| `/tasks`                    | `T`    | `#16a34a` | Green                              |
+| `/projects`                 | `P`    | `#4f46e5` | Indigo                             |
+| `/transcripts`              | `TR`   | `#9333ea` | Purple-600                         |
+| `/artifacts`                | `AF`   | `#78716c` | Stone-500                          |
+| `/scraper`                  | `SC`   | `#3730a3` | Indigo-800                         |
+| `/sandbox`                  | `SB`   | `#c2410c` | Orange-700                         |
+| `/messages`                 | `MS`   | `#db2777` | Pink-600                           |
+| `/settings`                 | `ST`   | `#475569` | Slate-600                          |
+| `/demo/*`                   | `De`   | `#ca8a04` | **System override**                |
+| `/tests/*`                  | `Tx`   | `#65a30d` | **System override**                |
+| `/administration/*`         | `Ad`   | `#111827` | **System override**                |
+
+The registry (`constants/favicon-route-data.ts`) is the authority — this table is
+the shape of it, not a copy of all ~200 entries. Read the file before adding one.
+
+### The colour taxonomy (Arman, 2026-09-18)
+
+> "Red: Agents. Blue: Chat. Yellow: notes, docs, etc. Light blue: Data, sheets,
+>  etc. Purple: Workflows, etc. Green: Marketing. Need a good color for admin —
+>  maybe black or gray."
+
+The families are **named constants exported from `constants/favicon-route-data.ts`**.
+A route in a family references the constant; it never repeats the hex.
+
+| Family              | Constant           | Hex       | Members today                        |
+| ------------------- | ------------------ | --------- | ------------------------------------ |
+| Agents              | `AGENTS_COLOR`     | `#f43f5e` | `/agents` and its whole subtree       |
+| Chat                | `CHAT_COLOR`       | `#2563eb` | `/chat`                               |
+| Notes / docs        | `DOCS_COLOR`       | `#eab308` | `/notes`, `/documents`, `/markdown-studio` |
+| Data / sheets       | `SHEETS_COLOR`     | `#0891b2` | `/data`, `/files`, `/workbooks`       |
+| Workflows           | `WORKFLOWS_COLOR`  | `#6d28d9` | `/workflows`, `/legacy/workflows`     |
+| Marketing           | `MARKETING_COLOR`  | `#15803d` | `/marketing`                          |
+| Administration      | `ADMIN_COLOR`      | `#111827` | LOCKED for `/administration`, `/admin` |
+| Generic core hub    | `CORE_HUB_COLOR`   | `#f97316` | `/launchpad`, `/dashboard`            |
+
+Two choices worth knowing before you second-guess them:
+
+- **Docs yellow `#eab308` is deliberately not the demo mustard `#ca8a04`.** The
+  demo colour is LOCKED, so a docs tab and a demo tab would otherwise be the same
+  badge; `#eab308` is brighter and more saturated and reads apart at 16px.
+- **The core hub is orange.** Red, blue, yellow, cyan, violet, green and
+  near-black are all spoken for, so orange is the one primary hue left that says
+  "front door, not a feature" — it is not Chat's blue and not Data's cyan.
+
+A route that is not in a family keeps its own curated colour. A family is a
+statement about kinship, not a licence to repaint the registry.
 
 ### Color Selection Rules
 
@@ -262,8 +297,9 @@ See `.claude/skills/route-discovery-system/SKILL.md` for full `RouteIndexPage` u
 ## Checklist for a New Route
 
 ```
-- [ ] favicon entry added to favicon-route-data.ts with a UNIQUE color
-- [ ] letter is 2 chars, not already used by another route
+- [ ] favicon entry added to favicon-route-data.ts with a UNIQUE color (or a family constant)
+- [ ] letter is 2 chars (3 for a deep settings/tuning tab), not already used by another route
+- [ ] `pnpm check:favicon-letters` is green
 - [ ] color confirmed not already in the table above
 - [ ] top-level layout exports createRouteMetadata("/my-route", { title, description })
 - [ ] sub-page layouts use titlePrefix for specific-word-first tab titles
@@ -318,3 +354,5 @@ export const metadata = createCustomFaviconMetadata(
 | 1-char letter on a high-traffic route                   | Use 2-char — more visually distinct at 16px                                       |
 | Same first letter with ambiguous second                 | `Pb` vs `Pa` works; `Pb` vs `Pc` is risky — pick visually distinct shapes         |
 | Thinking the system letter fallback is acceptable       | The path-derived fallback is a safety net only — always pass an explicit `letter` |
+| Guessing that your new letter is free                   | Run `pnpm check:favicon-letters` — it fails when two unrelated routes share a badge |
+| Repeating a family hex instead of its constant          | Import `DOCS_COLOR` / `SHEETS_COLOR` / … from `constants/favicon-route-data.ts`   |

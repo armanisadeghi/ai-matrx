@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/administration", {
   title: "Marketing Engines",
   description:
     "Operate and inspect the platform's marketing coverage engines.",
-  letter: "ME",
+  letter: "AMK",
   canonicalPath: "/administration/marketing",
 });
 

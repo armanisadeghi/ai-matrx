@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/demos/tests", {
   titlePrefix: "Slack Components",
   title: "Tests",
   description: "Slack UI component and block kit tests",
-  letter: "SC",
+  letter: "SKC",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

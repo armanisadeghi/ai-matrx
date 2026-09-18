@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/agents/new", {
   titlePrefix: "Tabs Builder",
   title: "New Agent",
   description: "Comprehensive tabbed agent builder.",
-  letter: "AG",
+  letter: "ANT",
 });
 
 export default function NewAgentTabsBuilderLayout({

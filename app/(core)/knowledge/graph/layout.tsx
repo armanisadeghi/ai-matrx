@@ -5,7 +5,7 @@ export const metadata = createRouteMetadata("/knowledge", {
   title: "Knowledge",
   description:
     "Explore scope and context relationships in the knowledge graph.",
-  letter: "Kg",
+  letter: "KGR",
 });
 
 export default function KnowledgeGraphLayout({

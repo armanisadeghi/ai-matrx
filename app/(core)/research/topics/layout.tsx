@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/research", {
   titlePrefix: "Topics",
   title: "Research",
   description: "Browse and manage your research topics.",
-  letter: "Rt",
+  letter: "RTP",
 });
 
 export default function ResearchTopicsLayout({

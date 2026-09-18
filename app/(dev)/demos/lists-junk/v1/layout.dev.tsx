@@ -8,7 +8,7 @@ export const metadata = createRouteMetadata("/lists", {
   titlePrefix: "v1",
   title: "Lists",
   description: "Legacy v1 lists UI with sidebar navigation",
-  letter: "L1",
+  letter: "LJ1",
 });
 
 async function getSidebarLists(): Promise<UserList[]> {
