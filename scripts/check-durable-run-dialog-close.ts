@@ -27,6 +27,7 @@
 import { readFileSync, readdirSync, statSync, writeFileSync, rmSync, mkdtempSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import { tmpdir } from "node:os";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(__dirname, "..");
 const DEFAULT_ROOTS = ["app", "features", "components"];
@@ -166,12 +167,12 @@ function selfTest(): never {
   if (failures.length) {
     console.error("check:durable-run-dialog-close --self-test FAILED");
     for (const f of failures) console.error(`  - ${f}`);
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log(
     "check:durable-run-dialog-close --self-test PASSED — the guard catches a planted `if (running) return;` and clears the honest handler.",
   );
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 function main(): void {
@@ -206,7 +207,7 @@ function main(): void {
   console.error(
     "\nRemedy: onOpenChange={durableRunDialogOnOpenChange({ running, reset, onOpenChange, runLabel })} — it always closes and tells the user the run is still going on the server.",
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 main();

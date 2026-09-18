@@ -39,6 +39,7 @@ import { readFileSync, readdirSync, statSync, writeFileSync, rmSync, mkdtempSync
 import { join, relative, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import ts from "typescript";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(__dirname, "..");
 const DEFAULT_ROOTS = ["app", "features", "components", "lib"];
@@ -196,12 +197,12 @@ function selfTest(): never {
   if (failures.length) {
     console.error("check:jsx-key-collisions --self-test FAILED");
     for (const failure of failures) console.error(`  - ${failure}`);
-    process.exit(1);
+    exitAfterDrain(1);
   }
   console.log(
     "check:jsx-key-collisions --self-test PASSED — the guard catches a planted sibling key collision and clears namespaced keys.",
   );
-  process.exit(0);
+  exitAfterDrain(0);
 }
 
 function main(): void {
@@ -237,7 +238,7 @@ function main(): void {
   console.error(
     "\nRemedy: namespace each key with the component it belongs to, e.g. key={`triage-${id}`} / key={`timeline-${id}`}.",
   );
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 main();

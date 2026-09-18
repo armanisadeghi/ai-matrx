@@ -144,6 +144,7 @@ import {
   loadBranchRef,
   TargetRefusal,
 } from "./lib/migration-target";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const APPLICATION_NAME = "matrx-frontend check:branch-schema-drift";
@@ -984,12 +985,12 @@ async function main(): Promise<number> {
 }
 
 main()
-  .then((code) => process.exit(code))
+  .then((code) => exitAfterDrain(code))
   .catch((err: unknown) => {
     if (err instanceof TargetRefusal) {
       console.error(`${C.red}[FAIL]${C.reset} ${err.message}`);
     } else {
       console.error(`${C.red}[FAIL]${C.reset} ${err instanceof Error ? err.message : String(err)}`);
     }
-    process.exit(1);
+    exitAfterDrain(1);
   });

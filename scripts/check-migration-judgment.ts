@@ -46,6 +46,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { basename, dirname, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const CORPUS_DIR = resolve(ROOT, "migrations", "judgment-corpus");
@@ -370,4 +371,4 @@ function main(): number {
   return 0;
 }
 
-process.exit(main());
+exitAfterDrain(main());

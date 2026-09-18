@@ -31,6 +31,7 @@
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 // pnpm runs every script from the repo root; a scripts-relative path would break
 // the moment this is invoked through a different runner.
@@ -120,7 +121,7 @@ function findWrites(extraFiles: { path: string; source: string }[] = []): Write[
 
 function fail(message: string): never {
   console.error(`\n${message}\n`);
-  process.exit(1);
+  exitAfterDrain(1);
 }
 
 async function main(): Promise<void> {
@@ -277,5 +278,5 @@ async function main(): Promise<void> {
 
 main().catch((error: unknown) => {
   console.error(`\nUNEXPECTED FAILURE — this check is UNMEASURED, which is a failure:\n${String(error)}\n`);
-  process.exit(1);
+  exitAfterDrain(1);
 });
