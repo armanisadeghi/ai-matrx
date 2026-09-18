@@ -52,6 +52,24 @@
  * spelling the refusal puts you under the rule, because only a spelled refusal
  * can be spelled too early.
  *
+ * THE SECOND RULE — THE FOURTH STATE IS NOT THE REFUSAL (R37, 2026-09-18)
+ * ----------------------------------------------------------------------
+ * There are FOUR states, not three: the read can FAIL. On a cold load whose
+ * Supabase calls failed, `current_personal_org_id()` answered `TypeError:
+ * Failed to fetch` and the import control went straight from "Checking which
+ * organization you are working in…" to "Select an organization before
+ * importing Google Tasks.", disabled, and stayed there for 24 seconds — to a
+ * person who is a member of THIRTEEN organizations. An abort, a page that
+ * never goes idle, a null resolve and a failed RPC all landed in the terminal
+ * `required` state, because that state was the only terminal one there was.
+ *
+ * So: a module that ENUMERATES the states — it names `"resolving"` AND
+ * `"required"` as literals against `organizationState` — must name
+ * `"unavailable"` too. Collapsing the fourth into the refusal is the defect;
+ * handling it (a switch with four arms, an `if (state === "unavailable")`) is
+ * the fix. A module that only tests `!== "ready"` enumerates nothing and is
+ * untouched by this rule, because non-ready already covers the fourth state.
+ *
  * Run:  pnpm check:org-three-states
  *       pnpm check:org-three-states --self-test   (proves it can FAIL)
  * Exit 1 on any unallowlisted violation; exit 2 on unexpected errors.
@@ -210,6 +228,23 @@ export function readsThreeStates(rawSource: string): boolean {
   return THREE_STATE_SIGNALS.some((needle) => source.includes(needle));
 }
 
+/**
+ * Does this module ENUMERATE the organization states? It does when it reads the
+ * discriminant AND spells at least the two terminal-looking arms as literals —
+ * the shape of a switch or a ternary chain over `organizationState`. A single
+ * `!== "ready"` test is not an enumeration and never trips the rule.
+ */
+export function enumeratesStates(rawSource: string): boolean {
+  const source = stripComments(rawSource);
+  if (!/\bOrganizationState\b|\borganizationState\b/.test(source)) return false;
+  return /["']resolving["']/.test(source) && /["']required["']/.test(source);
+}
+
+/** Does it name the FOURTH state? */
+export function handlesUnavailable(rawSource: string): boolean {
+  return /["']unavailable["']/.test(stripComments(rawSource));
+}
+
 export interface Violation {
   file: string;
   why: string;
@@ -231,6 +266,20 @@ export function scan(
       try {
         raw = readFileSync(full, "utf8");
       } catch {
+        continue;
+      }
+      // RULE 2 first: an exhaustive-looking reading that forgets the fourth
+      // state is a hard failure, never census debt — the census is the
+      // pre-existing two-state population, and nothing in it enumerates.
+      if (enumeratesStates(raw) && !handlesUnavailable(raw)) {
+        violations.push({
+          file: rel,
+          why:
+            'enumerates the organization states ("resolving" / "required") but never names ' +
+            '"unavailable" — a read that FAILED is collapsed into the refusal, so this ' +
+            "surface tells a person to select an organization nobody ever looked for. " +
+            "Handle the fourth state (R37).",
+        });
         continue;
       }
       if (!spellsARefusal(raw)) continue;
@@ -355,6 +404,60 @@ export function Planted() { return null; }
   }
   check("G. a NEW violation is not forgiven    ", newOneFlagged, true);
   check("H. a STALE census entry is a failure  ", staleFlagged, true);
+
+  // RULE 2 — the fourth state. A surface that switches on the discriminant and
+  // stops at three arms collapses a FAILED read into the refusal.
+  const collapsed = `"use client";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+export function Planted() {
+  const { organizationState } = useOrganizationRequired();
+  if (organizationState === "resolving") return <Spinner />;
+  if (organizationState === "required") return <Refusal />;
+  return <Body />;
+}
+`;
+  const exhaustive = collapsed.replace(
+    'if (organizationState === "required") return <Refusal />;',
+    'if (organizationState === "unavailable") return <CouldNotCheck />;\n  if (organizationState === "required") return <Refusal />;',
+  );
+  const nonReadyOnly = `"use client";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+export function Planted() {
+  const { organizationState } = useOrganizationRequired();
+  if (organizationState !== "ready") return <OrganizationContextNotice state={organizationState} />;
+  return <Body />;
+}
+`;
+  check("I. a collapsed fourth state is seen   ", enumeratesStates(collapsed) && !handlesUnavailable(collapsed), true);
+  check("J. an exhaustive reading is cleared   ", enumeratesStates(exhaustive) && handlesUnavailable(exhaustive), true);
+  check("K. a bare !== \"ready\" test is untouched", enumeratesStates(nonReadyOnly), false);
+
+  let collapsedFlagged = false;
+  let exhaustiveFlagged = true;
+  let collapsedForgiven = true;
+  try {
+    writeFileSync(PLANTED, collapsed, "utf8");
+    collapsedFlagged = scan({ useCensus: false }).some(
+      (v) => v.file.includes("__self_test_planted__") && v.why.includes("unavailable"),
+    );
+    // The census must NOT forgive rule 2 — it is a new rule with no debt.
+    collapsedForgiven = !scan({
+      census: new Set([relative(ROOT, PLANTED)]),
+    }).some((v) => v.file.includes("__self_test_planted__"));
+    writeFileSync(PLANTED, exhaustive, "utf8");
+    exhaustiveFlagged = scan({ useCensus: false }).some((v) =>
+      v.file.includes("__self_test_planted__"),
+    );
+  } finally {
+    try {
+      unlinkSync(PLANTED);
+    } catch {
+      /* already gone */
+    }
+  }
+  check("L. planted collapsed module flagged   ", collapsedFlagged, true);
+  check("M. exhaustive module cleared          ", exhaustiveFlagged, false);
+  check("N. the census does not forgive rule 2 ", collapsedForgiven, false);
 
   if (failed > 0) {
     console.error(`SELF-TEST FAILED: ${failed} expectation(s) did not hold.`);

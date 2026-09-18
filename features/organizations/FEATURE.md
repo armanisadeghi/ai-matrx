@@ -112,6 +112,17 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 - 🚨 **BOOT ENDS WITH AN EXPLICIT SELECTION WHENEVER ONE CAN BE NAMED HONESTLY.** The canonical rung order is stored browser selection → stated default → the user's own personal membership → sole membership → unresolved. Two independent layers apply it: `resolveActiveOrgContext` in `appContextPolicy.remote.fetch` is authoritative, and `useActiveOrganizationAutoSelect` reconciles the already-loaded Redux memberships after a short grace period. The second layer **screams to the console when it fires**, because reaching it means the first one failed. It is mounted through `useActiveOrganizationPicker`; never inline a third copy. Request transports still fail closed and never substitute the personal org per request.
 - **Compute requests fail closed without an organization.** `appContextSlice` holds `personal_organization_id` only as the identity of the personal workspace; `callApi` never treats it as an implicit request organization. The transport requires `selectOrganizationId` or an entity-local `scopeOverrides.organization_id`, sends the same value in the body and `X-Organization-Id`, and rejects mismatches before networking. `selectEffectiveOrganizationId` (`organization_id ?? personal_organization_id`) is **DELETED** (2026-09-17, after every surface was converted); a converted surface either refuses the write with the remedy or shows an honest "no organization is selected" state. The primitives are strict too: `getActiveOrgId()` reads the selection only, and `ensureOrgId()` throws `OrganizationContextError` instead of reaching for the personal-org RPC. `awaitEffectiveOrganizationId` (`features/organizations/awaitWorkspace.ts`) waits for the EXPLICIT selection only — it never settles on the personal workspace — though its exported name still says "effective" until its two out-of-feature consumers are renamed with it. `orgBootstrapResolved`, `selectHasExplicitOrganization`, and `selectShouldPromptForOrganization` own the picker/reminder state. The **default org is the single durable source of truth** for cross-session restore: stored in user preferences (`organization.defaultOrganizationId`, synced to `user_preferences`) and accessed via `features/organizations/hooks/useDefaultOrganization.ts`. There is **no `localStorage` last-org mechanism.** The sanctioned switcher lives in `lib/redux/thunks/activeOrgBootstrap.ts`: `chooseActiveOrganization` is the Surface-A switcher write; `bootstrapActiveOrganization()` is now only a thin back-compat imperative wrapper over the shared resolver (new code should not call it). UI: the in-menu switcher (`UserMenuOrgSection.tsx`) is always available, with a "Set as default" switch + Default-star badges; `HeaderChooseOrgButton.tsx` renders a "Choose org" control in the shell header's own flow while none is chosen (popover on desktop, Drawer on mobile; never floats over route chrome); the avatar (`UserMenuTrigger`) rings red while `selectShouldPromptForOrganization`. Canonical reusable pieces: `features/organizations/components/{OrganizationPickerPanel,DefaultOrgSwitch}.tsx`.
 - **Active org HYDRATION is owned by the unified sync engine** (`lib/sync`), not an island. `appContextPolicy` (defined in `appContextSlice.ts`, registered in `lib/sync/registry.ts`) is a `warm-cache` policy that persists the org identity fields (`organization_id` / `organization_name` / `personal_organization_id`) to IndexedDB→localStorage keyed by identity. On a hard refresh `SyncBootstrap` rehydrates it in React's **post-hydration layout phase**: after server/client HTML matching has committed, but before application passive effects and browser paint. Dispatching persisted state during the first client render is forbidden because it can change markup and trigger React #418. Theme is the sole pre-hydration path and uses `SyncBootScript` for DOM-only mutation. On cold-boot (and after `staleAfter`) the policy's `remote.fetch` waits for the shared page-idle gate, then runs the pure resolver `lib/organizations/resolveActiveOrgContext.ts` (stored selection → default → own personal membership → sole membership → unresolved); org switches broadcast across tabs. **A cache HIT is not automatically an answer:** the policy declares `remote.cacheSatisfies` — sufficiency is the ACTIVE org (`organization_id`) and nothing less, because "personal org only" is the exact shape every org-less boot writes, and accepting it suppressed the one fetch that reads the default-org preference. A hollow cached record may rehydrate its available identity fields, but it remains unresolved and cannot activate any "no org" cue; the authoritative post-idle result alone may declare a genuine no-active-org outcome. The reminder itself is mounted inside the existing deferred-singleton core, keeping its animation and picker graph out of initial page loading. **And the fetch only resolves an org for an `auth` identity, so the sync engine must SEE the sign-in:** a page rendered anonymous boots the engine as `guest:*` and `usePublicAuthSync` lands the user ~100ms later, so `makeStore` subscribes to `onIdentityChange` and re-runs the identity-scoped half of boot (`resyncForIdentity` — localStorage + IDB rehydrate + cold-boot fetches, never the channel/listeners/timers) for the new identity. The old `ActiveOrgBootstrap` island + per-launch multi-round-trip bootstrap are **retired**. The durable cross-device "which org" truth remains the **default-org preference** (owned by `userPreferences`), not a column on this slice — switching orgs durably = set your default.
+- 🚨 **FOUR ORGANIZATION STATES, ONE READING — and a FAILED read is never the refusal (R37, 2026-09-18).** `organization_id === null` answers nothing on its own. `useOrganizationRequired()` returns the discriminant every surface reads; nobody spells these states themselves.
+
+| `organizationState` | When | What the surface says | Control |
+|---|---|---|---|
+| `resolving` | boot has not answered yet | "Checking which organization you are working in…" | disabled, checking title |
+| `ready` | an organization is selected | its own content | enabled, no title |
+| `required` | the memberships WERE read and none is selected | "Select an organization…", with the picker | disabled, "Select an organization before &lt;act&gt;." |
+| `unavailable` | the read FAILED — aborted, thrown, or a degraded `current_personal_org_id()` | "We could not check your organization…", with **Try again** and no picker | disabled, "We could not check which organization you are working in. Try again." |
+
+  The fourth state is recorded on the slice as `orgBootstrapFailure` (a short technical reason; `selectOrgBootstrapFailure`), written only by the boot paths — `appContextPolicy.remote.fetch` and `bootstrapActiveOrganization` — and cleared by any answer, a selection included. `selectShouldPromptForOrganization` is FALSE while it is set, so the red avatar ring and the header reminder stay quiet too: "select an organization" is a claim about memberships, and it may only be made once they have been READ. `retry()` (→ `retryActiveOrgBootstrap`) puts the surfaces back into `resolving` and re-runs the same resolver boot runs. For an ACTION, `awaitEffectiveOrganizationId` / `awaitOrganizationForRecordRead` answer `{status: "unavailable", cause: "unreadable" | "no-selection"}` with the matching sentence. Guard: `pnpm check:org-three-states` fails a module that enumerates `"resolving"` and `"required"` without naming `"unavailable"`.
+
 - **Canonical org-id resolution for WRITES — `ensureOrgId(orgId)` (`lib/organizations/personalOrg.ts`).** Every org-scoped insert/update/upsert MUST stamp `organization_id` via `await ensureOrgId(orgId?)` — never write a null/optional org to a NOT NULL column, and never re-read the org from an ad-hoc selector at the write site. Resolution order: (1) the explicit `orgId` when a callsite already knows the org; (2) the user's GLOBAL active org from Redux via `getActiveOrgId()` (`lib/organizations/activeOrg.ts`) — so every write rides along the org the user is currently working in; (3) a **LOUD** last-resort fallback to the personal-org RPC (`resolvePersonalOrgId`). Reaching step 3 means the sync engine failed to keep the org present before a write — a defect — so `ensureOrgId` emits `console.error` + `captureError({ source: "org-resolution" })` into the systemwide Error Inspector before falling back (defensive, never silent). **The fallback also REPAIRS the hole** — it dispatches `setPersonalOrganization` with the resolved id, so the scream fires once per session rather than once per write; it never writes `organization_id`, so a later rehydrate or org switch still wins. A recovery that does not repair fires forever (2026-08-17). Server-side: use `ensureOrgIdServer(client, orgId)` (route handlers / Server Actions — never the module cache, which would leak across requests) or `resolveOrgIdForUserServer(client, userId, orgId)` for admin/secret-key writes on behalf of an arbitrary user. Deliberate personal-org-pinned exceptions (do NOT switch to active): `assignHomelessNotesToPersonalOrg` (re-homes to MY org by contract) and `projectService.createProject` (legacy personal-only path; org-scoped projects use `features/projects/service.ts`).
 
 ---
@@ -285,6 +296,50 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 ---
 
 ## Change log
+
+- `2026-09-18` — **F-102 (V-23, NEW-2 / R37): AN ORGANIZATION READ THAT FAILED IS
+  THE FOURTH STATE, AND IT IS NEVER THE REFUSAL.** On a cold load whose Supabase
+  calls failed, `current_personal_org_id()` answered `TypeError: Failed to fetch`
+  at +4.4s and the Tasks import control went straight from *"Checking which
+  organization you are working in…"* to *"Select an organization before importing
+  Google Tasks."*, disabled, for the remaining 24 seconds — to a person who is a
+  member of THIRTEEN organizations. Nobody read them. Every exit of
+  `appContextPolicy.remote.fetch` answered `orgBootstrapResolved: true` with no
+  organization, so an abort, a page that never went idle, a null resolve and a
+  thrown RPC all landed in the one terminal state there was. Now they do not.
+  **`appContextSlice` carries `orgBootstrapFailure`** (`setOrgBootstrapFailure`,
+  `selectOrgBootstrapFailure`), set by the boot paths when the read could not be
+  made and cleared by any answer; `selectShouldPromptForOrganization` returns
+  FALSE while it is set, so the avatar ring, the header reminder and every
+  surface derived from it stay quiet. **`resolveActiveOrgContext` reports a
+  DEGRADED resolve** (`unreadableReason`): reaching the last rung only because
+  the personal-org RPC failed is not an answer about thirteen memberships, and
+  its old `null` return for "no orgs and no personal org" is now distinguished
+  the same way. **`useOrganizationRequired` returns
+  `organizationState: "resolving" | "required" | "ready" | "unavailable"`** plus
+  `unavailableReason` and `retry()` (→ the new `retryActiveOrgBootstrap`, which
+  returns the surfaces to `resolving` and re-runs the same resolver boot runs);
+  the legacy `resolving` boolean stays TRUE through `unavailable` on purpose, so
+  a surface still reading the old pair keeps the checking posture instead of
+  falling through to a refusal. **`useOrganizationGatedControl`** gives the
+  fourth state its own honest title and keeps the control disabled;
+  **`OrganizationContextNotice`** renders "We could not check your organization"
+  with **Try again** and deliberately NO picker — a picker is the remedy for a
+  choice nobody made, not for a read nobody completed — so all ten Google
+  surfaces F-89 converted and `TopicalMapWindow` (F-100) inherit it with no edit.
+  `awaitEffectiveOrganizationId` / `awaitOrganizationForRecordRead` now answer
+  `cause: "unreadable" | "no-selection"` so a write path can say the same
+  sentence. Guard extended, proven failing-then-passing:
+  `pnpm check:org-three-states` gains a second rule — a module that enumerates
+  `"resolving"` and `"required"` against `organizationState` without naming
+  `"unavailable"` is a HARD failure the census never forgives (self-test cases
+  I–N; a bare `!== "ready"` test is untouched, because non-ready already covers
+  the fourth state). The census is unchanged at 113. Proof:
+  `features/organizations/__tests__/the-fourth-state-is-not-the-refusal.test.tsx`
+  walks the real policy fetch, its own `deserialize`, the real reducer,
+  selectors, hook, control gate and notice — red on the old bytes
+  (`Expected "unavailable", Received "required"`), green on these. The two admin
+  scheduling pages that read the old booleans render the new notice explicitly.
 
 - `2026-09-18` — **F-89 (V-22, NEW-1): THERE ARE THREE ORGANIZATION STATES, AND
   THEY ARE ONE READING NOW.** `useOrganizationRequired` had carried all three

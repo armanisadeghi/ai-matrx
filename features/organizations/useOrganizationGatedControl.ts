@@ -29,9 +29,19 @@
 //           onClick={() => { if (!org.organizationId) return;
 //                            open({ organizationId: org.organizationId }); }} />
 //
-//   resolving → disabled, "Checking which organization you are working in…"
-//   required  → disabled, "Select an organization before <act>."
-//   ready     → enabled, no title
+//   resolving   → disabled, "Checking which organization you are working in…"
+//   required    → disabled, "Select an organization before <act>."
+//   unavailable → disabled, "We could not check which organization you are
+//                 working in. Try again." — the CHECKING posture, never the
+//                 refusal (R37, 2026-09-18): the read failed, so nothing is
+//                 known about this person's memberships and telling them to
+//                 pick one is a claim we never verified. That is exactly what
+//                 this very control did for 24 seconds to a member of thirteen
+//                 organizations after one `TypeError: Failed to fetch`
+//                 (V-23 NEW-2). The Retry itself lives on
+//                 `OrganizationContextNotice`; a control shows the honest title
+//                 and stays disabled.
+//   ready       → enabled, no title
 //
 // The refusal sentence is built by the ONE builder every other refusal in the
 // repo uses (`organizationRefusalMessage` is its toast twin), so the wording
@@ -61,27 +71,45 @@ export function organizationControlRefusal(act: string): string {
   return `Select an organization before ${act}.`;
 }
 
+/**
+ * What a control says when the organization could NOT BE READ. It never names
+ * the act, because the act is not the problem and nothing the person does to
+ * the act will help — the read is what failed.
+ */
+export const ORGANIZATION_UNAVAILABLE_TITLE_CONTROL =
+  "We could not check which organization you are working in. Try again.";
+
 export interface OrganizationGatedControl {
   /** The selected organization, or null while resolving / with none. */
   organizationId: string | null;
   organizationState: OrganizationState;
-  /** True in BOTH non-ready states — a control never acts on a guess. */
+  /** True in EVERY non-ready state — a control never acts on a guess. */
   disabled: boolean;
+  /** Re-run the organization read. The `unavailable` state's only remedy. */
+  retry: () => void;
   /** The `title` to render: the checking beat, the refusal, or nothing. */
   title: string | undefined;
 }
 
 export function useOrganizationGatedControl(act: string): OrganizationGatedControl {
-  const { organizationId, organizationState } = useOrganizationRequired();
+  const { organizationId, organizationState, retry } = useOrganizationRequired();
+  const title = (): string | undefined => {
+    switch (organizationState) {
+      case "ready":
+        return undefined;
+      case "resolving":
+        return ORGANIZATION_RESOLVING_TITLE;
+      case "unavailable":
+        return ORGANIZATION_UNAVAILABLE_TITLE_CONTROL;
+      case "required":
+        return organizationControlRefusal(act);
+    }
+  };
   return {
     organizationId,
     organizationState,
     disabled: organizationState !== "ready",
-    title:
-      organizationState === "ready"
-        ? undefined
-        : organizationState === "resolving"
-          ? ORGANIZATION_RESOLVING_TITLE
-          : organizationControlRefusal(act),
+    title: title(),
+    retry,
   };
 }

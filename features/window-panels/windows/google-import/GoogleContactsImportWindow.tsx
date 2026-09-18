@@ -36,6 +36,11 @@ export default function GoogleContactsImportWindow({
       id="google-contacts-import"
       overlayId="googleContactsImportWindow"
       title="Import from Google Contacts"
+      // V-23 / R35 — the panel's subject rides in the address, so the link in
+      // the URL reopens the SAME import, not a blank one:
+      // `?panels=google_contacts_import:<externalId>:o-<organizationId>`.
+      urlSyncId={initialExternalId ?? "googleContactsImportWindow"}
+      urlSyncArgs={organizationId ? { o: organizationId } : undefined}
       onClose={onClose}
       width={640}
       height={680}
