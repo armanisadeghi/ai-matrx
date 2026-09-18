@@ -243,7 +243,7 @@ export function TopicTable({ mapId, siteId, host, readOnly, knobs }: TopicTableP
     onToggleExpand: (slug) => dispatch(toggleExpanded({ mapId, slug })),
   };
   const allColumns = buildMapTableColumns(columnContext);
-  const columns: MatrxColumnDef<MapTableRow>[] = visibleColumns.map((id) => allColumns[id]);
+  const columns: MatrxColumnDef<MapTableRow>[] = TABLE_COLUMN_IDS.map((id) => allColumns[id]);
   // The chosen columns lead, in their order; the hidden ones follow so the
   // package's Columns dialog can offer them back.
   const columnOrder: string[] = [
