@@ -867,8 +867,11 @@ export async function renameFolder(
   const organizationId = requireOrganizationContext(folder.organizationId);
   const userId = requireUserId();
 
-  // Update the note_folders record
-  await supabase
+  // Update the note_folders record FIRST and stop if it is refused: a rename
+  // onto a name this organization already holds violates the name key, and
+  // until 2026-09-18 that error was never read — the folder kept its old name
+  // while every note below was rewritten to the new one.
+  const { error: folderError } = await supabase
     .schema("workbench")
     .from("note_folders")
     .update({ name: newName, path: newName })
@@ -876,6 +879,10 @@ export async function renameFolder(
     .eq("id", folder.id)
     .eq("organization_id", organizationId)
     .is("deleted_at", null);
+  if (folderError) {
+    console.error("Error renaming folder:", folderError);
+    throw folderError;
+  }
 
   // Update the denormalized folder_name on all notes
   const { error } = await supabase

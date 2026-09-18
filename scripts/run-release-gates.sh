@@ -587,6 +587,8 @@ if $STRICT; then
 else
     # Non-strict variants still print the full loud report; they exit 0.
     declare -a GATES=(
+        "Hidden failure announcements (an error only a screen reader can perceive is a dead button)|pnpm check:hidden-alerts"
+        "Notes: a failed + is announced (the shared draft control and the real surfaces)|npx jest features/notes/hooks/useDraftInitializationControl.test.tsx features/notes/redux/draftInitialization.control.integration.test.tsx --silent"
         # EVERY FILE PARSES — the cheapest gate here (~4s over 14,716 files)
         # and the only one whose finding is not an opinion. On 2026-09-07 the
         # census-H1 codemod injected its new `@ai-matrx/kit/format` import

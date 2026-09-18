@@ -21,11 +21,20 @@ const DRAFT_FAILURE_TOAST_ID = "notes-new-note-failed";
  * toast it does not own, so the boundary raises it. Surfaces may still render
  * `error` inline as well; none may be the only thing that does.
  *
- * The one exception is "no organization is selected": the surface renders the
- * picker for it (`OrganizationRequiredNotice`), which is louder than a toast
- * and carries the remedy, so a second announcement would only be noise.
+ * The one exception is "no organization is selected" ON A SURFACE THAT DECLARES
+ * it renders the picker (`rendersOrganizationNotice`): the picker is louder than
+ * a toast and carries the remedy. The exception is opt-in, never the default.
  */
-export function useDraftInitializationControl() {
+export function useDraftInitializationControl(
+  options: {
+    /** The surface renders `OrganizationRequiredNotice` when
+     *  `organizationRequired` is true. ONLY then is the toast withheld for that
+     *  case — a surface that does not say so gets the toast, so a fifth consumer
+     *  is loud by default instead of silent by omission. */
+    rendersOrganizationNotice?: boolean;
+  } = {},
+) {
+  const rendersOrganizationNotice = options.rendersOrganizationNotice === true;
   const inFlight = useRef(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,6 +46,7 @@ export function useDraftInitializationControl() {
     if (inFlight.current) {
       const busy = new Error("A new note is already being started. Please wait.");
       setError(busy.message);
+      toastErrorAlreadyCaptured(busy.message, { id: DRAFT_FAILURE_TOAST_ID, duration: 4_000 });
       throw busy;
     }
     inFlight.current = true;
@@ -51,7 +61,7 @@ export function useDraftInitializationControl() {
       const needsOrganization = isOrganizationRequiredError(cause);
       setError(message);
       setOrganizationRequired(needsOrganization);
-      if (!needsOrganization) {
+      if (!(needsOrganization && rendersOrganizationNotice)) {
         // A rejected thunk arrives as RTK's serialized plain object and the
         // store middleware has ALREADY filed it; a real Error came from outside
         // a thunk and this toast is its only capture.
@@ -63,7 +73,7 @@ export function useDraftInitializationControl() {
       inFlight.current = false;
       setPending(false);
     }
-  }, []);
+  }, [rendersOrganizationNotice]);
   /** Clear a shown failure — e.g. once the organization it asked for exists. */
   const reset = useCallback(() => {
     setError(null);

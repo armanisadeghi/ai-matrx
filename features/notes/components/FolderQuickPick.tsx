@@ -51,7 +51,7 @@ export function FolderQuickPick({
   const resolveOrganization = useNewNoteOrganization();
   const activeOrgId = useAppSelector(selectOrganizationId);
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
-  const draftControl = useDraftInitializationControl();
+  const draftControl = useDraftInitializationControl({ rendersOrganizationNotice: true });
   useEffect(() => {
     if (draftControl.organizationRequired && activeOrgId) draftControl.reset();
   }, [activeOrgId, draftControl]);

@@ -58,6 +58,12 @@ export const NOTE_FOLDER_CROSS_ORG_CODE = "notes_folder_cross_org_legacy_key";
 export const NOTE_FOLDER_CROSS_ORG_MESSAGE =
   "You already have a folder with this name in another organization, and a folder name cannot repeat across your organizations yet. Switch to that organization, or choose a different folder name.";
 
+export const NOTE_FOLDER_EXISTS_MESSAGE =
+  "A folder with this name already exists in this organization. Choose a different name.";
+
+export const NOTE_FOLDER_TOMBSTONE_MESSAGE =
+  "A deleted folder is still holding this name in this organization, so it cannot be reused yet. Choose a different name. This has been reported.";
+
 const NOTE_CREATE_FALLBACK_MESSAGE = "The new note could not be started. Nothing was created.";
 
 function rawMessage(error: unknown): string | null {
@@ -73,7 +79,15 @@ function rawMessage(error: unknown): string | null {
 export function noteCreateErrorMessage(error: unknown): string {
   const message = rawMessage(error);
   if (!message) return NOTE_CREATE_FALLBACK_MESSAGE;
-  if (message.includes(NOTE_FOLDER_CROSS_ORG_CODE)) return NOTE_FOLDER_CROSS_ORG_MESSAGE;
+  // The raw constraint name reaches here when the database's own cross-org
+  // probe could not see the colliding row (it lives in an organization this
+  // person can no longer read) and re-raised the bare 23505.
+  if (
+    message.includes(NOTE_FOLDER_CROSS_ORG_CODE) ||
+    message.includes("note_folders_created_by_name_unique")
+  ) return NOTE_FOLDER_CROSS_ORG_MESSAGE;
+  if (message.includes("note_folders_organization_created_by_name_unique")) return NOTE_FOLDER_EXISTS_MESSAGE;
+  if (message.includes("notes_folder_not_visible")) return NOTE_FOLDER_TOMBSTONE_MESSAGE;
   return message;
 }
 

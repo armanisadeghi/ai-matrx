@@ -17,10 +17,10 @@ import { NOTE_FOLDER_CROSS_ORG_MESSAGE } from "../utils/writeErrors";
 type Control = ReturnType<typeof useDraftInitializationControl>;
 
 /** A surface that renders NOTHING for the error — the 2026-09-18 tab bar. */
-function mountSilentSurface() {
+function mountSilentSurface(options?: Parameters<typeof useDraftInitializationControl>[0]) {
   let control: Control | null = null;
   function SilentSurface() {
-    control = useDraftInitializationControl();
+    control = useDraftInitializationControl(options);
     return null;
   }
   const host = document.createElement("div");
@@ -59,14 +59,34 @@ describe("useDraftInitializationControl — a failed + is never silent", () => {
     surface.unmount();
   });
 
-  it("leaves 'no organization selected' to the picker the surface renders, without a second announcement", async () => {
-    const surface = mountSilentSurface();
-    await runAndSwallow(surface.get(), async () => {
-      throw new OrganizationContextError("organization_context_required", "Choose the organization this note belongs to.");
-    });
+  const organizationRequired = () =>
+    new OrganizationContextError("organization_context_required", "Choose the organization this note belongs to.");
+
+  it("withholds the toast for 'no organization selected' ONLY on a surface that declares it renders the picker", async () => {
+    const surface = mountSilentSurface({ rendersOrganizationNotice: true });
+    await runAndSwallow(surface.get(), async () => { throw organizationRequired(); });
     expect(surface.get().organizationRequired).toBe(true);
     expect(toastError).not.toHaveBeenCalled();
     expect(toastErrorAlreadyCaptured).not.toHaveBeenCalled();
+    surface.unmount();
+  });
+
+  it("is loud by default: a consumer that never declared a picker still announces 'no organization selected'", async () => {
+    const surface = mountSilentSurface();
+    await runAndSwallow(surface.get(), async () => { throw organizationRequired(); });
+    expect(surface.get().organizationRequired).toBe(true);
+    expect(toastError).toHaveBeenCalledTimes(1);
+    surface.unmount();
+  });
+
+  it("announces a second press while the first is still starting", async () => {
+    const surface = mountSilentSurface();
+    let release: () => void = () => undefined;
+    const first = surface.get().run(() => new Promise<void>((resolve) => { release = resolve; }));
+    await act(async () => { await surface.get().run(async () => undefined).catch(() => undefined); });
+    expect(toastErrorAlreadyCaptured).toHaveBeenCalledTimes(1);
+    expect(toastErrorAlreadyCaptured.mock.calls[0][0]).toMatch(/already being started/);
+    await act(async () => { release(); await first; });
     surface.unmount();
   });
 

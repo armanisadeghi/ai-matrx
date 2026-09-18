@@ -44,7 +44,7 @@ interface NoteTabBarProps {
 
 export function NoteTabBar({ instanceId, syncUrl = true }: NoteTabBarProps) {
   const dispatch = useAppDispatch();
-  const draftControl = useDraftInitializationControl();
+  const draftControl = useDraftInitializationControl({ rendersOrganizationNotice: true });
 
   const openTabs = useAppSelector(selectInstanceTabs(instanceId));
   const activeTabId = useAppSelector(selectInstanceActiveTab(instanceId));

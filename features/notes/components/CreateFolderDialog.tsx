@@ -1,5 +1,6 @@
 "use client";
 
+import { noteCreateErrorMessage } from "../utils/writeErrors";
 import React, { useCallback, useState } from "react";
 import { Loader2 } from "lucide-react";
 import {
@@ -96,9 +97,9 @@ export function CreateFolderDialog({
       onOpenChange(false);
     } catch (cause) {
       if (isOrganizationSelectionCancelled(cause)) return;
-      setError(
-        cause instanceof Error ? cause.message : "Could not create the folder",
-      );
+      // A rejected thunk arrives as RTK's serialized plain object, never an
+      // Error — `instanceof Error` here printed a dead-end generic for it.
+      setError(noteCreateErrorMessage(cause));
     } finally {
       setBusy(false);
     }

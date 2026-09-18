@@ -300,7 +300,7 @@ export function NoteSidebar({ instanceId }: NoteSidebarProps) {
   const [createFolderIntent, setCreateFolderIntent] = useState<
     { kind: "new-note" } | { kind: "move-note"; noteId: string } | null
   >(null);
-  const draftControl = useDraftInitializationControl();
+  const draftControl = useDraftInitializationControl({ rendersOrganizationNotice: true });
   // The "choose an organization" notice answers itself: once one is selected
   // (from the notice's own picker or the header) the notice goes away.
   useEffect(() => {
