@@ -364,8 +364,8 @@ function OutlineBody({ mapId, siteId, readOnly, knobs }: OutlineBodyProps) {
               right-click fell through to the page underneath. A DOM element in
               between takes the handlers and the event bubbles up from the row,
               the same wrapper `features/scheduling/.../ScheduleList.tsx` uses.
-              `display: contents` keeps the flex chain intact. */}
-          <div className="contents">
+              A real flex column keeps the scroll chain bounded (the static guard reads it; `display: contents` it cannot). */}
+          <div className="flex min-h-0 flex-1 flex-col">
             <TopicTree
               rows={rows}
               ariaLabel="Topical map outline"

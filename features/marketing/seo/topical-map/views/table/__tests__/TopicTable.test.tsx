@@ -16,6 +16,7 @@
 //     "status sort flips to flat" case fails;
 //   · `edit` spread unconditionally → the readOnly case fails.
 
+import { TABLE_COLUMN_IDS } from "../tableRows";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { Provider } from "react-redux";
@@ -209,7 +210,12 @@ describe("TopicTable", () => {
   it("defaults the column set to the knob and persists the chooser through setTableColumns", () => {
     const store = makeStore();
     const props = render(store);
-    expect(props.columns.map((column) => column.id)).toEqual(KNOBS.table_default_columns);
+    // Every column definition reaches the table (the chooser can only offer a
+    // column it was given — the browser walk of 2026-09-18 found the hidden ones
+    // unreachable when only the visible set was passed); the knob decides which
+    // are VISIBLE through columnState.order/hidden, never which exist.
+    expect(props.columns.map((column) => column.id).sort()).toEqual([...TABLE_COLUMN_IDS].sort());
+    expect(props.columnState?.order.slice(0, KNOBS.table_default_columns.length)).toEqual(KNOBS.table_default_columns);
     expect(props.columnState?.hidden.sort()).toEqual(["description", "facets", "updated"]);
     act(() => {
       props.columnState?.onChange({
@@ -220,9 +226,10 @@ describe("TopicTable", () => {
     expect(store.getState().topicalMap.maps[MAP_ID].table.columns).toEqual([
       "topic", "description", "planned", "keywords", "status", "leaving", "arriving",
     ]);
-    expect(tableProps?.columns.map((column) => column.id)).toEqual([
+    expect(tableProps?.columnState?.order.slice(0, 7)).toEqual([
       "topic", "description", "planned", "keywords", "status", "leaving", "arriving",
     ]);
+    expect(tableProps?.columnState?.hidden.sort()).toEqual(["facets", "pages", "updated"]);
   });
 
   it("absent counts render NOTHING with a title; loaded counts render the number", () => {
@@ -349,7 +356,10 @@ describe("TopicTable", () => {
     const store = makeStore();
     store.dispatch(setTableColumns({ mapId: MAP_ID, columns: ["topic", "facets"] }));
     const props = render(store);
-    expect(props.columns.map((column) => column.id)).toEqual(["topic", "facets"]);
+    expect(props.columnState?.order.slice(0, 2)).toEqual(["topic", "facets"]);
+    expect(props.columnState?.hidden).not.toContain("topic");
+    expect(props.columnState?.hidden).not.toContain("facets");
+    expect(props.columnState?.hidden.length).toBe(TABLE_COLUMN_IDS.length - 2);
     expect(props.toolbar?.actions).toBeTruthy();
   });
 

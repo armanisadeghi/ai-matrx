@@ -143,7 +143,10 @@ export function PlannedPagesSection({
           title={`Make a page under "${topicName}"`}
           description={
             targetSite ? (
-              <SiteLine siteId={targetSite} />
+              <span>
+                The page is planned on{" "}
+                <SiteDoor siteId={targetSite} />
+              </span>
             ) : candidates.length === 0 ? (
               diagnostics.isPending ? (
                 "Finding the sites that use this map…"
@@ -188,8 +191,22 @@ export function PlannedPagesSection({
   );
 }
 
-/** A site's name, with its id as the fallback while the row loads. */
+/** A site's name, with its id as the fallback while the row loads (inside a Select item, where a link cannot live). */
 function SiteLine({ siteId }: { siteId: string }) {
   const site = useSite(siteId);
   return <>{site.data?.name ?? site.data?.domain ?? siteId}</>;
+}
+
+/** The same site as a DOOR (the door law: a named record opens) — peek and new tab. */
+function SiteDoor({ siteId }: { siteId: string }) {
+  const site = useSite(siteId);
+  return (
+    <EntityRef
+      token="web_site"
+      id={siteId}
+      name={site.data?.name ?? site.data?.domain ?? siteId}
+      openInNewTab
+      showIcon={false}
+    />
+  );
 }

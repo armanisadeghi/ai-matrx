@@ -459,7 +459,7 @@ export function TopicTable({ mapId, siteId, host, readOnly, knobs }: TopicTableP
               from the row, the same wrapper
               `features/scheduling/.../ScheduleList.tsx` uses. `display:
               contents` keeps the flex chain intact. */}
-          <div className="contents">
+          <div className="flex min-h-0 flex-1 flex-col">
             <MatrxDataTable<MapTableRow>
               data={rows}
               columns={columns}
