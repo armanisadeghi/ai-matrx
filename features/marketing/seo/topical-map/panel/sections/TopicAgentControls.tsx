@@ -74,7 +74,7 @@ export function TopicAgentControls({ changeMode, regenerationMode }: TopicAgentC
   }
 
   const reason = loading
-    ? null
+    ? "Checking whether the topic agent is available…"
     : absent
       ? `Not available yet — this runs the job "${TOPIC_CURATION_MANDATE_KEY}", and no live job has that name. Once it is created these work, with no deploy.`
       : !available
