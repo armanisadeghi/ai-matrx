@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -619,7 +620,7 @@ export function ChaseboxDraftDialog({
                       token="party"
                       id={row.party_id}
                       name={row.party_name ?? "this contact"}
-                      href={`/crm/${row.party_id}?interaction=${reply.replyingToInteractionId}`}
+                      href={`${resolveEntityDoors("party", row.party_id).href ?? ""}?interaction=${reply.replyingToInteractionId}`}
                       openInNewTab
                       showIcon={false}
                       labelClassName="inline-flex items-center gap-1 text-xs text-primary underline underline-offset-2"

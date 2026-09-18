@@ -17,6 +17,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { dismissRecordToasts, recordToast, toast } from "@/lib/toast";
 import { toastDoor } from "@/components/official/entity-ref/toastDoor";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import {
   MoreVertical,
   Plus,
@@ -545,7 +546,10 @@ export function CrmListPage({
   // none is explicitly selected). Access never depends on it — only stamping.
   const effectiveOrgId = useAppSelector(selectEffectiveOrganizationId);
   const openGoogleContactsImport = useOpenGoogleContactsImport();
-  const openRow = (row: PartyListRow) => router.push(`/crm/${row.id}`);
+  const openRow = (row: PartyListRow) => {
+    const href = resolveEntityDoors("party", row.id).href;
+    if (href) router.push(href);
+  };
 
   // Duplicates indicator — a true pending-pair count behind the header door.
   // The assist-strip sweep refreshes it after detection runs.
@@ -806,13 +810,13 @@ export function CrmListPage({
         {
           id: "open",
           items: [
-            { id: "open", kind: "link", label: "Open", href: `/crm/${row.id}` },
+            { id: "open", kind: "link", label: "Open", href: resolveEntityDoors("party", row.id).href ?? "" },
             {
               id: "copy-link",
               label: "Copy link",
               onSelect: () =>
                 navigator.clipboard.writeText(
-                  `${window.location.origin}/crm/${row.id}`,
+                  `${window.location.origin}${resolveEntityDoors("party", row.id).href ?? ""}`,
                 ),
               toast: {
                 loading: "Copying…",

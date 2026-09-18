@@ -102,33 +102,6 @@ const BASELINE: Readonly<Record<string, string>> = {
   // The route naming itself.
   "app/(core)/crm/[partyId]/page.tsx":
     "The party route's own page, echoing its own path to the sign-in gate so a bounced visitor returns to this record.",
-  // Real hand-built doors, all onto the 360° workspace route, owed the one
-  // builder. Censused 2026-09-18 (lane F-47, N7); each is a one-line change
-  // that belongs with a lane that owns the file.
-  "features/crm/components/CrmListPage.tsx":
-    "Row open, the row menu's Open entry and its Copy link all build `/crm/<id>` by hand (3 sites).",
-  "features/crm/components/columns.tsx":
-    "The Name column's `href` data property builds the route by hand.",
-  "features/crm/components/crm-row-actions.tsx":
-    "`partyMenuTarget` and the outreach-member target both carry a hand-built `href`.",
-  "features/crm/components/SaveContactFromSelectionDialog.tsx":
-    "The success toast's link to the saved contact.",
-  "features/crm/components/outreach-lists/OutreachListDetailPage.tsx":
-    "The Member column href, the row menu's Open CRM record, and the row-open push (3 sites).",
-  "features/crm/chasebox/types.ts":
-    "`chaseboxFixHref` returns the repair destination for three queues as a hand-built string.",
-  "features/crm/chasebox/components/ChaseboxDraftDialog.tsx":
-    "An EntityRef `href` OVERRIDE carrying `?interaction=` — a real deep link, but the base path is still hand-built.",
-  "features/crm/inbox/columns.tsx":
-    "The subject column's `href` data property beside its own EntityRef token/id.",
-  "features/crm/inbox/types.ts":
-    "`inboxPartyHref` is a second, feature-local URL builder for the same route.",
-  "features/hr/routes.ts":
-    "`hrPartyHref` is a third builder for the same route, in another feature.",
-  "features/window-panels/windows/crm/CrmCreatePartyWindow.tsx":
-    "After creating a party the window pushes the hand-built record route.",
-  "features/marketing/content-plan/lib/entity-write-targets.ts":
-    "A refusal SENTENCE that names where a person/company is managed; the id inside it is not a door yet.",
 };
 
 function relativeTo(file: string): string {

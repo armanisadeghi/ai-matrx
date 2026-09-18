@@ -2,6 +2,7 @@ import type { AgentPayloadInput } from "@/components/agent-copy/buildAgentPayloa
 import type { PlatformComment as Comment } from "@ai-matrx/associations";
 import { readInboundClassification } from "@/features/crm/inbox/attributes";
 import { MEDIUM_BLOCK_LABELS, mediumBlocks } from "@/features/crm/reachability";
+import { partyKindWord } from "@/features/crm/party-words";
 import type {
   AddressRow,
   AffiliationWithEmployer,
@@ -70,7 +71,7 @@ export type IdentityCopyView = ReturnType<typeof buildIdentityCopyView>;
 export function formatIdentityCopy(view: IdentityCopyView): string {
   const lines = [
     `Identity — ${view.name}`,
-    `Type: ${titleCase(view.kind)}`,
+    `Type: ${partyKindWord(view.kind)}`,
     `First name: ${display(view.first_name)}`,
     `Last name: ${display(view.last_name)}`,
     `Title: ${display(view.title)}`,

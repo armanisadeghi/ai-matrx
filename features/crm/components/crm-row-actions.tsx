@@ -37,6 +37,7 @@ import {
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { toast } from "@/lib/toast";
 import { itemMenuConfigToExtraSections } from "@/components/official/item/itemMenuToV3";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import {
   resolveItemMenuConfig,
   type ItemMenuConfigInput,
@@ -127,7 +128,7 @@ export function partyMenuTarget(row: {
     kind: "party",
     id: row.id,
     title: row.display_name,
-    href: `/crm/${row.id}`,
+    href: resolveEntityDoors("party", row.id).href ?? "",
     domain: row.primary_domain ?? null,
     lines: [
       kindLabel,
@@ -214,7 +215,7 @@ export function outreachMemberMenuTarget(
     kind: "outreach-member",
     id: row.id,
     title: party?.display_name ?? "Member you cannot see",
-    href: party ? `/crm/${party.id}` : null,
+    href: party ? resolveEntityDoors("party", party.id).href : null,
     partyId: party?.id ?? null,
     lines: [
       listName ? `List: ${listName}` : "",

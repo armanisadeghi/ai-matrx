@@ -1047,6 +1047,31 @@ module in the folder + the two deleted filenames).
 
 ## Change log
 
+- 2026-09-18 — **F-48: the census's 14 baselined offenders converted to the
+  one door.** F-47's `person-doors-census.test.ts` baseline is now the two
+  legitimate entries only (the entity registry's own `hrefFor` and the party
+  route page's own sign-in-gate echo) — every hand-built `/crm/${id}` call
+  site it censused now calls `resolveEntityDoors("party", id).href`:
+  `CrmListPage.tsx` (row open, the row menu's Open entry, Copy link),
+  `columns.tsx` (Name column href), `crm-row-actions.tsx` (both menu targets),
+  `SaveContactFromSelectionDialog.tsx` (the saved-contact toast link),
+  `outreach-lists/OutreachListDetailPage.tsx` (Member column, row menu, row
+  open), `chasebox/types.ts` (`chaseboxFixHref`'s three party-record cases),
+  `chasebox/components/ChaseboxDraftDialog.tsx` (the base path under the
+  `?interaction=` override), `inbox/columns.tsx` (the subject column href),
+  and `entity-write-targets.ts` (the refusal sentence's `/crm/<id>` mention).
+  Two second builders for the same route are gone: `inbox/types.ts`'s
+  `inboxPartyHref` (repointed `inboxRowHref` straight at the resolver) and
+  `hr/routes.ts`'s `hrPartyHref` (repointed `ProfileHeader.tsx` and
+  `useHrEmployeeMenu.tsx`). `CrmCreatePartyWindow.tsx`'s post-create push now
+  resolves through the same door. `record-copy.ts`'s `formatIdentityCopy`
+  printed `Type: Organization` (a title-cased raw enum, not the lexicon word)
+  — it now prints `partyKindWord(view.kind)` from F-47's `party-words.ts`, so
+  a Company reads "Company" in the AI-copy summary, not "Organization" (the
+  lexicon's word for the tenant, never a CRM record). Guard now RED-then-GREEN
+  proven: the shrunk baseline still matches every remaining hand-built site
+  (only the two legitimate ones), and the census + inbox tests are green.
+
 - 2026-09-18 — **F-47: the word for a party lives in ONE place, the CRM inbox
   stopped leaving itself, and the Person-door guard became a class guard
   (VERIFY-U-P1-R5, N5–N7).** Live census: `crm.party` holds 1,892 rows, 460
