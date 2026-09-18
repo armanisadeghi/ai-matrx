@@ -3,7 +3,7 @@
  *
  * On 2026-09-17 every chat with an attachable connection read "HTTP 404"
  * because the client called `/api/conversations/{id}/attachments` while the
- * server mounts the route under `/ai` (`/api/ai/conversations/…`): aidream's
+ * server mounts the route under `/ai` (`/api/conversations/…`): aidream's
  * compatibility middleware strips `/api`, `/conversations/{id}/attachments`
  * matches nothing, and the failure sentence was bare because the body had
  * already been consumed by a failed `.json()` before `.text()` ran.
@@ -74,16 +74,16 @@ beforeEach(() => {
 });
 
 describe("conversation attachments client — routes", () => {
-  it("reads attachments from the /ai-mounted conversation route the contract publishes", async () => {
+  it("reads attachments from the bare conversation route the contract publishes", async () => {
     respond(200, "[]");
 
     await expect(fetchConversationAttachments("conv 1")).resolves.toEqual([]);
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe(
-      `${AIDREAM_PRODUCTION_URL}/api/ai/conversations/conv%201/attachments`,
+      `${AIDREAM_PRODUCTION_URL}/api/conversations/conv%201/attachments`,
     );
-    expect(url).not.toContain("/api/conversations/");
+    expect(url).not.toContain("/api/ai/conversations/");
     expect((init?.headers as Record<string, string>).Authorization).toBe(
       "Bearer jwt-for-test",
     );
@@ -92,7 +92,7 @@ describe("conversation attachments client — routes", () => {
     );
   });
 
-  it("attaches and detaches through the same /ai-mounted routes", async () => {
+  it("attaches and detaches through the same bare conversation routes", async () => {
     respond(200, JSON.stringify({ association_id: "a1" }));
     await attachConversationResource("c1", {
       provider: "github",
@@ -106,8 +106,8 @@ describe("conversation attachments client — routes", () => {
     await detachConversationResource("c1", "a/1");
 
     expect(fetchMock.mock.calls.map(([url, init]) => `${init?.method} ${url}`)).toEqual([
-      `POST ${AIDREAM_PRODUCTION_URL}/api/ai/conversations/c1/attachments`,
-      `DELETE ${AIDREAM_PRODUCTION_URL}/api/ai/conversations/c1/attachments/a%2F1`,
+      `POST ${AIDREAM_PRODUCTION_URL}/api/conversations/c1/attachments`,
+      `DELETE ${AIDREAM_PRODUCTION_URL}/api/conversations/c1/attachments/a%2F1`,
     ]);
   });
 
@@ -125,7 +125,7 @@ describe("conversation attachments client — failure sentences", () => {
     respond(404, "<html>not json</html>");
 
     await expect(fetchConversationAttachments("c1")).rejects.toThrow(
-      "HTTP 404 from GET /api/ai/conversations/c1/attachments",
+      "HTTP 404 from GET /api/conversations/c1/attachments",
     );
   });
 
