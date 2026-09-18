@@ -35,6 +35,14 @@ export interface DeadEndFinding {
   /** Whether the inferred token has an `hrefFor` in the entity registry. */
   entityHasRoute: boolean;
   /**
+   * The registry's own singular label for `entity` ("Calendar event",
+   * "Project"), when a token was inferred. The remedy sentence names the entity
+   * with THIS: the toast rule used to hard-code `label: "Open the note"` for a
+   * project, a task and a keyword alike (V-21). Absent for a file-level or
+   * unresolved finding, and optional because the committed report predates it.
+   */
+  entityLabel?: string;
+  /**
    * The source text of the offending expression, e.g. `row.agentName`.
    * The human sentence is DERIVED from these fields via
    * `describeFinding()` — never stored, so the CLI and the dashboard can

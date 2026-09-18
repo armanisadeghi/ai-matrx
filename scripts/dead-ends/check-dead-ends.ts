@@ -42,6 +42,7 @@ import { DEAD_END_ALLOWLIST } from "./allowlist";
 import { describeFinding } from "./describe";
 import { loadEntityTokens } from "./entity-tokens";
 import { featureOf, scanFile, shouldScanFile } from "./scan";
+import { TOAST_FIXTURE_CASES } from "./self-test/cases";
 import {
   RULE_DOCTRINE,
   RULE_TITLES,
@@ -284,19 +285,17 @@ export function matchesPathFilter(relPath: string, prefix: string | null): boole
 }
 
 /**
- * `--self-test` — prove the detector can still FAIL, and prove it on the case
- * that created the rule rather than on a toy.
+ * `--self-test` — prove the detector can still FAIL, and prove it on the cases
+ * that created and corrected the rule rather than on toys.
  *
- * RED: `features/google-workspace/calendar/AgendaPanel.tsx` verbatim at
- * `66f75b7a` (in `self-test/`), which created a note, named it in a toast and
- * offered no door — `pnpm check:dead-ends` was green over it (V-20 N10).
- * GREEN: the same file as it stands in the tree, fixed in `be673b90`.
- *
- * The green half reads the LIVE file on purpose: a frozen copy would keep
- * passing after a regression to the real surface.
+ * Every arm lives in ONE table, `self-test/cases.ts`, which the jest suite
+ * `scripts/dead-ends/__tests__/toast-names-record.test.ts` reads too — so the CLI
+ * proof and the test suite cannot disagree about what the rule must see. The
+ * table carries the shipped defect (the pre-fix AgendaPanel, V-20 N10), the LIVE
+ * fixed surface as the green half (read from the tree on purpose — a frozen copy
+ * would keep passing after a regression), and V-21's two probe arms plus their
+ * control.
  */
-const SELF_TEST_RED = join(ROOT, "scripts/dead-ends/self-test/agenda-panel-pre-fix.tsx.fixture");
-const SELF_TEST_GREEN = join(ROOT, "features/google-workspace/calendar/AgendaPanel.tsx");
 const SELF_TEST_RULE: DeadEndRuleId = "toast-names-record";
 
 function selfTest(): number {
@@ -317,48 +316,56 @@ function selfTest(): number {
 
   let failed = false;
 
-  if (!existsSync(SELF_TEST_GREEN)) {
-    console.error(
-      `${RED}[dead-ends] SELF-TEST BROKEN${NC} — the green half points at ` +
-        `${relative(ROOT, SELF_TEST_GREEN)}, which is not in the tree. It moved or was ` +
-        `renamed: re-point SELF_TEST_GREEN in scripts/dead-ends/check-dead-ends.ts at the ` +
-        `same surface. This is not a pass.`,
-    );
-    return 1;
-  }
-
-  const red = scan(SELF_TEST_RED).filter((f) => f.rule === SELF_TEST_RULE);
-  if (red.length === 0) {
-    console.error(
-      `${RED}[dead-ends] SELF-TEST FAILED${NC} — ${relative(ROOT, SELF_TEST_RED)} is the ` +
-        `pre-fix AgendaPanel (commit 66f75b7a): it creates a note, names it in a toast and ` +
-        `gives no door, and \`${SELF_TEST_RULE}\` did not report it. The rule can no longer ` +
-        `fail, so a green run proves nothing. See scripts/dead-ends/self-test/README.md.`,
-    );
-    failed = true;
-  } else {
+  for (const testCase of TOAST_FIXTURE_CASES) {
+    const abs = join(ROOT, testCase.file);
+    if (!existsSync(abs)) {
+      console.error(
+        `${RED}[dead-ends] SELF-TEST BROKEN${NC} — ${testCase.file} is not in the tree. ` +
+          (testCase.live
+            ? `It moved or was renamed: re-point the row in scripts/dead-ends/self-test/cases.ts ` +
+              `at the same surface. This is not a pass.`
+            : `A fixture was deleted — restore it (scripts/dead-ends/self-test/README.md).`),
+      );
+      failed = true;
+      continue;
+    }
+    const found = scan(abs).filter((f) => f.rule === SELF_TEST_RULE);
+    const problems: string[] = [];
+    if (found.length !== testCase.findings) {
+      problems.push(
+        `expected ${testCase.findings} ${SELF_TEST_RULE} finding(s), got ${found.length}`,
+      );
+    }
+    for (const f of found) {
+      if (testCase.entity && f.entity !== testCase.entity) {
+        problems.push(`line ${f.line} names \`${f.entity}\`, not \`${testCase.entity}\``);
+      }
+      if (testCase.neverEntity && f.entity === testCase.neverEntity) {
+        problems.push(
+          `line ${f.line} is attributed to \`${testCase.neverEntity}\` — the WRONG record`,
+        );
+      }
+      if (testCase.severity && f.severity !== testCase.severity) {
+        problems.push(`line ${f.line} is ${f.severity}, not ${testCase.severity}`);
+      }
+    }
+    if (problems.length > 0) {
+      console.error(
+        `${RED}  ✗ ${testCase.file}${NC}\n` +
+          problems.map((p) => `      ${p}`).join("\n") +
+          `\n      This row proves ${testCase.proves}. A green run without it proves nothing. ` +
+          `See scripts/dead-ends/self-test/README.md.`,
+      );
+      failed = true;
+      continue;
+    }
     console.log(
-      `${GREEN}  ✓ red${NC}  ${relative(ROOT, SELF_TEST_RED)} → ${red.length} ` +
-        `${SELF_TEST_RULE} finding(s) at line ${red.map((f) => f.line).join(", ")} ` +
-        `${DIM}(entity: ${red.map((f) => f.entity).join(", ")})${NC}`,
-    );
-  }
-
-  const green = scan(SELF_TEST_GREEN).filter((f) => f.rule === SELF_TEST_RULE);
-  if (green.length > 0) {
-    console.error(
-      `${RED}[dead-ends] SELF-TEST FAILED${NC} — the LIVE ` +
-        `${relative(ROOT, SELF_TEST_GREEN)} carries a door in the toast (\`action\`) and on ` +
-        `the row, yet \`${SELF_TEST_RULE}\` reports it at line ` +
-        `${green.map((f) => f.line).join(", ")}. Either the rule now flags its own fix — a ` +
-        `false accusation that teaches agents to delete a correct door — or that surface ` +
-        `regressed. Read the call site before touching the rule.`,
-    );
-    failed = true;
-  } else {
-    console.log(
-      `${GREEN}  ✓ green${NC} ${relative(ROOT, SELF_TEST_GREEN)} → 0 ${SELF_TEST_RULE} findings ` +
-        `${DIM}(the toast carries "Open the note")${NC}`,
+      `${GREEN}  ✓${NC} ${testCase.file} → ${found.length} ${SELF_TEST_RULE} finding(s)` +
+        (found.length > 0
+          ? ` ${DIM}(${found
+              .map((f) => `line ${f.line}, entity ${f.entity}, ${f.severity}`)
+              .join("; ")})${NC}`
+          : ` ${DIM}(${testCase.proves})${NC}`),
     );
   }
 
@@ -366,7 +373,7 @@ function selfTest(): number {
     failed
       ? `\n${RED}[dead-ends] self-test FAILED.${NC}\n`
       : `\n${GREEN}[dead-ends] self-test OK${NC} ${DIM}— the detector still reaches a record ` +
-        `named in a toast, and still clears the fixed surface.${NC}\n`,
+        `named in a toast, names the right one, and still clears the fixed surfaces.${NC}\n`,
   );
   return failed ? 1 : 0;
 }
@@ -386,9 +393,13 @@ function main(): void {
   assertFilters(args.rule, files.length, args.pathPrefix);
 
   const raw: DeadEndFinding[] = [];
+  // Bare nouns that name SEVERAL registered entities. Nothing is reported against
+  // one — a confident wrong record name is the V-21 defect — so the run SAYS SO
+  // instead of leaving the miss invisible.
+  const ambiguousNouns = new Map<string, Set<string>>();
   for (const file of files) {
     try {
-      raw.push(...scanFile(file, { repoRoot: ROOT, tokens }));
+      raw.push(...scanFile(file, { repoRoot: ROOT, tokens, ambiguousNouns }));
     } catch (err) {
       // A parse failure is a checker bug, not a silent zero. Scream and keep
       // going so one bad file can't hide the whole report.
@@ -443,6 +454,7 @@ function main(): void {
     console.log(JSON.stringify(report, null, 2));
   } else {
     printReport(report, args.limit);
+    printAmbiguousNouns(ambiguousNouns);
   }
 
   if (args.write) {
@@ -570,6 +582,32 @@ function readHistory(): DeadEndHistoryPoint[] {
     );
   }
   return kept;
+}
+
+/**
+ * The honest "I could not name this record" line. A noun like `document` heads
+ * four registered entities (`udt_document`, `google_document`,
+ * `working_document`, `processed_document`), so a message carrying only that word
+ * names none of them and the rule reports nothing — which must not be silent. The
+ * fix is at the source: qualify the word ("Google document imported") or register
+ * the entity, never guess one here.
+ */
+function printAmbiguousNouns(ambiguous: Map<string, Set<string>>): void {
+  if (ambiguous.size === 0) return;
+  console.log(
+    `${YELLOW}Ambiguous nouns — named several registered entities, so nothing was ` +
+      `attributed:${NC}`,
+  );
+  for (const [noun, files] of [...ambiguous].sort((a, b) => b[1].size - a[1].size)) {
+    const shown = [...files].slice(0, 3).join(", ");
+    console.log(
+      `  ${noun} ${DIM}(${files.size} file(s): ${shown}${files.size > 3 ? ", …" : ""})${NC}`,
+    );
+  }
+  console.log(
+    `  ${DIM}Qualify the word in the message, or register the entity — a guess here is ` +
+      `a wrong record name (scripts/dead-ends/entity-tokens.ts).${NC}\n`,
+  );
 }
 
 function printReport(report: DeadEndReport, limit: number): void {
