@@ -240,8 +240,23 @@ function ResourceAttachPickerBody({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg">
+    // 🚨 F-73: modal={false} is the platform contract for a dialog that can
+    // launch a WindowPanel (the same contract `CmsPageAiActionDialog` and
+    // others already carry) — the record-backed row's "Open" control opens
+    // the calendar event's own window/detail primitive while THIS picker
+    // stays mounted and unfocused-trapped, so the just-opened record is
+    // reachable and focusable instead of sitting behind a modal focus trap.
+    // Non-modal means nothing here closes the picker to open a record, so the
+    // person's in-progress selection is never silently lost.
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      modal={false}
+    >
+      <DialogContent
+        className="max-w-lg"
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>
             Choose {joinWithOr(nouns.length ? nouns : [noun])} from{" "}
@@ -410,7 +425,7 @@ function ResourceAttachPickerBody({
             door `attachable_resource_kinds.json` declares for it — refresh
             your agenda) is the whole remedy, said as a sentence, never as a
             clickable "Choose…" affordance a meeting cannot answer to. */}
-        {recordKindAddMoreSentences(kinds, matches).map((sentence) => (
+        {recordKindAddMoreSentences(kinds).map((sentence) => (
           <p
             key={sentence}
             className="text-[11px] leading-tight text-muted-foreground"
@@ -488,23 +503,21 @@ function joinWithOr(words: string[]): string {
 }
 
 /**
- * The `add_more` sentence for every Record-backed kind actually on screen,
- * de-duplicated. A kind is Record-backed when a visible candidate of that
- * resource type carries `record_table` — never a hand list of resource types
- * here, so a future Record-backed kind (not only `calendar_event`) is picked
- * up for free the day it starts appearing in this same list.
+ * The `add_more` sentence for every Record-backed KIND the picker is offering,
+ * de-duplicated. A kind is Record-backed when the KIND ROW ITSELF carries
+ * `record_table` (F-62's server declaration, `AttachableKind.record_table`) —
+ * never derived from a VISIBLE candidate carrying it (F-73): an empty list, or
+ * a search filter that hides every calendar event, must never hide the
+ * remedy sentence the person needs most right then. Never a hand list of
+ * resource types here, so a future Record-backed kind is picked up for free
+ * the day the server starts declaring it.
  */
 function recordKindAddMoreSentences(
   kinds: readonly AttachableResource[],
-  candidates: readonly AttachableCandidate[],
 ): string[] {
-  const recordTypes = new Set(
-    candidates.filter((c) => c.record_table).map((c) => c.resource_type),
-  );
-  if (recordTypes.size === 0) return [];
   const sentences: string[] = [];
   for (const kind of kinds) {
-    if (!recordTypes.has(kind.resource_type)) continue;
+    if (!kind.record_table) continue;
     const sentence = kind.add_more?.trim();
     if (sentence && !sentences.includes(sentence)) sentences.push(sentence);
   }

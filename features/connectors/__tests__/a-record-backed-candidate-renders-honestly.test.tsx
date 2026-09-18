@@ -58,6 +58,8 @@ const ATTACHABLE: AttachableResource[] = [
     source: "inventory",
     label: "Calendar event",
     add_more: CALENDAR_ADD_MORE,
+    // F-62: the server declares Record-backing on the KIND row itself.
+    record_table: "communication.calendar_event",
   },
 ];
 
@@ -223,5 +225,46 @@ describe("the kind's add_more sentence, never a Picker button for a meeting", ()
       (b) => /choose/i.test(b.textContent ?? ""),
     );
     expect(chooseButtons).toEqual([]);
+  });
+});
+
+describe("F-73: the add_more sentence survives an empty or filtered-out list", () => {
+  // Bugbot on 497023a0: `recordKindAddMoreSentences` derived "is this kind
+  // Record-backed" from a VISIBLE candidate carrying `record_table`, so the
+  // remedy sentence vanished exactly when the person needed it most — no
+  // synced meetings yet, or every one hidden by their own search text.
+
+  it("still shows the remedy when the server returns NO candidates at all", async () => {
+    fetchAttachableResources.mockResolvedValue([]);
+    await mount();
+    const text = document.body.textContent ?? "";
+    expect(text).toContain(CALENDAR_ADD_MORE);
+  });
+
+  it("still shows the remedy when a search filters every candidate off screen", async () => {
+    await mount();
+    const search = document.body.querySelector(
+      `input[aria-label="Search Google Calendar event"]`,
+    ) as HTMLInputElement | null;
+    expect(search).not.toBeNull();
+    act(() => {
+      search!.dispatchEvent(
+        Object.assign(new Event("input", { bubbles: true }), {
+          simulated: true,
+        }),
+      );
+    });
+    // React controlled-input change: set value then fire a real change event.
+    const setValue = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )!.set!;
+    act(() => {
+      setValue.call(search, "nothing matches this at all");
+      search!.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    const text = document.body.textContent ?? "";
+    expect(text).toContain("Nothing matched");
+    expect(text).toContain(CALENDAR_ADD_MORE);
   });
 });

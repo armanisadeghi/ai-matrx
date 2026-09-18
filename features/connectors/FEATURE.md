@@ -316,6 +316,40 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
   those rode existing server-composed fields) and green after. No screen was
   seen — there is no browser in this container.
 
+- `2026-09-18` — **F-73: two Bugbot-confirmed defects in F-71's attach picker,
+  fixed.** (1) *Record open stays behind the modal.* The Record-backed row's
+  "Open" control called `openItem(...)` while the picker's `<Dialog>` stayed a
+  MODAL (Radix's default) — focus was trapped inside the picker, so the record's
+  window opened but the person could not reach or focus it. Fixed by reusing the
+  existing platform contract for a dialog that can launch a WindowPanel:
+  `modal={false}` on the `<Dialog>` (the same convention `CmsPageAiActionDialog.tsx`,
+  `NewConversationDialog.tsx` and others already carry) plus
+  `onInteractOutside={(e) => e.preventDefault()}` on `DialogContent` so an
+  outside click from the newly-focusable record doesn't dismiss the picker.
+  Non-modal means the fix never closes the picker to open a record, so the
+  person's in-progress selection is never lost — no `onClose()` call was added.
+  (2) *Empty list hides the add-more remedy.* `recordKindAddMoreSentences`
+  derived "is this kind Record-backed" from a VISIBLE candidate's
+  `record_table`, so the remedy sentence vanished the moment the list was
+  empty or a search hid every calendar event — exactly when it was needed
+  most. The server already declares `record_table` on the KIND row itself
+  (aidream F-62's `AttachableKind.record_table`); the generated
+  `AttachableKindInfo` does not carry it yet, so `record_table?: string | null`
+  was added by hand to the client `AttachableResource` interface
+  (`attachable-resources.ts`, commented as client-only until the OpenAPI
+  contract catches up) and `recordKindAddMoreSentences` now reads it straight
+  off the KINDS the picker was given, independent of which candidates are on
+  screen. De-duplication and "never a Picker button for a Record" both hold
+  unchanged. New test `__tests__/opening-a-record-does-not-trap-the-picker.test.tsx`
+  (mocks `@/components/ui/dialog` to capture the real prop the component
+  passes — a deterministic read of the contract, not a guess at Radix's
+  internal focus-trap DOM) plus two new cases in
+  `__tests__/a-record-backed-candidate-renders-honestly.test.tsx` (empty
+  candidate list; every candidate filtered out by search). All three proven
+  red against the pre-fix file (copied aside, HEAD restored, re-run, copied
+  back) and green after. No screen was seen — there is no browser in this
+  container.
+
 - `2026-09-18` — **F-55: an overlay first action carries what its window needs, or the dialog will not render it.** Cursor Bugbot, Medium, thread 4043109495 on PR 228, commit `9e31d18a`: F-51's `ConnectorFirstAction` overlay variant carried only `overlayId`, so the Tasks row's button dispatched `openOverlay({ overlayId: "googleTasksImportWindow" })` with no `data` — the window it opens reads `organizationId` off that data (`GoogleTasksImportPanel.tsx`) and refuses to load without it, so the new "Import your tasks" button opened a window that could list and import nothing. Fixed at the class: the overlay variant now carries an optional `needs: readonly ConnectorFirstActionContextKey[]` (today just `"organizationId"`), the dialog resolves each key from its own scope via `resolveFirstActionData` (the SAME `selectEffectiveOrganizationId` value `TasksHeaderControls`' typed opener already passes) and refuses to render the button at all when a needed value is unavailable, never opening a window that can do nothing (Law 4). Census extended in `__tests__/every-connected-product-offers-its-first-action.test.ts` (`WINDOW_REQUIRED_CONTEXT_KEYS`, hand-verified against each window body's own prop contract) — the added case fails on the pre-fix config (Tasks missing `organizationId` in `needs`) and passes after. New dialog test `__tests__/the-tasks-button-opens-with-the-organization.test.tsx` clicks the real Tasks button through a real DOM and asserts the dispatched `openOverlay` action carries `{ organizationId }`. Calendar's agenda action needs nothing — confirmed against `GoogleAgendaWindow`, which takes no organization/project prop. No screen was seen — there is no browser in this container.
 
 - `2026-09-18` — **F-51: Calendar's first action exists, and the account preference is per PRODUCT.** (1) The consent dialog's promise — every connected row offers its first useful action — was unmet on five of the nine Google rows, Calendar among them although its first action (opening the agenda) had already been built and catalogued in the same project: `firstAction` could only hold an href, and a window has no route. It is now `ConnectorFirstAction`, three declared shapes, and the dialog renders an overlay action as a press that opens the window IN PLACE and steps the dialog aside. Calendar opens the agenda (`googleAgendaWindow`) and Tasks opens the import window that was already built and had no way in; Gmail, Tag Manager and YouTube declare `none` WITH the reason, which is visible debt escalated to the chair, not permission. Census: `__tests__/every-connected-product-offers-its-first-action.test.ts` walks every provider config — four cases, all four failing against the pre-fix config (11 undeclared rows) — and checks that an overlay action names a real catalogued WINDOW, that a route action is a real in-app path, and that the `none` list is exactly the named rows, each with a real sentence. (2) `preferredAccountId` ranked accounts by the NUMBER of live products, and a surface serving ONE product got the biggest collection instead of the account that holds what it serves: with Calendar on one Google account and five other products on another, the agenda read Calendar's health on the account without Calendar, told the person their calendar was not connected, and the doomed-call gate then correctly refused to refresh — a dead end with nothing on screen to explain it. Callers that serve one product now pass `forProductKey` (the agenda, and the detail health strip for a row that names no connection); the ranking is unchanged for everyone else and still decides ties. Red-then-green through the REAL derivation with the bigger account listed FIRST: `features/google-workspace/calendar/__tests__/the-refresh-runs-through-the-account-that-holds-calendar.test.tsx` (3 cases, all three failing before). No screen was seen — there is no browser in this container.

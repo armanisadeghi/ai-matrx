@@ -61,6 +61,19 @@ export interface AttachableResource {
    * never paint a Picker button from this field.
    */
   add_more?: string | null;
+  /**
+   * The Record table this kind is backed by (`communication.calendar_event`),
+   * when the server has one — F-62's `AttachableKind.record_table`, declared
+   * on the KIND row itself. Absent/`null` means the kind is a real picker
+   * (a Google Doc, a GitHub repo): something the Google Picker or a live
+   * search can put in the list. The generated `AttachableKindInfo` does not
+   * carry this field yet, so it is added here by hand (client-only) until the
+   * OpenAPI contract catches up — narrow FROM the generated type once it does,
+   * never re-derive "is this kind Record-backed" from a visible candidate: a
+   * search filter or an empty list must never hide that a kind is
+   * Record-backed (F-73).
+   */
+  record_table?: string | null;
 }
 
 /**
