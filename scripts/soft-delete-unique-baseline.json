@@ -239,7 +239,6 @@
     "web.site:site_brand_slug_key",
     "web.site_item_config:site_item_config_site_id_item_id_key",
     "web.sitemap:sitemap_site_url_unique",
-    "workbench.note_folders:note_folders_created_by_name_unique",
     "workbench.udt_dataset_fields:udt_dataset_fields_dataset_id_field_name_unique",
     "workbench.udt_dataset_rows:udt_dataset_rows_dataset_id_id_unique",
     "workflow.definition_version:wf_definition_version_unique_pair",
