@@ -278,6 +278,21 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-18` — **F-80 (V-21, N4 MED): the Record-backed candidate's two doors
+  are touch-sized and distinguishable without hover.** `ResourceAttachPicker`'s
+  "open the record" (`ArrowUpRight`) and "join the meeting" (`ExternalLink`)
+  controls carried bare `h-3 w-3` icons with no touch sizing, told apart only
+  by `aria-label`/`title` on hover — on a phone the two doors of a meeting were
+  adjacent ~12px look-alike targets. Both now carry `max-sm:min-h-11
+  max-sm:min-w-11` (the exact touch-sizing class the calendar's own
+  `AgendaPanel` uses for its "Join the meeting" / "Open in Google Calendar"
+  pair — the closest sibling, same entity), a visible text label on `sm:`
+  widths (`Open` / `Join`), and a visual distinction that never depends on
+  hover: the join door reads `text-primary` (an outbound link) while the
+  record door stays `text-muted-foreground` (an in-place open). Both doors
+  kept (F-71's rule); F-73's non-modal behavior untouched. Guard:
+  `a-record-backed-candidate-renders-honestly.test.tsx` § "V-21: the two doors
+  are touch-sized and distinguishable without hover".
 - `2026-09-18` — F-75: main deleted `selectEffectiveOrganizationId` (the
   personal-workspace fallback the org-context law forbids). `ConnectorConsentDialog`'s
   `firstActionOrganizationId` now reads the plain `selectOrganizationId` (the same
