@@ -145,8 +145,9 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
         header: "Out tokens",
         align: "right",
         width: 100,
+        className: "whitespace-nowrap",
         cell: (r) => (
-          <span className="font-mono">
+          <span className="font-mono whitespace-nowrap">
             {formatTokens(r.total_output_tokens)}
           </span>
         ),
@@ -156,9 +157,12 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
         header: "Cost",
         accessorFn: (r) => Number(r.total_cost ?? 0),
         align: "right",
-        width: 90,
+        width: 110,
+        className: "whitespace-nowrap",
         cell: (r) => (
-          <span className="font-mono">{formatCost(Number(r.total_cost))}</span>
+          <span className="font-mono whitespace-nowrap">
+            {formatCost(Number(r.total_cost))}
+          </span>
         ),
       },
       {
@@ -235,8 +239,9 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
         header: "Duration",
         align: "right",
         width: 90,
+        className: "whitespace-nowrap",
         cell: (r) => (
-          <span className="text-muted-foreground">
+          <span className="whitespace-nowrap text-muted-foreground">
             {formatDuration(r.duration_ms)}
           </span>
         ),
