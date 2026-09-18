@@ -118,7 +118,7 @@ function buildTilesFromMetrics(metrics: LibraryMetrics | null): Tile[] {
             label: `${mediaKindLabel("long")} videos`,
             value: kinds ? formatCount(kinds.long) : null,
             hint: metrics
-                ? `${formatDuration(metrics.length_by_kind.long?.median_seconds ?? null)} median`
+                ? `${formatDuration(metrics.length_by_kind?.long?.median_seconds ?? null)} median`
                 : "Median length",
         },
         {
@@ -126,7 +126,7 @@ function buildTilesFromMetrics(metrics: LibraryMetrics | null): Tile[] {
             label: "Shorts",
             value: kinds ? formatCount(kinds.short) : null,
             hint: metrics
-                ? `${formatDuration(metrics.length_by_kind.short?.median_seconds ?? null)} median`
+                ? `${formatDuration(metrics.length_by_kind?.short?.median_seconds ?? null)} median`
                 : "Median length",
         },
         {
@@ -145,32 +145,32 @@ function buildTilesFromMetrics(metrics: LibraryMetrics | null): Tile[] {
             key: "range",
             label: "Published across",
             value: metrics
-                ? formatDateRange(metrics.date_range.earliest, metrics.date_range.latest)
+                ? formatDateRange(metrics.date_range?.earliest ?? null, metrics.date_range?.latest ?? null)
                 : null,
-            hint: metrics?.date_range.span_days != null
-                ? `${formatCount(metrics.date_range.span_days)} days end to end`
+            hint: metrics?.date_range?.span_days != null
+                ? `${formatCount(metrics.date_range?.span_days)} days end to end`
                 : "First to most recent",
         },
         {
             key: "hours",
             label: "Total length",
-            value: metrics ? formatHours(metrics.length.total_seconds) : null,
+            value: metrics ? formatHours(metrics.length?.total_seconds ?? null) : null,
             hint: metrics
-                ? `${formatDuration(metrics.length.mean_seconds)} mean per video`
+                ? `${formatDuration(metrics.length?.mean_seconds ?? null)} mean per video`
                 : "Every Source added up",
         },
         {
             key: "median",
             label: "Median length",
-            value: metrics ? formatDuration(metrics.length.median_seconds) : null,
+            value: metrics ? formatDuration(metrics.length?.median_seconds ?? null) : null,
             hint: metrics
-                ? `${formatDuration(metrics.length.p90_seconds)} at the 90th percentile`
+                ? `${formatDuration(metrics.length?.p90_seconds ?? null)} at the 90th percentile`
                 : "Half are shorter than this",
         },
         {
             key: "captions",
             label: "Caption coverage",
-            value: captions ? `${captions.coverage_percent.toFixed(1)}%` : null,
+            value: captions ? `${(captions.coverage_percent ?? 0).toFixed(1)}%` : null,
             hint: captions
                 ? `${formatCount(captions.with_captions)} with, ${formatCount(
                       captions.without_captions,
@@ -774,7 +774,7 @@ export function LibraryMetricsHeader(props: {
             </div>
 
             <div className="flex h-4 items-center">
-                {metrics !== null && (
+                {metrics !== null && !Number.isNaN(Date.parse(metrics.computed_at ?? "")) && (
                     <p className="text-[11px] text-muted-foreground">
                         <FileText className="mr-1 inline h-3 w-3 align-[-2px]" aria-hidden="true" />
                         {`Computed by the server at ${new Date(metrics.computed_at).toLocaleString()}.`}

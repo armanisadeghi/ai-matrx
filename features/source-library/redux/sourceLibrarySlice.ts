@@ -131,6 +131,27 @@ function ensureJob(state: SourceLibraryState, jobId: string): JobLiveState {
     return state.jobsById[jobId];
 }
 
+/**
+ * Does this blob carry every section `LibraryMetricsHeader` reads? A partial
+ * one is not "some metrics" — it is a crash waiting for the first tile.
+ */
+export function isRenderableMetrics(value: unknown): value is LibraryMetrics {
+    if (!value || typeof value !== "object") return false;
+    const m = value as Record<string, unknown>;
+    const section = (key: string) =>
+        typeof m[key] === "object" && m[key] !== null;
+    return (
+        typeof m.total === "number" &&
+        section("counts_by_kind") &&
+        section("length") &&
+        section("length_by_kind") &&
+        section("date_range") &&
+        section("caption_coverage") &&
+        section("transcripts") &&
+        Array.isArray(m.cadence_per_month)
+    );
+}
+
 const sourceLibrarySlice = createSlice({
     name: "sourceLibrary",
     initialState,
@@ -138,7 +159,18 @@ const sourceLibrarySlice = createSlice({
         libraryLoaded(state, action: PayloadAction<LibraryRow>) {
             const entry = ensureLibrary(state, action.payload.id);
             entry.library = action.payload;
-            if (action.payload.metrics) entry.metrics = action.payload.metrics;
+            // 🚨 A JSONB COLUMN IS NOT A TYPE. `library.metrics` is whatever the
+            // last sync happened to write into `media.source_library.metrics`,
+            // including a shape from an older build or a half-written one from a
+            // run that then failed. Adopting it blind is how the TED Library
+            // crashed the page a second time on 2026-09-17, reading
+            // `length_by_kind.long` off undefined. Only a blob that carries the
+            // sections this screen reads is treated as metrics; anything else
+            // leaves `metrics` null, and the real `GET …/metrics` read — or its
+            // honest failure — is what the header renders.
+            if (isRenderableMetrics(action.payload.metrics)) {
+                entry.metrics = action.payload.metrics;
+            }
         },
 
         metricsLoaded(

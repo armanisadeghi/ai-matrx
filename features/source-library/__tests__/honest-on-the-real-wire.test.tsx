@@ -90,6 +90,7 @@ import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import { CATALOG_COLUMNS } from "../catalog/columns";
 import { LibraryMetricsHeader } from "../components/LibraryMetricsHeader";
 import { CatalogPasteBox } from "../components/CatalogPasteBox";
+import { isRenderableMetrics } from "../redux/sourceLibrarySlice";
 import type { SyncState } from "../redux/sourceLibrarySlice";
 import type { LibraryRow, VideoRow } from "../types";
 
@@ -208,6 +209,66 @@ afterEach(() => {
     container = null;
     root = null;
     jest.clearAllMocks();
+});
+
+// ── I ────────────────────────────────────────────────────────────────────────
+
+describe("I · the metrics blob stored on a Library row is not a type", () => {
+    /**
+     * RED PROOF: in `redux/sourceLibrarySlice.ts`, put
+     * `if (action.payload.metrics) entry.metrics = action.payload.metrics;`
+     * back into `libraryLoaded` (or drop the `?.` from
+     * `metrics.length_by_kind?.long` in LibraryMetricsHeader).
+     * → these fail with the second production crash verbatim:
+     *   TypeError: Cannot read properties of undefined (reading 'long').
+     *
+     * `media.source_library.metrics` is a jsonb column written by whatever
+     * build last finished a sync. On the TED Library it held a blob without
+     * `length_by_kind`, and adopting it blind crashed the page again the
+     * moment the Library row started arriving at all.
+     */
+    const partial = {
+        stale: false,
+        total: 5810,
+        length: { total_seconds: 1, mean_seconds: 1, median_seconds: 1, p90_seconds: 1 },
+    };
+
+    it("a blob missing the sections this screen reads is not adopted as metrics", () => {
+        expect(isRenderableMetrics(partial)).toBe(false);
+        expect(isRenderableMetrics(null)).toBe(false);
+        expect(isRenderableMetrics({})).toBe(false);
+    });
+
+    it("a complete metrics payload still is", () => {
+        expect(
+            isRenderableMetrics({
+                total: 533,
+                counts_by_kind: { long: 448, short: 85, live: 0, unknown: 0 },
+                length: {},
+                length_by_kind: {},
+                date_range: {},
+                caption_coverage: {},
+                transcripts: {},
+                cadence_per_month: [],
+            }),
+        ).toBe(true);
+    });
+
+    it("and the header survives one reaching it anyway", () => {
+        const node = mount(
+            <LibraryMetricsHeader
+                library={failedLibrary()}
+                metrics={partial as never}
+                sync={IDLE_SYNC}
+                elapsedMs={0}
+                onBringUpToDate={() => {}}
+            />,
+        );
+        expect(node.textContent).toContain("Catalogued in this Library");
+        expect(node.textContent).not.toContain("Something went wrong");
+        // and it never signs a timestamp it does not have
+        expect(node.textContent).not.toContain("Invalid Date");
+    });
 });
 
 // ── D ────────────────────────────────────────────────────────────────────────
