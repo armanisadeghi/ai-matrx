@@ -241,6 +241,11 @@ export function NodePanel({
       needs_reviewer: draft.needs_reviewer ?? node.needs_reviewer,
       brief: draft.brief ?? node.brief,
       attributes: draft.attributes ?? node.attributes,
+      // R3: the node→topic link is an editable field like any other, so it
+      // belongs in the draft-over-row merge. Without it the Topic control read
+      // `current.topic_id` off an object that never carried it, so an unsaved
+      // topic choice was invisible to the field that made it.
+      topic_id: draft.topic_id !== undefined ? draft.topic_id : node.topic_id,
     }),
     [draft, node],
   );

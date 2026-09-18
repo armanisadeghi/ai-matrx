@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 519 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 529 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "c44978a35fdd";
+export const KIND_REGISTRY_FINGERPRINT = "92b8a891dd10";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -352,9 +352,9 @@ export interface AiVisibilityPanelCostEstimateResult {
 /**
  * Mirrors ``KeyMessage`` — one thing we want assistants to be saying.
  *  *
- *  * From kind `ai_visibility_panel`.
+ *  * Shared by 2 kinds (ai_visibility_panel, ai_visibility_panel_list).
  */
-export interface AiVisibilityPanelKeyMessageResult_AiVisibilityPanel {
+export interface AiVisibilityPanelKeyMessageResult {
   key?: string;
   label?: string;
   terms?: string[];
@@ -365,39 +365,17 @@ export interface AiVisibilityPanelKeyMessageResult_AiVisibilityPanel {
 }
 
 /**
- * Mirrors ``KeyMessage`` — one thing we want assistants to be saying.
- *  *
- *  * From kind `ai_visibility_panel_list`.
- */
-export interface AiVisibilityPanelKeyMessageResult_AiVisibilityPanelList {
-  key?: string;
-  label?: string;
-  terms?: string[];
-}
-
-/**
  * Mirrors ``PanelPrompt`` — one buyer question, in the user's words.
  *  *
- *  * Shared by 2 kinds (ai_visibility_panel, ai_visibility_panel_preview).
+ *  * Shared by 3 kinds (ai_visibility_panel, ai_visibility_panel_list, ai_visibility_panel_preview).
  */
-export interface AiVisibilityPanelPromptResult_AiVisibilityPanel {
+export interface AiVisibilityPanelPromptResult {
   key?: string;
   text?: string;
   /**
    * The registered kind this payload is an instance of, when it is one.
    */
   __kind?: string;
-  intent?: string | null;
-}
-
-/**
- * Mirrors ``PanelPrompt`` — one buyer question, in the user's words.
- *  *
- *  * From kind `ai_visibility_panel_list`.
- */
-export interface AiVisibilityPanelPromptResult_AiVisibilityPanelList {
-  key?: string;
-  text?: string;
   intent?: string | null;
 }
 
@@ -2324,6 +2302,10 @@ export interface IntakeClassifyEstimate_SiteIntakeAnalysis {
  * * From kind `site_intake_apply_result`.
  */
 export interface IntakeClassifyEstimate_SiteIntakeApplyResult {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
   batches: number;
   batch_size: number;
   est_cost_usd?: number | null;
@@ -2459,7 +2441,7 @@ export interface ItemSpecific {
 }
 
 /**
- * * Shared by 65 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
+ * * Shared by 68 kinds (agent_assignment_batch_result, agent_react_result, agent_result, aggregate_group, …).
  */
 export type JsonValue = unknown;
 
@@ -4792,13 +4774,7 @@ export interface SeoBacklinkEnrichmentItemResult {
  */
 export interface SeoBacklinkEnrichmentResult_SeoBacklinkRefreshResult {
   items?: SeoBacklinkEnrichmentItemResult[];
-  queue?: {
-    /**
-     * The registered kind this payload is an instance of, when it is one.
-     */
-    __kind?: string;
-    [key: string]: number | string | undefined;
-  };
+  queue?: Record<string, number>;
   /**
    * The registered kind this payload is an instance of, when it is one.
    */
@@ -4969,22 +4945,9 @@ export interface SeoGscPageSummary {
 /**
  * Mirrors ``aidream.services.seo.prospect_import.ImportEntryPlan`` exactly.
  *  *
- *  * From kind `seo_prospect_capture_result`.
+ *  * Shared by 3 kinds (seo_prospect_capture_result, seo_prospect_import_preview, seo_prospect_import_report).
  */
-export interface SeoImportEntryPlan_SeoProspectCaptureResult {
-  raw: string;
-  url?: string | null;
-  why: string;
-  domain?: string | null;
-  verdict: "new" | "existing" | "duplicate_in_list" | "blocklisted" | "unusable";
-}
-
-/**
- * Mirrors ``aidream.services.seo.prospect_import.ImportEntryPlan`` exactly.
- *  *
- *  * Shared by 2 kinds (seo_prospect_import_preview, seo_prospect_import_report).
- */
-export interface SeoImportEntryPlan_SeoProspectImportPreview {
+export interface SeoImportEntryPlan {
   raw: string;
   url?: string | null;
   why: string;
@@ -5053,16 +5016,20 @@ export interface SeoKeywordVolumeRejectedPhrase {
 }
 
 /**
- * Mirrors ``aidream.services.seo.landscape_brief.LandscapeBrief`` exactly.
+ * Mirrors ``aidream.services.seo.landscape_brief.StrategyBrief`` exactly.
  *  *
  *  * From kind `seo_landscape_brief_read_result`.
  */
 export interface SeoLandscapeBriefData {
   id: string;
   facts?: Record<string, JsonValue>;
+  scope: string;
+  inputs?: Record<string, JsonValue>;
   status: string;
-  site_id: string;
+  site_id?: string | null;
+  brand_id: string;
   guidance?: string;
+  version_no?: number;
   reviewed_at?: string | null;
   generated_at?: string | null;
   service_lines?: SeoServiceLine_SeoLandscapeBriefReadResult[];
@@ -5200,31 +5167,13 @@ export interface SeoPagePerformanceSample {
  * Mirrors ``PriorRelationship`` exactly — present only when a
  * ``crm.party`` already exists for the captured domain.
  *  *
- *  * From kind `seo_prospect_capture_preview`.
+ *  * Shared by 2 kinds (seo_prospect_capture_preview, seo_prospect_capture_result).
  */
-export interface SeoPriorRelationship_SeoProspectCapturePreview {
+export interface SeoPriorRelationship {
   /**
    * The registered kind this payload is an instance of, when it is one.
    */
   __kind?: string;
-  summary: string;
-  party_id: string;
-  campaigns?: string[];
-  last_win_at?: string | null;
-  display_name: string;
-  confirmed_wins?: number;
-  do_not_contact?: boolean;
-  interaction_count?: number;
-  last_interaction_at?: string | null;
-}
-
-/**
- * Mirrors ``PriorRelationship`` exactly — present only when a
- * ``crm.party`` already exists for the captured domain.
- *  *
- *  * From kind `seo_prospect_capture_result`.
- */
-export interface SeoPriorRelationship_SeoProspectCaptureResult {
   summary: string;
   party_id: string;
   campaigns?: string[];
@@ -5244,9 +5193,13 @@ export interface SeoPriorRelationship_SeoProspectCaptureResult {
  *  * From kind `seo_prospect_capture_result`.
  */
 export interface SeoProspectImportReportSection {
+  /**
+   * The registered kind this payload is an instance of, when it is one.
+   */
+  __kind?: string;
   errors?: string[];
   created?: number;
-  entries?: SeoImportEntryPlan_SeoProspectCaptureResult[];
+  entries?: SeoImportEntryPlan[];
   matched?: number;
   site_id: string;
   skipped?: number;
@@ -6789,7 +6742,7 @@ export interface AiExtractResult {
 /**
  * Output of ``seo.ai_visibility.panel.declare`` — the saved/updated panel.
  *  *
- *  * Kind `ai_visibility_panel` (registry v4).
+ *  * Kind `ai_visibility_panel` (registry v5).
  */
 export interface AiVisibilityPanel {
   id?: string;
@@ -6798,9 +6751,9 @@ export interface AiVisibilityPanel {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "ai_visibility_panel";
+  __kind?: "ai_visibility_panel";
   engines?: string[];
-  prompts?: AiVisibilityPanelPromptResult_AiVisibilityPanel[];
+  prompts?: AiVisibilityPanelPromptResult[];
   site_id?: string;
   is_active?: boolean;
   run_count?: number;
@@ -6809,7 +6762,7 @@ export interface AiVisibilityPanel {
   declared_by?: string;
   last_run_at?: string | null;
   cadence_days?: number;
-  key_messages?: AiVisibilityPanelKeyMessageResult_AiVisibilityPanel[];
+  key_messages?: AiVisibilityPanelKeyMessageResult[];
   last_run_status?: string | null;
   last_run_cost_usd?: number | string | null;
   coverage_tracker_id?: string | null;
@@ -6820,7 +6773,7 @@ export interface AiVisibilityPanel {
  * Output of ``seo.ai_visibility.panel.list`` — saved panels for one site
  * or the current workspace.
  *  *
- *  * Kind `ai_visibility_panel_list` (registry v5).
+ *  * Kind `ai_visibility_panel_list` (registry v6).
  */
 export interface AiVisibilityPanelList {
   /**
@@ -6834,20 +6787,20 @@ export interface AiVisibilityPanelList {
  * Output of ``seo.ai_visibility.panel.preview`` — what running this panel
  * now would do, and cost, before any spend.
  *  *
- *  * Kind `ai_visibility_panel_preview` (registry v4).
+ *  * Kind `ai_visibility_panel_preview` (registry v5).
  */
 export interface AiVisibilityPanelPreview {
   name?: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "ai_visibility_panel_preview";
+  __kind?: "ai_visibility_panel_preview";
   engines?: string[];
   summary?: string;
   estimate?: AiVisibilityPanelCostEstimateResult;
   panel_id?: string;
-  prompts_deferred?: AiVisibilityPanelPromptResult_AiVisibilityPanel[];
-  prompts_this_pass?: AiVisibilityPanelPromptResult_AiVisibilityPanel[];
+  prompts_deferred?: AiVisibilityPanelPromptResult[];
+  prompts_this_pass?: AiVisibilityPanelPromptResult[];
 }
 
 /**
@@ -7303,14 +7256,14 @@ export interface BrokenLinkProspectingPreview {
 /**
  * Output of ``seo.prospecting.broken_links.run`` — mirrors ``BrokenLinkProspectingReport``.
  *  *
- *  * Kind `broken_link_prospecting_report` (registry v4).
+ *  * Kind `broken_link_prospecting_report` (registry v5).
  */
 export interface BrokenLinkProspectingReport {
   pages?: SeoCheckedPage[];
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "broken_link_prospecting_report";
+  __kind?: "broken_link_prospecting_report";
   errors?: string[];
   site_id: string;
   skipped?: SeoSkippedCandidate[];
@@ -7755,26 +7708,26 @@ export interface ComparisonSet {
 /**
  * Output of ``seo.competitors.name_lookup`` — likely official websites for a company name.
  *  *
- *  * Kind `competitor_lookup_result` (registry v4).
+ *  * Kind `competitor_lookup_result` (registry v5).
  */
 export interface CompetitorLookupResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "competitor_lookup_result";
+  __kind?: "competitor_lookup_result";
   results?: CompetitorLookupCandidate[];
 }
 
 /**
  * Output of ``seo.competitors.opportunity_autopsy`` — ranked content-gap opportunities.
  *  *
- *  * Kind `competitor_opportunity_autopsy_result` (registry v4).
+ *  * Kind `competitor_opportunity_autopsy_result` (registry v5).
  */
 export interface CompetitorOpportunityAutopsyResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "competitor_opportunity_autopsy_result";
+  __kind?: "competitor_opportunity_autopsy_result";
   run_id: string;
   site_id: string;
   artifact: CompetitorOpportunityArtifactSection;
@@ -8171,13 +8124,13 @@ export interface CrmContactSaveResult {
 /**
  * Output of ``seo.crm.fold_settings.read`` and ``seo.crm.fold_settings.update``.
  *  *
- *  * Kind `crm_fold_settings` (registry v4).
+ *  * Kind `crm_fold_settings` (registry v5).
  */
 export interface CrmFoldSettings {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "crm_fold_settings";
+  __kind?: "crm_fold_settings";
   site_id: string;
   settings?: CrmFoldSettingsSection;
   is_default?: boolean;
@@ -8494,13 +8447,13 @@ export interface DocumentQuadDetection {
  * outlets, approved link-gap domains, and approved SERP prospects each resolved
  * into CRM organizations. ``source`` distinguishes which producer ran.
  *  *
- *  * Kind `domain_fold_report` (registry v4).
+ *  * Kind `domain_fold_report` (registry v5).
  */
 export interface DomainFoldReport {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "domain_fold_report";
+  __kind?: "domain_fold_report";
   errors?: string[];
   folded?: FoldedDomainEntry[];
   source: string;
@@ -8973,7 +8926,7 @@ export interface FilterResult {
 }
 
 /**
- * Kind `flashcard_set` (registry v10).
+ * Kind `flashcard_set` (registry v11).
  */
 export interface FlashcardSet {
   cards: (Flashcard_FlashcardSet | EnhancedFlashcard_FlashcardSet | TieredFlashcard_FlashcardSet)[];
@@ -9185,16 +9138,47 @@ export interface GeoCoordinates {
 /**
  * Output of ``web.google.image_search`` — the SerpAPI Google Images response.
  *  *
- *  * Kind `google_image_search_results` (registry v4).
+ *  * Kind `google_image_search_results` (registry v5).
  */
 export interface GoogleImageSearchResults {
   query: string;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "google_image_search_results";
+  __kind?: "google_image_search_results";
   elapsed_ms?: number;
   images_results?: GoogleImageSearchResult[];
+}
+
+/**
+ * Kind `google_marketing_result` (registry v2).
+ */
+export interface GoogleMarketingResult {
+  data?: JsonValue | null;
+  note?: string | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "google_marketing_result";
+  action?: string;
+  bounds?: Record<string, unknown> | null;
+  checks?: (Record<string, unknown>)[] | null;
+  source?: string;
+  caveats?: string[] | null;
+  has_ga4?: boolean | null;
+  site_id?: string | null;
+  verdict?: string | null;
+  freshness?: string | null;
+  truncated?: boolean | null;
+  channel_id?: string | null;
+  containers?: (Record<string, unknown>)[] | null;
+  count_unit?: string | null;
+  limit_note?: string | null;
+  has_consent?: boolean | null;
+  completeness?: string | null;
+  google_account?: string | null;
+  returned_count?: number | null;
+  has_conversion_tag?: boolean | null;
 }
 
 /**
@@ -9280,6 +9264,70 @@ export interface GoogleSearchResults {
     __kind?: string;
     [key: string]: JsonValue | string | undefined;
   })[];
+}
+
+/**
+ * Kind `google_workspace_result` (registry v3).
+ */
+export interface GoogleWorkspaceResult {
+  tab?: string | null;
+  kind?: string | null;
+  name?: string | null;
+  note?: string | null;
+  rows?: JsonValue[][] | null;
+  sent?: boolean | null;
+  text?: string | null;
+  count?: number | null;
+  draft?: Record<string, unknown> | null;
+  range?: string | null;
+  tasks?: (Record<string, unknown>)[] | null;
+  title?: string | null;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "google_workspace_result";
+  action?: string;
+  bounds?: Record<string, unknown> | null;
+  events?: (Record<string, unknown>)[] | null;
+  fields?: (Record<string, unknown>)[] | null;
+  person?: Record<string, unknown> | null;
+  created?: boolean | null;
+  dry_run?: boolean | null;
+  file_id?: string | null;
+  skipped?: (Record<string, unknown>)[] | null;
+  written?: boolean | null;
+  accounts?: (Record<string, unknown>)[] | null;
+  appended?: boolean | null;
+  approval?: Record<string, unknown> | null;
+  contacts?: (Record<string, unknown>)[] | null;
+  has_more?: boolean | null;
+  imported?: boolean | null;
+  field_map?: (Record<string, unknown>)[] | null;
+  next_step?: string | null;
+  resources?: (Record<string, unknown>)[] | null;
+  row_count?: number | null;
+  truncated?: boolean | null;
+  from_email?: string | null;
+  header_row?: number | null;
+  limit_note?: string | null;
+  matched_by?: string | null;
+  sheet_size?: string | null;
+  task_lists?: (Record<string, unknown>)[] | null;
+  window_end?: string | null;
+  total_chars?: number | null;
+  would_write?: Record<string, unknown> | null;
+  needs_client?: Record<string, unknown> | null;
+  window_start?: string | null;
+  would_append?: Record<string, unknown> | null;
+  would_create?: Record<string, unknown> | null;
+  next_range_a1?: string | null;
+  showing_chars?: string | null;
+  google_account?: string | null;
+  imported_tasks?: (Record<string, unknown>)[] | null;
+  open_in_google?: string | null;
+  next_start_char?: number | null;
+  already_imported?: (Record<string, unknown>)[] | null;
+  awaiting_approval?: boolean | null;
 }
 
 /**
@@ -9879,13 +9927,13 @@ export interface InterviewSessionHydration {
 /**
  * Output of ``interview.tracker_apply`` — verdicts applied to Open Questions.
  *  *
- *  * Kind `interview_tracker_apply_result` (registry v6).
+ *  * Kind `interview_tracker_apply_result` (registry v7).
  */
 export interface InterviewTrackerApplyResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "interview_tracker_apply_result";
+  __kind?: "interview_tracker_apply_result";
   context?: InterviewRoundContext;
   summary?: string;
   verdicts_applied?: number;
@@ -10257,7 +10305,7 @@ export interface KeywordVariantSet {
 /**
  * Output of ``kg.entity.mentions`` — a paginated mention drill-down.
  *  *
- *  * Kind `kg_entity_mentions_page` (registry v6).
+ *  * Kind `kg_entity_mentions_page` (registry v7).
  */
 export interface KgEntityMentionsPage {
   items?: KgMentionRow[];
@@ -10266,14 +10314,14 @@ export interface KgEntityMentionsPage {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "kg_entity_mentions_page";
+  __kind?: "kg_entity_mentions_page";
   offset?: number;
 }
 
 /**
  * Output of ``kg.graph.neighborhood`` — the entity/relationship subgraph.
  *  *
- *  * Kind `kg_graph_neighborhood` (registry v6).
+ *  * Kind `kg_graph_neighborhood` (registry v7).
  */
 export interface KgGraphNeighborhood {
   edges?: KgGraphEdge[];
@@ -10281,7 +10329,7 @@ export interface KgGraphNeighborhood {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "kg_graph_neighborhood";
+  __kind?: "kg_graph_neighborhood";
   truncated?: boolean;
 }
 
@@ -10810,6 +10858,66 @@ export interface MapResult {
    * How many child invocations were dispatched (one per item).
    */
   dispatched: number;
+}
+
+/**
+ * One node of the tree, in the exact shape `seo.upsert_map_topics` accepts.
+ *
+ * `slug` is the agent-facing key (doctrine); `status` is what makes a proposal a
+ * proposal.
+ *
+ * 🚨 THE TREE IS FLAT HERE, AND THAT IS NOT A SIMPLIFICATION.
+ * `seo.upsert_map_topics` takes the tree in EITHER form — nested `children`, or
+ * flat with `parent_slug` (its own `COALESCE(node->>'parent_slug', <the nesting
+ * parent>)`) — and this kind uses the FLAT one, because a self-referencing JSON
+ * schema is REFUSED outright by Anthropic's structured-output gate ("Circular
+ * reference detected in schema definitions: MapTopicNode -> MapTopicNode",
+ * measured live 2026-09-17) and by Gemini's restricted subset. A recursive kind
+ * is a kind NO MODEL CAN BE BOUND TO — and the refusal comes from the registered
+ * KIND schema, not just the agent's own output schema, so flattening the agent
+ * alone does not fix it. `parent_slug` carries the same hierarchy with no
+ * recursion, so the contract survives every provider.
+ *  *
+ *  * Kind `map_topic_node_v1` (registry v3).
+ */
+export interface MapTopicNodeV1 {
+  name: string;
+  /**
+   * lowercase-hyphen slug, unique inside the map; the agent-facing key.
+   */
+  slug: string;
+  __kind?: "map_topic_node_v1";
+  status?: "proposed" | "active";
+  description?: string | null;
+  /**
+   * The slug this topic hangs under, or null for a root topic. This is how the tree is expressed: the parent must appear in the same list, before its children.
+   */
+  parent_slug?: string | null;
+}
+
+/**
+ * What `seo.map_author` returns: the tree, plus what it was built from.
+ *  *
+ *  * Kind `map_topic_proposal_v1` (registry v2).
+ */
+export interface MapTopicProposalV1 {
+  __kind?: "map_topic_proposal_v1";
+  /**
+   * The tree, EXACTLY as `upsert_map_topics` takes it.
+   */
+  topics: MapTopicNodeV1[];
+  /**
+   * One paragraph a person reads: what this tree covers and why.
+   */
+  summary: string;
+  /**
+   * Which of the six sources this tree came from.
+   */
+  source_kind: string;
+  /**
+   * What the source could NOT settle — the offerings, audiences or geographies a person still has to supply. Empty when the source covered everything.
+   */
+  coverage_notes?: string;
 }
 
 /**
@@ -12052,6 +12160,60 @@ export interface PageImage {
 }
 
 /**
+ * What `seo.page_intent_proposer` returns for one claimed topic batch.
+ *  *
+ *  * Kind `page_intent_batch_v1` (registry v4).
+ */
+export interface PageIntentBatchV1 {
+  /**
+   * What this batch could not settle, or a pattern about this topic worth telling a person — 'these forty pages are the same service in forty cities and the map has no region facet' is exactly the kind of thing that belongs here. Empty when there is nothing to say.
+   */
+  notes?: string;
+  __kind?: "page_intent_batch_v1";
+  /**
+   * One entry for EVERY page you were sent, in the order you were sent them. A page you leave out is a page nobody hears an answer about, and it goes back on the queue to be paid for again.
+   */
+  proposals: PageIntentProposalV1[];
+}
+
+/**
+ * ONE page's destination, in the shape an item of `seo.set_page_intents` takes.
+ *  *
+ *  * Kind `page_intent_proposal_v1` (registry v4).
+ */
+export interface PageIntentProposalV1 {
+  /**
+   * That page's url, copied back so a person can check the row.
+   */
+  url: string;
+  /**
+   * One or two sentences a person reads before accepting this. Say what the EVIDENCE was — the traffic, the links, the overlap with a named sibling — not a restatement of the disposition. When the evidence was thin, say what was missing.
+   */
+  note: string;
+  __kind?: "page_intent_proposal_v1";
+  /**
+   * The page id exactly as it was delivered to you.
+   */
+  page_id: string;
+  /**
+   * ONLY for merge and redirect: the url of the page this one goes INTO, copied EXACTLY from the delivered sibling roster or planned-page list. It must be one of those urls — a url you compose yourself is refused and the proposal is downgraded to keep. Leave null for every other disposition.
+   */
+  into_url?: string | null;
+  /**
+   * How sure you are, 0-100. Be honest: a merge, redirect, move or delete below the delivered floor is turned into `keep` with your note attached, which is the right outcome for a guess about a live business's website.
+   */
+  confidence: number;
+  /**
+   * The topic this page should SIT ON after your proposal — the topic it is going to for move, merge and redirect, and the topic it already covers for keep, rewrite and delete. Always a slug from the delivered map outline; an invented slug is refused and the page is left alone.
+   */
+  topic_slug: string;
+  /**
+   * What should happen to this page. keep: it is where it belongs and is worth keeping as it is. move: it is a good page sitting on the WRONG topic. merge: its content should be folded into a stronger page and this url retired. redirect: it should point at a stronger page, with nothing worth folding in. rewrite: the subject is wanted but this page is too thin to serve it. delete: the page is junk nobody should ever reach. When you are not sure, the answer is keep.
+   */
+  disposition: "keep" | "move" | "merge" | "redirect" | "rewrite" | "delete";
+}
+
+/**
  * `page_keyword_analysis_v1` — the Page Analyzer's artifact.
  *  *
  *  * Kind `page_keyword_analysis_v1` (registry v5).
@@ -12160,6 +12322,52 @@ export interface PageList {
 }
 
 /**
+ * What `seo.page_mapper` returns for one claimed batch: one answer per page.
+ *  *
+ *  * Kind `page_mapping_batch_v1` (registry v5).
+ */
+export interface PageMappingBatchV1 {
+  /**
+   * What this batch could not settle — pages whose evidence was too thin to judge, or a pattern worth telling a person about. Empty when there is nothing to say.
+   */
+  notes?: string;
+  __kind?: "page_mapping_batch_v1";
+  /**
+   * One entry for EVERY page you were sent, in the order you were sent them. A page you leave out is a page nobody hears an answer about.
+   */
+  mappings: PageMappingV1[];
+}
+
+/**
+ * Where ONE page sits on the map — or the honest answer that it sits nowhere yet.
+ *  *
+ *  * Kind `page_mapping_v1` (registry v5).
+ */
+export interface PageMappingV1 {
+  /**
+   * That page's url, copied back so a person can check the row.
+   */
+  url: string;
+  /**
+   * Only when `topics` is empty: one sentence saying what this page is about and why nothing in the map covers it. This is what a person reads when deciding whether to add the topic you suggested.
+   */
+  note?: string | null;
+  __kind?: "page_mapping_v1";
+  /**
+   * The topics this page covers, best first, never more than the delivered ceiling. EMPTY when no topic in the map covers this page — that is a legal and expected answer, and you must then fill in the suggestion below.
+   */
+  topics?: PageTopicPickV1[];
+  /**
+   * The page id exactly as it was delivered to you.
+   */
+  page_id: string;
+  /**
+   * Only when `topics` is empty: the name of the ONE topic this map is missing that would cover this page. A plain reader-facing name ('Battery recycling'), never a slug and never a city. Leave null when the page simply does not belong on any topical map (a cart, a login, a thank-you page).
+   */
+  suggested_topic_name?: string | null;
+}
+
+/**
  * What the page declares about itself in its head.
  *  *
  *  * Kind `page_metadata` (registry v2).
@@ -12245,6 +12453,28 @@ export interface PageSection {
   __kind?: "page_section";
   heading: string;
   markdown: string;
+}
+
+/**
+ * One topic a page covers, in the exact shape `seo.set_pages_map_topics` takes
+ * inside an item's `topics` array: `{slug, confidence, reason}`.
+ *  *
+ *  * Kind `page_topic_pick_v1` (registry v7).
+ */
+export interface PageTopicPickV1 {
+  /**
+   * The slug of a topic that appears in the delivered map outline. Never a slug you invented — an unknown slug is refused by the map and the whole page is skipped.
+   */
+  slug: string;
+  __kind?: "page_topic_pick_v1";
+  /**
+   * One sentence, from the evidence you were given, saying why this page covers this topic. A person reads this to decide whether to keep the placement, so it may never claim evidence that does not exist. For a page marked NOT CRAWLED there was no title, heading or body to read: say so and cite only what the URL literally contains — "Not crawled; placed from the URL slug alone, which reads '<the slug words>'." Any other wording for an uncrawled page is replaced by the writer.
+   */
+  reason: string;
+  /**
+   * How sure you are that this page covers this topic, 0-100. Be honest: a placement below the delivered floor is DROPPED and the page stays unmapped, which is the right outcome for a guess.
+   */
+  confidence: number;
 }
 
 /**
@@ -12827,15 +13057,64 @@ export interface PlanShapeRecommendation {
 }
 
 /**
+ * One platform Record, read as the operator.
+ *
+ * The kind is deliberately generic: the platform has one Record shape and
+ * every entity type answers in it, so a workflow (and every renderer) learns
+ * it once instead of once per table. The row's own columns live under
+ * ``fields`` — the columns are the table's business, not this kind's.
+ *  *
+ *  * Kind `platform_record` (registry v2).
+ */
+export interface PlatformRecord {
+  /**
+   * Schema-qualified table the row was read from.
+   */
+  table: string;
+  /**
+   * The registered kind this payload is an instance of.
+   */
+  __kind?: "platform_record";
+  /**
+   * The row's columns, JSON-safe, minus any the registry excludes.
+   */
+  fields?: Record<string, JsonValue>;
+  /**
+   * The record's id.
+   */
+  record_id: string;
+  /**
+   * platform.entity_types token this row belongs to.
+   */
+  entity_type: string;
+  /**
+   * Human label of the TYPE, from the registry (e.g. 'Google Document').
+   */
+  entity_label?: string;
+  /**
+   * Human name of THIS row, taken from whichever of name/title/label/… the table carries. Empty when it carries none.
+   */
+  record_label?: string;
+  /**
+   * Columns the entity registry marks as not-for-clients, withheld from ``fields``. Named rather than silently dropped.
+   */
+  hidden_fields?: string[];
+  /**
+   * The row's tenancy stamp, REPORTED for downstream scoping. Never the basis of the access decision — that is iam.has_access_for alone.
+   */
+  organization_id?: string | null;
+}
+
+/**
  * Output of ``podcast.cast.preview`` — the resolved deterministic cast.
  *  *
- *  * Kind `podcast_cast_preview_result` (registry v4).
+ *  * Kind `podcast_cast_preview_result` (registry v5).
  */
 export interface PodcastCastPreviewResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "podcast_cast_preview_result";
+  __kind?: "podcast_cast_preview_result";
   provider?: string;
   speakers?: PodcastCastSpeaker[];
   host_count?: number;
@@ -13575,13 +13854,13 @@ export interface RagChunkSet {
  * Output of ``rag.verify`` — each claim in an answer checked against the
  * retrieved source passages.
  *  *
- *  * Kind `rag_claim_verification` (registry v4).
+ *  * Kind `rag_claim_verification` (registry v5).
  */
 export interface RagClaimVerification {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "rag_claim_verification";
+  __kind?: "rag_claim_verification";
   claims?: RagClaimVerdict[];
   latency_ms?: number;
   judge_model?: string;
@@ -15173,14 +15452,14 @@ export interface SeoAuthorityRouteAnalysis {
  * Output of ``seo.authority.route`` — recommended internal-link authority
  * routes from internal links, backlinks, GSC evidence, and page roles.
  *  *
- *  * Kind `seo_authority_route_result` (registry v4).
+ *  * Kind `seo_authority_route_result` (registry v5).
  */
 export interface SeoAuthorityRouteResult {
   pages?: SeoAuthorityPage[];
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_authority_route_result";
+  __kind?: "seo_authority_route_result";
   site_id?: string;
   warnings?: string[];
   candidates?: SeoAuthorityCandidate[];
@@ -15228,13 +15507,13 @@ export interface SeoBacklinkEnrichmentResult {
 /**
  * Output of ``seo.backlinks.refresh`` — collection receipt plus optional enrichment.
  *  *
- *  * Kind `seo_backlink_refresh_result` (registry v4).
+ *  * Kind `seo_backlink_refresh_result` (registry v5).
  */
 export interface SeoBacklinkRefreshResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_backlink_refresh_result";
+  __kind?: "seo_backlink_refresh_result";
   receipt: SeoBacklinkRefreshReceipt;
   enrichment?: SeoBacklinkEnrichmentResult_SeoBacklinkRefreshResult | null;
 }
@@ -15373,13 +15652,13 @@ export interface SeoFindingFixResult {
  * Output of ``seo.local.google_listing.check`` — a location's live public
  * Google listing, persisted for NAP, category, review, and profile audits.
  *  *
- *  * Kind `seo_google_listing_check_result` (registry v4).
+ *  * Kind `seo_google_listing_check_result` (registry v5).
  */
 export interface SeoGoogleListingCheckResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_google_listing_check_result";
+  __kind?: "seo_google_listing_check_result";
   snapshot: SeoGoogleListingSnapshot;
   persisted: boolean;
   listing_id?: string | null;
@@ -15427,13 +15706,13 @@ export interface SeoKeywordClassifyResult {
 /**
  * Output of ``seo.keywords.relationships.research``.
  *  *
- *  * Kind `seo_keyword_relationship_research_result` (registry v10).
+ *  * Kind `seo_keyword_relationship_research_result` (registry v12).
  */
 export interface SeoKeywordRelationshipResearchResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_keyword_relationship_research_result";
+  __kind?: "seo_keyword_relationship_research_result";
   ingest?: SeoKeywordResearchIngestSummary;
   volume?: SeoKeywordVolumeRefreshResult | null;
   artifact?: KeywordRelationshipResearch;
@@ -15526,13 +15805,13 @@ export interface SeoKeywordTopicAssignResult {
 /**
  * Output of ``seo.keywords.market_volume.refresh``.
  *  *
- *  * Kind `seo_keyword_volume_refresh_result` (registry v4).
+ *  * Kind `seo_keyword_volume_refresh_result` (registry v5).
  */
 export interface SeoKeywordVolumeRefreshResult {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_keyword_volume_refresh_result";
+  __kind?: "seo_keyword_volume_refresh_result";
   batches?: SeoKeywordVolumeBatchReceipt[];
   result_kind?: string;
   skipped_fresh?: number;
@@ -15575,7 +15854,7 @@ export interface SeoLandscapeBrief {
 /**
  * Output of ``seo.competitors.landscape_brief.read`` — brief, or none yet.
  *  *
- *  * Kind `seo_landscape_brief_read_result` (registry v5).
+ *  * Kind `seo_landscape_brief_read_result` (registry v6).
  */
 export interface SeoLandscapeBriefReadResult {
   brief?: SeoLandscapeBriefData | null;
@@ -15589,13 +15868,13 @@ export interface SeoLandscapeBriefReadResult {
  * Output of ``seo.link_gap.page.collect`` — referring pages shared by
  * accepted competitor-page opportunities but absent from one canonical page.
  *  *
- *  * Kind `seo_link_gap_page_receipt` (registry v4).
+ *  * Kind `seo_link_gap_page_receipt` (registry v5).
  */
 export interface SeoLinkGapPageReceipt {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_link_gap_page_receipt";
+  __kind?: "seo_link_gap_page_receipt";
   page_id: string;
   receipt: SeoLinkGapCollectionReceipt;
   page_url: string;
@@ -15607,13 +15886,13 @@ export interface SeoLinkGapPageReceipt {
  * Output of ``seo.link_gap.site.preview`` — which human-confirmed
  * competitors would seed a paid site-wide link-gap run, and its cost.
  *  *
- *  * Kind `seo_link_gap_site_preview` (registry v4).
+ *  * Kind `seo_link_gap_site_preview` (registry v5).
  */
 export interface SeoLinkGapSitePreview {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_link_gap_site_preview";
+  __kind?: "seo_link_gap_site_preview";
   reason?: string | null;
   seeded?: SeoLinkGapSeededCompetitor[];
   can_run: boolean;
@@ -15629,13 +15908,13 @@ export interface SeoLinkGapSitePreview {
  * Output of ``seo.link_gap.site.collect`` — domains linking to confirmed
  * eligible competitors but not to the site, with optional authority measurement.
  *  *
- *  * Kind `seo_link_gap_site_receipt` (registry v4).
+ *  * Kind `seo_link_gap_site_receipt` (registry v5).
  */
 export interface SeoLinkGapSiteReceipt {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_link_gap_site_receipt";
+  __kind?: "seo_link_gap_site_receipt";
   seeded: SeoLinkGapSeededCompetitor[];
   receipt: SeoLinkGapCollectionReceipt;
   site_id: string;
@@ -15867,7 +16146,7 @@ export interface SeoPagePerformance {
  * page would land in and whether its domain is already a known
  * relationship, without writing anything.
  *  *
- *  * Kind `seo_prospect_capture_preview` (registry v4).
+ *  * Kind `seo_prospect_capture_preview` (registry v5).
  */
 export interface SeoProspectCapturePreview {
   url: string;
@@ -15876,12 +16155,12 @@ export interface SeoProspectCapturePreview {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_prospect_capture_preview";
+  __kind?: "seo_prospect_capture_preview";
   domain?: string | null;
   site_id?: string | null;
   verdict: "new" | "existing" | "blocklisted" | "unusable";
   site_label?: string | null;
-  prior_relationship?: SeoPriorRelationship_SeoProspectCapturePreview | null;
+  prior_relationship?: SeoPriorRelationship | null;
   site_choice_required?: boolean;
 }
 
@@ -15889,7 +16168,7 @@ export interface SeoProspectCapturePreview {
  * Output of ``seo.prospecting.capture.run`` — what the one-click capture
  * actually did, via the same import path every prospecting method uses.
  *  *
- *  * Kind `seo_prospect_capture_result` (registry v5).
+ *  * Kind `seo_prospect_capture_result` (registry v6).
  */
 export interface SeoProspectCaptureResult {
   url: string;
@@ -15903,21 +16182,21 @@ export interface SeoProspectCaptureResult {
   outcome: "created" | "matched" | "skipped";
   site_id: string;
   site_label?: string | null;
-  prior_relationship?: SeoPriorRelationship_SeoProspectCaptureResult | null;
+  prior_relationship?: SeoPriorRelationship | null;
 }
 
 /**
  * Output of ``seo.prospecting.import.preview`` — a verdict and reason
  * for every entry before anything is written.
  *  *
- *  * Kind `seo_prospect_import_preview` (registry v4).
+ *  * Kind `seo_prospect_import_preview` (registry v5).
  */
 export interface SeoProspectImportPreview {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_prospect_import_preview";
-  entries?: SeoImportEntryPlan_SeoProspectImportPreview[];
+  __kind?: "seo_prospect_import_preview";
+  entries?: SeoImportEntryPlan[];
   site_id: string;
   skipped: number;
   new_domains: number;
@@ -15929,16 +16208,16 @@ export interface SeoProspectImportPreview {
  * Output of ``seo.prospecting.import.run`` — what the import actually
  * did to the shared prospect triage surface.
  *  *
- *  * Kind `seo_prospect_import_report` (registry v4).
+ *  * Kind `seo_prospect_import_report` (registry v5).
  */
 export interface SeoProspectImportReport {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_prospect_import_report";
+  __kind?: "seo_prospect_import_report";
   errors?: string[];
   created?: number;
-  entries?: SeoImportEntryPlan_SeoProspectImportPreview[];
+  entries?: SeoImportEntryPlan[];
   matched?: number;
   site_id: string;
   skipped?: number;
@@ -15975,13 +16254,13 @@ export interface SeoRankCheckResult {
  * Output of ``seo.rank.history.read`` — chart-ready chronological
  * position history for one tracked ranking.
  *  *
- *  * Kind `seo_rank_history` (registry v4).
+ *  * Kind `seo_rank_history` (registry v5).
  */
 export interface SeoRankHistory {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_rank_history";
+  __kind?: "seo_rank_history";
   points?: SeoRankReading[];
 }
 
@@ -16082,13 +16361,13 @@ export interface SeoRankReading {
 /**
  * Output of ``seo.rank.serp_landscape.read``. Mirrors ``SerpLandscape``.
  *  *
- *  * Kind `seo_rank_serp_landscape` (registry v4).
+ *  * Kind `seo_rank_serp_landscape` (registry v6).
  */
 export interface SeoRankSerpLandscape {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_rank_serp_landscape";
+  __kind?: "seo_rank_serp_landscape";
   results?: SerpPlacement[];
   observed_at?: string | null;
   snapshot_id?: string | null;
@@ -16203,14 +16482,14 @@ export interface SeoRankTargetRemoval {
  *
  * Mirrors ``ReputationRunResult`` field-for-field.
  *  *
- *  * Kind `seo_reputation_analysis` (registry v4).
+ *  * Kind `seo_reputation_analysis` (registry v5).
  */
 export interface SeoReputationAnalysis {
   brief: SeoReputationBrief;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_reputation_analysis";
+  __kind?: "seo_reputation_analysis";
   site_id: string;
   result_kind?: "reputation.intelligence";
   accepted_cases?: number;
@@ -16224,14 +16503,14 @@ export interface SeoReputationAnalysis {
  * Output of ``seo.audit.robots.check`` — robots.txt fetched and tested
  * against specific paths/crawlers.
  *  *
- *  * Kind `seo_robots_check_result` (registry v4).
+ *  * Kind `seo_robots_check_result` (registry v5).
  */
 export interface SeoRobotsCheckResult {
   found?: boolean;
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_robots_check_result";
+  __kind?: "seo_robots_check_result";
   checks?: SeoRobotsPathCheck[];
   site_url?: string;
   sitemaps?: string[];
@@ -16270,13 +16549,13 @@ export interface SeoSearchPerformanceDaily {
  * Output of ``seo.prospecting.serp.preview`` — every query and the
  * estimated cost before money moves.
  *  *
- *  * Kind `seo_serp_prospecting_preview` (registry v4).
+ *  * Kind `seo_serp_prospecting_preview` (registry v5).
  */
 export interface SeoSerpProspectingPreview {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_serp_prospecting_preview";
+  __kind?: "seo_serp_prospecting_preview";
   dropped?: string[];
   queries?: SeoProspectQuery[];
   site_id: string;
@@ -16288,13 +16567,13 @@ export interface SeoSerpProspectingPreview {
  * Output of ``seo.prospecting.serp.collect`` — the collection run's
  * receipt plus how many opportunity domains were authority-scored.
  *  *
- *  * Kind `seo_serp_prospecting_receipt` (registry v4).
+ *  * Kind `seo_serp_prospecting_receipt` (registry v5).
  */
 export interface SeoSerpProspectingReceipt {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_serp_prospecting_receipt";
+  __kind?: "seo_serp_prospecting_receipt";
   queries?: SeoProspectQuery[];
   receipt: SeoCollectionReceipt;
   site_id: string;
@@ -16306,13 +16585,13 @@ export interface SeoSerpProspectingReceipt {
 /**
  * Output of ``seo.performance.site.read`` — mirrors ``SitePerformanceResponse``.
  *  *
- *  * Kind `seo_site_performance` (registry v4).
+ *  * Kind `seo_site_performance` (registry v5).
  */
 export interface SeoSitePerformance {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_site_performance";
+  __kind?: "seo_site_performance";
   site_id: string;
   coverage: SeoSitePerformanceCoverage;
   automation: SeoSitePerformanceAutomation;
@@ -16348,13 +16627,13 @@ export interface SeoSiteProviderFreshness {
 /**
  * Output of ``seo.spend.summary.read`` — workspace provider spend, ceilings, and rejections.
  *  *
- *  * Kind `seo_spend_summary` (registry v4).
+ *  * Kind `seo_spend_summary` (registry v5).
  */
 export interface SeoSpendSummary {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_spend_summary";
+  __kind?: "seo_spend_summary";
   last_month?: ProviderSpendRow[];
   this_month?: ProviderSpendRow[];
   daily_series?: DailySpendPoint[];
@@ -16391,14 +16670,14 @@ export interface SeoStructuredDataValidationResult {
 /**
  * Output of ``seo.ga4.landing_pages.read`` — persisted GA4 evidence rows.
  *  *
- *  * Kind `seo_web_analytics_read_result` (registry v4).
+ *  * Kind `seo_web_analytics_read_result` (registry v5).
  */
 export interface SeoWebAnalyticsReadResult {
   rows?: SeoWebAnalyticsRow[];
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "seo_web_analytics_read_result";
+  __kind?: "seo_web_analytics_read_result";
   site_id?: string;
   end_date?: string | null;
   truncated?: boolean;
@@ -16586,7 +16865,7 @@ export interface SiteIntakeAnalysis {
 /**
  * Output of ``seo.site.intake.apply`` — the confirmed intake persisted.
  *  *
- *  * Kind `site_intake_apply_result` (registry v5).
+ *  * Kind `site_intake_apply_result` (registry v6).
  */
 export interface SiteIntakeApplyResult {
   /**
@@ -16899,7 +17178,7 @@ export interface StringList {
 }
 
 /**
- * Kind `structured_document` (registry v8).
+ * Kind `structured_document` (registry v10).
  */
 export interface StructuredDocument {
   title: string;
@@ -16907,7 +17186,7 @@ export interface StructuredDocument {
   /**
    * The registered kind this payload is an instance of.
    */
-  __kind: "structured_document";
+  __kind?: "structured_document";
   glossary?: DocGlossaryTerm[];
   overview?: string;
   sections?: DocStructuredSection[];
@@ -21711,7 +21990,9 @@ export type GeneratedKindSlug =
   | "generated_video_set"
   | "geo_coordinates"
   | "google_image_search_results"
+  | "google_marketing_result"
   | "google_search_results"
+  | "google_workspace_result"
   | "graphql_response"
   | "growth_loop_stage_decision"
   | "gsc_opportunities"
@@ -21766,6 +22047,8 @@ export type GeneratedKindSlug =
   | "lulu_print_product_matches"
   | "lulu_shipping_options"
   | "map_result"
+  | "map_topic_node_v1"
+  | "map_topic_proposal_v1"
   | "mapped_list_result"
   | "markdown"
   | "masterwork_canon"
@@ -21812,13 +22095,18 @@ export type GeneratedKindSlug =
   | "page_extraction_validate_result"
   | "page_heading"
   | "page_image"
+  | "page_intent_batch_v1"
+  | "page_intent_proposal_v1"
   | "page_keyword_analysis_v1"
   | "page_keyword_map_v1"
   | "page_link"
   | "page_list"
+  | "page_mapping_batch_v1"
+  | "page_mapping_v1"
   | "page_metadata"
   | "page_removal"
   | "page_section"
+  | "page_topic_pick_v1"
   | "page_video"
   | "parsed_datetime"
   | "parsed_json"
@@ -21839,6 +22127,7 @@ export type GeneratedKindSlug =
   | "plan_page_route_choice"
   | "plan_review_findings"
   | "plan_shape_recommendation"
+  | "platform_record"
   | "podcast_cast_preview_result"
   | "podcast_episode"
   | "podcast_video_compose_result"
@@ -22233,7 +22522,9 @@ export interface KindPayloadBySlug {
   "generated_video_set": GeneratedVideoSet;
   "geo_coordinates": GeoCoordinates;
   "google_image_search_results": GoogleImageSearchResults;
+  "google_marketing_result": GoogleMarketingResult;
   "google_search_results": GoogleSearchResults;
+  "google_workspace_result": GoogleWorkspaceResult;
   "graphql_response": GraphqlResponse;
   "growth_loop_stage_decision": GrowthLoopStageDecision;
   "gsc_opportunities": GscOpportunities;
@@ -22288,6 +22579,8 @@ export interface KindPayloadBySlug {
   "lulu_print_product_matches": LuluPrintProductMatches;
   "lulu_shipping_options": LuluShippingOptions;
   "map_result": MapResult;
+  "map_topic_node_v1": MapTopicNodeV1;
+  "map_topic_proposal_v1": MapTopicProposalV1;
   "mapped_list_result": MappedListResult;
   "markdown": Markdown;
   "masterwork_canon": MasterworkCanon;
@@ -22334,13 +22627,18 @@ export interface KindPayloadBySlug {
   "page_extraction_validate_result": PageExtractionValidateResult;
   "page_heading": PageHeading;
   "page_image": PageImage;
+  "page_intent_batch_v1": PageIntentBatchV1;
+  "page_intent_proposal_v1": PageIntentProposalV1;
   "page_keyword_analysis_v1": PageKeywordAnalysisV1;
   "page_keyword_map_v1": PageKeywordMapV1;
   "page_link": PageLink;
   "page_list": PageList;
+  "page_mapping_batch_v1": PageMappingBatchV1;
+  "page_mapping_v1": PageMappingV1;
   "page_metadata": PageMetadata;
   "page_removal": PageRemoval;
   "page_section": PageSection;
+  "page_topic_pick_v1": PageTopicPickV1;
   "page_video": PageVideo;
   "parsed_datetime": ParsedDatetime;
   "parsed_json": ParsedJson;
@@ -22361,6 +22659,7 @@ export interface KindPayloadBySlug {
   "plan_page_route_choice": PlanPageRouteChoice;
   "plan_review_findings": PlanReviewFindings;
   "plan_shape_recommendation": PlanShapeRecommendation;
+  "platform_record": PlatformRecord;
   "podcast_cast_preview_result": PodcastCastPreviewResult;
   "podcast_episode": PodcastEpisode;
   "podcast_video_compose_result": PodcastVideoComposeResult;
@@ -22759,7 +23058,9 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "generated_video_set",
   "geo_coordinates",
   "google_image_search_results",
+  "google_marketing_result",
   "google_search_results",
+  "google_workspace_result",
   "graphql_response",
   "growth_loop_stage_decision",
   "gsc_opportunities",
@@ -22814,6 +23115,8 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "lulu_print_product_matches",
   "lulu_shipping_options",
   "map_result",
+  "map_topic_node_v1",
+  "map_topic_proposal_v1",
   "mapped_list_result",
   "markdown",
   "masterwork_canon",
@@ -22860,13 +23163,18 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "page_extraction_validate_result",
   "page_heading",
   "page_image",
+  "page_intent_batch_v1",
+  "page_intent_proposal_v1",
   "page_keyword_analysis_v1",
   "page_keyword_map_v1",
   "page_link",
   "page_list",
+  "page_mapping_batch_v1",
+  "page_mapping_v1",
   "page_metadata",
   "page_removal",
   "page_section",
+  "page_topic_pick_v1",
   "page_video",
   "parsed_datetime",
   "parsed_json",
@@ -22887,6 +23195,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "plan_page_route_choice",
   "plan_review_findings",
   "plan_shape_recommendation",
+  "platform_record",
   "podcast_cast_preview_result",
   "podcast_episode",
   "podcast_video_compose_result",

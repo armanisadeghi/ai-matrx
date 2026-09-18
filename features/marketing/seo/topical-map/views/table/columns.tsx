@@ -15,6 +15,7 @@
 
 import { ChevronDown, ChevronRight } from "lucide-react";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import { formatCount } from "@ai-matrx/kit/format";
 
 import { cn } from "@/lib/utils";
 
@@ -159,7 +160,7 @@ function IntentHeader({ id, ctx }: { id: "leaving" | "arriving"; ctx: MapTableCo
   return (
     <span
       className="inline-flex items-center gap-1"
-      title={`Counted over the first ${loaded.toLocaleString()} of ${total.toLocaleString()} listed pages — the rest are not in this view yet.`}
+      title={`Counted over the first ${formatCount(loaded)} of ${formatCount(total)} listed pages — the rest are not in this view yet.`}
     >
       {label}
       <span className="rounded-sm border border-warning/40 bg-warning/10 px-1 text-[10px] font-medium leading-none text-warning">

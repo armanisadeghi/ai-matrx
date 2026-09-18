@@ -4,16 +4,21 @@
  *
  * Arman, 2026-09-15: "it should then persist but let me add others later."
  *
- * Two separate ways this class of feature dies, both of which have already
+ * Three separate ways this class of feature dies, all of which have already
  * happened in this repo:
  *
- *  1. **The `/chat/new` handoff.** The composer renders against a conversation
- *     id minted in the browser; the row does not exist until the first send.
- *     A pick made in that window has nothing to POST to. Per-run tool and MCP
- *     additions were lost on exactly this boundary until 2026-09-14
- *     (6843361ca1) — the pick was discarded with no trace, and attaching a
- *     service is usually the FIRST thing a person does on a new chat.
- *  2. **The reload.** State that lives only in the browser reads as persistent
+ *  1. **The `/chat/new` boundary.** The composer renders against a conversation
+ *     id minted in the browser. Per-run tool and MCP additions were lost on
+ *     exactly this boundary until 2026-09-14 (6843361ca1) — the pick was
+ *     discarded with no trace, and attaching a service is usually the FIRST
+ *     thing a person does on a new chat. The server now creates the row on the
+ *     first write against the minted id (aidream 7e7ebf6da2), so a pick made
+ *     there is WRITTEN, not held.
+ *  2. **The optimistic chip.** Holding a pick locally while the server could
+ *     have taken it shows a chip for something that does not exist; the reload
+ *     in case 3 is what exposes it. So a pick made on this chat must produce a
+ *     real `association_id`, in the same tick it is made.
+ *  3. **The reload.** State that lives only in the browser reads as persistent
  *     for the length of one session and then is not.
  *
  * The SUT is the attachments slice's lifecycle. The service is mocked at the
@@ -115,7 +120,6 @@ describe("attachments on an existing conversation", () => {
       attachResource({
         conversationId: CONVERSATION_ID,
         pick: pick("armanisadeghi/ai-matrx", "armanisadeghi/ai-matrx"),
-        conversationExists: true,
       }),
     );
     expect(entryOf(store).rows.map((r) => r.resource_ref)).toEqual([
@@ -144,7 +148,7 @@ describe("attachments on an existing conversation", () => {
   });
 });
 
-describe("the /chat/new handoff — picks made before the conversation existed", () => {
+describe("/chat/new — attaching before the first message", () => {
   it("copies landed and pending picks to the next agent without carrying old association ids", () => {
     const store = makeStore();
     const landed = row(
@@ -176,7 +180,7 @@ describe("the /chat/new handoff — picks made before the conversation existed",
     );
   });
 
-  it("removes a detached inherited pick without deleting a destination-local pick", async () => {
+  it("removes a detached inherited pick without disturbing a pick made on this chat", async () => {
     const store = makeStore();
     const inheritedA = pick("org/inherited-a", "Inherited A");
     const inheritedB = pick("org/inherited-b", "Inherited B");
@@ -187,12 +191,11 @@ describe("the /chat/new handoff — picks made before the conversation existed",
         picks: [inheritedA, inheritedB],
       }),
     );
+    // A pick made ON this chat is written immediately and lands as a row —
+    // it is not, and never was, part of the handoff's pending list.
+    mockAttach.mockResolvedValueOnce(row("org/local", "Local", "assoc-local"));
     await store.dispatch(
-      attachResource({
-        conversationId: CONVERSATION_ID,
-        pick: local,
-        conversationExists: false,
-      }),
+      attachResource({ conversationId: CONVERSATION_ID, pick: local }),
     );
     store.dispatch(
       dropPendingAttachment({
@@ -210,82 +213,96 @@ describe("the /chat/new handoff — picks made before the conversation existed",
       }),
     );
 
-    expect(entryOf(store).pending).toEqual([inheritedA, local]);
+    expect(entryOf(store).pending).toEqual([inheritedA]);
+    expect(entryOf(store).rows.map((r) => r.association_id)).toEqual([
+      "assoc-local",
+    ]);
     expect(entryOf(store).handoffInheritedKeys).toEqual([
       "github\0org/inherited-a",
     ]);
   });
 
-  it("holds a pick while there is no row, then carries it over once there is", async () => {
+  it("writes a pick made before the first message — no hold, and the chip is the server's row", async () => {
     const store = makeStore();
 
-    // On /chat/new nothing has been read yet, so the row is not known to
-    // exist. The pick must be HELD, not thrown at a conversation that is not
-    // there — and never silently dropped.
-    await store.dispatch(
-      attachResource({
-        conversationId: CONVERSATION_ID,
-        pick: pick("armanisadeghi/ai-matrx", "armanisadeghi/ai-matrx"),
-        conversationExists: false,
-      }),
-    );
-    await store.dispatch(
-      attachResource({
-        conversationId: CONVERSATION_ID,
-        pick: pick("AI-Matrix-Engine/aidream", "AI-Matrix-Engine/aidream"),
-        conversationExists: false,
-      }),
-    );
-    expect(mockAttach).not.toHaveBeenCalled();
-
-    let entry = entryOf(store);
-    expect(entry.pending).toHaveLength(2);
-    // The person SEES both picks — held is not hidden.
-    expect(mergeAttachments(entry.rows, entry.pending)).toHaveLength(2);
-    expect(
-      mergeAttachments(entry.rows, entry.pending).every((item) => item.pending),
-    ).toBe(true);
-
-    // First send happens; the row now exists and the read proves it.
+    // /chat/new: the read of an id the server has never seen answers `[]`.
+    // That is NOT "no row to attach to" — the server creates the row on the
+    // first write against this same minted id.
     mockFetch.mockResolvedValueOnce([]);
     await store.dispatch(
       loadConversationAttachments({ conversationId: CONVERSATION_ID }),
     );
+    expect(entryOf(store).status).toBe("succeeded");
 
-    mockAttach
-      .mockResolvedValueOnce(
-        row("armanisadeghi/ai-matrx", "armanisadeghi/ai-matrx", "assoc-1"),
-      )
-      .mockResolvedValueOnce(
-        row("AI-Matrix-Engine/aidream", "AI-Matrix-Engine/aidream", "assoc-2"),
-      );
-    await store.dispatch(
-      flushPendingAttachments({ conversationId: CONVERSATION_ID }),
+    mockAttach.mockResolvedValueOnce(
+      row("armanisadeghi/ai-matrx", "armanisadeghi/ai-matrx", "assoc-1"),
     );
-
-    entry = entryOf(store);
-    expect(mockAttach).toHaveBeenCalledTimes(2);
-    expect(entry.pending).toHaveLength(0);
-    expect(entry.rows.map((r) => r.association_id).sort()).toEqual([
-      "assoc-1",
-      "assoc-2",
-    ]);
-  });
-
-  it("a pick that could not be carried over stays held and says why — it never just vanishes", async () => {
-    const store = makeStore();
     await store.dispatch(
       attachResource({
         conversationId: CONVERSATION_ID,
         pick: pick("armanisadeghi/ai-matrx", "armanisadeghi/ai-matrx"),
-        conversationExists: false,
       }),
+    );
+
+    // The request actually went out, and what the person sees carries the
+    // server's association id — nothing is pending, nothing is optimistic.
+    expect(mockAttach).toHaveBeenCalledTimes(1);
+    const entry = entryOf(store);
+    expect(entry.pending).toHaveLength(0);
+    expect(entry.rows.map((r) => r.association_id)).toEqual(["assoc-1"]);
+    const shown = mergeAttachments(entry.rows, entry.pending);
+    expect(shown).toHaveLength(1);
+    expect(shown.every((item) => item.pending)).toBe(false);
+  });
+
+  it("writes the pick even when nothing has been read yet — the id is enough", async () => {
+    const store = makeStore();
+
+    // The picker can open before the read settles. There is no `succeeded`
+    // status to wait for and no excuse to hold: POST against the minted id.
+    mockAttach.mockResolvedValueOnce(
+      row("armanisadeghi/ai-matrx", "armanisadeghi/ai-matrx", "assoc-1"),
+    );
+    await store.dispatch(
+      attachResource({
+        conversationId: CONVERSATION_ID,
+        pick: pick("armanisadeghi/ai-matrx", "armanisadeghi/ai-matrx"),
+      }),
+    );
+
+    expect(mockAttach).toHaveBeenCalledTimes(1);
+    expect(entryOf(store).rows.map((r) => r.association_id)).toEqual([
+      "assoc-1",
+    ]);
+    expect(entryOf(store).pending).toHaveLength(0);
+  });
+
+  it("a write that failed is said out loud, never absorbed into a pending chip", async () => {
+    const store = makeStore();
+    mockAttach.mockRejectedValueOnce(
+      new Error("AI Matrx is not installed on AI-Matrix-Engine"),
     );
     await store.dispatch(
       attachResource({
         conversationId: CONVERSATION_ID,
         pick: pick("AI-Matrix-Engine/aidream", "AI-Matrix-Engine/aidream"),
-        conversationExists: false,
+      }),
+    );
+    const entry = entryOf(store);
+    expect(entry.rows).toHaveLength(0);
+    expect(entry.pending).toHaveLength(0);
+    expect(entry.writeError).toMatch(/not installed on AI-Matrix-Engine/);
+  });
+
+  it("an INHERITED pick that could not be carried over stays held and says why", async () => {
+    const store = makeStore();
+    store.dispatch(
+      mergePendingAttachments({
+        conversationId: CONVERSATION_ID,
+        picks: [
+          pick("armanisadeghi/ai-matrx", "armanisadeghi/ai-matrx"),
+          pick("AI-Matrix-Engine/aidream", "AI-Matrix-Engine/aidream"),
+        ],
       }),
     );
 
@@ -335,11 +352,10 @@ describe("reload", () => {
 
   it("a pick that landed while we were not looking stops being pending", async () => {
     const store = makeStore();
-    await store.dispatch(
-      attachResource({
+    store.dispatch(
+      mergePendingAttachments({
         conversationId: CONVERSATION_ID,
-        pick: pick("armanisadeghi/ai-matrx", "armanisadeghi/ai-matrx"),
-        conversationExists: false,
+        picks: [pick("armanisadeghi/ai-matrx", "armanisadeghi/ai-matrx")],
       }),
     );
     mockFetch.mockResolvedValueOnce([

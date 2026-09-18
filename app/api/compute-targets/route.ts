@@ -20,6 +20,7 @@ import { NextResponse } from "next/server";
 
 import { createClient } from "@/utils/supabase/server";
 import { sandboxDisplayName } from "@/lib/sandbox/format";
+import { isJsonObject } from "@/types/json";
 import { filesDb } from "@/features/files/filesDb";
 
 const DEVICE_FRESHNESS_WINDOW_MS = 10 * 60 * 1000;
@@ -97,10 +98,11 @@ export async function GET() {
   const sandboxes: ComputeTarget[] = [];
   for (const row of sandboxResult.data ?? []) {
     if (!RENDERABLE_SANDBOX_STATUSES.has(row.status ?? "")) continue;
-    const config = (row.config as { template?: string } | null) ?? {};
     // `template` is canonical on current rows. Older rows may still carry it
-    // in config, so preserve that value only when the canonical column is null.
-    const template = row.template ?? config.template ?? null;
+    // in config (bare `unknown` JSONB), so narrow that leaf at read time and
+    // use it only when the canonical column is null.
+    const configTemplate = isJsonObject(row.config) && typeof row.config.template === "string" ? row.config.template : null;
+    const template = row.template ?? configTemplate;
     if (row.tier !== "ec2" && row.tier !== "hosted") {
       console.error(
         `[GET /api/compute-targets] sandbox row ${row.id} has no valid tier (got: ${JSON.stringify(row.tier)}). ` +

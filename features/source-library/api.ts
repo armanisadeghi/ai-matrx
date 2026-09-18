@@ -4,8 +4,12 @@
  * Contract: ../../../common-docs/projects/media-source-catalog/API-CONTRACT.md (0.1.0).
  * Everything goes through `callApi`, the ONE door to the Python server, so auth,
  * base-URL resolution, organization scope, error capture and the NDJSON reader
- * are the platform's and not this feature's. Paths are typed through
- * ./contract-paths.ts until `pnpm sync-types` supplies the generated ones.
+ * are the platform's and not this feature's. Paths and bodies are typed by the
+ * GENERATED contract (`types/python-generated/api-types.ts`): the `/media/*`
+ * operations landed there on 2026-09-18 and the contract-ahead augmentation
+ * that stood in for them deleted itself, exactly as its header promised. What
+ * that generated contract does NOT carry, this file no longer calls — see the
+ * note above `syncLibrary`.
  *
  * WHY THE CATALOG READS THROUGH THE SERVER AND NOT SUPABASE. House rule is that
  * rows go direct to Supabase. Here the row set behind a Library is a join of
@@ -23,7 +27,6 @@ import type { AppDispatch } from "@/lib/redux/store";
 import { callApi } from "@/lib/api/call-api";
 import type { ApiCallError } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
-import "./contract-paths";
 import {
     MediaApiError,
     parseActionList,
@@ -272,8 +275,12 @@ export async function createLibrary(
                 // organization_id must match the request context organization".
                 ...(input.organizationId ? { organization_id: input.organizationId } : {}),
                 settings: input.settings ?? null,
-                // Enumeration is its own streaming call — never hidden inside create.
-                sync_now: false,
+                // NO `sync_now`. Enumeration is its own streaming call and the
+                // server never offered a way to fold it into creation:
+                // `components["schemas"]["CreateLibraryBody"]` has exactly
+                // input / adapter / name / description / visibility /
+                // organization_id / settings. The key was invented by the
+                // contract-ahead declaration and FastAPI dropped it on arrival.
             },
             expectedErrorStatuses: [400, 404, 422],
             connectTimeoutMs: 30_000,
@@ -330,42 +337,32 @@ export async function getLibrary(
     return asLibraryRow(read(result, (payload) => payload));
 }
 
-export async function updateLibrary(
-    dispatch: AppDispatch,
-    libraryId: string,
-    patch: {
-        name?: string;
-        description?: string | null;
-        visibility?: LibraryVisibility;
-        settings?: Record<string, unknown>;
-    },
-): Promise<LibraryRow> {
-    const result = await dispatch(
-        callApi<"/media/libraries/{library_id}", "PATCH">({
-            path: "/media/libraries/{library_id}",
-            method: "PATCH",
-            pathParams: { library_id: libraryId },
-            body: patch,
-            expectedErrorStatuses: [404],
-        }),
-    );
-    return asLibraryRow(read(result, (payload) => payload));
-}
-
-export async function deleteLibrary(
-    dispatch: AppDispatch,
-    libraryId: string,
-): Promise<void> {
-    const result = await dispatch(
-        callApi({
-            path: "/media/libraries/{library_id}",
-            method: "DELETE",
-            pathParams: { library_id: libraryId },
-            expectedErrorStatuses: [404],
-        }),
-    );
-    if (result.error) throw toMediaError(result.error);
-}
+/**
+ * 🚨 WHAT THIS MODULE NO LONGER CALLS, AND WHY (2026-09-18).
+ *
+ * `pnpm sync-types:live` replaced the contract-ahead declaration with the real
+ * generated contract, and four endpoints this file called are not in it — and
+ * never were in the router either. The server's own wire-shape table
+ * (`aidream/tests/test_media_catalog_wire_shapes.py`) marks each one
+ * `implemented: False`, and API-CONTRACT.md §0.5 "NOT working" says the same:
+ *
+ *   • `PATCH /media/libraries/{id}`  — §3, "Not implemented."
+ *   • `DELETE /media/libraries/{id}` — §3, "Not implemented."
+ *   • `POST …/classify`             — §6, "No separate endpoint. Classification
+ *                                     runs inside every sync (`classify: true`,
+ *                                     the default); re-sync to reclassify."
+ *   • `GET /media/jobs/{id}/stream` — published in §7 but never built:
+ *                                     "Progress rides the platform operation
+ *                                     stream, not a /media path."
+ *
+ * So `updateLibrary`, `deleteLibrary`, `classifyLibrary` and `streamJob` are
+ * gone rather than kept as callers of 404s — the same class as the Cancel
+ * button §0.5 records, which the contract published and this file called for
+ * the feature's whole life while no route served it. The one of them a person
+ * could reach, Delete on the Library list, went with them. They come back the
+ * day the server ships the routes and `pnpm sync-types` puts them in `paths`;
+ * the gap is filed in FOUND_DEFECTS.md.
+ */
 
 // ──────────────────────────────────────────────────────── §4 sync stream ──
 
@@ -439,7 +436,12 @@ export async function syncLibrary(
             body: {
                 mode: options.mode ?? "full",
                 classify: options.classify ?? true,
-                stream: true,
+                // NO `stream` key. `components["schemas"]["SyncBody"]` is
+                // exactly { mode, classify }; the endpoint ALWAYS streams
+                // NDJSON (the server answers it with
+                // `create_streaming_response`), so asking for it was never a
+                // choice the body could express. The `stream: true` below is
+                // `callApi`'s own reader flag, which is a different thing.
             },
             stream: true,
             ...(options.signal ? { signal: options.signal } : {}),
@@ -448,40 +450,6 @@ export async function syncLibrary(
                 if (parsed) options.onEvent(parsed);
             },
             expectedErrorStatuses: [404, 409],
-        }),
-    );
-    if (result.error) throw toMediaError(result.error);
-}
-
-export async function classifyLibrary(
-    dispatch: AppDispatch,
-    libraryId: string,
-    options: {
-        videoIds?: string[] | null;
-        force?: boolean;
-        shortsThresholdSeconds?: number;
-        signal?: AbortSignal;
-        onEvent?: (event: SyncEvent) => void;
-        onProblem?: (message: string) => void;
-    } = {},
-): Promise<void> {
-    const result = await dispatch(
-        callApi<"/media/libraries/{library_id}/classify", "POST">({
-            path: "/media/libraries/{library_id}/classify",
-            method: "POST",
-            pathParams: { library_id: libraryId },
-            body: {
-                video_ids: options.videoIds ?? null,
-                force: options.force ?? false,
-                shorts_threshold_seconds: options.shortsThresholdSeconds ?? null,
-            },
-            stream: true,
-            ...(options.signal ? { signal: options.signal } : {}),
-            onStreamEvent: (event) => {
-                const parsed = asSyncEvent(event, options.onProblem);
-                if (parsed && options.onEvent) options.onEvent(parsed);
-            },
-            expectedErrorStatuses: [404],
         }),
     );
     if (result.error) throw toMediaError(result.error);
@@ -646,33 +614,6 @@ export async function getJob(
         }),
     );
     return read(result, parseJobDetailResponse);
-}
-
-export async function streamJob(
-    dispatch: AppDispatch,
-    jobId: string,
-    options: {
-        signal?: AbortSignal;
-        onEvent: (event: JobEvent) => void;
-        /** An update this panel could not read. The job keeps running; say so. */
-        onProblem?: (message: string) => void;
-    },
-): Promise<void> {
-    const result = await dispatch(
-        callApi({
-            path: "/media/jobs/{job_id}/stream",
-            method: "GET",
-            pathParams: { job_id: jobId },
-            stream: true,
-            ...(options.signal ? { signal: options.signal } : {}),
-            onStreamEvent: (event) => {
-                const parsed = asJobEvent(event, options.onProblem);
-                if (parsed) options.onEvent(parsed);
-            },
-            expectedErrorStatuses: [404],
-        }),
-    );
-    if (result.error) throw toMediaError(result.error);
 }
 
 export async function resumeJob(

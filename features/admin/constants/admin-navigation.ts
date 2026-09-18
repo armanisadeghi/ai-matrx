@@ -464,6 +464,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/ui/official-components", [
             "/administration/ui/official-components/[componentId]",
           ]),
+          destination("/administration/ui/official-components/alchemy"),
           destination(
             "/administration/ui/official-components/to-be-added/toggle-menu-demo",
           ),
@@ -522,6 +523,7 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
           destination("/administration/applications/installations"),
           destination("/administration/applications/sync"),
           destination("/administration/applications/history"),
+          destination("/administration/applications/packages"),
         ],
       },
     ],

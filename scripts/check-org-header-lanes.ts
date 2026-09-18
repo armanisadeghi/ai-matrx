@@ -254,12 +254,36 @@ function hoistedVarBindingInScope(
     : null);
 }
 
+/**
+ * The function-like nodes that actually DECLARE a body scope. TypeScript ships
+ * this predicate internally but does not export it, so it is spelled out here
+ * from public guards — never a cast, which would let a bodiless signature reach
+ * a walk that assumes a body.
+ */
+function isFunctionLikeDeclaration(
+  node: ts.Node,
+): node is ts.FunctionLikeDeclaration {
+  return (
+    ts.isFunctionDeclaration(node) ||
+    ts.isMethodDeclaration(node) ||
+    ts.isConstructorDeclaration(node) ||
+    ts.isGetAccessorDeclaration(node) ||
+    ts.isSetAccessorDeclaration(node) ||
+    ts.isFunctionExpression(node) ||
+    ts.isArrowFunction(node)
+  );
+}
+
 function bindingInContainer(
   name: string,
   container: ts.Node,
   usePosition: number,
 ): BindingResolution | null {
-  if (ts.isFunctionLike(container)) {
+  // `isFunctionLikeDeclaration`, not `ts.isFunctionLike`: the latter also
+  // admits bodiless signatures (a call/construct/index signature, an interface
+  // method), which own no scope a use site could live in and are not the
+  // `FunctionLikeDeclaration` the var-hoisting walk accepts.
+  if (isFunctionLikeDeclaration(container)) {
     for (const parameter of container.parameters) {
       const resolved = bindingResolution(parameter, name);
       if (resolved) return resolved;

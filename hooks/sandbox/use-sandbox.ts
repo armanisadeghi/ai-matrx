@@ -408,6 +408,9 @@ export function useSandboxInstances(projectId?: string) {
   const deleteInstances = useCallback(async (ids: string[]) => {
     if (ids.length === 0) {
       return {
+        // Every branch returns the SAME shape: a caller destructuring
+        // `queuedIds` on the empty-input path got `undefined` here.
+        queuedIds: [] as string[],
         deletedIds: [] as string[],
         failed: [] as string[],
         unknownIds: [] as string[],

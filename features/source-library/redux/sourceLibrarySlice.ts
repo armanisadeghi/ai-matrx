@@ -98,6 +98,10 @@ export interface JobLiveState {
      *  before this, exactly as a list may not say "none" while it is loading. */
     loadedFromServer: boolean;
     error: string | null;
+    /** One honest sentence per item the mount read could not narrow — see
+     *  `JobDetailResponse.row_problems` (`lib/contract/narrow.ts`'s
+     *  `mapListRows`). Never taken as "no items". */
+    rowProblems: string[];
 }
 
 interface SourceLibraryState {
@@ -134,6 +138,7 @@ function emptyJob(): JobLiveState {
         etaSeconds: null,
         loadedFromServer: false,
         error: null,
+        rowProblems: [],
     };
 }
 
@@ -325,12 +330,17 @@ const sourceLibrarySlice = createSlice({
         /** The mount read landed — the truth every stream event is reconciled to. */
         jobLoaded(
             state,
-            action: PayloadAction<{ job: JobRow; items: JobItemRow[] }>,
+            action: PayloadAction<{
+                job: JobRow;
+                items: JobItemRow[];
+                rowProblems?: string[];
+            }>,
         ) {
             const entry = ensureJob(state, action.payload.job.id);
             entry.job = action.payload.job;
             entry.loadedFromServer = true;
             entry.error = null;
+            entry.rowProblems = action.payload.rowProblems ?? [];
             for (const item of action.payload.items) {
                 if (!entry.items[item.id]) entry.itemOrder.push(item.id);
                 entry.items[item.id] = item;
@@ -449,6 +459,12 @@ export const selectJobItems = createSelector([selectJobLive], (entry): JobItemRo
     return entry.itemOrder.map((id) => entry.items[id]).filter(Boolean);
 });
 
+export const selectJobRowProblems = createSelector(
+    [selectJobLive],
+    (entry): string[] => entry?.rowProblems ?? EMPTY_ROW_PROBLEMS,
+);
+
 const EMPTY_VIDEOS: VideoRow[] = [];
 const EMPTY_IDS: string[] = [];
 const EMPTY_ITEMS: JobItemRow[] = [];
+const EMPTY_ROW_PROBLEMS: string[] = [];

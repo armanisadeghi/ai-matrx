@@ -33,7 +33,11 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import type { AddressInfo } from "node:net";
 import path from "node:path";
 
-const ROOT = path.resolve(__dirname, "../../../..");
+// A test-only static server for the Shape sandbox's real-browser gate
+// (`pnpm check:kind-sandbox-gate`). It never enters a Next.js bundle, but its
+// root is dynamic, so the trace boundary is declared explicitly — see
+// docs/BUILD-TIME-TURBOPACK.md.
+const ROOT = path.resolve(/* turbopackIgnore: true */ __dirname, "../../../..");
 const PUBLIC_DIR = path.join(ROOT, "public");
 const ROUTE_MODULE = path.join(ROOT, "app/kind-sandbox/route.ts");
 

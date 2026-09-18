@@ -77,15 +77,30 @@ const mockUseDbToolRendererState =
     typeof useDbToolRendererState
   >;
 
+/**
+ * A complete lifecycle entry, built without a cast: a partial object forced
+ * through `as ToolLifecycleEntry` hid every field the component may read
+ * (`displayName` is the primary label it renders), so the test proved the
+ * collapse behaviour against a shape the reducer never produces.
+ */
 function entry(result: unknown = { secret: "raw detail" }): ToolLifecycleEntry {
   return {
     callId: "call-generic-collapse",
     toolName: "unregistered_tool",
+    displayName: "unregistered_tool",
     status: "completed",
     arguments: { query: "test" },
+    startedAt: "2026-09-18T00:00:00.000Z",
+    completedAt: "2026-09-18T00:00:01.000Z",
+    latestMessage: null,
+    latestData: null,
     result,
+    resultPreview: null,
+    errorType: null,
+    errorMessage: null,
+    isDelegated: false,
     events: [],
-  } as ToolLifecycleEntry;
+  };
 }
 
 function mount(element: React.ReactNode): {

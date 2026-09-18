@@ -36,9 +36,9 @@ export async function hasExactLifecycleReceipt(target: SandboxLifecycleTarget, o
 export async function readExactLifecycleReceipt(target: SandboxLifecycleTarget, operationId: string, kind: LifecycleKind): Promise<{ graceful: boolean } | null> {
   try {
     const response = await fetch(`${target.orchestrator.url}/sandboxes/${target.sandboxId}/lifecycle-operations/${operationId}`, { headers: orchestratorJsonHeaders(target.orchestrator) });
-    if (!response.ok) return false;
+    if (!response.ok) return null;
     const payload: unknown = await response.json();
-    if (!payload || typeof payload !== "object") return false;
+    if (!payload || typeof payload !== "object") return null;
     const receipt = payload as Record<string, unknown>;
     if (!sameUuid(receipt.row_id, target.rowId) || receipt.sandbox_id !== target.sandboxId || !sameUuid(receipt.operation_id, operationId) || receipt.kind !== kind || typeof receipt.graceful !== "boolean") return null;
     return { graceful: receipt.graceful };

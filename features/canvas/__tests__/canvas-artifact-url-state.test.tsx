@@ -28,6 +28,18 @@
  *   e. waits-for-availability → removed the `isAvailable` wait; the idle
  *      -deferred front door had not mounted yet, so the restore was refused
  *      with a FALSE "canvas is not available here" → RED.
+ *   f. waits-on-every-pass → restored the shipped bug: the availability wait
+ *      guarding only the FIRST reconcile, and `agreedRef` committed before the
+ *      opener is called. A request that arrives on a later pass is burned → RED
+ *      ("waits for the canvas when the address arrives AFTER hydration").
+ *
+ * (f) is not hypothetical. It shipped in `743cc0a73d` and production caught it
+ * within the hour: `/artifacts?open=<id>` reloaded to the list with the toast
+ * "The canvas isn't available on this screen". The five jsdom guards above all
+ * passed, because jsdom mounts with the real query string already readable
+ * while a hydrating Next.js page renders `useSyncExternalStore`'s SERVER
+ * snapshot (an empty query) for its first commit — so the address genuinely
+ * arrives one pass late, and only there.
  */
 
 import React, { act } from "react";
@@ -255,6 +267,32 @@ describe("the open artifact is part of /artifacts' address", () => {
     setAddress("", "replace");
     await settle();
     expect(store.getState().canvas.isOpen).toBe(false);
+    h.unmount();
+  });
+
+  it("waits for the canvas when the address arrives AFTER hydration", async () => {
+    // Reproduces the production shape: the first commit renders the SERVER
+    // query snapshot (empty), the real address lands on a later pass, and the
+    // idle-deferred canvas front door has still not mounted.
+    setAddress("", "replace");
+    const store = makeStore(); // NOT available yet
+    const h = mount(store);
+    await settle();
+
+    setAddress(`?${CANVAS_ARTIFACT_URL_PARAM}=${ARTIFACT_A}`, "replace");
+    await settle();
+
+    // The request must be HELD, not burned on a false refusal.
+    expect(openArtifactIdInCanvas(store)).toBeNull();
+    expect(toastError).not.toHaveBeenCalled();
+
+    await act(async () => {
+      store.dispatch(setCanvasAvailable(true));
+    });
+    await settle();
+
+    expect(openArtifactIdInCanvas(store)).toBe(ARTIFACT_A);
+    expect(toastError).not.toHaveBeenCalled();
     h.unmount();
   });
 

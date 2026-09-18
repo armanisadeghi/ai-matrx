@@ -64,6 +64,12 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
     const [openVideo, setOpenVideo] = useState<VideoRow | null>(null);
     const [jobIds, setJobIds] = useState<string[]>([]);
     const [jobsDoorError, setJobsDoorError] = useState<string | null>(null);
+    // 🚨 One job's shape being unreadable must never hide every OTHER job on
+    // this Library — see `mapListRows` in `lib/contract/narrow.ts`. The jobs
+    // that DID parse are still in `jobIds` below; this only names the ones
+    // that did not, one honest line each, right beside the jobs a person can
+    // actually see and act on.
+    const [jobsRowProblems, setJobsRowProblems] = useState<string[]>([]);
     const [listGeneration, setListGeneration] = useState(0);
     const startedRef = useRef(false);
     // Every metrics read takes a ticket. A read that returns after a newer one
@@ -195,6 +201,10 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                     ...live,
                     ...current.filter((id) => !live.includes(id)),
                 ]);
+                // Every job that DID parse is already in `live` above. Name the
+                // ones that did not — one honest line each — without touching
+                // the jobs that are fine.
+                setJobsRowProblems(found.row_problems);
             } catch (error) {
                 if (cancelled || isOrganizationNotReady(error)) return;
                 // NOTHING FAILS SILENTLY. A job may be running and spending right
@@ -341,6 +351,22 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                                 </span>
                             </p>
                         )}
+
+                        {/* One line per job the server sent but this build could
+                            not read — dropped, never guessed, and never hiding
+                            the jobs below that DID read correctly. */}
+                        {jobsRowProblems.map((problem, index) => (
+                            <p
+                                key={`job-row-problem-${index}`}
+                                className="flex items-start gap-2 text-sm text-muted-foreground"
+                            >
+                                <CircleAlert
+                                    className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400"
+                                    aria-hidden
+                                />
+                                <span>{problem}</span>
+                            </p>
+                        ))}
 
                         {jobIds.map((jobId) => (
                             <JobPanel

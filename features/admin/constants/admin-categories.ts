@@ -647,6 +647,14 @@ export const adminCategoriesData: AdminCategory[] = [
         link: "/administration/applications/history",
         isNew: true,
       },
+      {
+        title: "Packages",
+        description:
+          "The @ai-matrx npm package catalog — what is published, at which version, and what this app has installed.",
+        iconName: "Package",
+        link: "/administration/applications/packages",
+        isNew: true,
+      },
     ],
   },
   {
@@ -1070,6 +1078,14 @@ export const adminCategoriesData: AdminCategory[] = [
           "Candidate demo for category-aware toggle menus under official-components.",
         iconName: "ToggleLeft",
         link: "/administration/ui/official-components/to-be-added/toggle-menu-demo",
+      },
+      {
+        title: "Alchemy — Content Transfer",
+        description:
+          "Exercise the @ai-matrx/alchemy content-transfer menu over sample rows: copy, export and hand-off actions on a data table.",
+        iconName: "FlaskConical",
+        link: "/administration/ui/official-components/alchemy",
+        isNew: true,
       },
       {
         title: "Toggle Menu — With Categories",

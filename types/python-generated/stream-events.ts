@@ -787,6 +787,13 @@ export interface ImageStudioVariantData {
   total?: number;
 }
 
+export interface MediaSelectionJobProgressData {
+  type?: "job.progress";
+  job_id: string;
+  at: string;
+  totals?: Record<string, number>;
+}
+
 export interface LegalSyncEventData {
   type?: "legal_sync_event";
   phase: string;
@@ -818,6 +825,94 @@ export interface LegalSyncEventData {
   per_resource_rows?: Record<string, number> | null;
   per_resource_errors?: Record<string, string> | null;
   error?: string | null;
+}
+
+export interface LibrarySyncClassifiedData {
+  type?: "library.sync.classified";
+  library_id: string;
+  seq: number;
+  at: string;
+  classifications?: Record<string, JsonValue>[];
+  from_cache: boolean;
+}
+
+export interface LibrarySyncCompletedData {
+  type?: "library.sync.completed";
+  library_id: string;
+  seq: number;
+  at: string;
+  total_listed: number;
+  elapsed_ms: number;
+  listed_ms: number;
+  quota_units_spent: number;
+  metrics?: Record<string, JsonValue>;
+  removed_count?: number;
+  skipped_by_reason?: Record<string, number>;
+  skipped_total?: number;
+}
+
+export interface LibrarySyncFailedData {
+  type?: "library.sync.failed";
+  library_id: string;
+  seq: number;
+  at: string;
+  code: string;
+  message: string;
+  partial_total?: number;
+  retryable?: boolean;
+}
+
+export interface LibrarySyncListedData {
+  type?: "library.sync.listed";
+  library_id: string;
+  seq: number;
+  at: string;
+  total_listed: number;
+  elapsed_ms: number;
+  deciding: number;
+  skipped_by_reason?: Record<string, number>;
+  skipped_total?: number;
+}
+
+export interface LibrarySyncPageData {
+  type?: "library.sync.page";
+  library_id: string;
+  seq: number;
+  at: string;
+  page_index: number;
+  page_size: number;
+  cumulative: number;
+  next_page_token_present: boolean;
+  videos?: Record<string, JsonValue>[];
+}
+
+export interface LibrarySyncPersistedData {
+  type?: "library.sync.persisted";
+  library_id: string;
+  seq: number;
+  at: string;
+  ids?: Record<string, string>;
+  count: number;
+}
+
+export interface LibrarySyncStartedData {
+  type?: "library.sync.started";
+  library_id: string;
+  seq: number;
+  at: string;
+  mode: string;
+  expected_total?: number | null;
+}
+
+export interface LibrarySyncUnavailableData {
+  type?: "library.sync.unavailable";
+  library_id: string;
+  seq: number;
+  at: string;
+  code: string;
+  message: string;
+  remedy?: string | null;
+  partial_total?: number;
 }
 
 export interface MasterworkAuditionOutcomeVerdictData {
@@ -1034,6 +1129,7 @@ export interface MasterworkDumpResourceOutcome {
   rules_added?: number;
   duplicates?: number;
   error?: string | null;
+  note?: string | null;
   already_distilled?: MasterworkSourceAlreadyDistilled | null;
   replaced_rules?: number;
 }
@@ -2096,6 +2192,14 @@ export type TypedDataPayload =
   | ImageStudioProcessCompleteData
   | ImageStudioVariantData
   | LegalSyncEventData
+  | LibrarySyncClassifiedData
+  | LibrarySyncCompletedData
+  | LibrarySyncFailedData
+  | LibrarySyncListedData
+  | LibrarySyncPageData
+  | LibrarySyncPersistedData
+  | LibrarySyncStartedData
+  | LibrarySyncUnavailableData
   | MasterworkAuditionOutcomeVerdictData
   | MasterworkAuditionProgressData
   | MasterworkAuditionVerdictData
@@ -2128,6 +2232,7 @@ export type TypedDataPayload =
   | MasterworkTriageProgressData
   | MediaBlockData
   | MediaNoticeData
+  | MediaSelectionJobProgressData
   | MemoryBufferSpawnedData
   | MemoryContextInjectedData
   | MemoryErrorData
@@ -2819,7 +2924,7 @@ export interface ProgressItem {
   id: string;
   text: string;
   completed?: boolean;
-  priority?: "low" | "medium" | "high" | null;
+  priority?: "high" | "medium" | "low" | null;
   estimatedHours?: number | null;
   optional?: boolean;
   category?: string | null;
@@ -2829,7 +2934,7 @@ export interface ProgressItem {
   id: string;
   text: string;
   completed?: boolean;
-  priority?: "low" | "medium" | "high" | null;
+  priority?: "high" | "medium" | "low" | null;
   estimatedHours?: number | null;
   optional?: boolean;
   category?: string | null;
@@ -2881,7 +2986,7 @@ export interface TroubleshootingSolution {
   id: string;
   title: string;
   description?: string | null;
-  priority?: "low" | "medium" | "high" | null;
+  priority?: "high" | "medium" | "low" | null;
   successRate?: number | null;
   tags?: string[];
   steps?: TroubleshootingStep[];
@@ -2891,7 +2996,7 @@ export interface TroubleshootingSolution {
   id: string;
   title: string;
   description?: string | null;
-  priority?: "low" | "medium" | "high" | null;
+  priority?: "high" | "medium" | "low" | null;
   successRate?: number | null;
   tags?: string[];
   steps?: TroubleshootingStep[];

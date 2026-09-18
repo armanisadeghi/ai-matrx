@@ -19,6 +19,8 @@ function msg(
     origin: "provider_mirror",
     agentId: null,
     agentName: null,
+    // Native to this conversation, which is what the timeline tests are about.
+    carriedFrom: null,
   };
 }
 

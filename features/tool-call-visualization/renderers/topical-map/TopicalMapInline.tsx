@@ -23,6 +23,7 @@
 
 import { useState } from "react";
 import { ExternalLink, ListTree, PanelRightOpen } from "lucide-react";
+import { formatCount } from "@ai-matrx/kit/format";
 
 import { TopicTree } from "@/components/official/topic-tree/TopicTree";
 import { useOpenTopicalMapCanvas } from "@/features/marketing/seo/topical-map/canvas/useOpenTopicalMapCanvas";
@@ -103,7 +104,7 @@ function subtitleFor(read: TopicalMapToolResult | null): string | null {
     const count = flattenTreeNodes(read.tree).length;
     return `${count} topic${count === 1 ? "" : "s"}${read.capped ? " · cut to fit the output budget" : ""}`;
   }
-  if (read.outline) return `${read.outline.length.toLocaleString()} characters`;
+  if (read.outline) return `${formatCount(read.outline.length)} characters`;
   return null;
 }
 

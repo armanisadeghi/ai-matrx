@@ -14,3 +14,9 @@ describe("durable lifecycle admission route", () => {
   it("rejects force intent before proxying when a fresh super-admin check fails", async () => { checkIsSuperAdmin.mockResolvedValue(false); const response = await POST({ json: async () => ({ operation_id: "22222222-2222-4222-8222-222222222222", kind: "stop", graceful: false }) } as any, { params: Promise.resolve({ id: target.rowId }) }); expect(response.status).toBe(403); expect(proxyLifecycleReceipt).not.toHaveBeenCalled(); });
   it("forwards the exact false graceful intent after fresh super-admin admission", async () => { resolveSandboxLifecycleTarget.mockResolvedValue({ ok: true, target }); proxyLifecycleReceipt.mockResolvedValue({ status: 202 }); await POST({ json: async () => ({ operation_id: "22222222-2222-4222-8222-222222222222", kind: "stop", graceful: false }) } as any, { params: Promise.resolve({ id: target.rowId }) }); expect(proxyLifecycleReceipt).toHaveBeenLastCalledWith(target, "", expect.objectContaining({ body: JSON.stringify({ operation_id: "22222222-2222-4222-8222-222222222222", kind: "stop", graceful: false }) }), expect.objectContaining({ graceful: false })); });
 });
+
+// This file uses `require` + `jest.mock` factories that close over local
+// `const`s, so it has no import/export of its own. Without this marker
+// TypeScript treats it as a global script and its top-level consts collide
+// with the sibling lifecycle route test's identically named ones.
+export {};

@@ -241,6 +241,12 @@ export type ExportItemOrder =
 
 export interface ExportItemsResponse {
   items: ExportItem[];
+  /**
+   * One honest sentence per item (or per item's recipient) this build could
+   * not read — dropped, never guessed, and never taking the items that DID
+   * read correctly down with it. See `mapListRows` in `lib/contract/narrow.ts`.
+   */
+  row_problems: string[];
   /** The WHOLE Library. Never `items.length`. */
   total: number;
   /** What the current filter matches. Never `items.length`. */

@@ -7,6 +7,47 @@ import {
   listSnapshotReceiptPage,
 } from "./service";
 import type { MatrxDataTableQueryState } from "@ai-matrx/design-system/data-table/types";
+import type { SnapshotReceiptPage } from "./service";
+import type { PageSnapshot } from "../types";
+
+/**
+ * A REAL `web.snapshot` row (the generated shape), with only the id varying.
+ * The hook hands these straight to the table, so a fixture that carries an id
+ * and nothing else lets a test pass while the surface would render a row it
+ * cannot read.
+ */
+function snapshotRow(id: string): PageSnapshot {
+  return {
+    audit_metrics: null,
+    body_file_id: "body-file",
+    captured_at: "2026-09-13T00:00:00Z",
+    content_hash: null,
+    created_at: "2026-09-13T00:00:00Z",
+    created_by: null,
+    deleted_at: null,
+    extracted: {},
+    final_url: "https://example.com/page",
+    head_tags: {},
+    headings: [],
+    http_status: 200,
+    id,
+    images: [],
+    links_summary: {},
+    markdown_file_id: null,
+    metadata: {},
+    organization_id: "org-1",
+    page_id: "page",
+    perf: {},
+    seo_metrics: null,
+    session_id: "session-1",
+    site_id: "site",
+    structured_data: {},
+    updated_at: "2026-09-13T00:00:00Z",
+    updated_by: null,
+    version: 1,
+    word_count: 120,
+  };
+}
 
 jest.mock("./service", () => ({
   getSnapshotReceiptWatermark: jest.fn(),
@@ -60,7 +101,7 @@ describe("snapshot append production hook", () => {
     page
       .mockReset()
       .mockResolvedValueOnce({
-        rows: [{ id: "one" }],
+        rows: [snapshotRow("one")],
         total: 2,
         nextCursor: JSON.stringify({
           watermark: "2026-09-13T00:00:00Z",
@@ -71,7 +112,7 @@ describe("snapshot append production hook", () => {
         }),
       })
       .mockResolvedValueOnce({
-        rows: [{ id: "two" }],
+        rows: [snapshotRow("two")],
         total: 2,
         nextCursor: null,
       });
@@ -121,16 +162,8 @@ describe("snapshot append production hook", () => {
   });
   it("aborts and clears an old append receipt when the page lineage is invalidated", async () => {
     expect(result!.pagination.rows.map((row) => row.id)).toEqual(["one"]);
-    const oldPage = deferred<{
-      rows: Array<{ id: string }>;
-      total: number;
-      nextCursor: null;
-    }>();
-    const freshPage = deferred<{
-      rows: Array<{ id: string }>;
-      total: number;
-      nextCursor: null;
-    }>();
+    const oldPage = deferred<SnapshotReceiptPage>();
+    const freshPage = deferred<SnapshotReceiptPage>();
     let oldSignal: AbortSignal | undefined;
     page
       .mockReset()
@@ -162,7 +195,7 @@ describe("snapshot append production hook", () => {
 
     await act(async () =>
       freshPage.resolve({
-        rows: [{ id: "fresh-one" }],
+        rows: [snapshotRow("fresh-one")],
         total: 1,
         nextCursor: null,
       }),
@@ -174,7 +207,7 @@ describe("snapshot append production hook", () => {
     )
       await flush();
     oldPage.resolve({
-      rows: [{ id: "stale-two" }],
+      rows: [snapshotRow("stale-two")],
       total: 2,
       nextCursor: null,
     });

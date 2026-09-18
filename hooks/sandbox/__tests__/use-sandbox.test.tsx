@@ -384,7 +384,7 @@ describe("useSandboxInstances lifecycle outcomes", () => {
     let firstExtension: Promise<unknown> = Promise.resolve();
 
     await hook.act(() => { firstExtension = hook.current.extendInstance("sandbox-a"); });
-    let secondResult: Awaited<ReturnType<typeof hook.current.extendInstance>>;
+    let secondResult: Awaited<ReturnType<typeof hook.current.extendInstance>> | undefined;
     await hook.act(async () => { secondResult = await hook.current.extendInstance("sandbox-b"); });
 
     expect(fetchMock).toHaveBeenCalledTimes(2);

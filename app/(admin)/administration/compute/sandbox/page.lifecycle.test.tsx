@@ -39,7 +39,7 @@ describe("AdminSandboxManagementPage deletion ownership", () => {
   it("lets B's real confirmation be cancelled while A's request remains unresolved", async () => {
     await act(async () => { root.render(<AdminSandboxManagementPage />); await Promise.resolve(); });
     await act(async () => { for (let i = 0; i < 4; i += 1) await Promise.resolve(); });
-    const deletes = [...container.querySelectorAll('button[title="Delete sandbox"]')];
+    const deletes = [...container.querySelectorAll<HTMLButtonElement>('button[title="Delete sandbox"]')];
     if (deletes.length !== 2) throw new Error("admin delete controls were not rendered");
     await act(async () => deletes[0]?.click());
     const firstConfirm = [...document.querySelectorAll("button")].find((button) => button.textContent === "Delete");

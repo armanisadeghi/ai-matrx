@@ -165,6 +165,12 @@ export interface LibraryRow {
 
 export interface LibraryListResponse {
     libraries: LibraryRow[];
+    /**
+     * One sentence per Library row that could not be read, in the same order
+     * it was dropped — that row is simply absent from `libraries` above,
+     * never guessed at, never taking any other Library in this page with it.
+     */
+    row_problems: string[];
     total: number;
     limit: number;
     offset: number;
@@ -228,6 +234,8 @@ export interface VideoQuery {
 
 export interface VideoListResponse {
     videos: VideoRow[];
+    /** Same rule as `LibraryListResponse.row_problems` — dropped, never hidden. */
+    row_problems: string[];
     total: number;
     limit: number;
     offset: number;
@@ -340,8 +348,19 @@ export interface EstimateRequest {
 }
 
 export interface EstimateResult {
-    estimate_token: string;
-    expires_at: string;
+    /**
+     * §7.3 (contract v0.5.5): NULLABLE. Whether a token is required is the
+     * Action's own `requires_estimate` declaration, never this field's
+     * presence — an Action that declares no estimate (`send_to_rulebook`,
+     * `build_knowledge_base`, `export`, …) mints and confirms its estimate in
+     * one breath server-side, and the frozen `Job.estimate` that comes back
+     * can carry every other number here with no token at all. A client must
+     * never refuse the whole estimate, or the whole Job it is frozen into,
+     * over this one field being absent.
+     */
+    estimate_token: string | null;
+    /** Paired with `estimate_token`: no token minted, no expiry to report. */
+    expires_at: string | null;
     action: string;
     selected_count: number;
     already_done: number;
@@ -424,12 +443,23 @@ export interface JobItemRow {
 export interface JobDetailResponse {
     job: JobRow;
     items: JobItemRow[];
+    /** One honest sentence per item this build could not read — dropped, never
+     *  guessed. See `mapListRows` in `lib/contract/narrow.ts`. */
+    row_problems: string[];
     items_total: number;
 }
 
 /** `GET /media/libraries/{id}/jobs` — the job-discovery door (contract §7). */
 export interface JobListResponse {
     jobs: JobRow[];
+    /**
+     * One sentence per Job row that could not be read. That Job is simply
+     * absent from `jobs` above — this is the field that closes the
+     * 2026-09-18 defect where one bad Job's `estimate.estimate_token` blanked
+     * the whole running-jobs panel; every OTHER Job still comes through, and
+     * a caller can show this list beside them ("N job(s) could not be read").
+     */
+    row_problems: string[];
     total: number;
     limit: number;
     offset: number;

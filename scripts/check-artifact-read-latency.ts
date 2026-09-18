@@ -104,6 +104,7 @@
  */
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const ROOT = resolve(import.meta.dirname, "..");
 
@@ -738,8 +739,8 @@ async function main(): Promise<number> {
 }
 
 main()
-  .then((code) => process.exit(code))
+  .then((code) => exitAfterDrain(code))
   .catch((err) => {
     console.error(`${TAG.fail}UNMEASURED — guard crashed: ${String(err)}`);
-    process.exit(2);
+    exitAfterDrain(2);
   });

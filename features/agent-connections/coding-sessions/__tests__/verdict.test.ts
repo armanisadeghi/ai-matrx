@@ -80,4 +80,13 @@ describe("coding-session storage health", () => {
   it("renders corrupt timestamps as an explicit data error", () => {
     expect(formatSessionTimestamp("not-a-timestamp")).toBe("Invalid timestamp");
   });
+
+  it("says a missing timestamp is missing, never that it is invalid", () => {
+    // `last_seen_at` is nullable: a binding that has never delivered has no
+    // timestamp at all. Calling that "Invalid timestamp" tells the reader
+    // their data is corrupt when nothing is wrong.
+    expect(formatSessionTimestamp(null)).toBe("Not recorded");
+    expect(formatSessionTimestamp(undefined)).toBe("Not recorded");
+    expect(formatSessionTimestamp("   ")).toBe("Not recorded");
+  });
 });

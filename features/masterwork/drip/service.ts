@@ -20,7 +20,7 @@ import { operationFailed } from "@/utils/errors";
 import { callApi } from "@/lib/api/call-api";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import type { AppStore } from "@/lib/redux/store";
-import type { paths } from "@/types/python-generated/api-types";
+import type { components, paths } from "@/types/python-generated/api-types";
 import { setNotificationPreference } from "@/features/settings/notification-preferences";
 import { parseRulebook, type Rulebook, type RulebookRow } from "../types";
 import {
@@ -256,7 +256,18 @@ export async function answerDripDay(
   return hit ? result : { status: "not_found" };
 }
 
-export interface DripSendReport {
+/**
+ * The server's full pass report. Every field there is optional (each has a
+ * `0`/`false` default) because a pass that touched nothing still reports
+ * every counter.
+ */
+export type DripSendReport = components["schemas"]["DripSendReport"];
+
+/**
+ * The six counters this screen reads off `DripSendReport`, all defaulted so
+ * `sendOutcomeSentence` never has to guard `undefined` case by case.
+ */
+export interface DripSendOutcome {
   asked: number;
   already_asked_today: number;
   not_yet_their_hour: number;
@@ -277,7 +288,7 @@ export interface DripSendReport {
 export async function sendTodaysQuestion(
   store: AppStore,
   rulebookId: string,
-): Promise<DripSendReport> {
+): Promise<DripSendOutcome> {
   const result = await store.dispatch(
     callApi({
       path: DRIP_SEND_NOW_PATH,
@@ -293,7 +304,7 @@ export async function sendTodaysQuestion(
         "Today's question couldn't be sent. Nothing was lost — try again.",
     );
   }
-  const data = (result.data ?? {}) as Partial<DripSendReport>;
+  const data = (result.data ?? {}) as DripSendReport;
   return {
     asked: data.asked ?? 0,
     already_asked_today: data.already_asked_today ?? 0,
@@ -308,7 +319,7 @@ export async function sendTodaysQuestion(
  * The one sentence to show after a send. Every branch says what actually
  * happened — an "asked 0" pass is never reported as a success.
  */
-export function sendOutcomeSentence(report: DripSendReport): {
+export function sendOutcomeSentence(report: DripSendOutcome): {
   ok: boolean;
   sentence: string;
 } {

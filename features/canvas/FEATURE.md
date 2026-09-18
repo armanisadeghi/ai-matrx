@@ -173,9 +173,22 @@ path updates the node's `STATE.md` in the same session.
   URL we wrote ourselves" bookkeeping swallows Forward to an artifact that was
   open before, moving the address while the canvas stays behind.
   Guard: `features/canvas/__tests__/canvas-artifact-url-state.test.tsx`
-  (6 tests; FIVE mutations proven RED — no URL→canvas restore, no
+  (7 tests; SIX mutations proven RED — no URL→canvas restore, no
   canvas→URL write, a close that ignores `isOpen`, the write-bookkeeping loop
-  breaker, and no availability wait).
+  breaker, no availability wait, and the availability wait guarding only the
+  first pass).
+  **The defect the live check caught, same day, on the first release
+  (`743cc0a73d`):** the availability wait guarded only the FIRST reconcile, and
+  committed the agreed id BEFORE calling the opener. On production the reload
+  landed on the list with the toast *"The canvas isn't available on this
+  screen"* — a HYDRATING page renders `useSyncExternalStore`'s SERVER query
+  snapshot (empty) for its first commit, so the real address arrives one pass
+  later, which that wait did not cover, and committing the id burned the
+  request so nothing asked again. All five jsdom guards had passed, because
+  jsdom mounts with the query string already readable. The wait now guards
+  EVERY pass and leaves `agreedRef` alone until the open is actually attempted;
+  the seventh case reproduces the hydration shape and is red against the
+  shipped code.
 
 - `2026-09-18` — **THE HEADER'S CANVAS SLOT IS RESERVED BY AVAILABILITY, NOT BY
   ITEM COUNT.** The 2026-09-17 fix held the slot only between OPEN and CLOSED;

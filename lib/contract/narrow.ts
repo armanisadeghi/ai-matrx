@@ -245,3 +245,38 @@ export interface Parsed<T> {
   /** Empty when the server said exactly what it promised. */
   problems: string[];
 }
+
+/**
+ * Parse a LIST of independent rows — one row failing narrowing must never
+ * cost every OTHER row in the same response.
+ *
+ * 🚨 WHY THIS EXISTS. `Array.prototype.map` with a throwing parser aborts the
+ * whole array on the first bad entry. For a list endpoint (a page of Jobs, of
+ * Videos, of Libraries, of Actions) that turns one malformed row into an
+ * empty screen for every sibling row that parsed fine — verified live
+ * 2026-09-18: one Job whose `estimate.estimate_token` had gone missing
+ * blanked the ENTIRE running-jobs panel, hiding jobs that were reading
+ * correctly, and made Cancel unreachable for all of them.
+ *
+ * This is deliberately NOT the same rule as a single entity's own required
+ * fields (`parseJobRow`, `parseLibraryRow`, …), which still refuse atomically
+ * — a half-parsed Job is not a Job, and that failure is caught one level up
+ * by whichever screen renders that one entity. A LIST is different: each
+ * element is a sibling, not a sub-field, so a bad one is dropped and named,
+ * never silently hidden and never allowed to take its neighbors with it.
+ */
+export function mapListRows<T>(
+  items: unknown[],
+  parseOne: (entry: unknown, index: number) => T,
+): { rows: T[]; problems: string[] } {
+  const rows: T[] = [];
+  const problems: string[] = [];
+  items.forEach((entry, index) => {
+    try {
+      rows.push(parseOne(entry, index));
+    } catch (error) {
+      problems.push(error instanceof Error ? error.message : String(error));
+    }
+  });
+  return { rows, problems };
+}

@@ -39,10 +39,6 @@
       "reason": "LIVE 42501 proven 2026-09-14 as authenticated (permission denied for function _notify_channels). Revoked by the hr_l3_114 / hr_l3_116 migrations, not DD-169; whether a client calls it is not yet censused. D321."
     },
     {
-      "key": "authenticated | client-executable invoker function | iam._apply_rls_unchecked(text, text, text, text) | iam.class_lanes",
-      "reason": "RLS generator tooling no browser session runs; the open question is why authenticated holds EXECUTE on the invoker tool at all, not whether the helper should reopen. Not a DD-169 revoke. D321."
-    },
-    {
       "key": "authenticated | client-executable invoker function | iam.entity_read_expr(text, text, text, text) | iam.class_lanes",
       "reason": "RLS generator tooling no browser session runs; the open question is why authenticated holds EXECUTE on the invoker tool at all, not whether the helper should reopen. Not a DD-169 revoke. D321."
     },

@@ -56,6 +56,10 @@ const conversationRow = {
   exclude_from_kg: false,
   forked_at_position: null,
   forked_from_id: null,
+  // `chat.conversation.host_value_names` — which launch variables the HOST
+  // wired. Empty is the column's default and the honest answer here: the
+  // extension bridge appends to a plain chat, it wires no launch variables.
+  host_value_names: [],
   id: CONVERSATION_ID,
   initial_agent_id: null,
   initial_agent_version_id: null,

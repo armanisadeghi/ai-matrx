@@ -66,6 +66,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import pg from "pg";
 import { connectDirect, loadDbEnv } from "./lib/direct-db";
+import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const STRICT = process.argv.includes("--strict");
 const SELF_TEST = process.argv.some((a) => a === "--self-test" || a.startsWith("--self-test="));
@@ -135,7 +136,7 @@ async function connect(): Promise<{ client: pg.Client; isProduction: boolean; wh
     console.log(
       `${C.yellow}check:access-kernel-bounded: database credentials absent (${env.missing.join(", ")}) - skipping.${C.reset}`,
     );
-    process.exit(0);
+    exitAfterDrain(0);
   }
   const client = await connectDirect(env, "check-access-kernel-bounded");
   return { client, isProduction: true, where: env.host };
@@ -234,7 +235,7 @@ async function main(): Promise<void> {
         `${C.white}Point it at a branch: ACCESS_KERNEL_GUARD_DATABASE_URL=postgresql://... pnpm check:access-kernel-bounded:self-test${C.reset}`,
     );
     await client.end();
-    process.exit(2);
+    exitAfterDrain(2);
   }
 
   console.log(
@@ -422,7 +423,7 @@ async function main(): Promise<void> {
     }
     await client.end();
   }
-  process.exit(exitCode);
+  exitAfterDrain(exitCode);
 }
 
 void main();
