@@ -1,5 +1,6 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import SiteLayoutClient from "./SiteLayoutClient";
 import {
   CmsComponentService,
@@ -70,8 +71,21 @@ async function settleEffects(): Promise<void> {
 describe("SiteLayoutClient cache lifecycle", () => {
   let container: HTMLDivElement;
   let root: Root;
+  let queryClient: QueryClient;
+
+  // The nav's topical-map door reads `seo.site_map_id` through react-query
+  // (`useSiteMapId`, added with the Lane E link-in points). That is a real
+  // context the layout now requires, so the suite supplies a real client
+  // rather than a stub: with no `web_site_id` on the site the query stays
+  // disabled and nothing is fetched.
+  const layout = () => (
+    <QueryClientProvider client={queryClient}>
+      <SiteLayoutClient>page</SiteLayoutClient>
+    </QueryClientProvider>
+  );
 
   beforeEach(() => {
+    queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     jest.clearAllMocks();
     listSites.mockResolvedValue([]);
     listPages.mockResolvedValue([]);
@@ -84,6 +98,7 @@ describe("SiteLayoutClient cache lifecycle", () => {
   afterEach(async () => {
     await act(async () => root.unmount());
     container.remove();
+    queryClient.clear();
   });
 
   it("does not request dependent caches when the site cannot be loaded", async () => {
@@ -91,7 +106,7 @@ describe("SiteLayoutClient cache lifecycle", () => {
     getSite.mockRejectedValue(new Error("Site not found or access denied"));
 
     await act(async () => {
-      root.render(<SiteLayoutClient>page</SiteLayoutClient>);
+      root.render(layout());
     });
     await settleEffects();
 
@@ -130,7 +145,7 @@ describe("SiteLayoutClient cache lifecycle", () => {
     });
 
     await act(async () => {
-      root.render(<SiteLayoutClient>page</SiteLayoutClient>);
+      root.render(layout());
     });
     await settleEffects();
 
