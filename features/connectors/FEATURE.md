@@ -307,6 +307,41 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
   `import/__tests__/an-import-panel-waits-for-the-organization.test.tsx` (3,
   3 RED on HEAD). Guard: `pnpm check:org-three-states`.
 
+- `2026-09-18` — **F-112 follow-up (Bugbot on `75fd614c`, review 5246968154
+  comment 4046052473): a selection may hold any id the panel has SEEN this
+  session, never only the current page.** F-112's first fix (below)
+  reconciled `selected` against the LATEST `search` page, which treats one
+  page as the whole account: (a) a typed query whose narrower page omitted
+  the address's contact silently dropped it from `selected`, (b) a
+  TRUNCATED first page (the search caps at `limit`, default 50 — the
+  service exposes no next-page token or lookup-by-id, `./service.ts`) did
+  the same for a real contact sitting past the page, (c) the "not in this
+  account" banner then fired off that same truncated/narrowed read — exactly
+  the conflation the original changelog entry says it must never do — and
+  (d) once dropped, finding the contact later never restored the selection.
+  Fixed at the class: `seenIds`, a UNION of every `external_id` any read has
+  returned this session (reset only when the organization/account changes),
+  set in the SAME tick as the read that produced it (never from a separate
+  effect keyed on `search` — that lands one commit later than the read and
+  the reconcile effect would fire first against a still-empty `seenIds`,
+  dropping a selection the very read just confirmed). `selected` is
+  reconciled against `seenIds`, and only DROPPED once the unfiltered
+  (empty-query), NOT-truncated read has settled without it — the one read
+  that can prove absence; a typed query's page or a truncated unfiltered page
+  proves nothing and removes nothing. A truncated unfiltered read that has
+  not (yet) turned the contact up gets the honest, weaker
+  `requestedContactBounded` sentence ("We could not find this contact in the
+  first N read — search for it by name below."), never the "not in this
+  account" one, and it clears itself the moment a later read (e.g. searching
+  by name) proves the contact is there — nothing was ever removed, so there
+  is nothing to "restore". `import/phantom-selection.test.tsx` gained two
+  cases, both RED on `75fd614c` and green after: a typed-query narrowing that
+  used to read "0 selected" / show the wrong banner now stays "1 selected"
+  with no banner; a truncated unfiltered read that used to show "not in this
+  account's readable contacts" now shows the bounded sentence, keeps the
+  selection, and clears the sentence once a later search proves the contact
+  exists.
+
 - `2026-09-18` — **F-112 (V-24): a selection can only contain ids the current
   read returned.** Opening `?panels=google_contacts_import:<bogus
   externalId>:o-<org>` rendered "This Google account has no contacts we can
