@@ -336,7 +336,11 @@ function RoleRow({
       onChanged();
     } catch (err) {
       console.error("[surfaces] role selection failed", err);
-      toast.error("Failed to save agent selection");
+      // Say WHY — the service refuses by name (e.g. no organization selected)
+      // and a generic "Failed" would hide the remedy it just handed us.
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save agent selection",
+      );
     } finally {
       setBusy(false);
     }

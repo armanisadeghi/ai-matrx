@@ -25,6 +25,7 @@ import { getListVisibility } from "../types";
 import { ListMetaModal } from "./ListMetaModal";
 import { CreateListDialog } from "./CreateListDialog";
 import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
+import { formatCount } from "@ai-matrx/kit/format";
 
 interface CategoryPanelProps {
   lists: UserList[];
@@ -43,10 +44,15 @@ const VISIBILITY_COLORS = {
   private: "text-amber-500",
 };
 
-function formatCount(n: number | undefined): string {
+/**
+ * A compact badge count. The EMPTY STRING for `undefined` is this badge's own
+ * statement — the badge is absent when the count is unknown rather than showing
+ * a placeholder inside a pill — and it is why this name is allow-listed against
+ * the NAME lane; the abbreviation itself is the package's since kit 0.14.0.
+ */
+function listBadgeCount(n: number | undefined): string {
   if (n === undefined) return "";
-  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
-  return String(n);
+  return formatCount(n, { style: "compact" });
 }
 
 interface ListRowProps {
@@ -120,7 +126,7 @@ function ListRow({
 
         {list.item_count !== undefined && (
           <span className="flex-shrink-0 text-[10px] tabular-nums text-muted-foreground/60 font-mono">
-            {formatCount(list.item_count)}
+            {listBadgeCount(list.item_count)}
           </span>
         )}
       </Link>

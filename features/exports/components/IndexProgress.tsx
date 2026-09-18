@@ -12,6 +12,7 @@
 import { AlertCircle, Loader2, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCount } from "../format";
+import type { ExportCounts } from "../counts";
 
 export type IndexPhase = "idle" | "starting" | "running" | "completed" | "failed";
 
@@ -31,11 +32,23 @@ export const IDLE_INDEX_STATE: IndexState = {
   partialTotal: null,
 };
 
+/**
+ * 🚨 D6: the running readout says `counts.total`, NOT `state.cumulative`.
+ *
+ * The stream's cumulative is the reader's own progress and the items endpoint
+ * counts the rows that are actually browsable; both were on this screen at
+ * once, under labels a person reads as the same number. The cumulative still
+ * feeds the derivation (it is the only signal before the first page read) —
+ * it just no longer reaches the screen on its own. The elapsed seconds and the
+ * failure sentence are this banner's own facts and stay here.
+ */
 export function IndexProgress({
   state,
+  counts,
   onRetry,
 }: {
   state: IndexState;
+  counts: ExportCounts;
   onRetry: () => void;
 }) {
   if (state.phase === "starting" || state.phase === "running") {
@@ -47,9 +60,11 @@ export function IndexProgress({
       >
         <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-primary" />
         <span className="min-w-0 flex-1 truncate">
-          {state.phase === "starting"
+          {state.phase === "starting" || counts.total.value === null
             ? "Reading the archive…"
-            : `Found ${formatCount(state.cumulative)} items so far`}
+            : counts.total.partial
+              ? `${formatCount(counts.total.value)} items read so far`
+              : `Found ${formatCount(counts.total.value)} items`}
         </span>
         {state.elapsedMs > 0 && (
           <span className="shrink-0 tabular-nums text-muted-foreground">

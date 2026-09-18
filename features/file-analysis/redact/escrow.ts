@@ -54,6 +54,16 @@ export async function escrowSessionKey(
   record: StoredSession,
   organizationId: string | null,
 ): Promise<void> {
+  // Org recovery needs an ORGANIZATION the user actually chose. Null means
+  // none is selected (the caller reads `selectOrganizationId`, never a
+  // personal fallback), so refuse by name — the caller shows the loud "this
+  // key exists only in this browser" banner rather than escrowing the key to
+  // a workspace nobody picked.
+  if (!organizationId) {
+    throw new Error(
+      "Escrow write skipped: no organization is selected, so there is no organization to recover this key through. Pick one from the menu under your avatar before masking.",
+    );
+  }
   const { data: wrappingKey } = await getEscrowWrappingKey();
 
   const publicKey = await crypto.subtle.importKey(

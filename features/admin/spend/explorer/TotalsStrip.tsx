@@ -8,9 +8,10 @@
 
 "use client";
 
-import { count, usd } from "../format";
+import { usd } from "../format";
 import type { SpendBreakdown } from "../types";
-import { compactNumber, percent } from "./labels";
+import { compactNumber } from "./labels";
+import { formatCount, formatPercentFromFraction } from "@ai-matrx/kit/format";
 
 export interface SpendLeadingKpis {
   windowTotal: { value: string; hint: string };
@@ -35,27 +36,27 @@ export function buildSpendLeadingKpis(data: SpendBreakdown): SpendLeadingKpis {
     windowTotal: {
       value: usd(t.cost),
       hint: data.filters.hour
-        ? `${count(t.paidExecutions)} executions`
-        : `${usd(perHour)}/hr · ${count(t.paidExecutions)} executions`,
+        ? `${formatCount(t.paidExecutions)} executions`
+        : `${usd(perHour)}/hr · ${formatCount(t.paidExecutions)} executions`,
     },
     manual: {
       value: usd(t.manualCost),
-      hint: percent(t.cost > 0 ? t.manualCost / t.cost : 0),
+      hint: formatPercentFromFraction(t.cost > 0 ? t.manualCost / t.cost : 0),
     },
     automated: {
       value: usd(t.automatedCost),
-      hint: percent(t.cost > 0 ? t.automatedCost / t.cost : 0),
+      hint: formatPercentFromFraction(t.cost > 0 ? t.automatedCost / t.cost : 0),
     },
     requests: {
-      value: count(t.requests),
-      hint: `${count(t.conversations)} conversations · ${count(t.executions)} ledger rows`,
+      value: formatCount(t.requests),
+      hint: `${formatCount(t.conversations)} conversations · ${formatCount(t.executions)} ledger rows`,
     },
     tokensIn: {
       value: compactNumber(t.tokensIn + t.tokensCached),
-      hint: `${percent(cached)} served from cache · ${compactNumber(t.tokensOut)} out`,
+      hint: `${formatPercentFromFraction(cached)} served from cache · ${compactNumber(t.tokensOut)} out`,
     },
     explainedByRequest: {
-      value: percent(t.cost > 0 ? t.linkedCost / t.cost : 0),
+      value: formatPercentFromFraction(t.cost > 0 ? t.linkedCost / t.cost : 0),
       hint:
         t.unlinkedCost > 0
           ? `${usd(t.unlinkedCost)} from execution context`

@@ -10,7 +10,7 @@ there is, then a filterable, sortable, server-paged list of everything inside,
 and one action: send the parts worth keeping to a Masterwork Rulebook as
 Sources.
 
-## 🚨 Three invariants, in order of how badly breaking them would hurt
+## 🚨 Four invariants, in order of how badly breaking them would hurt
 
 1. **THERE IS NO BODY TEXT, ANYWHERE, ON PURPOSE.** An export holds other
    people's words. The API serves no message content and there must never be an
@@ -27,11 +27,23 @@ Sources.
    matches; `total` is the whole export. The list shell is fed the first and the
    page prints both. A line that showed the rows on screen as if they were
    everything is the failure this feature is judged on.
+4. **EVERY NUMBER ON THE LIBRARY SCREEN COMES FROM `counts.ts`.** No component
+   reads `ExportSummary`, the index stream's `cumulative`, or an items response
+   for a count of its own. `ExportLibraryPage` calls `deriveExportCounts` once
+   per render and the strip, the details sheet, the progress banner, the scope
+   tab and the list header all render that ONE object, so they cannot disagree
+   at any moment. Defect D6 was exactly this: mid-index the card said "WITH A
+   FILE —" beside a list header saying "158 of 4,000 items … with an
+   attachment", because four readers were reading four sources at four
+   moments. A partial number always says what it is partial OF ("158 of 4,000
+   read so far"); a number no source has evidenced is `null` and renders
+   "counting…" or "—", never a zero stand-in. Guard: `counts.test.tsx`.
 
 ## The pieces
 
 | File | What it is |
 |---|---|
+| `counts.ts` | THE ONE derivation of every number the Library screen shows, plus `ExportPageFacts` and the "158 of 4,000 read so far" wording (invariant 4) |
 | `types.ts` | The wire vocabulary — a documented TEMPORARY hand-mirror (see below) |
 | `api.ts` | Every `/media/*` call, through `lib/python-client` (base-url selection, fresh JWT, Error Inspector) |
 | `consent.ts` | The one builder for the confirmed sentence |
@@ -41,7 +53,7 @@ Sources.
 | `browse/service.ts` | The `EntityListService` triple, built per Library (hence `serviceKey`) |
 | `browse/columns.tsx` | The column registry. Five columns sort (the server's five `order` keys); the rest declare `sortable: false` rather than offering a control that silently falls back |
 | `browse/listConfig.tsx` | The `EntityListConfig` factory, including the one bulk action |
-| `components/*` | Drop zone, adapter catalogue, summary, index progress, quick views, the send dialog |
+| `components/*` | Drop zone, adapter catalogue, summary, index progress, quick views, list totals, the send dialog |
 
 ## The bulk action sends a FILTER, not ids
 

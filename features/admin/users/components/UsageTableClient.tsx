@@ -24,6 +24,7 @@ import {
   sortByOriginOrder,
 } from "@/lib/usage/originClass";
 import { pushAppHref } from "@/lib/deployment/navigate";
+import { formatCount, formatUsd } from "@ai-matrx/kit/format";
 
 type Timeframe = "all" | "30d" | "7d" | "24h";
 
@@ -33,10 +34,15 @@ const TIMEFRAME_DAYS: Record<Exclude<Timeframe, "all">, number> = {
   "24h": 1,
 };
 
-const fmtInt = new Intl.NumberFormat();
-function fmtCost(n: number): string {
-  return `$${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-}
+/**
+ * THE MONEY AND COUNT BODIES HERE WERE WRONG IN TWO WAYS AT ONCE, and the money
+ * and count shape lanes of `check:package-twins` found both: `fmtCost` capped
+ * at two decimals, so a real `total_cost` of $0.004 printed a confident
+ * "$0.00", and it formatted in the VIEWER's locale, so a German admin read
+ * "0,00 $" for a dollar figure. `digits: "adaptive"` shows the sub-cent end and
+ * kit pins `en-US`, so the separators never move under the reader.
+ */
+const fmtCost = (n: number | null | undefined) => formatUsd(n, { digits: "adaptive" });
 function fmtDate(iso: string | null): string {
   return iso ? new Date(iso).toLocaleString() : "—";
 }
@@ -64,7 +70,7 @@ function OriginBar({ row }: { row: AdminUserUsageRow }) {
       title={parts
         .map(
           (o) =>
-            `${originClassLabel(o.origin_class)}: ${fmtCost(o.total_cost)} · ${fmtInt.format(o.requests)} reqs`,
+            `${originClassLabel(o.origin_class)}: ${fmtCost(o.total_cost)} · ${formatCount(o.requests)} reqs`,
         )
         .join("\n")}
     >
@@ -88,7 +94,7 @@ function originSummaryLine(
 ): string {
   const parts = sortByOriginOrder(origins, (o) => o.origin_class).map(
     (o) =>
-      `${originClassLabel(o.origin_class)} ${fmtCost(o.total_cost)}/${fmtInt.format(o.requests)} reqs`,
+      `${originClassLabel(o.origin_class)} ${fmtCost(o.total_cost)}/${formatCount(o.requests)} reqs`,
   );
   return parts.join(", ") || "none recorded";
 }
@@ -196,7 +202,7 @@ export function UsageTableClient() {
         align: "right",
         cell: (r) => (
           <span className="tabular-nums text-sm">
-            {fmtInt.format(r.total_requests)}
+            {formatCount(r.total_requests)}
           </span>
         ),
         width: 100,
@@ -209,7 +215,7 @@ export function UsageTableClient() {
         align: "right",
         cell: (r) => (
           <span className="tabular-nums text-sm">
-            {fmtInt.format(r.total_tokens)}
+            {formatCount(r.total_tokens)}
           </span>
         ),
         width: 130,
@@ -222,7 +228,7 @@ export function UsageTableClient() {
         align: "right",
         cell: (r) => (
           <span className="tabular-nums text-xs text-muted-foreground">
-            {fmtInt.format(r.input_tokens)}
+            {formatCount(r.input_tokens)}
           </span>
         ),
         width: 110,
@@ -235,7 +241,7 @@ export function UsageTableClient() {
         align: "right",
         cell: (r) => (
           <span className="tabular-nums text-xs text-muted-foreground">
-            {fmtInt.format(r.output_tokens)}
+            {formatCount(r.output_tokens)}
           </span>
         ),
         width: 110,
@@ -336,13 +342,13 @@ export function UsageTableClient() {
         <div className="rounded-lg border border-border bg-card p-3">
           <div className="text-[11px] text-muted-foreground">Requests</div>
           <div className="text-lg font-semibold tabular-nums">
-            {fmtInt.format(totals.requests)}
+            {formatCount(totals.requests)}
           </div>
         </div>
         <div className="rounded-lg border border-border bg-card p-3">
           <div className="text-[11px] text-muted-foreground">Total tokens</div>
           <div className="text-lg font-semibold tabular-nums">
-            {fmtInt.format(totals.tokens)}
+            {formatCount(totals.tokens)}
           </div>
         </div>
         <div className="rounded-lg border border-border bg-card p-3">
@@ -384,7 +390,7 @@ export function UsageTableClient() {
                 <span>{originClassLabel(o.origin_class)}</span>
                 <span className="font-mono tabular-nums">{fmtCost(o.cost)}</span>
                 <span className="text-muted-foreground">
-                  ({fmtInt.format(o.requests)})
+                  ({formatCount(o.requests)})
                 </span>
               </div>
             ))}
@@ -405,7 +411,7 @@ export function UsageTableClient() {
             setClickedRow(row);
             if (!row) return null;
             return {
-              content: `${row.email ?? row.user_id}: ${fmtInt.format(row.total_requests)} requests, ${fmtCost(row.total_cost)}`,
+              content: `${row.email ?? row.user_id}: ${formatCount(row.total_requests)} requests, ${fmtCost(row.total_cost)}`,
             };
           }}
           extraSections={[
@@ -457,7 +463,7 @@ export function UsageTableClient() {
               "Filtered/sorted per-user usage currently visible.",
             humanRow: (r) =>
               [
-                `${r.email ?? r.user_id}: ${fmtInt.format(r.total_requests)} requests, ${fmtInt.format(r.total_tokens)} tokens, ${fmtCost(r.total_cost)}`,
+                `${r.email ?? r.user_id}: ${formatCount(r.total_requests)} requests, ${formatCount(r.total_tokens)} tokens, ${fmtCost(r.total_cost)}`,
                 `models=${r.distinct_models} last=${r.last_activity ?? "?"}`,
                 `by origin: ${originSummaryLine(r.by_origin)}`,
               ].join("\n"),
@@ -475,7 +481,7 @@ export function UsageTableClient() {
               by_origin: originTotals
                 .map(
                   (o) =>
-                    `${originClassLabel(o.origin_class)} ${fmtCost(o.cost)}/${fmtInt.format(o.requests)}`,
+                    `${originClassLabel(o.origin_class)} ${fmtCost(o.cost)}/${formatCount(o.requests)}`,
                 )
                 .join(", "),
             }),

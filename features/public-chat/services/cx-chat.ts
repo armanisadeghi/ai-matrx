@@ -6,7 +6,6 @@
  */
 
 import { createClient } from "@/utils/supabase/server";
-import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import type {
   CxConversation,
   CxConversationInsert,
@@ -47,21 +46,26 @@ export async function getCxConversation(
 
 /** Create a new conversation */
 export async function createCxConversation(
-  // org is resolved server-side below, so callers need not supply it (the
-  // regenerated types make organization_id required on chat.conversation).
-  conversation: Omit<CxConversationInsert, "organization_id"> & {
-    organization_id?: string | null;
-  },
+  // 🚨 THE CALLER NAMES THE ORGANIZATION. `organization_id` used to be
+  // optional here and was resolved server-side into the session's PERSONAL
+  // organization when the caller left it out — a conversation filed in a
+  // private workspace nobody chose. It is required now, and the route that
+  // calls this reads it from `X-Organization-Id` and refuses without one.
+  // common-docs/policies/context-is-carried-never-rebuilt.md rule 4.
+  conversation: CxConversationInsert,
 ): Promise<CxConversation | null> {
   const supabase = await createClient();
-  // chat.conversation is a root entity (org NOT NULL, no inherit trigger) —
-  // never insert a null org; fall back to the session's personal org.
+  if (!conversation.organization_id) {
+    throw new Error(
+      "createCxConversation was called without an organization. The conversation is filed in the organization the caller is acting in \u2014 read it at the request boundary and pass it in.",
+    );
+  }
   const insert: CxConversationInsert = {
     ...conversation,
-    organization_id: await ensureOrgIdServer(
-      supabase,
-      conversation.organization_id ?? null,
-    ),
+    // Named explicitly so the write READS as carrying its organization — the
+    // sibling guard `scripts/check-org-insert-scope.ts` judges the payload it
+    // can see, and a spread alone hides which tenant this row lands in.
+    organization_id: conversation.organization_id,
   };
   const { data, error } = await supabase
     .schema("chat")

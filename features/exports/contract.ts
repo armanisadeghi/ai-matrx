@@ -176,8 +176,28 @@ export function parseExportSummary(value: unknown, field = "summary"): ExportSum
   };
 }
 
+/**
+ * One export Library, from `GET /media/exports/{id}` or from the create response.
+ *
+ * 🚨 THE SERVER WRAPS THE ROW, AND SO THIS UNWRAPS IT. `read_export` returns
+ * `{"library": {…}}`, not the row. Reading the envelope as the row makes every
+ * field `undefined`, which on 2026-09-17 showed on the real screen as "the
+ * export.id should be text and arrived as nothing at all" — honest, and still
+ * an empty summary card on a Library that had just indexed perfectly. Accepting
+ * BOTH shapes is the same ruling `features/source-library/api.ts` records for
+ * the same server on the same day: reality is the referee, and a screen does
+ * not get to be right while a person sees nothing.
+ *
+ * It is a strict unwrap, not a guess: only an object carrying a `library` key
+ * whose value is itself an object is treated as an envelope.
+ */
 export function parseExportLibrary(payload: unknown, field = "the export"): ExportLibrary {
-  const row = obj(payload, field);
+  const outer = obj(payload, field);
+  const inner = outer.library;
+  const row =
+    inner !== null && typeof inner === "object" && !Array.isArray(inner)
+      ? (inner as Record<string, unknown>)
+      : outer;
   return {
     id: str(row.id, `${field}.id`),
     name: str(row.name ?? "", `${field}.name`),
@@ -192,10 +212,36 @@ export function parseExportLibrary(payload: unknown, field = "the export"): Expo
     organization_id: optStr(row.organization_id, `${field}.organization_id`),
     created_at: optStr(row.created_at, `${field}.created_at`),
     updated_at: optStr(row.updated_at, `${field}.updated_at`),
-    summary:
-      row.summary === undefined || row.summary === null
-        ? null
-        : parseExportSummary(row.summary, `${field}.summary`),
+    /**
+     * 🚨 THE SERVER CALLS IT `metrics`, AND THAT IS NOT COSMETIC.
+     * `read_export` publishes the finished summary under `metrics`, never
+     * `summary`. Reading only `summary` meant a completed export always looked
+     * un-indexed to the page, so `ExportLibraryPage`'s "index only what has not
+     * been indexed" guard never fired and EVERY mount re-ran the index. Before
+     * the server was made idempotent, the second pass hit
+     * `library_item_library_external_uniq` and a person re-opening their own
+     * export was shown a database constraint over 10,000 perfectly indexed
+     * messages (2026-09-17). An empty `metrics` object means "not indexed yet"
+     * and stays null — it is the server's own "nothing measured", not a summary
+     * of zero.
+     */
+    summary: (() => {
+      const direct = row.summary;
+      if (direct !== undefined && direct !== null) {
+        return parseExportSummary(direct, `${field}.summary`);
+      }
+      const metrics = row.metrics;
+      if (
+        metrics !== undefined &&
+        metrics !== null &&
+        typeof metrics === "object" &&
+        !Array.isArray(metrics) &&
+        Object.keys(metrics as object).length > 0
+      ) {
+        return parseExportSummary(metrics, `${field}.metrics`);
+      }
+      return null;
+    })(),
   };
 }
 

@@ -30,7 +30,14 @@
  * DB-loaded turn:    messageId set, isStreamActive=false (no requestId).
  */
 
-import { startTransition, useCallback, useMemo, useState, useEffect, useRef } from "react";
+import {
+  startTransition,
+  useCallback,
+  useMemo,
+  useState,
+  useEffect,
+  useRef,
+} from "react";
 import MarkdownStream from "@/components/MarkdownStream";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useDebugContext } from "@/hooks/useDebugContext";
@@ -69,6 +76,8 @@ import { friendlyStreamError } from "../../run/friendlyStreamError";
 import { AssistantWarning } from "../../run/AssistantWarning";
 import { BreathingOrb } from "./BreathingOrb";
 import { AssistantActionBar } from "./AssistantActionBar";
+import { AssistantNoAnswer } from "./AssistantNoAnswer";
+import { isAnswerlessTurn } from "./answerless-turn";
 import { retryConversationTurn } from "@/features/agents/redux/execution-system/message-crud/retry-turn.thunk";
 import { commitInlineContentEdit } from "@/features/agents/redux/execution-system/message-crud/commit-inline-edit.thunk";
 import { toast } from "@/lib/toast";
@@ -93,6 +102,8 @@ interface AgentAssistantMessageProps {
   /** Server-assigned `cx_message.id` — present for committed and DB-loaded turns. */
   messageId?: string;
   isStreamActive?: boolean;
+  streamSlotStart?: number;
+  streamSlotEnd?: number;
   /**
    * Optional surface key for routing fork / retry outcomes via the
    * surfaces registry. Threaded down to AssistantActionBar.
@@ -115,6 +126,13 @@ interface AgentAssistantMessageProps {
   canRetry?: boolean;
   /** Chat cold-load only: show a short text skeleton before DB markdown mounts. */
   deferColdMarkdown?: boolean;
+  /**
+   * False for the intermediate iterations of a multi-step agentic turn. Only
+   * the LAST member of a turn carries the answer, so only it may say "this run
+   * produced no answer" — see `answerless-turn.ts`. Defaults to true, which is
+   * correct for every single-message surface.
+   */
+  isTurnAnswer?: boolean;
 }
 
 export function AgentAssistantMessage({
@@ -122,10 +140,13 @@ export function AgentAssistantMessage({
   requestId,
   messageId,
   isStreamActive = false,
+  streamSlotStart,
+  streamSlotEnd,
   surfaceKey,
   hideActionBar = false,
   canRetry = false,
   deferColdMarkdown = false,
+  isTurnAnswer = true,
 }: AgentAssistantMessageProps) {
   useDebugContext("AgentAssistantMessage");
 
@@ -197,6 +218,11 @@ export function AgentAssistantMessage({
   const record = useAppSelector(
     messageId ? selectMessageById(conversationId, messageId) : () => undefined,
   );
+
+  // Request-wide notices and source lists belong to its final segment. They
+  // must not keep growing above a steering message after this segment closes.
+  const isClosedStreamSegment =
+    (streamSlotEnd ?? record?._streamSlotEnd) !== undefined;
 
   // Plain-text projection for action bar (copy / print / share) — always
   // marker-free.
@@ -352,7 +378,8 @@ export function AgentAssistantMessage({
   // error treatment so a live failure and a reloaded one look identical. The
   // failed turn stays in history; retry (when offered) re-runs it without
   // deleting anything. See CONVERSATION_FAILURE_AND_RETRY_FE_GUIDE.md.
-  const failed = isFatalError || isFailedRecord(record);
+  const failed =
+    (!isClosedStreamSegment && isFatalError) || isFailedRecord(record);
 
   // Did anything actually stream/persist for this turn? Drives the failed
   // layout: a turn that already produced content renders that content WITH
@@ -381,7 +408,21 @@ export function AgentAssistantMessage({
     (serverProcessedBlocks?.length ?? 0) > 0 ||
     streamedBlockCount > 0;
 
+  // A run that finished and produced NOTHING says so, in words, with a remedy —
+  // never an empty bubble wearing a like/copy/speak bar (see answerless-turn.ts).
+  const answerless = isAnswerlessTurn({
+    isTurnAnswer,
+    isStreamActive,
+    failed,
+    coldMarkdownReady,
+    messageId,
+    renderedText,
+    attachmentCount: attachmentParts.length,
+    mediaBlockCount: serverProcessedBlocks?.length ?? 0,
+  });
+
   const showProviderRetry =
+    !isClosedStreamSegment &&
     providerRetry !== null &&
     (isStreamActive || providerRetry.state !== "recovered");
 
@@ -534,6 +575,8 @@ export function AgentAssistantMessage({
           <div data-message-content>
             <MarkdownStream
               requestId={effectiveRequestId}
+              streamSlotStart={streamSlotStart ?? record?._streamSlotStart}
+              streamSlotEnd={streamSlotEnd ?? record?._streamSlotEnd}
               turnId={messageId}
               conversationId={conversationId}
               messageId={messageId ?? undefined}
@@ -549,7 +592,7 @@ export function AgentAssistantMessage({
               the inline markers above; renders only when sources exist.
               During a live stream it appears as soon as the first citation
               event lands and grows as sources accumulate. */}
-          {displaySources.length > 0 && (
+          {!isClosedStreamSegment && displaySources.length > 0 && (
             <MessageSourcesRow sources={displaySources} className="mt-2" />
           )}
           {/* While content is streaming, the breathing orb trails just below
@@ -570,12 +613,19 @@ export function AgentAssistantMessage({
           mid-turn (`hasInlineError`): then EnhancedChatMarkdown already placed
           it at its chronological spot inline, so the trailing copy is
           suppressed to avoid a duplicate that floats to the bottom. */}
-      {visibleWarnings?.map((warning, index) => (
-        <AssistantWarning
-          key={`${warning.code}-${index}`}
-          warning={warning}
+      {!isClosedStreamSegment &&
+        visibleWarnings?.map((warning, index) => (
+          <AssistantWarning
+            key={`${warning.code}-${index}`}
+            warning={warning}
+          />
+        ))}
+      {answerless && (
+        <AssistantNoAnswer
+          onRetry={canRetry ? handleRetry : undefined}
+          retrying={retrying}
         />
-      ))}
+      )}
       {!hasInlineError && failedError}
       {messageId && (
         <MessageFilesStrip

@@ -195,11 +195,12 @@ before adding any keyword field or per-keyword display anywhere.
   returns exactly the phrases inside THAT artifact. Never widen it, and never
   grant anon the keyword tables to avoid it.
 - `useSavedKeywordResearch.ts` — THE one query for the latest durable
-  research artifact per (org, phrase): wraps `getLatestSavedKeywordResearch`,
-  resolves the org exactly like `callApi` (explicit override else
-  `selectEffectiveOrganizationId`) so the read scope always equals the run's
-  write scope, exports `savedKeywordResearchQueryKey` for invalidation, and
-  optionally debounces a live-input phrase. Consumed by the launcher AND the
+  research artifact per (site, phrase): wraps `getLatestSavedKeywordResearch`,
+  which is SITE-scoped through the `content_ir_kind_instance` -> `web_site`
+  binding (MSR-26), so the read scope always equals the run's write scope and
+  no organization is resolved here at all; exports
+  `savedKeywordResearchQueryKey` for invalidation, and optionally debounces a
+  live-input phrase. Consumed by the launcher AND the
   Keyword Intelligence Research tab — never re-declare the query inline.
 - `components/KeywordResearchLauncher.tsx` — **THE canonical research runner**
   (input → live feed → summary) over a caller-owned `useKeywordResearch()`

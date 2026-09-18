@@ -12,6 +12,7 @@ import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import type { TablesUpdate } from "@/types/database.types";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 import {
   getProjectTasks,
   getTopLevelProjectTasks,
@@ -220,7 +221,13 @@ export const createTaskThunk = createAsyncThunk(
       .from("tasks")
       .insert({
         ...insertData,
-        organization_id: await ensureOrgId(organization_id),
+        // Same contract as createProjectThunk: the refusal is spoken, and
+        // it still rejects so no surface shows a task that was never written.
+        organization_id: await withOrganizationRefusalShown(
+          "created",
+          () => ensureOrgId(organization_id),
+          { subject: "This task" },
+        ),
         // 'not_started' violated the DB status CHECK; 'inbox' is the canonical
         // untriaged status (features/tasks/constants/status.ts).
         status: data.status ?? "inbox",

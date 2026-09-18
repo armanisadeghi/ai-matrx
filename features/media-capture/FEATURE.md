@@ -126,6 +126,8 @@ The studio matches the audio recorder's bar. Three rules:
 
 ## Change log
 
+- 2026-09-17 — **A capture files into the organization the user chose, or it does not upload.** `capture-uploader` read the effective org (explicit selection ELSE the personal workspace), so a capture taken with no organization selected was silently filed into a personal workspace — visible only in a folder path nobody sees. It now waits for the workspace through `awaitEffectiveOrganizationId` (bounded, explicit-only) and REFUSES with that primitive's own sentence when there is none: no bytes leave, and `CaptureStudio` / the transport strip / journal recovery show the reason they already show for any upload failure. `inheritActiveScope` is now unconditional, because the path always carries a real org. Guard: `upload/__tests__/capture-uploader.test.ts` proves both answers (org-namespaced folder on ready, nothing uploaded on unavailable).
+
 - 2026-09-01 — Centralized user-picked video metadata inspection in `core/video-file-inspection.ts`; commerce intake and Product Capture now share the bounded MIME/duration probe while recorded video keeps the stronger capture-engine terminal contract.
 
 - 2026-08-30 — **Embedded-recorder isolation.** `LiveCaptureIndicator` now requires owning-surface `LiveCaptureControls` before it renders or guards navigation; product capture video no longer gets a duplicate global pill whose `/camera` fallback could pull the user out of the item and strand the clip in recovery. Regression coverage pins low-level identity-without-controls as hidden.

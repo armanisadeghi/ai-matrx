@@ -184,6 +184,8 @@ Two project-specific templates in `lib/email/client.ts`:
 
 ## Change Log
 
+- `2026-09-17` — **A project create that refuses for want of an organization says so in English, and keeps its error CLASS.** `service.ts`'s `resolveOrganizationId` wrapped every failure in `pgErrorToError`, which erased the `OrganizationContextError` class and left `isOrganizationRequiredError` unable to recognise the one refusal it exists for; it now re-throws that error untouched and `createProject` returns the remedy sentence instead of the transport's programmer instruction. `importJson.ts`'s `createProjectFromJson` did the same at its catch and also documented a personal-organization fallback that `ensureOrgId` has not had since 2026-09-17 — both corrected. Law: `../../common-docs/policies/context-is-carried-never-rebuilt.md`.
+
 - `2026-09-11` — `/projects` now keeps active filter identity in its actionable filter controls instead of repeating it as a page subtitle. The initial empty state leads directly to **New project**; filtered and searched empty states still explain that no records match.
 
 - `2026-09-11` — `/projects` now uses complete paged project and task-summary reads for its aggregate counts, derives its compact destination strip from the Workspaces registry, and groups cards by organization with stable identity accents. Card and table controls, scope/context behavior, and the existing create window remain shared.

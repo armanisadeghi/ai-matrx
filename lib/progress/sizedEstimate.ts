@@ -1,3 +1,4 @@
+import { formatFileSize } from "@ai-matrx/kit/format";
 // lib/progress/sizedEstimate.ts
 //
 // 🚨 A DURATION PROMISE IS A MEASUREMENT OF *THIS* RUN, NEVER A CONSTANT.
@@ -143,8 +144,7 @@ export function describeWorkSize(size: WorkSize | null | undefined): string | nu
     parts.push(`${minutes} ${minutes === 1 ? "minute" : "minutes"} recorded`);
   }
   if (known.bytes) {
-    const mb = known.bytes / BYTES_PER_MB;
-    parts.push(mb < 1 ? `${Math.max(1, Math.round(known.bytes / 1024))} KB` : `${mb.toFixed(1)} MB`);
+    parts.push(formatFileSize(known.bytes));
   }
   return parts.length > 0 ? parts.join(" · ") : null;
 }

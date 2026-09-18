@@ -40,26 +40,25 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import {
-  countWithNoun,
-  directionLabel,
-  formatBytes,
-  formatCount,
-  formatDay,
-  formatSpan,
-  topCounts,
-} from "../format";
+import { countWithNoun, directionLabel, formatCount, formatDay, formatSpan, topCounts } from "../format";
+import { formatExportCount, type ExportCounts } from "../counts";
 import type { ExportLibrary, ExportSummary } from "../types";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 export interface LibrarySummaryProps {
   library: ExportLibrary | null;
   summary: ExportSummary | null;
-  /** What the index stream has said so far, before a summary exists. */
-  indexedSoFar: number | null;
-  /** True while the index is actually running. Without it, a page whose reads
-   *  all failed would sit on "counting…" forever — a progress word for work
-   *  that is not happening. */
-  indexing: boolean;
+  /**
+   * EVERY NUMBER THIS CARD SHOWS, already derived (`../counts`).
+   *
+   * 🚨 D6: this component must not read `summary`, the index stream or an
+   * items response for a count of its own. It did, the list header below it
+   * read a different one, and mid-index the two contradicted each other on the
+   * same screen. `summary` survives as a prop only for the things that are not
+   * counts — the date range, the correspondents, the label and thread chips,
+   * the warnings and the owner identity.
+   */
+  counts: ExportCounts;
   /** The identity the person picked when the server could not tell. */
   ownerOverride: string | null;
   onPickOwner: (key: string | null) => void;
@@ -139,8 +138,7 @@ function ChipRow({
 export function LibrarySummary({
   library,
   summary,
-  indexedSoFar,
-  indexing,
+  counts,
   ownerOverride,
   onPickOwner,
   onNarrow,
@@ -151,8 +149,7 @@ export function LibrarySummary({
     library?.adapter_label ?? library?.adapter ?? "Working it out";
   const detectedFrom = library?.detected_from ?? null;
 
-  const outbound = summary?.counts_by_direction?.outbound ?? null;
-  const total = summary?.total_items ?? indexedSoFar;
+  const indexing = counts.indexing;
 
   return (
     <div className="space-y-2">
@@ -189,24 +186,36 @@ export function LibrarySummary({
             {!summary ? (
               <p className="text-sm text-muted-foreground">
                 The full breakdown appears when the index finishes.
-                {indexedSoFar !== null &&
-                  ` ${formatCount(indexedSoFar)} items so far.`}
+                {counts.total.value !== null &&
+                  ` ${formatExportCount(counts.total, indexing)}.`}
               </p>
             ) : (
               <div className="space-y-5">
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  <Stat icon={FileText} label="Items" value={formatCount(summary.total_items)} />
-                  <Stat icon={Send} label="Sent by you" value={formatCount(outbound ?? 0)} />
+                  <Stat
+                    icon={FileText}
+                    label="Items"
+                    value={formatExportCount(counts.total, indexing)}
+                  />
+                  <Stat
+                    icon={Send}
+                    label="Sent by you"
+                    value={formatExportCount(counts.outbound, indexing)}
+                  />
                   <Stat
                     icon={Paperclip}
                     label="With a file"
-                    value={formatCount(summary.with_attachments)}
+                    value={formatExportCount(counts.withAttachments, indexing)}
                   />
-                  <Stat icon={FileText} label="Words" value={formatCount(summary.total_words)} />
+                  <Stat
+                    icon={FileText}
+                    label="Words"
+                    value={formatExportCount(counts.words, indexing)}
+                  />
                   <Stat
                     icon={FileText}
                     label="Characters"
-                    value={formatCount(summary.total_chars)}
+                    value={formatExportCount(counts.characters, indexing)}
                   />
                   <Stat
                     icon={CalendarRange}
@@ -302,18 +311,12 @@ export function LibrarySummary({
         <Stat
           icon={FileText}
           label="Items"
-          value={
-            total !== null
-              ? formatCount(total)
-              : indexing
-                ? "counting…"
-                : "—"
-          }
+          value={formatExportCount(counts.total, indexing)}
         />
         <Stat
           icon={Send}
           label="Sent by you"
-          value={outbound === null ? "—" : formatCount(outbound)}
+          value={formatExportCount(counts.outbound, indexing)}
         />
         <Stat
           icon={CalendarRange}
@@ -328,15 +331,15 @@ export function LibrarySummary({
         <Stat
           icon={Paperclip}
           label="With a file"
-          value={summary ? formatCount(summary.with_attachments) : "—"}
+          value={formatExportCount(counts.withAttachments, indexing)}
         />
         <Stat
           icon={FileText}
           label="Words"
-          value={summary ? formatCount(summary.total_words) : "—"}
+          value={formatExportCount(counts.words, indexing)}
         />
         {library?.bytes ? (
-          <Stat icon={FileText} label="Archive" value={formatBytes(library.bytes)} />
+          <Stat icon={FileText} label="Archive" value={formatFileSize(library.bytes)} />
         ) : null}
       </div>
 
@@ -463,8 +466,16 @@ function OwnerIdentityLine({
   );
 }
 
-/** Used by the page's aria label; kept beside the strip it describes. */
-export function summaryHeadline(summary: ExportSummary | null): string {
-  if (!summary) return "Working out what is in this export";
-  return `${countWithNoun(summary.total_items, "item")} indexed`;
+/**
+ * Used by the page's aria label; kept beside the strip it describes.
+ *
+ * Takes the derived counts, not the summary: a headline that read the summary
+ * itself would be one more place on this screen with its own opinion of how
+ * many items there are (D6).
+ */
+export function summaryHeadline(counts: ExportCounts): string {
+  if (counts.total.value === null) return "Working out what is in this export";
+  return counts.total.partial
+    ? `${countWithNoun(counts.total.value, "item")} read so far`
+    : `${countWithNoun(counts.total.value, "item")} indexed`;
 }

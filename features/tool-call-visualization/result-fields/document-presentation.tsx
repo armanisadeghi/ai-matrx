@@ -47,7 +47,7 @@
 import React, { createContext, useContext, useMemo } from "react";
 
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 
@@ -162,9 +162,10 @@ export function useOptionalFieldPolicy(): OptionalFieldPolicy {
   // store = no organization = the declared default, which is a correct answer.
   const store = getStoreSingleton();
   const state = store?.getState();
-  const organizationId = state
-    ? selectEffectiveOrganizationId(state as never)
-    : null;
+  // The EXPLICIT active org, never a personal-workspace substitute: with none
+  // selected the knob ladder answers from the person and the declared default,
+  // which is a correct answer — it never borrows another account's setting.
+  const organizationId = state ? selectOrganizationId(state as never) : null;
   const userId = state ? selectUserId(state as never) : null;
   const value = useEffectiveKnob(organizationId, userId, OPTIONAL_FIELDS_KNOB);
   return asOptionalFieldPolicy(value) ?? DEFAULT_OPTIONAL_FIELD_POLICY;

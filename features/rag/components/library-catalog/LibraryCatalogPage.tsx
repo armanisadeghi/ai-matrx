@@ -48,7 +48,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { RagHubHeader } from "@/features/rag/components/shell/RagHubHeader";
 import {
   itemNoun,
@@ -111,7 +111,11 @@ function TypeIcon({
 export function LibraryCatalogPage() {
   const router = useRouter();
   const search = useSearchParams();
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE — this is the org the
+  // detail panels link to and adopt into, so a personal-org fallback would
+  // send the user to a workspace they never chose. Null is handled by the
+  // panels (they hide the org-settings door and the adopted-copy read).
+  const organizationId = useAppSelector(selectOrganizationId);
   // `store_id` is the pre-2026-08-23 shape: a data-store id, no type.
   const selectedId = search?.get("id") ?? search?.get("store_id") ?? null;
   const typeParam = search?.get("type");

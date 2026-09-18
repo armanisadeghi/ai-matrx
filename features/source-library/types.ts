@@ -282,6 +282,15 @@ export type SyncEvent =
           elapsed_ms: number;
           quota_units_spent: number;
           metrics: LibraryMetrics;
+          /**
+           * What the catalogue LEFT OUT, and why. A blog crawl reaches taxonomy
+           * pages, pagination, nav widgets and assets; waitbutwhy.com reported 346
+           * "Posts" against its own sitemap's 202 and nothing on screen could have
+           * said so. Absent or empty means nothing was discarded — never "we did
+           * not look", which is why the server sends `{}` rather than omitting it.
+           */
+          skipped_by_reason: Record<string, number>;
+          skipped_total: number;
       })
     | (SyncEventBase & {
           type: "library.sync.unavailable";
@@ -354,7 +363,12 @@ export interface EstimateResult {
         wall_seconds_estimate: number;
         parallelism: number;
     };
-    quota: { units_required: number; units_remaining: number };
+    /**
+     * Estimates do not call the YouTube Data API, so a server may omit this
+     * unrelated ledger snapshot. When it does provide one, both values are
+     * still narrowed by the wire parser rather than guessed.
+     */
+    quota: { units_required: number; units_remaining: number } | null;
     warnings: string[];
     requires_confirmation: boolean;
 }
@@ -411,6 +425,14 @@ export interface JobDetailResponse {
     job: JobRow;
     items: JobItemRow[];
     items_total: number;
+}
+
+/** `GET /media/libraries/{id}/jobs` — the job-discovery door (contract §7). */
+export interface JobListResponse {
+    jobs: JobRow[];
+    total: number;
+    limit: number;
+    offset: number;
 }
 
 export type JobEvent =

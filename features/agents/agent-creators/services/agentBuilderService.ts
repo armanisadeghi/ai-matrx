@@ -6,6 +6,12 @@ import { useRouter } from "next/navigation";
 import type { Database } from "@/types/database.types";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
 import { stripNullish } from "@/utils/supabase/payload";
+// The ONE write-organization resolver (explicit value → the org the user
+// SELECTED → refuse). `agent.definition` is org-scoped and its sibling write
+// path (`agentDefinitionToInsert`) already refuses a row with no organization;
+// this path must not be the quiet one. Law:
+// common-docs/policies/context-is-carried-never-rebuilt.md.
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 type AgentInsert = Database["agent"]["Tables"]["definition"]["Insert"];
 
@@ -119,9 +125,17 @@ export async function createAgentFromBuilder(
       return { success: false, error: msg };
     }
 
+    // Organization is carried, never guessed. `ensureOrgId` throws
+    // `OrganizationContextError` ("Select an organization before sending this
+    // request.") when nothing is selected; the catch below turns that into the
+    // same honest toast + `{ success: false }` every other failure here uses,
+    // and NOTHING is inserted.
+    const organizationId = await ensureOrgId(undefined);
+
     const payload = {
       ...configToInsertPayload(config),
       created_by: authData.user.id,
+      organization_id: organizationId,
     } satisfies AgentInsert;
 
     const { data, error: insertError } = await supabase

@@ -109,3 +109,13 @@ Migration `kg_014` added `decision_note`, `viewed_at`, `is_starred` to both ledg
   the page size.
 
 ---
+
+## Change Log
+
+- 2026-09-17 — **The personal-organization write in `kgSuggestionAckService.ackSuggestions` is
+  marked deliberate, not removed.** A "don't show this suggestion again" row is the signed-in
+  person's own cross-organization preference (the new-suggestion toast is global; RLS scopes every
+  row to `auth.uid()`), so it stays in their personal workspace and the line now carries
+  `// org-fallback-deliberate:` with that reason. Re-filing it under the active organization would
+  split one person's dismissals across tenants.
+  Law: `../../../common-docs/policies/context-is-carried-never-rebuilt.md`.

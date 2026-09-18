@@ -1723,94 +1723,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/ai/conversation/{conversation_id}/attachments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Conversation Attachments
-         * @description Everything attached to this chat (ownership-scoped).
-         */
-        get: operations["get_conversation_attachments_ai_conversation__conversation_id__attachments_get"];
-        put?: never;
-        /**
-         * Attach Conversation Resource
-         * @description Attach a repo / Doc / Sheet to this chat. Idempotent.
-         */
-        post: operations["attach_conversation_resource_ai_conversation__conversation_id__attachments_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ai/conversations/{conversation_id}/attachments": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Conversation Attachments
-         * @description Everything attached to this chat (ownership-scoped).
-         */
-        get: operations["get_conversation_attachments_ai_conversations__conversation_id__attachments_get"];
-        put?: never;
-        /**
-         * Attach Conversation Resource
-         * @description Attach a repo / Doc / Sheet to this chat. Idempotent.
-         */
-        post: operations["attach_conversation_resource_ai_conversations__conversation_id__attachments_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ai/conversation/{conversation_id}/attachments/{association_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Detach Conversation Resource
-         * @description End one attachment. The resource row stays and can be re-attached.
-         */
-        delete: operations["detach_conversation_resource_ai_conversation__conversation_id__attachments__association_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/ai/conversations/{conversation_id}/attachments/{association_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * Detach Conversation Resource
-         * @description End one attachment. The resource row stays and can be re-attached.
-         */
-        delete: operations["detach_conversation_resource_ai_conversations__conversation_id__attachments__association_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/ai/conversation/{conversation_id}/memory_cost": {
         parameters: {
             query?: never;
@@ -3545,6 +3457,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/coding-sessions/codex/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Codex Managed Capabilities
+         * @description Can THIS box run a Codex turn — CLI, broker audience, mint, and all.
+         *
+         *     The same door shape as `/claude/capabilities`, and for the same reason:
+         *     a screen must be able to learn the answer with a reason instead of
+         *     discovering it from a launch that fails.
+         */
+        get: operations["codex_managed_capabilities_coding_sessions_codex_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coding-sessions/codex/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Codex Managed Stream */
+        post: operations["codex_managed_stream_coding_sessions_codex_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coding-sessions/codex/runtimes/{runtime_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Codex Managed Runtime */
+        post: operations["cancel_codex_managed_runtime_coding_sessions_codex_runtimes__runtime_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/skills": {
         parameters: {
             query?: never;
@@ -3788,6 +3758,31 @@ export interface paths {
         put?: never;
         /** Anthropic Count Tokens */
         post: operations["anthropic_count_tokens_broker_gateway_anthropic_v1_messages_count_tokens_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/broker/gateway/openai_codex/v1/responses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Openai Codex Responses
+         * @description The Codex CLI's data plane — `{base_url}/responses`, SSE, scoped-token auth.
+         *
+         *     The path is NOT cosmetic: `codex exec` derives it from the `base_url` of
+         *     its `model_providers.<id>` entry, so the credential's `endpoint` minus
+         *     `/responses` is exactly what the runtime configures. Scoped token only —
+         *     no `context_dep` here, by the gateway contract.
+         */
+        post: operations["openai_codex_responses_broker_gateway_openai_codex_v1_responses_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6091,11 +6086,59 @@ export interface paths {
         /**
          * List Connection Resources
          * @description The attachable things this caller can reach through ``provider``.
+         *
+         *     A bare list, so the chooser turns a candidate into a pick without reshaping
+         *     it. WHICH kinds a provider offers — and therefore what an empty list means —
+         *     is `/connections/attachable`, which also rides the availability payload.
          */
         get: operations["list_connection_resources_connections_resources_get"];
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/conversations/{conversation_id}/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Conversation Attachments
+         * @description Everything attached to this chat (ownership-scoped).
+         */
+        get: operations["get_conversation_attachments_conversations__conversation_id__attachments_get"];
+        put?: never;
+        /**
+         * Attach Conversation Resource
+         * @description Attach a repo / Doc / Sheet to this chat. Idempotent.
+         */
+        post: operations["attach_conversation_resource_conversations__conversation_id__attachments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/conversations/{conversation_id}/attachments/{association_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Detach Conversation Resource
+         * @description End one attachment. The resource row stays and can be re-attached.
+         */
+        delete: operations["detach_conversation_resource_conversations__conversation_id__attachments__association_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -19502,6 +19545,49 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/google-workspace/approvals/{approval_id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply Approval
+         * @description Approve one queued Google change and make it — exactly once.
+         *
+         *     The approval id IS the idempotency key: calling this twice writes to Google
+         *     once and returns the first call's receipt the second time.
+         */
+        post: operations["apply_approval_google_workspace_approvals__approval_id__apply_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/google-workspace/approvals/{approval_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject Approval
+         * @description Turn one queued Google change down, with the reason kept on the record.
+         */
+        post: operations["reject_approval_google_workspace_approvals__approval_id__reject_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/bing-integrations/authorize-url": {
         parameters: {
             query?: never;
@@ -21526,6 +21612,134 @@ export interface paths {
          *     hence the stream. Rejoin with ``POST /seo/collections/{run_id}/rejoin``.
          */
         post: operations["sync_press_newsroom_seo_sites__site_id__press_newsroom_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/map/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Map Site Pages
+         * @description Put this site's pages on its topical map — the ONE entry the "map the pages"
+         *     button calls.
+         *
+         *     It enrols every active page of the site in a durable ledger in Search Console demand
+         *     order, then works it in batches: claim, ask `seo.page_mapper` where each page sits,
+         *     write the surviving placements through `seo.set_pages_map_topics` with
+         *     `source='mapper'`, and settle the claim against the edges that actually landed.
+         *
+         *     Resumable by construction. Pressing this again continues where the last run stopped —
+         *     a page already mapped is never re-judged, a page a PERSON mapped is never touched, and
+         *     a worker that dies mid-batch costs one lease window and nothing else. Streams a named
+         *     stage per batch; rejoin with `POST /seo/collections/{run_id}/rejoin`.
+         *
+         *     `limit` caps the pages this press will spend on (the daily ceiling decides when it is
+         *     omitted), and `dry_run` answers what WOULD be written without writing it — honest
+         *     about the map, not free: every batch still costs a model call.
+         */
+        post: operations["map_site_pages_seo_sites__site_id__map_pages_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/map/regions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Map Site Regions
+         * @description Give this site's map its GEOGRAPHY — the one entry the "map the regions" button
+         *     calls, and the rule that keeps a topic tree about subjects.
+         *
+         *     🚨 GEOGRAPHY IS A FACET, NOT A BRANCH. A topic answers WHAT this company does; a
+         *     region answers WHERE. `region` is a built-in facet of every map, so a location page
+         *     belongs on the SERVICE topic it is about, carrying its place as a facet value. When
+         *     a map has no region values the geography goes into the tree instead — measured live
+         *     2026-09-17, a topic slugged `california` on a real client's map had collected 557
+         *     location pages — and every downstream judgement then reads that company's local
+         *     footprint as duplicates of itself.
+         *
+         *     This pass derives the brand's region values from real data (the locations the
+         *     business has registered first, then the places its own pages name), creates them
+         *     hierarchically through `seo.create_map_facet_values`, and binds each location page
+         *     through `seo.set_page_map_facet` with `source='mapper'` — the LOWEST rank on the
+         *     precedence ladder, so a region a person set is never overwritten.
+         *
+         *     🚨 IT COSTS NOTHING. There is no model call anywhere in it: a place is read out of
+         *     a page's own address by subtracting the words this map already uses for its
+         *     subjects. `dry_run` is therefore genuinely free.
+         *
+         *     Resumable by construction and without a ledger: the work set is recomputed every
+         *     press as "pages whose region is not already the one we derived", so a run that dies
+         *     halfway costs nothing. Streams a named stage; rejoin with
+         *     `POST /seo/collections/{run_id}/rejoin`.
+         *
+         *     `retire_geography_topics` is OFF by default. Turning it on moves every page off the
+         *     map's place-named topics onto the service topics those pages already cover, then
+         *     retires the topics. A page is NEVER lost: one that covered nothing else ends on no
+         *     topic, still listed and named in the answer, for the page mapper to place now that
+         *     the place-named topic is gone.
+         */
+        post: operations["map_site_regions_seo_sites__site_id__map_regions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/seo/sites/{site_id}/map/intents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Propose Site Page Intents
+         * @description Propose where every mapped page of this site is GOING — the ONE entry the
+         *     "propose the destinations" button calls, and the second half of the convergence
+         *     workflow the map screen shows.
+         *
+         *     It enrols every active page that already sits on a topic (a `covers` edge) in a
+         *     durable ledger keyed by that topic, then works it TOPIC BY TOPIC: claim one topic's
+         *     pages so siblings are judged together, hand `seo.page_intent_proposer` the topic's
+         *     traffic-ranked roster, its keywords and its planned pages, write the surviving
+         *     proposals through `seo.set_page_intents` with `source='agent'` and `state='proposed'`,
+         *     and settle the claim against the intent edges that actually landed.
+         *
+         *     🚨 NOTHING HERE ACTS. Every intent is a PROPOSAL a person reviews through
+         *     `intent_review_mode`; no page is redirected, merged or deleted by this call. A page
+         *     whose destination a person already decided — or any intent already accepted or done —
+         *     is never proposed over.
+         *
+         *     Resumable by construction. Pressing this again continues where the last run stopped,
+         *     and a worker that dies mid-batch costs one lease window and nothing else. Streams a
+         *     named stage per batch; rejoin with `POST /seo/collections/{run_id}/rejoin`.
+         *
+         *     `limit` caps the pages this press will spend on (the daily ceiling decides when it is
+         *     omitted), `topic_slugs` restricts the pass to named topics, and `dry_run` answers what
+         *     WOULD be written without writing it — honest about the map, not free: every batch
+         *     still costs a model call.
+         */
+        post: operations["propose_site_page_intents_seo_sites__site_id__map_intents_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -40441,6 +40655,12 @@ export interface components {
         AgentDetail: {
             /** Id */
             id: string;
+            /**
+             * Agent Id
+             * @description Owning agent definition id; equals id for a live definition and names the parent for a version snapshot.
+             * @default
+             */
+            agent_id?: string;
             /** Name */
             name: string;
             /**
@@ -42748,6 +42968,19 @@ export interface components {
              */
             source: "organization_policy" | "safe_default";
         };
+        /** ApprovalDecisionResponse */
+        ApprovalDecisionResponse: {
+            /** Approval Id */
+            approval_id: string;
+            /** Status */
+            status: string;
+            /** Applied Now */
+            applied_now: boolean;
+            /** Receipt */
+            receipt: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
         /**
          * ApproveDraftsRequest
          * @description Approve several drafts a reviewer has ALREADY READ, one by one.
@@ -43949,7 +44182,13 @@ export interface components {
          * @enum {string}
          */
         AssignmentUniqueness: "allow_repeats" | "without_replacement";
-        /** AttachResourceRequest */
+        /**
+         * AttachResourceRequest
+         * @description What the chooser sends. Only `provider` plus one of `resource_ref` /
+         *     `resource_id` decides anything — the display fields ride along so the
+         *     client can post a candidate back unchanged, and the server re-reads the
+         *     real row rather than trusting them.
+         */
         AttachResourceRequest: {
             /**
              * Provider
@@ -43966,6 +44205,28 @@ export interface components {
              * @description users.integration_connection_resources.id, when known
              */
             resource_id?: string | null;
+            /**
+             * Resource Type
+             * @description Echoed from the candidate; the server re-reads the row.
+             */
+            resource_type?: string | null;
+            /**
+             * Display Name
+             * @description Echoed from the candidate; the server re-reads the row.
+             */
+            display_name?: string | null;
+            /**
+             * Link
+             * @description Echoed from the candidate; the server re-reads the row.
+             */
+            link?: string | null;
+            /**
+             * Metadata
+             * @description Echoed from the candidate; the server re-reads the row.
+             */
+            metadata?: {
+                [key: string]: unknown;
+            } | null;
         };
         /**
          * AttachableKindInfo
@@ -44754,6 +45015,39 @@ export interface components {
              * @description Cap the sources tagged this run; defaults to the topic setting.
              */
             max_calls?: number | null;
+        };
+        /**
+         * AwaitingInputRunResponse
+         * @description A headless start missing require/ask inputs PARKED instead of dying
+         *     (INPUT-SURFACE.md park-not-die). The run row exists at ``awaiting_input``
+         *     — durable, announced, listed in the same "waiting on you" inbox as
+         *     ``interrupted`` — and resumes via POST /runs/{run_id}/resume with the
+         *     missing values in ``inputs``.
+         */
+        AwaitingInputRunResponse: {
+            /** Run Id */
+            run_id: string;
+            /**
+             * Mode
+             * @default awaiting_input
+             * @constant
+             */
+            mode?: "awaiting_input";
+            /**
+             * Status
+             * @default awaiting_input
+             * @constant
+             */
+            status?: "awaiting_input";
+            /** Missing */
+            missing?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Message
+             * @default Run parked awaiting input — supply the missing values via POST /runs/{run_id}/resume to continue.
+             */
+            message?: string;
         };
         /**
          * AworkStatusResult
@@ -54217,6 +54511,79 @@ export interface components {
             operational: boolean;
         };
         /**
+         * CodexManagedAction
+         * @enum {string}
+         */
+        CodexManagedAction: "resume" | "start";
+        /** CodexManagedCancelResponse */
+        CodexManagedCancelResponse: {
+            /** Runtime Id */
+            runtime_id: string;
+            /** Cancelled */
+            cancelled: boolean;
+        };
+        /** CodexManagedCapabilitiesResponse */
+        CodexManagedCapabilitiesResponse: {
+            /** Available */
+            available: boolean;
+            /** Native Resume */
+            native_resume: boolean;
+            /** Native Fork */
+            native_fork: boolean;
+            /** Cli Version */
+            cli_version?: string | null;
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
+         * CodexManagedRestRequest
+         * @description HTTP carrier that accepts, but never trusts, frontend-injected scope.
+         */
+        CodexManagedRestRequest: {
+            /** @default start */
+            action?: components["schemas"]["CodexManagedAction"];
+            conversation: components["schemas"]["BridgeConversation"];
+            /** Prompt */
+            prompt: string;
+            /**
+             * Workspace Root
+             * @default /home/agent
+             */
+            workspace_root?: string;
+            /** Thread Id */
+            thread_id?: string | null;
+            /** Model */
+            model?: string | null;
+            /**
+             * Sandbox Mode
+             * @default read-only
+             * @enum {string}
+             */
+            sandbox_mode?: "read-only" | "workspace-write";
+            /**
+             * Turn Timeout Seconds
+             * @default 1800
+             */
+            turn_timeout_seconds?: number;
+            /** Max Budget Usd */
+            max_budget_usd?: number | null;
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+        };
+        /**
          * CodingReplyResponder
          * @description Who will answer a reply typed here, resolved before the person types.
          */
@@ -55284,6 +55651,23 @@ export interface components {
              */
             conversation_exists?: boolean;
             /**
+             * Conversation Generation
+             * @description Which conversation on this person's ladder for this workflow is open.
+             * @default 0
+             */
+            conversation_generation?: number;
+            /**
+             * Conversations
+             * @description Every conversation this person holds with this workflow's Conductor, most recently touched first. Reopen one by sending its `conversation_id` back as the `conversation_id` query — the client never invents one.
+             */
+            conversations?: components["schemas"]["LauncherConversation"][];
+            /**
+             * Test Run Mode
+             * @description The `workflow.conductor.test_run_mode` knob for this person and org: `ask` — the Conductor must get the Creator's word before it test-runs the workflow (the server refuses an unapproved run); `auto` — it may run a test on its own judgement.
+             * @default ask
+             */
+            test_run_mode?: string;
+            /**
              * Messages
              * @description The stored transcript so far, oldest first — the panel reopens with it.
              */
@@ -55420,7 +55804,11 @@ export interface components {
              */
             already_used?: boolean;
         };
-        /** ConnectionResource */
+        /**
+         * ConnectionResource
+         * @description One attachable candidate. `link` and `detail` are the SERVER's words —
+         *     only it knows what matters about a given provider's resources.
+         */
         ConnectionResource: {
             /** Resource Id */
             resource_id: string;
@@ -55434,29 +55822,16 @@ export interface components {
             resource_ref: string;
             /** Display Name */
             display_name: string;
+            /** Link */
+            link?: string | null;
+            /** Detail */
+            detail?: string | null;
             /** Permission Level */
             permission_level?: string | null;
             /** Metadata */
             metadata?: {
                 [key: string]: unknown;
             };
-        };
-        /** ConnectionResourcesResponse */
-        ConnectionResourcesResponse: {
-            /** Provider */
-            provider: string;
-            /** Connected */
-            connected: boolean;
-            /** Kinds */
-            kinds: components["schemas"]["AttachableKindPayload"][];
-            /** Resources */
-            resources: components["schemas"]["ConnectionResource"][];
-            /** Total Matching */
-            total_matching: number;
-            /** Returned */
-            returned: number;
-            /** Query */
-            query?: string | null;
         };
         /**
          * ConnectionSummary
@@ -56343,7 +56718,12 @@ export interface components {
             /** Human Input Enabled */
             human_input_enabled: boolean;
         };
-        /** ConversationAttachmentPayload */
+        /**
+         * ConversationAttachmentPayload
+         * @description One live attachment. `link` and `detail` are the server's words: only it
+         *     knows what matters about a given provider's resources (THE DOOR LAW — the
+         *     row the UI names must open).
+         */
         ConversationAttachmentPayload: {
             /** Association Id */
             association_id: string;
@@ -56363,6 +56743,10 @@ export interface components {
             resource_ref: string;
             /** Display Name */
             display_name: string;
+            /** Link */
+            link?: string | null;
+            /** Detail */
+            detail?: string | null;
             /** Permission Level */
             permission_level?: string | null;
             /** Metadata */
@@ -61987,6 +62371,68 @@ export interface components {
             schema?: string | null;
             /** Schema Source */
             schema_source?: string | null;
+        };
+        /**
+         * DripSendReport
+         * @description What one pass did. Every field is reported, including the boring ones, so
+         *     a pass that did nothing is distinguishable from a pass that never ran.
+         */
+        DripSendReport: {
+            /**
+             * Scanned
+             * @default 0
+             */
+            scanned?: number;
+            /**
+             * Hit Scan Cap
+             * @default false
+             */
+            hit_scan_cap?: boolean;
+            /**
+             * Subscribed
+             * @default 0
+             */
+            subscribed?: number;
+            /**
+             * Active
+             * @default 0
+             */
+            active?: number;
+            /**
+             * Not Yet Their Hour
+             * @default 0
+             */
+            not_yet_their_hour?: number;
+            /**
+             * Already Asked Today
+             * @default 0
+             */
+            already_asked_today?: number;
+            /**
+             * Asked
+             * @default 0
+             */
+            asked?: number;
+            /**
+             * Adapted
+             * @default 0
+             */
+            adapted?: number;
+            /**
+             * Fell Back To Base Question
+             * @default 0
+             */
+            fell_back_to_base_question?: number;
+            /**
+             * Paused For Silence
+             * @default 0
+             */
+            paused_for_silence?: number;
+            /**
+             * Errors
+             * @default 0
+             */
+            errors?: number;
         };
         /**
          * DripServiceStatus
@@ -71540,6 +71986,31 @@ export interface components {
             folders: string[];
         };
         /**
+         * IdempotentDuplicateRunResponse
+         * @description Returned when X-Idempotency-Key matches a prior request.
+         *
+         *     The FE recognizes ``mode='duplicate'`` and switches to polling the
+         *     existing run_id (no fresh stream — the original is already in flight or
+         *     terminal).
+         */
+        IdempotentDuplicateRunResponse: {
+            /** Run Id */
+            run_id: string;
+            /**
+             * Mode
+             * @default duplicate
+             * @constant
+             */
+            mode?: "duplicate";
+            /** Status */
+            status: string;
+            /**
+             * Message
+             * @default Existing run returned for idempotency key
+             */
+            message?: string;
+        };
+        /**
          * IdentityHealth
          * @description The rolling picture. Rates are fractions (0.03 == 3%), never percentages —
          *     one unit, decided once, so nothing downstream has to guess.
@@ -72480,6 +72951,11 @@ export interface components {
              */
             own_replies_only?: boolean | null;
             /**
+             * Voice Keys
+             * @description Which voices in these threads are the Expert (from /masterworks/inbox/preview). Used when no address in the thread matches — a mail client's copy labels the person's own message 'me', which is a voice, not an address.
+             */
+            voice_keys?: string[] | null;
+            /**
              * Organization Id
              * @description Organization context for the request; omitted to use the authenticated context.
              */
@@ -73110,6 +73586,11 @@ export interface components {
              * @description Read only threads this person actually replied in (knob `masterwork.shadow_inbox.own_replies_only`, default on). None = the organization's standing answer.
              */
             own_replies_only?: boolean | null;
+            /**
+             * Voice Keys
+             * @description Which voices in these threads are the Expert (from /masterworks/inbox/preview). Used when no address in the thread matches — a mail client's copy labels the person's own message 'me', which is a voice, not an address.
+             */
+            voice_keys?: string[] | null;
             /**
              * Organization Id
              * @description Organization context for the request; omitted to use the authenticated context.
@@ -76845,6 +77326,27 @@ export interface components {
             operational: boolean;
         };
         /**
+         * LauncherConversation
+         * @description One of a person's conversations with one launcher target.
+         */
+        LauncherConversation: {
+            /** Conversation Id */
+            conversation_id: string;
+            /** Generation */
+            generation: number;
+            /** Title */
+            title: string;
+            /** Started At */
+            started_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+            /**
+             * Message Count
+             * @default 0
+             */
+            message_count?: number;
+        };
+        /**
          * LeakRule
          * @description Why a branch of a contract is considered untyped.
          * @enum {string}
@@ -78314,11 +78816,11 @@ export interface components {
              * @default []
              */
             relations?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             }[];
             /** Root Blocker */
             root_blocker?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["JsonValue"];
             } | null;
             /** Note */
             note?: string | null;
@@ -79513,6 +80015,47 @@ export interface components {
             /** Sentence */
             sentence: string;
         };
+        /**
+         * MandatePatrolSection
+         * @description The patrol's own state and running cost (Arman, 2026-09-17: *"if there is
+         *     a cost, make sure it's tracked and easy for me to see"*).
+         */
+        MandatePatrolSection: {
+            /** Tool Name */
+            tool_name: string;
+            /** Task Id */
+            task_id: string;
+            /** Enabled */
+            enabled: boolean;
+            /** Schedule */
+            schedule: string | null;
+            /** Trigger Enabled */
+            trigger_enabled: boolean;
+            /** Next Due At */
+            next_due_at: string | null;
+            /** Last Run At */
+            last_run_at: string | null;
+            /** Enabled At */
+            enabled_at: string | null;
+            /** Runs */
+            runs: components["schemas"]["PatrolRunRow"][];
+            /** Runs Counted */
+            runs_counted: number;
+            /** Runs Failed */
+            runs_failed: number;
+            /** Cumulative Wall Seconds */
+            cumulative_wall_seconds: number;
+            /** Cumulative Vcpu Seconds */
+            cumulative_vcpu_seconds: number;
+            /** Cumulative Compute Cost Usd */
+            cumulative_compute_cost_usd: number | null;
+            /** Cumulative Model Spend Usd */
+            cumulative_model_spend_usd: number;
+            /** Cost Note */
+            cost_note: string;
+            /** Read Error */
+            read_error?: string | null;
+        };
         /** MandateProvenanceReport */
         MandateProvenanceReport: {
             /** Mandate Key */
@@ -79548,6 +80091,7 @@ export interface components {
             open_finding_count: number;
             /** Unverified Repos */
             unverified_repos: string[];
+            patrol?: components["schemas"]["MandatePatrolSection"] | null;
             /**
              * Source
              * @default mandate.reference
@@ -80317,6 +80861,56 @@ export interface components {
              * @default 1000
              */
             max_steps?: number;
+        };
+        /**
+         * MapPagesRequest
+         * @description The one body `POST /seo/sites/{site_id}/map/pages` takes.
+         */
+        MapPagesRequest: {
+            /**
+             * Refresh
+             * @default true
+             */
+            refresh?: boolean;
+            /** Limit */
+            limit?: number | null;
+            /** Batch Size */
+            batch_size?: number | null;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+        };
+        /**
+         * MapRegionsRequest
+         * @description The one body `POST /seo/sites/{site_id}/map/regions` takes.
+         */
+        MapRegionsRequest: {
+            /**
+             * Derive Values
+             * @default true
+             */
+            derive_values?: boolean;
+            /**
+             * Bind Pages
+             * @default true
+             */
+            bind_pages?: boolean;
+            /** Limit */
+            limit?: number | null;
+            /**
+             * Retire Geography Topics
+             * @default false
+             */
+            retire_geography_topics?: boolean;
+            /** Geography Topic Slugs */
+            geography_topic_slugs?: string[] | null;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
         };
         /** MappingIssue */
         MappingIssue: {
@@ -83661,6 +84255,10 @@ export interface components {
             spec_type: string;
             /** Backing Agent Id */
             backing_agent_id?: string | null;
+            /** Wizard */
+            wizard?: "run_agent" | null;
+            /** Wizard Step */
+            wizard_step?: ("agent" | "variables") | null;
             /**
              * Conversation Id
              * @description The ONE stored Steward conversation for this person and this step (deterministic; the studio continues it with is_new=false when conversation_exists, else starts it).
@@ -83671,6 +84269,17 @@ export interface components {
              * @default false
              */
             conversation_exists?: boolean;
+            /**
+             * Conversation Generation
+             * @description Which conversation on this person's ladder for this step is open.
+             * @default 0
+             */
+            conversation_generation?: number;
+            /**
+             * Conversations
+             * @description Every conversation this person holds with this step's Steward, most recently touched first. Reopen one by sending its `conversation_id` back as the `conversation_id` query — the client never invents one.
+             */
+            conversations?: components["schemas"]["LauncherConversation"][];
             /**
              * Messages
              * @description The stored transcript so far, oldest first — the panel reopens with it.
@@ -88122,6 +88731,71 @@ export interface components {
              * @constant
              */
             status_page?: "https://status.patreon.com/";
+        };
+        /**
+         * PatrolRunRow
+         * @description ONE `mandate_reference_patrol` run, and what it cost.
+         *
+         *     Every number here is READ off `scheduler.sch_run` — `result_metadata.cost`,
+         *     written by the patrol itself (`reference_patrol.RunAccounting`). Nothing on
+         *     this row is recomputed here, so the board and the run ledger cannot drift.
+         */
+        PatrolRunRow: {
+            /** Run Id */
+            run_id: string;
+            /** Status */
+            status: string;
+            /** Due At */
+            due_at: string | null;
+            /** Started At */
+            started_at: string | null;
+            /** Finished At */
+            finished_at: string | null;
+            /** Wall Seconds */
+            wall_seconds: number | null;
+            /**
+             * Seconds Source
+             * @enum {string}
+             */
+            seconds_source: "derived_from_timestamps" | "recorded" | "unknown";
+            /** Cpu Seconds */
+            cpu_seconds: number | null;
+            /** Vcpu Seconds */
+            vcpu_seconds: number | null;
+            /** Cpu Count Source */
+            cpu_count_source: string | null;
+            /** Compute Cost Usd */
+            compute_cost_usd: number | null;
+            /** Compute Cost Note */
+            compute_cost_note: string | null;
+            /** Model Spend Usd */
+            model_spend_usd: number | null;
+            /** Model Spend Evidence */
+            model_spend_evidence: string | null;
+            /** Revision */
+            revision: string | null;
+            /** Rows Submitted */
+            rows_submitted: number | null;
+            /** Findings */
+            findings: number | null;
+            /** Error Rows Filed */
+            error_rows_filed: number | null;
+            /** Error Rows Resolved */
+            error_rows_resolved: number | null;
+            /** Error Rows Request Id */
+            error_rows_request_id: string | null;
+            /** Git Clone Bytes */
+            git_clone_bytes: number | null;
+            /** Spend Row */
+            spend_row: string | null;
+            /** Failed Legs */
+            failed_legs: string[];
+            /** Summary */
+            summary: string | null;
+            /** Error Message */
+            error_message: string | null;
+            /** Cost Recorded */
+            cost_recorded: boolean;
         };
         /** PauseRequest */
         PauseRequest: {
@@ -93447,6 +94121,28 @@ export interface components {
              */
             label?: string;
         };
+        /**
+         * ProposeIntentsRequest
+         * @description The one body `POST /seo/sites/{site_id}/map/intents` takes.
+         */
+        ProposeIntentsRequest: {
+            /**
+             * Refresh
+             * @default true
+             */
+            refresh?: boolean;
+            /** Limit */
+            limit?: number | null;
+            /** Batch Size */
+            batch_size?: number | null;
+            /** Topic Slugs */
+            topic_slugs?: string[] | null;
+            /**
+             * Dry Run
+             * @default false
+             */
+            dry_run?: boolean;
+        };
         /** ProposifyServiceStatus */
         ProposifyServiceStatus: {
             /**
@@ -96519,6 +97215,11 @@ export interface components {
             cost_usd?: number;
             /** Faithful */
             faithful?: boolean | null;
+        };
+        /** RejectApprovalRequest */
+        RejectApprovalRequest: {
+            /** Reason */
+            reason?: string | null;
         };
         /** RejectCandidateRequest */
         RejectCandidateRequest: {
@@ -106376,6 +107077,25 @@ export interface components {
             pipe_policy?: components["schemas"]["PipePolicy-Input"] | null;
             /** @default research */
             start_stage?: components["schemas"]["LoopStage"];
+        };
+        /** StartQueuedRunResponse */
+        StartQueuedRunResponse: {
+            /** Run Id */
+            run_id: string;
+            /** Job Id */
+            job_id: string;
+            /**
+             * Mode
+             * @default queued
+             * @constant
+             */
+            mode?: "queued";
+            /**
+             * Status
+             * @default pending
+             * @constant
+             */
+            status?: "pending";
         };
         /**
          * StartRunBody
@@ -124532,202 +125252,6 @@ export interface operations {
             };
         };
     };
-    get_conversation_attachments_ai_conversation__conversation_id__attachments_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                conversation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConversationAttachmentPayload"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    attach_conversation_resource_ai_conversation__conversation_id__attachments_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                conversation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AttachResourceRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConversationAttachmentPayload"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_conversation_attachments_ai_conversations__conversation_id__attachments_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                conversation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConversationAttachmentPayload"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    attach_conversation_resource_ai_conversations__conversation_id__attachments_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                conversation_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["AttachResourceRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConversationAttachmentPayload"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    detach_conversation_resource_ai_conversation__conversation_id__attachments__association_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                conversation_id: string;
-                association_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConversationAttachmentPayload"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    detach_conversation_resource_ai_conversations__conversation_id__attachments__association_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                conversation_id: string;
-                association_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ConversationAttachmentPayload"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     get_conversation_memory_cost_ai_conversation__conversation_id__memory_cost_get: {
         parameters: {
             query?: never;
@@ -127653,6 +128177,90 @@ export interface operations {
             };
         };
     };
+    codex_managed_capabilities_coding_sessions_codex_capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodexManagedCapabilitiesResponse"];
+                };
+            };
+        };
+    };
+    codex_managed_stream_coding_sessions_codex_stream_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodexManagedRestRequest"];
+            };
+        };
+        responses: {
+            /** @description Codex exec JSONL event stream */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-ndjson": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_codex_managed_runtime_coding_sessions_codex_runtimes__runtime_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                runtime_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodexManagedCancelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_skills_skills_get: {
         parameters: {
             query?: {
@@ -128226,6 +128834,24 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AnthropicCountTokensResponse"];
                 };
+            };
+        };
+    };
+    openai_codex_responses_broker_gateway_openai_codex_v1_responses_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -132343,6 +132969,8 @@ export interface operations {
                 /** @description Substring of the name or ref */
                 q?: string | null;
                 limit?: number;
+                /** @description Ask the provider itself instead of our inventory. NO provider offers a live search today — /connections/attachable reports the source of every kind and none is `live` — so this changes nothing. Google in particular can never be live: AI Matrx holds the drive.file scope only, which reaches the files the user handed us and nothing else. */
+                live?: boolean;
             };
             header?: never;
             path?: never;
@@ -132356,7 +132984,105 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ConnectionResourcesResponse"];
+                    "application/json": components["schemas"]["ConnectionResource"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_conversation_attachments_conversations__conversation_id__attachments_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationAttachmentPayload"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_conversation_resource_conversations__conversation_id__attachments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AttachResourceRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationAttachmentPayload"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    detach_conversation_resource_conversations__conversation_id__attachments__association_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversation_id: string;
+                association_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationAttachmentPayload"];
                 };
             };
             /** @description Validation Error */
@@ -150636,6 +151362,72 @@ export interface operations {
             };
         };
     };
+    apply_approval_google_workspace_approvals__approval_id__apply_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                approval_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalDecisionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reject_approval_google_workspace_approvals__approval_id__reject_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                approval_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectApprovalRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApprovalDecisionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     authorization_url_bing_integrations_authorize_url_get: {
         parameters: {
             query?: {
@@ -153634,6 +154426,111 @@ export interface operations {
             };
         };
     };
+    map_site_pages_seo_sites__site_id__map_pages_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MapPagesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    map_site_regions_seo_sites__site_id__map_regions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MapRegionsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    propose_site_page_intents_seo_sites__site_id__map_intents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                site_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProposeIntentsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     receive_url_changes_web_url_changes__site_id___token__post: {
         parameters: {
             query?: never;
@@ -156607,6 +157504,8 @@ export interface operations {
                 error_type?: string | null;
                 /** @description Optional kind filter, e.g. 'request_snapshot_capture_failure'. `kind` is the stable family name a producer records under, so it is what an alarm deep-links on — error_type is the exception class and changes with the code. */
                 kind?: string | null;
+                /** @description Optional exact request_id filter. This is how a PRODUCER deep-links to the rows one of its own runs filed: the mandate reference patrol records the request_id its scan wrote (`mandate-scan/<repo>/<revision>`) on the run, and the board links here with it. Without this filter that link would land on an unfiltered list that merely LOOKS like the run's evidence. */
+                request_id?: string | null;
                 /** @description When true, only rows with resolved_at IS NULL. */
                 unresolved_only?: boolean;
             };
@@ -158991,7 +159890,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["DripSendReport"];
                 };
             };
             /** @description Validation Error */
@@ -172095,7 +172994,14 @@ export interface operations {
     };
     get_node_agent_context_workflows__definition_id__nodes__node_id__agent_context_get: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Reopen this exact conversation — it must be one this launcher itself listed for this person and this step; anything else is refused. */
+                conversation_id?: string | null;
+                /** @description Start a fresh conversation with this step's Steward. */
+                new_conversation?: boolean;
+                wizard?: "run_agent" | null;
+                wizard_step?: ("agent" | "variables") | null;
+            };
             header?: never;
             path: {
                 definition_id: string;
@@ -172130,6 +173036,10 @@ export interface operations {
             query?: {
                 /** @description The step the Creator has selected on the canvas (Conductor mode). Rendered into the envelope so 'this step' needs no name. */
                 selected_node_id?: string | null;
+                /** @description Reopen this exact conversation — it must be one this launcher itself listed for this person and this workflow; anything else is refused. */
+                conversation_id?: string | null;
+                /** @description Start a fresh conversation with the Conductor. */
+                new_conversation?: boolean;
             };
             header?: never;
             path: {
@@ -172528,7 +173438,7 @@ export interface operations {
         parameters: {
             query?: never;
             header?: {
-                /** @description Stable client-supplied key. If a previous request from the same user with the same key on the same route succeeded within the last 24h, the existing run is returned (mode='duplicate') instead of a new one being created. Use to make double-clicks, retried webhooks, and cron-with-jitter safe. */
+                /** @description Stable client-supplied key for retry-safe workflow starts. */
                 "X-Idempotency-Key"?: string | null;
             };
             path: {
@@ -172542,13 +173452,14 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Successful Response */
+            /** @description A JSON start result or an NDJSON workflow event stream. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["IdempotentDuplicateRunResponse"] | components["schemas"]["AwaitingInputRunResponse"] | components["schemas"]["StartQueuedRunResponse"];
+                    "application/x-ndjson": string;
                 };
             };
             /** @description Validation Error */

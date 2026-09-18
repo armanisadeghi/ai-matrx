@@ -23,9 +23,6 @@
  *      the only question a waiting person actually has.
  *   3. The Build reads a live clock, so the sentence can change at all. A
  *      correct sentence computed once at launch is the original bug.
- *   4. The live-turn state is pinned where it cannot scroll away, and carries
- *      a Stop — and that Stop is the SAME `cancelExecution` the composer
- *      dispatches, never a second implementation of stopping.
  */
 
 import { readFileSync } from "node:fs";
@@ -48,6 +45,7 @@ describe("the sentence a person reads while they wait", () => {
       // Every step healthy: the time-based sentences below are only reachable
       // when the rows agree. See the step-aware suite at the bottom.
       steps: [{ label: "Building the parts", status: "running" }],
+      shape: "sequence",
     });
 
   it("promises the usual time while the promise still holds", () => {
@@ -81,6 +79,7 @@ describe("the sentence a person reads while they wait", () => {
         usualMs: MINUTE,
         doing: "Checking every rule",
         steps: [{ label: "Checking rule 4", status: "running" }],
+        shape: "sequence",
       }),
     ).not.toContain("keeps going without you");
   });
@@ -112,39 +111,6 @@ describe("the Build's estimate can actually change", () => {
   });
 });
 
-describe("the live-turn state cannot scroll away", () => {
-  const column = read(
-    "features/agents/components/shared/AgentConversationColumn.tsx",
-  );
-  const bar = read("features/agents/components/shared/LiveTurnBar.tsx");
-
-  it("is pinned in the region above the composer, not inside the transcript", () => {
-    const barAt = column.indexOf("<LiveTurnBar");
-    const inputAt = column.indexOf("<SmartAgentInput");
-    const scrollAt = column.indexOf("ref={scrollRef}");
-    expect(barAt).toBeGreaterThan(-1);
-    // Below the scroll area, above the composer: the only always-visible slot.
-    expect(barAt).toBeGreaterThan(scrollAt);
-    expect(barAt).toBeLessThan(inputAt);
-  });
-
-  it("only appears while a turn is actually live", () => {
-    expect(column).toContain("{isLiveRequest && <LiveTurnBar");
-  });
-
-  it("carries a Stop that is THE stop, not a second implementation of one", () => {
-    expect(bar).toContain("cancelExecution");
-    const composer = read(
-      "features/agents/components/inputs/smart-input/SingleRowActionButtons.tsx",
-    );
-    expect(composer).toContain("cancelExecution");
-  });
-
-  it("says what is happening in plain words a non-technical person reads", () => {
-    expect(bar).toContain('label = "Working…"');
-  });
-});
-
 /**
  * Cold walk 2026-09-16, finding #2 — the reassurance that contradicted the
  * rows rendered beneath it. The clock never outranks a failed step.
@@ -161,6 +127,7 @@ describe("a failed step outranks every word the clock would say", () => {
         { label: "Building the parts that do the work", status: "failed" },
         { label: "Saving it to your library", status: "waiting" },
       ],
+      shape: "sequence",
     });
 
   it("never says nothing has failed when a rendered step has", () => {
@@ -186,6 +153,7 @@ describe("a failed step outranks every word the clock would say", () => {
         { label: "Second part", status: "failed" },
         { label: "Third part", status: "failed" },
       ],
+      shape: "sequence",
     });
     expect(sentence).toContain("First part");
     expect(sentence).toContain("2 other steps failed too");

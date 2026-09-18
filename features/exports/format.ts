@@ -3,25 +3,16 @@
 // The words BRING YOUR EXPORT uses for numbers. Plain English, never a raw
 // byte count or a bare integer with no noun.
 
-const KB = 1024;
-
-export function formatBytes(bytes: number | null | undefined): string {
-  if (bytes === null || bytes === undefined || !Number.isFinite(bytes)) return "—";
-  if (bytes < KB) return `${bytes} B`;
-  const units = ["KB", "MB", "GB", "TB"];
-  let value = bytes / KB;
-  let unit = 0;
-  while (value >= KB && unit < units.length - 1) {
-    value /= KB;
-    unit += 1;
-  }
-  return `${value >= 10 || unit === 0 ? Math.round(value) : value.toFixed(1)} ${units[unit]}`;
-}
-
-export function formatCount(n: number | null | undefined): string {
-  if (n === null || n === undefined || !Number.isFinite(n)) return "—";
-  return n.toLocaleString();
-}
+/**
+ * THE PACKAGE FUNCTIONS THEMSELVES, re-exported under the names this feature's
+ * call sites already use. The bodies that used to be here — a 1024 cascade and
+ * a bare `toLocaleString()` — were found by the byte-size and count shape lanes
+ * of `check:package-twins`. The byte one is gone from this module entirely: its
+ * two callers now import `formatFileSize` by its own name, because a re-export
+ * under a SECOND name takes every call site outside the guards that judge the
+ * package function.
+ */
+export { formatCount } from "@ai-matrx/kit/format";
 
 /** "12,433 messages" / "1 message". */
 export function countWithNoun(n: number, singular: string, plural?: string): string {

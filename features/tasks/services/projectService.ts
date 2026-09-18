@@ -2,35 +2,45 @@
  * Task Project Service
  *
  * Legacy project service for the tasks feature.
- * Personal projects are stored under the user's real personal organization.
- * For org-scoped projects, use features/projects/service.ts instead.
+ * Every project is created in the organization the person SELECTED
+ * (`appContext.organization_id`) — there is no personal-organization default
+ * here any more (2026-09-17). For the richer org-scoped project surface, use
+ * features/projects/service.ts instead.
  */
 import { requireUserId } from "@/utils/auth/getUserId";
 import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
-import { resolvePersonalOrgId } from "@/lib/organizations/personalOrg";
+import { requireSelectedOrgId } from "@/lib/organizations/activeOrg";
 import { membershipsService } from "@/features/organizations/service/membershipsService";
 import { isScopesRpcErr } from "@/features/scopes/types";
 import type { DatabaseProject, ProjectWithTasks } from "../types";
 import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
 
 /**
- * Create a new project in the user's personal organization.
+ * Create a new project in the organization the person SELECTED.
+ *
+ * A project is a workspace-scoped, shareable record — it is not the person's
+ * own cross-organization data — so it is filed under `appContext.organization_id`
+ * and nothing else. The personal organization used to be written here
+ * unconditionally, which quietly filed a project created while working in a
+ * team into the person's private workspace, where their team could not see it.
+ * With no selection this REFUSES: `requireSelectedOrgId()` throws the one
+ * `OrganizationContextError` every surface recognises
+ * (`isOrganizationRequiredError` → `OrganizationRequiredNotice`), and that
+ * throw is re-raised rather than flattened into a null, so the screen can say
+ * what is missing instead of failing namelessly.
+ *
+ * Law: common-docs/policies/context-is-carried-never-rebuilt.md.
  */
 export async function createProject(
   name: string,
   description?: string,
 ): Promise<DatabaseProject | null> {
+  const userId = requireUserId();
+  // Outside the try: a missing organization is a refusal the caller must see,
+  // never one of the swallowed-and-logged failures below.
+  const organizationId = requireSelectedOrgId();
   try {
-    const userId = requireUserId();
-    let organizationId: string;
-    try {
-      organizationId = await resolvePersonalOrgId();
-    } catch (orgError) {
-      console.error("Error resolving personal organization:", orgError);
-      return null;
-    }
-
     const { data, error } = await workspaceDb(supabase)
       .from("projects")
       .insert({
@@ -71,6 +81,9 @@ export async function ensureDefaultProject(): Promise<DatabaseProject | null> {
       return null;
     }
 
+    // Throws `OrganizationContextError` when nothing is selected; the catch
+    // below logs it and returns null — this is a best-effort bootstrap, never
+    // the surface a person is looking at.
     return await createProject("Personal", "Your personal tasks");
   } catch (error) {
     console.error("Exception ensuring default project:", error);

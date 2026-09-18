@@ -1812,6 +1812,11 @@ export function useDurableRun<TResult>(
     }
     return {
       title: options.live.label ?? "AI is working",
+      // The generic narration is the run's own stage LADDER — connecting, then
+      // each server stage in the order it arrived, then done or failed. A
+      // surface whose rows are a pile rather than a ladder renders its own
+      // progress (see `RunStages`) and declares `fan_out` there.
+      shape: "sequence" as const,
       ...(state.rejoinedTarget ? { description: state.rejoinedTarget } : {}),
       items,
     };

@@ -7,6 +7,7 @@ import {
   type CanvasItemFilters,
 } from '@/features/canvas/services/canvasItemsService';
 import { toast } from "@/lib/toast";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 
 /**
  * useCanvasItems - Hook for managing canvas items with database persistence
@@ -64,7 +65,13 @@ export function useCanvasItems(initialFilters?: CanvasItemFilters) {
 
     if (saveError) {
       setError(saveError);
-      toast.error('Failed to save canvas item');
+      // An org refusal is fixable by the person; "Failed to save" is not.
+      // Law: common-docs/policies/context-is-carried-never-rebuilt.md.
+      toast.error(
+        isOrganizationRequiredError(saveError)
+          ? 'Select an organization before saving \u2014 every record is filed under one organization. Pick yours from the avatar menu.'
+          : 'Failed to save canvas item',
+      );
     } else if (data) {
       if (isDuplicate) {
         // Update existing item in local state

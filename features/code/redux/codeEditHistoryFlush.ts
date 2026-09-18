@@ -24,6 +24,7 @@ import { useAppDispatch } from "@/lib/redux/hooks";
 import { runTrackedRequest } from "@/lib/redux/net/runTrackedRequest";
 import { createClient } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 
 import {
   markPersisted,
@@ -83,8 +84,10 @@ async function buildPayload(snap: MessageFileSnapshot): Promise<RpcPayload> {
   return {
     message_id: snap.messageId,
     conversation_id: snap.conversationId,
-    // Org is required on the history row — ride the snapshot's org if captured,
-    // else the user's active org (never null) via the canonical resolver.
+    // Org is required on the history row — ride the snapshot's org if
+    // captured, else the SELECTED organization. There is no "never null" any
+    // more: `ensureOrgId` REFUSES when nothing is selected (2026-09-17), and
+    // the flush loop's catch speaks that refusal.
     organization_id: await ensureOrgId(snap.organizationId),
     file_adapter: snap.fileAdapter,
     file_path: snap.filePath,
@@ -201,6 +204,16 @@ export function flushHistoryThunk(
             },
           });
         } catch (err) {
+          // `markWriteError` lands in a slice NOTHING renders, so on its own
+          // this is a silent loss: the edit history for a file the person just
+          // changed is never written and no screen ever says so. Since
+          // 2026-09-17 `ensureOrgId` throws the organization refusal through
+          // here too, which is exactly the shape that must reach a person with
+          // a remedy rather than a console line.
+          presentOrganizationRefusal(err, {
+            subject: "This file's edit history",
+            act: "saved",
+          });
           dispatch(
             markWriteError({
               messageId: write.messageId,

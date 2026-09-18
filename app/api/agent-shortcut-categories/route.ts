@@ -148,6 +148,7 @@ export async function POST(request: NextRequest) {
     // Resolve scope FKs via the shared helper (sets created_by/org/project/task_id on payload).
     const scopePayload: Record<string, unknown> = {};
     const scoped = await applyScopeToInsertPayload({
+      request,
       body,
       payload: scopePayload,
       userId: user.id,
@@ -164,7 +165,10 @@ export async function POST(request: NextRequest) {
       placement_type: body.placement_type,
       position: body.sort_order ?? null,
       parent_id: body.parent_category_id ?? null,
-      organization_id: scoped.organization_id ?? null,
+      // Never `?? null`: `public._stamp_org_default` would file a NULL into
+      // the writer's PERSONAL organization. The kernel above has already
+      // refused the request when it could not name one, so this is a string.
+      organization_id: scoped.organization_id as string,
       created_by: user.id,
       metadata: {
         description: body.description ?? null,

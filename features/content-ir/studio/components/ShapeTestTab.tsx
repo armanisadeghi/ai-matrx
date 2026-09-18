@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import type { Json } from "@/types/database.types";
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
@@ -96,7 +96,9 @@ export default function ShapeTestTab({
   const [instance, setInstance] = useState<unknown>(null);
   const [renderKey, setRenderKey] = useState(0);
   const [saveState, setSaveState] = useState<SaveState>({ status: "idle" });
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // The EXPLICIT active org. With none, `saveKindInstance` refuses and the
+  // catch below shows that sentence — never a personal-workspace default.
+  const organizationId = useAppSelector(selectOrganizationId);
   // Agent-staged seed for the input form. `KindInputForm.initialValue` is read
   // ONCE per form load (documented: not a controlled value), so a seed must
   // arrive with a new `key` to remount the form — hence the counter.

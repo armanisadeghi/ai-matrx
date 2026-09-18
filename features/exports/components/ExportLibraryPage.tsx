@@ -25,11 +25,12 @@ import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import type { EntityBulkActionResult } from "@/lib/entity-list/selection";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import { createExportItemsListConfig } from "../browse/listConfig";
-import type { ExportPageFacts } from "../browse/service";
+import { deriveExportCounts, type ExportPageFacts } from "../counts";
 import { fetchExportLibrary, streamExportIndex } from "../api";
 import { forgetFreshExport, peekFreshExport } from "../freshExport";
 import type { ExportItem, ExportLibrary, ExportSummary } from "../types";
 import { ExportsHeader } from "./ExportsHeader";
+import { ExportListTotals } from "./ExportListTotals";
 import { IDLE_INDEX_STATE, IndexProgress, type IndexState } from "./IndexProgress";
 import { LibrarySummary } from "./LibrarySummary";
 import { QuickViews } from "./QuickViews";
@@ -177,12 +178,43 @@ export function ExportLibraryPage({ libraryId }: { libraryId: string }) {
     })();
   }, [libraryId]);
 
-  // Index only what has not been indexed. A Library that came back WITH a
-  // summary is done; re-POSTing would redo work nobody asked for.
+  /**
+   * Index only what has not been indexed, and never what is being indexed.
+   *
+   * A Library that came back WITH a summary is done; re-POSTing would redo work
+   * nobody asked for.
+   *
+   * 🚨 AND A LIBRARY THE SERVER SAYS IS `syncing` IS ALREADY BEING READ. An
+   * index pass is authoritative — it clears the Library's rows and rebuilds
+   * them — so a second pass started from a re-mount does not "resume", it
+   * throws away the progress of the pass still running and starts from zero.
+   * On a 1 GB mailbox that is minutes of work lost to opening the page twice.
+   * The status is the server's own; if a pass really died mid-read it stays
+   * `syncing` and the person's own "Index it again" is the way back, which is
+   * the right place for that decision.
+   */
   useEffect(() => {
     if (!library) return;
     if (summary) return;
     if (indexState.phase !== "idle") return;
+    if (library.status === "syncing") {
+      // Not a stand-in and not a guess: the server says it is reading this
+      // export right now. Starting a second pass would throw that progress
+      // away, so this shows the live readout instead — and only claims a
+      // COUNT when the server has published one. `item_count` is written when
+      // a pass ends, so mid-pass it is 0, and "Found 0 items so far" beside a
+      // list already showing tens of thousands would be the screen lying about
+      // the very thing it is reporting.
+      const counted = library.total_items ?? 0;
+      setIndexState({
+        phase: counted > 0 ? "running" : "starting",
+        cumulative: counted,
+        elapsedMs: 0,
+        message: null,
+        partialTotal: null,
+      });
+      return;
+    }
     runIndex();
   }, [library, summary, indexState.phase, runIndex]);
 
@@ -203,6 +235,32 @@ export function ExportLibraryPage({ libraryId }: { libraryId: string }) {
   );
 
   const libraryName = library?.name ?? "This export";
+
+  /**
+   * 🚨 EVERY NUMBER ON THIS SCREEN, DERIVED ONCE (defect D6).
+   *
+   * The strip, the details sheet, the progress banner, the scope tab and the
+   * list header used to read four different sources — the published summary,
+   * the index stream's cumulative, the last items response, and an extra
+   * `limit=1` request of its own — taken at four different moments. Mid-index
+   * they contradicted each other in front of the person: "WITH A FILE —" on
+   * the card beside "158 of 4,000 items … with an attachment" in the list.
+   * One object, built here, is what every one of them renders now.
+   */
+  const counts = useMemo(
+    () =>
+      deriveExportCounts({
+        summary,
+        indexedSoFar:
+          indexState.phase === "running" || indexState.phase === "completed"
+            ? indexState.cumulative
+            : null,
+        indexing:
+          indexState.phase === "starting" || indexState.phase === "running",
+        facts,
+      }),
+    [summary, indexState.phase, indexState.cumulative, facts],
+  );
 
   const listConfig = useMemo(
     () =>
@@ -288,38 +346,20 @@ export function ExportLibraryPage({ libraryId }: { libraryId: string }) {
           <LibrarySummary
             library={library}
             summary={summary}
-            indexedSoFar={
-              indexState.phase === "running" || indexState.phase === "completed"
-                ? indexState.cumulative
-                : null
-            }
-            indexing={
-              indexState.phase === "starting" || indexState.phase === "running"
-            }
+            counts={counts}
             ownerOverride={ownerOverride}
             onPickOwner={pickOwner}
             onNarrow={narrow}
           />
 
-          <IndexProgress state={indexState} onRetry={runIndex} />
+          <IndexProgress state={indexState} counts={counts} onRetry={runIndex} />
 
           <QuickViews
               libraryId={libraryId} outboundBy={outboundBy} />
 
-          {/*
-            BOTH NUMBERS, ALWAYS. `filtered_total` is what the filter matches
-            and `total` is the whole export — a line that showed only one of
-            them, or showed the rows on screen as if they were everything, is
-            the lie this feature is judged on.
-          */}
-          {facts && (
-            <p className="text-xs text-muted-foreground">
-              {facts.filteredTotal.toLocaleString()} of{" "}
-              {facts.total.toLocaleString()}{" "}
-              {facts.total === 1 ? "item" : "items"} in this export
-              {facts.filterDescription ? ` — ${facts.filterDescription}` : ""}
-            </p>
-          )}
+          {/* Both numbers, always — and from the SAME object the strip above
+              renders, so they cannot disagree at any moment. */}
+          <ExportListTotals counts={counts} />
         </div>
 
         <div className="min-h-0 flex-1">

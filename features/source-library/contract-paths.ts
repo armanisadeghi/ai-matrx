@@ -31,6 +31,7 @@ import type {
     EstimateRequest,
     EstimateResult,
     JobDetailResponse,
+    JobListResponse,
     JobRow,
     LibraryListResponse,
     LibraryRow,
@@ -108,9 +109,15 @@ declare module "@/types/python-generated/api-types" {
         "/media/libraries/{library_id}/estimate": {
             post: Body<EstimateRequest> & Ok<EstimateResult>;
         };
-        /** §7.3 — every Action runs through this one endpoint. */
+        /**
+         * §7.3 — every Action runs through this one endpoint (POST), and §7's
+         * JOB-DISCOVERY DOOR (GET) is how a durable job is found again when this
+         * browser does not know its id: after a reload, on another device, or when
+         * the id never arrived because the response was a shape we could not read.
+         */
         "/media/libraries/{library_id}/jobs": {
             post: Body<CreateJobRequest> & Created<JobRow>;
+            get: Ok<JobListResponse>;
         };
         /** §7 — the job mount read. */
         "/media/jobs/{job_id}": {

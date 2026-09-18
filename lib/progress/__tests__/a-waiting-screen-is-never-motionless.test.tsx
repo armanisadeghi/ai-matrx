@@ -71,7 +71,7 @@ describe("a waiting screen is never motionless", () => {
     const justBefore = usualMs * 1.5 - 1_000;
     const justAfter = usualMs * 1.5 + 1_000;
     const sentence = (elapsedMs: number): string =>
-      estimateSentence({ elapsedMs, usualMs, doing: "Building", steps: [] });
+      estimateSentence({ elapsedMs, usualMs, doing: "Building", steps: [], shape: "sequence" });
     expect(sentence(justBefore)).toContain("usually takes");
     expect(elapsedDetail({ elapsedMs: justBefore, usualMs })).toContain(
       "usually takes",

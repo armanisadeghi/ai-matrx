@@ -600,6 +600,9 @@ export async function createMandateExemplar(input: {
       user_input: input.userInput ?? null,
       source: "manual",
       visibility: "internal",
+      // org-fallback-deliberate: a mandate exemplar is platform-wide agent
+      //   configuration every organization inherits; the admin service is reached
+      //   only from the admin-gated (admin) route group
       organization_id: SYSTEM_ORGANIZATION_ID,
     })
     .select("*")
@@ -662,6 +665,8 @@ export async function saveAdHocResultAsExemplar(input: {
       user_input: input.userInput ?? null,
       source: "manual",
       visibility: "internal",
+      // org-fallback-deliberate: the same platform-wide mandate configuration as
+      //   above — shipped content, no tenant
       organization_id: SYSTEM_ORGANIZATION_ID,
       reference_output: input.result.output ?? "",
       reference_artifact: input.result.artifact ?? null,

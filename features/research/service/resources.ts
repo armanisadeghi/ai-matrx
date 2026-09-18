@@ -12,6 +12,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import type { Database } from "@/types/database.types";
 import { isJsonObject } from "@/types/json";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
@@ -263,6 +264,14 @@ export async function createBundle(
   input: ContextBundleInput,
 ): Promise<ContextBundle> {
   const userId = await requireUserId();
+  // 🚨 THE BUNDLE CARRIES ITS ORGANIZATION. `research.rs_context_bundle` is one
+  // of the 328 tables carrying `public._stamp_org_default`, so `?? null` filed
+  // the bundle in the writer's PERSONAL workspace silently. `ensureOrgId` takes
+  // the organization the caller named, else the one the person SELECTED, and
+  // THROWS `OrganizationContextError` when there is none — which every surface
+  // renders as the "select an organization" notice.
+  // common-docs/policies/context-is-carried-never-rebuilt.md
+  const organizationId = await ensureOrgId(input.organizationId);
   const insert: BundleInsert = {
     entity_type: input.entityType ?? ENTITY_TYPE,
     entity_id: input.entityId ?? null,
@@ -273,7 +282,7 @@ export async function createBundle(
     bindings: input.bindings,
     budget: input.budget ?? null,
     agent_id: input.agentId ?? null,
-    organization_id: input.organizationId ?? null,
+    organization_id: organizationId,
     created_by: userId,
   };
   const { data, error } = await supabase

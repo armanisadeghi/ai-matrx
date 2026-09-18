@@ -41,7 +41,11 @@ jest.mock("@/lib/python-client", () => ({
 // Imported AFTER the transport mock so the real module graph binds to it.
 import { AdapterCatalog } from "./components/AdapterCatalog";
 import { fetchExportAdapters } from "./api";
-import { ExportContractError, parseAdapterCatalog } from "./contract";
+import {
+  ExportContractError,
+  parseAdapterCatalog,
+  parseExportLibrary,
+} from "./contract";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -155,5 +159,90 @@ describe("every value the screen renders has been checked, not assumed", () => {
     // The drop zone is a sibling and must survive: this component says its own
     // part is unavailable rather than taking the page down.
     expect(container.textContent).toContain("Dropping a file still works");
+  });
+});
+
+describe("the Library read, against the envelope the server actually sends", () => {
+  it("reads the row out of `{library: {…}}` instead of showing an empty card", () => {
+    // Verbatim shape of `GET /media/exports/{id}` (aidream read_export).
+    const library = parseExportLibrary({
+      library: {
+        id: "d2df57ed-ea50-4e59-aa68-64fdc6dd4247",
+        name: "takeout-10k.mbox",
+        adapter: "gmail_mbox",
+        adapter_label: "Gmail / mail archive (.mbox)",
+        sync_status: "completed",
+        item_count: 10000,
+        organization_id: "884d1ce8-7b49-4fba-a2f3-0f7dd7c83d4f",
+        visibility: "personal",
+      },
+    });
+
+    // THE FAILING HALF: reading the envelope as the row made every field
+    // undefined and the screen said "the export.id ... arrived as nothing at
+    // all" over a Library that had just indexed perfectly.
+    expect(library.id).toBe("d2df57ed-ea50-4e59-aa68-64fdc6dd4247");
+    expect(library.name).toBe("takeout-10k.mbox");
+    expect(library.total_items).toBe(10000);
+    expect(library.status).toBe("completed");
+  });
+
+  it("still reads a bare row, which is what the contract publishes", () => {
+    const library = parseExportLibrary({ id: "abc", name: "x.mbox" });
+    expect(library.id).toBe("abc");
+  });
+
+  it("does not mistake a row that happens to carry a `library` string", () => {
+    const library = parseExportLibrary({ id: "abc", name: "x", library: "not-an-object" });
+    expect(library.id).toBe("abc");
+  });
+});
+
+describe("a finished export is recognised as finished", () => {
+  const METRICS = {
+    total_items: 10000,
+    counts_by_kind: { message: 10000 },
+    counts_by_direction: { outbound: 3941, inbound: 6059 },
+    counts_by_label: {},
+    counts_by_container: {},
+    date_range: { earliest: "2021-01-01", latest: "2021-11-12", span_days: 315 },
+    top_correspondents: [{ key: "dana", label: "Dana Okafor", count: 812 }],
+    total_chars: 1200000,
+    total_words: 210000,
+    with_attachments: 355,
+    owner_identity: "me@example.com",
+    owner_identity_basis: "the address that sent the most messages",
+    warnings: [],
+  };
+
+  it("reads the summary the server publishes as `metrics`", () => {
+    const library = parseExportLibrary({
+      library: { id: "lib-1", name: "takeout.mbox", metrics: METRICS },
+    });
+
+    // THE FAILING HALF: reading only `summary` left this null, so the page
+    // thought the export was un-indexed and re-ran the index on EVERY mount —
+    // which is how a person re-opening their own export met
+    // `library_item_library_external_uniq` on screen.
+    expect(library.summary).not.toBeNull();
+    expect(library.summary?.total_items).toBe(10000);
+    expect(library.summary?.owner_identity).toBe("me@example.com");
+  });
+
+  it("treats an empty `metrics` as not-yet-indexed, never as a summary of zero", () => {
+    const library = parseExportLibrary({ library: { id: "lib-1", name: "x", metrics: {} } });
+    expect(library.summary).toBeNull();
+  });
+
+  it("prefers an explicit `summary` when the server ever sends one", () => {
+    const library = parseExportLibrary({
+      library: {
+        id: "lib-1",
+        name: "x",
+        summary: { ...METRICS, total_items: 7 },
+        metrics: METRICS,
+      },
+    });
+    expect(library.summary?.total_items).toBe(7);
   });
 });

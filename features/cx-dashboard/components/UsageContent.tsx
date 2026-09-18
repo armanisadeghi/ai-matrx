@@ -11,11 +11,9 @@ import { CxFiltersBar } from "@/features/cx-dashboard/components/CxFiltersBar";
 import { CxEmptyState } from "@/features/cx-dashboard/components/CxEmptyState";
 import { CxJsonViewer } from "@/features/cx-dashboard/components/CxJsonViewer";
 import { formatCost, formatTokens, formatDuration } from "@/features/cx-dashboard/utils/format";
-import { exportToCSV, exportToJSON } from "@/features/cx-dashboard/utils/export";
-import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
+import { buildCxSourcePageExportConfig } from "@/features/cx-dashboard/utils/export";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
   ADMIN_CX_DASHBOARD_SURFACE_NAME,
@@ -73,7 +71,47 @@ export function UsageContent({ analytics }: { analytics: CxUsageAnalytics }) {
     avg_duration_ms: m.avg_duration_ms,
   }));
 
+  const modelColumns: MatrxColumnDef<CxUsageAnalytics["by_model"][number]>[] = [
+    { accessorKey: "model_name", header: "Model", width: 200, cell: (row) => <span className="font-medium whitespace-nowrap">{row.model_name}</span> },
+    { accessorKey: "provider", header: "Provider", width: 130, cell: (row) => <span className="text-muted-foreground whitespace-nowrap">{row.provider}</span> },
+    { accessorKey: "count", header: "Requests", align: "right", width: 100, className: "whitespace-nowrap", cell: (row) => <span className="whitespace-nowrap tabular-nums">{row.count}</span> },
+    { accessorKey: "total_input_tokens", header: "Input tokens", align: "right", width: 120, className: "whitespace-nowrap", cell: (row) => <span className="font-mono whitespace-nowrap">{formatTokens(row.total_input_tokens)}</span> },
+    { accessorKey: "total_output_tokens", header: "Output tokens", align: "right", width: 120, className: "whitespace-nowrap", cell: (row) => <span className="font-mono whitespace-nowrap">{formatTokens(row.total_output_tokens)}</span> },
+    { accessorKey: "total_cached_tokens", header: "Cached", align: "right", width: 100, className: "whitespace-nowrap", cell: (row) => <span className="font-mono whitespace-nowrap">{formatTokens(row.total_cached_tokens)}</span> },
+    { accessorKey: "total_tokens", header: "Total tokens", align: "right", width: 120, className: "whitespace-nowrap", cell: (row) => <span className="font-mono whitespace-nowrap">{formatTokens(row.total_tokens)}</span> },
+    { accessorKey: "total_cost", header: "Cost", align: "right", width: 110, className: "whitespace-nowrap", cell: (row) => <span className="font-mono font-medium whitespace-nowrap">{formatCost(row.total_cost)}</span> },
+    { accessorKey: "avg_duration_ms", header: "Avg duration", align: "right", width: 110, className: "whitespace-nowrap", cell: (row) => <span className="whitespace-nowrap text-muted-foreground">{formatDuration(row.avg_duration_ms)}</span> },
+    {
+      id: "cost_share",
+      header: "Cost share",
+      accessorFn: (row) => totalCost > 0 ? (row.total_cost / totalCost) * 100 : 0,
+      align: "right",
+      width: 130,
+      cell: (row) => {
+        const share = totalCost > 0 ? (row.total_cost / totalCost) * 100 : 0;
+        return (
+          <div className="flex items-center justify-end gap-1 whitespace-nowrap">
+            <div className="h-1.5 w-12 overflow-hidden rounded-full bg-muted">
+              <div className="h-full rounded-full bg-primary" style={{ width: `${share}%` }} />
+            </div>
+            <span className="text-[10px] tabular-nums">{share.toFixed(1)}%</span>
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
+    <SurfaceRuntimeProvider
+      surfaceName={ADMIN_CX_DASHBOARD_SURFACE_NAME}
+      getScope={() =>
+        createAdminCxDashboardScope({
+          dashboard_section: "usage",
+          usage_analytics: analytics,
+          usage_total_requests: analytics.total_requests,
+        })
+      }
+    >
     <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold">
@@ -88,8 +126,6 @@ export function UsageContent({ analytics }: { analytics: CxUsageAnalytics }) {
         showSearch={false}
         showStatusFilter={false}
         onRefresh={() => router.refresh()}
-        onExportCSV={() => exportToCSV(exportData, "usage-by-model")}
-        onExportJSON={() => exportToJSON(exportData, "usage-by-model")}
       />
 
       {analytics.total_requests === 0 ? (
@@ -213,60 +249,44 @@ export function UsageContent({ analytics }: { analytics: CxUsageAnalytics }) {
           )}
 
           {/* Model breakdown table */}
-          <div className="border border-border rounded-md bg-card">
-            <div className="px-3 py-2 border-b border-border">
-              <h3 className="text-xs font-medium text-muted-foreground">Usage by Model</h3>
-            </div>
-            <div className="overflow-x-auto">
-              <table className={cn("text-xs", MOBILE_TABLE_FROZEN)}>
-                <thead>
-                  <tr className="border-b border-border text-muted-foreground">
-                    <th className="text-left py-1.5 px-3 font-medium">Model</th>
-                    <th className="text-left py-1.5 px-3 font-medium">Provider</th>
-                    <th className="text-right py-1.5 px-3 font-medium">Requests</th>
-                    <th className="text-right py-1.5 px-3 font-medium">Input Tokens</th>
-                    <th className="text-right py-1.5 px-3 font-medium">Output Tokens</th>
-                    <th className="text-right py-1.5 px-3 font-medium">Cached</th>
-                    <th className="text-right py-1.5 px-3 font-medium">Total Tokens</th>
-                    <th className="text-right py-1.5 px-3 font-medium">Cost</th>
-                    <th className="text-right py-1.5 px-3 font-medium">Avg Duration</th>
-                    <th className="text-right py-1.5 px-3 font-medium">% of Cost</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {analytics.by_model.map((m) => (
-                    <tr key={`${m.model_name}|${m.provider}`} className="border-b border-border/50 hover:bg-muted/20">
-                      <td className="py-1.5 px-3 font-medium">{m.model_name}</td>
-                      <td className="py-1.5 px-3 text-muted-foreground">{m.provider}</td>
-                      <td className="text-right py-1.5 px-3">{m.count}</td>
-                      <td className="text-right py-1.5 px-3 font-mono">{formatTokens(m.total_input_tokens)}</td>
-                      <td className="text-right py-1.5 px-3 font-mono">{formatTokens(m.total_output_tokens)}</td>
-                      <td className="text-right py-1.5 px-3 font-mono">{formatTokens(m.total_cached_tokens)}</td>
-                      <td className="text-right py-1.5 px-3 font-mono">{formatTokens(m.total_tokens)}</td>
-                      <td className="text-right py-1.5 px-3 font-mono font-medium">{formatCost(m.total_cost)}</td>
-                      <td className="text-right py-1.5 px-3 text-muted-foreground">{formatDuration(m.avg_duration_ms)}</td>
-                      <td className="text-right py-1.5 px-3">
-                        <div className="flex items-center gap-1 justify-end">
-                          <div className="w-12 h-1.5 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-primary rounded-full"
-                              style={{ width: `${totalCost > 0 ? (m.total_cost / totalCost) * 100 : 0}%` }}
-                            />
-                          </div>
-                          <span className="text-[10px]">{totalCost > 0 ? ((m.total_cost / totalCost) * 100).toFixed(1) : 0}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          <MatrxDataTable
+            tableId="cx-dashboard-usage-by-model"
+            data={analytics.by_model}
+            columns={modelColumns}
+            getRowId={(row) => JSON.stringify([row.model_name, row.provider])}
+            toolbar={{
+              title: "Usage by Model",
+              search: true,
+              searchPlaceholder: "Search models and providers…",
+              refresh: { onRefresh: () => router.refresh() },
+            }}
+            copy={{
+              label: "Usage by model",
+              listLabel: "Usage by model (source page)",
+              location: "/administration/chat/cx-dashboard/usage",
+              rowKind: "cx-usage-by-model",
+              listKind: "cx-usage-by-model",
+              humanRow: (row) => [
+                `Model: ${row.model_name}`,
+                `Provider: ${row.provider}`,
+                `Requests: ${row.count}`,
+                `Cost: ${formatCost(row.total_cost)}`,
+                `Tokens: ${formatTokens(row.total_tokens)}`,
+              ].join("\n"),
+              rowAttributes: (row) => ({
+                model: row.model_name,
+                provider: row.provider,
+                requests: row.count,
+              }),
+              export: () => buildCxSourcePageExportConfig(exportData, "usage-by-model"),
+            }}
+          />
 
           {/* Debug view */}
           <CxJsonViewer data={analytics} label="Raw Analytics Data" />
         </>
       )}
     </div>
+    </SurfaceRuntimeProvider>
   );
 }

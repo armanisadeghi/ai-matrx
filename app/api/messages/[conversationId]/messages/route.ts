@@ -9,7 +9,6 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
-import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import type { Json } from "@/types/database.types";
 import { z } from "zod";
 
@@ -244,16 +243,29 @@ export async function POST(
       }
     }
 
-    // The message belongs to its parent conversation's org.
+    // 🚨 THE MESSAGE TAKES ITS PARENT CONVERSATION'S ORGANIZATION, AND
+    // REFUSES WHEN THE PARENT CANNOT BE READ. It used to fall through to
+    // `ensureOrgIdServer`, so a conversation the caller could not read (RLS, a
+    // deleted row, a bad id) filed the message in the SENDER'S PERSONAL
+    // workspace — a message in a tenant the other participant is not even in,
+    // silently. A child row never invents a tenant its parent already has.
+    // common-docs/policies/context-is-carried-never-rebuilt.md rule 4.
     const { data: parentConversation } = await supabase
       .schema("communication").from("dm_conversations")
       .select("organization_id")
       .eq("id", conversationId)
       .single();
-    const organizationId = await ensureOrgIdServer(
-      supabase,
-      parentConversation?.organization_id,
-    );
+    const organizationId = parentConversation?.organization_id ?? "";
+    if (organizationId.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          msg: "This conversation could not be read, so the message was not sent. Reopen it and try again.",
+          code: "organization_context_required",
+        },
+        { status: 400 },
+      );
+    }
 
     // Insert message
     const { data: newMessage, error: insertError } = await supabase

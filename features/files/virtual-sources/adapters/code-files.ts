@@ -32,6 +32,7 @@ import type {
 } from "@/features/files/virtual-sources/types";
 import type { Database } from "@/types/database.types";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
+import { ensureOrgId } from "@/lib/organizations/personalOrg";
 
 const TAB_ID_PREFIX = "code-file:";
 
@@ -336,14 +337,22 @@ const codeFilesAdapter: VirtualSourceAdapter = {
   },
 
   async create(supabase, _userId, args: CreateArgs) {
-    // `created_by` (owner) and `organization_id` are stamped by the
-    // `_stamp_actor` / `_stamp_org_default` triggers from `auth.uid()`.
+    // `created_by` (owner) is stamped by the `_stamp_actor` trigger from
+    // `auth.uid()`. The organization is NOT: `public._stamp_org_default` would
+    // file a snippet arriving with a NULL organization into the owner's
+    // PERSONAL organization, silently, no matter which organization the person
+    // is actually working in. So the write carries the SELECTED organization
+    // and refuses (OrganizationContextError -> the surface's honest state)
+    // when nothing is selected.
+    // Law: common-docs/policies/context-is-carried-never-rebuilt.md.
+    const organizationId = await ensureOrgId(undefined);
     if (args.kind === "folder") {
       const { data, error } = await supabase
         .schema("code").from("code_file_folders")
         .insert({
           name: args.name,
           parent_folder_id: args.parentId,
+          organization_id: organizationId,
         })
         .select(FOLDER_LIST_COLUMNS)
         .maybeSingle();
@@ -368,6 +377,7 @@ const codeFilesAdapter: VirtualSourceAdapter = {
         content: args.content ?? "",
         folder_id: args.parentId,
         language: "plaintext",
+        organization_id: organizationId,
       })
       .select(FILE_LIST_COLUMNS)
       .maybeSingle();
