@@ -135,6 +135,24 @@ describe("the canvas has exactly one presentation", () => {
     expect(mounters).toEqual([]);
   });
 
+  it("the shell header's canvas slot is kept, not unmounted, while the canvas is open", () => {
+    // The control belongs to the canvas pane's header while the canvas is
+    // open, but its BOX must stay in the shell header — unmounting it pulled
+    // every button to its left 44px sideways the moment the canvas opened.
+    // Measured live on 2026-09-17 before this: Records at x = 887.59 closed
+    // against x = 931.59 open, on both the chat and the document route.
+    const toggle = read("features/canvas/core/CanvasHeaderToggle.tsx");
+    expect(toggle).toContain('data-canvas-header-slot="reserved"');
+    expect(toggle).toContain('data-canvas-header-slot="control"');
+    // Nothing is left on screen for a route with no canvas content at all.
+    expect(toggle).toContain("if (!isAvailable || itemCount === 0) return null;");
+    // The reserved slot is inert: invisible, unclickable, out of the tab order.
+    const reserved = toggle.slice(toggle.indexOf("if (isOpen) {"));
+    expect(reserved).toContain("invisible pointer-events-none");
+    expect(reserved).toContain("tabIndex={-1}");
+    expect(reserved).toContain("aria-hidden");
+  });
+
   it("the surface card marks exactly one presentation", () => {
     const surface = read("features/canvas/core/CanvasSurface.tsx");
     expect(surface).toContain('data-canvas-surface="sheet"');

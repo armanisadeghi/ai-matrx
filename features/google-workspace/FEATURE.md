@@ -429,14 +429,50 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
   event (`aidream/services/google_workspace/tools.py`) — V-22 fed
   `record_table: "media.source_library"` and got an Open control for a `calendar_event` with a
   foreign id, the V-21 `document → udt_document` defect in a new place. The resolver that ends the
-  class now exists and is proven against that exact attack —
-  `itemTypeForRecordTable` in `features/item-presentation/registry.tsx`, derived from the type map,
-  `null` for an unknown table so the caller renders no door. **The one-line adoption is STILL OWED
-  and is not in this change:** that file belongs to another lane (F-90/91) and was deliberately not
-  edited. Censused for siblings: `CalendarEventSections.tsx` carries only `party` doors for
+  class now exists and is proven against that exact attack: `itemTypeForRecordTable` in
+  `features/item-presentation/registry.tsx`, derived from the type map, `null` for an unknown table.
+  **The fix is in `RecordDoor` itself, not at the call site** — the shared door takes the row's own
+  `recordTable`, prefers it over the caller's `type`, and renders NOTHING when a stamp arrived and
+  named a table no item type reads (a refusal, never a fall back to the caller's guess), so every
+  present and future caller inherits it; the calendar call site passes `event.record_table` and
+  keeps `calendar_event` only as the answer for an older payload with no stamp. Red→green through
+  the canonical pipeline (`applyIrKindRoute` → `resolveBlockDispatch`, never the component imported
+  directly) in `features/content-ir/__tests__/kind-google-result-families.test.tsx`: against the
+  components as F-90 left them the `media.source_library` probe fails with the received markup
+  showing `aria-label="Open Weekly sync in AI Matrx"` on a calendar door, 1 failed / 66 passed;
+  67/67 after. Censused for siblings: `CalendarEventSections.tsx` carries only `party` doors for
   attendees (correct — an attendee IS a Person record), `GoogleMarketingResultBlock.tsx` passes
   `web_site` with a `site_id` (correct), and no Google surface navigates to `/detail/...` as a
   primary door. No screen was seen.
+- `2026-09-18` — **F-90: a Google write answer's honesty is carried by the PREVIEW, not by a flag
+  (V-22 findings NEW-8 HIGH, NEW-10, NEW-14).** F-84's two components gated
+  "Nothing was written" on `dry_run === true || awaiting_approval === true` while rendering
+  `would_append` / `would_write` UNCONDITIONALLY, so a `would_append` carrying neither flag
+  printed the whole preview of the person's own document with nothing saying it had not
+  happened, and a payload carrying `would_append` AND `appended` printed a green receipt chip
+  beside the preview. There is now ONE truth table — `readWriteClaim` in
+  [`google-result-shared.tsx`](../../components/mardown-display/blocks/google-kinds/google-result-shared.tsx),
+  a pure function both blocks read: the arrival of ANY `would_*` key always leads with "nothing
+  was written" (a `would_delete` nobody has written yet included), a completed-write chip
+  (`appended`/`written`/`created`/`imported`/`sent`) renders ONLY in the `receipt`/`none` states,
+  a payload carrying both NAMES the contradiction instead of resolving it — the block says it
+  reports both `would append` and `appended`, is treating it as a preview, and is showing nothing
+  as written — and a hold flag that arrived as something other than a boolean (`dry_run: "true"`) is its own state
+  rather than an absent hold. Also: a marketing count with no `bounds` now says "(window not
+  stated by the provider)" instead of printing bare (NEW-10, `hasStatedBounds` reads the same
+  predicate the `Bounds` chips do), and a mirrored row's freshness prints through
+  `readRecordSyncNotice` — the calendar record's OWN sentences, never a second wording — so every
+  state names what to do, a word this build does not know says so, `detached` deliberately offers
+  no refresh (a refresh is refused for a detached row), and every ISO instant prints through
+  `lib/detail/format`'s `formatWhen`, the platform's one timestamp formatter, instead of reaching
+  a person as `2026-09-18T15:00:00Z` (NEW-14). Proof, through the canonical pipeline
+  (`applyIrKindRoute` → `resolveBlockDispatch`, never the component imported directly):
+  [`features/content-ir/__tests__/kind-google-result-families.test.tsx`](../content-ir/__tests__/kind-google-result-families.test.tsx)
+  — twelve new hostile fixtures reproduced from V-22's probe table plus a 26-row table-driven test
+  of the truth table itself; RED against the components at `306edaf2` = 11 failed / 25 passed,
+  GREEN after = 64 passed (89 passed with the block-registry suites). NOT fixed here and still
+  open from the same verdict: NEW-9, the calendar door hardcodes `type="calendar_event"` and
+  ignores the server's `record_table`.
 
 - `2026-09-18` — **F-78: the contract pin now names the field this repo actually reads.**
   `scripts/aidream-contract-pin.json` sat at aidream `62fa56114` while these surfaces read

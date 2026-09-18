@@ -169,6 +169,20 @@ path updates the node's `STATE.md` in the same session.
   header. Its own gate (`features/shell/layout-gate/shell-scroll-runway.spec.ts`)
   now models the canonical world and measures the composer instead of a docked
   column.
+  AND THE SHIFT ITSELF, found by the live check the same day: with the parallel
+  layer gone, `CanvasShellHeaderToggle` still UNMOUNTED while the canvas was
+  open, so every shell-header button to its left moved 44px sideways on every
+  open and close — measured on production-equivalent build at 1280x720,
+  Records at `x = 887.59` closed against `x = 931.59` open, on the chat route
+  AND on `/artifacts`. The canvas pane's header owns the control while the
+  canvas is open, but its BOX must stay: the component now renders an inert
+  `data-canvas-header-slot="reserved"` placeholder there, the same trick
+  `:root[data-canvas-open="true"] .shell-user-menu-wrapper` already uses for
+  the avatar. Re-measured after: every one of the nine header button rects and
+  the header box itself are byte-identical open vs closed, on both routes, and
+  the canvas surface is `sheet` at `[512, 0, 768, 720]` on both.
+  Guard: the layout gate's case 2, with `MATRX_LAYOUT_GATE_MUTATION=unmount-slot`
+  proven RED on both routes and both viewports.
 
 - `2026-09-17` — **Share and score refusals reach the person.** `useCanvasShare` rendered the raw transport sentence ("Select an organization before sending this request.") beside a Share button that could only fail again; `useCanvasScore` recorded nothing and said nothing. Both now speak the refusal with its remedy (`lib/organizations/organizationRefusalToast.ts`), and a score that fails for any other reason is spoken too rather than leaving the leaderboard silently unchanged.
 

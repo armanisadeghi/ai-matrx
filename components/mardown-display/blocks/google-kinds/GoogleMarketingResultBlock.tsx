@@ -60,10 +60,14 @@ import {
 import {
   Bounds,
   CountedFact,
+  NothingWasWritten,
   RecordDoor,
   ServerSentence,
   TruncationChip,
+  hasStatedBounds,
+  readBlock,
   readRows,
+  readWriteClaim,
 } from "./google-result-shared";
 
 /**
@@ -171,6 +175,16 @@ const GoogleMarketingResultBlock: React.FC<ResultKindBlockProps> = ({
     ? (value.caveats.filter((item) => typeof item === "string") as string[])
     : null;
 
+  /**
+   * Six READ-ONLY reads share this kind, so a write claim should never arrive
+   * here at all — which is exactly why the claim is read. The truth table lives
+   * once (`google-result-shared.tsx`) and BOTH Google blocks consult it, so a
+   * `would_*` or a completed-write marker that turns up on a marketing payload
+   * leads with "nothing was written" instead of passing silently through the
+   * leftovers (V-22, NEW-8).
+   */
+  const claim = readWriteClaim(value);
+
   const HeadIcon = headIcon(action);
   const booleans: Array<{ key: string; label: string }> = [
     { key: "has_ga4", label: "GA4 tag" },
@@ -187,8 +201,16 @@ const GoogleMarketingResultBlock: React.FC<ResultKindBlockProps> = ({
         <span className="text-sm font-medium text-foreground">
           {action ? humanizeKey(action) : "Google marketing read"}
         </span>
-        <CountedFact count={value.returned_count} unit={value.count_unit} />
+        {/* A NUMBER ALWAYS CARRIES ITS WINDOW: `bounds` is optional on this kind,
+            so an absent window is announced ON the count (V-22, NEW-10). */}
+        <CountedFact
+          count={value.returned_count}
+          unit={value.count_unit}
+          windowStated={hasStatedBounds(value.bounds)}
+        />
       </div>
+
+      <NothingWasWritten claim={claim} approval={readBlock(value.approval)} />
 
       <ChipRow>
         {/* WHERE the number came from. Never implied. */}
