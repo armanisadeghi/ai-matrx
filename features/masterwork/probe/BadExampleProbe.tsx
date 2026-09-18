@@ -495,7 +495,7 @@ export function BadExampleProbe({
                 document as if it were a real record. `specimen` declares what
                 this is to every renderer underneath. */}
             <RichDocument
-              content={current.example_body}
+              content={current.example_body ?? ""}
               source={{ type: "raw" }}
               actionsVariant="none"
               specimen={{
@@ -602,7 +602,7 @@ export function BadExampleProbe({
           <ol className="mt-2 space-y-2">
             {rounds.slice(0, finished ? rounds.length : -1).map((round, index) => (
               <li
-                key={`${index}-${round.example_title}`}
+                key={`${index}-${round.example_title ?? ""}`}
                 className={cn(
                   "rounded-md border border-border bg-card px-3 py-2 text-sm",
                 )}

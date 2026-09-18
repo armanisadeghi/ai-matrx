@@ -16,7 +16,7 @@
 // rejoin — instead of needing a bespoke session row nothing else in Masterwork
 // has. Same shape as the Bad Example probe, for the same reason.
 
-import type { paths } from "@/types/python-generated/api-types";
+import type { components, paths } from "@/types/python-generated/api-types";
 
 /**
  * Served by `aidream/aidream/services/distillation/teach_back.py`.
@@ -47,22 +47,17 @@ export const DECLARED_KNOB_DEFAULTS = {
  *  have given us nothing yet, and the explanation says so out loud. */
 export type TeachBackBasis = "rulebook" | "generalist";
 
-/** One round of a teach-back session, exactly as the wire carries it. */
-export interface TeachBackRound {
-  /** The ONE decision this round explained back, in the Expert's words. */
-  subject: string;
-  /** The explanation exactly as it was shown and spoken. */
-  explanation: string;
-  basis: TeachBackBasis | "";
-  /**
-   * The Rulebook rule ids this explanation leaned on. THESE are the rules a
-   * "yes, that's it" signs — carried back so the server stamps exactly the
-   * rules that were on screen, never whatever the Rulebook holds by then.
-   */
-  rule_ids: string[];
-  /** The Expert's own words. Empty until they answer this round. */
-  correction: string;
-}
+/**
+ * One round of a teach-back session, exactly as the wire carries it.
+ *
+ * `subject` is the ONE decision this round explained back, in the Expert's
+ * words. `rule_ids` are the Rulebook rule ids this explanation leaned on —
+ * THESE are the rules a "yes, that's it" signs, carried back so the server
+ * stamps exactly the rules that were on screen, never whatever the Rulebook
+ * holds by then. `correction` is the Expert's own words, empty until they
+ * answer this round.
+ */
+export type TeachBackRound = components["schemas"]["TeachBackRound"];
 
 /** The terminal `masterwork_teach_back_round` payload. */
 export interface TeachBackRoundResult {
@@ -251,7 +246,7 @@ export function buildTeachBackRequest(input: {
   roundCap?: number;
 }): TeachBackRequestBody {
   const subject = input.rounds.length
-    ? input.rounds[input.rounds.length - 1].subject
+    ? (input.rounds[input.rounds.length - 1].subject ?? "")
     : "";
   const body: TeachBackRequestBody = {
     rulebook_id: input.rulebookId,
