@@ -59,7 +59,7 @@ export function TopicalMapStartDoor() {
 
   return (
     <div className="h-full overflow-y-auto overflow-x-hidden bg-textured">
-      <div className="mx-auto grid max-w-5xl gap-4 p-4 pt-[calc(var(--shell-header-h)+1rem)] sm:p-6 sm:pt-[calc(var(--shell-header-h)+1.5rem)]">
+      <div className="grid w-full gap-4 p-4 pt-[calc(var(--shell-header-h)+1rem)] sm:p-6 sm:pt-[calc(var(--shell-header-h)+1.5rem)]">
         <section className="rounded-xl border border-border bg-card p-5">
           <h1 className="flex items-center gap-2 text-lg font-semibold">
             <BrainCircuit className="h-5 w-5" aria-hidden />
