@@ -1521,6 +1521,9 @@ const heavyImplStaticImportBan = [
 //     (gated by ContentPlanWorkbench's next/dynamic)
 //   - Growth Loop map: features/growth-loop/components/GrowthLoopCanvas.tsx wrapper
 //     → GrowthLoopCanvasImpl.tsx
+//   - Topical map graph: features/marketing/seo/topical-map/views/GraphView.tsx wrapper
+//     → topical-map/views/GraphViewImpl.tsx (the feature's ONE dynamic edge,
+//     CONTRACTS §0; views/graph/** are deliberately engine-free bodies)
 // A static value import anywhere else drags the whole flow runtime into that
 // route/server chunk: the exact build-time-leak class that ballooned the build
 // 15→24min for the context menu. `import type {...}` and dynamic `import()`

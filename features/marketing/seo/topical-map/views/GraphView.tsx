@@ -3,17 +3,37 @@
 /**
  * GRAPH — the map drawn as a graph.
  *
- * Phase 0 renders the U1 harness. Lane C owns the real drawing, and it is the
- * ONE dynamic import edge in this feature (CONTRACTS §0):
- * `GraphView.tsx` → `GraphViewImpl.tsx`, `ssr: false`, because xy-flow measures
- * the DOM. That edge does not exist yet — there is nothing behind it to load —
- * and adding it now would be a boundary around a harness, which buys neither of
- * the two things a dynamic import buys (code-splitting skill, rules 1 and 4).
+ * 🚨 THIS IS THE FEATURE'S ONE DYNAMIC IMPORT EDGE (CONTRACTS §0). Nothing else
+ * under `features/marketing/seo/topical-map/` lazies anything: the code-splitting
+ * skill's fragmentation rule says a boundary is worth its cost only where a
+ * genuinely heavy, browser-only module sits behind it, and React Flow — which
+ * measures the DOM and cannot render on the server — is exactly that module and
+ * the only one here.
+ *
+ * `ssr: false` is not a preference. `GraphViewImpl` imports `@xyflow/react`
+ * statically (the ONE sanctioned import in this feature, see the
+ * `reactFlowStaticImportBan` in eslint.config.mjs), and that package reaches for
+ * the DOM at module scope.
+ *
+ * The props type lives in the body's contract (`MapViewProps`), so consumers
+ * stay typed without pulling the impl into their graph.
  */
 
-import type { MapViewProps } from "../components/TopicalMapWorkspaceBody";
-import { MapTreeHarness } from "./MapTreeHarness";
+import dynamic from "next/dynamic";
 
-export function GraphView({ mapId, siteId }: MapViewProps) {
-  return <MapTreeHarness mapId={mapId} siteId={siteId} view="graph" />;
+import SuspenseLoader from "@/components/loaders/SuspenseLoader";
+
+import type { MapViewProps } from "../components/TopicalMapWorkspaceBody";
+
+const GraphViewImpl = dynamic(() => import("./GraphViewImpl"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex min-h-0 flex-1 items-center justify-center bg-textured">
+      <SuspenseLoader size="md" centered={false} message="Loading the map drawing…" />
+    </div>
+  ),
+});
+
+export function GraphView(props: MapViewProps) {
+  return <GraphViewImpl {...props} />;
 }
