@@ -31,16 +31,28 @@
 //
 //   resolving   → disabled, "Checking which organization you are working in…"
 //   required    → disabled, "Select an organization before <act>."
-//   unavailable → disabled, "We could not check which organization you are
-//                 working in. Try again." — the CHECKING posture, never the
-//                 refusal (R37, 2026-09-18): the read failed, so nothing is
-//                 known about this person's memberships and telling them to
-//                 pick one is a claim we never verified. That is exactly what
-//                 this very control did for 24 seconds to a member of thirteen
-//                 organizations after one `TypeError: Failed to fetch`
-//                 (V-23 NEW-2). The Retry itself lives on
-//                 `OrganizationContextNotice`; a control shows the honest title
-//                 and stays disabled.
+//   unavailable → ENABLED, "We could not check which organization you are
+//                 working in. Press to try again." — never the refusal (R37,
+//                 2026-09-18): the read failed, so nothing is known about this
+//                 person's memberships and telling them to pick one is a claim
+//                 we never verified. That is exactly what this very control did
+//                 for 24 seconds to a member of thirteen organizations after
+//                 one `TypeError: Failed to fetch` (V-23 NEW-2).
+//
+// 🚨 THE REMEDY IS THE PRESS (V-24 NEW-3, 2026-09-18). The fourth state used to
+// say "Try again." from a tooltip on a control that could not be pressed, and
+// on `/tasks` there was no organization Try again ANYWHERE on the page — the
+// only one on screen belonged to the task list, and pressing it left the import
+// control saying "Try again." for the whole 20s that was then sampled. A
+// sentence naming a remedy the screen does not offer is the dead-or-lying
+// screen law 4 forbids, in a smaller frame. So the posture carries its own
+// remedy: in `unavailable` the control is ENABLED and its press re-runs the ONE
+// organization read (`useOrganizationRequired().retry` →
+// `retryActiveOrgBootstrap`). One press, one remedy, no second button to hunt
+// for — and the sentence is true, because pressing this really is trying again.
+// A consumer gets that for free by wrapping its own action in `press(...)`
+// instead of writing its own `onClick`; `check:org-three-states` rule 3 refuses
+// a consumer that renders the posture without it.
 //   ready       → enabled, no title
 //
 // The refusal sentence is built by the ONE builder every other refusal in the
@@ -77,18 +89,34 @@ export function organizationControlRefusal(act: string): string {
  * the act will help — the read is what failed.
  */
 export const ORGANIZATION_UNAVAILABLE_TITLE_CONTROL =
-  "We could not check which organization you are working in. Try again.";
+  "We could not check which organization you are working in. Press to try again.";
 
 export interface OrganizationGatedControl {
   /** The selected organization, or null while resolving / with none. */
   organizationId: string | null;
   organizationState: OrganizationState;
-  /** True in EVERY non-ready state — a control never acts on a guess. */
+  /**
+   * True while the answer is still coming and once it has settled with nothing
+   * — a control never acts on a guess. FALSE in `unavailable`, where the press
+   * is not the act at all: it is the remedy (see THE REMEDY IS THE PRESS).
+   */
   disabled: boolean;
   /** Re-run the organization read. The `unavailable` state's only remedy. */
   retry: () => void;
   /** The `title` to render: the checking beat, the refusal, or nothing. */
   title: string | undefined;
+  /**
+   * THE CONTROL'S OWN onClick. Wrap the act this control performs and render
+   * the result — never a hand-written handler beside `disabled`/`title`, which
+   * is how the `unavailable` posture lost its remedy on two surfaces:
+   *
+   *   onClick={gate.press((organizationId) => open({ organizationId }))}
+   *
+   *   ready       → runs `act` with the organization, never null;
+   *   unavailable → re-runs the organization read (the sentence's own remedy);
+   *   resolving / required → nothing, and the control is disabled anyway.
+   */
+  press: (act: (organizationId: string) => void) => () => void;
 }
 
 export function useOrganizationGatedControl(act: string): OrganizationGatedControl {
@@ -105,11 +133,25 @@ export function useOrganizationGatedControl(act: string): OrganizationGatedContr
         return organizationControlRefusal(act);
     }
   };
+  const press = (act: (organizationId: string) => void) => () => {
+    // The fourth state's press IS the remedy: it asks the question again,
+    // through the ONE re-run every other "Try again" on this state calls.
+    if (organizationState === "unavailable") {
+      retry();
+      return;
+    }
+    // Never act on a guess. `disabled` already covers the other two states for
+    // a mouse; this covers a keyboard, a programmatic click and a stale render.
+    if (organizationId == null) return;
+    act(organizationId);
+  };
   return {
     organizationId,
     organizationState,
-    disabled: organizationState !== "ready",
+    // `unavailable` stays pressable — the press re-runs the read.
+    disabled: organizationState !== "ready" && organizationState !== "unavailable",
     title: title(),
     retry,
+    press,
   };
 }

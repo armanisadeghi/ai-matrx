@@ -27,9 +27,12 @@ import { createRoot } from "react-dom/client";
 const gate = {
   organizationId: null as string | null,
   organizationRequired: false,
+  /** The FOURTH state: the read itself failed (R37). */
+  readFailed: null as string | null,
 };
 
 const opened: { organizationId: string | null }[] = [];
+const retried: unknown[] = [];
 
 // The REAL hook and the REAL control gate run; only the store underneath them is
 // stood in for, because the three states are a property of that store's two
@@ -37,13 +40,35 @@ const opened: { organizationId: string | null }[] = [];
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (s: unknown) => unknown) =>
     selector({
-      appContext: {
+      // THE FIXTURE LAW: the slice builds its own state, so a field the gate
+      // learns tomorrow costs this file nothing.
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      appContext: require("@/lib/redux/slices/appContextSlice").makeAppContextState({
         organization_id: gate.organizationId,
-        orgBootstrapResolved: gate.organizationRequired || gate.organizationId != null,
-      },
+        orgBootstrapResolved:
+          gate.organizationRequired ||
+          gate.organizationId != null ||
+          gate.readFailed != null,
+        orgBootstrapFailure: gate.readFailed,
+      }),
       taskUi: { selectedTaskId: null },
     }),
   useAppDispatch: () => () => {},
+}));
+
+// The retry the fourth state's press must reach — the ONE bootstrap re-run,
+// dispatched through the store singleton (a pure leaf, so no surface test needs
+// to know it exists).
+jest.mock("@/lib/redux/thunks/activeOrgBootstrap", () => ({
+  retryActiveOrgBootstrap: () => ({ type: "test/retry-organization-read" }),
+}));
+jest.mock("@/lib/redux/store-singleton", () => ({
+  getStoreSingleton: () => ({
+    dispatch: (action: unknown) => {
+      retried.push(action);
+      return action;
+    },
+  }),
 }));
 jest.mock("@/features/tasks/redux/taskUiSlice", () => ({
   selectSelectedTaskId: () => null,
@@ -103,7 +128,9 @@ describe("the Tasks import control and the three organization states", () => {
   beforeEach(() => {
     gate.organizationId = null;
     gate.organizationRequired = false;
+    gate.readFailed = null;
     opened.length = 0;
+    retried.length = 0;
   });
 
   it("while boot is RESOLVING: disabled, says it is checking, and never the refusal", () => {
@@ -133,6 +160,38 @@ describe("the Tasks import control and the three organization states", () => {
         "Select an organization before importing Google Tasks.",
       );
       button.click();
+      expect(opened).toEqual([]);
+    } finally {
+      unmount();
+    }
+  });
+
+  /**
+   * 🚨 V-24 NEW-3 (seat-proven 2026-09-18) — the fourth state's sentence named a
+   * remedy this page did not have. With every Supabase read aborted the control
+   * sat at "We could not check which organization you are working in. Try
+   * again." and the ONLY Try again on /tasks belonged to the task list:
+   * pressing it left the control exactly where it was for the whole 20s that
+   * was then sampled. The sentence must name a button that is there, and the
+   * only button that can be is this one.
+   */
+  it("when the READ FAILED: pressable, and the press re-runs the organization read", () => {
+    gate.readFailed = "the organization read failed: Failed to fetch";
+    const { host, unmount } = render();
+    try {
+      const button = importButton(host);
+      const title = button.getAttribute("title") ?? "";
+      expect(title).not.toMatch(/Select an organization/);
+      expect(title).toBe(
+        "We could not check which organization you are working in. Press to try again.",
+      );
+      // The remedy the sentence names is THIS control.
+      expect(button.disabled).toBe(false);
+      act(() => {
+        button.click();
+      });
+      expect(retried).toEqual([{ type: "test/retry-organization-read" }]);
+      // And it opened nothing: there is no organization to import into yet.
       expect(opened).toEqual([]);
     } finally {
       unmount();

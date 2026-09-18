@@ -119,9 +119,11 @@ Organizations are the top-level multi-tenant scope in the app — every user bel
 | `resolving` | boot has not answered yet | "Checking which organization you are working in…" | disabled, checking title |
 | `ready` | an organization is selected | its own content | enabled, no title |
 | `required` | the memberships WERE read and none is selected | "Select an organization…", with the picker | disabled, "Select an organization before &lt;act&gt;." |
-| `unavailable` | the read FAILED — aborted, thrown, or a degraded `current_personal_org_id()` | "We could not check your organization…", with **Try again** and no picker | disabled, "We could not check which organization you are working in. Try again." |
+| `unavailable` | the read FAILED — aborted, thrown, or a degraded `current_personal_org_id()` | "We could not check your organization…", with **Try again** and no picker | **ENABLED**, "We could not check which organization you are working in. Press to try again." — and the press re-runs the read |
 
-  The fourth state is recorded on the slice as `orgBootstrapFailure` (a short technical reason; read through the pure leaf `lib/organizations/orgBootstrapFailure.ts`, which `appContextSlice` re-exports as `selectOrgBootstrapFailure`), written only by the boot paths — `appContextPolicy.remote.fetch` and `bootstrapActiveOrganization` — and cleared by any answer, a selection included. `selectShouldPromptForOrganization` is FALSE while it is set, so the red avatar ring and the header reminder stay quiet too: "select an organization" is a claim about memberships, and it may only be made once they have been READ. `retry()` (→ `retryActiveOrgBootstrap`) puts the surfaces back into `resolving` and re-runs the same resolver boot runs. For an ACTION, `awaitEffectiveOrganizationId` / `awaitOrganizationForRecordRead` answer `{status: "unavailable", cause: "unreadable" | "no-selection"}` with the matching sentence. Guard: `pnpm check:org-three-states` fails a module that enumerates `"resolving"` and `"required"` without naming `"unavailable"`.
+  The fourth state is recorded on the slice as `orgBootstrapFailure` (a short technical reason; read through the pure leaf `lib/organizations/orgBootstrapFailure.ts`, which `appContextSlice` re-exports as `selectOrgBootstrapFailure`), written only by the boot paths — `appContextPolicy.remote.fetch` and `bootstrapActiveOrganization` — and cleared by any answer, a selection included. `selectShouldPromptForOrganization` is FALSE while it is set, so the red avatar ring and the header reminder stay quiet too: "select an organization" is a claim about memberships, and it may only be made once they have been READ. `retry()` (→ `retryActiveOrgBootstrap`) puts the surfaces back into `resolving` and re-runs the same resolver boot runs. For an ACTION, `awaitEffectiveOrganizationId` / `awaitOrganizationForRecordRead` answer `{status: "unavailable", cause: "unreadable" | "no-selection"}` with the matching sentence. Guard: `pnpm check:org-three-states` fails a module that enumerates `"resolving"` and `"required"` without naming `"unavailable"` (rule 2), and a module that can render the fourth state's CONTROL posture without wiring a press that re-runs the read (rule 3).
+
+- 🚨 **THE POSTURE CARRIES ITS REMEDY — a control that says "Press to try again." is the button that tries again (V-24 NEW-3, 2026-09-18).** The fourth state is the ONE non-ready state whose control stays pressable: `useOrganizationGatedControl` returns `disabled: false` there and a `press(act)` handler that runs `act(organizationId)` when the organization is known, calls `retry()` when the read failed, and does nothing while the answer is still coming. A consumer renders `onClick={gate.press(…)}` and inherits all four states; a hand-written `onClick` beside `disabled`/`title` is the defect and `check:org-three-states` rule 3 refuses it by name. A BODY still renders `OrganizationContextNotice`, whose own Try again is the same `retry()`.
 
 - **Canonical org-id resolution for WRITES — `ensureOrgId(orgId)` (`lib/organizations/personalOrg.ts`).** Every org-scoped insert/update/upsert MUST stamp `organization_id` via `await ensureOrgId(orgId?)` — never write a null/optional org to a NOT NULL column, and never re-read the org from an ad-hoc selector at the write site. Resolution order: (1) the explicit `orgId` when a callsite already knows the org; (2) the user's GLOBAL active org from Redux via `getActiveOrgId()` (`lib/organizations/activeOrg.ts`) — so every write rides along the org the user is currently working in; (3) a **LOUD** last-resort fallback to the personal-org RPC (`resolvePersonalOrgId`). Reaching step 3 means the sync engine failed to keep the org present before a write — a defect — so `ensureOrgId` emits `console.error` + `captureError({ source: "org-resolution" })` into the systemwide Error Inspector before falling back (defensive, never silent). **The fallback also REPAIRS the hole** — it dispatches `setPersonalOrganization` with the resolved id, so the scream fires once per session rather than once per write; it never writes `organization_id`, so a later rehydrate or org switch still wins. A recovery that does not repair fires forever (2026-08-17). Server-side: use `ensureOrgIdServer(client, orgId)` (route handlers / Server Actions — never the module cache, which would leak across requests) or `resolveOrgIdForUserServer(client, userId, orgId)` for admin/secret-key writes on behalf of an arbitrary user. Deliberate personal-org-pinned exceptions (do NOT switch to active): `assignHomelessNotesToPersonalOrg` (re-homes to MY org by contract) and `projectService.createProject` (legacy personal-only path; org-scoped projects use `features/projects/service.ts`).
 
@@ -296,6 +298,59 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 ---
 
 ## Change log
+
+- `2026-09-18` — **F-110 (V-24, NEW-3): THE FOURTH STATE'S REMEDY IS THE PRESS —
+  a sentence never names a button that is not on the screen.** The `unavailable`
+  control title ended "Try again." while the control could not be pressed, and
+  the only Try again on `/tasks` belonged to the TASK LIST: the hostile verifier
+  aborted every `db.matrxserver.com/rest/v1/**` request, watched the Google
+  Tasks import control sit at *"We could not check which organization you are
+  working in. Try again."*, restored the reads, pressed the one Try again the
+  page had, and the control stayed exactly where it was for the whole 20s then
+  sampled. `/settings/integrations` was worse: under the same failure it said
+  **nothing** about the organization at any second. A sentence naming a remedy
+  the screen does not offer is the dead-or-lying screen law 4 forbids, one frame
+  smaller.
+
+  **The shape, and why.** The remedy could have been a second control (a Retry
+  chip beside the button) or a notice pushed onto every surface that gates a
+  control. Both put a new thing on screen to fix a sentence, and both leave the
+  original control saying "Try again" while pointing elsewhere — the very
+  confusion that was found. So the POSTURE carries the remedy instead: in
+  `unavailable` the gated control is **enabled**, its title reads "We could not
+  check which organization you are working in. Press to try again.", and its
+  press runs the ONE re-run (`useOrganizationRequired().retry` →
+  `retryActiveOrgBootstrap`) every other Try again on this state calls. One
+  press, one remedy, nothing new to find, and the sentence is true because
+  pressing this really is trying again. A consumer gets all four states by
+  rendering the gate's own handler — `onClick={gate.press((organizationId) =>
+  …)}` — instead of writing an `onClick` beside `disabled` and `title`, which is
+  exactly how two surfaces lost the remedy.
+
+  Consumers converted: `features/tasks/components/TasksHeaderControls.tsx` (the
+  import opens with the organization, or asks again) and
+  `features/connectors/ConnectorConsentDialog.tsx`'s `FirstAction` (the
+  organization-missing branch is pressable only when the read failed).
+  `/settings/integrations` now says the fourth state out loud:
+  `ConnectorsSettingsPanel` renders the shared `OrganizationContextNotice` —
+  with its working Try again — whenever the read failed, in the loading branch
+  as well as the loaded one, and nothing at all in the other three states (a
+  personal connection needs no organization, so `required` is not a problem
+  here). Guard: `check:org-three-states` gains RULE 3 (a module that can render
+  the fourth state's control posture must wire a press that re-runs the read),
+  proven failing-then-passing on the shipped `TasksHeaderControls.tsx` bytes and
+  in the guard's own `--self-test` legs O–S. Seat proofs:
+  `features/organizations/__tests__/the-fourth-state-is-not-the-refusal.test.tsx`
+  (the press retries, and never on a guess),
+  `features/tasks/components/__tests__/the-import-control-waits-for-the-organization.test.tsx`
+  (the fourth state, pressed) and
+  `features/connectors/__tests__/the-integrations-page-says-the-read-failed.test.tsx`
+  (the page that said nothing now says it, and its Try again dispatches the
+  re-run). **Still owed:** the five legacy-boolean readers
+  (`ModelContextPanel`, `EncoreRunPage`, `useWaitingRuns`, `useAgenda`,
+  `EduNoteNew`) keep the CHECKING posture under a failed read, so they show a
+  skeleton with no remedy — honest, but with no way out; they are the
+  legacy-pair debt and were not converted here.
 
 - `2026-09-18` — **F-107: THE FIXTURE LAW — a test never hand-spells a whole
   `AppContextState`, and a `WorkspaceResolution` is never built by hand.** When

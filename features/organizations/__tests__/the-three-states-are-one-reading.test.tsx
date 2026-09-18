@@ -149,7 +149,11 @@ describe("the three organization states are one reading", () => {
     expect(gate.organizationState).toBe("unavailable");
     expect(gate.organizationRequired).toBe(false);
     const control = readHook(() => useOrganizationGatedControl("importing Google Tasks"));
-    expect(control.disabled).toBe(true);
+    // THE REMEDY IS THE PRESS (V-24 NEW-3): the fourth state's control is the
+    // only one of the four that stays pressable, because its sentence ends
+    // "Press to try again." and this press is what tries again.
+    expect(control.disabled).toBe(false);
+    expect(control.title).toMatch(/Press to try again/);
     expect(control.title).not.toMatch(/Select an organization/);
     store.orgBootstrapFailure = null;
   });

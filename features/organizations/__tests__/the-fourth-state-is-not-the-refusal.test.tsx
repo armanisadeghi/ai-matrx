@@ -196,16 +196,66 @@ describe("a failed organization read is unavailable, never required", () => {
     );
   });
 
-  it("the control stays in the checking posture — never 'Select an organization'", async () => {
+  it("the control never spells the refusal — and its own press IS the remedy", async () => {
     resolveActiveOrgContext.mockRejectedValue(new TypeError("Failed to fetch"));
     current = await boot();
 
     const control = readHook(() =>
       useOrganizationGatedControl("importing Google Tasks"),
     );
-    expect(control.disabled).toBe(true);
     expect(control.title).toBe(ORGANIZATION_UNAVAILABLE_TITLE_CONTROL);
     expect(control.title).not.toMatch(/Select an organization/);
+    // V-24 NEW-3: the sentence used to end "Try again." on a control that could
+    // not be pressed, with no organization Try again anywhere on the page. It
+    // now names THIS button.
+    expect(control.title).toMatch(/Press to try again/);
+    expect(control.disabled).toBe(false);
+
+    // And the press re-runs the READ, never the act.
+    const act = jest.fn();
+    retryActiveOrgBootstrap.mockClear();
+    readHook(() => useOrganizationGatedControl("importing Google Tasks")).press(act)();
+    expect(act).not.toHaveBeenCalled();
+    expect(retryActiveOrgBootstrap).toHaveBeenCalledTimes(1);
+  });
+
+  it("the press runs the ACT once the read answers, and never on a guess", async () => {
+    resolveActiveOrgContext.mockResolvedValue({
+      organization_id: "org-7",
+      organization_name: "Titanium Success",
+      personal_organization_id: "personal-1",
+      unreadableReason: null,
+    });
+    current = await boot();
+
+    const act = jest.fn();
+    retryActiveOrgBootstrap.mockClear();
+    const ready = readHook(() =>
+      useOrganizationGatedControl("importing Google Tasks"),
+    );
+    expect(ready.disabled).toBe(false);
+    ready.press(act)();
+    expect(act).toHaveBeenCalledWith("org-7");
+    expect(retryActiveOrgBootstrap).not.toHaveBeenCalled();
+
+    // Settled with nothing: the press does neither. A control that cannot act
+    // never acts on a guess, and there is nothing to retry — the read answered.
+    resolveActiveOrgContext.mockResolvedValue({
+      organization_id: null,
+      organization_name: null,
+      personal_organization_id: "personal-1",
+      unreadableReason: null,
+    });
+    current = await boot();
+    const refused = readHook(() =>
+      useOrganizationGatedControl("importing Google Tasks"),
+    );
+    expect(refused.organizationState).toBe("required");
+    expect(refused.disabled).toBe(true);
+    act.mockClear();
+    refused.press(act)();
+    expect(act).not.toHaveBeenCalled();
+    expect(retryActiveOrgBootstrap).not.toHaveBeenCalled();
   });
 
   it("the shared notice says we could not check, and offers Retry", async () => {

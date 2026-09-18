@@ -70,6 +70,24 @@
  * the fix. A module that only tests `!== "ready"` enumerates nothing and is
  * untouched by this rule, because non-ready already covers the fourth state.
  *
+ * THE THIRD RULE — THE POSTURE CARRIES ITS REMEDY (V-24 NEW-3, 2026-09-18)
+ * -----------------------------------------------------------------------
+ * The fourth state's control sentence ends "Press to try again." It used to end
+ * "Try again." on a control that could not be pressed, and on `/tasks` there
+ * was no organization Try again ANYWHERE on the page: the only one on screen
+ * belonged to the task list, and pressing it left the import control saying
+ * "Try again." for the whole 20s that was then sampled. A sentence that names a
+ * remedy the screen does not offer is law 4 in a smaller frame.
+ *
+ * So: a module that can RENDER the fourth state's control posture — it calls
+ * `useOrganizationGatedControl`, names `ORGANIZATION_UNAVAILABLE_TITLE_CONTROL`,
+ * or spells that sentence — must also WIRE the remedy: `gate.press(...)` (the
+ * gate's own onClick, which re-runs the read in `unavailable`), a `retry()`
+ * call, or an `onRetry` it hands down. Reading `disabled` and `title` beside a
+ * hand-written `onClick` is exactly the defect and is refused by name. Neither
+ * the census nor rule 2's shape forgives this one; a genuine exception is the
+ * allowlist, with a reason.
+ *
  * Run:  pnpm check:org-three-states
  *       pnpm check:org-three-states --self-test   (proves it can FAIL)
  * Exit 1 on any unallowlisted violation; exit 2 on unexpected errors.
@@ -123,6 +141,29 @@ const SPELLS_A_REFUSAL: readonly RegExp[] = [
   /\bno organization is selected\b/i,
   /\bwithout an organization\b/i,
   /\bOrganizationRequiredNotice\b/,
+];
+
+/**
+ * RULE 3 — the module can put the FOURTH STATE'S CONTROL POSTURE on screen.
+ * Any one of these and it owns the sentence's remedy too.
+ */
+const RENDERS_THE_FOURTH_STATE_CONTROL: readonly RegExp[] = [
+  /\buseOrganizationGatedControl\s*\(/,
+  /\bORGANIZATION_UNAVAILABLE_TITLE_CONTROL\b/,
+  /We could not check which organization you are working in/,
+];
+
+/**
+ * …and any one of THESE is the remedy actually wired to a press. `press(` is
+ * the gate's own handler; `retry(` is the same re-run called by hand; `onRetry`
+ * is it handed to a child that presses it.
+ */
+const WIRES_THE_REMEDY: readonly RegExp[] = [
+  /\.press\s*\(/,
+  /(^|[^.\w$])press\s*\(/m,
+  /\.retry\s*\(/,
+  /(^|[^.\w$])retry\s*\(/m,
+  /\bonRetry\b/,
 ];
 
 /** Any one of these means the module can tell the three states apart. */
@@ -240,6 +281,18 @@ export function enumeratesStates(rawSource: string): boolean {
   return /["']resolving["']/.test(source) && /["']required["']/.test(source);
 }
 
+/** Can this module put the fourth state's CONTROL posture on screen? */
+export function rendersTheFourthStateControl(rawSource: string): boolean {
+  const source = stripComments(rawSource);
+  return RENDERS_THE_FOURTH_STATE_CONTROL.some((pattern) => pattern.test(source));
+}
+
+/** Does it wire a press that actually re-runs the organization read? */
+export function wiresTheRemedy(rawSource: string): boolean {
+  const source = stripComments(rawSource);
+  return WIRES_THE_REMEDY.some((pattern) => pattern.test(source));
+}
+
 /** Does it name the FOURTH state? */
 export function handlesUnavailable(rawSource: string): boolean {
   return /["']unavailable["']/.test(stripComments(rawSource));
@@ -279,6 +332,22 @@ export function scan(
             '"unavailable" — a read that FAILED is collapsed into the refusal, so this ' +
             "surface tells a person to select an organization nobody ever looked for. " +
             "Handle the fourth state (R37).",
+        });
+        continue;
+      }
+      // RULE 3: the posture carries its remedy. A module that can render the
+      // fourth state's control sentence — which ends "Press to try again." —
+      // and wires no press that tries again is the sentence naming a button
+      // that is not there (V-24 NEW-3). Never census debt: the sentence itself
+      // is new, so there is no pre-existing population.
+      if (rendersTheFourthStateControl(raw) && !wiresTheRemedy(raw)) {
+        violations.push({
+          file: rel,
+          why:
+            "can render the fourth state's control posture (\"We could not check which " +
+            'organization you are working in. Press to try again.") but wires no press that ' +
+            "re-runs the read — the sentence names a remedy this screen does not offer. " +
+            "Render the gate's own handler: onClick={gate.press((organizationId) => …)}.",
         });
         continue;
       }
@@ -458,6 +527,50 @@ export function Planted() {
   check("L. planted collapsed module flagged   ", collapsedFlagged, true);
   check("M. exhaustive module cleared          ", exhaustiveFlagged, false);
   check("N. the census does not forgive rule 2 ", collapsedForgiven, false);
+
+  // RULE 3 — the posture carries its remedy. A control that reads `disabled`
+  // and `title` from the gate and writes its own onClick renders "Press to try
+  // again." beside nothing that tries again (V-24 NEW-3).
+  const noRemedy = `"use client";
+import { useOrganizationGatedControl } from "@/features/organizations/useOrganizationGatedControl";
+export function Planted() {
+  const gate = useOrganizationGatedControl("importing Google Tasks");
+  return <button disabled={gate.disabled} title={gate.title} onClick={() => open(gate.organizationId)} />;
+}
+`;
+  const withRemedy = noRemedy.replace(
+    "onClick={() => open(gate.organizationId)}",
+    "onClick={gate.press((organizationId) => open(organizationId))}",
+  );
+  check("O. a posture with no remedy is seen    ", rendersTheFourthStateControl(noRemedy) && !wiresTheRemedy(noRemedy), true);
+  check("P. the wired press is cleared          ", wiresTheRemedy(withRemedy), true);
+
+  let noRemedyFlagged = false;
+  let withRemedyFlagged = true;
+  let noRemedyForgiven = true;
+  try {
+    writeFileSync(PLANTED, noRemedy, "utf8");
+    noRemedyFlagged = scan({ useCensus: false }).some(
+      (v) => v.file.includes("__self_test_planted__") && v.why.includes("no press"),
+    );
+    // The census is the two-state population; it must not forgive rule 3.
+    noRemedyForgiven = !scan({
+      census: new Set([relative(ROOT, PLANTED)]),
+    }).some((v) => v.file.includes("__self_test_planted__"));
+    writeFileSync(PLANTED, withRemedy, "utf8");
+    withRemedyFlagged = scan({ useCensus: false }).some((v) =>
+      v.file.includes("__self_test_planted__"),
+    );
+  } finally {
+    try {
+      unlinkSync(PLANTED);
+    } catch {
+      /* already gone */
+    }
+  }
+  check("Q. planted remedy-less control flagged ", noRemedyFlagged, true);
+  check("R. the wired control is cleared        ", withRemedyFlagged, false);
+  check("S. the census does not forgive rule 3  ", noRemedyForgiven, false);
 
   if (failed > 0) {
     console.error(`SELF-TEST FAILED: ${failed} expectation(s) did not hold.`);
