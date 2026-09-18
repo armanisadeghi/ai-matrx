@@ -111,6 +111,25 @@ export interface AppContextState {
    * org has had a chance to resolve. Set only by bootstrapActiveOrganization.
    */
   orgBootstrapResolved: boolean;
+
+  /**
+   * 🚨 THE FOURTH STATE (R37, 2026-09-18). Why the organization question has no
+   * answer, when it has none — a short technical reason, or null.
+   *
+   * `orgBootstrapResolved: true` with no organization used to mean exactly one
+   * thing to every screen: "you belong to nothing, pick one". It was also what
+   * an ABORTED fetch, a page that never went idle, a thrown membership read and
+   * a degraded `current_personal_org_id()` all landed on — so a person who is a
+   * member of thirteen organizations was told, for 24 seconds, to select one
+   * (V-23 NEW-2, seat-proven 2026-09-18). A read that FAILED is not an answer.
+   *
+   * Non-null here means: the platform could not READ the memberships. The UI
+   * says so in plain words and offers Retry; it NEVER says "select an
+   * organization", because nobody has looked. Set only by the boot paths
+   * (`appContextPolicy.remote.fetch`, `bootstrapActiveOrganization`); cleared
+   * by any answer, including a selection.
+   */
+  orgBootstrapFailure: string | null;
 }
 
 const initialState: AppContextState = {
@@ -125,6 +144,7 @@ const initialState: AppContextState = {
   task_name: null,
   conversation_id: null,
   orgBootstrapResolved: false,
+  orgBootstrapFailure: null,
 };
 
 const appContextSlice = createSlice({
@@ -144,6 +164,8 @@ const appContextSlice = createSlice({
       state.task_id = null;
       state.task_name = null;
       state.conversation_id = null;
+      // A selection IS an answer — the read that failed no longer matters.
+      state.orgBootstrapFailure = null;
     },
     /**
      * FIRST organization choice, made to unblock an action already in flight.
@@ -257,6 +279,18 @@ const appContextSlice = createSlice({
       state.orgBootstrapResolved = action.payload;
     },
     /**
+     * Record (or clear) WHY the organization question has no answer. A non-null
+     * reason is the fourth state: the read failed, so the screen says we could
+     * not check and offers Retry — never the refusal. It also settles the
+     * bootstrap, because a failed read is a finished attempt: leaving
+     * `orgBootstrapResolved` false would hold every surface on a skeleton that
+     * never ends, which is the same lie from the other side.
+     */
+    setOrgBootstrapFailure: (state, action: PayloadAction<string | null>) => {
+      state.orgBootstrapFailure = action.payload;
+      if (action.payload != null) state.orgBootstrapResolved = true;
+    },
+    /**
      * Set multiple context fields at once without cascading resets.
      * Use this when restoring a full saved context (e.g. page reload,
      * deep-link navigation) where all values are already known.
@@ -314,6 +348,13 @@ const appContextSlice = createSlice({
       // no explicit org (multiple memberships and no default).
       state.orgBootstrapResolved =
         loaded.orgBootstrapResolved === true || loaded.organization_id != null;
+      // THE FOURTH STATE rides the same rehydrate. A remote result always
+      // carries it (null on success), so a later success clears an earlier
+      // failure; a local cache record never does, and leaves it alone.
+      if (loaded.orgBootstrapFailure !== undefined) {
+        state.orgBootstrapFailure =
+          loaded.organization_id != null ? null : loaded.orgBootstrapFailure;
+      }
       if (loaded.personal_organization_id !== undefined) {
         state.personal_organization_id = loaded.personal_organization_id;
       }
@@ -343,6 +384,7 @@ export const {
   setTask,
   setConversation,
   setOrgBootstrapResolved,
+  setOrgBootstrapFailure,
   setFullContext,
   clearContext,
 } = appContextSlice.actions;
@@ -388,7 +430,21 @@ export const selectShouldPromptForOrganization = (
   state: StateWithAppContext,
 ): boolean =>
   state.appContext.orgBootstrapResolved &&
-  state.appContext.organization_id == null;
+  state.appContext.organization_id == null &&
+  // 🚨 A FAILED READ IS NEVER THE NUDGE (R37). "Select an organization" is a
+  // statement about the person's memberships, and it may only be made once we
+  // have READ them. When the read failed we know nothing about them, so the
+  // red ring, the header reminder and every surface derived from this selector
+  // stay quiet and the fourth state speaks instead.
+  state.appContext.orgBootstrapFailure == null;
+
+/**
+ * Why the organization question has no answer, or null when it has one (or is
+ * still being asked). Non-null = the fourth state: `unavailable`.
+ */
+export const selectOrgBootstrapFailure = (
+  state: StateWithAppContext,
+): string | null => state.appContext.orgBootstrapFailure;
 
 export const selectScopeSelectionsContext = (
   state: StateWithAppContext,
@@ -515,6 +571,12 @@ export const appContextPolicy = definePolicy<AppContextState>({
       organization_name,
       personal_organization_id: str(r.personal_organization_id),
       orgBootstrapResolved: r.orgBootstrapResolved === true,
+      // The fourth state rides the remote result through `deserialize` (the
+      // engine runs it over BOTH the cached record and the fetch body). A
+      // cached record never carries it; a remote result always does, null
+      // included, so a success clears the previous failure.
+      orgBootstrapFailure:
+        typeof r.orgBootstrapFailure === "string" ? r.orgBootstrapFailure : null,
     };
   },
   staleAfter: 5 * 60_000, // reconcile against default-pref / membership after 5 min idle
@@ -531,10 +593,23 @@ export const appContextPolicy = definePolicy<AppContextState>({
         markOrgBootstrapResolved();
         return value;
       };
+      // 🚨 AND A FAILED READ ANSWERS A DIFFERENT QUESTION (R37, 2026-09-18).
+      // Every exit below answers, but three of them answer "nobody is
+      // selected" when the truth is "we could not look": the fetch aborted,
+      // the page never went idle, or the membership read threw. A person in
+      // thirteen organizations was told to pick one for 24 seconds because a
+      // `TypeError: Failed to fetch` landed in the same terminal state as a
+      // genuine empty answer. A read that FAILED is the fourth state.
+      const unreadable = (reason: string): Partial<AppContextState> =>
+        answered({
+          orgBootstrapResolved: true,
+          orgBootstrapFailure: reason,
+        } satisfies Partial<AppContextState>);
       if (identity.type !== "auth") {
         // Guests have no server org, and never will — that IS the answer.
         return answered({
           orgBootstrapResolved: true,
+          orgBootstrapFailure: null,
         } satisfies Partial<AppContextState>);
       }
       // Cold reconciliation is useful but not render-critical. Let the page
@@ -542,23 +617,47 @@ export const appContextPolicy = definePolicy<AppContextState>({
       // default-org preference. Stale/manual refreshes pass through instantly
       // once the session's one-time idle gate has completed.
       const { whenPageIdle } = await import("@ai-matrx/kit/idle-scheduler");
+      // `whenPageIdle` answers false only when the signal aborted — we never
+      // asked, so we know nothing about this person's memberships.
       if (!(await whenPageIdle(signal))) {
-        return answered({
-          orgBootstrapResolved: true,
-        } satisfies Partial<AppContextState>);
+        return unreadable("the organization read was cancelled before it ran");
       }
       const { resolveActiveOrgContext } = await import(
         "@/lib/organizations/resolveActiveOrgContext"
       );
-      const resolved = await resolveActiveOrgContext(identity.userId);
-      if (signal.aborted || !resolved) {
+      let resolved: Awaited<ReturnType<typeof resolveActiveOrgContext>>;
+      try {
+        resolved = await resolveActiveOrgContext(identity.userId);
+      } catch (error) {
+        // The membership read threw — `getUserOrganizations` fails closed, and
+        // this is the `TypeError: Failed to fetch` path from the seat.
+        return unreadable(
+          error instanceof Error
+            ? `the organization read failed: ${error.message}`
+            : "the organization read failed",
+        );
+      }
+      if (signal.aborted) {
+        return unreadable("the organization read was cancelled before it ran");
+      }
+      if (!resolved) {
+        // A genuine empty answer: no memberships, and no personal org either.
         return answered({
           orgBootstrapResolved: true,
+          orgBootstrapFailure: null,
         } satisfies Partial<AppContextState>);
       }
+      const { unreadableReason, ...context } = resolved;
+      // A DEGRADED resolve is unreadable too: the resolver reached its last
+      // rung only because `current_personal_org_id()` failed, so "none of your
+      // thirteen organizations is selected" is a guess, not a reading.
+      if (unreadableReason && context.organization_id == null) {
+        return unreadable(unreadableReason);
+      }
       return answered({
-        ...resolved,
+        ...context,
         orgBootstrapResolved: true,
+        orgBootstrapFailure: null,
       } satisfies Partial<AppContextState>);
     },
     // A cached appContext record with NO org in it is not an answer — it is

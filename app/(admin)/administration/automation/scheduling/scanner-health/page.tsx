@@ -43,11 +43,14 @@ import {
   definedOnly,
   useAdminSchedulingScopeSlice,
 } from "@/features/scheduling/lib/admin-scheduling-scope";
-import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import {
+  OrganizationContextNotice,
+  OrganizationRequiredNotice,
+} from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 
 export default function ScannerHealthPage() {
-  const { organizationId, canLoad, organizationRequired } =
+  const { organizationId, canLoad, organizationRequired, organizationState } =
     useOrganizationRequired();
   const [status, setStatus] = useState<ScannerStatusResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -215,6 +218,16 @@ export default function ScannerHealthPage() {
   // A settled no-organization state is not a scanner outage. Keep the
   // terminal picker-backed remedy honest instead of rendering the transport's
   // developer-facing refusal as "Scanner unreachable".
+  // And a read that FAILED is not a settled no-organization state either
+  // (R37): say we could not check, with Retry — never "select an organization"
+  // about memberships nobody managed to read.
+  if (organizationState === "unavailable") {
+    return (
+      <div className="h-full overflow-y-auto px-4 py-4 sm:px-6">
+        <OrganizationContextNotice state="unavailable" what="Scanner health" />
+      </div>
+    );
+  }
   if (organizationRequired) {
     return (
       <div className="h-full overflow-y-auto px-4 py-4 sm:px-6">

@@ -49,6 +49,18 @@ export interface ResolvedOrgContext {
   organization_id: string | null;
   organization_name: string | null;
   personal_organization_id: string | null;
+  /**
+   * 🚨 WHY A NULL SELECTION MAY NOT BE AN ANSWER (R37, 2026-09-18).
+   *
+   * Rung b — the user's own personal org — needs `current_personal_org_id()`.
+   * When that RPC fails the rung is skipped silently, and a person with
+   * thirteen memberships, no cookie and no stated default falls all the way to
+   * rung d and comes back with `organization_id: null`. The caller then said
+   * "Select an organization" for 24 seconds about a question nobody managed to
+   * ask. Non-null here means the rungs were DEGRADED: treat a null selection as
+   * unreadable, not as a refusal. Null means the rungs ran on real answers.
+   */
+  unreadableReason?: string | null;
 }
 
 /**
@@ -87,9 +99,13 @@ export async function resolveActiveOrgContext(
   // Authoritative personal org id (auto-provisioned at signup). Falls back to
   // the org-list heuristic only if the RPC is unavailable.
   let personalOrgId: string | null = null;
+  let unreadableReason: string | null = null;
   try {
     personalOrgId = await resolvePersonalOrgId();
   } catch (e) {
+    unreadableReason =
+      "the personal-organization read failed" +
+      (e instanceof Error && e.message ? `: ${e.message}` : "");
     console.warn(
       "[resolveActiveOrgContext] current_personal_org_id() failed; falling back to org-list heuristic",
       e,
@@ -100,12 +116,24 @@ export async function resolveActiveOrgContext(
 
   // No memberships at all — still surface the personal org if we have one.
   if (!orgs || orgs.length === 0) {
-    if (!personalOrgId) return null;
+    if (!personalOrgId) {
+      // No memberships AND no personal org. That is a real answer only when
+      // the personal-org read actually ran; otherwise we simply could not look.
+      return unreadableReason
+        ? {
+            organization_id: null,
+            organization_name: null,
+            personal_organization_id: null,
+            unreadableReason,
+          }
+        : null;
+    }
     primePersonalOrgId(personalOrgId);
     return {
       organization_id: null,
       organization_name: null,
       personal_organization_id: personalOrgId,
+      unreadableReason: null,
     };
   }
 
@@ -188,5 +216,7 @@ export async function resolveActiveOrgContext(
     organization_id: null,
     organization_name: null,
     personal_organization_id: resolvedPersonalId,
+    // …UNLESS rung b never ran. Then this is not "unresolved", it is unread.
+    unreadableReason,
   };
 }
