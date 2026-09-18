@@ -3457,6 +3457,64 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/coding-sessions/codex/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Codex Managed Capabilities
+         * @description Can THIS box run a Codex turn — CLI, broker audience, mint, and all.
+         *
+         *     The same door shape as `/claude/capabilities`, and for the same reason:
+         *     a screen must be able to learn the answer with a reason instead of
+         *     discovering it from a launch that fails.
+         */
+        get: operations["codex_managed_capabilities_coding_sessions_codex_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coding-sessions/codex/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Codex Managed Stream */
+        post: operations["codex_managed_stream_coding_sessions_codex_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/coding-sessions/codex/runtimes/{runtime_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Codex Managed Runtime */
+        post: operations["cancel_codex_managed_runtime_coding_sessions_codex_runtimes__runtime_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/skills": {
         parameters: {
             query?: never;
@@ -3700,6 +3758,31 @@ export interface paths {
         put?: never;
         /** Anthropic Count Tokens */
         post: operations["anthropic_count_tokens_broker_gateway_anthropic_v1_messages_count_tokens_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/broker/gateway/openai_codex/v1/responses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Openai Codex Responses
+         * @description The Codex CLI's data plane — `{base_url}/responses`, SSE, scoped-token auth.
+         *
+         *     The path is NOT cosmetic: `codex exec` derives it from the `base_url` of
+         *     its `model_providers.<id>` entry, so the credential's `endpoint` minus
+         *     `/responses` is exactly what the runtime configures. Scoped token only —
+         *     no `context_dep` here, by the gateway contract.
+         */
+        post: operations["openai_codex_responses_broker_gateway_openai_codex_v1_responses_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -54426,6 +54509,79 @@ export interface components {
             indicator: "critical" | "major" | "minor" | "none";
             /** Operational */
             operational: boolean;
+        };
+        /**
+         * CodexManagedAction
+         * @enum {string}
+         */
+        CodexManagedAction: "resume" | "start";
+        /** CodexManagedCancelResponse */
+        CodexManagedCancelResponse: {
+            /** Runtime Id */
+            runtime_id: string;
+            /** Cancelled */
+            cancelled: boolean;
+        };
+        /** CodexManagedCapabilitiesResponse */
+        CodexManagedCapabilitiesResponse: {
+            /** Available */
+            available: boolean;
+            /** Native Resume */
+            native_resume: boolean;
+            /** Native Fork */
+            native_fork: boolean;
+            /** Cli Version */
+            cli_version?: string | null;
+            /** Reason */
+            reason?: string | null;
+        };
+        /**
+         * CodexManagedRestRequest
+         * @description HTTP carrier that accepts, but never trusts, frontend-injected scope.
+         */
+        CodexManagedRestRequest: {
+            /** @default start */
+            action?: components["schemas"]["CodexManagedAction"];
+            conversation: components["schemas"]["BridgeConversation"];
+            /** Prompt */
+            prompt: string;
+            /**
+             * Workspace Root
+             * @default /home/agent
+             */
+            workspace_root?: string;
+            /** Thread Id */
+            thread_id?: string | null;
+            /** Model */
+            model?: string | null;
+            /**
+             * Sandbox Mode
+             * @default read-only
+             * @enum {string}
+             */
+            sandbox_mode?: "read-only" | "workspace-write";
+            /**
+             * Turn Timeout Seconds
+             * @default 1800
+             */
+            turn_timeout_seconds?: number;
+            /** Max Budget Usd */
+            max_budget_usd?: number | null;
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
         };
         /**
          * CodingReplyResponder
@@ -128021,6 +128177,90 @@ export interface operations {
             };
         };
     };
+    codex_managed_capabilities_coding_sessions_codex_capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodexManagedCapabilitiesResponse"];
+                };
+            };
+        };
+    };
+    codex_managed_stream_coding_sessions_codex_stream_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CodexManagedRestRequest"];
+            };
+        };
+        responses: {
+            /** @description Codex exec JSONL event stream */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/x-ndjson": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_codex_managed_runtime_coding_sessions_codex_runtimes__runtime_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                runtime_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CodexManagedCancelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_skills_skills_get: {
         parameters: {
             query?: {
@@ -128594,6 +128834,24 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AnthropicCountTokensResponse"];
                 };
+            };
+        };
+    };
+    openai_codex_responses_broker_gateway_openai_codex_v1_responses_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

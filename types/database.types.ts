@@ -55702,6 +55702,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          expected_chunk_count: number | null
           finding_counts: Json
           finished_at: string | null
           id: string
@@ -55711,6 +55712,7 @@ export type Database = {
           organization_id: string
           package_name: string | null
           package_path: string
+          received_chunks: number[]
           repo_slug: string
           revision: string
           revision_kind: string
@@ -55727,6 +55729,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          expected_chunk_count?: number | null
           finding_counts?: Json
           finished_at?: string | null
           id?: string
@@ -55736,6 +55739,7 @@ export type Database = {
           organization_id: string
           package_name?: string | null
           package_path: string
+          received_chunks?: number[]
           repo_slug: string
           revision: string
           revision_kind: string
@@ -55752,6 +55756,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          expected_chunk_count?: number | null
           finding_counts?: Json
           finished_at?: string | null
           id?: string
@@ -55761,6 +55766,7 @@ export type Database = {
           organization_id?: string
           package_name?: string | null
           package_path?: string
+          received_chunks?: number[]
           repo_slug?: string
           revision?: string
           revision_kind?: string
