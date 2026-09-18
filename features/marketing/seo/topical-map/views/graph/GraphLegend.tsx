@@ -23,6 +23,8 @@
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Compass, Route } from "lucide-react";
 
+import { formatCount } from "@ai-matrx/kit/format";
+
 import { cn } from "@/lib/utils";
 
 import type { MapIntentColors } from "../../knobs";
@@ -177,12 +179,12 @@ export function GraphLegend({
               {progress.complete ? (
                 <p className="mt-2 text-muted-foreground">
                   Coloured from all{" "}
-                  {(progress.total ?? progress.loaded).toLocaleString()} pages on this map.
+                  {formatCount(progress.total ?? progress.loaded)} pages on this map.
                 </p>
               ) : (
                 <p className="mt-2 text-foreground" role="status" aria-live="polite">
-                  Colouring {progress.loaded.toLocaleString()} of{" "}
-                  {progress.total === null ? "…" : progress.total.toLocaleString()} pages…
+                  Colouring {formatCount(progress.loaded)} of{" "}
+                  {formatCount(progress.total, { unknown: "…" })} pages…
                   {progress.loaded === 0
                     ? " No topic is coloured by intent yet."
                     : " Topics whose pages are still being counted keep their structural colour."}
