@@ -79,9 +79,15 @@ const ALLOW: Array<{ match: RegExp; reason: string }> = [
     reason: "time ranges are a closed set by nature",
   },
   {
-    match: /SiteSwitcher|BrandSwitcher|OrgSwitcher/i,
+    // Narrowed 2026-09-18. This entry used to cover SiteSwitcher and
+    // BrandSwitcher with the reason "inline creation lives on that record's
+    // own surface" — the door-is-the-fix sentence the law forbids. Sites and
+    // brands are user-authored, so their switchers are BOUND (a create row,
+    // as Linear's switchers carry). Organizations alone stay out, by Arman's
+    // ruling that day, not by this reasoning.
+    match: /OrgSwitcher/i,
     reason:
-      "picks an existing record created elsewhere; inline creation lives on that record's own surface",
+      "organizations: Arman 2026-09-18 — no quick inline add; the org's own create form is the path (policy § The exceptions)",
   },
   {
     match: /sortDir|SortDirection/i,
@@ -256,6 +262,41 @@ function scan(): Finding[] {
 
 const findings = scan();
 
+/**
+ * THE BASELINE ONLY SHRINKS. `scripts/picker-add-baseline.json` is the list of
+ * files that screamed on 2026-09-18. A file that screams and is NOT in it is
+ * NEW debt: it is named separately, first, and fails the run in every mode
+ * (advisory included) — a law that lets new violations in while the old ones
+ * are being fixed is how P23 rotted between 2026-08-23 and 2026-09-18. A
+ * baseline file that no longer screams is announced so the entry is deleted.
+ * Never add a line to the baseline to make a run pass; fix the picker.
+ */
+const BASELINE_PATH = join(ROOT, "scripts/picker-add-baseline.json");
+let baseline: string[] = [];
+try {
+  baseline = JSON.parse(readFileSync(BASELINE_PATH, "utf8")).files ?? [];
+} catch {
+  baseline = [];
+}
+const baselineSet = new Set(baseline);
+const flagged = new Set(findings.map((f) => f.file));
+const newDebt = findings.filter((f) => !baselineSet.has(f.file));
+const cleared = baseline.filter((f) => !flagged.has(f));
+if (cleared.length > 0) {
+  console.log("");
+  console.log(
+    `  ✓ ${cleared.length} baseline file(s) no longer scream — DELETE them from scripts/picker-add-baseline.json:`,
+  );
+  for (const f of cleared) console.log(`    - ${f}`);
+}
+if (newDebt.length > 0) {
+  console.log("");
+  console.log(
+    `  ✗ NEW since the 2026-09-18 baseline — ${newDebt.length} file(s). These FAIL the run:`,
+  );
+  for (const f of newDebt) console.log(`    ✗ ${f.file}  (${f.items})`);
+}
+
 if (findings.length === 0) {
   console.log(
     "✓ check:picker-add — every data-driven picker in the scanned surfaces offers a way to add a new option (P23).",
@@ -304,4 +345,4 @@ console.log(
 );
 console.log("");
 
-exitAfterDrain(STRICT ? 1 : 0);
+exitAfterDrain(STRICT || newDebt.length > 0 ? 1 : 0);
