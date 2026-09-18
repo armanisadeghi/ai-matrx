@@ -1,0 +1,13 @@
+import { chromium } from 'playwright';
+const [,, storageStatePath, exportUrl] = process.argv;
+const browser = await chromium.launch({ headless: true });
+const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: storageStatePath });
+const page = await context.newPage();
+await page.goto(exportUrl, { waitUntil: 'load', timeout: 30000 });
+await page.waitForTimeout(3000);
+console.log('frames:', page.frames().length);
+const el = await page.locator('text=Search items...').count();
+console.log('text=Search items... count:', el);
+const el2 = await page.getByText('Search items...').count();
+console.log('getByText count:', el2);
+await browser.close();

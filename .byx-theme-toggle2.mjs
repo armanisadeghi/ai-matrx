@@ -1,0 +1,14 @@
+import { chromium } from 'playwright';
+const [,, storageStatePath] = process.argv;
+const browser = await chromium.launch({ headless: true });
+const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: storageStatePath });
+const page = await context.newPage();
+await page.goto('http://acquisition-frontier.localhost:3001/exports', { waitUntil: 'load', timeout: 30000 });
+await page.waitForTimeout(2000);
+await page.mouse.click(1417, 21);
+await page.waitForTimeout(800);
+await page.getByText('Dark Mode', { exact: true }).click();
+await page.waitForTimeout(1500);
+await context.storageState({ path: storageStatePath });
+console.log('theme toggled, saved storage state');
+await browser.close();

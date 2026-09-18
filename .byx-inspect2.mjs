@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const [,, storageStatePath, exportUrl] = process.argv;
+const browser = await chromium.launch({ headless: true });
+const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: storageStatePath });
+const page = await context.newPage();
+await page.goto(exportUrl, { waitUntil: 'load', timeout: 30000 });
+await page.waitForTimeout(3000);
+const all = await page.locator('input, textarea, [role="textbox"], [role="searchbox"]').evaluateAll(els => els.map(e => ({tag: e.tagName, type: e.type||'', placeholder: e.getAttribute('placeholder'), role: e.getAttribute('role')})));
+console.log('total matches:', all.length);
+console.log(JSON.stringify(all.filter(e => e.type !== 'checkbox'), null, 2));
+await browser.close();

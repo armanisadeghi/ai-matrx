@@ -1,0 +1,11 @@
+import { chromium } from 'playwright';
+const [,, storageStatePath] = process.argv;
+const browser = await chromium.launch({ headless: true });
+const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: storageStatePath });
+const page = await context.newPage();
+await page.goto('http://acquisition-frontier.localhost:3001/masterwork', { waitUntil: 'load', timeout: 30000 });
+await page.waitForTimeout(3000);
+console.log('URL:', page.url());
+const links = await page.locator('a').evaluateAll(els => els.map(e => e.getAttribute('href')).filter(h => h && h.includes('masterwork')));
+console.log(JSON.stringify([...new Set(links)], null, 2));
+await browser.close();

@@ -1,0 +1,12 @@
+import { chromium } from 'playwright';
+const [,, storageStatePath, url, outPath, waitMs] = process.argv;
+const browser = await chromium.launch({ headless: true });
+const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: storageStatePath });
+const page = await context.newPage();
+await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+await page.waitForTimeout(parseInt(waitMs || '3000'));
+await page.screenshot({ path: outPath, fullPage: true });
+const bodyText = await page.locator('body').innerText();
+console.log(bodyText.slice(0, 4000));
+await browser.close();
+console.log('DONE');

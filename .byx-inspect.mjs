@@ -1,0 +1,10 @@
+import { chromium } from 'playwright';
+const [,, storageStatePath, exportUrl] = process.argv;
+const browser = await chromium.launch({ headless: true });
+const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, storageState: storageStatePath });
+const page = await context.newPage();
+await page.goto(exportUrl, { waitUntil: 'load', timeout: 30000 });
+await page.waitForTimeout(3000);
+const inputs = await page.locator('input').evaluateAll(els => els.map(e => ({tag: e.tagName, placeholder: e.placeholder, type: e.type, cls: e.className.slice(0,60)})));
+console.log(JSON.stringify(inputs, null, 2));
+await browser.close();
