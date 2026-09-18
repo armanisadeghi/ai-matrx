@@ -211,7 +211,7 @@ export const marketingTopicalMapManifest: SurfaceManifest = {
   label: "Topical Map",
   readiness: "partial",
   readinessNote:
-    "The workspace body mounts the SurfaceRuntimeProvider and emits this scope from the live store (2026-09-18): map_id, map_screen, site_id, topic_total, selected_topic_slug, expanded_topic_slugs, visible_topics, and page_intents on the pages screen. The rest fill in as the view builders land — map_outline, map_diagnostics and map_history are read by their screens but not emitted yet, and page_intent_total is deliberately absent because the slice holds the rows this workspace LISTED, not the server's matched total. NO agentRoles: a mandate is declared here only by the lane that ships the control running it (seo.map_author, seo.page_mapper, seo.page_intent_proposer, seo.topic_curation, seo.map_curation), never ahead of its control.",
+    "The workspace body mounts the SurfaceRuntimeProvider and emits this scope from the live store (2026-09-18): map_id, map_screen, site_id, topic_total, selected_topic_slug, expanded_topic_slugs, visible_topics, and page_intents on the pages screen. The rest fill in as the view builders land — map_outline, map_diagnostics and map_history are read by their screens but not emitted yet, and page_intent_total is deliberately absent because the slice holds the rows this workspace LISTED, not the server's matched total. agentRoles carries seo.page_mapper and seo.page_intent_proposer, declared with the pages workspace's run controls that launch them; a mandate is declared here only by the lane that ships the control running it (seo.map_author, seo.topic_curation, seo.map_curation are still to come), never ahead of its control.",
   urlPattern: "/marketing/[brandId]/content/map/[mapId]",
   intro: `<surface_intro>
 You are in a brand's TOPICAL MAP: the tree of subjects this brand should cover, and the plan for getting its website there. The map decides WHICH pages should exist and WHERE they live; the content plan, a separate surface, decides what one page says.
@@ -224,6 +224,43 @@ Every change goes through the topical_map tool, never by writing rows.
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
+  // The two fixed jobs the pages workspace already runs behind its header
+  // controls (`views/pages/runs/**`). Disclosure ONLY: these rows put the
+  // mandates in the shell's top Agents menu and add nothing visible to the
+  // screen.
+  //
+  // STRING LITERALS, not `MANDATE_KEYS`: the installed @ai-matrx/agents 0.12.5
+  // has no `seo__page_mapper` / `seo__page_intent_proposer` — aidream's
+  // regeneration (d2b14cee) added both for the first time and the package has
+  // not republished. Both keys are named in `scripts/mandate-keys-allowlist.json`
+  // with that reason; swap the literals for `MANDATE_KEYS` and drop those rows
+  // on the first change here after the package publishes (CONTRACTS.md §6).
+  agentRoles: [
+    {
+      name: "page_mapper",
+      label: "Page mapper",
+      description:
+        "Places this site's crawled pages onto the map's topics (covers edges) from the Map the pages control.",
+      kind: "single",
+      defaultAgentId: null,
+      mandateKey: "seo.page_mapper",
+      allowCustom: false,
+      autoRun: "never",
+      sortOrder: 200,
+    },
+    {
+      name: "page_intent_proposer",
+      label: "Destination proposer",
+      description:
+        "Proposes where each mapped page should go — keep, move, merge, redirect, rewrite or delete — from the Propose destinations control.",
+      kind: "single",
+      defaultAgentId: null,
+      mandateKey: "seo.page_intent_proposer",
+      allowCustom: false,
+      autoRun: "never",
+      sortOrder: 210,
+    },
+  ],
 };
 
 /** Type-safe payload helper — nothing is guaranteed while the reads hydrate. */

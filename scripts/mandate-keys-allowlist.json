@@ -23,5 +23,15 @@
     "file": "features/masterwork/components/detail/MeetingScavengerDialog.tsx",
     "key": "masterwork.meeting_scavenger",
     "reason": "The Meeting Scavenger's mandate, registered 2026-09-15 (mandate.definition row, enabled, holder bound to the builtin seeded by aidream/scripts/seed_meeting_scavenger_agent.py). The installed @ai-matrx/agents predates it, so the generated key union cannot carry it yet. Swap the literal for MANDATE_KEYS.masterwork__meeting_scavenger on the first change here after the package republishes."
+  },
+  {
+    "file": "features/surfaces/manifests/marketing-topical-map.manifest.ts",
+    "key": "seo.page_mapper",
+    "reason": "declared in aidream d2b14cee; package republish pending"
+  },
+  {
+    "file": "features/surfaces/manifests/marketing-topical-map.manifest.ts",
+    "key": "seo.page_intent_proposer",
+    "reason": "declared in aidream d2b14cee; package republish pending"
   }
 ]
