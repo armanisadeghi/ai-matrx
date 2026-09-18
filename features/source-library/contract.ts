@@ -524,7 +524,11 @@ export function parseEstimateResult(payload: unknown, field = "the estimate"): E
     const row = obj(payload, field);
     const cost = obj(row.cost, `${field}.cost`);
     const time = obj(row.time, `${field}.time`);
-    const quota = obj(row.quota, `${field}.quota`);
+    // An estimate prices existing Sources; it does not spend YouTube Data API
+    // quota. Older contract drafts advertised a quota snapshot, but the live
+    // server correctly omits it. Preserve strict validation when it is sent;
+    // only its absence is compatible.
+    const quota = row.quota === undefined ? null : obj(row.quota, `${field}.quota`);
     return {
         estimate_token: str(row.estimate_token, `${field}.estimate_token`),
         expires_at: str(row.expires_at, `${field}.expires_at`),
@@ -558,10 +562,12 @@ export function parseEstimateResult(payload: unknown, field = "the estimate"): E
             ),
             parallelism: num(time.parallelism, `${field}.time.parallelism`),
         },
-        quota: {
-            units_required: num(quota.units_required, `${field}.quota.units_required`),
-            units_remaining: num(quota.units_remaining, `${field}.quota.units_remaining`),
-        },
+        quota: quota
+            ? {
+                  units_required: num(quota.units_required, `${field}.quota.units_required`),
+                  units_remaining: num(quota.units_remaining, `${field}.quota.units_remaining`),
+              }
+            : null,
         warnings: strList(row.warnings ?? [], `${field}.warnings`),
         // Absent defaults to TRUE: confirming is the safe side of this knob.
         requires_confirmation: optBool(
