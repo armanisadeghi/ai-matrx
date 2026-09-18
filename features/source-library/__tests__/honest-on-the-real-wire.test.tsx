@@ -483,6 +483,48 @@ describe("G · the one instruction on the screen is true", () => {
         );
     });
 
+    it("a keyboard Enter on the input starts the catalogue, with no click anywhere", async () => {
+        // jsdom does not implement a form's IMPLICIT submission, so this
+        // exercises the component's own keydown path — the one that has to
+        // work when a synthesised or composed key event never reaches the
+        // browser's default action. The live headless proof of the browser's
+        // half is in the re-test section of FIRST-PERSON-TEST.md.
+        resolveMediaInput.mockImplementation(() => new Promise(() => {}));
+        const node = mount(<CatalogPasteBox autoFocus={false} />);
+        const input = node.querySelector("input")!;
+
+        act(() => {
+            const setter = Object.getOwnPropertyDescriptor(
+                window.HTMLInputElement.prototype,
+                "value",
+            )!.set!;
+            setter.call(input, "https://www.youtube.com/@mkbhd");
+            input.dispatchEvent(new Event("input", { bubbles: true }));
+        });
+
+        await act(async () => {
+            input.focus();
+            input.dispatchEvent(
+                new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+            );
+        });
+
+        expect(resolveMediaInput).toHaveBeenCalledTimes(1);
+    });
+
+    it("an empty box does nothing at all on Enter — no request, no error", async () => {
+        resolveMediaInput.mockImplementation(() => new Promise(() => {}));
+        const node = mount(<CatalogPasteBox autoFocus={false} />);
+        const input = node.querySelector("input")!;
+        await act(async () => {
+            input.focus();
+            input.dispatchEvent(
+                new KeyboardEvent("keydown", { key: "Enter", bubbles: true }),
+            );
+        });
+        expect(resolveMediaInput).not.toHaveBeenCalled();
+    });
+
     it("the button is the form's submit button, not a second door", () => {
         const node = mount(<CatalogPasteBox autoFocus={false} />);
         const button = [...node.querySelectorAll("button")].find((b) =>
