@@ -24,13 +24,35 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 
 import { OpenGoogleDocumentRecordButton, type PickedGoogleRecordResource } from "../openRecord";
+import type { postGoogleBackend as postGoogleBackendReal } from "@/features/marketing/google/service";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let activeOrganizationId: string | null = null;
-const postGoogleBackend = jest.fn(async () => {
-  throw new Error("refreshGoogleDocument must never reach the network with no organization");
-});
+
+/**
+ * The mock is typed from the REAL function's parameter list, so a signature
+ * change over in `features/marketing/google/service.ts` breaks this file
+ * instead of silently letting it stand in for something that no longer exists.
+ *
+ * Its RETURN is deliberately narrower than `Response`: `refreshGoogleDocument`
+ * reads exactly `status` and `json()` (through `responseRecord`), and jsdom has
+ * no `Response` constructor to build a real one with. Declaring the narrow
+ * reply is the honest shape — the alternative was `jest.fn(async () => {
+ * throw … })`, whose return type TypeScript infers as `Promise<never>`, which
+ * then refuses EVERY `mockImplementation` the file needs (TS2345). A cast or a
+ * ts-expect-error would have hidden that rather than fixed it.
+ */
+type GoogleBackendReply = Pick<Response, "status" | "json">;
+type PostGoogleBackendArgs = Parameters<typeof postGoogleBackendReal>;
+
+const postGoogleBackend = jest.fn<Promise<GoogleBackendReply>, PostGoogleBackendArgs>(
+  async () => {
+    throw new Error(
+      "refreshGoogleDocument must never reach the network with no organization",
+    );
+  },
+);
 
 jest.mock("@/utils/supabase/client", () => {
   const chain: Record<string, unknown> = {};
@@ -51,7 +73,7 @@ jest.mock("@/utils/supabase/client", () => {
 });
 
 jest.mock("@/features/marketing/google/service", () => ({
-  postGoogleBackend: (...args: unknown[]) => postGoogleBackend(...(args as [])),
+  postGoogleBackend: (...args: PostGoogleBackendArgs) => postGoogleBackend(...args),
 }));
 
 // The birth door resolves the ACTIVE organization from the store singleton —
