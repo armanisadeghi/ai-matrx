@@ -175,7 +175,9 @@ describe("useCloudBrowser — a failed start", () => {
       expect(mockLoadSnapshot).toHaveBeenCalledTimes(1);
 
       Object.defineProperty(document, "hidden", { configurable: true, value: false });
-      await h.act(() => document.dispatchEvent(new Event("visibilitychange")));
+      await h.act(() => {
+        document.dispatchEvent(new Event("visibilitychange"));
+      });
       await settle(h, () => mockLoadSnapshot.mock.calls.length === 2, "the resumed exact-run poll");
       expect(mockLoadSnapshot.mock.calls[1]).toEqual(["prof-1", "run-1"]);
 

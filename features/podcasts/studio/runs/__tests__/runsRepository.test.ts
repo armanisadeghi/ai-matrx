@@ -373,6 +373,10 @@ function runRow(
   return {
     id,
     status: "completed",
+    // `agent_run.error` is a selected, non-nullable-key column: a run with no
+    // failure carries SQL NULL, never an absent key. Omitting it made every
+    // row in this suite a shape PostgREST cannot return.
+    error: null,
     request: { input_data: "A topic" },
     result: null,
     episode_id: null,

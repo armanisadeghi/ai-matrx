@@ -28,6 +28,7 @@
  * product's vocabulary in the client, where a new provider means a deploy.
  */
 
+import type { components } from "@/types/python-generated/api-types";
 import type { McpAvailability } from "./connection-state";
 
 /**
@@ -41,33 +42,34 @@ import type { McpAvailability } from "./connection-state";
  */
 export type AttachableResourceSource = "inventory" | "live";
 
-/** One kind of thing a connection lets a person attach to a conversation. */
-export interface AttachableResource {
-  /** Canonical resource type, e.g. `github_repository`, `google_sheet`. */
-  resource_type: string;
-  source: AttachableResourceSource;
-  /**
-   * The provider's own plural word for these things — "repositories",
-   * "files", "sheets". The server owns this vocabulary; the client renders it
-   * verbatim so a new provider needs no frontend change.
-   */
-  label: string;
-}
+/** The sources this client knows how to search. Anything else is dropped at
+ * ingress by {@link normalizeAttachable} rather than rendered as a chooser we
+ * cannot drive. The wire type is `string` — Python owns the vocabulary. */
+const KNOWN_SOURCES: readonly string[] = [
+  "inventory",
+  "live",
+] satisfies readonly AttachableResourceSource[];
 
 /**
- * The availability row as the server sends it once attachable resources are
- * part of the contract. `attachable` is optional and absent-means-empty, so a
- * server that has not shipped it yet degrades to today's plain chips rather
- * than to a broken screen.
+ * One kind of thing a connection lets a person attach to a conversation.
  *
- * Swap this for `components["schemas"]["McpAvailability"]` the moment the
- * generated types carry `attachable` — generated types are the source of
- * truth and this interface exists only to bridge the two halves of the
- * feature while they ship.
+ * THE GENERATED TYPE IS THE TRUTH: this is `AttachableKindInfo` from the
+ * OpenAPI contract, carrying `resource_type`, `source`, `label` and the
+ * provider's own `add_more` wording. Never re-declare it here.
  */
-export interface AttachableAvailability extends McpAvailability {
-  attachable?: AttachableResource[] | null;
-}
+export type AttachableResource = components["schemas"]["AttachableKindInfo"];
+
+/**
+ * The availability row as the server sends it. `attachable` is optional and
+ * absent-means-empty, so a server that has not shipped it yet degrades to
+ * today's plain chips rather than to a broken screen.
+ *
+ * This WAS a local interface that widened `attachable` while the two halves of
+ * the feature shipped; the generated contract now carries the field, so the
+ * alias is the whole type (2026-09-18). Keep the name — every consumer reads
+ * it — but never re-add a member to it.
+ */
+export type AttachableAvailability = McpAvailability;
 
 /**
  * What a chip IS. `plain` means the connection is the whole story; every
@@ -101,7 +103,7 @@ export function normalizeAttachable(
       entry.resource_type.length > 0 &&
       typeof entry.label === "string" &&
       entry.label.trim().length > 0 &&
-      (entry.source === "inventory" || entry.source === "live"),
+      KNOWN_SOURCES.includes(entry.source),
   );
 }
 

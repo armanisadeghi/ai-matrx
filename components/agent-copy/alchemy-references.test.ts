@@ -1,5 +1,8 @@
 import { fetchDirectiveCatalog } from "@/features/directive-catalog/service";
-import type { DirectiveCatalog } from "@/features/directive-catalog/types";
+import {
+  DIRECTIVE_VERBS,
+  type DirectiveCatalog,
+} from "@/features/directive-catalog/types";
 import { validateAgainstKind } from "@/features/content-ir/registry/validate-against-kind";
 import { alchemyReferencePort } from "./alchemy-references";
 
@@ -53,6 +56,9 @@ function liveCatalog(
 ): DirectiveCatalog {
   return {
     directive_version: 1,
+    // The class axis the live catalog ships (aidream `NOUN_CLASSES`), mirrored
+    // here from the one client-side list rather than re-typed.
+    classes: [...DIRECTIVE_VERBS],
     nouns: nouns.map((noun) => {
       const captured = LIVE_REFERENCE_NOUNS[noun];
       return {
