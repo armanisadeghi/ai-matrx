@@ -26,6 +26,7 @@ type Range = { start: number; end: number };
 
 const FULL_RANGE: Range = { start: 0, end: 0 };
 const FINE_WIDTH = 200;
+const COARSE_STOPS = 1_000;
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -37,10 +38,7 @@ function centeredRange(value: number, width: number, max: number): Range {
   return { start, end: start + safeWidth };
 }
 
-/**
- * A precise, bounded control for character trimming. The full slider stays
- * useful for very large content while Fine tune exposes a stable exact window.
- */
+/** A compact character-trim control with coarse and exact adjustment modes. */
 export function TrimControl({
   label,
   max,
@@ -57,47 +55,45 @@ export function TrimControl({
     safeMax,
   );
   const [range, setRange] = React.useState<Range>(FULL_RANGE);
-  const isDragging = React.useRef(false);
   const disabled = safeMax === 0;
-  const isZoomed = range.end > range.start;
-  const sliderRange = isZoomed ? range : { start: 0, end: safeMax };
-  const sliderWidth = sliderRange.end - sliderRange.start;
-  const sliderStep =
-    isZoomed && sliderWidth <= FINE_WIDTH
-      ? 1
-      : Math.max(1, Math.ceil(Math.max(1, sliderWidth) / 1000));
+  const sliderRange = (() => {
+    if (range.end <= range.start) return { start: 0, end: safeMax };
 
-  React.useEffect(() => {
-    setRange((current) => {
-      if (current.end <= current.start) return FULL_RANGE;
-      const width = Math.min(current.end - current.start, safeMax);
-      if (width <= 0) return FULL_RANGE;
-      return centeredRange(clampedValue, width, safeMax);
-    });
-  }, [safeMax]);
-
-  React.useEffect(() => {
-    if (!isZoomed || isDragging.current) return;
-    if (clampedValue < range.start || clampedValue > range.end) {
-      setRange(centeredRange(clampedValue, range.end - range.start, safeMax));
+    const width = Math.min(range.end - range.start, safeMax);
+    if (
+      width <= 0 ||
+      range.start < 0 ||
+      range.end > safeMax ||
+      clampedValue < range.start ||
+      clampedValue > range.end
+    ) {
+      return width > 0
+        ? centeredRange(clampedValue, width, safeMax)
+        : { start: 0, end: safeMax };
     }
-  }, [clampedValue, isZoomed, range.end, range.start, safeMax]);
 
-  const updateExactValue = React.useCallback(
-    (nextValue: number) => {
-      const next = clamp(Math.round(nextValue), 0, safeMax);
-      if (isZoomed && (next < range.start || next > range.end)) {
-        setRange(centeredRange(next, range.end - range.start, safeMax));
-      }
-      onChange(next);
-    },
-    [isZoomed, onChange, range.end, range.start, safeMax],
+    return range;
+  })();
+  const isZoomed = sliderRange.start > 0 || sliderRange.end < safeMax;
+  const sliderWidth = sliderRange.end - sliderRange.start;
+  const sliderStops = Math.min(COARSE_STOPS, Math.max(1, sliderWidth));
+  const sliderValue = Math.round(
+    ((clampedValue - sliderRange.start) / Math.max(1, sliderWidth)) * sliderStops,
   );
 
+  const updateExactValue = (nextValue: number) => {
+    const next = clamp(Math.round(nextValue), 0, safeMax);
+    if (isZoomed && (next < sliderRange.start || next > sliderRange.end)) {
+      setRange(centeredRange(next, sliderWidth, safeMax));
+    }
+    onChange(next);
+  };
+
   const fineTune = () => {
-    const currentWidth = isZoomed ? range.end - range.start : safeMax;
-    if (currentWidth <= FINE_WIDTH) return;
-    setRange(centeredRange(clampedValue, Math.ceil(currentWidth / 10), safeMax));
+    const currentWidth = isZoomed ? sliderWidth : safeMax;
+    if (currentWidth > FINE_WIDTH) {
+      setRange(centeredRange(clampedValue, Math.ceil(currentWidth / 10), safeMax));
+    }
   };
 
   const labelElement = (
@@ -113,13 +109,8 @@ export function TrimControl({
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div
-        className={cn(
-          "matrx-touch-targets flex w-full min-w-0 flex-col gap-1.5",
-          className,
-        )}
-      >
-        <div className="flex min-w-0 items-center gap-1.5">
+      <div className={cn("matrx-touch-targets min-w-0", className)}>
+        <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto_8rem] items-center gap-1.5 sm:grid-cols-[5rem_auto_minmax(0,1fr)_auto_7rem_auto_auto]">
           {tooltip ? (
             <Tooltip>
               <TooltipTrigger asChild>{labelElement}</TooltipTrigger>
@@ -127,19 +118,21 @@ export function TrimControl({
                 {tooltip}
               </TooltipContent>
             </Tooltip>
-          ) : labelElement}
+          ) : (
+            labelElement
+          )}
 
           <span
-            className="ml-auto shrink-0 text-[10px] tabular-nums text-muted-foreground"
-            aria-live="polite"
+            className="col-start-2 row-start-1 min-w-0 truncate text-right text-[10px] tabular-nums text-muted-foreground sm:hidden"
+            title={
+              isZoomed
+                ? `Fine range: ${sliderRange.start.toLocaleString()}–${sliderRange.end.toLocaleString()}`
+                : undefined
+            }
           >
-            {isZoomed
-              ? `${sliderRange.start.toLocaleString()}–${sliderRange.end.toLocaleString()} of ${safeMax.toLocaleString()}`
-              : `0–${safeMax.toLocaleString()}`}
+            {isZoomed ? `${sliderWidth.toLocaleString()} range` : ""}
           </span>
-        </div>
 
-        <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-1.5 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto]">
           <IconButton
             icon={ChevronLeft}
             size="sm"
@@ -147,22 +140,26 @@ export function TrimControl({
             tooltip={`Decrease ${label} by one character`}
             onClick={() => updateExactValue(clampedValue - 1)}
             disabled={disabled || clampedValue === 0}
-            className="rounded-md"
+            className="col-start-1 row-start-2 rounded-md sm:col-start-2 sm:row-start-1"
           />
 
           <SliderPrimitive.Root
-            min={sliderRange.start}
-            max={sliderRange.end || 1}
-            step={sliderStep}
-            value={[clampedValue]}
-            onValueChange={(values) =>
+            min={0}
+            max={sliderStops}
+            step={1}
+            value={[sliderValue]}
+            onValueChange={(values) => {
+              const position = clamp(values[0] ?? 0, 0, sliderStops);
+              // Normalization makes both pointer endpoints exact even when the
+              // character range is not divisible by the number of coarse stops.
               onChange(
-                clamp(values[0] ?? 0, sliderRange.start, sliderRange.end),
-              )
-            }
-            onPointerDown={() => { isDragging.current = true; }}
-            onPointerUp={() => { isDragging.current = false; }}
-            onPointerCancel={() => { isDragging.current = false; }}
+                clamp(
+                  sliderRange.start + Math.round((position / sliderStops) * sliderWidth),
+                  sliderRange.start,
+                  sliderRange.end,
+                ),
+              );
+            }}
             onKeyDown={(event) => {
               if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
                 event.preventDefault();
@@ -180,15 +177,18 @@ export function TrimControl({
             }}
             disabled={disabled}
             className={cn(
-              "relative flex h-5 min-w-0 touch-none select-none items-center",
+              "relative col-start-2 row-start-2 flex h-11 min-w-0 touch-none select-none items-center sm:col-start-3 sm:row-start-1 sm:h-5",
               disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
             )}
-            aria-label={`${label} slider`}
           >
             <SliderPrimitive.Track className="relative h-2 grow overflow-hidden rounded-full border border-border bg-muted">
               <SliderPrimitive.Range className="absolute h-full bg-primary" />
             </SliderPrimitive.Track>
-            <SliderPrimitive.Thumb className="block size-4 rounded-full border-2 border-background bg-primary shadow-sm transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 active:scale-110 disabled:pointer-events-none" />
+            <SliderPrimitive.Thumb
+              aria-label={`${label} slider`}
+              aria-valuetext={`${clampedValue.toLocaleString()} characters`}
+              className="block size-4 rounded-full border-2 border-background bg-primary shadow-sm transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 active:scale-110 disabled:pointer-events-none"
+            />
           </SliderPrimitive.Root>
 
           <IconButton
@@ -198,7 +198,7 @@ export function TrimControl({
             tooltip={`Increase ${label} by one character`}
             onClick={() => updateExactValue(clampedValue + 1)}
             disabled={disabled || clampedValue === safeMax}
-            className="rounded-md"
+            className="col-start-3 row-start-2 rounded-md sm:col-start-4 sm:row-start-1"
           />
 
           <label className="sr-only" htmlFor={inputId}>
@@ -217,38 +217,43 @@ export function TrimControl({
               if (Number.isFinite(next)) updateExactValue(next);
             }}
             disabled={disabled}
-            className="col-span-3 h-8 min-w-0 rounded-md border border-border bg-background px-2 text-base tabular-nums text-foreground outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 sm:col-span-1 sm:w-24 sm:text-xs"
+            className="col-start-4 row-start-1 h-8 min-w-0 rounded-md border border-border bg-background px-2 text-base tabular-nums text-foreground outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 sm:col-start-5 sm:text-xs"
             aria-label={`${label} character count`}
           />
-        </div>
 
-        <div className="flex min-w-0 items-center gap-1.5">
+          <IconButton
+            icon={ZoomOut}
+            size="sm"
+            variant="outline"
+            tooltip="Restore the full trim range"
+            onClick={() => setRange(FULL_RANGE)}
+            disabled={!isZoomed}
+            className="col-start-3 row-start-1 rounded-md sm:col-start-7 sm:row-start-1"
+          />
+
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={fineTune}
             disabled={disabled || sliderWidth <= FINE_WIDTH}
-            className="h-7 min-w-0 gap-1 px-2 text-xs"
+            className="col-start-4 row-start-2 h-8 justify-center gap-1 px-2 text-xs sm:col-start-6 sm:row-start-1"
+            aria-label="Fine tune trim range"
           >
             <ZoomIn className="size-3.5" />
-            Fine tune
+            <span className="hidden sm:inline">
+              Fine tune
+            </span>
           </Button>
+        </div>
+
+        <div className="mt-1 hidden h-3 pl-[5.5rem] text-[10px] tabular-nums text-muted-foreground sm:block">
           {isZoomed && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setRange(FULL_RANGE)}
-              className="h-7 gap-1 px-2 text-xs"
-            >
-              <ZoomOut className="size-3.5" />
-              Full range
-            </Button>
+            <span>
+              Fine range: {sliderRange.start.toLocaleString()}–
+              {sliderRange.end.toLocaleString()}
+            </span>
           )}
-          <span className="ml-auto shrink-0 text-[10px] tabular-nums text-muted-foreground">
-            {clampedValue.toLocaleString()} / {safeMax.toLocaleString()}
-          </span>
         </div>
       </div>
     </TooltipProvider>
