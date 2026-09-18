@@ -242,6 +242,11 @@ export function googleAccount(row: GoogleConnectionSummary): ConnectorAccount {
     providerSubject: row.provider_subject,
     grantedScopes: row.scopes,
     usable: row.health === "connected",
+    // 🚨 BLOCKED, NOT MERELY UNUSABLE (V17-1, R22). `unavailable` is Google (or
+    // our own app configuration) refusing everything with nothing to press;
+    // `unrecognized` is a status word this build cannot vouch for, which is never
+    // rendered as a working connection either.
+    blocked: row.health === "unavailable" || row.health === "unrecognized",
     statusLabel: diagnosis.label,
     statusReason: diagnosis.reason,
     statusRemedy: diagnosis.remedy,

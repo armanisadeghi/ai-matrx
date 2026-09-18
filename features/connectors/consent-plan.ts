@@ -182,6 +182,18 @@ export function buildConsentPlan({
       account,
       rollout,
     });
+    // 🚨 A BLOCKED ACCOUNT HAS NOTHING TO ASK FOR, AND IS NOT "ALREADY GRANTED"
+    // (V17-1). The provider, or our own app configuration, refuses everything:
+    // the row falls out here with its own sentence so the press answers honestly
+    // instead of reporting the product as connected.
+    if (row.state === "unavailable") {
+      blocked.push({
+        productKey: product.key,
+        productName: product.name,
+        reason: [row.reason, row.remedy].filter(Boolean).join(" "),
+      });
+      continue;
+    }
     const missing = row.missingScopes;
     const renewal = missing.length === 0 && row.actionLabel === "Reconnect";
     if (missing.length === 0 && !renewal) {

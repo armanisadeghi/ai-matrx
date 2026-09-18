@@ -67,6 +67,37 @@ describe("the capability-health marker", () => {
     }
   });
 
+  /**
+   * 🚨 V17-8 — THE MARKER "AS READ" WAS A CLAIM THIS FILE INVENTED. On any value
+   * it did not recognise, the reader returned a shared `EMPTY` constant whose
+   * `kind` was the LEGACY GOOGLE spelling — so a probe with
+   * `__kind: "something_else"` came back `recognized: false, kind:
+   * "google_connection_capability_health"`, reporting a marker the data never
+   * had, in the one file whose stated law is that the marker read is the marker
+   * carried. Harmless today (no reader shows it) and exactly the kind of quiet
+   * false claim the next reader would build on.
+   *
+   * RED before the fix: both assertions below returned the legacy spelling.
+   */
+  it("carries the marker it actually SAW on a value it does not recognise", () => {
+    const foreign = parseGoogleCapabilityHealth({
+      __kind: "github_connection_capability_health",
+      docs: CAPABILITY.docs,
+    });
+    expect(foreign.recognized).toBe(false);
+    expect(foreign.kind).toBe("github_connection_capability_health");
+    expect(foreign.kind).not.toBe(GOOGLE_CAPABILITY_HEALTH_KIND);
+  });
+
+  it("claims NO marker when the value carried none", () => {
+    for (const raw of [null, 7, {}, { __kind: 3 }, "text"]) {
+      const read = parseGoogleCapabilityHealth(raw);
+      expect(read.recognized).toBe(false);
+      // Null is the honest answer: there was nothing to carry.
+      expect(read.kind).toBeNull();
+    }
+  });
+
   it("never treats the marker as a capability, under either spelling", () => {
     for (const kind of CAPABILITY_HEALTH_KINDS) {
       const read = parseGoogleCapabilityHealth({ __kind: kind, ...CAPABILITY });

@@ -78,6 +78,19 @@ export interface ConnectorAccount {
   grantedScopes: readonly string[];
   /** True only when the account can authorize a provider call right now. */
   usable: boolean;
+  /**
+   * 🚨 THE THIRD TERMINAL ANSWER (chair ruling R22, 2026-09-18; VERIFY-U-P2-R5
+   * V17-1). True when the provider — or OUR OWN platform configuration — blocks
+   * every call for this account and NOTHING the person can press repairs it.
+   * `usable` is false whenever this is true, but the two are not the same claim:
+   * a dead credential is repaired by one Reconnect, and this is not repaired by
+   * anything on the screen, so every row renders BLOCKED with no control and the
+   * card never says "Connected" or "N of N products in use".
+   *
+   * Absent means false, so an adapter that predates the word behaves exactly as
+   * before — it simply cannot express the state, which is the old lie's shape.
+   */
+  blocked?: boolean;
   /** Short badge word for the account as a whole. */
   statusLabel: string;
   /** Exactly what is wrong with the account, or why it is fine. */
@@ -135,6 +148,14 @@ export type ConnectorProductState =
   | "scope_missing"
   /** Scopes granted, but the account itself cannot authorize anything. */
   | "account_unusable"
+  /**
+   * The provider or our own configuration blocks every call on this account and
+   * no press can change it. Distinct from `account_unusable`, which ONE
+   * Reconnect repairs: this row offers nothing, because offering a control that
+   * cannot help is the dead end law 4 forbids — and saying "Connected" over it
+   * is the lie PLAN §5.3 forbids (V17-1).
+   */
+  | "unavailable"
   /** Never switched on. */
   | "not_connected"
   /**
@@ -589,6 +610,25 @@ export function productHealth({
       // PLAN §2: the exact line for a row still behind our gate.
       reason: "Turns on automatically when ready for your account.",
       remedy: null,
+      togglable: false,
+    });
+  }
+
+  // 🚨 BLOCKED OUTRANKS EVERY OTHER READING (V17-1). Judged before the
+  // credential branch because a blocked account is also unusable, and before the
+  // scope and refusal branches because none of their remedies can help: a person
+  // approving nine products again against a rejected app configuration gets the
+  // same refusal nine times.
+  if (account?.blocked) {
+    return row({
+      state: "unavailable",
+      label: "Blocked",
+      reason: account.statusReason,
+      remedy:
+        account.statusRemedy ??
+        `There is nothing you can do here; we are fixing our ${provider.name} configuration.`,
+      // Nothing may be switched on for it either: the consent dialog would open
+      // a provider window that cannot succeed.
       togglable: false,
     });
   }

@@ -351,17 +351,24 @@ describe("every file type the server declares can be rendered", () => {
   (hasServer ? it : it.skip)(
     "renders exactly the file types the server's ResourceType union declares",
     () => {
-      const serviceSource = join(
-        AIDREAM_ROOT,
-        "aidream",
-        "services",
-        "google_workspace",
-        "service.py",
+      // 🚨 AN ORDERED CANDIDATE LIST, newest home first (the pattern the receipt
+      // census uses). Lane B-24 extracted the declaration into its own
+      // import-light module (`resource_types.py`) so the attach registry, the
+      // briefing and the routers could all derive from it; this census followed
+      // it there instead of going quiet, which is what a single hard-coded path
+      // would have done the hour that landed.
+      const unionSources = [
+        join(AIDREAM_ROOT, "aidream", "services", "google_workspace", "resource_types.py"),
+        join(AIDREAM_ROOT, "aidream", "services", "google_workspace", "service.py"),
+      ];
+      const serviceSource = unionSources.find(
+        (path) =>
+          existsSync(path) && /ResourceType = Literal\[/.test(readFileSync(path, "utf8")),
       );
-      if (!existsSync(serviceSource)) {
+      if (!serviceSource) {
         console.warn(
-          `UNMEASURED: ${serviceSource} is absent, so the client's file-type` +
-            " record was not measured against the server's ResourceType union.",
+          `UNMEASURED: none of ${unionSources.join(", ")} declares the ResourceType` +
+            " union, so the client's file-type record was not measured against it.",
         );
         return;
       }

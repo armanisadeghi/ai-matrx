@@ -170,6 +170,14 @@ export const GOOGLE_ACCOUNT_FAULT_CODES = [
    * time" — which product stops, and when, is never this sentence's business.
    */
   "credential_storage_outdated",
+  /**
+   * The row's own status word is one this build has never heard of, so nothing
+   * here can say what state the account is in. Declared as a fault so the
+   * account line speaks from this one vocabulary, and carries NO remedy: the two
+   * repos deploy independently and pressing something we cannot reason about is
+   * the dead control law 4 forbids (VERIFY-U-P2-R5, V17-1).
+   */
+  "status_unrecognized",
   /** Something we cannot classify. One honest sentence, never the raw text. */
   "unknown",
 ] as const;
@@ -330,6 +338,12 @@ export function googleAccountFaultLanguage(
         reason: `${account} is connected and working. AI Matrx will ask you to approve it once more at some point, to move it onto how it keeps permissions now.`,
         remedy: `Reconnect ${account} whenever it suits you — nothing stops working until then.`,
       };
+    case "status_unrecognized":
+      return {
+        label: "Blocked",
+        reason: `AI Matrx cannot tell what state ${account} is in, so it will not claim the account is working. Nothing can be pressed here to change that.`,
+        remedy: null,
+      };
     case "unknown":
       return {
         label: "Needs attention",
@@ -337,6 +351,36 @@ export function googleAccountFaultLanguage(
         remedy: `Try reconnecting ${account}; if it does not clear, tell us and we will repair it.`,
       };
   }
+}
+
+/**
+ * 🚨 THE FAULTS THAT BLOCK EVERYTHING WITH NOTHING TO PRESS — the client half of
+ * the third terminal status (chair ruling R22, 2026-09-18; VERIFY-U-P2-R5 V17-1).
+ *
+ * `platform_configuration` is Google rejecting AI MATRX'S OWN app configuration:
+ * no account can mint a token, and a fresh approval lands in the same refusal.
+ * The server deliberately leaves such a row `connected` today because it is not a
+ * credential failure — which is how the card came to print "Connected" ten times
+ * and "9 of 9 products in use" directly above its own sentence saying no Google
+ * account could be used. So the derived health says `unavailable` on the strength
+ * of the fault the row already carries, exactly as it already says `needs_reauth`
+ * on the strength of a missing credential rather than the stored word. Lane B-23
+ * makes the server write the status too; this reading does not wait for it, and
+ * does not conflict with it.
+ *
+ * The rule, not a list: a fault whose remedy is null is a fault nothing the person
+ * can do repairs, which is precisely `unavailable`. `__tests__/…` asserts the set
+ * and the vocabulary agree in BOTH directions, so a new remedy-less fault cannot
+ * be added without deciding this.
+ */
+export const GOOGLE_UNAVAILABLE_FAULT_CODES: readonly GoogleAccountFault[] = [
+  "platform_configuration",
+  "status_unrecognized",
+];
+
+/** Does this fault mean blocked-with-nothing-to-press? */
+export function googleFaultBlocksEverything(fault: GoogleAccountFault): boolean {
+  return GOOGLE_UNAVAILABLE_FAULT_CODES.includes(fault);
 }
 
 /**
@@ -411,6 +455,37 @@ export function diagnoseGoogleConnection(
   // said "resolves through the legacy vault key … a deprecated path scheduled
   // for removal". `last_error` was not involved in any of them, which is why
   // N9's fix — and N9's test — went straight past all three.
+  // 🚨 THE THIRD TERMINAL ANSWER, BEFORE EVERY OTHER BRANCH (V17-1, R22). A
+  // status word we cannot vouch for, or one the row carries as `unavailable`,
+  // means the account is BLOCKED: no product works and nothing here can be
+  // pressed to change it. It is judged first because the branches below would
+  // otherwise read `status === "connected"` and print "connected and working"
+  // over it — the ten "Connected"s the verifier found on one card.
+  if (connection.health === "unrecognized") {
+    return {
+      ...googleAccountFaultLanguage("status_unrecognized", account),
+      blocking: true,
+    };
+  }
+
+  if (connection.health === "unavailable") {
+    const fault = googleAccountFault(connection);
+    if (fault === "unknown") {
+      // Marked blocked with nothing recorded to explain it: say exactly that
+      // rather than guessing at a fault or offering a press that cannot help.
+      return {
+        label: "Blocked",
+        reason: `${account} cannot be used right now. There is nothing you can do here; we are fixing our Google configuration.`,
+        remedy: null,
+        blocking: true,
+      };
+    }
+    // The fault's own declared sentence, and its own remedy when it has one
+    // (a provider outage says to try again later; our own misconfiguration says
+    // nothing can be pressed). Never a remedy this branch invents.
+    return { ...googleAccountFaultLanguage(fault, account), blocking: true };
+  }
+
   if (connection.health === "revoked") {
     return { ...googleAccountFaultLanguage("access_revoked", account), blocking: true };
   }
@@ -465,7 +540,10 @@ export function googleConnectionDiagnostics(
       "Owner",
       connection.owner_type === "organization" ? "Organization" : "Personal",
     ],
-    ["Stored status", connection.status],
+    // The word the row actually carried, not the one this build narrowed it to:
+    // an operator looking at an unrecognised status needs to see it (V17-8's rule
+    // applied to this column too).
+    ["Stored status", connection.status_as_read || connection.status],
     ["Derived health", connection.health],
     [
       "Vault credential",

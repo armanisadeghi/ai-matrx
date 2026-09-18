@@ -117,6 +117,7 @@ function row(
       ]),
     ],
     status: "connected",
+    status_as_read: "connected",
     last_verified_at: "2026-09-17T12:00:00Z",
     // 🚨 NOTHING TO CLASSIFY. Every branch below fires with the column empty,
     // which is what no existing suite did.
@@ -141,6 +142,26 @@ const BRANCHES: Array<{ name: string; row: GoogleConnectionSummary }> = [
   {
     name: "the account was revoked at Google",
     row: row({ health: "revoked", status: "revoked" }),
+  },
+  {
+    // The third terminal status (R22 / V17-1): blocked with nothing to press.
+    name: "our own app configuration is what Google rejected",
+    row: row({
+      health: "unavailable",
+      metadata: { credential_failure: { code: "platform_configuration" } },
+    }),
+  },
+  {
+    name: "the server marked it blocked and recorded nothing to explain it",
+    row: row({ health: "unavailable", status: "unavailable" }),
+  },
+  {
+    name: "the row carries a status word this build has never heard of",
+    row: row({
+      health: "unrecognized",
+      status: "unrecognized",
+      status_as_read: "suspended_by_provider",
+    }),
   },
   {
     name: "the credential is simply GONE (V13-1's own case)",

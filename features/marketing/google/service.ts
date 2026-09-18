@@ -17,6 +17,12 @@ import type {
   YouTubeAnalyticsPreview,
 } from "@/features/marketing/google/types";
 import { isGoogleConnectionResourceType } from "@/features/marketing/google/types";
+import { readConnectionStatus } from "@/features/connectors/connection-status";
+import {
+  googleAccountFault,
+  googleFaultBlocksEverything,
+} from "@/features/marketing/google/health";
+import { readAllRows } from "@ai-matrx/data/db";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -177,7 +183,7 @@ type GeneratedConnectionRow =
  * `CONNECTION_SELECT` names every field below and postgrest-js infers the
  * result directly, no `.returns<>()` needed.
  */
-type ConnectionRow = Pick<
+export type ConnectionRow = Pick<
   GeneratedConnectionRow,
   | "id"
   | "owner_type"
@@ -210,29 +216,68 @@ export type GoogleConnectionResourceRow = {
   metadata: unknown;
 };
 
-function connectionSummary(row: ConnectionRow): GoogleConnectionSummary {
-  const status =
-    row.status === "needs_attention" || row.status === "revoked"
-      ? row.status
-      : "connected";
+/**
+ * The ONE reader of a connection row. Exported because the derivation IS the
+ * thing under test in `features/connectors/__tests__/
+ * a-blocked-configuration-is-never-connected.test.tsx`: a test that hand-set
+ * `health` would prove nothing about the status word it is judging (V17-1).
+ */
+export function connectionSummary(row: ConnectionRow): GoogleConnectionSummary {
+  // 🚨 EVERY WORD THIS DOES NOT RECOGNISE USED TO BECOME `connected` (V17-1).
+  // The column is written by aidream and the two repos deploy independently, so
+  // the day the server gained `unavailable` — "the provider or our own platform
+  // configuration blocks every call" — this function would have painted the
+  // green badge over it. The vocabulary is shared and read once
+  // (`features/connectors/connection-status.ts`); a word we have no branch for
+  // is `unrecognized`, which is never usable.
+  const reading = readConnectionStatus(row.status);
+  const status = reading.status ?? "unrecognized";
   const credentialPresent = row.credential_present === true;
-  return {
+  const metadata = recordValue(row.metadata);
+  const summary: GoogleConnectionSummary = {
     ...row,
     owner_type: row.owner_type === "organization" ? "organization" : "user",
     provider: "google",
     status,
-    metadata: recordValue(row.metadata),
+    status_as_read: reading.asRead,
+    metadata,
     credential_present: credentialPresent,
     credential_stable: row.credential_stable === true,
-    // A row whose credential reference is gone CANNOT authorize anything, no
-    // matter what `status` claims — parity with aidream's precondition.
-    health:
-      status === "revoked"
-        ? "revoked"
-        : credentialPresent && status === "connected"
-          ? "connected"
-          : "needs_reauth",
+    health: "needs_reauth",
   };
+  return { ...summary, health: derivedHealth(summary) };
+}
+
+/**
+ * DERIVED truth, never the stored word — the same principle that has always
+ * made a credential-less row `needs_reauth` however loudly `status` said
+ * `connected` (the silent GSC failures of 2026-07-25).
+ *
+ * The blocked reading is the V17-1 fix: Google rejecting AI Matrx's own OAuth
+ * client configuration is deliberately NOT a credential failure, so the row stays
+ * `connected` today, and the card printed "Connected" ten times and "9 of 9
+ * products in use" directly above its own sentence saying no Google account
+ * could be used. A fault the vocabulary declares remedy-less means nothing the
+ * person can press repairs it, which IS `unavailable` — so the row is read that
+ * way whether or not the server has restamped it (lane B-23 makes `status_for`
+ * write the word; this does not wait for it and does not disagree with it).
+ */
+function derivedHealth(
+  summary: GoogleConnectionSummary,
+): GoogleConnectionSummary["health"] {
+  if (summary.status === "unrecognized") return "unrecognized";
+  if (summary.status === "unavailable") return "unavailable";
+  if (summary.status === "revoked" || summary.status === "disconnected") {
+    return "revoked";
+  }
+  if (googleFaultBlocksEverything(googleAccountFault(summary))) {
+    return "unavailable";
+  }
+  // A row whose credential reference is gone CANNOT authorize anything, no
+  // matter what `status` claims — parity with aidream's precondition.
+  return summary.credential_present && summary.status === "connected"
+    ? "connected"
+    : "needs_reauth";
 }
 
 export function connectionResource(
@@ -264,39 +309,67 @@ export async function listGoogleConnectionInventory(
   } = await supabase.auth.getSession();
   if (!session?.access_token) return { connections: [], resources: [] };
 
-  const connections = await supabase
-    .schema("users")
-    .from("integration_connections")
-    .select(CONNECTION_SELECT)
-    .eq("provider", "google")
-    .is("deleted_at", null)
-    .order("updated_at", { ascending: false })
-    .abortSignal(signal ?? new AbortController().signal);
-  if (connections.error) {
-    throw operationFailed("load your Google connections", connections.error);
+  // 🚨 BOTH READS ARE TREATED AS COMPLETE, SO BOTH PAGE (CLAUDE.md § readAllRows,
+  // and VERIFY-U-P2-R5 V17-7). PostgREST caps a response at 1000 rows without
+  // erroring, and these two arrays are not merely rendered: the connection ids
+  // become the resource filter, the resources are COUNTED per account, and that
+  // count is the consequence a person weighs a Disconnect against
+  // ("The N items you picked with this account stop resolving…" —
+  // `revokeConsequence`). At 313 undeleted resource rows today it is latent; the
+  // first account to cross the cap would have quietly under-stated what a
+  // destructive press destroys, and the attach and review lists would have been
+  // short with nothing saying so.
+  const abortSignal = signal ?? new AbortController().signal;
+  let connections: ConnectionRow[];
+  try {
+    connections = await readAllRows<ConnectionRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("users")
+          .from("integration_connections")
+          .select(CONNECTION_SELECT, { count: "exact" })
+          .eq("provider", "google")
+          .is("deleted_at", null)
+          .order("updated_at", { ascending: false })
+          // A stable total order, required by the pager: `updated_at` is not
+          // unique, so the id breaks every tie.
+          .order("id", { ascending: true })
+          .range(from, to)
+          .abortSignal(abortSignal)
+          .returns<ConnectionRow[]>(),
+      { label: "users.integration_connections (google)" },
+    );
+  } catch (error) {
+    throw operationFailed("load your Google connections", error);
   }
 
-  const ids = connections.data.map((connection) => connection.id);
+  const ids = connections.map((connection) => connection.id);
   if (!ids.length) return { connections: [], resources: [] };
-  const resources = await supabase
-    .schema("users")
-    .from("integration_connection_resources")
-    .select(RESOURCE_SELECT)
-    .in("connection_id", ids)
-    .is("deleted_at", null)
-    .order("resource_type", { ascending: true })
-    .order("display_name", { ascending: true })
-    .abortSignal(signal ?? new AbortController().signal);
-  if (resources.error) {
-    throw operationFailed(
-      "load your Google connection details",
-      resources.error,
+  let resourceRows: GoogleConnectionResourceRow[];
+  try {
+    resourceRows = await readAllRows<GoogleConnectionResourceRow>(
+      ({ from, to }) =>
+        supabase
+          .schema("users")
+          .from("integration_connection_resources")
+          .select(RESOURCE_SELECT, { count: "exact" })
+          .in("connection_id", ids)
+          .is("deleted_at", null)
+          .order("resource_type", { ascending: true })
+          .order("display_name", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to)
+          .abortSignal(abortSignal)
+          .returns<GoogleConnectionResourceRow[]>(),
+      { label: "users.integration_connection_resources (google)" },
     );
+  } catch (error) {
+    throw operationFailed("load your Google connection details", error);
   }
 
   return {
-    connections: connections.data.map(connectionSummary),
-    resources: resources.data.map(connectionResource),
+    connections: connections.map(connectionSummary),
+    resources: resourceRows.map(connectionResource),
   };
 }
 

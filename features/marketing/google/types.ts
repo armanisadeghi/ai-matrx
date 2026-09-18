@@ -1,3 +1,4 @@
+import type { ConnectionStatus } from "@/features/connectors/connection-status";
 import {
   GOOGLE_WORKSPACE_RESOURCE_TYPES,
   type GoogleWorkspaceResourceType,
@@ -21,7 +22,21 @@ export interface GoogleConnectionSummary {
   account_email: string | null;
   account_name: string | null;
   scopes: string[];
-  status: "connected" | "needs_attention" | "revoked";
+  /**
+   * The stored status, read through the ONE shared vocabulary
+   * (`features/connectors/connection-status.ts`). `"unrecognized"` means the
+   * deployed server wrote a word this build has never heard of — which is NOT
+   * `connected`, and used to be collapsed into it (V17-1). The word itself is
+   * kept on `status_as_read` for the operator surface.
+   */
+  status: ConnectionStatus | "unrecognized";
+  /**
+   * The status word the row actually carried, verbatim — for an OPERATOR surface
+   * only (`googleConnectionDiagnostics`), never a person's sentence (D6).
+   * Optional because a hand-built fixture has no column to have read; the one
+   * reader of a row always sets it, and its reader falls back to `status`.
+   */
+  status_as_read?: string;
   last_verified_at: string | null;
   last_error: string | null;
   created_at: string;
@@ -54,7 +69,24 @@ export interface GoogleConnectionSummary {
   capability_health: unknown;
 }
 
-export type GoogleConnectionHealth = "connected" | "needs_reauth" | "revoked";
+/**
+ * DERIVED truth about one connection, never the stored status.
+ *
+ * `unavailable` is the third terminal word (chair ruling R22, 2026-09-18): the
+ * provider or our own platform configuration blocks every call, and NOTHING the
+ * person can press repairs it — so every surface renders it as blocked, with no
+ * Reconnect and never the word "Connected" (V17-1).
+ *
+ * `unrecognized` is the honest answer to a status word this build has never heard
+ * of: the two repos deploy independently, and a claim we cannot vouch for is
+ * never rendered as a working connection.
+ */
+export type GoogleConnectionHealth =
+  | "connected"
+  | "needs_reauth"
+  | "revoked"
+  | "unavailable"
+  | "unrecognized";
 
 /** Canonical API descriptor; generated from aidream's Google capability model. */
 export type GoogleCapabilityMetadata =

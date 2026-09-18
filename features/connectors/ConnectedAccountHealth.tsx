@@ -29,6 +29,7 @@
 
 import {
   AlertTriangle,
+  Ban,
   Building2,
   Check,
   Clock,
@@ -58,6 +59,12 @@ const STATE_STYLE: Record<
   account_unusable: {
     chip: "bg-destructive/15 text-destructive",
     icon: AlertTriangle,
+  },
+  // Blocked with nothing to press — it wears the destructive chip so it is never
+  // mistaken for a row that is working (V17-1).
+  unavailable: {
+    chip: "bg-destructive/15 text-destructive",
+    icon: Ban,
   },
   not_connected: { chip: "bg-muted text-muted-foreground", icon: null },
   refused: { chip: "bg-warning/15 text-warning", icon: AlertTriangle },
@@ -183,8 +190,16 @@ export function ConnectedAccountHealth({
                 {account.statusLabel}
               </span>
             </div>
+            {/* 🚨 A BLOCKED ACCOUNT NEVER COUNTS PRODUCTS "IN USE" (V17-1). The
+                card printed "9 of 9 products in use" one line above its own
+                sentence saying no Google account could be used, because the
+                status word could not express "blocked". Nothing here is in use,
+                and the line says what is true instead of arithmetic that reads
+                like health. */}
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {live} of {health.length} products in use
+              {account.blocked
+                ? `None of these ${health.length} products can be used right now`
+                : `${live} of ${health.length} products in use`}
               {lastChecked ? ` · account last confirmed ${lastChecked}` : ""}
             </p>
             {!account.usable ? (

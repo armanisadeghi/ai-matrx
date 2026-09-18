@@ -65,20 +65,48 @@ const REFRESHED_COLUMNS = ["last_refreshed_at", "synced_at", "external_modified_
 const SOURCE_URL_COLUMNS = ["web_url", "external_url", "source_url"] as const;
 
 /**
- * The product a record type belongs to when its own row does not say. Keys are
- * item-presentation type tokens; values are `ConnectorProduct.key`.
+ * Item-presentation type tokens whose spelling differs from the connectors'
+ * resource-type names. ONLY the aliases live here; every resource type a product
+ * declares attachable arrives from the config below, so the next attachable type
+ * cannot be forgotten by the strip.
  */
-const PRODUCT_BY_ITEM_TYPE: Readonly<Record<string, string>> = {
+const PRODUCT_BY_ITEM_TYPE_ALIAS: Readonly<Record<string, string>> = {
   linked_document: "workspace_files",
   linked_spreadsheet: "workspace_files",
-  google_document: "workspace_files",
-  google_spreadsheet: "workspace_files",
   calendar_event: "calendar",
   contact: "contacts",
   email: "gmail",
   gsc_property: "search_console",
   ga4_property: "analytics",
 };
+
+/**
+ * The product a record type belongs to when its own row does not say. DERIVED
+ * from the connectors' own product config — every `attachableResourceTypes`
+ * entry of every product maps to that product's key — plus the aliases above.
+ *
+ * 🚨 IT WAS A HAND-TYPED RECORD (Bugbot round 18 on frontend PR 228; landed in
+ * `ec7ce701`, LOST when the chair reverted that commit for its package half, and
+ * re-landed here as V17-5). F-38 made a picked Slides deck a first-class resource
+ * type (`google_presentation`) under `workspace_files`, and the strip resolved it
+ * to NO product — silently, with a console warning nobody reads and the record's
+ * own honest-gap sentence ("we cannot tell which connection refreshes it") where
+ * the answer was trivially `workspace_files`. The census showed three more
+ * declared types in the same state (`search_console_property`,
+ * `analytics_property`, `youtube_channel`).
+ * `features/item-presentation/__tests__/every-attachable-type-has-a-product.test.ts`
+ * walks the config, so a list nobody remembers to extend is no longer possible.
+ */
+const PRODUCT_BY_ITEM_TYPE: Readonly<Record<string, string>> = Object.freeze({
+  ...Object.fromEntries(
+    GOOGLE_PROVIDER.products.flatMap((product) =>
+      product.attachableResourceTypes.map(
+        (type) => [type, product.key] as const,
+      ),
+    ),
+  ),
+  ...PRODUCT_BY_ITEM_TYPE_ALIAS,
+});
 
 function stringColumn(row: DetailRow, columns: readonly string[]): string | null {
   for (const column of columns) {
@@ -121,8 +149,10 @@ export function sourceHealthProducerFor(
       console.warn(
         `[detail] The record type "${type}" carries a provider column but no connector product ` +
           "is mapped for it, so its health strip cannot name the grant it depends on. Remedy: add " +
-          "the type to PRODUCT_BY_ITEM_TYPE in features/item-presentation/sourceHealth.ts, or give " +
-          "the row a `provider_product` column.",
+          "the type to the product's `attachableResourceTypes` in " +
+          "features/connectors/provider-config.ts (the map here is derived from it), add it to " +
+          "PRODUCT_BY_ITEM_TYPE_ALIAS in features/item-presentation/sourceHealth.ts when its " +
+          "spelling differs, or give the row a `provider_product` column.",
       );
       return {
         source: GOOGLE_PROVIDER.name,
@@ -192,6 +222,13 @@ function grantStateFor(health: ConnectorProductHealth): DetailSourceHealth["gran
       return "missing";
     case "account_unusable":
       return "revoked";
+    // Blocked by the provider or by our own configuration: the strip states the
+    // reason and `reconnectWouldHelp` gives it no press, because none exists
+    // (V17-1). `unknown` is the only honest word the primitive's grant vocabulary
+    // has for it — "revoked" would tell the person to reconnect something a
+    // reconnect cannot repair.
+    case "unavailable":
+      return "unknown";
     case "refused": {
       const code = health.lastRefusal?.code ?? null;
       if (code === "grant_expired_or_revoked") return "expired";

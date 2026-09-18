@@ -28,6 +28,7 @@
 import { useState } from "react";
 import {
   AlertTriangle,
+  Ban,
   Check,
   ChevronDown,
   ChevronRight,
@@ -144,6 +145,8 @@ function initialSelection(health: readonly ConnectorProductHealth[]): string[] {
         // (VERIFY-U-P2-R2, N2).
         row.state === "account_unusable",
     )
+    // A BLOCKED row is deliberately absent: nothing can be asked for it, so
+    // switching it on would build a request the provider must refuse (V17-1).
     .map((row) => row.product.key);
 }
 
@@ -165,8 +168,20 @@ export function newAccountFootnote(providerName: string): string {
   return `Nothing you have already connected changes. A ${providerName} login that is new here becomes its own account; if you sign in with one that is already connected here, that account is refreshed instead — unless you switch it on for your organization below, which is its own account.`;
 }
 
-/** The one-line summary beside an account in the switcher: what it actually has. */
-function accountSummary(
+/**
+ * The one-line summary beside an account in the switcher: what it actually has.
+ *
+ * 🚨 EXPORTED, AND RENDERED ABOVE THE ROWS TOO (VERIFY-U-P2-R5, V17-3). This
+ * sentence was built correctly and shown ONLY inside the account `Select`'s item
+ * list — which is closed, and which a person with one account never opens. So the
+ * dialog a person reaches from a row reading "Needs reconnecting" said
+ * "Needs reconnecting" zero times, every one of the nine broken rows read exactly
+ * like a row nobody had ever connected, and the line above them promised
+ * "Nothing it already has is asked for again" while the footer under the button
+ * said it would approve nine products again. The words existed; the person could
+ * not reach them.
+ */
+export function accountSummary(
   provider: ConnectorProviderConfig,
   account: ConnectorAccount,
   rollout: readonly ConnectorCapabilityRollout[],
@@ -175,6 +190,12 @@ function accountSummary(
   const live = rows
     .filter((row) => row.state === "connected")
     .map((row) => row.product.name);
+  // Blocked outranks everything: no product works and nothing here repairs it,
+  // so the switcher must not offer the renewal sentence below (V17-1).
+  if (account.blocked) {
+    const held = rows.filter((row) => row.state === "unavailable").length;
+    return `Blocked — ${held} product${held === 1 ? "" : "s"} it already has cannot be used, and approving again would not help`;
+  }
   // A dead credential holds its grant and can use none of it. "Nothing
   // connected on this account yet" would read as "you never set this up", which
   // is the opposite of what happened (the N2 shape, in the switcher).
@@ -205,6 +226,8 @@ function ProductRow({
 }) {
   const Icon = health.product.icon;
   const gated = health.state === "pending_rollout";
+  /** Blocked: no toggle at all, because no request could succeed (V17-1). */
+  const blocked = health.state === "unavailable";
   return (
     <div className="flex items-start gap-2.5 border-b border-border/60 px-2.5 py-2.5 last:border-b-0 sm:px-3">
       <Icon
@@ -233,6 +256,21 @@ function ProductRow({
             <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-warning/15 px-1.5 text-[10px] font-medium text-warning">
               <AlertTriangle className="h-2.5 w-2.5" aria-hidden />
               Not working
+            </span>
+          ) : /* 🚨 THE TWO STATES THIS ROW RENDERED AS "never connected" (V17-3,
+                V17-1). A product the account HOLDS and cannot use is not a blank
+                row: with the credential dead every one of the nine rows read
+                exactly like a row nobody had ever switched on, on the one screen
+                a person reaches to repair it. */
+          health.state === "account_unusable" ? (
+            <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-destructive/15 px-1.5 text-[10px] font-medium text-destructive">
+              <AlertTriangle className="h-2.5 w-2.5" aria-hidden />
+              Needs reconnecting
+            </span>
+          ) : health.state === "unavailable" ? (
+            <span className="inline-flex shrink-0 items-center gap-0.5 rounded-full bg-destructive/15 px-1.5 text-[10px] font-medium text-destructive">
+              <Ban className="h-2.5 w-2.5" aria-hidden />
+              Blocked
             </span>
           ) : null}
         </div>
@@ -264,6 +302,23 @@ function ProductRow({
               ? ` Approving ${provider.name} again renews it — nothing new is asked for.`
               : ""}
           </p>
+        ) : health.state === "account_unusable" ? (
+          /* The account's own sentence, on the row it broke, with what the press
+             will do about it — the same promise the footer makes (V17-3). */
+          <p className="mt-1 text-xs leading-snug text-destructive">
+            {health.reason}
+            {selected
+              ? ` Approving ${provider.name} again renews it — nothing new is asked for.`
+              : ""}
+          </p>
+        ) : health.state === "unavailable" ? (
+          <p className="mt-1 flex items-start gap-1 text-xs leading-snug text-destructive">
+            <Ban className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+            <span>
+              {health.reason}
+              {health.remedy ? ` ${health.remedy}` : ""}
+            </span>
+          </p>
         ) : null}
         {outcome ? (
           <p
@@ -290,7 +345,7 @@ function ProductRow({
       </div>
 
       <div className="flex shrink-0 items-center gap-0.5">
-        {gated ? null : (
+        {gated || blocked ? null : (
           <Switch
             checked={selected}
             disabled={busy || health.state === "connected"}
@@ -570,10 +625,30 @@ export function ConnectorConsentBody({
               </SelectContent>
             </Select>
           )}
-          <p className="w-full text-xs text-muted-foreground">
-            {account
-              ? "Switching on another product adds it to this account. Nothing it already has is asked for again."
-              : newAccountFootnote(provider.name)}
+          {/* 🚨 THE ACCOUNT'S OWN TRUTH, ABOVE THE ROWS, WHERE A PERSON READS IT
+              (V17-3). This line always said "Nothing it already has is asked for
+              again" — which is exactly backwards for an account whose credential
+              is dead (the press renews all nine) and for one that is blocked
+              (nothing can be asked for at all), and it sat directly above rows
+              that looked unconnected and a footer that said nine products would
+              be approved again. `accountSummary` is the same sentence the
+              switcher shows; it is no longer only reachable by opening a closed
+              `Select`. */}
+          <p
+            className={cn(
+              "w-full text-xs",
+              account && !account.usable
+                ? "text-destructive"
+                : "text-muted-foreground",
+            )}
+          >
+            {!account
+              ? newAccountFootnote(provider.name)
+              : account.blocked
+                ? `${accountSummary(provider, account, rollout)}.`
+                : !account.usable
+                  ? `${accountSummary(provider, account, rollout)}. Approving ${provider.name} again renews what it already has — nothing new is asked for.`
+                  : "Switching on another product adds it to this account. Nothing it already has is asked for again."}
           </p>
         </div>
 

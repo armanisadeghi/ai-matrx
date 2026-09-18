@@ -116,8 +116,17 @@ export interface GoogleConnectionCapabilityHealth {
   /**
    * The marker AS READ, carried through — never dropped, never rewritten to the
    * one this build prefers (V13-6: the server's spelling is changing under us).
+   *
+   * 🚨 AND NULL WHEN THERE WAS NO MARKER TO READ (VERIFY-U-P2-R5, V17-8). An
+   * unrecognised value used to come back carrying the LEGACY GOOGLE spelling,
+   * because the `EMPTY` constant was written with it — so this field reported a
+   * marker the data never had, in the one file whose stated law is that the
+   * marker read is the marker carried. An unrecognised value now carries the
+   * string it actually held, and `null` when it held no `__kind` string at all.
+   * Nothing is stripped either way (kind-marker law): the value is not ours to
+   * rewrite, and a claim about it is not ours to invent.
    */
-  kind: string;
+  kind: string | null;
   /** Keyed by SERVER capability key (`drive_files`, `youtube_analytics`). */
   capabilities: Record<string, GoogleCapabilityRecord>;
   /**
@@ -129,11 +138,16 @@ export interface GoogleConnectionCapabilityHealth {
   recognized: boolean;
 }
 
-const EMPTY: GoogleConnectionCapabilityHealth = {
-  kind: GOOGLE_CAPABILITY_HEALTH_KIND,
-  capabilities: {},
-  recognized: false,
-};
+/**
+ * The unrecognised answer, carrying the marker AS READ — the value's own
+ * `__kind` string when it had one, and `null` when it did not. Never this build's
+ * preferred spelling (V17-8).
+ */
+function unrecognized(raw: unknown): GoogleConnectionCapabilityHealth {
+  const asRead =
+    isJsonObject(raw) && typeof raw.__kind === "string" ? raw.__kind : null;
+  return { kind: asRead, capabilities: {}, recognized: false };
+}
 
 function stringField(source: Record<string, unknown>, key: string): string | null {
   const value = source[key];
@@ -217,8 +231,8 @@ function parseRefusal(raw: unknown): GoogleCapabilityRefusal | null {
 export function parseGoogleCapabilityHealth(
   raw: unknown,
 ): GoogleConnectionCapabilityHealth {
-  if (!isJsonObject(raw)) return EMPTY;
-  if (!isCapabilityHealthKind(raw.__kind)) return EMPTY;
+  if (!isJsonObject(raw)) return unrecognized(raw);
+  if (!isCapabilityHealthKind(raw.__kind)) return unrecognized(raw);
   const kind = raw.__kind as string;
   const capabilities: Record<string, GoogleCapabilityRecord> = {};
   for (const [key, value] of Object.entries(raw)) {
