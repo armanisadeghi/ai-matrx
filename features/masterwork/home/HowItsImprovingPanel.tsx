@@ -27,14 +27,19 @@ import {
   fetchImprovementRows,
   type ImprovementRow,
 } from "./service";
+import { formatRelativeTime } from "@ai-matrx/kit/format";
 
+/**
+ * AN OPTION-BINDING WRAPPER over `@ai-matrx/kit/format`. The body it replaces
+ * rounded an epoch delta into whole days and returned "today" for anything at
+ * or below zero, so an improvement stamped a few seconds ahead of the viewer's
+ * clock read "today" and one stamped tomorrow read "today" too. kit's `long`
+ * voice speaks both directions, has a sub-minute skew band, and falls back to
+ * the absolute date past a year — which is what the `toLocaleDateString` branch
+ * was reaching for.
+ */
 function whenDate(iso: string): string {
-  const d = new Date(iso);
-  const days = Math.round((Date.now() - d.getTime()) / 86_400_000);
-  if (days <= 0) return "today";
-  if (days === 1) return "yesterday";
-  if (days < 30) return `${days} days ago`;
-  return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  return formatRelativeTime(iso, { style: "long" });
 }
 
 export function HowItsImprovingPanel() {

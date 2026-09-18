@@ -4,23 +4,26 @@ import { parseTimestamp } from "@/utils/datetime";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
 // 1h 02m. THE UNIT LAW puts the unit in the name.
-import { formatDurationMs } from "@ai-matrx/kit/format";
+import { formatCount, formatDurationMs, formatUsd } from "@ai-matrx/kit/format";
 // `formatRelativeTime` is THE package formatter (`@ai-matrx/kit/format`,
 // census H1 2026-09-07). This surface previously carried a local copy.
 export { formatRelativeTime } from "@ai-matrx/kit/format";
 
+/**
+ * AN OPTION-BINDING WRAPPER over `@ai-matrx/kit/format`. Two things changed
+ * when the money shape lane found the body that used to be here: the three
+ * hand-rolled precision tiers are the package's `digits: "adaptive"`, and an
+ * UNMEASURED cost no longer prints a confident "$0.00" — it prints the em-dash,
+ * because "we never measured this" and "this cost nothing" are not the same
+ * sentence.
+ */
 export function formatCost(cost: number | null | undefined): string {
-  if (cost === null || cost === undefined) return "$0.00";
-  if (cost < 0.01) return `$${cost.toFixed(6)}`;
-  if (cost < 1) return `$${cost.toFixed(4)}`;
-  return `$${cost.toFixed(2)}`;
+  return formatUsd(cost, { digits: "adaptive" });
 }
 
 export function formatTokens(tokens: number | null | undefined): string {
   if (!tokens) return "0";
-  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`;
-  if (tokens >= 1_000) return `${(tokens / 1_000).toFixed(1)}K`;
-  return tokens.toLocaleString();
+  return formatCount(tokens, { style: "compact" });
 }
 
 /** A zero here means "not measured", so it keeps this dashboard's hyphen. */

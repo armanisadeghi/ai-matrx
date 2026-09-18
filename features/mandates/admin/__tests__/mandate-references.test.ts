@@ -11,14 +11,7 @@
  *    never render as an honest-looking empty list.
  */
 
-import {
-  SINGLE_SITE_SENTENCE,
-  formatRepoList,
-  isMandateReferenceBoard,
-  isMandateReferenceReport,
-  unreportedSentence,
-  type MandateReferenceReport,
-} from "../references";
+import { SINGLE_SITE_SENTENCE, formatRepoList, isMandateReferenceBoard, isMandateReferenceReport, unreportedSentence, type MandateReferenceReport } from "../references";
 
 function report(
   overrides: Partial<MandateReferenceReport> = {},

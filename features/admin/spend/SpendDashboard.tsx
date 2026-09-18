@@ -49,8 +49,9 @@ import {
 
 import { fetchSpendOverview, viewerTimezone } from "./service";
 import { useSpendPopoverKnobs } from "./useSpendPopoverKnobs";
-import { count, staleness, timestamp, usd, usdPrecise } from "./format";
+import { staleness, timestamp, usd, usdPrecise } from "./format";
 import type { SpendLedger, SpendLedgerRole, SpendOverview } from "./types";
+import { formatCount } from "@ai-matrx/kit/format";
 
 const ROLE_LABEL: Record<SpendLedgerRole, string> = {
   primary: "Headline",
@@ -273,7 +274,7 @@ export function SpendDashboard() {
       align: "right",
       cell: (r) => (
         <span className="tabular-nums text-muted-foreground">
-          {r.rows === null ? "—" : count(r.rows)}
+          {r.rows === null ? "—" : formatCount(r.rows)}
         </span>
       ),
     },
@@ -463,8 +464,8 @@ export function SpendDashboard() {
                   {usd(data.printOrders.revenueUsd)}
                 </div>
                 <div className="text-[11px] text-muted-foreground">
-                  {count(data.printOrders.paidOrders)} of{" "}
-                  {count(data.printOrders.orders)} orders
+                  {formatCount(data.printOrders.paidOrders)} of{" "}
+                  {formatCount(data.printOrders.orders)} orders
                 </div>
               </div>
               <div className="rounded-md border border-border bg-card px-3 py-2">

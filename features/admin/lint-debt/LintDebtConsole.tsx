@@ -66,8 +66,11 @@ import {
   type LintDebtReport,
 } from "@/scripts/lint-debt/types";
 import { fixPromptForBucket, fixPromptForFinding } from "./fix-prompt";
+import { formatCount, formatRelativeTime } from "@ai-matrx/kit/format";
 
 /** A scan older than this is stale enough that the page must say so. */
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 const STALE_AFTER_DAYS = 7;
 
 /** The one-click fix that ships with the staleness complaint. */
@@ -104,9 +107,17 @@ function lintFindingContent(f: LintDebtFinding): string {
 /** The clock never notifies us; the age only needs to be right on mount. */
 const subscribeToNothing = () => () => {};
 
-function ageInDays(iso: string): number {
+/**
+ * How long ago the scan ran, in MILLISECONDS — a number the staleness threshold
+ * COMPARES and nothing renders. Every rendered form of this age goes through
+ * `formatRelativeTime` from `@ai-matrx/kit/format` instead; the body that used
+ * to live here floored the delta into whole days and printed "scanned today"
+ * for a stamp ahead of the clock, and the relative-time shape lane of
+ * `check:package-twins` is what found it.
+ */
+function ageMs(iso: string): number {
   const ms = Date.now() - new Date(iso).getTime();
-  return Number.isFinite(ms) ? Math.max(0, Math.floor(ms / 86_400_000)) : 0;
+  return Number.isFinite(ms) ? Math.max(0, ms) : 0;
 }
 
 function classTone(klass: LintDebtClass): string {
@@ -150,14 +161,14 @@ export function LintDebtConsole({
   const [clickedFinding, setClickedFinding] = useState<LintDebtFinding | null>(null);
 
   /**
-   * Snapshot age in days. The wall clock is an external system, so it is read
+   * Snapshot age in milliseconds. The wall clock is an external system, so it is read
    * through `useSyncExternalStore` rather than during render — `Date.now()` in
    * a render body is impure (react-hooks/purity, one of the very rules this
    * page reports) and a setState-in-effect would cascade.
    */
-  const scanAgeDays = useSyncExternalStore(
+  const scanAgeMs = useSyncExternalStore(
     subscribeToNothing,
-    () => ageInDays(report.generatedAt),
+    () => ageMs(report.generatedAt),
     () => null,
   );
 
@@ -383,7 +394,7 @@ export function LintDebtConsole({
     <div className="flex h-full min-h-0 flex-col gap-3 p-4">
       <Header
         report={report}
-        scanAgeDays={scanAgeDays}
+        scanAgeMs={scanAgeMs}
         delta={delta}
         problems={problems}
         historyDrift={historyDrift}
@@ -638,7 +649,7 @@ function filterFindings(
 
 function Header({
   report,
-  scanAgeDays,
+  scanAgeMs,
   delta,
   problems,
   historyDrift,
@@ -646,13 +657,13 @@ function Header({
 }: {
   report: LintDebtReport;
   /** `null` until the client has read the clock. */
-  scanAgeDays: number | null;
+  scanAgeMs: number | null;
   delta: number | null;
   problems: string[];
   historyDrift: string | null;
   onCopyRefresh: () => void;
 }) {
-  const stale = scanAgeDays !== null && scanAgeDays > STALE_AFTER_DAYS;
+  const stale = scanAgeMs !== null && scanAgeMs > STALE_AFTER_DAYS * DAY_MS;
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -666,12 +677,12 @@ function Header({
 
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <span>
-          Scanned {report.totals.filesScanned.toLocaleString()} files
-          {scanAgeDays === null
+          Scanned {formatCount(report.totals.filesScanned)} files
+          {scanAgeMs === null
             ? ""
-            : scanAgeDays === 0
-              ? " · today"
-              : ` · ${scanAgeDays} day${scanAgeDays === 1 ? "" : "s"} ago`}
+            : ` · ${formatRelativeTime(Date.now() - scanAgeMs, {
+                style: "long",
+              })}`}
         </span>
         {report.commit && (
           <AppLink
@@ -719,7 +730,10 @@ function Header({
       {stale && (
         <Alert
           tone="warn"
-          text={`This snapshot is ${scanAgeDays} days old — the line numbers below have almost certainly drifted.`}
+          text={`This snapshot is ${formatRelativeTime(Date.now() - (scanAgeMs ?? 0), {
+            style: "long",
+            suffix: false,
+          })} old — the line numbers below have almost certainly drifted.`}
           action={{
             label: `Copy \`${REFRESH_COMMAND}\``,
             onClick: onCopyRefresh,
@@ -801,10 +815,10 @@ function ClassCard({
       </div>
       <div className="mt-0.5 flex items-baseline gap-2">
         <span className="text-2xl font-semibold tabular-nums text-foreground">
-          {report.totals.errors.toLocaleString()}
+          {formatCount(report.totals.errors)}
         </span>
         <span className="text-xs text-muted-foreground">
-          errors in {report.totals.filesWithFindings.toLocaleString()} files
+          errors in {formatCount(report.totals.filesWithFindings)} files
         </span>
       </div>
       <p className="mt-0.5 text-xs text-muted-foreground">
