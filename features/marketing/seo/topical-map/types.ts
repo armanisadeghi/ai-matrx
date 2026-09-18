@@ -420,7 +420,19 @@ export interface MapDiagnosticsResult {
   topics_crowded: MapDiagnosticsCrowdedTopic[];
   topics_proposed: string[];
   pages_on_many_topics: MapDiagnosticsOverloadedPage[];
-  /** 0 when no site is in scope — the count only means something per site. */
+  /**
+   * Pages with no `covers` edge into a LIVE topic OF THIS MAP. 0 when no site
+   * is in scope — the count only means something per site.
+   *
+   * 🚨 ROUND 22 CHANGED THE MEANING, not the signature. Before
+   * `seo_topical_map_22_a_page_never_vanishes` the `NOT EXISTS` behind this
+   * matched ANY `seo_map_topic` edge, at any status and OF ANY MAP — so a page
+   * whose only coverage had been rejected, or belonged to a different map, read
+   * as "on a topic" and the one number built to find unmapped pages kept saying
+   * zero. It now sees live topics of this map only, so rejected and retired
+   * coverage counts as no coverage and this number can rise when somebody
+   * rejects a proposal. That is the truth arriving, never a regression.
+   */
   pages_on_no_topic: number;
   pages_on_no_topic_sample: MapDiagnosticsPageRef[];
   /** Retired topics that still carry attachments. */
@@ -477,7 +489,9 @@ export interface MapTopicsPatchResult {
 
 /**
  * What to do with a topic that is being removed while attachments still hang
- * off it. `merge_into:<slug>` moves them onto that topic.
+ * off it. `merge_into:<slug>` moves them onto that topic — and since round 22
+ * that target must be a LIVE topic: a retired or rejected slug raises the same
+ * `P0002` an invented one does.
  */
 export type MapTopicRemovalPolicy =
   | "error"
@@ -533,6 +547,12 @@ export interface SetPagesMapTopicsSuccess {
   covers: number;
   /** How many coverage rows from the same `source` were replaced. */
   replaced: number;
+  /**
+   * Slugs this call could not cover. 🚨 ROUND 22: a RETIRED or REJECTED slug
+   * lands here too, in the same shape and the same bytes as an invented one —
+   * a dead topic is never a coverage destination, and nothing distinguishes
+   * the two cases on the wire.
+   */
   unknown_slugs: string[];
 }
 
@@ -594,7 +614,8 @@ export interface MapDryRunResult {
  * says `retire`, rejection's says `reject` (keep them and reject anyway), and
  * `seo.reject_map_topics` raises 22023 on anything outside this list.
  * `merge_into:<slug>` moves them onto that topic, which may not itself be in
- * the batch.
+ * the batch — and since round 22 must be a LIVE topic: a retired or rejected
+ * slug raises the same `P0002` an invented one does.
  */
 export type MapTopicRejectionPolicy =
   | "error"
@@ -802,8 +823,27 @@ export interface PageIntentCurrentTopic {
 
 /** The page's one intent, rendered. `jsonb_strip_nulls`ed. */
 export interface PageIntentRecord {
-  /** Where the page SHOULD live (keep/move/rewrite/merge/redirect) or sits today (delete). */
-  topic: { slug: string; name: string };
+  /**
+   * Where the page SHOULD live (keep/move/rewrite/merge/redirect) or sits
+   * today (delete).
+   *
+   * 🚨 OPTIONAL SINCE ROUND 22 (`seo_topical_map_22_a_page_never_vanishes`),
+   * and a missing key is a REAL, EXPECTED state — not a malformed row. The
+   * intent SURVIVES its topic being hidden, because it is a decision somebody
+   * made and it is still true; but the server renders `topic` only while that
+   * topic is live (`status IN ('proposed','active')`), so a screen can never
+   * offer a destination that is gone. A rejected or retired topic is not a
+   * destination anywhere: `set_page_intents`, `set_page_map_topics` (the slug
+   * comes back in `unknown_slugs`), `move_map_topic`, `merge_map_topics` and
+   * every `merge_into:<slug>` policy answer the same `P0002` an invented slug
+   * gets.
+   *
+   * So a reader must narrow before use. The state it means —
+   * `intent_topic_hidden` — is produced by `pageTopicState` in
+   * `./redux/selectors`, and the screen says the destination left the map
+   * rather than printing a blank cell.
+   */
+  topic?: { slug: string; name: string };
   disposition: PageIntentDisposition;
   state: PageIntentState;
   source: PageIntentSource;
@@ -825,6 +865,17 @@ export interface PageIntentRecord {
  */
 export interface PageIntentItem {
   page: PageIntentPageRef;
+  /**
+   * The page's LIVE coverage. `[]` is a real, expected state — "on no topic" —
+   * and never a sign the read failed.
+   *
+   * 🚨 ROUND 22. A page is ALWAYS LISTABLE. Candidacy for this list reads
+   * topics of this map at ANY status, so a page whose only topic was rejected
+   * or retired is still here; `current_topics` reads LIVE topics only, so it
+   * comes back empty. Before the migration the two came from one CTE that
+   * excluded rejected topics, so rejecting a proposal silently deleted its
+   * pages from the list entirely.
+   */
   current_topics: PageIntentCurrentTopic[];
   intent: PageIntentRecord | null;
 }
@@ -895,4 +946,77 @@ export interface MapHistoryListOptions {
   limit?: number;
   /** Clamped to >= 0; 0 when omitted. */
   offset?: number;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// The page-mapping ledger (CONTRACTS §8 readers)
+//
+// These four read the SITE's mapping ledger, `seo.page_mapping_queue` — what
+// the "map the pages" run enrolled, what it settled, and what it could not
+// place. They are site-scoped, never map-scoped: a ledger row belongs to a
+// site, and the map is only what the site currently uses.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * One row of `seo.page_mapping_status` — the ledger for one site, rolled up.
+ * The function is `RETURNS TABLE`, so PostgREST answers with an ARRAY of
+ * exactly one row; the wrapper hands back that row (see `pageMappingStatus`).
+ *
+ * Every `*_mapped` figure is the DONE slice of the figure beside it, so
+ * "43% of this site's clicks are on the map" is a division a screen can do
+ * without a second call. `next_url` is the pending page with the most clicks —
+ * what the next press will start on — and `last_error` is the newest failure
+ * still standing, not a count.
+ */
+export type PageMappingStatus =
+  Database["seo"]["Functions"]["page_mapping_status"]["Returns"][number];
+
+/**
+ * One topic the mapper says this map is MISSING: pages it could not place that
+ * all named the same subject. THE BAR is two pages asking, or one page we have
+ * actually crawled — a suggestion resting on a single uncrawled URL is held
+ * back instead (see {@link PageMappingWantedTopicHeldBack}), never dropped.
+ */
+export type PageMappingWantedTopic =
+  Database["seo"]["Functions"]["page_mapping_wanted_topics"]["Returns"][number];
+
+/**
+ * A wanted topic that did NOT clear the bar, with `held_back_because` — the
+ * sentence saying what would promote it. Listed, never hidden: a suggestion
+ * the system is sitting on is a decision a person is entitled to see.
+ */
+export type PageMappingWantedTopicHeldBack =
+  Database["seo"]["Functions"]["page_mapping_wanted_topics_held_back"]["Returns"][number];
+
+/**
+ * One active page of a site that sits on NO live topic of the map.
+ *
+ * The function `jsonb_strip_nulls` each item, so every field below except
+ * `page_id`, `url` and `clicks` can be ABSENT rather than null — a page that
+ * was never enrolled has no `queue_status` at all. `rendition_of` names the
+ * canonical page this one is a second address of (amp / paginated / parameter
+ * variant); a rendition is not a gap, it is a duplicate address.
+ */
+export interface PageWithoutTopic {
+  page_id: string;
+  url: string;
+  clicks: number;
+  queue_status?: string;
+  mapping_source?: string;
+  last_error?: string;
+  rendition_of?: string;
+}
+
+/**
+ * Result of `seo.list_pages_without_topic`. Paged: `total` counts every bare
+ * page, `items` carries one page of them (the function clamps `limit` to
+ * 1..1000, defaulting to 200, and `offset` to >= 0).
+ */
+export interface PagesWithoutTopicResult {
+  site_id: string;
+  map_id: string;
+  total: number;
+  limit: number;
+  offset: number;
+  items: PageWithoutTopic[];
 }

@@ -11,12 +11,14 @@
  */
 
 import Link from "next/link";
+import { BrainCircuit } from "lucide-react";
 
 import { SectionCard } from "@/features/marketing/components/shared/MarketingUi";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 import { useTopicalMaps } from "../hooks";
 import { topicalMapErrorText } from "../errors";
+import { startMapHref } from "./TopicalMapHome";
 
 export function BrandTopicalMapCard({
   brandId,
@@ -48,10 +50,20 @@ export function BrandTopicalMapCard({
           {topicalMapErrorText(maps.error)}
         </p>
       ) : maps.data.length === 0 ? (
-        <p className="p-4 text-xs text-muted-foreground">
-          No topical map yet. The map decides which pages this brand should have
-          and where they live; the content plan writes the ones it calls for.
-        </p>
+        <div className="grid gap-2 p-4">
+          <p className="text-xs text-muted-foreground">
+            No topical map yet. The map decides which pages this brand should have
+            and where they live; the content plan writes the ones it calls for.
+          </p>
+          {/* Placement §7 #4 — "Generate map" when there is none. */}
+          <Link
+            href={startMapHref(brandSeg, { source: "data" })}
+            className="inline-flex w-fit items-center gap-2 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-muted"
+          >
+            <BrainCircuit className="h-4 w-4" aria-hidden />
+            Start a map from this brand&apos;s data
+          </Link>
+        </div>
       ) : (
         <ul className="divide-y divide-border">
           {maps.data.map((map) => (

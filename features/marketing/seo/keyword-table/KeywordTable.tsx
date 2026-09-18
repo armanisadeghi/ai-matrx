@@ -36,7 +36,7 @@ import {
   type ReactNode,
 } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { SearchX } from "lucide-react";
+import { Network, SearchX } from "lucide-react";
 
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -93,6 +93,7 @@ import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/com
 import { WhyScoreHint } from "@/features/marketing/seo/value-system/workbench/WhyScore";
 import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import { ColumnChooser } from "./ColumnChooser";
+import { useKeywordMapHomes } from "@/features/marketing/seo/topical-map/linkins/useKeywordMapHomes";
 import { buildKeywordColumns, OFFERING_COLUMN_ID } from "./columns";
 import {
   liveSearchParams,
@@ -343,6 +344,14 @@ export function KeywordTable({
     dimensions: state.dimensions,
   });
   const { rows, total } = data;
+  // Where each keyword on this page lives on the site's topical map (the
+  // `map_topic` column). One read per page of ids; "no map" and "not homed
+  // yet" are real answers the column renders, never blanks.
+  const mapHomes = useKeywordMapHomes(
+    siteId,
+    brandId,
+    rows.map((row) => row.keyword_id),
+  );
 
   /* -------------------------------------------------------------- selection */
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -527,6 +536,7 @@ export function KeywordTable({
       siteId,
       brandId,
       hasCompare: periods.compare !== null,
+      mapHomes,
       handlers: {
         onPlaceService: (keywordId, offeringId, keyword) =>
           void placeService(keywordId, offeringId, keyword),
@@ -973,9 +983,58 @@ export function KeywordTable({
   // The context menu's trigger renders `asChild`, so `wrapTable` must return a
   // real DOM element around the table — handing `asChild` a component that does
   // not forward props drops the right-click handler on the floor, silently.
+  /**
+   * `?topic=<slug>` — the MAP topic a link-in arrived from.
+   *
+   * 🚨 IT NARROWS THE LOADED PAGE ONLY. Which keywords come back at all is
+   * `gsc_perf_breakdown`'s decision and it takes no topic argument; a keyword's
+   * map home is read separately, for the ids ON THIS PAGE
+   * (`useKeywordMapHomes`). So this answers "of the fifty on screen, these live
+   * on that topic" and the banner below says so in those words. Presenting it
+   * as a filter of all 5,823 would be exactly the lie this file's header
+   * refuses. Nothing is hidden until the homes have actually loaded — a row
+   * whose home is still `undefined` is unknown, not absent.
+   */
+  const mapTopicSlug = state.mapTopicSlug;
+  const topicRows =
+    mapTopicSlug && mapHomes.ready
+      ? displayRows.filter(
+          (row) =>
+            !!row.keyword_id &&
+            mapHomes.homeFor(row.keyword_id)?.slug === mapTopicSlug,
+        )
+      : displayRows;
+  const topicName = mapTopicSlug
+    ? (topicRows
+        .map((row) => (row.keyword_id ? mapHomes.homeFor(row.keyword_id)?.name : null))
+        .find((name): name is string => !!name) ?? mapTopicSlug)
+    : null;
+
+  const mapTopicBanner = mapTopicSlug ? (
+    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-xs text-muted-foreground">
+      <Network className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      <span>
+        {mapHomes.error
+          ? mapHomes.error
+          : !mapHomes.mapId && mapHomes.ready
+            ? `This link came from the topical map's "${mapTopicSlug}", but this site uses no map, so nothing here can be narrowed to it.`
+            : !mapHomes.ready
+              ? `Reading which of these keywords live on "${mapTopicSlug}"…`
+              : `Showing the ${topicRows.length} of the ${displayRows.length} keywords loaded on this page that live on ${topicName} — this narrows the page you are looking at, not all ${formatCount(total)}.`}
+      </span>
+      <button
+        type="button"
+        onClick={() => patch({ mapTopicSlug: null })}
+        className="rounded-sm font-medium text-primary hover:underline"
+      >
+        Show every keyword on this page
+      </button>
+    </p>
+  ) : null;
+
   const table = (
     <MatrxDataTable<GscBreakdownRow>
-      data={displayRows}
+      data={topicRows}
       columns={columns}
       getRowId={(row) => row.key}
       isLoading={data.isLoading}
@@ -1174,6 +1233,8 @@ export function KeywordTable({
           />
         </div>
       ) : null}
+
+      {mapTopicBanner}
 
       {data.error ? (
         <InlineQueryError

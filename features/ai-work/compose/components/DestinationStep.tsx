@@ -3,16 +3,17 @@
 /**
  * Step 1 — WHO does the work.
  *
- * Every destination the product intends to offer is listed. Exactly one is
- * selectable today; the rest state the real reason they are not, sourced from
- * `destinationAvailability` (which reads the LIVE managed-runtime contract for
- * Claude Code). No fake Run button, no invented availability, and no hidden
- * option the user cannot find later.
+ * Every destination the product intends to offer is listed; the ones that
+ * cannot run state the real reason, sourced from
+ * `destinationAvailability` — the live bridge verdict for the hosted sandbox,
+ * the live Matrx Local engine answer for the user's own Mac. No fake Run
+ * button, no invented availability, and no hidden option the user cannot find
+ * later.
  */
 
 import { CircleDot, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ManagedCapability } from "@/features/ai-work/lib/managedClaudeCapability";
+import type { CodingBridgeCapability } from "@/features/ai-work/lib/codingBridgeCapability";
 import type { LocalRuntimeCapability } from "@/features/ai-work/lib/matrxLocalRuntime";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import {
@@ -23,16 +24,16 @@ import {
 
 export function DestinationStep({
   value,
-  capability,
+  bridgeCapability,
   localCapability,
   onChange,
 }: {
   value: WorkDestinationId;
-  capability: ManagedCapability;
+  bridgeCapability: CodingBridgeCapability;
   localCapability?: LocalRuntimeCapability;
   onChange: (id: WorkDestinationId) => void;
 }) {
-  if (capability.organizationRequired) {
+  if (bridgeCapability.organizationRequired) {
     return (
       <OrganizationRequiredNotice description="Choosing where this work runs needs to know which organization to work in. Pick one below and the destinations load automatically." />
     );
@@ -43,7 +44,7 @@ export function DestinationStep({
       {WORK_DESTINATIONS.map((destination) => {
         const { selectable, reason } = destinationAvailability(
           destination.id,
-          capability,
+          bridgeCapability,
           localCapability,
         );
         const selected = selectable && value === destination.id;

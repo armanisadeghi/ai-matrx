@@ -49,6 +49,7 @@ export const PEEK_KINDS = [
   // F-40; before it, `hasPeek("party")` was false and `EntityRef token="party"`
   // offered no in-place door on any surface that names a Person.
   "party",
+  "seo_map_topic",
 ] as const;
 
 const PEEK_KIND_SET: ReadonlySet<string> = new Set(PEEK_KINDS);

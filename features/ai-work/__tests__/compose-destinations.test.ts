@@ -3,9 +3,11 @@ import {
   destinationAvailability,
 } from "@/features/ai-work/compose/destinations";
 import {
-  INITIAL_CAPABILITY,
-  type ManagedCapability,
-} from "@/features/ai-work/lib/managedClaudeCapability";
+  INITIAL_BRIDGE_CAPABILITY,
+  type BridgeOperation,
+  type BridgeOperationVerdict,
+  type CodingBridgeCapability,
+} from "@/features/ai-work/lib/codingBridgeCapability";
 import type { LocalRuntimeCapability } from "@/features/ai-work/lib/matrxLocalRuntime";
 
 function localCapability(
@@ -24,36 +26,59 @@ function localCapability(
   };
 }
 
-const READY_AVAILABLE: ManagedCapability = {
+function supported(operation: BridgeOperation): BridgeOperationVerdict {
+  return { operation, supported: true, reason: null };
+}
+
+/** The bridge verdict that CAN launch a hosted sandbox run. */
+const READY_AVAILABLE: CodingBridgeCapability = {
   state: "ready",
   available: true,
-  nativeResume: true,
-  nativeFork: true,
   reason: null,
+  runtime: "matrx_sandbox",
+  operations: {
+    ...INITIAL_BRIDGE_CAPABILITY.operations,
+    start: supported("start"),
+    stream: supported("stream"),
+  },
   organizationRequired: false,
 };
 
-const READY_UNAVAILABLE: ManagedCapability = {
+/** The bridge verdict that cannot, with the server's own sentence. */
+const READY_UNAVAILABLE: CodingBridgeCapability = {
   state: "ready",
   available: false,
-  nativeResume: false,
-  nativeFork: false,
   reason: "The hosted image is not released.",
+  runtime: "matrx_sandbox",
+  operations: INITIAL_BRIDGE_CAPABILITY.operations,
   organizationRequired: false,
 };
 
 describe("destinationAvailability", () => {
-  it("makes AI Matrx the one selectable destination", () => {
+  it("selects only AI Matrx when no coding runtime can run", () => {
     const selectable = WORK_DESTINATIONS.filter(
       (destination) =>
-        destinationAvailability(destination.id, READY_AVAILABLE).selectable,
+        destinationAvailability(destination.id, READY_UNAVAILABLE).selectable,
     );
     expect(selectable.map((d) => d.id)).toEqual(["ai-matrx"]);
   });
 
+  // The hosted destination's verdict is the bridge's, and nothing else — its
+  // full rule set lives in `hosted-destination-verdict.test.ts`.
+  it("adds the hosted destination once the bridge verdict can launch it", () => {
+    const selectable = WORK_DESTINATIONS.filter(
+      (destination) =>
+        destinationAvailability(destination.id, READY_AVAILABLE).selectable,
+    );
+    expect(selectable.map((d) => d.id)).toEqual([
+      "ai-matrx",
+      "claude-code-hosted",
+    ]);
+  });
+
   it("never leaves an unavailable destination without a reason", () => {
     for (const capability of [
-      INITIAL_CAPABILITY,
+      INITIAL_BRIDGE_CAPABILITY,
       READY_AVAILABLE,
       READY_UNAVAILABLE,
     ]) {
@@ -69,9 +94,9 @@ describe("destinationAvailability", () => {
     }
   });
 
-  // Claude Code's runnability moved to the user's OWN Matrx Local engine on
-  // 2026-08-17; the hosted managed-sandbox capability is context, never a
-  // launch path from the composer. These assert the live contract.
+  // "Claude Code on my Mac" reads the user's OWN Matrx Local engine and
+  // NOTHING else — the bridge verdict passed alongside it is the hosted
+  // sandbox's, and must never leak into this branch. These assert that.
   it("says it is still asking while the local engine has not answered", () => {
     expect(destinationAvailability("claude-code", READY_UNAVAILABLE)).toEqual({
       selectable: false,

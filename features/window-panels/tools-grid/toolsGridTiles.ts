@@ -314,6 +314,18 @@ export const TOOLS_GRID_TILES: ReadonlyArray<ToolsGridTile> = [
 
   // ── Content ────────────────────────────────────────────────────────────
   {
+    // A brand's topical map, floating over ANY screen (Arman: "the window
+    // panel is the most important one"). Opens on the map picker; the
+    // window re-keys itself to the chosen map so restore and the URL carry it.
+    id: "tile.topical-map",
+    label: "Topical map",
+    icon: ListTree,
+    category: "content",
+    overlayId: "topicalMapWindow",
+    instanceStrategy: "singleton-default",
+    seedData: () => ({ mapId: "", screen: "outline", siteId: null }),
+  },
+  {
     id: "tile.code-editor",
     label: "Code Editor",
     icon: FileCode2,

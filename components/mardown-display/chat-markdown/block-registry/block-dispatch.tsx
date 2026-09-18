@@ -435,6 +435,7 @@ export type FeSynthesizedBlockType =
   | "directive_receipt"
   | "media_block"
   | "video_prompt_options"
+  | "map_topic_proposal"
   | "keyword_research"
   | "keyword_classification_batch"
   | "keyword_serp_intent_analysis"
@@ -608,6 +609,7 @@ export type ShapeBlockType =
   | "structured_info"
   | "item_presentation"
   | "video_prompt_options"
+  | "map_topic_proposal"
   | "keyword_research"
   | "keyword_classification_batch"
   | "keyword_serp_intent_analysis"
@@ -1702,6 +1704,26 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.VideoPromptOptionsBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return renderJsonFallback(block, index);
+  },
+
+  // Kind-routed (map_topic_proposal_v1 — the tree the topical-map author
+  // proposes, Lane G / R12): same complete-only bridge shape as above. The
+  // block renders THE ONE proposal component (`MapTopicProposalView`) over the
+  // shared `TopicTree`; a complete block with no serverData falls through to
+  // readable JSON (never hidden).
+  map_topic_proposal: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.MapTopicProposalBlock
           key={index}
           serverData={block.serverData}
         />

@@ -15,6 +15,7 @@ import type {
   MapTopicStatus,
   PageIntentDisposition,
   PageIntentRecord,
+  PageIntentSource,
   PageIntentState,
 } from "../types";
 
@@ -85,6 +86,84 @@ export function emptyMapTopicFilters(): MapTopicFilters {
 }
 
 /**
+ * How siblings are ordered inside every view that walks the tree (CONTRACTS §3).
+ *
+ * `sort_order` is THE TREE'S OWN ORDER — the order `seo.map_tree` returned,
+ * which is the order a person arranged their map in. It is the default for
+ * that reason: every other value is a temporary lens over someone's structure,
+ * never a replacement for it.
+ *
+ * The three count sorts (`pages`, `keywords`, `planned`) order DESCENDING and
+ * put a topic whose count was never loaded LAST — not first, and never as a
+ * zero. `map_tree` omits counts entirely when the tree was read without
+ * `include: ["counts"]` (see {@link NormalizedMapTopic}), so treating absent as
+ * 0 would sort a whole unloaded tree into a confident, wrong order.
+ */
+export type MapSiblingSort = "sort_order" | "name" | "pages" | "keywords" | "planned";
+
+/**
+ * What the pages workspace is narrowed to (CONTRACTS §3).
+ *
+ * Every field is "no filter" when null / "" / false, EXCEPT `traffic`, whose
+ * "no filter" value is the explicit `"all"` — a tri-state that must never be
+ * confused with "we have no traffic reading".
+ */
+export interface MapPageFilters {
+  /** Substring, matched client-side against the page's title, url and summary. */
+  text: string;
+  /** Only pages whose intent or coverage names this topic. */
+  topicSlug: string | null;
+  /** Only pages in this region facet value. */
+  regionSlug: string | null;
+  /** `"low"` = clicks <= the `pages_low_traffic_clicks_max` knob. */
+  traffic: "all" | "low" | "with_traffic";
+  disposition: PageIntentDisposition | null;
+  state: PageIntentState | null;
+  source: PageIntentSource | null;
+  /** The `list_pages_without_topic` tab. */
+  onNoTopic: boolean;
+}
+
+export function emptyMapPageFilters(): MapPageFilters {
+  return {
+    text: "",
+    topicSlug: null,
+    regionSlug: null,
+    traffic: "all",
+    disposition: null,
+    state: null,
+    source: null,
+    onNoTopic: false,
+  };
+}
+
+/** The graph view's own state (CONTRACTS §3). */
+export interface MapGraphState {
+  /** The topic the graph is centred on. Null = the whole map. */
+  focusSlug: string | null;
+  /** What shape and colour encode: the tree, or where pages are converging. */
+  encodingMode: "structure" | "convergence";
+}
+
+/** The table view's own state (CONTRACTS §3). */
+export interface MapTableState {
+  /** Rows keep their parent/child nesting rather than flattening. */
+  hierarchy: boolean;
+  /** Null = the `table_default_columns` knob's set, NEVER "no columns". */
+  columns: string[] | null;
+}
+
+/**
+ * Where a review deck left off. Two cursors, not one: a topic review and a
+ * page-intent review run over different records and a user switching between
+ * them must not lose either place.
+ */
+export interface MapReviewState {
+  cursorSlug: string | null;
+  cursorPageId: string | null;
+}
+
+/**
  * One in-flight optimistic write. `before` is the exact pre-edit state of the
  * touched topics; a rollback restores it byte for byte rather than re-deriving.
  */
@@ -121,11 +200,29 @@ export interface TopicalMapWorkspaceState {
   groupBy: string | null;
   /** Page id → the one intent on that page, as `list_page_intents` returned it. */
   intentsByPageId: Record<string, PageIntentRecord>;
+  /**
+   * Page id → the slugs of the LIVE topics that page covers today, as
+   * `list_page_intents` returned them. An entry holding `[]` is a page that is
+   * ON NO TOPIC — a real state since round 22, and the reason this is stored
+   * at all: `intentsByPageId` alone cannot tell "covers nothing" from "we
+   * never listed this page", and a screen that guesses between those two is
+   * the blank cell this round exists to kill.
+   */
+  coverageByPageId: Record<string, string[]>;
   /** Page id → the site it belongs to, so an intent can be written without a second read. */
   intentSiteByPageId: Record<string, string>;
   /** Non-zero means `list_page_intents` had to collapse duplicate edges — say so, never hide it. */
   duplicateIntents: number;
   optimistic: OptimisticEdit[];
+  /** The pages workspace's filters (CONTRACTS §3). */
+  pageFilters: MapPageFilters;
+  /** Bulk selection of PAGES — deliberately separate from `checkedSlugs` (topics). */
+  checkedPageIds: string[];
+  graph: MapGraphState;
+  table: MapTableState;
+  review: MapReviewState;
+  /** How siblings are ordered in every tree walk. */
+  siblingSort: MapSiblingSort;
 }
 
 export interface TopicalMapSliceState {
@@ -155,9 +252,17 @@ export interface PageIntentView {
   pageId: string;
   disposition: PageIntentDisposition;
   state: PageIntentState;
-  /** Where the intent says the page belongs (or, for `delete`, where it sits today). */
-  intendedTopicSlug: string;
-  /** Where its `covers` edges put it today. */
+  /**
+   * Where the intent says the page belongs (or, for `delete`, where it sits
+   * today) — NULL when that topic is no longer live.
+   *
+   * 🚨 ROUND 22. `seo.list_page_intents` keeps the intent and omits its
+   * `topic` key while the topic is rejected or retired, so a destination that
+   * left the map arrives here as null rather than as a slug no reader can
+   * resolve. `pageTopicState` turns that into `intent_topic_hidden`.
+   */
+  intendedTopicSlug: string | null;
+  /** Where its `covers` edges put it today. `[]` means it is on no topic. */
   currentTopicSlugs: string[];
 }
 
@@ -168,3 +273,49 @@ export type PageIntentTone =
   | "arriving"
   | "delete"
   | "planned";
+
+/**
+ * Where ONE page stands in the map's topic structure, independent of any one
+ * topic's row — the answer the plain page list and the bulk screen colour by.
+ *
+ * The first three keys are `intent_colors`' own (requirements §5: in_place
+ * green, leaving amber, arriving blue), so a view reads the colour straight
+ * off the knob. The last two are round 22's new honest states, and they have
+ * NO `intent_colors` entry on purpose: they are not a disposition, they are
+ * the absence of a live topic, which §5 draws with the `missing` gray-dashed
+ * treatment.
+ *
+ * - `in_place` — it covers a live topic and nothing is moving it away.
+ * - `leaving` — it covers live topics and its intent names a different one.
+ * - `arriving` — it covers nothing live and its intent names a live topic.
+ * - `on_no_topic` — no live coverage and no intent that resolves. Counted by
+ *   `map_diagnostics.pages_on_no_topic`.
+ * - `intent_topic_hidden` — an intent EXISTS and the topic it named has been
+ *   rejected or retired, so the server no longer renders it. The decision is
+ *   still true; the destination is gone, and the screen must say so.
+ *
+ * Disposition colour (`delete`, and the `planned` treatment of a `plan.node`)
+ * stays with {@link PageIntentTone} / `pageIntentTone`: that answers "how
+ * should THIS topic's row draw this page", which is a different question.
+ */
+export type PageTopicState =
+  | "in_place"
+  | "leaving"
+  | "arriving"
+  | "on_no_topic"
+  | "intent_topic_hidden";
+
+/**
+ * The minimum a caller needs to answer {@link PageTopicState} for one page —
+ * deliberately not {@link PageIntentView}, because a page with NO intent at
+ * all still has a topic state and has no disposition to report.
+ */
+export interface PageTopicView {
+  pageId: string;
+  /** Live coverage today. `[]` is "on no topic", never "unknown". */
+  currentTopicSlugs: string[];
+  /** True when the page carries an intent edge at all. */
+  hasIntent: boolean;
+  /** The intent's destination, or null when it exists but its topic is hidden. */
+  intendedTopicSlug: string | null;
+}

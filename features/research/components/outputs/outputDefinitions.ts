@@ -33,6 +33,7 @@
 import type { OutputKind } from "./outputs";
 import type { MandateKey } from "@ai-matrx/agents/mandates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
 
 /** The bundle every publishing output uses — the report, and nothing else. */
 export const REPORT_ONLY_BUNDLE_SLUG = "research-report-only";
@@ -45,10 +46,17 @@ export interface DomainOutputDefinition {
   description: string;
   /** The mandate whose resolved agent writes it (`research_client.output_*`). */
   mandateKey: MandateKey;
-  /** System bundle that feeds it. */
-  bundleSlug: string;
+  /** System bundle feeding the Context Builder; null when openHref owns the run path. */
+  bundleSlug: string | null;
   /** Slot in `rs_topic.outputs` where a generated report persists (D5). */
   outputKind: OutputKind;
+  /**
+   * Where the card opens INSTEAD of the Context Builder — for an output that
+   * runs through its own entry (the topical map runs through
+   * `POST /seo/brands/{brand_id}/map/author`, a durable command with its own
+   * screen). Exactly one of `bundleSlug` / `openHref` is the run path.
+   */
+  openHref?: (topicId: string) => string;
 }
 
 /**
@@ -115,7 +123,32 @@ export const DOMAIN_OUTPUTS: DomainOutputDefinition[] = [
     bundleSlug: "research-competitive-landscape",
     outputKind: "competitive_landscape",
   },
+  {
+    // The research → map handoff (R8): a finished company topic-tree research
+    // run (`content_topic_map` intent, or any research about the company) is
+    // one of the six sources a topical map starts from. The run is the map
+    // author's own durable entry, not the Context Builder, so the card opens
+    // the brand-free start door with this research preselected.
+    slug: "research-topical-map",
+    label: "Topical map",
+    description:
+      "The brand's tree of subjects — every offering, audience and place it should cover — authored from this research by the topical map author, then reviewed in the map.",
+    mandateKey: MANDATE_KEYS.seo__map_author,
+    bundleSlug: null,
+    outputKind: "topical_map",
+    openHref: (topicId) =>
+      marketingRoutes.topicalMapStart({ researchTopicId: topicId, source: "existing_research" }),
+  },
 ];
+
+/** The card's destination: its own entry when it has one, else the Context Builder. */
+export function domainOutputHref(def: DomainOutputDefinition, topicId: string): string {
+  if (def.openHref) return def.openHref(topicId);
+  if (def.bundleSlug) return contextBuilderHref(topicId, def.bundleSlug);
+  throw new Error(
+    `[research/outputs] "${def.slug}" declares neither a bundle nor an openHref — it has no run path.`,
+  );
+}
 
 /** The domain output a bundle slug belongs to, if any — how the Context
  *  Builder knows which mandate a loaded SYSTEM bundle runs through. */

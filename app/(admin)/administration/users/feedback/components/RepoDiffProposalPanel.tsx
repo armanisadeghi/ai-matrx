@@ -17,8 +17,9 @@
  *
  * THE NO-DEAD-ENDS SHAPE (`common-docs/policies/no-dead-ends.md`). Every control
  * here does something real today. A "Launch coding session" button would be a
- * dead end — web-app session launch is not wired (`readManagedCapability` reports
- * the contract, TASK-006 wires the launch) — so the panel hands over the prompt
+ * dead end from here — a launch must be gated on the coding session bridge's
+ * own `capabilities` verdict (`features/ai-work/lib/codingBridgeCapability.ts`),
+ * which this panel does not read — so the panel hands over the prompt
  * instead of pretending. When that launch lands, THIS is the one place that
  * changes.
  */

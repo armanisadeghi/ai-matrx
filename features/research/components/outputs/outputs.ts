@@ -26,7 +26,14 @@ export type OutputKind =
   | "reputation_personal"
   | "gap_analysis"
   | "literature_review"
-  | "competitive_landscape";
+  | "competitive_landscape"
+  /**
+   * A topical map authored from this research (`seo.map_author`,
+   * `existing_research`). The map lives in `seo.topical_map`, never in
+   * `rs_topic.outputs`, so this slot never fills — it exists so the output
+   * card is typed like every other domain output.
+   */
+  | "topical_map";
 
 export type OutputStatus = "generating" | "ready" | "failed" | "stale";
 
