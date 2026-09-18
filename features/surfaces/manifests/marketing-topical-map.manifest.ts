@@ -28,6 +28,8 @@ import type {
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import { MAP_CURATION_MANDATE_KEY } from "@/features/marketing/seo/topical-map/mandateKeys";
+import { TOPIC_CURATION_MANDATE_KEY } from "@/features/marketing/seo/topical-map/panel/topicCuration";
+import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -279,7 +281,7 @@ Every change goes through the topical_map tool, never by writing rows.
         "Places this site's crawled pages onto the map's topics (covers edges) from the Map the pages control.",
       kind: "single",
       defaultAgentId: null,
-      mandateKey: "seo.page_mapper",
+      mandateKey: dbAuthoredMandateKey("seo.page_mapper"),
       allowCustom: false,
       autoRun: "never",
       sortOrder: 200,
@@ -291,7 +293,7 @@ Every change goes through the topical_map tool, never by writing rows.
         "Proposes where each mapped page should go — keep, move, merge, redirect, rewrite or delete — from the Propose destinations control.",
       kind: "single",
       defaultAgentId: null,
-      mandateKey: "seo.page_intent_proposer",
+      mandateKey: dbAuthoredMandateKey("seo.page_intent_proposer"),
       allowCustom: false,
       autoRun: "never",
       sortOrder: 210,
@@ -309,7 +311,7 @@ Every change goes through the topical_map tool, never by writing rows.
         "Works inside ONE topic of the map: rewrites its description, answers questions about it, and changes it through the topical_map tool under the topic_agent_change_mode setting.",
       kind: "single",
       defaultAgentId: null,
-      mandateKey: "seo.topic_curation",
+      mandateKey: TOPIC_CURATION_MANDATE_KEY,
       allowCustom: false,
       autoRun: "never",
       sortOrder: 400,

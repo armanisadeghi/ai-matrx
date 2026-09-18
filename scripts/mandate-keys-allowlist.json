@@ -58,10 +58,5 @@
     "file": "features/marketing/seo/topical-map/panel/topicCuration.ts",
     "key": "seo.topic_curation",
     "reason": "Declared in aidream d2b14cee (2026-09-18, the Topical Map Topic Agent); package republish pending \u2014 @ai-matrx/agents on npm predates the regenerated key set. Remove this row and swap the literal for MANDATE_KEYS.seo__topic_curation once the package publishes the key."
-  },
-  {
-    "file": "features/surfaces/manifests/marketing-topical-map.manifest.ts",
-    "key": "seo.topic_curation",
-    "reason": "Same declared-but-unpublished mandate as features/marketing/seo/topical-map/panel/topicCuration.ts, named here so the surface manifest discloses the topic panel's fixed job."
   }
 ]
