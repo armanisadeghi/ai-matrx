@@ -27,6 +27,7 @@ import { Globe, FileText, Camera, MonitorPlay, BellRing } from "lucide-react";
 import { CLOUD_BROWSER_ASSIST_SURFACE } from "../constants";
 import { useCloudBrowser } from "../hooks/useCloudBrowser";
 import { useCloudBrowserTakeover } from "../hooks/useCloudBrowserTakeover";
+import { useCloudBrowserProfileContextSync } from "../hooks/useCloudBrowserProfileContextSync";
 import { useScreenshotSession } from "../hooks/useScreenshotSession";
 import {
   dismissHandoff,
@@ -83,6 +84,9 @@ export function CloudBrowserBody({
   className,
 }: CloudBrowserBodyProps) {
   const cb = useCloudBrowser(initialProfileId, runId);
+  // The browser the person picked here is the browser the agent should use.
+  // Published as a context entry, never as user input (THE USER-INPUT LAW).
+  useCloudBrowserProfileContextSync(conversationId, cb.activeProfile);
   // Rapid = per-session opt-in for visually busy pages; captures are otherwise
   // event-driven (browser tool activity) with a slow idle heartbeat.
   const [rapidShots, setRapidShots] = useState(false);

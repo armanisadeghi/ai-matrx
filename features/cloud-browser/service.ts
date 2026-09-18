@@ -54,10 +54,23 @@ const LIVE_STATES = [
   "resume_pending",
   "stopping",
 ] as const;
+/**
+ * Defaults for a browser whose owner has never touched these switches.
+ *
+ * ON by default (Arman, 2026-09-18): signed-in sites stay signed in, and the
+ * platform logs back in on its own wherever a person is not truly required.
+ * A browser that stops and waits for a human on every expired session is not
+ * a cloud browser. Every one of these is a switch the person can turn off, and
+ * a saved explicit `false` always wins over this default (`cloudBrowserConsent`
+ * below only falls back when the stored value is not a boolean).
+ *
+ * `sensitiveActionsRequireHuman` is the unchanged always-on floor: payments,
+ * security settings and destructive changes still stop for a person.
+ */
 const DEFAULT_CONSENT: CloudBrowserConsent = {
-  unattendedLogin: false,
-  sessionHealthChecks: false,
-  totpDelegation: false,
+  unattendedLogin: true,
+  sessionHealthChecks: true,
+  totpDelegation: true,
   sensitiveActionsRequireHuman: true,
 };
 
