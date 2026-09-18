@@ -57,6 +57,7 @@ import { RejectPolicyPicker, rejectPolicySentence } from "./RejectPolicyPicker";
 import {
   expandableSlugs,
   flattenProposalNodes,
+  orphanedProposalNodes,
   topicTreeRows,
 } from "./topicRows";
 
@@ -85,6 +86,7 @@ export function MapTopicProposalView({
   className,
 }: MapTopicProposalViewProps) {
   const topics = flattenProposalNodes(proposal.topics);
+  const orphans = orphanedProposalNodes(proposal.topics);
   const [expanded, setExpanded] = useState<Set<string>>(() => expandableSlugs(topics));
   const [selected, setSelected] = useState<string | null>(null);
   const [checked, setChecked] = useState<Set<string>>(() => new Set());
@@ -160,6 +162,19 @@ export function MapTopicProposalView({
             : {})}
         />
       )}
+
+      {orphans.length > 0 ? (
+        <p role="alert" className="flex items-start gap-1.5 rounded-md border border-warning/40 bg-warning/5 px-2.5 py-2 text-xs text-muted-foreground">
+          <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+          <span>
+            <span className="font-medium text-foreground">
+              {orphans.length === 1 ? "One topic names" : `${orphans.length} topics name`} a parent this proposal does not contain
+            </span>
+            {" — shown at the top level: "}
+            {orphans.map((n) => `${n.name} (under "${n.parent_slug}")`).join(", ")}.
+          </span>
+        </p>
+      ) : null}
 
       {proposal.coverage_notes ? (
         <p className="flex items-start gap-1.5 rounded-md border border-border bg-muted/40 px-2.5 py-2 text-xs text-muted-foreground">

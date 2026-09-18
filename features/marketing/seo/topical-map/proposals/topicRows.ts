@@ -43,6 +43,16 @@ export interface FlatTopic {
  * as a root (it is still shown — dropping it would hide a topic the author
  * proposed), and a cycle cannot form because each node is emitted once.
  */
+/**
+ * The nodes whose `parent_slug` names a topic the proposal does not contain.
+ * `flattenProposalNodes` shows them as roots so nothing proposed is hidden;
+ * the screen says so, because a silently re-rooted branch is a tree that lies.
+ */
+export function orphanedProposalNodes(nodes: readonly MapTopicProposalNode[]): MapTopicProposalNode[] {
+  const known = new Set(nodes.map((n) => n.slug));
+  return nodes.filter((n) => Boolean(n.parent_slug) && !known.has(n.parent_slug as string));
+}
+
 export function flattenProposalNodes(nodes: readonly MapTopicProposalNode[]): FlatTopic[] {
   const known = new Set(nodes.map((n) => n.slug));
   const children = new Map<string | null, MapTopicProposalNode[]>();

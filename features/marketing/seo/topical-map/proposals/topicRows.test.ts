@@ -12,6 +12,7 @@ import {
   expandableSlugs,
   flattenProposalNodes,
   flattenTreeNodes,
+  orphanedProposalNodes,
   topicPathNames,
   topicTreeRows,
 } from "./topicRows";
@@ -118,5 +119,17 @@ describe("topicPathNames", () => {
   it("answers root-first names", () => {
     const topics = flattenProposalNodes(DOCUMENTED_PROPOSAL.topics);
     expect(topicPathNames(topics, "metals-copper")).toEqual(["Recycling", "Metals", "Copper"]);
+  });
+});
+
+describe("orphanedProposalNodes", () => {
+  it("names every node whose parent the proposal does not contain, and nothing else", () => {
+    const nodes = [
+      { __kind: "map_topic_node_v1", slug: "a", name: "A", parent_slug: null },
+      { __kind: "map_topic_node_v1", slug: "b", name: "B", parent_slug: "a" },
+      { __kind: "map_topic_node_v1", slug: "c", name: "C", parent_slug: "ghost" },
+    ] as unknown as Parameters<typeof orphanedProposalNodes>[0];
+    expect(orphanedProposalNodes(nodes).map((n) => n.slug)).toEqual(["c"]);
+    expect(flattenProposalNodes(nodes).find((t) => t.slug === "c")?.depth).toBe(0);
   });
 });
