@@ -62,9 +62,11 @@ differential run (last-good vs first-bad SHA, two configs, two users/orgs) · `g
 good state exists · the trigger looped 100× under load for races.
 
 Then tighten it: faster, sharper assertion, deterministic (pin time, seed RNG, isolate state).
-No loop after real effort? Get what is missing yourself — a live canary, an artifact from a lane
-above, temporary capture shipped to production — and record what you tried. A theory without a
-loop is not a diagnosis.
+No loop after real effort? Recover a captured artifact, add local instrumentation, or drive a
+local canary, and record what you tried. A normal developer task does not deploy capture or
+wait for production verification. If the assignment explicitly requires production-only
+evidence, prepare the instrumentation and record the release-owner handoff through the
+existing durable channel. A theory without a reproduction loop is not a diagnosis.
 
 **The loop is scaffolding, not proof.** Stubs, fixtures, and throwaway harnesses are fine here and
 get deleted; they never count as closure.
@@ -147,4 +149,10 @@ consequential design choice, packaged with evidence and a recommendation — nev
 - [ ] A previously silent failure is now captured structurally
 - [ ] Every `[DBG-…]` line and throwaway harness removed (grep)
 - [ ] Commit message states the confirmed cause and the hypotheses ruled out
-- [ ] Verified independently on the live surface with real data once deployed
+- [ ] Every touched type boundary is checked without suppressing introduced errors; meaningful
+  behavior tests prove the repaired path; introduced regressions are fixed
+- [ ] Changed UI is exercised in an actual localhost browser against the changed code
+- [ ] Independent review is obtained when the change's risk or scope requires it
+
+Deployment and production/live-surface verification belong to the release owner unless the
+assignment explicitly includes them. They never keep a completed local repair open.
