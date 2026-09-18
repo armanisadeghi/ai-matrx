@@ -46,7 +46,7 @@ Surfaced by `check:soft-delete-unique --strict` on armanisadeghi/ai-matrx#225, w
 whole diff is two lines of a markdown skill file. The check reads LIVE indexes, so this
 is database state, not this PR's.
 
-### D319 — 32 HR client doors are ungranted, so those surfaces 403 for EVERY signed-in user (2026-09-13)
+### D319 — RESOLVED 2026-09-18 — 32 HR client doors were ungranted, so those surfaces 403'd for EVERY signed-in user (found 2026-09-13)
 
 🚨 **Live product breakage, measured on Matrx Main, not inferred.** Of the 166
 `public.hr_*` SECURITY DEFINER wrappers, **32 give `authenticated` no EXECUTE**, so
@@ -99,11 +99,23 @@ diff is two lines of a markdown skill file. The check's own `grandfathered_owner
 calls these SECURITY INVOKER; live `pg_proc.prosecdef` says they are SECURITY DEFINER,
 so that note is stale and should be corrected with the fix.
 
-**Not fixed here.** The remedy is a migration adding the 32 `client_callable_door` rows
+**RESOLVED on the live database, 2026-09-18.** Migration
+`hr_public_wrappers_are_declared_doors_not_caller_census_casualties.sql` was applied at
+14:59:29Z by another lane. Measured on Matrx Main at 17:32Z the same day: the dead-door
+count went 32 → 2, and **every one of the 164 granted `public.hr_*` SECURITY DEFINER
+wrappers now has a `platform.client_callable_door` row — zero granted without one**, so
+the fix went through the door-row path the §6d-4 guard requires rather than around it.
+
+The two still ungranted are `hr_leave_accrual_apply` and `hr_leave_reinstate_on_rehire`.
+Neither is a dead button: a grep of both checkouts finds no call site for either outside
+the generated `types/database.types.ts`, so no UI control depends on them. They read as
+system/back-office jobs, correctly left un-client-callable. If a surface is ever wired to
+one, it needs a door row FIRST, then the grant.
+
+**Not fixed in the finding session.** The remedy was a migration adding the 32 `client_callable_door` rows
 and re-granting, which is HR-lane and access-layer work; `docs/official/db-rules.md` §6
 forbids changing a security layer on your own authority, and the session that found it
-was branch-restricted. **This needs an owner today** — it is not latent, it is 32 dead
-buttons in production.
+was branch-restricted. It needed an owner, and got one on 2026-09-18 (see the RESOLVED note above).
 
 ### D317 — the `shell_execution` KIND is still inactive and routed to the generic floor
 
