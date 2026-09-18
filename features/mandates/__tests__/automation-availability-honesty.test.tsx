@@ -23,6 +23,7 @@
  * These are the guards for the three facts, asserted on the rendered component
  * — the words a person reads, never an internal shape.
  */
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
@@ -38,7 +39,9 @@ import * as inputSurfaceModule from "../input-surface";
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-const GOAL_WRITER = "mandate.goal_writer";
+// DB-authored (origin='user'), so no generated union can carry it — the same
+// reason features/mandates/authoring/constants.ts uses dbAuthoredMandateKey().
+const GOAL_WRITER = "mandate.goal_writer" as MandateKey;
 
 /** The door's own 409 sentence for a job that exists and cannot answer. */
 const DOOR_SAID =

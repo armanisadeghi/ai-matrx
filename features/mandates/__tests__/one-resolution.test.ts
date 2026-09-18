@@ -29,6 +29,7 @@
  * had to be closed BEFORE somebody edited one and silently repointed every user
  * on the platform at a foreign organization's agent.
  */
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 
 // ── The fakes ───────────────────────────────────────────────────────────────
 //
@@ -43,7 +44,11 @@ const ORG_B = "bbbbbbbb-2222-4222-8222-222222222222";
 const MANDATE_ID = "0f2a1f1e-1111-4c4c-9c9c-aaaaaaaaaaaa";
 const SYSTEM_AGENT = "11111111-2222-4333-8444-555555555555";
 const ORG_AGENT = "99999999-8888-4777-8666-555555555555";
-const KEY = "test.one_resolution";
+// A key the vocabulary will NEVER contain, invented on purpose (the guard's
+// header, blind spot 2: a fixture bound to the vocabulary would become a second
+// authority). The carriers are typed `MandateKey` since V-L6a, so the fixture
+// says so once, here, instead of widening a carrier for a test's convenience.
+const KEY = "test.one_resolution" as MandateKey;
 
 interface Verdict {
   mandate_key: string;
