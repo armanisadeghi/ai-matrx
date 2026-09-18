@@ -34,9 +34,12 @@ import { callConversationContinue } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import { readServerRefusal } from "@/features/access-gate/service/serverRefusal";
 import { useCodingReplyResponder } from "./useCodingReplyResponder";
+// `source_feature` for every reply sent from this composer. Per the provenance
+// ruling the reply's source_app is `code-plugin`; this composer sends none —
+// request attribution for the continue is the server reply path's
+// (aidream coding_session_bridge), which validates source_app on its side.
+import { CODING_SESSION_REPLY_SOURCE_FEATURE } from "../../lib/providerSource";
 
-/** `source_feature` for every reply sent from this composer (registered slug). */
-export const CODING_SESSION_REPLY_SOURCE_FEATURE = "coding_session_reply";
 
 type SendState =
   | { phase: "idle" }

@@ -41,7 +41,8 @@ export const CONVERSATION_LIST_SCOPES: ListScopeKind[] = [
 //
 // The bucket is DERIVED SERVER-SIDE (`public.cvx_audience`, one expression
 // shared by the list RPC and the facets RPC) from facts the row already has:
-// a coding-session binding or a coding source_app is external no matter what
+// a coding-session binding or source_app `code-plugin` (the one "outside data"
+// test — `isCodePluginSourceApp` in lib/providerSource.ts) is external no matter what
 // else the row says; a machine origin_class is internal; a human origin is
 // chat; pre-provenance rows fall back to conversation_type. The client only
 // ever names the bucket — it never re-derives it, so a chip's count is exactly
@@ -72,13 +73,6 @@ export const INTERNAL_CONVERSATION_TYPES = [
   "podcast",
 ] as const;
 
-/** Apps whose sessions are mirrored from outside AI Matrx. Mirrors `cvx_audience`. */
-export const EXTERNAL_SOURCE_APPS = [
-  "claude-code",
-  "codex",
-  "cursor",
-  "vscode",
-] as const;
 
 /**
  * The surface's honest starting point: the conversations a person had

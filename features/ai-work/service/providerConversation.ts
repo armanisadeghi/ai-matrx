@@ -7,7 +7,7 @@ import {
   PROVIDER_TRANSCRIPT_PAGE_SIZE,
   type ProviderConversationMessage,
 } from "../lib/providerConversationMessage";
-import { isProviderSourceApp } from "../lib/providerSource";
+import { isCodePluginSourceApp } from "../lib/providerSource";
 
 export { PROVIDER_TRANSCRIPT_PAGE_SIZE };
 
@@ -136,7 +136,7 @@ export async function readProviderConversation(
       : false,
   };
 
-  if (!isProviderSourceApp(conversation.source_app)) {
+  if (!isCodePluginSourceApp(conversation.source_app)) {
     return {
       state: "not-provider",
       detail: null,

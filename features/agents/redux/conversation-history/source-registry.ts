@@ -153,10 +153,9 @@ export const APP_META: Record<string, SourceMeta> = {
   },
   // Workflow-engine node/run executions — programmatic.
   workflow: { label: "Workflows", icon: Server, system: true },
-  "claude-code": { label: "Claude Code", icon: TerminalSquare },
-  codex: { label: "Codex", icon: Code2 },
-  cursor: { label: "Cursor", icon: MousePointer2 },
-  vscode: { label: "VS Code", icon: PanelsTopLeft },
+  // Every conversation mirrored from an outside coding tool. The TOOL is the
+  // source_feature beneath it (see FEATURE_META) — a tool slug is never an app.
+  "code-plugin": { label: "Code Plugin", icon: Puzzle },
   [EMPTY_SOURCE_KEY]: { label: "Generic", icon: Boxes, system: true },
 };
 
@@ -276,6 +275,13 @@ export const FEATURE_META: Record<string, SourceMeta> = {
   // pressed send. The coding host never sees these turns — see
   // `features/ai-work/conversations/components/AiMatrxReplyComposer.tsx`.
   coding_session_reply: { label: "AI Matrx reply on a coding session", icon: MessageSquare },
+
+  // The outside coding tools, as features of source_app `code-plugin`. Labels
+  // must equal the coding-session catalog's (pinned by a test there).
+  "claude-code": { label: "Claude Code", icon: TerminalSquare },
+  codex: { label: "Codex", icon: Code2 },
+  cursor: { label: "Cursor", icon: MousePointer2 },
+  vscode: { label: "VS Code", icon: PanelsTopLeft },
 
   // Automations / system runs
   "server-run": { label: "Server Run", icon: Server, system: true },

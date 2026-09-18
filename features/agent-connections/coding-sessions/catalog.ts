@@ -17,7 +17,12 @@ export type CodingSessionProvider = (typeof CODING_SESSION_PROVIDERS)[number];
 
 export interface CodingSessionProviderMeta {
   provider: CodingSessionProvider;
-  sourceApp: "claude-code" | "codex" | "cursor" | "vscode";
+  /**
+   * The tool's slug as it appears in conversation `source_feature`. Every
+   * mirrored conversation's `source_app` is `code-plugin`; the tool is the
+   * smaller category beneath it (see features/ai-work/lib/providerSource.ts).
+   */
+  sourceFeature: "claude-code" | "codex" | "cursor" | "vscode";
   label: string;
   icon: LucideIcon;
   connection: string;
@@ -31,7 +36,7 @@ export const CODING_SESSION_PROVIDER_META: Record<
 > = {
   claude_code: {
     provider: "claude_code",
-    sourceApp: "claude-code",
+    sourceFeature: "claude-code",
     label: "Claude Code",
     icon: TerminalSquare,
     connection: "AI Matrx plugin, OAuth MCP, and lifecycle hooks",
@@ -40,7 +45,7 @@ export const CODING_SESSION_PROVIDER_META: Record<
   },
   codex: {
     provider: "codex",
-    sourceApp: "codex",
+    sourceFeature: "codex",
     label: "Codex",
     icon: Code2,
     connection: "AI Matrx plugin and remote MCP",
@@ -49,7 +54,7 @@ export const CODING_SESSION_PROVIDER_META: Record<
   },
   cursor: {
     provider: "cursor",
-    sourceApp: "cursor",
+    sourceFeature: "cursor",
     label: "Cursor",
     icon: MousePointer2,
     connection: "AI Matrx plugin, MCP, skills, and hooks",
@@ -58,7 +63,7 @@ export const CODING_SESSION_PROVIDER_META: Record<
   },
   vscode: {
     provider: "vscode",
-    sourceApp: "vscode",
+    sourceFeature: "vscode",
     label: "VS Code",
     icon: PanelsTopLeft,
     connection: "AI Matrx extension and editor capabilities",

@@ -120,7 +120,7 @@ export function indexThreadAssignments(
     if (isPlainMeta(row.metadata) && row.metadata.pinned === true) {
       const list = pinnedByThread.get(row.container_id) ?? [];
       // Provider provenance from the edge (conversations: source_app =
-      // e.g. "claude-code" marks a mirrored coding-agent session).
+      // e.g. "code-plugin" marks a mirrored coding-agent session).
       const sourceApp =
         typeof row.metadata.source_app === "string" && row.metadata.source_app
           ? row.metadata.source_app

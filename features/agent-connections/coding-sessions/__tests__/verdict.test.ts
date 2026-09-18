@@ -7,14 +7,15 @@ import { CODING_SESSION_PROVIDER_META, providerMeta } from "../catalog";
 import {
   APP_META,
   describeSource,
+  FEATURE_META,
 } from "@/features/agents/redux/conversation-history/source-registry";
 
 describe("coding-session provider vocabulary", () => {
-  it("maps storage enums to the exact conversation source_app slugs", () => {
+  it("maps storage enums to the exact conversation source_feature slugs", () => {
     expect(
       Object.values(CODING_SESSION_PROVIDER_META).map((provider) => [
         provider.provider,
-        provider.sourceApp,
+        provider.sourceFeature,
       ]),
     ).toEqual([
       ["claude_code", "claude-code"],
@@ -28,11 +29,13 @@ describe("coding-session provider vocabulary", () => {
     expect(providerMeta("other")).toBeNull();
   });
 
-  it("registers every provider in the canonical conversation source display", () => {
+  it("registers every tool as a FEATURE of the code-plugin app, never an app", () => {
+    expect(APP_META["code-plugin"]?.label).toBe("Code Plugin");
     for (const provider of Object.values(CODING_SESSION_PROVIDER_META)) {
-      expect(APP_META[provider.sourceApp]?.label).toBe(provider.label);
-      expect(describeSource(provider.sourceApp, "code-editor")).toBe(
-        `${provider.label} · Code`,
+      expect(APP_META[provider.sourceFeature]).toBeUndefined();
+      expect(FEATURE_META[provider.sourceFeature]?.label).toBe(provider.label);
+      expect(describeSource("code-plugin", provider.sourceFeature)).toBe(
+        `Code Plugin · ${provider.label}`,
       );
     }
   });

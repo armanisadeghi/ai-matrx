@@ -40,6 +40,10 @@ import type { CxToolCallRecord } from "@/features/agents/redux/execution-system/
 import { fetchCodingSessionBindings } from "@/features/agent-connections/coding-sessions/service";
 import { formatSessionTimestamp } from "@/features/agent-connections/coding-sessions/verdict";
 import { workspaceName } from "../lib/codingSessionPresentation";
+import {
+  codingToolFromSource,
+  resolveCodingTool,
+} from "../lib/providerSource";
 import type { ProviderConversationDetail } from "../service/providerConversation";
 import {
   fetchEarlierProviderMessages,
@@ -87,7 +91,26 @@ export function ProviderConversationTranscript({
 }) {
   const { conversation, visibleMessageCount } = detail;
   const title = conversation.title?.trim() || "Untitled conversation";
-  const provider = appLabel(conversation.source_app);
+  /**
+   * Storage providers of this conversation's coding-session bindings. A reply
+   * typed in AI Matrx carries `source_feature = coding_session_reply`, so the
+   * tool it belongs to is read from the binding, never guessed.
+   */
+  const [bindingProviders, setBindingProviders] = useState<readonly string[]>(
+    [],
+  );
+  const familyLabel = appLabel(conversation.source_app);
+  const toolNamedByFeature =
+    codingToolFromSource(conversation.source_app, conversation.source_feature) !==
+    null;
+  // Until a reply row's binding read lands, the family label stands in — an
+  // honest "Code Plugin", never a guessed tool.
+  const provider =
+    resolveCodingTool(
+      conversation.source_app,
+      conversation.source_feature,
+      bindingProviders,
+    )?.label ?? familyLabel;
 
   const [messages, setMessages] = useState<ProviderConversationMessage[]>(
     detail.messages,
@@ -140,6 +163,7 @@ export function ProviderConversationTranscript({
         if (cancelled) return;
         setBindingRead(true);
         setSessions(artifactSessions(bindings));
+        setBindingProviders(bindings.map((binding) => binding.provider));
         for (const binding of bindings) {
           const name = workspaceName(binding.metadata);
           if (name) {
@@ -360,7 +384,11 @@ export function ProviderConversationTranscript({
                   {workspace}
                 </span>
               ) : null}
-              <span>{featureLabel(conversation.source_feature)}</span>
+              <span>
+                {toolNamedByFeature
+                  ? familyLabel
+                  : `${familyLabel} · ${featureLabel(conversation.source_feature)}`}
+              </span>
               <span aria-hidden>·</span>
               <span>{formatText(conversation.status)}</span>
             </div>
