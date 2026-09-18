@@ -243,12 +243,11 @@ function OutlineBody({ mapId, siteId, readOnly, knobs }: OutlineBodyProps) {
         }}
         title="Open topic"
         aria-label={`Open ${topic.name}`}
-        className={cn(
-          "flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground",
-          // The tree reveals the actions slot on hover / focus-within; on touch
-          // there is no hover, so the door is always visible there.
-          isMobile && "opacity-100",
-        )}
+        // The tree's own actions slot is now visible wherever there is no hover
+        // to reveal it (`TopicTreeRow`, `[@media(hover:hover)]`), so this button
+        // needs no touch override — an ancestor's `opacity-0` could never have
+        // been undone from here anyway.
+        className="flex h-5 w-5 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground"
       >
         <PanelRight className="h-3.5 w-3.5" aria-hidden />
       </button>
