@@ -173,6 +173,9 @@ function SettingDetailPanel({
     try {
       let saved: AiSetting;
       if (isNew) {
+        // org-fallback-deliberate: a catalog setting is platform-wide AI
+        //   configuration, identical for every organization; the surface lives in the
+        //   admin-gated (admin) route group
         const organization_id = await resolveSystemOrgId();
         const payload: AiSettingInsert = {
           ...buildPayload(),

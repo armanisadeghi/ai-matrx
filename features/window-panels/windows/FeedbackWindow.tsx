@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUser } from "@/lib/redux/slices/userSlice";
 import { selectIsAdmin } from "@/lib/redux/selectors/userSelectors";
 import { closeOverlay } from "@/lib/redux/slices/overlaySlice";
@@ -270,6 +271,9 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
   const pathname = usePathname();
   const reduxUser = useAppSelector(selectUser);
   const isAdmin = useAppSelector(selectIsAdmin);
+  // The organization the report is filed in — a Server Action carries no
+  // `X-Organization-Id` header, so the selection travels as an argument.
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
 
   const username =
     reduxUser?.userMetadata?.name ||
@@ -592,6 +596,15 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
   const handleSubmit = useCallback(async () => {
     if (!description.trim() || isSubmitting) return;
 
+    if (!selectedOrganizationId) {
+      // The action files the report in the organization the person is acting
+      // in and refuses without one; say so instead of a dead click.
+      setError(
+        "Select an organization before sending feedback — every report is filed under one organization. Pick yours from the avatar menu; your text is still here.",
+      );
+      return;
+    }
+
     // Pre-flight: check that the client-side session is still valid before
     // hitting the server. This catches the "tab left open overnight" case
     // where the refresh token has expired and the server action would either
@@ -634,6 +647,9 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
       submitFeedback({
         feedback_type: feedbackType,
         route: pathname,
+        // The organization the person is acting in — a Server Action carries
+        // no header, so the selection travels as an argument.
+        organization_id: selectedOrganizationId ?? "",
         description: description.trim(),
         image_file_ids:
           uploadedImageFileIds.length > 0 ? uploadedImageFileIds : undefined,
@@ -687,6 +703,7 @@ function useFeedbackForm({ onClose }: { onClose: () => void }) {
     isAdmin,
     categoryId,
     assigneeId,
+    selectedOrganizationId,
   ]);
 
   // ── Surface seam (`matrx-user/feedback`) ─────────────────────────────────

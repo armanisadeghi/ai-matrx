@@ -36,6 +36,7 @@ import {
 } from "@/features/agents/redux/agent-definition/parse-settings-context";
 import { sanitizeAgentToolIds } from "@/features/agents/redux/agent-definition/sanitize-tool-ids";
 import { stripNullish } from "@/utils/supabase/payload";
+import { OrganizationContextError } from "@ai-matrx/agents/matrx";
 import type { SkillConfig } from "@/features/skills/types";
 import { parseUiGates } from "@/lib/redux/slices/agent-settings/ui-gates";
 import type { MatrxDirectivesConfig } from "@/features/agents/types/matrx-directives.types";
@@ -418,8 +419,14 @@ export function dbRowToAgentDefinition(row: AgentRow): AgentDefinition {
  */
 export function agentDefinitionToInsert(agent: AgentDefinition): AgentInsert {
   if (!agent.organizationId) {
-    throw new Error(
-      "[agent-converters] organizationId is required for agent.definition inserts",
+    // The ONE typed refusal for "no organization", so every surface that
+    // already calls `isOrganizationRequiredError` recognises this one too and
+    // renders `OrganizationRequiredNotice` with the picker — a plain Error made
+    // this the single shape nobody could classify.
+    // Law: common-docs/policies/context-is-carried-never-rebuilt.md.
+    throw new OrganizationContextError(
+      "organization_context_required",
+      "Select an organization before saving this agent.",
     );
   }
 

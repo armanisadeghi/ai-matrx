@@ -1,5 +1,4 @@
 import { createClient } from "@/utils/supabase/server";
-import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(
@@ -17,6 +16,18 @@ export async function POST(
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const organizationId = request.headers.get("X-Organization-Id")?.trim() ?? "";
+    if (organizationId.length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            "No organization was named for this template, so nothing was created. Choose the organization you are working in and try again.",
+          code: "organization_context_required",
+        },
+        { status: 400 },
+      );
     }
 
     // Fetch the source agent — RLS ensures user can only read agents they own or have access to
@@ -79,9 +90,15 @@ export async function POST(
         is_featured: false,
         use_count: 0,
         created_by: user.id,
-        // "My template" → the user's personal org (agent.template org is NOT
-        // NULL with no inherit trigger; resolve server-side, never cache).
-        organization_id: await ensureOrgIdServer(supabase, undefined),
+        // 🚨 THE TEMPLATE IS FILED IN THE ORGANIZATION THE CALLER IS ACTING
+        // IN. It used to resolve the caller's PERSONAL organization, which is
+        // why all 11 live `agent.template` rows sit in their creator's private
+        // workspace — a template nobody they work with can reach. The caller
+        // states the organization on `X-Organization-Id`; the insert runs on
+        // their own RLS-scoped client, so a header naming an organization they
+        // are not in fails the policy.
+        // common-docs/policies/context-is-carried-never-rebuilt.md rule 4.
+        organization_id: organizationId,
         source_agent_id: id,
       })
       .select()

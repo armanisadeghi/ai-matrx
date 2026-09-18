@@ -176,6 +176,7 @@ export async function POST(request: NextRequest) {
       );
     }
     const scoped = await applyScopeToInsertPayload({
+      request,
       body,
       payload: insertPayload,
       userId: user.id,
@@ -209,7 +210,10 @@ export async function POST(request: NextRequest) {
             source_id: (data as { id: string }).id,
             target_type: target.type,
             target_id: target.id,
-            organization_id: (scoped.organization_id as string) ?? null,
+            // The edge is filed in the SAME organization as the row it
+            // describes — never `?? null`, which `_stamp_org_default` would
+            // turn into the writer's personal organization.
+            organization_id: scoped.organization_id as string,
             created_by: user.id,
           })) as never,
         );

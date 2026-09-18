@@ -302,15 +302,24 @@ export async function POST(request: NextRequest) {
     // Verify all participants exist in auth.users
     // We can use lookup_user_by_email or just try to create - RLS will handle invalid users
 
-    // Resolve the creator's personal org (org-scoped write; never-null fallback).
-    const { data: organizationId, error: orgError } = await supabase.rpc(
-      "current_personal_org_id",
-    );
-    if (orgError || !organizationId) {
-      console.error("[DM Conversations API] Failed to resolve org:", orgError);
+    // 🚨 THE CONVERSATION IS FILED IN THE ORGANIZATION THE CALLER IS ACTING IN.
+    // This used to call `current_personal_org_id` — the personal-org RPC that
+    // belongs to lib/organizations/personalOrg.ts alone — so a conversation
+    // between two people landed in the CREATOR'S private workspace, which
+    // nobody chose and the other participant does not share. The caller states
+    // the organization on `X-Organization-Id` (the header every Matrx client
+    // carries), and with none the request is refused with the remedy.
+    // common-docs/policies/context-is-carried-never-rebuilt.md
+    const organizationId =
+      request.headers.get("X-Organization-Id")?.trim() ?? "";
+    if (organizationId.length === 0) {
       return NextResponse.json(
-        { success: false, msg: "Could not resolve organization" },
-        { status: 500 },
+        {
+          success: false,
+          msg: "No organization was named for this conversation, so nothing was created. Choose the organization you are working in and try again.",
+          code: "organization_context_required",
+        },
+        { status: 400 },
       );
     }
 

@@ -177,6 +177,9 @@ export async function POST(request: Request) {
           // via has_access's platform-global tier. The DB guard
           // (agent._enforce_builtin_system_org) enforces this regardless; we set it
           // explicitly because the regenerated types now require organization_id.
+          // org-fallback-deliberate: a builtin agent is platform-shipped content with
+          //   no tenant, and agent._enforce_builtin_system_org forces this org in the
+          //   database anyway; the route is behind checkIsSuperAdmin
           organization_id: await resolveSystemOrgId(adminClient),
           task_id: null,
           source_agent_id: agent_id,

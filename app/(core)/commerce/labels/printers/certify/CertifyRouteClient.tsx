@@ -12,13 +12,15 @@ import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { CertifyPrinterWizard } from "@/features/commerce-intake/labels/printers/components/CertifyPrinterWizard";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 
 export function CertifyRouteClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // The EXPLICIT active org — never a personal-workspace substitute. The
+  // component below already refuses honestly when it is null.
+  const organizationId = useAppSelector(selectOrganizationId);
   const userId = useAppSelector(selectUserId);
   const existingId = searchParams.get("id") ?? undefined;
 

@@ -133,6 +133,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
 import { MobilePanelShell } from "@/features/shell/components/header/templates/MobilePanelShell";
@@ -143,6 +145,8 @@ type Picklist = {
   id: string;
   list_name: string | null;
   description: string | null;
+  /** The list's tenant. Every item created under it inherits THIS value. */
+  organization_id: string | null;
   is_public: boolean | null;
   public_read: boolean | null;
   user_id: string | null;
@@ -328,6 +332,10 @@ export function StructuredListManagerV1({
   userId,
   forcedListId,
 }: StructuredListManagerV1Props) {
+  // THE ACTIVE ORGANIZATION, never the "effective" one: a new picklist is
+  // filed in the organization the user picked, and it refuses when there is
+  // none rather than landing in their personal workspace by default.
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
   const [lists, setLists] = React.useState<Picklist[]>([]);
   const [items, setItems] = React.useState<PicklistItem[]>([]);
   const [activeId, setActiveId] = React.useState<string | null>(
@@ -450,12 +458,19 @@ export function StructuredListManagerV1({
   // ------- Picklist mutations -------
 
   const createList = async () => {
+    if (!activeOrganizationId) {
+      toast.error(
+        "Choose an organization first — a picklist has to be filed in one. Pick it from the menu under your avatar.",
+      );
+      return;
+    }
     const optimistic: Picklist = {
       id: crypto.randomUUID(),
       list_name: "",
       description: "",
       is_public: false,
       public_read: true,
+      organization_id: activeOrganizationId,
       user_id: userId,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
@@ -473,6 +488,7 @@ export function StructuredListManagerV1({
         list_name: "",
         description: "",
         is_public: false,
+        organization_id: activeOrganizationId,
         user_id: userId,
       });
     if (error) {
@@ -556,6 +572,17 @@ export function StructuredListManagerV1({
     focusFieldRef?: React.MutableRefObject<string | null>,
   ): Promise<PicklistItem | null> => {
     if (!activeId) return null;
+    // An item lives in its LIST's tenant, not in whatever organization is
+    // selected right now — a list opened from another organization must not
+    // gain rows filed somewhere else.
+    const listOrganizationId =
+      lists.find((l) => l.id === activeId)?.organization_id ?? "";
+    if (listOrganizationId.length === 0) {
+      toast.error(
+        "This picklist isn't filed in an organization, so a new item has nowhere to live. Reopen it from an organization workspace.",
+      );
+      return null;
+    }
     const optimistic: PicklistItem = {
       id: crypto.randomUUID(),
       list_id: activeId,
@@ -579,6 +606,7 @@ export function StructuredListManagerV1({
       .insert({
         id: optimistic.id,
         list_id: activeId,
+        organization_id: listOrganizationId,
         label: "",
         description: "",
         help_text: "",

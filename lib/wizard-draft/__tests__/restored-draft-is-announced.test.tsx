@@ -129,7 +129,7 @@ jest.mock("@/lib/toast", () => ({
 
 jest.mock("@/lib/redux/slices/appContextSlice", () => {
   const actual = jest.requireActual("@/lib/redux/slices/appContextSlice");
-  return { ...actual, selectEffectiveOrganizationId: () => ORG_ID };
+  return { ...actual, selectOrganizationId: () => ORG_ID };
 });
 
 import { NewRulebookFlow } from "@/features/masterwork/intake/NewRulebookFlow";

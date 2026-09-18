@@ -109,6 +109,9 @@ export async function loadNotificationScopes(): Promise<NotificationScope[]> {
   ]);
 
   const scopes: NotificationScope[] = [
+    // org-fallback-deliberate: this is the 'Everywhere (my default)' scope in
+    //   the picker — the person's own cross-organization default, named as such in
+    //   the UI
     { organizationId: personalOrgId, label: "Everywhere (my default)", isGlobal: true },
   ];
 
@@ -163,6 +166,12 @@ export async function loadNotificationSettings(
   if (eventsError) throw eventsError;
   if (prefsError) throw prefsError;
 
+  // DELIBERATE personal-organization read, by name — not a fallback for a
+  // missing selection. "No employer named" is this surface's way of saying
+  // "my default everywhere", and the platform STORES that default as the row
+  // on the person's own personal organization (hr_l3_116 §1, the ladder's
+  // second rung, described in this file's header).
+  // org-fallback-deliberate: absent employer means the person's own cross-organization default row
   const scopeId = scopeOrganizationId ?? personalOrgId;
   const scoped = new Map<string, boolean>();
   const global = new Map<string, boolean>();
@@ -223,6 +232,12 @@ export async function setNotificationPreference(
         event_key: eventKey,
         channel,
         enabled,
+        // DELIBERATE personal-organization read, by name (same rule as the
+        // loader above): omitting `organizationId` means "my default
+        // everywhere", which IS the row on the person's own organization.
+        // A missing ACTIVE selection never reaches here — the caller either
+        // names an employer or is asking for their own default.
+        // org-fallback-deliberate: absent employer means the person's own cross-organization default row
         organization_id: organizationId ?? personalOrgId,
         created_by: userId,
         deleted_at: null,

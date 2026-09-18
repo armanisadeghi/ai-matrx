@@ -10,11 +10,13 @@ import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { LabelBatchDetail } from "@/features/commerce-intake/labels/components/LabelBatchDetail";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 export function LabelBatchRouteClient({ batchId }: { batchId: string }) {
   const router = useRouter();
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // The EXPLICIT active org — never a personal-workspace substitute. The
+  // component below already refuses honestly when it is null.
+  const organizationId = useAppSelector(selectOrganizationId);
   return (
     <>
       <PageHeader>

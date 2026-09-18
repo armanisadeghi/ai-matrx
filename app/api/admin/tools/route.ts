@@ -113,6 +113,8 @@ export async function POST(request: NextRequest) {
       // Admin-authored platform tools are builtin/shipped content with no
       // individual owner — home them in the global system org (tool.definition
       // org is NOT NULL with no inherit trigger).
+      // org-fallback-deliberate: an admin-authored platform tool is shipped
+      //   content with no individual owner; the route is behind requireAdmin
       organization_id: await resolveSystemOrgId(supabase),
     };
 

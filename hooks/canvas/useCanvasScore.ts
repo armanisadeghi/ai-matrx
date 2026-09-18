@@ -2,6 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createClient } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
+import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectDisplayName } from "@/lib/redux/slices/userSlice";
 import type {
@@ -58,7 +61,13 @@ export function useCanvasScore(canvasId: string) {
         .insert({
           canvas_id: canvasId,
           user_id: userId,
-          organization_id: await ensureOrgId(undefined),
+          // A score that silently fails to record is the worst possible
+          // lie on a leaderboard — the person played and the board forgot.
+          organization_id: await withOrganizationRefusalShown(
+            "recorded",
+            () => ensureOrgId(undefined),
+            { subject: "Your score" },
+          ),
           username: displayName,
           display_name: displayName,
           score: request.score,
@@ -110,6 +119,16 @@ export function useCanvasScore(canvasId: string) {
         xp_earned: xpEarned,
         achievements_unlocked: [],
       } as SubmitScoreResponse;
+    },
+    onError: (err: unknown) => {
+      // The refusal is already spoken by `withOrganizationRefusalShown`; this
+      // is here so every OTHER failure is spoken too, rather than leaving the
+      // board silently unchanged.
+      if (isOrganizationRequiredError(err)) return;
+      toast.error("Your score was not recorded", {
+        description:
+          err instanceof Error ? err.message : "The leaderboard was not updated.",
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({

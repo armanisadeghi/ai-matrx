@@ -1627,9 +1627,17 @@ export const userPreferencesPolicy = definePolicy<UserPreferencesState>({
         .schema("users")
         .from("user_preferences")
         .upsert({
-          // This is a user-global singleton (PK = user_id), so its ownership
-          // is the user's personal organization. The selected workspace org
-          // is unrelated and can fail RLS when the user is working in HR.
+          // org-fallback-deliberate: `users.user_preferences` is a user-global
+          // singleton (PK = user_id) — ONE row per person that follows them
+          // across every organization they work in, so its tenant is the
+          // person's own workspace by definition, not the organization they
+          // happen to have selected. This is the personal organization
+          // answering "which is this user's own workspace" — the one question
+          // it is still the right answer to
+          // (common-docs/policies/context-is-carried-never-rebuilt.md, rule 4)
+          // — never a substitute for a scope the write failed to carry. The
+          // selected workspace org is unrelated here and can fail RLS when the
+          // user is working in HR.
           organization_id: await resolvePersonalOrgId(),
           user_id: identity.userId,
           preferences: body,

@@ -234,6 +234,16 @@ should describe the migration path.
 
 Newest first. Each entry: date, author/agent, one-line summary.
 
+- `2026-09-17` — claude: `/api/user/form-profile` PATCH names the organization
+  explicitly instead of casting past it. It reads the existing row's
+  `organization_id` and keeps it (a save never MOVES the profile to whichever
+  organization the caller is looking at); a first save with no row reads
+  `X-Organization-Id` off the request; with neither it refuses 400 with the
+  remedy rather than letting a database default choose. The
+  `patch as FormProfileInsert` cast is gone, so the table's required
+  `organization_id` is type-enforced again. NOTE: `useUserFormProfile` does not
+  send that header yet, so a brand-new profile's first save refuses until it
+  does.
 - `2026-08-21` — Codex: Stamped profile upserts with the session's canonical
   personal organization after the live no-null organization ratchet.
 - `2026-08-17` — agent: Treat both hooks' initial `idle` state as loading so

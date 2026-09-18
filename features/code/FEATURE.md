@@ -181,6 +181,9 @@ The management list exposes stored template/tier, resources, heartbeat, expiry, 
 
 ## Change log
 
+
+- **2026-09-17** — **A failed edit-history flush is no longer silent.** `markWriteError` lands in a slice NOTHING renders, so the history for a file the person just changed could fail to write with no screen saying so — and since 2026-09-17 `ensureOrgId` throws the organization refusal through the same catch. The flush loop now presents that refusal with its remedy before recording the write error.
+
 - `2026-09-13` — Shared sandbox proxy responses now remove stale `content-encoding` after Node fetch decodes upstream bytes. A loopback regression covers gzip, zstd, plain binary, SSE, non-2xx status, custom headers, and compressed request forwarding through the actual `forwardToOrchestrator` boundary.
 - `2026-09-15` — Access-token minting keeps its bounded retry deadline through both upstream headers and body parsing. A stalled orchestrator body now aborts and returns the established recoverable 502 route response instead of allowing the serverless function to time out; authoritative 4xx responses remain non-retried.
 - `2026-09-15` — Every token-mint retry owns its response/body pair; a later timeout or connection failure cannot return stale transient-body data as a malformed successful mint.

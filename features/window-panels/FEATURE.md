@@ -100,6 +100,13 @@ The rule, and why it is not a style preference:
 
 ## Change Log
 
+- **2026-09-17** — **A feedback report is filed in the organization the person is
+  acting in.** `submitFeedback` resolved the submitter's PERSONAL organization
+  server-side; a Server Action carries no `X-Organization-Id` header, so
+  `CreateFeedbackInput` now carries `organization_id` and `FeedbackWindow`
+  reads it from `selectOrganizationId` and refuses — with the text preserved —
+  when nothing is selected. Guard: `pnpm check:organization-context`.
+
 - 2026-09-14 — **Dialog-to-WindowPanel interaction census.** Repaired twelve dialogs that launched a child WindowPanel behind a blocking modal or auto-dismissed when the child received its first click. Coexisting hosts now use the design-system's `modal={false}` z-layer contract and prevent outside interaction from dismissing the host; blocking overwrite confirmations close before launching the diff window. `window-launching-dialogs.test.ts` pins every audited host and both confirmation handoffs.
 
 - 2026-09-14 — **`impactBatchWindow` carries `posture` and `focusAgentId`** (Agent Change Impact I6): the opener, the controller block, the window's `onCollectData` and the metadata `defaultData`/`preservation.dataKeys` all grew the two keys, so a post-edit panel opened through the per-person read door and scoped to one agent restores as such. Title reads "Change impact — this agent" in that case.

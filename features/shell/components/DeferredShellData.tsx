@@ -6,6 +6,9 @@
 import { useEffect, useRef } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { setUser, setShellDataLoaded } from "@/lib/redux/slices/userSlice";
+// eslint-disable-next-line no-restricted-syntax -- boot totality: this island owns "the organization question has been answered", including the no-user and failed-fetch exits
+import { setOrgBootstrapResolved } from "@/lib/redux/slices/appContextSlice";
+import { markOrgBootstrapResolved } from "@/lib/organizations/orgBootstrapGate";
 import {
   setModulePreferences,
   sanitizeLoadedPreferences,
@@ -36,6 +39,12 @@ export default function DeferredShellData() {
     const t0 = performance.now();
     console.debug(`⚡DeferredShellData effect started at ${t0.toFixed(2)}ms`);
 
+    // Did the org bootstrap actually START? If it did, IT owns the answer
+    // (its own `finally` always marks the question answered, success or not).
+    // If it never started — no session, or `getUser()` itself threw — this
+    // island must answer, or every gated surface waits forever.
+    let bootstrapStarted = false;
+
     async function load() {
       try {
         const t1 = performance.now();
@@ -45,7 +54,27 @@ export default function DeferredShellData() {
         console.debug(
           `⚡DeferredShellData getUser: ${(performance.now() - t1).toFixed(2)}ms`,
         );
-        if (!user) return;
+        if (!user) {
+          // Not signed in: the organization question is ANSWERED (there is no
+          // organization and never will be this session), so say so rather
+          // than leaving every gated surface waiting on a boot that ended.
+          dispatch(setOrgBootstrapResolved(true));
+          markOrgBootstrapResolved();
+          return;
+        }
+
+        // 🚨 BOOT IS TOTAL, AND IT DOES NOT RIDE ON THE SHELL FETCH.
+        // This dispatch used to sit AFTER `getSSRShellData`, so any failure in
+        // that fetch — a network blip, one bad preference row — skipped it
+        // entirely. The catch below then set `shellDataLoaded`, which unblocks
+        // the chrome, while `orgBootstrapResolved` stayed FALSE forever: ~20
+        // surfaces gate their "choose an organization" notice on
+        // `bootstrapResolved && !organizationId`, so every one of them showed a
+        // permanent skeleton with no error and no picker. The org question is
+        // independent of the shell payload, so it is asked FIRST, with the user
+        // we already have in hand, and answered whatever happens next.
+        bootstrapStarted = true;
+        void dispatch(bootstrapActiveOrganization(user.id));
 
         // Fetch session for the access token (fast local read, no network call)
         const {
@@ -61,12 +90,6 @@ export default function DeferredShellData() {
         const userData = mapUserData(user, accessToken, shellData.is_admin);
 
         dispatch(setUser(userData));
-
-        // Hydrate active-org state: record the personal org (API fallback) and
-        // resolve the active org (default → only-org → nudge). Fire-and-forget
-        // — never blocks the rest of shell hydration. (The live core/admin
-        // shell triggers this via the ActiveOrgBootstrap island.)
-        void dispatch(bootstrapActiveOrganization());
 
         if (shellData.preferences_exists && shellData.preferences) {
           // Load boundary: normalize every known legacy shape drift
@@ -128,6 +151,16 @@ export default function DeferredShellData() {
         console.error("[DeferredShellData]", err);
         // Still mark as loaded so gated components don't hang indefinitely on error.
         dispatch(setShellDataLoaded(true));
+      } finally {
+        // The backstop for the same class: however this function ends, nothing
+        // is left waiting on an answer that is never coming. Deliberately NOT
+        // unconditional — marking here while the bootstrap is still in flight
+        // would answer "no organization" before anyone looked, which is the
+        // cold-boot false refusal this same change set exists to remove.
+        if (!bootstrapStarted) {
+          dispatch(setOrgBootstrapResolved(true));
+          markOrgBootstrapResolved();
+        }
       }
     }
 

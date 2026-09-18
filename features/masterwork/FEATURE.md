@@ -476,6 +476,7 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- `2026-09-17` — `NewRulebookFlow` reads the EXPLICIT active organization instead of the legacy `selectEffectiveOrganizationId` (`organization_id ?? personal_organization_id`). Behaviour on Start is unchanged in the normal case; with no organization the bounded W39 wait settles and the page says so inline, with the remedy, and no Rulebook is created. The three intake tests mock `selectOrganizationId` accordingly.
 - 2026-09-17 (the registry learns about doors) — **A LANE REGISTRY CANNOT SEE A
   DOOR OUT OF ITSELF.** Cold walk 8 typed several paragraphs of real expert
   material into the Rulebook's "New document" resource and found a blank page

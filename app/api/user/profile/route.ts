@@ -196,6 +196,9 @@ export async function PATCH(request: NextRequest) {
         profilesPatch.display_name = fallback;
       }
 
+      // org-fallback-deliberate: users.profiles is a per-person singleton (PK =
+      //   the user id) that follows the person across every organization, so its
+      //   tenant IS their own workspace
       const organizationId = await ensureOrgIdServer(supabase, null);
       const { error: upsertError } = await supabase
         .schema("users").from("profiles")

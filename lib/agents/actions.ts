@@ -27,8 +27,14 @@ type AgentInsert = Omit<
  */
 function seedToInsertPayload(
   seed: Omit<Partial<AgentDefinition>, "id">,
+  organizationId?: string,
 ): AgentInsert {
   const raw: Partial<AgentInsert> = {
+    // The organization the person SELECTED, carried in from the caller and
+    // read here — never resolved, defaulted, or left out. Omitted ONLY by
+    // `createSystemAgentFromSeed`, whose tenant the DB guard forces to the
+    // Matrx System org (see that function).
+    organization_id: organizationId,
     name: seed.name ?? "Untitled Agent",
     description: seed.description ?? undefined,
     category: seed.category ?? undefined,
@@ -58,10 +64,33 @@ function seedToInsertPayload(
 /**
  * Creates an agent from a seed (template constant) and redirects to the builder.
  * Explicitly sets user_id to satisfy RLS INSERT policy.
+ *
+ * 🚨 THE ORGANIZATION IS CARRIED IN, NEVER REBUILT
+ * (common-docs/policies/context-is-carried-never-rebuilt.md). `agent.definition`
+ * is one of the 328 tables carrying `public._stamp_org_default`, a BEFORE
+ * INSERT trigger that files a row arriving with a NULL organization into the
+ * WRITER'S PERSONAL organization. This action wrote no organization at all
+ * until 2026-09-17, so every agent made from a template landed in the
+ * creator's personal workspace instead of the organization they were working
+ * in — invisible to their teammates, and no error anywhere. The caller (the
+ * client half of `/agents/new/manual`) reads the selected organization from
+ * the store and passes it; with nothing selected this refuses and writes
+ * nothing.
  */
 export async function createAgentFromSeed(
   seed: Omit<Partial<AgentDefinition>, "id">,
+  organizationId: string,
 ) {
+  const trimmedOrganizationId =
+    typeof organizationId === "string" ? organizationId.trim() : "";
+  if (!trimmedOrganizationId) {
+    throw new Error(
+      "No organization was chosen for this agent, so nothing was created. " +
+        "Pick the organization you are working in from the menu under your " +
+        "avatar, then try again.",
+    );
+  }
+
   const supabase = await createClient();
 
   const {
@@ -76,7 +105,10 @@ export async function createAgentFromSeed(
   const { data, error } = await supabase
     .schema("agent")
     .from("definition")
-    .insert({ ...seedToInsertPayload(seed), created_by: user.id })
+    .insert({
+      ...seedToInsertPayload(seed, trimmedOrganizationId),
+      created_by: user.id,
+    })
     .select("id")
     .single();
 

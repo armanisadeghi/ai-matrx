@@ -5,17 +5,24 @@
  * subscribe — Shared Knowledge Resources, opt-in tier. Direct-to-Supabase:
  * LIST calls `rag.fn_list_library_catalog` (discoverable+active stores, member
  * count, subscribed = an explicit org-audience grant for the caller's
- * effective org). Subscribe/unsubscribe call the generic Library RPCs
+ * SELECTED org). Subscribe/unsubscribe call the generic Library RPCs
  * `public.library_subscribe`/`library_unsubscribe` (entity_type data_store)
  * directly — they re-validate org membership internally (identity from
- * auth.uid()), so passing `selectEffectiveOrganizationId` is safe even if a
- * caller somehow isn't a member: the RPC just 403s. Lazy by design.
+ * auth.uid()), so passing `selectOrganizationId` is safe even if a caller
+ * somehow isn't a member: the RPC just 403s. Lazy by design.
+ *
+ * 🚨 The org here is the EXPLICIT active organization, never
+ * `selectEffectiveOrganizationId`: subscribing is a write, and the personal-org
+ * fallback used to subscribe the user's PERSONAL workspace to a library they
+ * believed they were adding for their organization. With none selected the
+ * catalog still LISTS (the read is keyed on auth.uid() and the org only
+ * narrows entitlement), and subscribe refuses with the remedy.
  */
 
 import { useCallback, useEffect, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { createClient } from "@/utils/supabase/client";
 import { ragDb } from "@/utils/supabase/ragDb";
 
@@ -86,14 +93,14 @@ function toItem(c: RpcCatalogRow): LibraryCatalogItem {
 
 /**
  * @param overrideOrganizationId — evaluate subscription/entitlement against a
- * SPECIFIC org (org-settings surfaces) instead of the effective active org.
+ * SPECIFIC org (org-settings surfaces) instead of the active org.
  * Access itself never depends on the active org — this only affects which
  * org's subscription state the rows describe.
  */
 export function useLibraryCatalog(overrideOrganizationId?: string | null) {
   const userId = useAppSelector(selectUserId);
-  const effectiveOrganizationId = useAppSelector(selectEffectiveOrganizationId);
-  const organizationId = overrideOrganizationId ?? effectiveOrganizationId;
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
+  const organizationId = overrideOrganizationId ?? activeOrganizationId;
   const [items, setItems] = useState<LibraryCatalogItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -129,7 +136,11 @@ export function useLibraryCatalog(overrideOrganizationId?: string | null) {
   const subscribe = useCallback(
     async (storeId: string): Promise<boolean> => {
       if (!organizationId) {
-        setError("an organization is required to subscribe");
+        // Fail closed and NAME the remedy — a subscription belongs to an
+        // organization, and there is no "effective" one to fall back to.
+        setError(
+          "No organization is selected, so this library cannot be added — choose one from the organization picker in the header, then add it again. Nothing was subscribed.",
+        );
         return false;
       }
       try {
@@ -153,7 +164,9 @@ export function useLibraryCatalog(overrideOrganizationId?: string | null) {
   const unsubscribe = useCallback(
     async (storeId: string): Promise<boolean> => {
       if (!organizationId) {
-        setError("an organization is required");
+        setError(
+          "No organization is selected, so there is nothing to remove it from — choose one from the organization picker in the header and try again. Nothing was changed.",
+        );
         return false;
       }
       try {

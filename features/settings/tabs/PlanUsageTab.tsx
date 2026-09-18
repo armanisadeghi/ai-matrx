@@ -2,16 +2,17 @@
 //
 // Settings → Plan & usage. The home of "where am I at right now".
 //
-// Scoped to the EFFECTIVE organization (the active one, falling back to the
-// user's personal org) because a plan belongs to an account, and every user has
-// a personal org — so this always resolves to a real plan rather than an empty
-// state. Switching orgs here changes which account you're LOOKING at; it does
+// Scoped to the EXPLICIT active organization, never a personal-workspace
+// stand-in: a plan belongs to an account, and showing one account's plan while
+// the person believes they are looking at another is the whole defect. With no
+// organization selected both cards say "Pick an organization" and offer the
+// picker. Switching orgs here changes which account you're LOOKING at; it does
 // not change anyone's access.
 
 "use client";
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { Gauge } from "lucide-react";
 import { SettingsCallout } from "@/components/official/settings/layout/SettingsCallout";
 import { SettingsSubHeader } from "@/components/official/settings/layout/SettingsSubHeader";
@@ -19,7 +20,7 @@ import { PlanUsagePanel } from "@/features/entitlements/components/PlanUsagePane
 import { SpendBudgetCard } from "@/features/entitlements/guardrails/SpendBudgetCard";
 
 export function PlanUsageTab() {
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  const organizationId = useAppSelector(selectOrganizationId);
 
   return (
     <div className="space-y-3">

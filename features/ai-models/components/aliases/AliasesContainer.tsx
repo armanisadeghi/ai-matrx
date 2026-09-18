@@ -160,6 +160,9 @@ export default function AliasesContainer() {
         notes: form.notes.trim() || null,
       };
       if (editingId === "new") {
+        // org-fallback-deliberate: a model alias is a row of the platform's AI
+        //   catalog, identical for every organization; the surface lives in the
+        //   admin-gated (admin) route group
         const organization_id = await resolveSystemOrgId();
         const saved = await aiModelService.createAlias({
           ...payload,

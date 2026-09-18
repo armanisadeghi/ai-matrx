@@ -225,6 +225,23 @@ Realtime moved onto `@ai-matrx/realtime` (2026-09-07). `useInterviewRoom` lost ~
 
 ## Change log
 
+- **2026-09-17** — **A new interview is filed in the organization the person
+  selected.** `createSession` inserted `interview.session` with no
+  `organization_id`, and `public._stamp_org_default` then stamped the
+  CREATOR'S PERSONAL organization: all 53 live rows sit in a private workspace
+  nobody chose, invisible to the people the vision is for. It now carries
+  `ensureOrgId(undefined)` — the selected organization, which joins store
+  hydration before answering — and refuses with
+  `OrganizationContextError("organization_context_required")` when there is
+  none; `NewInterviewDialog` and `NewInterviewExperience` render that refusal
+  with its remedy ("Pick yours from the avatar menu") instead of the
+  transport's programmer sentence. The write was invisible to
+  `scripts/check-org-insert-scope.ts` until the same day, because
+  `interviewDb(supabase).from("session")` resolved as `public.session` — a
+  table the generated types do not have — and the ratchet absorbed it as
+  "scope cannot be proved". Law:
+  `../../../common-docs/policies/context-is-carried-never-rebuilt.md` rule 4.
+
 - **2026-09-17** — **The room no longer guesses which conversation it is in, no
   longer prints the machine's own words in the thread, and no longer follows a
   run that is already over** (Masterwork cold walk 5, findings 7 and 8).

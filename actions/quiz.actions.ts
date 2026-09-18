@@ -1,7 +1,6 @@
 "use server";
 
 import { createClient } from "@/utils/supabase/server";
-import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import type { QuizState } from "@/components/mardown-display/blocks/quiz/quiz-types";
 import type { Json } from "@/types/database.types";
 import type { QuizSession } from "@/types/quiz-session";
@@ -24,6 +23,12 @@ type QuizSessionUpdate = {
  */
 export async function findExistingQuizByHash(
   contentHash: string,
+  /**
+   * The organization the person is acting in, carried from the surface. A
+   * session lives in ONE organization, so the resumable duplicate is looked
+   * up there — never across every organization the person belongs to.
+   */
+  organizationId: string,
 ): Promise<{ success: boolean; data?: QuizSession; error?: string }> {
   try {
     const supabase = await createClient();
@@ -37,12 +42,22 @@ export async function findExistingQuizByHash(
       return { success: false, error: "Not authenticated" };
     }
 
+    const trimmedOrganizationId = organizationId?.trim() ?? "";
+    if (trimmedOrganizationId.length === 0) {
+      return {
+        success: false,
+        error:
+          "Select an organization before resuming a quiz \u2014 every session is filed under one organization. Pick yours from the avatar menu.",
+      };
+    }
+
     const { data, error } = await supabase
       .schema("education")
       .from("quiz_sessions")
       .select("*")
       .is("deleted_at", null)
       .eq("created_by", user.id)
+      .eq("organization_id", trimmedOrganizationId)
       .eq("quiz_content_hash", contentHash)
       .eq("is_completed", false)
       .order("created_at", { ascending: false })
@@ -78,6 +93,12 @@ export async function findExistingQuizByHash(
  */
 export async function createQuizSession(
   state: QuizState,
+  /**
+   * The organization the person is acting in, read from Redux by the surface
+   * and CARRIED here. A Server Action carries no `X-Organization-Id` header,
+   * so the selection has to travel as an argument.
+   */
+  organizationId: string,
   title?: string,
   category?: string,
   contentHash?: string,
@@ -95,11 +116,26 @@ export async function createQuizSession(
       return { success: false, error: "Not authenticated" };
     }
 
+    const trimmedOrganizationId = organizationId?.trim() ?? "";
+    if (trimmedOrganizationId.length === 0) {
+      return {
+        success: false,
+        error:
+          "Select an organization before saving a quiz \u2014 every session is filed under one organization. Pick yours from the avatar menu.",
+      };
+    }
+
     const { data, error } = await supabase
       .schema("education")
       .from("quiz_sessions")
       .insert({
-        organization_id: await ensureOrgIdServer(supabase, undefined),
+        // The organization the person is acting in, carried from the surface
+        // — a Server Action carries no `X-Organization-Id` header, so the
+        // selection travels as an argument. This used to resolve the
+        // submitter's PERSONAL organization, filing every quiz session in a
+        // workspace nobody chose.
+        // common-docs/policies/context-is-carried-never-rebuilt.md rule 4.
+        organization_id: trimmedOrganizationId,
         created_by: user.id,
         title: title || null,
         category: category || null,

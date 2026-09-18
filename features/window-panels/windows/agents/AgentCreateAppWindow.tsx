@@ -21,6 +21,8 @@ import {
   useAppSelector,
 } from "@/lib/redux/hooks";
 import { selectIsSuperAdmin } from "@/lib/redux/slices/userSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import {
   selectAgentById,
   selectLiveAgents,
@@ -122,6 +124,9 @@ function CreateAppWindowBody({
     agentId ? selectAgentById(state, agentId) : null,
   );
   const liveAgents = useAppSelector(selectLiveAgents);
+  // The organization the person selected — carried to the route as
+  // `X-Organization-Id`, never resolved server-side into their personal one.
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
 
   // When an admin creates an app for a builtin/system agent, the app belongs
   // to the system (scope="global"), not to the admin personally. Forgetting
@@ -157,15 +162,28 @@ function CreateAppWindowBody({
 
   const handleSubmit = useCallback(
     async (input: CreateAgentAppInput) => {
+      const scope = publishAsGlobal ? "global" : input.scope ?? "user";
+      if (scope !== "global" && !selectedOrganizationId) {
+        // The route files the app in the admitted organization and refuses
+        // without one; say so here instead of sending a request that 400s.
+        toast.error(
+          "No organization is selected, so this app has nowhere to be filed. Choose the organization you are working in from the avatar menu and try again.",
+        );
+        return;
+      }
       setSubmitting(true);
       try {
         const res = await fetch("/api/agent-apps", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...input,
-            scope: publishAsGlobal ? "global" : input.scope ?? "user",
-          }),
+          // A global (platform-scoped) app carries no organization; every
+          // other scope was refused above without one, so here it is present.
+          headers: selectedOrganizationId
+            ? applyOrganizationContextHeader(
+                { "Content-Type": "application/json" },
+                selectedOrganizationId,
+              )
+            : { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...input, scope }),
         });
 
         if (!res.ok) {
@@ -191,7 +209,7 @@ function CreateAppWindowBody({
         setSubmitting(false);
       }
     },
-    [publishAsGlobal],
+    [publishAsGlobal, selectedOrganizationId],
   );
 
   // Empty-state when the window was opened without an agent context and the

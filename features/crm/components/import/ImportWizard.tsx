@@ -38,7 +38,7 @@ import {
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { getUserOrganizations } from "@/features/organizations/service";
 import type { PartyKind } from "../../types";
 import {
@@ -90,7 +90,10 @@ const STATUS_META: Record<
 
 export function ImportWizard() {
   const router = useRouter();
-  const effectiveOrgId = useAppSelector(selectEffectiveOrganizationId);
+  // Seeds the wizard's own "Into organization" picker with the EXPLICIT
+  // active org — never the personal workspace. With none selected the picker
+  // stays empty and the wizard already says imported records need one.
+  const activeOrgId = useAppSelector(selectOrganizationId);
 
   const [step, setStep] = useState<Step>("source");
   const [kind, setKind] = useState<PartyKind>("person");
@@ -129,7 +132,7 @@ export function ImportWizard() {
     };
   }, []);
 
-  const resolvedOrgId = orgId ?? effectiveOrgId ?? null;
+  const resolvedOrgId = orgId ?? activeOrgId ?? null;
   const selectedOrg = orgs.find(
     (organization) => organization.id === resolvedOrgId,
   );
