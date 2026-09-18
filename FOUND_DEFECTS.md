@@ -4429,8 +4429,13 @@ restores real checking at those call sites — no cast, no suppression. Anyone w
 
 ## 2026-09-18 — `scripts/aidream-contract-pin.json` pins a commit that is not on aidream `main`
 
-`pnpm sync-types` refuses every checkout: the pin `62fa56114` exists only on aidream branch
-`claude/workflow-studio-query-client-u67xw6`. Until that branch merges or the pin moves,
-`types/python-generated/api-types.ts` cannot be regenerated from the checkout by anyone, and the
+`pnpm sync-types` refused every checkout: the pin `62fa56114` existed only on aidream branch
+`claude/workflow-studio-query-client-u67xw6`. **Resolved 2026-09-18 (evening):** the same change
+(the legal/print attribution values) is on aidream `main` as `dee241f38c` (content byte-identical
+in all four files), so the pin now names that commit and the offline sync passes its pin check.
+What still stops a regeneration on a box without credentials: step 1 (`pnpm db-types`) needs
+`SUPABASE_ACCESS_TOKEN`, and the checkout emit (`uv run python scripts/generate_types.py all
+--direct`) imports the app, which raises `DatabaseConfigError` without the five
+`SUPABASE_MATRIX_*` variables. Run `pnpm sync-types` on a credentialed machine; until then the
 topical map's three run clients (`map-pages.ts`, `map-regions.ts`, `map-intents.ts`) carry
 transcribed bodies with a red test naming the remedy. Found by the topical-map UI build (P0-A).
