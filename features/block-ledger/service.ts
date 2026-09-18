@@ -49,8 +49,6 @@ type Query = ReturnType<typeof baseQuery>;
 function baseQuery(select: string, opts?: { count?: "exact"; head?: boolean }) {
   return supabase
     .schema(SCHEMA)
-    // @ts-expect-error — generated types cover the public surface; this table is
-    // read by name and mapped explicitly below.
     .from(TABLE)
     .select(select, opts)
     .is("deleted_at", null);
@@ -90,7 +88,6 @@ async function countBy(column: string): Promise<{ value: string; count: number }
   // would be a server round trip per section for no gain.
   const { data, error } = await supabase
     .schema(SCHEMA)
-    // @ts-expect-error — see baseQuery
     .from(TABLE)
     .select(column)
     .is("deleted_at", null)
@@ -140,7 +137,6 @@ export const blockLedgerService: EntityListService<AcquisitionBlock> = {
   async fetchCounts(): Promise<EntityScopeCounts> {
     const { count, error } = await supabase
       .schema(SCHEMA)
-      // @ts-expect-error — see baseQuery
       .from(TABLE)
       .select("id", { count: "exact", head: true })
       .is("deleted_at", null);
