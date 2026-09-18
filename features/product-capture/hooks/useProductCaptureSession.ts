@@ -22,7 +22,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import {
   createTrackedObjectUrl,
@@ -125,7 +125,12 @@ export function useProductCaptureSession(
 ): UseProductCaptureSessionResult {
   const { initialItemId = null, lane = "standard" } = options;
   const instantLane = lane === "instant";
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE — capture CREATES rows,
+  // and the personal-org fallback filed them in a workspace the person never
+  // chose. With none selected `awaitEffectiveOrganizationId` (explicit-only
+  // since 2026-09-17) settles `unavailable` and the capture refuses with the
+  // remedy instead of writing.
+  const organizationId = useAppSelector(selectOrganizationId);
 
   const [currentItem, setCurrentItem] = useState<CaptureItem | null>(null);
   const [artifacts, setArtifacts] = useState<PendingArtifact[]>([]);

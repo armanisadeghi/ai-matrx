@@ -135,6 +135,42 @@ describe("the canvas has exactly one presentation", () => {
     expect(mounters).toEqual([]);
   });
 
+  it("the shell header's canvas slot is reserved whenever the canvas is available", () => {
+    // The control belongs to the canvas pane's header while the canvas is
+    // open, but its BOX must stay in the shell header. The 2026-09-17 version
+    // of this case asserted `if (!isAvailable || itemCount === 0) return null;`
+    // — which WAS the defect: the slot only existed once an item did, so the
+    // first canvas item both created the box and pulled every button to its
+    // left 44px sideways, and folding never gave it back. Measured live on
+    // production 2026-09-18 (review row 34bfd1e8): Records 1043.39 → 999.39.
+    // The rule now: availability alone reserves the slot.
+    const toggle = read("features/canvas/core/CanvasHeaderToggle.tsx");
+    expect(toggle).toContain('data-canvas-header-slot="reserved"');
+    expect(toggle).toContain('data-canvas-header-slot="control"');
+    // Availability is the ONLY thing that can remove the slot.
+    expect(toggle).toContain("if (!isAvailable) return null;");
+    expect(toggle).not.toContain("!isAvailable || itemCount === 0");
+    // Both empty and open reserve the same box, from the same constant.
+    expect(toggle).toContain('<CanvasHeaderSlotSpacer reason="empty" />');
+    expect(toggle).toContain('<CanvasHeaderSlotSpacer reason="open" />');
+    expect(toggle).toContain(
+      'width: "var(--matrx-tap-target-size, 2.75rem)"',
+    );
+    // The spacer is inert and honest — a box, never a dead-looking button.
+    const spacer = toggle.slice(toggle.indexOf("function CanvasHeaderSlotSpacer"));
+    expect(spacer.slice(0, spacer.indexOf("}\n"))).not.toContain("TapButton");
+    expect(spacer).toContain("aria-hidden");
+    // The behavioural half of this law (rendered DOM, not source text):
+    expect(
+      existsSync(
+        path.join(
+          REPO,
+          "features/canvas/__tests__/canvas-header-slot-reserved.test.tsx",
+        ),
+      ),
+    ).toBe(true);
+  });
+
   it("the surface card marks exactly one presentation", () => {
     const surface = read("features/canvas/core/CanvasSurface.tsx");
     expect(surface).toContain('data-canvas-surface="sheet"');

@@ -256,6 +256,9 @@ The frontend never receives a password, seed, or generated code from that path.
 
 ## Change log
 
+
+- **2026-09-17** — A handoff notification preference saved with no organization selected now says so with the remedy, instead of throwing past its caller (`withOrganizationRefusalShown`).
+
 - **2026-09-17 — queued fleet starts stay attached to their durable run.** A
   `provisioning` response no longer looked idle while written-progress waited for events.
   The hook rehydrates its named run without overlapping or stale-selection reads, and the

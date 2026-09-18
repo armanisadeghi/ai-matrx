@@ -30,17 +30,28 @@ import {
 import { resolveActiveOrgContext } from "@/lib/organizations/resolveActiveOrgContext";
 import { getUserId } from "@/utils/auth/getUserId";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import { markOrgBootstrapResolved } from "@/lib/organizations/orgBootstrapGate";
 
 /**
  * Back-compat imperative bootstrap. Delegates to the shared resolver and
  * dispatches the result. Hydration is normally owned by `appContextPolicy`;
  * this exists only for legacy callers. Never throws — always marks the
  * bootstrap resolved so the UI's "no org" cues don't hang suppressed.
+ *
+ * `explicitUserId` lets a caller that already holds the authenticated user
+ * start the bootstrap before `setUser` has reached Redux.
  */
 export const bootstrapActiveOrganization =
-  () => async (dispatch: AppDispatch, getState: () => RootState) => {
+  (explicitUserId?: string | null) =>
+  async (dispatch: AppDispatch, getState: () => RootState) => {
     try {
-      const userId = getUserId();
+      // THE CALLER MAY KNOW WHO THIS IS BEFORE REDUX DOES. `DeferredShellData`
+      // has the authenticated user in hand from `supabase.auth.getUser()`
+      // several awaits before `setUser` is dispatched; without this parameter
+      // the bootstrap could only run AFTER the shell fetch, which is exactly
+      // how a failing shell fetch left the organization question unanswered
+      // forever (2026-09-17).
+      const userId = explicitUserId ?? getUserId();
       if (!userId) return;
       const resolved = await resolveActiveOrgContext(userId);
       if (!resolved) return;
@@ -61,6 +72,9 @@ export const bootstrapActiveOrganization =
       console.error("[activeOrgBootstrap] failed to hydrate active org", err);
     } finally {
       dispatch(setOrgBootstrapResolved(true));
+      // The same answer, for the non-React waiters (`ensureOrgId`). One
+      // promise, settled by whoever answers first — never a second fetch.
+      markOrgBootstrapResolved();
     }
   };
 

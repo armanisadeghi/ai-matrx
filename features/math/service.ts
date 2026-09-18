@@ -1,5 +1,6 @@
 // features/math/service.ts
 import { createClient } from "@/utils/supabase/server";
+import { OrganizationContextError } from "@ai-matrx/agents/matrx";
 import type { Database, Json } from "@/types/database.types";
 import {
   MathProblem,
@@ -211,17 +212,52 @@ export async function getMathCourseStructure() {
 }
 
 /**
+ * 🚨 `education.math_problems.organization_id` is NOT NULL and this table
+ * carries NO parent-inherit trigger and NO personal-org stamp — so a row
+ * arriving without one does not get filed anywhere, it is REJECTED by the
+ * database with `null value in column "organization_id" violates not-null
+ * constraint`. That sentence reaches an importer as an opaque failure halfway
+ * through a batch.
+ *
+ * The organization is carried by the caller (the import utility takes it as a
+ * required argument and stamps every transformed row). What this does is
+ * refuse at the boundary, before the network, naming what is missing and what
+ * to do — the same shape every other org-scoped writer in this app uses.
+ * common-docs/policies/context-is-carried-never-rebuilt.md.
+ */
+function requireProblemOrganization(
+  problem: MathProblemInsert,
+  where: string,
+): string {
+  const organizationId =
+    typeof problem.organization_id === "string"
+      ? problem.organization_id.trim()
+      : "";
+  if (!organizationId) {
+    throw new OrganizationContextError(
+      "organization_context_required",
+      `${where}: this math problem names no organization, and every record is filed under one. Pass the organization you are importing into and try again.`,
+    );
+  }
+  return organizationId;
+}
+
+/**
  * Insert a new math problem (for admin use)
  */
 export async function insertMathProblem(
   problem: MathProblemInsert,
 ): Promise<MathProblem | null> {
+  const organizationId = requireProblemOrganization(
+    problem,
+    "insertMathProblem",
+  );
   const supabase = await createClient();
 
   const { data, error } = await supabase
     .schema("education")
     .from("math_problems")
-    .insert(problem)
+    .insert({ ...problem, organization_id: organizationId })
     .select()
     .single();
 
@@ -239,9 +275,18 @@ export async function insertMathProblem(
 export async function bulkInsertMathProblems(
   problems: MathProblemInsert[],
 ): Promise<void> {
+  // Refuse the WHOLE batch before the network if any row is unfiled — a
+  // partially-inserted batch that dies on row 40 is the worst outcome here.
+  const rows = problems.map((problem, index) => ({
+    ...problem,
+    organization_id: requireProblemOrganization(
+      problem,
+      `bulkInsertMathProblems[${index}]`,
+    ),
+  }));
   const supabase = await createClient();
 
-  const { error } = await supabase.schema("education").from("math_problems").insert(problems);
+  const { error } = await supabase.schema("education").from("math_problems").insert(rows);
 
   if (error) {
     console.error("Error bulk inserting math problems:", error);

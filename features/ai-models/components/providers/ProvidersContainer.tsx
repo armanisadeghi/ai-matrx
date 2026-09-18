@@ -170,6 +170,9 @@ function ProviderDetailPanel({
         // organization_id is required by the generated Insert type — every
         // new provider catalog row is homed in the global system org (same
         // pattern as ServicesContainer / OfferingsContainer).
+        // org-fallback-deliberate: a provider is a row of the platform's AI catalog,
+        //   identical for every organization; the surface lives in the admin-gated
+        //   (admin) route group
         const organization_id = await resolveSystemOrgId();
         saved = await aiModelService.createProvider({
           ...buildPayload(),

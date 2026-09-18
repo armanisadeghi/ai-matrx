@@ -26,6 +26,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 
 export interface HandoffChannelPreferences {
   /** Opt-in. `users.user_email_preferences.browser_handoff_notifications`. */
@@ -118,7 +119,11 @@ export async function setHandoffEmailPreference(enabled: boolean): Promise<void>
       created_by: userId,
       // Never insert an org-scoped row with a null org (the column is NOT NULL
       // and NULL is never "global" — it is a row nobody can see).
-      organization_id: await ensureOrgId(null),
+      organization_id: await withOrganizationRefusalShown(
+        "saved",
+        () => ensureOrgId(null),
+        { subject: "This notification preference" },
+      ),
       browser_handoff_notifications: enabled,
     });
   if (error) throw error;

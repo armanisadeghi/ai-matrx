@@ -22468,6 +22468,7 @@ export type Database = {
           postal_region: string | null
           provider: string
           provider_account: string | null
+          purpose: string
           quiet_hours_end: number
           quiet_hours_start: number
           reply_to: string | null
@@ -22531,6 +22532,7 @@ export type Database = {
           postal_region?: string | null
           provider: string
           provider_account?: string | null
+          purpose?: string
           quiet_hours_end?: number
           quiet_hours_start?: number
           reply_to?: string | null
@@ -22594,6 +22596,7 @@ export type Database = {
           postal_region?: string | null
           provider?: string
           provider_account?: string | null
+          purpose?: string
           quiet_hours_end?: number
           quiet_hours_start?: number
           reply_to?: string | null
@@ -28044,6 +28047,7 @@ export type Database = {
       }
       files: {
         Row: {
+          artifact_kind: string | null
           canonical_processed_document_id: string | null
           checksum: string | null
           client_modified_at: string | null
@@ -28065,6 +28069,7 @@ export type Database = {
           origin_device_id: string | null
           parent_file_id: string | null
           parent_folder_id: string | null
+          provider_session_id: string | null
           size_bytes: number | null
           storage_uri: string
           updated_at: string
@@ -28074,6 +28079,7 @@ export type Database = {
           width: number | null
         }
         Insert: {
+          artifact_kind?: string | null
           canonical_processed_document_id?: string | null
           checksum?: string | null
           client_modified_at?: string | null
@@ -28095,6 +28101,7 @@ export type Database = {
           origin_device_id?: string | null
           parent_file_id?: string | null
           parent_folder_id?: string | null
+          provider_session_id?: string | null
           size_bytes?: number | null
           storage_uri: string
           updated_at?: string
@@ -28104,6 +28111,7 @@ export type Database = {
           width?: number | null
         }
         Update: {
+          artifact_kind?: string | null
           canonical_processed_document_id?: string | null
           checksum?: string | null
           client_modified_at?: string | null
@@ -28125,6 +28133,7 @@ export type Database = {
           origin_device_id?: string | null
           parent_file_id?: string | null
           parent_folder_id?: string | null
+          provider_session_id?: string | null
           size_bytes?: number | null
           storage_uri?: string
           updated_at?: string
@@ -55693,6 +55702,7 @@ export type Database = {
           created_at: string
           created_by: string | null
           deleted_at: string | null
+          expected_chunk_count: number | null
           finding_counts: Json
           finished_at: string | null
           id: string
@@ -55702,6 +55712,7 @@ export type Database = {
           organization_id: string
           package_name: string | null
           package_path: string
+          received_chunks: number[]
           repo_slug: string
           revision: string
           revision_kind: string
@@ -55718,6 +55729,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          expected_chunk_count?: number | null
           finding_counts?: Json
           finished_at?: string | null
           id?: string
@@ -55727,6 +55739,7 @@ export type Database = {
           organization_id: string
           package_name?: string | null
           package_path: string
+          received_chunks?: number[]
           repo_slug: string
           revision: string
           revision_kind: string
@@ -55743,6 +55756,7 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
+          expected_chunk_count?: number | null
           finding_counts?: Json
           finished_at?: string | null
           id?: string
@@ -55752,6 +55766,7 @@ export type Database = {
           organization_id?: string
           package_name?: string | null
           package_path?: string
+          received_chunks?: number[]
           repo_slug?: string
           revision?: string
           revision_kind?: string
@@ -58329,6 +58344,128 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      acquisition_block: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          detail: Json
+          engine: string
+          error_class: string
+          error_sentence: string
+          first_seen_at: string
+          handoff_id: string | null
+          id: string
+          input_label: string
+          input_ref: string
+          last_retry_at: string | null
+          last_seen_at: string
+          lawful_route: string | null
+          library_id: string | null
+          metadata: Json
+          occurrence_count: number
+          organization_id: string
+          retry_count: number
+          rung: string | null
+          rung_trail: Json
+          source_type: string
+          status: string
+          unblock_note: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          detail?: Json
+          engine: string
+          error_class: string
+          error_sentence: string
+          first_seen_at?: string
+          handoff_id?: string | null
+          id?: string
+          input_label?: string
+          input_ref: string
+          last_retry_at?: string | null
+          last_seen_at?: string
+          lawful_route?: string | null
+          library_id?: string | null
+          metadata?: Json
+          occurrence_count?: number
+          organization_id: string
+          retry_count?: number
+          rung?: string | null
+          rung_trail?: Json
+          source_type: string
+          status?: string
+          unblock_note?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          detail?: Json
+          engine?: string
+          error_class?: string
+          error_sentence?: string
+          first_seen_at?: string
+          handoff_id?: string | null
+          id?: string
+          input_label?: string
+          input_ref?: string
+          last_retry_at?: string | null
+          last_seen_at?: string
+          lawful_route?: string | null
+          library_id?: string | null
+          metadata?: Json
+          occurrence_count?: number
+          organization_id?: string
+          retry_count?: number
+          rung?: string | null
+          rung_trail?: Json
+          source_type?: string
+          status?: string
+          unblock_note?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acquisition_block_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acquisition_block_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acquisition_block_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_auth_user"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acquisition_block_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "visible_user_identity"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       activity_log: {
         Row: {

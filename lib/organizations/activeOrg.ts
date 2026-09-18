@@ -6,12 +6,21 @@
 //
 // Source of truth is Redux ONLY: `appContext.organization_id`, the org the
 // user explicitly selected for the current request context. A personal org is
-// identity metadata, not a transport fallback.
+// identity metadata, not a transport fallback and not a write fallback: there
+// is no `?? personal_organization_id` here any more (2026-09-17). Boot is
+// TOTAL since 2026-09-12 — `resolveActiveOrgContext` rung (b) explicitly
+// SELECTS the user's own personal workspace at bootstrap when nothing else
+// applies — so a null here means genuinely unresolved (no memberships) or not
+// yet hydrated, never "they have a personal org we could have used".
 //
 // Why this exists: org is now required on every org-scoped write. Service
 // callsites must always attach the user's CURRENT org — not a per-callsite
 // guess and not the personal org. Request transports use
 // `requireSelectedOrgId()` so missing context fails before networking.
+//
+// Law: common-docs/policies/context-is-carried-never-rebuilt.md — the
+// organization is READ below the boundary, never invented, defaulted or
+// substituted.
 //
 // CRITICAL: imports ONLY from the cycle-free `store-singleton` leaf module —
 // never from `@/lib/redux/store` or the slice — so service modules can import
@@ -30,13 +39,15 @@ import { OrganizationContextError } from "@ai-matrx/agents/matrx";
 
 interface AppContextOrgShape {
   organization_id: string | null;
-  personal_organization_id: string | null;
 }
 
 /**
- * Legacy effective-scope read for direct data surfaces: explicitly selected
- * org, else personal org, else null. Never use this for request transport;
- * transports must call `requireSelectedOrgId()`.
+ * The user's explicitly-SELECTED organization id, or null when none is
+ * selected. This is the ONE read: there is no personal-organization fallback,
+ * because a transport or a write that quietly substitutes the personal
+ * workspace files the person's work in an organization they never chose.
+ * Null means "no selection" — surfaces render `OrganizationRequiredNotice`
+ * (see `organizationRequiredError.ts`) and writes refuse.
  */
 export function getActiveOrgId(): string | null {
   const store = getStore();
@@ -44,35 +55,16 @@ export function getActiveOrgId(): string | null {
   const appContext = (store.getState() as { appContext?: AppContextOrgShape })
     .appContext;
   if (!appContext) return null;
-  return appContext.organization_id ?? appContext.personal_organization_id ?? null;
+  return appContext.organization_id ?? null;
 }
 
-/**
- * The user's explicitly-SELECTED org id (no personal-org fallback), or null.
- * Mirrors `selectOrganizationId`. Use only when you specifically need to know
- * whether the user has actively chosen an org; for writes, prefer
- * `getActiveOrgId` / `ensureOrgId`.
- */
-export function getSelectedOrgId(): string | null {
-  const store = getStore();
-  if (!store) return null;
-  const appContext = (store.getState() as { appContext?: AppContextOrgShape })
-    .appContext;
-  return appContext?.organization_id ?? null;
-}
+/** Alias of `getActiveOrgId` — the two reads became identical when the
+ * personal-org fallback was deleted (2026-09-17). Mirrors `selectOrganizationId`. */
+export const getSelectedOrgId = getActiveOrgId;
 
-/**
- * Legacy throwing effective-scope read for direct data surfaces. This may
- * return the personal org and therefore is forbidden for request transport.
- */
+/** Alias of `requireSelectedOrgId` — same reason as `getSelectedOrgId`. */
 export function requireActiveOrgId(): string {
-  const id = getActiveOrgId();
-  if (!id) {
-    throw new Error(
-      "No active organization available (Redux not hydrated). Use ensureOrgId() for an async-recoverable resolution.",
-    );
-  }
-  return id;
+  return requireSelectedOrgId();
 }
 
 /**

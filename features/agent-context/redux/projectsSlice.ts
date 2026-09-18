@@ -11,6 +11,7 @@ import { supabase } from "@/utils/supabase/client";
 import { workspaceDb } from "@/utils/supabase/workspaceDb";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 import type { NavProject, ProjectScopeTag } from "./hierarchySlice";
 import type { DataLevel, DataLevelMeta } from "./organizationsSlice";
 import { isStale } from "./organizationsSlice";
@@ -135,7 +136,15 @@ export const createProjectThunk = createAsyncThunk(
       .from("projects")
       .insert({
         ...data,
-        organization_id: await ensureOrgId(data.organization_id),
+        // The refusal REACHES THE PERSON. `ensureOrgId` throws when no
+        // organization is selected (2026-09-17); a rejected thunk alone is a
+        // dead Create button, so the toast names the act and the remedy and
+        // the throw still propagates so nothing pretends the project exists.
+        organization_id: await withOrganizationRefusalShown(
+          "created",
+          () => ensureOrgId(data.organization_id),
+          { subject: "This project" },
+        ),
         created_by: userId,
       })
       .select(

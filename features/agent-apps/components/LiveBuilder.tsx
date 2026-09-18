@@ -36,6 +36,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import IconInputWithValidation from "@/components/official/icons/IconInputWithValidation";
 import { toast } from "@/lib/toast-service";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { selectAgentById } from "@/features/agents/redux/agent-definition/selectors";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { selectFocusedConversation } from "@/features/agents/redux/execution-system/conversation-focus/conversation-focus.selectors";
@@ -102,6 +104,9 @@ export function LiveBuilder({
   const dispatch = useAppDispatch();
 
   const agent = useAppSelector((state) => selectAgentById(state, agentId));
+  // The organization the person selected — carried to the route as
+  // `X-Organization-Id`, never resolved server-side into their personal one.
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
   useEffect(() => {
     if (agent) return;
     void dispatch(fetchFullAgent(agentId));
@@ -474,6 +479,14 @@ export function LiveBuilder({
   }, [previewConversationId, dispatch]);
 
   const handleCreate = useCallback(async () => {
+    if (!selectedOrganizationId) {
+      // The route files the app in the admitted organization and refuses
+      // without one — say so here rather than send a request that 400s.
+      toast.error(
+        "No organization is selected, so this app has nowhere to be filed. Choose the organization you are working in from the avatar menu and try again.",
+      );
+      return;
+    }
     setSubmitting(true);
     try {
       const slug =
@@ -482,7 +495,10 @@ export function LiveBuilder({
           : `app-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
       const res = await fetch("/api/agent-apps", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: applyOrganizationContextHeader(
+          { "Content-Type": "application/json" },
+          selectedOrganizationId ?? undefined,
+        ),
         body: JSON.stringify({
           agent_id: agentId,
           slug,
@@ -518,6 +534,7 @@ export function LiveBuilder({
     slotCode,
     onSuccess,
     router,
+    selectedOrganizationId,
   ]);
 
   return (

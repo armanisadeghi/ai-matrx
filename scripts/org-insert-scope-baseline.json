@@ -1,0 +1,247 @@
+{
+  "_comment": "RATCHET — organization-scoped writes that do not yet carry the organization. `public._stamp_org_default` stamps the writer's PERSONAL organization on any NULL, so every entry here is a row that can silently land in a workspace nobody selected (common-docs/policies/context-is-carried-never-rebuilt.md rule 4). This list may only SHRINK: a NEW site fails immediately, a fixed one fails as STALE until `tsx scripts/check-org-insert-scope.ts --fix` rewrites it downward, and NULLABLE is never carried here at all. Line numbers are deliberately absent — an entry is identified by file + table + payload text, so unrelated edits above it do not churn the file.",
+  "seeded_at": "2026-09-17T22:17:32.603Z",
+  "count": 40,
+  "sites": [
+    {
+      "file": "app/api/agent-shortcuts/route.ts",
+      "table": "<unresolved>",
+      "status": "UNRESOLVED",
+      "signature": "scoped as never"
+    },
+    {
+      "file": "features/agents/components/schema-proposal/create-shape.ts",
+      "table": "content_ir.kind_edge",
+      "status": "UNRESOLVED",
+      "signature": "edgeRows"
+    },
+    {
+      "file": "features/agents/redux/agent-apps/thunks.ts",
+      "table": "app.definition",
+      "status": "UNRESOLVED",
+      "signature": "insert"
+    },
+    {
+      "file": "features/agents/redux/agent-definition/thunks.ts",
+      "table": "agent.definition",
+      "status": "UNRESOLVED",
+      "signature": "agentDefinitionToInsert(draft)"
+    },
+    {
+      "file": "features/agents/redux/agent-shortcuts/thunks.ts",
+      "table": "<unresolved>",
+      "status": "UNRESOLVED",
+      "signature": "agentShortcutToInsert(draft)"
+    },
+    {
+      "file": "features/agents/redux/agent-shortcuts/thunks/bulkWriteShortcuts.thunk.ts",
+      "table": "<unresolved>",
+      "status": "UNRESOLVED",
+      "signature": "rows"
+    },
+    {
+      "file": "features/agents/redux/agent-shortcuts/thunks/bulkWriteShortcuts.thunk.ts",
+      "table": "<unresolved>",
+      "status": "UNRESOLVED",
+      "signature": "rows"
+    },
+    {
+      "file": "features/ai-models/service.ts",
+      "table": "ai.api",
+      "status": "UNRESOLVED",
+      "signature": "payload"
+    },
+    {
+      "file": "features/ai-models/service.ts",
+      "table": "ai.endpoint",
+      "status": "UNRESOLVED",
+      "signature": "payload"
+    },
+    {
+      "file": "features/ai-models/service.ts",
+      "table": "ai.model_alias",
+      "status": "UNRESOLVED",
+      "signature": "payload"
+    },
+    {
+      "file": "features/ai-models/service.ts",
+      "table": "ai.model_definition",
+      "status": "UNRESOLVED",
+      "signature": "canonicalizeModelWrite(payload)"
+    },
+    {
+      "file": "features/ai-models/service.ts",
+      "table": "ai.offering",
+      "status": "UNRESOLVED",
+      "signature": "payload"
+    },
+    {
+      "file": "features/ai-models/service.ts",
+      "table": "ai.provider",
+      "status": "UNRESOLVED",
+      "signature": "payload"
+    },
+    {
+      "file": "features/ai-models/service.ts",
+      "table": "ai.setting",
+      "status": "UNRESOLVED",
+      "signature": "payload"
+    },
+    {
+      "file": "features/ai-runs/services/ai-tasks-service.ts",
+      "table": "<unresolved>",
+      "status": "UNRESOLVED",
+      "signature": "{ user_id: userId, run_id: input.run_id, task_id: input.task_id, service: input.service, task_name: input.task_name, model_id: input.model_i"
+    },
+    {
+      "file": "features/bindings/treatment-writer.ts",
+      "table": "<unresolved>",
+      "status": "UNRESOLVED",
+      "signature": "{ mandate_id: owner.mandateId, organization_id: owner.organizationId, name: owner.label, tier: TREATMENT_TIER_WIDGET, is_default: true, is_e"
+    },
+    {
+      "file": "features/canvas/services/canvasArtifactService.ts",
+      "table": "<unresolved>",
+      "status": "UNRESOLVED",
+      "signature": "{ messageId: input.source.id, artifactIndex: input.artifactIndex, type: input.type, title: input.title, content: input.content, structured: "
+    },
+    {
+      "file": "features/commerce-intake/labels/service.ts",
+      "table": "commerce.label_code",
+      "status": "UNRESOLVED",
+      "signature": "rows"
+    },
+    {
+      "file": "features/crm/service.ts",
+      "table": "crm.address",
+      "status": "UNRESOLVED",
+      "signature": "input"
+    },
+    {
+      "file": "features/data-tables/grid-context-menu.ts",
+      "table": "<unresolved>",
+      "status": "UNRESOLVED",
+      "signature": "name"
+    },
+    {
+      "file": "features/data-tables/grid-context-menu.ts",
+      "table": "<unresolved>",
+      "status": "UNRESOLVED",
+      "signature": "name"
+    },
+    {
+      "file": "features/education/study/service/planService.ts",
+      "table": "education.study_plan_block",
+      "status": "UNRESOLVED",
+      "signature": "blockRows as never"
+    },
+    {
+      "file": "features/mandates/notes.ts",
+      "table": "<unresolved>",
+      "status": "UNRESOLVED",
+      "signature": "{ mandate_id: input.mandateId, body, note_kind: input.noteKind ?? \"observation\", surface_name: input.surfaceName ?? null, observed_agent_id:"
+    },
+    {
+      "file": "features/marketing/content-plan/data/service.ts",
+      "table": "plan.entity",
+      "status": "UNRESOLVED",
+      "signature": "input"
+    },
+    {
+      "file": "features/marketing/content-plan/data/service.ts",
+      "table": "plan.node",
+      "status": "UNRESOLVED",
+      "signature": "input"
+    },
+    {
+      "file": "features/marketing/initiatives/service.ts",
+      "table": "marketing.initiative",
+      "status": "UNRESOLVED",
+      "signature": "input"
+    },
+    {
+      "file": "features/marketing/seo/topical-map/data.ts",
+      "table": "seo.map_facet",
+      "status": "UNRESOLVED",
+      "signature": "input"
+    },
+    {
+      "file": "features/marketing/seo/topical-map/data.ts",
+      "table": "seo.map_facet_value",
+      "status": "UNRESOLVED",
+      "signature": "input"
+    },
+    {
+      "file": "features/marketing/seo/topical-map/data.ts",
+      "table": "seo.map_topic",
+      "status": "UNRESOLVED",
+      "signature": "input"
+    },
+    {
+      "file": "features/marketing/seo/topical-map/data.ts",
+      "table": "seo.topical_map",
+      "status": "UNRESOLVED",
+      "signature": "input"
+    },
+    {
+      "file": "features/page-extraction/data-review/data.ts",
+      "table": "docproc.page_extraction_jobs",
+      "status": "UNRESOLVED",
+      "signature": "clone"
+    },
+    {
+      "file": "features/podcasts/generator/useEpisodeArticles.ts",
+      "table": "<unresolved>",
+      "status": "UNRESOLVED",
+      "signature": "{ episode_id: episode.id, show_id: episode.show_id, kind, // Blog gets a public, globally-unique slug (the suffix guards the DB // unique co"
+    },
+    {
+      "file": "features/public-chat/services/cx-chat.ts",
+      "table": "chat.message",
+      "status": "UNRESOLVED",
+      "signature": "message"
+    },
+    {
+      "file": "features/public-chat/services/cx-chat.ts",
+      "table": "chat.message",
+      "status": "UNRESOLVED",
+      "signature": "messages"
+    },
+    {
+      "file": "features/surfaces/services/manifest-sync.service.ts",
+      "table": "ui.ui_surface_agent_role",
+      "status": "UNRESOLVED",
+      "signature": "roleUpsertRows"
+    },
+    {
+      "file": "features/surfaces/services/manifest-sync.service.ts",
+      "table": "ui.ui_surface_client_tool",
+      "status": "UNRESOLVED",
+      "signature": "clientToolRows"
+    },
+    {
+      "file": "features/surfaces/services/manifest-sync.service.ts",
+      "table": "ui.ui_surface_value",
+      "status": "UNRESOLVED",
+      "signature": "upsertRows"
+    },
+    {
+      "file": "features/surfaces/services/manifest-sync.service.ts",
+      "table": "ui.ui_surface_write_target",
+      "status": "UNRESOLVED",
+      "signature": "writeTargetRows"
+    },
+    {
+      "file": "lib/agents/actions.ts",
+      "table": "agent.definition",
+      "status": "UNRESOLVED",
+      "signature": "{ ...seedToInsertPayload(seed), agent_type: \"builtin\", is_active: true, // organization_id intentionally omitted — the DB guard forces it to"
+    },
+    {
+      "file": "lib/agents/actions.ts",
+      "table": "agent.definition",
+      "status": "UNRESOLVED",
+      "signature": "{ ...seedToInsertPayload(seed, trimmedOrganizationId), created_by: user.id, }"
+    }
+  ]
+}

@@ -27,6 +27,7 @@ import AssistsDock from "@/features/assists/components/AssistsDock";
 import CloudBrowserHandoffDeepLink from "@/features/cloud-browser/components/CloudBrowserHandoffDeepLink";
 import LiveCaptureIndicator from "@/features/media-capture/components/LiveCaptureIndicator";
 import ErrorInspectorBadge from "@/features/admin/error-inspector/ErrorInspectorBadge";
+import NeedsYouTray from "@/features/capture-ladder/NeedsYouTray";
 import AdminAttentionDock from "@/features/admin/attention/AdminAttentionDock";
 import { FirstSignInAgeGateMount } from "@/features/education/compliance/FirstSignInAgeGateMount";
 import { DailySpendPopoverMount } from "@/features/admin/spend/DailySpendPopoverMount";
@@ -141,6 +142,16 @@ export default function DeferredSingletonCore() {
           FLOATS: see the component header and styles/shell.css. */}
       <AdminAttentionDock />
       <LiveCaptureIndicator />
+      {/* Renders NOTHING while nothing needs a person's own browser — absent,
+          not a greyed "0 waiting" pill. The capture ladder's rungs 3 and 4 run
+          in the person's own Chrome through matrx-extend, minutes or hours
+          after the scrape that raised them, so the count cannot live on
+          /scraper/batch where it was created: it has to find the person
+          wherever they are. It reads media.capture_handoff directly (there is
+          no outbound channel from the server to a browser) and says out loud
+          when it could not read it — see the component header and
+          common-docs/projects/acquisition-frontier/extension-ladder/CONTRACT.md §8.1. */}
+      <NeedsYouTray />
       {/* Render-free. Asks a signed-in account with no declared age band for
           it ONCE, after they are in the app — never during signup (Arman,
           2026-08-20). Dismissible; re-asks next session. Guests are handled by

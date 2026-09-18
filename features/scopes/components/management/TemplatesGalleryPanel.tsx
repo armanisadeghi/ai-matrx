@@ -16,6 +16,7 @@ import { Card } from "@/components/ui/card";
 import { useTemplates } from "@/features/scopes/hooks/useTemplates";
 import { useActiveContext } from "@/features/scopes/hooks/useActiveContext";
 import { useScopeTree } from "@/features/scopes/hooks/useScopeTree";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { DynamicIcon } from "@ai-matrx/icons";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -32,11 +33,15 @@ export function TemplatesGalleryPanel() {
   const active = useActiveContext();
   const { organizations } = useScopeTree();
 
+  // Applying a template WRITES scope types and context items into one
+  // organization, so the target is the organization the person selected —
+  // never whichever organization sorted first in their list (a membership in
+  // someone else's personal workspace can sort first). With no selection the
+  // catalog still browses and the apply affordance is replaced by the honest
+  // organization-required state below.
+  // Law: common-docs/policies/context-is-carried-never-rebuilt.md.
   const targetOrg = useMemo(
-    () =>
-      organizations.find((o) => o.id === active.organizationId) ??
-      organizations[0] ??
-      null,
+    () => organizations.find((o) => o.id === active.organizationId) ?? null,
     [organizations, active.organizationId],
   );
 
@@ -128,6 +133,15 @@ export function TemplatesGalleryPanel() {
 
   return wrap(
     <div className="space-y-5">
+      {targetOrg ? null : (
+        <Card className="p-0">
+          <OrganizationRequiredNotice
+            compact
+            title="Choose an organization to apply a template"
+            description="Templates are browsable without one, but applying a template writes its scope types and context items into a single organization — so pick the one you are working in."
+          />
+        </Card>
+      )}
       {Object.entries(grouped).map(([category, list]) => (
         <section key={category} className="space-y-2">
           <h2 className="text-xs font-semibold text-muted-foreground uppercase">
@@ -169,7 +183,7 @@ export function TemplatesGalleryPanel() {
                     </Link>
                   ) : (
                     <span className="text-[11px] text-muted-foreground">
-                      Pick an org first
+                      Choose an organization above to apply
                     </span>
                   )}
                 </div>

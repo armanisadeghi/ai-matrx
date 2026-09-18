@@ -22,7 +22,7 @@ import { agentAppPublicationPatch } from "@/features/agent-apps/lib/publication"
  *    debugging duplicate-collision races impossible.
  */
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
   try {
@@ -39,21 +39,25 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // app.definition.organization_id is NOT NULL — duplicating always resets
-    // ownership to the *acting* user's own scope (never the original's org),
-    // so resolve their personal org rather than passing null.
-    const { data: personalOrgId, error: orgError } = await supabase.rpc(
-      "ensure_personal_organization",
-      { p_user_id: user.id },
-    );
-    if (orgError || !personalOrgId) {
-      console.error(
-        "[agent-apps duplicate] failed to resolve personal organization:",
-        orgError,
-      );
+    // 🚨 THE COPY IS FILED IN THE ORGANIZATION THE CALLER IS ACTING IN.
+    // This used to resolve the acting user's PERSONAL organization, which is
+    // why all 96 live `app.definition` rows sit in their creator's private
+    // workspace instead of the organization the app was built for. The caller
+    // states the organization on `X-Organization-Id` — the header every Matrx
+    // client carries — and with none the request is refused with the remedy.
+    // Membership is not taken on trust: the insert below runs on the caller's
+    // own RLS-scoped client, so a header naming an organization they are not
+    // in fails the policy.
+    // common-docs/policies/context-is-carried-never-rebuilt.md rule 4.
+    const organizationId = request.headers.get("X-Organization-Id")?.trim() ?? "";
+    if (organizationId.length === 0) {
       return NextResponse.json(
-        { error: "Failed to resolve personal organization" },
-        { status: 500 },
+        {
+          error:
+            "No organization was named for this app, so nothing was created. Choose the organization you are working in and try again.",
+          code: "organization_context_required",
+        },
+        { status: 400 },
       );
     }
 
@@ -106,7 +110,7 @@ export async function POST(
       .from("definition")
       .insert({
         created_by: user.id,
-        organization_id: personalOrgId,
+        organization_id: organizationId,
         project_id: null,
         task_id: null,
         agent_id: original.agent_id,

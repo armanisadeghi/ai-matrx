@@ -242,6 +242,13 @@ never become an answer, and absent means the declaration gave none — never inv
 
 ## Change Log
 
+- 2026-09-17 — **Moving onto the organization rung no longer lands on `organizations[0]`.**
+  `OneBindingWorkspace`'s `onRungChange` seeded the org rung with the first organization in the
+  membership list when the bar named none — a binding decided for whichever org sorted first. It now
+  takes the organization the person selected (when they are a member of it) or stays empty, where
+  `rungReady` keeps Save refused and the bar already says "Choose the organization below."
+  Law: `../../common-docs/policies/context-is-carried-never-rebuilt.md`.
+
 - 2026-09-09 — All scopes use structured scope/holder controls. The shared treatment editor lives above the binding draft key and gates existing-row edits through canonical resource access. Model baselines reuse the resolution ladder for preceding enabled layers, preserving runtime null cancellation and per-field provenance; local API deltas and counts use the existing serializer.
 
 - 2026-09-09 — Disabled Run Instantly across mandate authoring until universal intervention is supported. Moved it to the top of Holder and removed Source/State/Eligibility fields; stored configuration remains unchanged.

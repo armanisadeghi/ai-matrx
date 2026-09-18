@@ -53,6 +53,8 @@ const summaryOf = (progress: LiveRunProgressState) => {
 /** The exact screen from the cold walk: the reassurance beside a failed row. */
 const QUICK_BUILD_WITH_A_FAILED_STEP: LiveRunProgressState = {
   title: "Quick Build",
+  // Ordered milestones — a Build's step 3 really does need step 2.
+  shape: "sequence",
   description:
     "Still building after 2 minutes — longer than usual. Nothing has failed, and it keeps going without you.",
   items: [
@@ -120,6 +122,8 @@ describe("every consumer of the canonical renderer inherits the honesty", () => 
   it("corrects a cheerful process sentence when one row has failed", () => {
     const illustration: LiveRunProgressState = {
       title: "Illustrating Photosynthesis",
+      // A pile of CARDS, each sourced independently.
+      shape: "fan_out",
       description:
         "An agent searches the open web for each card's front, judges the source, and attaches only what clears the bar.",
       items: [
@@ -136,6 +140,8 @@ describe("every consumer of the canonical renderer inherits the honesty", () => 
   it("corrects the visibility report's waiting sentence when an engine fails", () => {
     const report: LiveRunProgressState = {
       title: "Checking AI recommendations",
+      // A pile of ENGINES, each asked independently.
+      shape: "fan_out",
       description:
         "Each engine updates here as its response and analysis complete.",
       items: [

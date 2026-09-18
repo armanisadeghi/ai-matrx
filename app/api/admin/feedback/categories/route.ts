@@ -81,6 +81,8 @@ export async function POST(request: NextRequest) {
       .schema("platform")
       .from("categories")
       .insert({
+        // org-fallback-deliberate: a feedback category is a platform-wide vocabulary
+        //   row every organization sees; the route is behind requireAdmin
         organization_id: await resolveSystemOrgId(supabase),
         dimension: "feedback",
         name,

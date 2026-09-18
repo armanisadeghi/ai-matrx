@@ -1,0 +1,24 @@
+-- ============================================================================
+-- THE CLIENT MUST BE ABLE TO READ THE TWO NEW COLUMNS (2026-09-17, CS-30)
+--
+-- `files.files` does NOT grant `authenticated` a table-level SELECT. Its ACL is
+--     {postgres=arwdDxtm, service_role=arwdDxtm, authenticated=d}
+-- and every column a client may read carries its OWN column grant
+-- (`pg_attribute.attacl` — `metadata`, `derivation_kind`, `duplicate_of_file_id`
+-- and the rest are each `authenticated=arw`). That is how `storage_uri` stays
+-- server-only. The consequence a lane discovers the hard way: a column ADDED to
+-- this table is readable by NOBODY but `postgres`/`service_role`, and the client
+-- read does not come back empty — it fails with
+--     permission denied for table files
+-- HINT: Grant the required privileges … TO authenticated;
+-- which is exactly what happened the first time the new columns were put into
+-- the panel's read, minutes after they landed.
+--
+-- SELECT only, deliberately narrower than the `arw` its siblings carry: these
+-- two columns are derived identity written by the ONE upload door in aidream
+-- (server-side, `service_role`), and no client has any business writing them.
+-- `anon` is granted nothing, so the anon column-surface guard
+-- (`pnpm check:anon-column-surface`) stays green.
+-- ============================================================================
+
+GRANT SELECT (artifact_kind, provider_session_id) ON files.files TO authenticated;

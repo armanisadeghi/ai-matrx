@@ -104,6 +104,21 @@ the rules an agent editing THIS directory must obey.
   a POINTER (`data: { artifactId }`); `CanvasBody` resolves that pointer through `useCanvasItem`
   before invoking the canonical renderer. Legacy `openCanvas` items carry a full payload, so
   anything reading `content.data` must handle both.
+- **THE OPEN ARTIFACT IS PART OF THE PAGE'S ADDRESS.** Because the slice is not
+  persisted, a surface that has no other source for what was open LOSES it on
+  reload. Chat does not notice — it re-derives its artifacts from persisted
+  tool-call rows. A LIST route has no such source, so the address carries it:
+  `/artifacts?open=<canvas_items.id>`, mirrored by
+  `hooks/useCanvasArtifactUrlState.ts`. Any list surface that opens saved canvas
+  items mounts that hook and inherits reload, Back, Forward and a shareable
+  link — never a second persistence layer, never `localStorage`. Restoring goes
+  through the SAME `useOpenCanvasItem` opener a click uses, and it WAITS for
+  `selectCanvasIsAvailable` because the front door is idle-deferred; restoring
+  before it mounts produces a false "canvas is not available here". The two
+  directions are reconciled BY VALUE against one agreed-on id, never by
+  remembering which URLs we wrote — that bookkeeping swallows Forward to an
+  artifact that was open before. Guard:
+  `features/canvas/__tests__/canvas-artifact-url-state.test.tsx`.
 - Use `updateCanvasContent` (not `openCanvas`) to change an item already on the canvas — `openCanvas`
   creates a duplicate. `closeCanvas()` keeps items in memory; `clearCanvas()` destroys them.
 - Pass `titleToString(content.metadata?.title)` — never the raw `metadata.title` — to anything that
@@ -116,8 +131,9 @@ the rules an agent editing THIS directory must obey.
 - `search_vector` and `trending_score` on `shared_canvas_items` are trigger-maintained; never write
   them from app code.
 - **Verifying the canvas surface:** `/canvas` is not a route, and on a MAPPED route the route
-  surface wins — verify on `/artifacts` (no route→surface mapping), reached by CLIENT-SIDE
-  navigation with the pane open, since a reload empties the slice.
+  surface wins — verify on `/artifacts` (no route→surface mapping). Since 2026-09-18 a reload
+  there is fine: `?open=<id>` restores the pane. On any OTHER route, still reach it by
+  CLIENT-SIDE navigation with the pane open, because a reload empties the slice.
 - **A public shared canvas owns the viewport.** Both `/canvas/shared/[token]` and the canonical
   `/s/[token]` lens suppress the generic public header/footer through
   `data-public-immersive-surface`, render the same identity/action header, and keep
@@ -129,6 +145,54 @@ the rules an agent editing THIS directory must obey.
 path updates the node's `STATE.md` in the same session.
 
 ## Change log
+
+- `2026-09-18` — **`/artifacts` NO LONGER DROPS ITS OPEN CANVAS ITEM ON RELOAD —
+  the open artifact is part of the page's address.** The recorded open item:
+  the canvas slice is deliberately not persisted, chat re-derives its artifacts
+  from persisted tool-call rows, and `/artifacts` had no source at all — so a
+  reload lost what the person was reading, Back did nothing, and the page could
+  not be linked. **Decision (loop owner, 2026-09-18):** the open artifact is
+  part of the address, not session state. **Champion: Claude.ai's artifacts
+  gallery**, where the selected artifact lives in the URL and reload,
+  Back/Forward and a shared link all restore it.
+  Built as a platform primitive, not an `/artifacts` feature:
+  `hooks/useCanvasArtifactUrlState.ts` mirrors the open artifact into
+  `?open=<canvas_items.id>` and back, through the repo's canonical
+  `@ai-matrx/kit/url-state` primitive (`useUrlSearchParams` + `commitUrlParams`) — the same
+  primitive `EnumsContainer` uses for `?selected` and the data-integrity panel
+  for its selected row. No new persistence layer, no `localStorage`. Opening,
+  switching and closing each PUSH one history entry; adopting an artifact that
+  was already open when the route is entered client-side REPLACES, because
+  nobody pressed anything. `CmsArtifactList` mounts the hook; the restore uses
+  the same `useOpenCanvasItem` opener a click uses.
+  Two things the shape forced, both guarded: the restore WAITS for
+  `selectCanvasIsAvailable` (the front door is idle-deferred through
+  `features/shell/islands/DeferredIslands.tsx`, so an immediate restore is
+  refused with a false "canvas is not available here"), and the two directions
+  are reconciled BY VALUE against one agreed-on id — the tempting "ignore any
+  URL we wrote ourselves" bookkeeping swallows Forward to an artifact that was
+  open before, moving the address while the canvas stays behind.
+  Guard: `features/canvas/__tests__/canvas-artifact-url-state.test.tsx`
+  (6 tests; FIVE mutations proven RED — no URL→canvas restore, no
+  canvas→URL write, a close that ignores `isOpen`, the write-bookkeeping loop
+  breaker, and no availability wait).
+
+- `2026-09-18` — **THE HEADER'S CANVAS SLOT IS RESERVED BY AVAILABILITY, NOT BY
+  ITEM COUNT.** The 2026-09-17 fix held the slot only between OPEN and CLOSED;
+  `CanvasShellHeaderToggle` still returned `null` while `itemCount === 0`, so
+  the FIRST canvas item both created the 44px box and pushed every button left
+  of it sideways — and folding the canvas away never gave the space back. An
+  independent live review of review row 34bfd1e8 re-found it on production and
+  measured it on one chat, one click (Records 1043.39 → 999.39, Canvas 1132 →
+  1088, Conversation actions 1164 → 1120, Agents for this page 1192 → 1148;
+  same on the documents page). Now: `isAvailable` alone decides whether the
+  slot exists; `itemCount`/`isOpen` decide only what is inside it — an inert,
+  aria-hidden, buttonless `CanvasHeaderSlotSpacer` sized with the same
+  `var(--matrx-tap-target-size, 2.75rem)` the tap target itself uses, or the
+  real control. Guards: `__tests__/canvas-header-slot-reserved.test.tsx`
+  (rendered DOM; mutation = restore `!isAvailable || itemCount === 0` → RED)
+  and a fourth case + `MATRX_LAYOUT_GATE_MUTATION=first-item` in
+  `features/shell/layout-gate/canvas-one-presentation.spec.ts` (real layout).
 
 - `2026-09-17` — **THE CANVAS HAS ONE PRESENTATION AGAIN; THE CHAT ROUTE'S
   PARALLEL LAYER IS GONE.** Owner rejection (review row 34bfd1e8, 2026-09-16,
@@ -169,6 +233,26 @@ path updates the node's `STATE.md` in the same session.
   header. Its own gate (`features/shell/layout-gate/shell-scroll-runway.spec.ts`)
   now models the canonical world and measures the composer instead of a docked
   column.
+  AND THE SHIFT ITSELF, found by the live check the same day: with the parallel
+  layer gone, `CanvasShellHeaderToggle` still UNMOUNTED while the canvas was
+  open, so every shell-header button to its left moved 44px sideways on every
+  open and close — measured on production-equivalent build at 1280x720,
+  Records at `x = 887.59` closed against `x = 931.59` open, on the chat route
+  AND on `/artifacts`. The canvas pane's header owns the control while the
+  canvas is open, but its BOX must stay: the component now renders an inert
+  `data-canvas-header-slot="reserved"` placeholder there, the same trick
+  `:root[data-canvas-open="true"] .shell-user-menu-wrapper` already uses for
+  the avatar. Re-measured after: every one of the nine header button rects and
+  the header box itself are byte-identical open vs closed, on both routes, and
+  the canvas surface is `sheet` at `[512, 0, 768, 720]` on both.
+  Guard: the layout gate's case 2, with `MATRX_LAYOUT_GATE_MUTATION=unmount-slot`
+  proven RED on both routes and both viewports.
+
+- `2026-09-17` — **Share and score refusals reach the person.** `useCanvasShare` rendered the raw transport sentence ("Select an organization before sending this request.") beside a Share button that could only fail again; `useCanvasScore` recorded nothing and said nothing. Both now speak the refusal with its remedy (`lib/organizations/organizationRefusalToast.ts`), and a score that fails for any other reason is spoken too rather than leaving the leaderboard silently unchanged.
+
+- `2026-09-17` — **`canvasArtifactService.upsertDiscoveryIndex` can no longer write a NULL organization.** `organizationId` was `let organizationId: string | null = null` — a shape that reads as "maybe NULL", and a NULL on `chat.artifact` means `public._stamp_org_default` files the row in the writer's personal workspace. It is now a non-nullable `string`: a chat row takes its conversation's organization (a conversation without one is refused and logged, not written), and a non-chat row takes the SELECTED organization via `ensureOrgId`, which throws `OrganizationContextError` when there is none. Guard: `pnpm check:organization-context`.
+
+- `2026-09-17` — **A canvas save that refuses for want of an organization SAYS SO; it is never a silent `false`.** Four services caught the new `OrganizationContextError` and returned a falsy value with only a `console.error` — a dead click: the quiz never persisted, the viewer state never saved, the artifact never reached the discovery index, and nothing on screen said why. `quiz-adapter.ts` and `canvasItemStateService.ts` now re-throw that ONE error class, and `useArtifactState.flush` — the boundary that owns the save — toasts the remedy; `canvasArtifactService.upsertDiscoveryIndex` re-throws it too, which both materialization callers already collect into the `errors` they return. `useCanvasItems.save` and `maps/service.createMap` replaced their generic "Failed to save" with the same remedy sentence, so `NewMapDialog` shows it verbatim. Every other error path is byte-for-byte unchanged. `canvas.canvas_item_state` and `education.quiz_sessions` were already carrying the selected organization; the defect here was purely the swallowed refusal. Law: `../../common-docs/policies/context-is-carried-never-rebuilt.md`.
 
 - `2026-09-15` — **A LIVE PANE IS ALWAYS REACHABLE.** An independent reviewer
   reloaded a bound chat that also held an agent-created document, clicked

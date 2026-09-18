@@ -53,6 +53,27 @@ export type ProviderMessageOrigin =
   | "matrx_agent_run"
   | "provider_mirror";
 
+/**
+ * WHERE a turn came from when it is not native to this conversation.
+ *
+ * A seeded handoff can MOVE a claiming session's binding onto the conversation
+ * being handed over, and the turns that session had already produced travel
+ * with it (`metadata.carried_from`, written by the bridge's rebind). Those rows
+ * then sit in a transcript whose primary provider is a DIFFERENT tool, so a
+ * page that labels every turn with the conversation's provider attributes them
+ * to a tool that never wrote them — seen live on 2026-09-18, where two Claude
+ * Code turns carried onto a Codex conversation were both bylined "Codex".
+ * The row itself knows better, so the row is asked.
+ */
+export type ProviderMessageCarriedFrom = {
+  /** The provider whose session actually produced this turn. */
+  provider: string;
+  /** That session's own id, when the bridge recorded it. */
+  providerSessionId: string | null;
+  /** The conversation it was carried off. */
+  conversationId: string | null;
+};
+
 export type ProviderConversationMessage = Omit<
   ProviderConversationMessageRow,
   "content" | "metadata" | "agent_id"
@@ -69,6 +90,12 @@ export type ProviderConversationMessage = Omit<
    * provider label.
    */
   agentName: string | null;
+  /**
+   * Set only on a turn a handoff rebind MOVED onto this conversation, naming
+   * the provider session that actually produced it. The transcript labels the
+   * turn from this rather than from the conversation's own provider.
+   */
+  carriedFrom: ProviderMessageCarriedFrom | null;
 };
 
 /** `metadata` is unknown JSON on the wire. Narrow, never assume. */
@@ -83,6 +110,31 @@ function readString(value: unknown): string | null {
 export interface ProviderMessageAttribution {
   origin: ProviderMessageOrigin;
   agentName: string | null;
+  /** Null for every turn native to this conversation, which is most of them. */
+  carriedFrom: ProviderMessageCarriedFrom | null;
+}
+
+/**
+ * The `carried_from` block a handoff rebind stamped on a moved turn, or null.
+ *
+ * Only a block that NAMES a provider counts: the label is the whole point, and
+ * a carry we cannot attribute must read as an ordinary turn rather than as an
+ * unnamed "carried from somewhere", which tells a person nothing and looks
+ * broken.
+ */
+export function readCarriedFrom(
+  metadata: unknown,
+): ProviderMessageCarriedFrom | null {
+  if (!isRecord(metadata)) return null;
+  const block = isRecord(metadata.carried_from) ? metadata.carried_from : null;
+  if (!block) return null;
+  const provider = readString(block.provider);
+  if (!provider) return null;
+  return {
+    provider,
+    providerSessionId: readString(block.provider_session_id),
+    conversationId: readString(block.conversation_id),
+  };
 }
 
 /**
@@ -95,8 +147,11 @@ export interface ProviderMessageAttribution {
 export function readProviderMessageAttribution(
   metadata: unknown,
 ): ProviderMessageAttribution {
-  if (!isRecord(metadata)) return { origin: "provider_mirror", agentName: null };
+  if (!isRecord(metadata)) {
+    return { origin: "provider_mirror", agentName: null, carriedFrom: null };
+  }
 
+  const carriedFrom = readCarriedFrom(metadata);
   const origin = readString(metadata.origin);
   if (origin === "ai_matrx_reply") {
     const block = isRecord(metadata.ai_matrx_reply)
@@ -105,6 +160,7 @@ export function readProviderMessageAttribution(
     return {
       origin: "ai_matrx_reply",
       agentName: block ? readString(block.agent_name) : null,
+      carriedFrom,
     };
   }
   if (origin === "matrx_agent_run") {
@@ -112,12 +168,13 @@ export function readProviderMessageAttribution(
     return {
       origin: "matrx_agent_run",
       agentName: block ? readString(block.agent_name) : null,
+      carriedFrom,
     };
   }
   // Absence of a known origin IS the provider mirror. An origin string we do
   // not know is also not ours to claim — it renders as the mirror it came from
   // rather than borrowing an AI Matrx byline.
-  return { origin: "provider_mirror", agentName: null };
+  return { origin: "provider_mirror", agentName: null, carriedFrom };
 }
 
 export function normalizeProviderMessage(
@@ -126,6 +183,7 @@ export function normalizeProviderMessage(
   let attribution: ProviderMessageAttribution = {
     origin: "provider_mirror",
     agentName: null,
+    carriedFrom: null,
   };
   try {
     attribution = readProviderMessageAttribution(message.metadata);
@@ -152,6 +210,7 @@ export function normalizeProviderMessage(
       origin: attribution.origin,
       agentId: message.agent_id,
       agentName: attribution.agentName,
+      carriedFrom: attribution.carriedFrom,
     };
   } catch (error) {
     console.error(
@@ -170,6 +229,7 @@ export function normalizeProviderMessage(
       origin: attribution.origin,
       agentId: message.agent_id,
       agentName: attribution.agentName,
+      carriedFrom: attribution.carriedFrom,
     };
   }
 }

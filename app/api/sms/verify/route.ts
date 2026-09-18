@@ -122,6 +122,9 @@ export async function POST(request: NextRequest) {
         // Phone verified — persist the exact web-form consent contract before
         // enabling notification delivery.
         const adminSupabase = createAdminClient();
+        // org-fallback-deliberate: the SMS consent record is the person's own phone
+        //   and their own consent — it belongs to them, not to whichever organization
+        //   they happen to be working in
         const organizationId = await ensureOrgIdServer(supabase, undefined);
         const forwardedFor = request.headers.get("x-forwarded-for");
         const ipAddress = forwardedFor?.split(",")[0]?.trim() || null;

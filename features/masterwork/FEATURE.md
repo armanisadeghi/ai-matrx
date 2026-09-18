@@ -476,6 +476,53 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-09-18 (a pile launches whole, or not at all) — **THE FIFTEEN FILES THAT
+  WERE NEVER SUBMITTED.** `common-docs/projects/acquisition-frontier/own-files/
+  VERIFICATION.md` §9.1/§9.6: an Expert dropped seventeen files on a Rulebook
+  and pressed "Turn this into rules"; two became rules. The edges were written
+  ~0.3 s apart by the shared capture toolbar's serial `for … await attach(...)`
+  loop, the run started 0.9 s into that loop, and
+  `jsonb_array_length(settings->'resources')` on run `937c0db3` is **2**.
+  `launchDump` built its payload from `sourceLinks` at click time with no gate
+  and nothing said. Three repairs, all of them the class rather than the
+  instance:
+  1. `lib/launch-gate/useLaunchGate.ts` (new platform primitive) — every write
+     that shapes a launcher's payload runs through the gate; a launch is
+     refused, by name, while any is in flight OR while one that has landed is
+     not yet in the rendered list, and the button WEARS `Attaching 14 sources…`
+     rather than sitting live. `RulebookSourcesPanel` routes attach, detach and
+     the staged-URL CAS write through it, `launchDump` re-checks at the click,
+     and the payload is now built by one exported `dumpResources` beside the
+     one exported `visibleLaunchKeys` — "the run launches with the set on
+     screen" is only checkable while both come out of one definition. The
+     census found this launcher is the only one of 27 `useMasterworkRun`
+     call sites whose resources come from asynchronous attaches; every other
+     awaits its uploads inside the same handler before launching.
+  2. `lib/progress/honestSummary.ts` gains a REQUIRED `RunShape`. The primitive
+     printed *"Stopped — 'Untitled File' failed. Nothing after it will run."*
+     over a seventeen-source run that ran all seventeen and completed: right
+     for a Build's ordered milestones, false for every fan-out. `RunStages`
+     declares `fan_out`; the flashcard illustration pass and the AI-visibility
+     report (both piles) were quietly making the same claim and now declare it
+     too; `useBuildRun`, `useDurableRun`'s narration ladder and
+     `reattachStudioRun` declare `sequence`. There is no default — the required
+     field is what found the last two producers.
+  3. Every outcome the server sends gets a row. `parseDumpSummary` had a closed
+     three-status union and DROPPED anything else, so `already_distilled` rows
+     had been vanishing for weeks and the new honest-empty outcome would have
+     vanished the day it shipped. It now keeps every row, carries `note` and
+     `already_distilled`, and `DumpOutcomes` says which of the three a source
+     got — `3 rules` / `read — no rules in it` / `refused` — with the server's
+     own sentence rendered WHOLE beneath it. The copy-protection refusal
+     (aidream `1c9edb934c`) names the scheme and the four lawful routes; it was
+     an inline tail on a truncating row in the progress panel, which is a dead
+     end wearing an ellipsis, and neither line truncates now.
+  Guard: `__tests__/a-pile-launches-whole-or-not-at-all.test.tsx` — 8 legs over
+  the real gate, the real `reduceIngestProgress` transcript and the real
+  `DumpOutcomes`; each proven red by reverting its own half (removing the gate
+  reproduces the production symptom exactly: 3 resources of 17).
+
+- `2026-09-17` — `NewRulebookFlow` reads the EXPLICIT active organization instead of the legacy `selectEffectiveOrganizationId` (`organization_id ?? personal_organization_id`). Behaviour on Start is unchanged in the normal case; with no organization the bounded W39 wait settles and the page says so inline, with the remedy, and no Rulebook is created. The three intake tests mock `selectOrganizationId` accordingly.
 - 2026-09-17 (the registry learns about doors) — **A LANE REGISTRY CANNOT SEE A
   DOOR OUT OF ITSELF.** Cold walk 8 typed several paragraphs of real expert
   material into the Rulebook's "New document" resource and found a blank page

@@ -30,6 +30,7 @@ import {
     parseEstimateResult,
     parseJobAndCount,
     parseJobDetailResponse,
+    parseJobListResponse,
     parseJobEvent,
     parseJobRow,
     parseLibraryListResponse,
@@ -48,6 +49,7 @@ import type {
     EstimateRequest,
     EstimateResult,
     JobDetailResponse,
+    JobListResponse,
     JobEvent,
     JobItemStatus,
     JobRow,
@@ -173,6 +175,30 @@ function asLibraryRow(payload: unknown): LibraryRow {
         }
     }
     return normalizeVisibility(parseLibraryRow(payload, "this Library"));
+}
+
+/**
+ * 🚨 THE SAME DEFECT, ONE ENDPOINT OVER — AND THIS ONE COST MONEY.
+ *
+ * `POST /media/libraries/{id}/jobs` answered `{"job": {…}}` where §7.3 publishes a
+ * bare Job row. The screen read `job.id`, got nothing, and said so honestly — but the
+ * server had ALREADY accepted and started a real, billable paid transcription. The
+ * person who confirmed "Spend up to $3.66 and start" had a running job their screen
+ * could never find again: 0 running, 0 queued, twelve minutes later.
+ *
+ * The server is fixed (it returns the bare row, guarded by
+ * `tests/test_media_catalog_wire_shapes.py`, which now walks EVERY documented endpoint
+ * against the router). This stays anyway, for the same reason `asLibraryRow` does:
+ * a client and a server deploy at different times, and during that window the shape
+ * that arrives is whichever build answered. Reading both costs nothing; reading one
+ * costs a person their money.
+ */
+function asJobRow(payload: unknown): JobRow {
+    if (payload && typeof payload === "object" && "job" in payload) {
+        const inner = (payload as { job: unknown }).job;
+        if (inner && typeof inner === "object") return parseJobRow(inner, "this job");
+    }
+    return parseJobRow(payload, "this job");
 }
 
 /**
@@ -566,7 +592,38 @@ export async function createJob(
             connectTimeoutMs: 60_000,
         }),
     );
-    return read(result, parseJobRow);
+    return read(result, asJobRow);
+}
+
+/**
+ * `GET /media/libraries/{id}/jobs` — THE JOB-DISCOVERY DOOR.
+ *
+ * The server has published this since the feature shipped and nothing here called it.
+ * It is how a durable job is found again when this browser does not know its id:
+ * after a reload, on another device, or — the defect that made it urgent — when the
+ * id never arrived at all because `POST …/jobs` answered in an envelope this screen
+ * could not read. The job was real, running and already billed; the rows were in the
+ * database the whole time; only the door was never opened.
+ */
+export async function listLibraryJobs(
+    dispatch: AppDispatch,
+    libraryId: string,
+    options: { status?: JobRow["status"][]; limit?: number; offset?: number } = {},
+): Promise<JobListResponse> {
+    const result = await dispatch(
+        callApi<"/media/libraries/{library_id}/jobs", "GET">({
+            path: "/media/libraries/{library_id}/jobs",
+            method: "GET",
+            pathParams: { library_id: libraryId },
+            queryParams: {
+                ...(options.status?.length ? { status: options.status.join(",") } : {}),
+                ...(options.limit === undefined ? {} : { limit: options.limit }),
+                ...(options.offset === undefined ? {} : { offset: options.offset }),
+            },
+            expectedErrorStatuses: [404],
+        }),
+    );
+    return read(result, parseJobListResponse);
 }
 
 export async function getJob(

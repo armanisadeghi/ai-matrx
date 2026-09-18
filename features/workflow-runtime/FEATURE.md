@@ -186,6 +186,8 @@ that is the exit-test surface.
   a tracked tail cut mid-document. Actual declared structured outputs retain
   the same guard. Guard: `__tests__/agent-result-live-readout.test.tsx`.
 
+- 2026-09-17 — `RunSurfaceBuilder` reads the EXPLICIT active organization instead of the legacy `selectEffectiveOrganizationId` (`organization_id ?? personal_organization_id`); creating a run surface with none selected already refuses by name and now writes nothing anywhere else either.
+
 - 2026-09-17 — **A STEP LABEL IS DECLARED, NEVER SCRAPED — and a finished run
   can be signed** (Masterwork cold walk 5, findings 5 and 5b). *The labels:* the
   fan-out lanes in "THE PLAN" preferred a node's raw stream `textTail` over the

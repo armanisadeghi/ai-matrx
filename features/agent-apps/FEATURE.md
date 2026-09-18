@@ -189,6 +189,23 @@ and admin/user route families are live. Remaining migration work is tracked in:
 
 ## Change log
 
+- `2026-09-17` — **An app is filed in the organization the person selected, not
+  their private workspace.** All 96 live `app.definition` rows sat in their
+  creator's personal organization: `POST /api/agent-apps`,
+  `POST /api/agent-apps/[id]/duplicate` and `services/auto-create-draft.ts`
+  each resolved the personal org server-side (`ensureOrgIdServer(…, null)`,
+  `ensure_personal_organization`). The two routes now read `X-Organization-Id`
+  at the boundary and refuse with `organization_context_required` and a plain
+  remedy when the caller names none — membership is not taken on trust, the
+  insert runs on the caller's own RLS-scoped client — and the draft service
+  carries `ensureOrgId(undefined)`. A GLOBAL app keeps the system org, which is
+  what scope "global" means, marked `org-fallback-deliberate` and reachable
+  only by an admin caller. Every caller sends the header and refuses the click
+  honestly first: `CreateAgentAppFormWrapper` (both create paths),
+  `LiveBuilder`, `AgentCreateAppWindow`, `AgentAppsGrid` (duplicate), and
+  `useAutoCreateApp` translates the refusal into the same sentence. Guard:
+  `pnpm check:organization-context`.
+
 - `2026-09-12` — **Resetting a conversation now actually clears its context (D314).** `clearContext()` and `resetConversation()` in [`hooks/useAgentApp.ts`](hooks/useAgentApp.ts) both dispatched `setContextEntries({ conversationId, entries: [] })`, and that reducer is MERGE-ONLY — it upserts every key it is handed and deletes none, so an empty array cleared nothing and the previous turn's context values survived into the next conversation. Both now dispatch `clearInstanceContext(conversationId)`. The merge behaviour is unchanged for the ~30 call sites that depend on it; the reducer carries a MERGE-ONLY contract note naming `clearInstanceContext` / `removeContextEntry` / `replaceSurfaceContextEntries`. The same class was live once more — `setOverrides` + `ColumnOverridesEditor`'s Clear chip — and is fixed with it. Guard: `features/agents/redux/execution-system/instance-context/__tests__/context-reset-is-real.test.ts` (real reducers + a repo-wide scan for merge-only actions used as removals), red 2/8 before, green 8/8 after.
 
 - `2026-08-31` — **Inactive app Holder lanes no longer query an empty mandate key.** `useMandate("")` now settles immediately without calling `resolveMandate`, preventing the paired false `record-unavailable` and console-error captures emitted when `useAppHolder` deliberately disables client resolution.

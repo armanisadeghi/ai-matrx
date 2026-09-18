@@ -83,8 +83,24 @@ export async function POST(request: Request) {
 
         const modelId = last_model_id ?? ai_model_id;
 
+        // 🚨 THE CONVERSATION IS FILED IN THE ORGANIZATION THE CALLER IS
+        // ACTING IN — `createCxConversation` used to resolve the session's
+        // PERSONAL organization when nobody named one.
+        const organizationId = request.headers.get('X-Organization-Id')?.trim() ?? '';
+        if (organizationId.length === 0) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    error: 'No organization was named for this conversation, so nothing was created. Choose the organization you are working in and try again.',
+                    code: 'organization_context_required',
+                },
+                { status: 400 },
+            );
+        }
+
         // Ownership (`created_by`) is trigger-stamped from auth.uid(); never set manually.
         const newConversation = await createCxConversation({
+            organization_id: organizationId,
             title: title || null,
             system_instruction: system_instruction || null,
             last_model_id: modelId || null,

@@ -18,7 +18,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { createOutreachList } from "../../outreach-lists/service";
 import type {
@@ -52,7 +52,10 @@ export function OutreachListCreateDialog({
   onOpenChange: (open: boolean) => void;
   onCreated: (list: OutreachListRow) => void;
 }) {
-  const orgId = useAppSelector(selectEffectiveOrganizationId);
+  // The EXPLICIT active org — never a personal-workspace substitute. When
+  // there is none, the bounded workspace wait below answers honestly and
+  // nothing is created.
+  const orgId = useAppSelector(selectOrganizationId);
   const [name, setName] = useState("");
   const [kind, setKind] = useState<OutreachListKind>("call");
   const [description, setDescription] = useState("");

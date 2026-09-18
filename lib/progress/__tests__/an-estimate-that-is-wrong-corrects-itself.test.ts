@@ -45,6 +45,7 @@ describe("the sentence a person reads while they wait", () => {
       // Every step healthy: the time-based sentences below are only reachable
       // when the rows agree. See the step-aware suite at the bottom.
       steps: [{ label: "Building the parts", status: "running" }],
+      shape: "sequence",
     });
 
   it("promises the usual time while the promise still holds", () => {
@@ -78,6 +79,7 @@ describe("the sentence a person reads while they wait", () => {
         usualMs: MINUTE,
         doing: "Checking every rule",
         steps: [{ label: "Checking rule 4", status: "running" }],
+        shape: "sequence",
       }),
     ).not.toContain("keeps going without you");
   });
@@ -125,6 +127,7 @@ describe("a failed step outranks every word the clock would say", () => {
         { label: "Building the parts that do the work", status: "failed" },
         { label: "Saving it to your library", status: "waiting" },
       ],
+      shape: "sequence",
     });
 
   it("never says nothing has failed when a rendered step has", () => {
@@ -150,6 +153,7 @@ describe("a failed step outranks every word the clock would say", () => {
         { label: "Second part", status: "failed" },
         { label: "Third part", status: "failed" },
       ],
+      shape: "sequence",
     });
     expect(sentence).toContain("First part");
     expect(sentence).toContain("2 other steps failed too");

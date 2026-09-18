@@ -23,15 +23,21 @@
  *      chat route's rect equals the document route's rect, to the pixel.
  *   2. OPENING THE CANVAS MOVES NO SHELL HEADER BUTTON — every button in the
  *      shell header's cluster keeps its exact rect, canvas closed vs open, on
- *      both routes. (`:root[data-canvas-open]` hides the avatar with
- *      `visibility`, which reserves its box; a rule that used `display` — or a
- *      presentation that reflowed the header row — would go red here.)
+ *      both routes. Two things have to hold for that: `:root[data-canvas-open]`
+ *      hides the avatar with `visibility`, which reserves its box; and
+ *      `CanvasShellHeaderToggle` keeps its SLOT while the canvas is open (the
+ *      canvas pane's header owns the control then) instead of unmounting and
+ *      pulling every button left of it 44px sideways. Measured live on
+ *      2026-09-17 before that fix: Records 887.59 closed against 931.59 open.
  *
- * PROVEN FAILING BEFORE PASSING: set `MATRX_LAYOUT_GATE_MUTATION=dock` and the
- * chat fixture is built the way the rejected dock built it (in-flow column,
- * `padding-top: var(--shell-header-h)`). Case 1 goes RED — the canvas pane
- * header sits 44px lower and hundreds of pixels narrower on chat than on a
- * document route — which is precisely the difference the owner saw.
+ * PROVEN FAILING BEFORE PASSING, two switches:
+ *   `MATRX_LAYOUT_GATE_MUTATION=dock` builds the chat fixture the way the
+ *   rejected dock built it (in-flow column, `padding-top: var(--shell-header-h)`).
+ *   Case 1 goes RED — the canvas pane header sits 44px lower and hundreds of
+ *   pixels narrower on chat than on a document route.
+ *   `MATRX_LAYOUT_GATE_MUTATION=unmount-slot` drops the canvas toggle's slot
+ *   while the canvas is open, as the component did until 2026-09-17. Case 2
+ *   goes RED on both routes with every button left of it moved 44px.
  *
  * WHY A REAL BROWSER: jsdom computes no layout and this defect IS layout. The
  * repo's own `styles/shell.css` is loaded off disk; no server, no network.
@@ -69,17 +75,41 @@ const TAILWIND_SUBSET = `
  * an auto-margined row of buttons ending in `.shell-user-menu-wrapper`, the
  * one element `:root[data-canvas-open="true"]` targets.
  */
-const HEADER = `
+/**
+ * The shell header's right-hand cluster, as the app builds it: an auto-margined
+ * row ending in the canvas toggle's slot and `.shell-user-menu-wrapper`, the one
+ * element `:root[data-canvas-open="true"]` targets.
+ *
+ * `slot` mirrors `CanvasShellHeaderToggle`: an inert placeholder of the SAME
+ * width whenever the canvas has nothing to reopen (`empty`) or is showing
+ * (`open`, where the canvas pane's own header owns the control), and the live
+ * control only in `closed` — an item exists and the canvas is folded away.
+ */
+function header(canvas: CanvasState) {
+  const dropSlot =
+    (MUTATION === "unmount-slot" && canvas === "open") ||
+    (MUTATION === "first-item" && canvas === "empty");
+  const reserved = canvas === "open" || canvas === "empty";
+  const slot = dropSlot
+    ? ""
+    : reserved
+      ? `<div data-canvas-header-slot="reserved" data-header-button="canvas-slot"
+             style="width:44px;height:44px;visibility:hidden;pointer-events:none"></div>`
+      : `<div data-canvas-header-slot="control" data-header-button="canvas-slot"
+             style="width:44px;height:44px"><button style="width:44px;height:44px">C</button></div>`;
+  return `
   <header class="shell-header" data-testid="shell-header">
     <div style="display:flex; align-items:center; gap:8px; margin-left:auto; height:100%">
       <button data-header-button="records" style="width:72px;height:28px">Records</button>
       <button data-header-button="canvas" style="width:72px;height:28px">Canvas</button>
+      ${slot}
       <div class="shell-user-menu-wrapper" data-header-button="avatar" style="width:28px;height:28px">
         <button style="width:28px;height:28px">A</button>
       </div>
     </div>
   </header>
 `;
+}
 
 /**
  * THE CANONICAL CANVAS. One markup, used by every route: the global overlay
@@ -124,6 +154,15 @@ function dockedCanvas() {
 
 type RouteKind = "chat" | "document";
 
+/**
+ * The three states the shell header actually lives through, in order:
+ *   `empty`  — the route has a canvas surface but nothing has been put in it
+ *   `open`   — an item exists and the canvas pane is showing
+ *   `closed` — an item exists and the canvas has been folded away
+ * The header must be pixel-identical in all three.
+ */
+type CanvasState = "empty" | "open" | "closed";
+
 /** The body each route draws. Neither one knows anything about the canvas. */
 function routeBody(route: RouteKind) {
   return route === "chat"
@@ -144,7 +183,7 @@ function routeBody(route: RouteKind) {
 async function mount(
   page: import("@playwright/test").Page,
   route: RouteKind,
-  canvas: "closed" | "open",
+  canvas: CanvasState,
   canvasWidth: number,
 ) {
   // Under the mutation, and ONLY the chat route, the canvas is built the way
@@ -170,7 +209,7 @@ async function mount(
   await page.setContent(
     `<!doctype html><html><body>
       <div class="shell-root" data-pathname="/${route}">
-        ${HEADER}
+        ${header(canvas)}
         <main class="shell-main" data-testid="shell-main">${body}</main>
       </div>
       ${overlayCanvas}
@@ -268,6 +307,7 @@ for (const route of ["chat", "document"] as const) {
     expect(Object.keys(closed).sort()).toEqual([
       "avatar",
       "canvas",
+      "canvas-slot",
       "records",
     ]);
 
@@ -303,5 +343,45 @@ for (const route of ["chat", "document"] as const) {
     await mount(page, route, "open", width);
     expect(await read()).toEqual(closed);
     expect(round(closed[1])).toBe(0);
+  });
+}
+
+/**
+ * CASE 4 — THE FIRST CANVAS ITEM MOVES NO SHELL HEADER BUTTON EITHER.
+ *
+ * Case 2 only compares `closed` (an item exists, canvas folded away) against
+ * `open`. That is the half the 2026-09-17 fix covered. The half it did not:
+ * `empty` — the state every route starts in, before anything has ever been put
+ * in the canvas. The component returned `null` there, so the FIRST item both
+ * created the 44px box and shoved every button left of it, permanently.
+ * Measured live on production 2026-09-18 (review row 34bfd1e8): Records
+ * 1043.39 → 999.39, Canvas 1132 → 1088, Conversation actions 1164 → 1120,
+ * Agents for this page 1192 → 1148.
+ *
+ * `MATRX_LAYOUT_GATE_MUTATION=first-item` drops the slot in the `empty` state,
+ * exactly as the shipped component did → this case goes RED on both routes.
+ */
+for (const route of ["chat", "document"] as const) {
+  test(`the first canvas item moves no shell header button on the ${route} route`, async ({
+    page,
+  }, testInfo) => {
+    const width = sheetWidth(testInfo);
+
+    await mount(page, route, "empty", width);
+    const empty = await headerButtonRects(page);
+    // The slot is on screen before anything has ever been put in the canvas.
+    expect(Object.keys(empty).sort()).toEqual([
+      "avatar",
+      "canvas",
+      "canvas-slot",
+      "records",
+    ]);
+
+    await mount(page, route, "open", width);
+    expect(await headerButtonRects(page)).toEqual(empty);
+
+    // …and folding it away gives back exactly the same row, not a third one.
+    await mount(page, route, "closed", width);
+    expect(await headerButtonRects(page)).toEqual(empty);
   });
 }

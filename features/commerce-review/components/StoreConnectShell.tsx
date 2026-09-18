@@ -15,7 +15,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { announceComingSoon } from "@/lib/coming-soon/announce";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 const buildSteps = (
   organizationId: string | null,
@@ -26,9 +26,12 @@ const buildSteps = (
   href?: string;
 }[] => [
   {
-    title: "Set your organization's configuration",
-    detail:
-      "Hold days, triage mode, cost budgets — every pipeline decision is a setting you control.",
+    title: organizationId
+      ? "Set your organization's configuration"
+      : "Choose the organization this store belongs to",
+    detail: organizationId
+      ? "Hold days, triage mode, cost budgets — every pipeline decision is a setting you control."
+      : "No organization is selected, so there is no configuration to open yet — pick one and this step becomes your settings.",
     done: false,
     // The org rung of the ONE scoped-configuration ladder — never a
     // commerce-local settings page (that parallel surface was deleted
@@ -52,7 +55,10 @@ const buildSteps = (
 ];
 
 export function StoreConnectShell() {
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE — this read the
+  // personal-org fallback, so the configuration step pointed at the PERSONAL
+  // workspace's settings while the page talked about "your organization".
+  const organizationId = useAppSelector(selectOrganizationId);
   const steps = buildSteps(organizationId);
   return (
     <div className="mx-auto max-w-2xl space-y-4 p-4">

@@ -25,11 +25,12 @@ import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
 import type { EntityBulkActionResult } from "@/lib/entity-list/selection";
 import { extractErrorMessage } from "@ai-matrx/data/net";
 import { createExportItemsListConfig } from "../browse/listConfig";
-import type { ExportPageFacts } from "../browse/service";
+import { deriveExportCounts, type ExportPageFacts } from "../counts";
 import { fetchExportLibrary, streamExportIndex } from "../api";
 import { forgetFreshExport, peekFreshExport } from "../freshExport";
 import type { ExportItem, ExportLibrary, ExportSummary } from "../types";
 import { ExportsHeader } from "./ExportsHeader";
+import { ExportListTotals } from "./ExportListTotals";
 import { IDLE_INDEX_STATE, IndexProgress, type IndexState } from "./IndexProgress";
 import { LibrarySummary } from "./LibrarySummary";
 import { QuickViews } from "./QuickViews";
@@ -235,6 +236,32 @@ export function ExportLibraryPage({ libraryId }: { libraryId: string }) {
 
   const libraryName = library?.name ?? "This export";
 
+  /**
+   * 🚨 EVERY NUMBER ON THIS SCREEN, DERIVED ONCE (defect D6).
+   *
+   * The strip, the details sheet, the progress banner, the scope tab and the
+   * list header used to read four different sources — the published summary,
+   * the index stream's cumulative, the last items response, and an extra
+   * `limit=1` request of its own — taken at four different moments. Mid-index
+   * they contradicted each other in front of the person: "WITH A FILE —" on
+   * the card beside "158 of 4,000 items … with an attachment" in the list.
+   * One object, built here, is what every one of them renders now.
+   */
+  const counts = useMemo(
+    () =>
+      deriveExportCounts({
+        summary,
+        indexedSoFar:
+          indexState.phase === "running" || indexState.phase === "completed"
+            ? indexState.cumulative
+            : null,
+        indexing:
+          indexState.phase === "starting" || indexState.phase === "running",
+        facts,
+      }),
+    [summary, indexState.phase, indexState.cumulative, facts],
+  );
+
   const listConfig = useMemo(
     () =>
       createExportItemsListConfig({
@@ -319,38 +346,20 @@ export function ExportLibraryPage({ libraryId }: { libraryId: string }) {
           <LibrarySummary
             library={library}
             summary={summary}
-            indexedSoFar={
-              indexState.phase === "running" || indexState.phase === "completed"
-                ? indexState.cumulative
-                : null
-            }
-            indexing={
-              indexState.phase === "starting" || indexState.phase === "running"
-            }
+            counts={counts}
             ownerOverride={ownerOverride}
             onPickOwner={pickOwner}
             onNarrow={narrow}
           />
 
-          <IndexProgress state={indexState} onRetry={runIndex} />
+          <IndexProgress state={indexState} counts={counts} onRetry={runIndex} />
 
           <QuickViews
               libraryId={libraryId} outboundBy={outboundBy} />
 
-          {/*
-            BOTH NUMBERS, ALWAYS. `filtered_total` is what the filter matches
-            and `total` is the whole export — a line that showed only one of
-            them, or showed the rows on screen as if they were everything, is
-            the lie this feature is judged on.
-          */}
-          {facts && (
-            <p className="text-xs text-muted-foreground">
-              {facts.filteredTotal.toLocaleString()} of{" "}
-              {facts.total.toLocaleString()}{" "}
-              {facts.total === 1 ? "item" : "items"} in this export
-              {facts.filterDescription ? ` — ${facts.filterDescription}` : ""}
-            </p>
-          )}
+          {/* Both numbers, always — and from the SAME object the strip above
+              renders, so they cannot disagree at any moment. */}
+          <ExportListTotals counts={counts} />
         </div>
 
         <div className="min-h-0 flex-1">

@@ -36,7 +36,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { supabase } from "@/utils/supabase/client";
 import { kindRegistry } from "@/features/content-ir/registry/kind-registry";
 import type { OutputSchema } from "@/features/agents/types/json-schema";
@@ -82,7 +82,10 @@ const CreateShapeDialog: React.FC<CreateShapeDialogProps> = ({
   onOpenChange,
   schema,
 }) => {
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // The EXPLICIT active org — a Shape is registered for the organization the
+  // user is working in, never silently into their personal workspace.
+  // `handleCreate` already refuses and says so when there is none.
+  const organizationId = useAppSelector(selectOrganizationId);
 
   const derivedSlug = useMemo(() => deriveKindSlug(schema.name), [schema.name]);
   const draftSample = useMemo(

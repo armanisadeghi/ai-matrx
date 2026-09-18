@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { CmsSiteService } from "@/features/cms/services/cmsService";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import type { ClientSiteSummary } from "@/features/cms/types";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { ExportMenu } from "@/components/agent-copy/ExportMenu";
@@ -196,10 +196,20 @@ export default function SitesListPage() {
     },
   });
 
-  const activeOrganizationId = useAppSelector(selectEffectiveOrganizationId);
+  // THE ACTIVE ORG, EXPLICITLY. A site belongs to the company the user is
+  // working in; with no organization selected there is no honest answer, so
+  // the Create control refuses and says so rather than filing the site into a
+  // personal workspace nobody asked for.
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
 
   const handleCreate = async () => {
     if (!newName || !newSlug) return;
+    if (!activeOrganizationId) {
+      setError(
+        "Choose an organization first — a site has to belong to one. Pick it from the menu under your avatar.",
+      );
+      return;
+    }
     setIsCreating(true);
     try {
       const site = await CmsSiteService.createSite({
@@ -336,6 +346,13 @@ export default function SitesListPage() {
                     />
                   </div>
                 </div>
+                {!activeOrganizationId && (
+                  <p className="flex items-start gap-1.5 text-xs text-destructive">
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-px" />
+                    Choose an organization first — a site has to belong to one.
+                    Pick it from the menu under your avatar.
+                  </p>
+                )}
                 <DialogFooter>
                   <Button
                     variant="outline"
@@ -346,7 +363,12 @@ export default function SitesListPage() {
                   </Button>
                   <Button
                     onClick={handleCreate}
-                    disabled={isCreating || !newName || !newSlug}
+                    disabled={
+                      isCreating ||
+                      !newName ||
+                      !newSlug ||
+                      !activeOrganizationId
+                    }
                     className="gap-1.5"
                   >
                     {isCreating && <Loader2 className="h-4 w-4 animate-spin" />}

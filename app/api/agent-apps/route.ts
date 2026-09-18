@@ -5,7 +5,6 @@ import { NextRequest, NextResponse } from "next/server";
 import type { CreateAgentAppInput } from "@/features/agent-apps/types";
 import type { Database } from "@/types/database.types";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
-import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
 import { agentAppPublicationPatch } from "@/features/agent-apps/lib/publication";
 
 type AgentAppInsert = Database["app"]["Tables"]["definition"]["Insert"];
@@ -130,13 +129,37 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Every row needs a real tenant — never insert app.definition with a null
-    // organization_id. Global apps home under the system org (readable by all
-    // authed users via iam.system_orgs.global_readable); user apps home under
-    // the caller's own org (falling back to their personal org).
-    const organizationId = isGlobal
-      ? await resolveSystemOrgId(supabase)
-      : await ensureOrgIdServer(supabase, null);
+    // 🚨 THE APP IS FILED IN THE ORGANIZATION THE CALLER IS ACTING IN.
+    // A GLOBAL app is platform-shipped content readable by every authenticated
+    // user through `iam.system_orgs.global_readable`, so the system org IS its
+    // tenant — a scope the caller asked for, not a substitute for one it
+    // failed to carry. A user app used to fall through to the caller's
+    // PERSONAL organization, which is why all 96 live `app.definition` rows
+    // sit in a workspace nobody chose. It now carries `X-Organization-Id`
+    // — the header every Matrx client sends — and refuses with the remedy
+    // when the caller named none. The insert runs on the caller's own
+    // RLS-scoped client, so a header naming an organization they are not in
+    // fails the policy.
+    // common-docs/policies/context-is-carried-never-rebuilt.md rule 4.
+    let organizationId: string;
+    if (isGlobal) {
+      // org-fallback-deliberate: a global app is platform content with no
+      //   tenant of its own — the system org is what scope "global" MEANS
+      //   here, and the route only accepts that scope from an admin caller.
+      organizationId = await resolveSystemOrgId(supabase);
+    } else {
+      organizationId = request.headers.get("X-Organization-Id")?.trim() ?? "";
+      if (organizationId.length === 0) {
+        return NextResponse.json(
+          {
+            error:
+              "No organization was named for this app, so nothing was created. Choose the organization you are working in and try again.",
+            code: "organization_context_required",
+          },
+          { status: 400 },
+        );
+      }
+    }
 
     const insertPayload: AgentAppInsert = {
       agent_id,

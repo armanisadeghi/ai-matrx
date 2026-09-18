@@ -774,6 +774,8 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-09-17 — **A site-tier SEO schedule is never filed under the system organization.** `ScheduleCascadePanel`'s save fell back to `SYSTEM_ORGANIZATION_ID` when the site was missing from the loaded list, so a row that spends money on its own cadence could land in the system org with nothing on screen saying so. It now refuses, naming the site, and writes nothing. `ContentPlanHeader` also reads the explicit active org (`selectOrganizationId`) for picker ordering only — with none selected every administrable site still lists, unsorted.
+
 - 2026-09-17 — Codex: **Brand media byte ingestion is bound to the brand's organization, never the shell's ambient organization.** `UploadOpts.organizationId` is now the explicit ownership input for file creation while existing scope metadata remains intact. Brand Library uploads, Brand Asset Editor replacements, Stock Sources imports, and Marketing Media imports all pass the target brand organization, preventing cross-organization `brand_asset_file_org_fkey` failures when an admin opens a brand outside the active workspace.
 
 - 2026-09-15 — Codex: the agency-plane Marketing sidebar now resolves one most-specific route owner before applying the shared blue selected treatment, so `/marketing/reports/ranks` selects Rank Roll-up without also faking Reports as active.

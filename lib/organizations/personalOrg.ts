@@ -1,17 +1,32 @@
 // lib/organizations/personalOrg.ts
 //
 // The ONE canonical way to resolve the signed-in user's PERSONAL organization
-// id on the client — the never-null fallback for org-scoped writes.
+// id on the client — the identity of the person's OWN workspace.
+//
+// 🚨 IT IS NOT A FALLBACK. Until 2026-09-17 this module also owned "the
+// never-null fallback for org-scoped writes": `ensureOrgId` ended in the
+// personal-org RPC whenever Redux held no selection, so a write the person
+// made with nothing selected was filed in their personal workspace silently.
+// That is exactly what the law forbids — the organization is READ below the
+// boundary, never invented, defaulted or substituted
+// (common-docs/policies/context-is-carried-never-rebuilt.md). Boot has been
+// TOTAL since 2026-09-12 (`resolveActiveOrgContext` rung b explicitly SELECTS
+// the user's own personal workspace when nothing else applies), so a missing
+// selection now means genuinely unresolved, and `ensureOrgId` REFUSES.
+//
+// What remains here answers one question only: "which organization is this
+// user's own workspace?" — the bootstrap resolver asks it, and so may a
+// surface that deliberately, by name, files something personal (a creator's
+// payout account, a person's cross-organization notification default).
 //
 // Backed by the `current_personal_org_id()` RPC (SECURITY DEFINER, no args —
 // resolves `auth.uid()` server-side). Every user's personal org is
 // auto-provisioned at signup and its id never changes, so this is fetched at
-// most ONCE per session and memoized at module scope. Do NOT call the RPC per
-// row / per insert — read `ensureOrgId()` instead; it hits the warm cache.
+// most ONCE per session and memoized at module scope.
 //
 // Priming: the active-org bootstrap (`lib/redux/thunks/activeOrgBootstrap.ts`)
-// calls the RPC at session start and primes this cache, so service callsites
-// that read it afterward make zero extra network calls.
+// calls the RPC at session start and primes this cache, so callsites that read
+// it afterward make zero extra network calls.
 //
 // Lifetime: the cache is module-scoped, so it lives for the tab's page
 // lifetime. Sign-out does a full `window.location.href` navigation (see
@@ -28,15 +43,18 @@ import { supabase } from "@/utils/supabase/client";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { getActiveOrgId } from "@/lib/organizations/activeOrg";
+// The ONE error type for "no organization is selected" — the same class the
+// transport kernel and `requireSelectedOrgId` throw, so every surface's
+// existing recogniser (`isOrganizationRequiredError`) already handles it.
+import { OrganizationContextError } from "@ai-matrx/agents/matrx";
 // Cycle-free leaf (same constraint as activeOrg.ts) — never `@/lib/redux/store`.
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { captureError } from "@/lib/diagnostics/errorCaptureStore";
-
-/** Narrow appContext shape read here — declared inline for the same cycle-free reason. */
-interface AppContextOrgShape {
-  organization_id: string | null;
-  personal_organization_id: string | null;
-}
+// The ONE "has the organization question been answered yet?" promise, settled
+// by the boot path (activeOrgBootstrap + appContextPolicy.remote.fetch).
+import {
+  isOrgBootstrapResolved,
+  whenOrgBootstrapResolved,
+} from "@/lib/organizations/orgBootstrapGate";
 
 let cachedId: string | null = null;
 let inflight: Promise<string> | null = null;
@@ -90,21 +108,26 @@ export async function resolvePersonalOrgId(): Promise<string> {
 }
 
 /**
- * Resolve an org id for an org-scoped write. Resolution order:
- *   1. the explicitly-passed `orgId` (a callsite that already knows the org);
- *   2. the user's GLOBAL active org from Redux (`getActiveOrgId` — the org they
- *      have selected in the header, else their personal org). This is the
- *      important step: every write now rides along on the user's CURRENT org,
- *      not just their personal one;
- *   3. the cached/RPC personal org (`resolvePersonalOrgId`) as the never-null
- *      backstop — but ONLY for the brief window before Redux has hydrated. The
- *      `appContextPolicy` sync engine rehydrates the active org from cache
- *      before first paint, so in steady state step 2 should ALWAYS win. If we
- *      reach step 3, that is a DEFECT — so we scream (console.error + the
- *      systemwide Error Inspector) before falling back. Defensive, never silent.
+ * Resolve the organization an org-scoped write acts in. Resolution order:
+ *   1. the explicitly-passed `orgId` (a callsite that already knows the
+ *      organization — a durable record's own org, for instance);
+ *   2. the organization the user SELECTED (`getActiveOrgId`, i.e. Redux
+ *      `appContext.organization_id`), after joining the store's bootstrap
+ *      hydration so a write racing boot is not mistaken for a missing one;
+ *   3. on a COLD boot, where neither of those can have an answer yet, wait for
+ *      the boot path's own remote resolution (`orgBootstrapGate`) and read the
+ *      selection again — refusing before anyone has looked is a false refusal;
+ *   4. otherwise THROW. There is no personal-organization rung: a backstop
+ *      files the person's work in a workspace they never chose, and does it
+ *      silently. Boot explicitly SELECTS the personal workspace when nothing
+ *      else applies, so if we get here nothing is selected at all.
  *
- * Use this everywhere instead of writing a null `organization_id` — "never
- * insert an org-scoped row with a null org."
+ * The throw is the same `OrganizationContextError` every transport raises, so
+ * a surface that already renders `OrganizationRequiredNotice` on
+ * `isOrganizationRequiredError` shows the picker and the remedy rather than a
+ * raw string.
+ *
+ * Law: common-docs/policies/context-is-carried-never-rebuilt.md.
  */
 export async function ensureOrgId(
   orgId: string | null | undefined,
@@ -115,7 +138,7 @@ export async function ensureOrgId(
 
   // Descendant passive effects can write in the same commit that starts
   // SyncBootstrap. Join its store-owned warm-cache hydration before treating
-  // missing organization context as a defect.
+  // missing organization context as missing.
   const store = getStoreSingleton() as
     | (ReturnType<typeof getStoreSingleton> & {
         _sync?: { boot: () => Promise<void> };
@@ -125,66 +148,28 @@ export async function ensureOrgId(
   activeOrgId = getActiveOrgId();
   if (activeOrgId) return activeOrgId;
 
-  // ── LOUD last-resort fallback ────────────────────────────────────────────
-  // Reaching here means the active org was NOT in Redux when an org-scoped
-  // write needed it — the sync engine's appContextPolicy should have made it
-  // present before any write runs. Recovery (the personal-org RPC) still fires
-  // so the write does not fail, but it SCREAMS so the defect can't hide: a
-  // recovery firing means a real bug slipped past the proactive layer.
-  const message =
-    "[ensureOrgId] active org MISSING from Redux at write time — falling back to the personal-org RPC. " +
-    "appContextPolicy (lib/sync) should keep the active org present before any write. This is a defect, not a normal path.";
-  // console.error is also captured globally in prod (globalErrorCapture wrapper);
-  // the explicit captureError below guarantees it lands in the Error Inspector
-  // in every environment with structured, admin-visible fields.
-  console.error(message);
-  try {
-    captureError({
-      source: "org-resolution",
-      operation: "rpc",
-      relation: "current_personal_org_id",
-      message,
-      hint:
-        "Ensure appContextPolicy is registered (lib/sync/registry) and the store " +
-        "has booted/hydrated before this write. Check for writes that run before sync boot completes.",
-    });
-  } catch {
-    /* capture must never break the write path */
+  // 🚨 "NOBODY HAS LOOKED YET" IS NOT "THERE IS NONE". The warm-cache boot
+  // above answers a RETURNING session, where the last organization comes back
+  // out of IndexedDB. On a FIRST-EVER session there is no local record and no
+  // apex cookie, so the only answer comes from `appContextPolicy.remote.fetch`
+  // → `resolveActiveOrgContext`, which deliberately waits for `whenPageIdle`
+  // before spending the network. Every write made in that window — an
+  // autosave, a first note, a canvas score — was refused with "Select an
+  // organization" although the person HAS one and the app was seconds from
+  // finding it. A false refusal is as dishonest as a false success, so join
+  // the answer the boot path is already fetching. This starts nothing: it
+  // waits on the one promise the boot settles (bounded, so it can never hang),
+  // and there is no second fetch anywhere.
+  if (!isOrgBootstrapResolved()) {
+    await whenOrgBootstrapResolved();
+    activeOrgId = getActiveOrgId();
+    if (activeOrgId) return activeOrgId;
   }
 
-  const resolved = await resolvePersonalOrgId();
-  await repairMissingPersonalOrgInRedux(resolved);
-  return resolved;
-}
-
-/**
- * Put the recovered personal org back into Redux so the hole heals instead of
- * being re-discovered (and re-screamed, and re-RPC'd) by every later write in
- * the session — a recovery that does not repair is a recovery that fires
- * forever. Writes ONLY `personal_organization_id`, which is exactly what the
- * canonical resolver would have written; the explicitly-selected
- * `organization_id` is never touched, so a later REHYDRATE or a user org
- * switch still wins (`getActiveOrgId` prefers the selected org).
- *
- * Imported lazily: this module is pulled into service chunks, and a static
- * import of the slice would drag the sync-policy graph in with it.
- */
-async function repairMissingPersonalOrgInRedux(orgId: string): Promise<void> {
-  try {
-    const store = getStoreSingleton();
-    if (!store) return;
-    const appContext = (store.getState() as { appContext?: AppContextOrgShape })
-      .appContext;
-    if (!appContext || appContext.personal_organization_id) return;
-    // Surface A write, by contract: this repairs the canonical personal-org
-    // field with the value the canonical resolver itself would have written.
-    const { setPersonalOrganization } = await import(
-      "@/lib/redux/slices/appContextSlice"
-    );
-    store.dispatch(setPersonalOrganization(orgId));
-  } catch {
-    /* repair is best-effort — it must never break the write path */
-  }
+  throw new OrganizationContextError(
+    "organization_context_required",
+    "Select an organization before sending this request.",
+  );
 }
 
 /**

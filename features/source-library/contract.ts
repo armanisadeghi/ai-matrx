@@ -52,6 +52,7 @@ import type {
     ActionDeclaration,
     EstimateResult,
     JobDetailResponse,
+    JobListResponse,
     JobEvent,
     JobItemRow,
     JobRow,
@@ -159,6 +160,21 @@ function number(value: unknown, field: string, fallback = 0): number {
 function member<T extends string>(value: unknown, field: string, fallback: T): T {
     const read = optStr(value, field);
     return (read ?? fallback) as T;
+}
+
+/**
+ * A `{reason: count}` breakdown. Every value must be a number — a reason whose
+ * count is not a number is a shape this screen cannot add up, and printing "202
+ * posts, [object Object] skipped" is worse than printing nothing.
+ */
+function countsByReason(value: unknown, field: string): Record<string, number> {
+    if (value === undefined || value === null) return {};
+    const row = obj(value, field);
+    const out: Record<string, number> = {};
+    for (const [reason, count] of Object.entries(row)) {
+        out[reason] = num(count, `${field}.${reason}`);
+    }
+    return out;
 }
 
 /** A free-form JSON object (`settings`, `result`, `params_schema`). */
@@ -676,6 +692,29 @@ export function parseJobDetailResponse(payload: unknown): JobDetailResponse {
     };
 }
 
+/**
+ * `GET /media/libraries/{id}/jobs` — THE JOB-DISCOVERY DOOR (contract §7).
+ *
+ * After a reload this page knows only the Library id, so without this read a durable
+ * job cannot be found again and "survives a restart" is unprovable from the screen.
+ * This endpoint existed on the server the whole time and nothing here ever called it;
+ * the page kept job ids in `localStorage` instead, which meant a job whose id never
+ * reached the browser — exactly what the `POST …/jobs` envelope defect caused — was
+ * invisible forever even though its rows were sitting in the database.
+ */
+export function parseJobListResponse(payload: unknown): JobListResponse {
+    const root = obj(payload, "the jobs for this Library");
+    const jobs = arr(root.jobs ?? [], "jobs").map((entry, index) =>
+        parseJobRow(entry, `jobs[${index}]`),
+    );
+    return {
+        jobs,
+        total: number(root.total, "total", jobs.length),
+        limit: number(root.limit, "limit", jobs.length),
+        offset: number(root.offset, "offset", 0),
+    };
+}
+
 /** `POST …/resume` and `POST …/retry-failed` — a job row plus one count. */
 export function parseJobAndCount<K extends string>(
     payload: unknown,
@@ -908,6 +947,15 @@ export function parseSyncEvent(payload: unknown, standIns: string[]): EventRead<
                             row.quota_units_spent,
                             `${type}.quota_units_spent`,
                         ),
+                        // A server build older than this one sends neither field.
+                        // Absent is read as "nothing was discarded" rather than
+                        // refused, because a missing account of skips must never
+                        // cost a person the catalogue they just watched arrive.
+                        skipped_by_reason: countsByReason(
+                            row.skipped_by_reason,
+                            `${type}.skipped_by_reason`,
+                        ),
+                        skipped_total: number(row.skipped_total, `${type}.skipped_total`),
                         metrics: parseLibraryMetrics(row.metrics, `${type}.metrics`, standIns),
                     },
                 };

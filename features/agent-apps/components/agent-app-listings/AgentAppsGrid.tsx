@@ -45,6 +45,8 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import { toast } from "@/lib/toast-service";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { AgentAppCard } from "./AgentAppCard";
@@ -139,6 +141,9 @@ export function AgentAppsGrid({
   }, [dispatch]);
 
   const sliceStatus = useAppSelector(selectAppsStatus);
+  // The organization the copy is filed in — carried to the route as
+  // `X-Organization-Id`, never resolved server-side into a personal one.
+  const selectedOrganizationId = useAppSelector(selectOrganizationId);
   const isLoading = sliceStatus === "idle" || sliceStatus === "loading";
   const isError = sliceStatus === "failed";
 
@@ -221,10 +226,19 @@ export function AgentAppsGrid({
 
   const handleDuplicate = useCallback(
     async (app: AgentAppCardModel) => {
+      if (!selectedOrganizationId) {
+        // The route files the copy in the admitted organization and refuses
+        // without one — say so rather than send a request that 400s.
+        toast.error(
+          "No organization is selected, so the copy has nowhere to be filed. Choose the organization you are working in from the avatar menu and try again.",
+        );
+        return;
+      }
       setDuplicatingIds((prev) => new Set(prev).add(app.id));
       try {
         const res = await fetch(`/api/agent-apps/${app.id}/duplicate`, {
           method: "POST",
+          headers: applyOrganizationContextHeader({}, selectedOrganizationId),
         });
         // Pull the server's actual error message so silent backend
         // failures (RLS, FK violations, slug races, etc.) surface in the
@@ -261,7 +275,7 @@ export function AgentAppsGrid({
         });
       }
     },
-    [dispatch],
+    [dispatch, selectedOrganizationId],
   );
 
   const handleDelete = useCallback(

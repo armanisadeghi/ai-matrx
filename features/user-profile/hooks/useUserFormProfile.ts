@@ -13,6 +13,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
 import {
   EMPTY_FORM_PROFILE,
   type UserFormProfileData,
@@ -67,6 +70,12 @@ export function useUserFormProfile(): UseUserFormProfileReturn {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const mounted = useRef(true);
+  // The organization the user SELECTED — never a personal-org substitute
+  // (common-docs/policies/context-is-carried-never-rebuilt.md). The route
+  // needs it only for a FIRST save (an existing row keeps the organization it
+  // is already filed in) and refuses that first save by name when no source
+  // can supply one, so an unselected organization is not refused here.
+  const organizationId = useAppSelector(selectOrganizationId);
 
   useEffect(() => {
     return () => {
@@ -122,9 +131,16 @@ export function useUserFormProfile(): UseUserFormProfileReturn {
       if (Object.keys(patch).length === 0) return true;
       setSaving(true);
       try {
+        // Stamped through the sanctioned kernel, never a hand-built header.
+        const headers = organizationId
+          ? applyOrganizationContextHeader(
+              { "Content-Type": "application/json" },
+              organizationId,
+            )
+          : { "Content-Type": "application/json" };
         const res = await fetch(ENDPOINT, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify(patch),
         });
         const json = (await res.json()) as
@@ -154,7 +170,7 @@ export function useUserFormProfile(): UseUserFormProfileReturn {
         if (mounted.current) setSaving(false);
       }
     },
-    [],
+    [organizationId],
   );
 
   const save = useCallback(async (): Promise<boolean> => {

@@ -915,12 +915,29 @@ export const fcService = {
     } = {},
   ): Promise<FcResult<FcDetailRow>> {
     try {
-      // fc_detail is a composition child: organization_id is inherited from the
-      // parent card by the _inherit_org trigger, so it is intentionally omitted
-      // here. The generated Insert type marks it required (NOT NULL, trigger-
-      // filled, no column default), hence the deliberate cast.
+      // fc_detail is a composition child, and it CARRIES its parent card's
+      // organization. The `_inherit_org` trigger would copy it, but a row never
+      // depends on a trigger to choose its tenant: with the card unreadable
+      // this refuses, rather than letting `public._stamp_org_default` file the
+      // layer in the writer's personal workspace.
+      // common-docs/policies/context-is-carried-never-rebuilt.md
+      const { data: card, error: cardError } = await EDU()
+        .from("fc_card")
+        .select("organization_id")
+        .eq("id", cardId)
+        .maybeSingle();
+      if (cardError) return fail("addDetail", cardError);
+      const organizationId = card?.organization_id ?? "";
+      if (organizationId.length === 0) {
+        return {
+          data: null,
+          error:
+            "This card could not be opened, so the new layer was not saved. Reopen the set and try again.",
+        };
+      }
       const payload = {
         card_id: cardId,
+        organization_id: organizationId,
         kind,
         text,
         audio_file_id: opts.audio_file_id ?? null,

@@ -1070,6 +1070,38 @@ export interface FoundryAgentPlanningOffer {
   anything_else?: string;
 }
 
+/** Offered shape of provision `google.channel_plan_context` (kind `google.channel_plan_context.offer`). */
+export interface GoogleChannelPlanContextOffer {
+  __kind?: "google.channel_plan_context.offer";
+  channel_id: string;
+  channel_title: string;
+  brand_name: string;
+  window_days: string;
+  topical_map?: string;
+}
+
+/** Offered shape of provision `google.desk_context` (kind `google.desk_context.offer`). */
+export interface GoogleDeskContextOffer {
+  __kind?: "google.desk_context.offer";
+  today: string;
+  organization_name: string;
+  google_account: string;
+  agenda_days: string;
+  picked_documents?: string;
+}
+
+/** Offered shape of provision `google.site_performance_context` (kind `google.site_performance_context.offer`). */
+export interface GoogleSitePerformanceContextOffer {
+  __kind?: "google.site_performance_context.offer";
+  site_id: string;
+  site_name: string;
+  site_url: string;
+  comparison_window: string;
+  evidence_freshness: string;
+  analytics_property?: string;
+  search_console_property?: string;
+}
+
 /** Offered shape of provision `growth_loop.stage_dispatch` (kind `growth_loop.stage_dispatch.offer`). */
 export interface GrowthLoopStageDispatchOffer {
   __kind?: "growth_loop.stage_dispatch.offer";
@@ -1554,6 +1586,36 @@ export interface MasterworkSealedCaseQuestionOffer {
   __kind?: "masterwork.sealed_case_question.offer";
   case_text: string;
   question: string;
+}
+
+/** Offered shape of provision `masterwork.sort_boundary_answer` (kind `masterwork.sort_boundary_answer.offer`). */
+export interface MasterworkSortBoundaryAnswerOffer {
+  __kind?: "masterwork.sort_boundary_answer.offer";
+  kind: string;
+  question: string;
+  left_case?: string;
+  left_pile?: string;
+  right_case?: string;
+  right_pile?: string;
+  empty_pile?: string;
+  pile_names: string[];
+  reason: string;
+  rulebook_name?: string;
+  rulebook_description?: string;
+  intake_goal?: string;
+}
+
+/** Offered shape of provision `masterwork.sort_cases` (kind `masterwork.sort_cases.offer`). */
+export interface MasterworkSortCasesOffer {
+  __kind?: "masterwork.sort_cases.offer";
+  rulebook_name: string;
+  rulebook_description?: string;
+  intake_goal?: string;
+  existing_rules?: unknown;
+  source_notes?: string[];
+  pile_names: string[];
+  count: number;
+  avoid?: string[];
 }
 
 /** Offered shape of provision `masterwork.teach_back_explanation` (kind `masterwork.teach_back_explanation.offer`). */
@@ -2927,6 +2989,9 @@ export interface ProvisionOffers {
   "flashcards.tts_render": FlashcardsTtsRenderOffer;
   "flashcards.verify_against_source": FlashcardsVerifyAgainstSourceOffer;
   "foundry.agent_planning": FoundryAgentPlanningOffer;
+  "google.channel_plan_context": GoogleChannelPlanContextOffer;
+  "google.desk_context": GoogleDeskContextOffer;
+  "google.site_performance_context": GoogleSitePerformanceContextOffer;
   "growth_loop.stage_dispatch": GrowthLoopStageDispatchOffer;
   "growth_loop.stage_quality": GrowthLoopStageQualityOffer;
   "hindsight.enrollment_review": HindsightEnrollmentReviewOffer;
@@ -2970,6 +3035,8 @@ export interface ProvisionOffers {
   "masterwork.rulebook_audit": MasterworkRulebookAuditOffer;
   "masterwork.scout_interview": MasterworkScoutInterviewOffer;
   "masterwork.sealed_case_question": MasterworkSealedCaseQuestionOffer;
+  "masterwork.sort_boundary_answer": MasterworkSortBoundaryAnswerOffer;
+  "masterwork.sort_cases": MasterworkSortCasesOffer;
   "masterwork.teach_back_explanation": MasterworkTeachBackExplanationOffer;
   "masterwork.timeline_segment": MasterworkTimelineSegmentOffer;
   "masterwork.timeline_step": MasterworkTimelineStepOffer;
@@ -3169,6 +3236,9 @@ export const PROVISION_OFFER_KINDS = {
   "flashcards.tts_render": "flashcards.tts_render.offer",
   "flashcards.verify_against_source": "flashcards.verify_against_source.offer",
   "foundry.agent_planning": "foundry.agent_planning.offer",
+  "google.channel_plan_context": "google.channel_plan_context.offer",
+  "google.desk_context": "google.desk_context.offer",
+  "google.site_performance_context": "google.site_performance_context.offer",
   "growth_loop.stage_dispatch": "growth_loop.stage_dispatch.offer",
   "growth_loop.stage_quality": "growth_loop.stage_quality.offer",
   "hindsight.enrollment_review": "hindsight.enrollment_review.offer",
@@ -3212,6 +3282,8 @@ export const PROVISION_OFFER_KINDS = {
   "masterwork.rulebook_audit": "masterwork.rulebook_audit.offer",
   "masterwork.scout_interview": "masterwork.scout_interview.offer",
   "masterwork.sealed_case_question": "masterwork.sealed_case_question.offer",
+  "masterwork.sort_boundary_answer": "masterwork.sort_boundary_answer.offer",
+  "masterwork.sort_cases": "masterwork.sort_cases.offer",
   "masterwork.teach_back_explanation": "masterwork.teach_back_explanation.offer",
   "masterwork.timeline_segment": "masterwork.timeline_segment.offer",
   "masterwork.timeline_step": "masterwork.timeline_step.offer",

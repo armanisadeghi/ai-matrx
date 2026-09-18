@@ -3798,306 +3798,6 @@
         }
       }
     },
-    "/ai/conversation/{conversation_id}/attachments": {
-      "get": {
-        "tags": [
-          "AI"
-        ],
-        "summary": "Get Conversation Attachments",
-        "description": "Everything attached to this chat (ownership-scoped).",
-        "operationId": "get_conversation_attachments_ai_conversation__conversation_id__attachments_get",
-        "parameters": [
-          {
-            "name": "conversation_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Conversation Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ConversationAttachmentPayload"
-                  },
-                  "title": "Response Get Conversation Attachments Ai Conversation  Conversation Id  Attachments Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "AI"
-        ],
-        "summary": "Attach Conversation Resource",
-        "description": "Attach a repo / Doc / Sheet to this chat. Idempotent.",
-        "operationId": "attach_conversation_resource_ai_conversation__conversation_id__attachments_post",
-        "parameters": [
-          {
-            "name": "conversation_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Conversation Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AttachResourceRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConversationAttachmentPayload"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/ai/conversations/{conversation_id}/attachments": {
-      "get": {
-        "tags": [
-          "AI"
-        ],
-        "summary": "Get Conversation Attachments",
-        "description": "Everything attached to this chat (ownership-scoped).",
-        "operationId": "get_conversation_attachments_ai_conversations__conversation_id__attachments_get",
-        "parameters": [
-          {
-            "name": "conversation_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Conversation Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/ConversationAttachmentPayload"
-                  },
-                  "title": "Response Get Conversation Attachments Ai Conversations  Conversation Id  Attachments Get"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      },
-      "post": {
-        "tags": [
-          "AI"
-        ],
-        "summary": "Attach Conversation Resource",
-        "description": "Attach a repo / Doc / Sheet to this chat. Idempotent.",
-        "operationId": "attach_conversation_resource_ai_conversations__conversation_id__attachments_post",
-        "parameters": [
-          {
-            "name": "conversation_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Conversation Id"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AttachResourceRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConversationAttachmentPayload"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/ai/conversation/{conversation_id}/attachments/{association_id}": {
-      "delete": {
-        "tags": [
-          "AI"
-        ],
-        "summary": "Detach Conversation Resource",
-        "description": "End one attachment. The resource row stays and can be re-attached.",
-        "operationId": "detach_conversation_resource_ai_conversation__conversation_id__attachments__association_id__delete",
-        "parameters": [
-          {
-            "name": "conversation_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Conversation Id"
-            }
-          },
-          {
-            "name": "association_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Association Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConversationAttachmentPayload"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/ai/conversations/{conversation_id}/attachments/{association_id}": {
-      "delete": {
-        "tags": [
-          "AI"
-        ],
-        "summary": "Detach Conversation Resource",
-        "description": "End one attachment. The resource row stays and can be re-attached.",
-        "operationId": "detach_conversation_resource_ai_conversations__conversation_id__attachments__association_id__delete",
-        "parameters": [
-          {
-            "name": "conversation_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Conversation Id"
-            }
-          },
-          {
-            "name": "association_id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "title": "Association Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConversationAttachmentPayload"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/ai/conversation/{conversation_id}/memory_cost": {
       "get": {
         "tags": [
@@ -8342,6 +8042,111 @@
         }
       }
     },
+    "/coding-sessions/codex/capabilities": {
+      "get": {
+        "tags": [
+          "Coding Sessions"
+        ],
+        "summary": "Codex Managed Capabilities",
+        "description": "Can THIS box run a Codex turn — CLI, broker audience, mint, and all.\n\nThe same door shape as `/claude/capabilities`, and for the same reason:\na screen must be able to learn the answer with a reason instead of\ndiscovering it from a launch that fails.",
+        "operationId": "codex_managed_capabilities_coding_sessions_codex_capabilities_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodexManagedCapabilitiesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coding-sessions/codex/stream": {
+      "post": {
+        "tags": [
+          "Coding Sessions"
+        ],
+        "summary": "Codex Managed Stream",
+        "operationId": "codex_managed_stream_coding_sessions_codex_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodexManagedRestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Codex exec JSONL event stream",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coding-sessions/codex/runtimes/{runtime_id}/cancel": {
+      "post": {
+        "tags": [
+          "Coding Sessions"
+        ],
+        "summary": "Cancel Codex Managed Runtime",
+        "operationId": "cancel_codex_managed_runtime_coding_sessions_codex_runtimes__runtime_id__cancel_post",
+        "parameters": [
+          {
+            "name": "runtime_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Runtime Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodexManagedCancelResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/skills": {
       "get": {
         "tags": [
@@ -9157,6 +8962,22 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/broker/gateway/openai_codex/v1/responses": {
+      "post": {
+        "tags": [
+          "Token Broker",
+          "Token Broker"
+        ],
+        "summary": "Openai Codex Responses",
+        "description": "The Codex CLI's data plane — `{base_url}/responses`, SSE, scoped-token auth.\n\nThe path is NOT cosmetic: `codex exec` derives it from the `base_url` of\nits `model_providers.<id>` entry, so the credential's `endpoint` minus\n`/responses` is exactly what the runtime configures. Scoped token only —\nno `context_dep` here, by the gateway contract.",
+        "operationId": "openai_codex_responses_broker_gateway_openai_codex_v1_responses_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response"
           }
         }
       }
@@ -15631,7 +15452,7 @@
           "Connections"
         ],
         "summary": "List Connection Resources",
-        "description": "The attachable things this caller can reach through ``provider``.",
+        "description": "The attachable things this caller can reach through ``provider``.\n\nA bare list, so the chooser turns a candidate into a pick without reshaping\nit. WHICH kinds a provider offers — and therefore what an empty list means —\nis `/connections/attachable`, which also rides the availability payload.",
         "operationId": "list_connection_resources_connections_resources_get",
         "parameters": [
           {
@@ -15674,6 +15495,18 @@
               "default": 50,
               "title": "Limit"
             }
+          },
+          {
+            "name": "live",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Ask the provider itself instead of our inventory. NO provider offers a live search today — /connections/attachable reports the source of every kind and none is `live` — so this changes nothing. Google in particular can never be live: AI Matrx holds the drive.file scope only, which reaches the files the user handed us and nothing else.",
+              "default": false,
+              "title": "Live"
+            },
+            "description": "Ask the provider itself instead of our inventory. NO provider offers a live search today — /connections/attachable reports the source of every kind and none is `live` — so this changes nothing. Google in particular can never be live: AI Matrx holds the drive.file scope only, which reaches the files the user handed us and nothing else."
           }
         ],
         "responses": {
@@ -15682,7 +15515,161 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ConnectionResourcesResponse"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConnectionResource"
+                  },
+                  "title": "Response List Connection Resources Connections Resources Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversations/{conversation_id}/attachments": {
+      "get": {
+        "tags": [
+          "Conversation Attachments"
+        ],
+        "summary": "Get Conversation Attachments",
+        "description": "Everything attached to this chat (ownership-scoped).",
+        "operationId": "get_conversation_attachments_conversations__conversation_id__attachments_get",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConversationAttachmentPayload"
+                  },
+                  "title": "Response Get Conversation Attachments Conversations  Conversation Id  Attachments Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Conversation Attachments"
+        ],
+        "summary": "Attach Conversation Resource",
+        "description": "Attach a repo / Doc / Sheet to this chat. Idempotent.",
+        "operationId": "attach_conversation_resource_conversations__conversation_id__attachments_post",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachResourceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationAttachmentPayload"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/conversations/{conversation_id}/attachments/{association_id}": {
+      "delete": {
+        "tags": [
+          "Conversation Attachments"
+        ],
+        "summary": "Detach Conversation Resource",
+        "description": "End one attachment. The resource row stays and can be re-attached.",
+        "operationId": "detach_conversation_resource_conversations__conversation_id__attachments__association_id__delete",
+        "parameters": [
+          {
+            "name": "conversation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Conversation Id"
+            }
+          },
+          {
+            "name": "association_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Association Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationAttachmentPayload"
                 }
               }
             }
@@ -37715,6 +37702,102 @@
         }
       }
     },
+    "/google-workspace/approvals/{approval_id}/apply": {
+      "post": {
+        "tags": [
+          "Google Workspace"
+        ],
+        "summary": "Apply Approval",
+        "description": "Approve one queued Google change and make it — exactly once.\n\nThe approval id IS the idempotency key: calling this twice writes to Google\nonce and returns the first call's receipt the second time.",
+        "operationId": "apply_approval_google_workspace_approvals__approval_id__apply_post",
+        "parameters": [
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Approval Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalDecisionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/google-workspace/approvals/{approval_id}/reject": {
+      "post": {
+        "tags": [
+          "Google Workspace"
+        ],
+        "summary": "Reject Approval",
+        "description": "Turn one queued Google change down, with the reason kept on the record.",
+        "operationId": "reject_approval_google_workspace_approvals__approval_id__reject_post",
+        "parameters": [
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Approval Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RejectApprovalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalDecisionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/bing-integrations/authorize-url": {
       "get": {
         "tags": [
@@ -41954,6 +42037,162 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/NewsroomSyncBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/map/pages": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Map Site Pages",
+        "description": "Put this site's pages on its topical map — the ONE entry the \"map the pages\"\nbutton calls.\n\nIt enrols every active page of the site in a durable ledger in Search Console demand\norder, then works it in batches: claim, ask `seo.page_mapper` where each page sits,\nwrite the surviving placements through `seo.set_pages_map_topics` with\n`source='mapper'`, and settle the claim against the edges that actually landed.\n\nResumable by construction. Pressing this again continues where the last run stopped —\na page already mapped is never re-judged, a page a PERSON mapped is never touched, and\na worker that dies mid-batch costs one lease window and nothing else. Streams a named\nstage per batch; rejoin with `POST /seo/collections/{run_id}/rejoin`.\n\n`limit` caps the pages this press will spend on (the daily ceiling decides when it is\nomitted), and `dry_run` answers what WOULD be written without writing it — honest\nabout the map, not free: every batch still costs a model call.",
+        "operationId": "map_site_pages_seo_sites__site_id__map_pages_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MapPagesRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/map/regions": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Map Site Regions",
+        "description": "Give this site's map its GEOGRAPHY — the one entry the \"map the regions\" button\ncalls, and the rule that keeps a topic tree about subjects.\n\n🚨 GEOGRAPHY IS A FACET, NOT A BRANCH. A topic answers WHAT this company does; a\nregion answers WHERE. `region` is a built-in facet of every map, so a location page\nbelongs on the SERVICE topic it is about, carrying its place as a facet value. When\na map has no region values the geography goes into the tree instead — measured live\n2026-09-17, a topic slugged `california` on a real client's map had collected 557\nlocation pages — and every downstream judgement then reads that company's local\nfootprint as duplicates of itself.\n\nThis pass derives the brand's region values from real data (the locations the\nbusiness has registered first, then the places its own pages name), creates them\nhierarchically through `seo.create_map_facet_values`, and binds each location page\nthrough `seo.set_page_map_facet` with `source='mapper'` — the LOWEST rank on the\nprecedence ladder, so a region a person set is never overwritten.\n\n🚨 IT COSTS NOTHING. There is no model call anywhere in it: a place is read out of\na page's own address by subtracting the words this map already uses for its\nsubjects. `dry_run` is therefore genuinely free.\n\nResumable by construction and without a ledger: the work set is recomputed every\npress as \"pages whose region is not already the one we derived\", so a run that dies\nhalfway costs nothing. Streams a named stage; rejoin with\n`POST /seo/collections/{run_id}/rejoin`.\n\n`retire_geography_topics` is OFF by default. Turning it on moves every page off the\nmap's place-named topics onto the service topics those pages already cover, then\nretires the topics. A page is NEVER lost: one that covered nothing else ends on no\ntopic, still listed and named in the answer, for the page mapper to place now that\nthe place-named topic is gone.",
+        "operationId": "map_site_regions_seo_sites__site_id__map_regions_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MapRegionsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/seo/sites/{site_id}/map/intents": {
+      "post": {
+        "tags": [
+          "SEO Collections"
+        ],
+        "summary": "Propose Site Page Intents",
+        "description": "Propose where every mapped page of this site is GOING — the ONE entry the\n\"propose the destinations\" button calls, and the second half of the convergence\nworkflow the map screen shows.\n\nIt enrols every active page that already sits on a topic (a `covers` edge) in a\ndurable ledger keyed by that topic, then works it TOPIC BY TOPIC: claim one topic's\npages so siblings are judged together, hand `seo.page_intent_proposer` the topic's\ntraffic-ranked roster, its keywords and its planned pages, write the surviving\nproposals through `seo.set_page_intents` with `source='agent'` and `state='proposed'`,\nand settle the claim against the intent edges that actually landed.\n\n🚨 NOTHING HERE ACTS. Every intent is a PROPOSAL a person reviews through\n`intent_review_mode`; no page is redirected, merged or deleted by this call. A page\nwhose destination a person already decided — or any intent already accepted or done —\nis never proposed over.\n\nResumable by construction. Pressing this again continues where the last run stopped,\nand a worker that dies mid-batch costs one lease window and nothing else. Streams a\nnamed stage per batch; rejoin with `POST /seo/collections/{run_id}/rejoin`.\n\n`limit` caps the pages this press will spend on (the daily ceiling decides when it is\nomitted), `topic_slugs` restricts the pass to named topics, and `dry_run` answers what\nWOULD be written without writing it — honest about the map, not free: every batch\nstill costs a model call.",
+        "operationId": "propose_site_page_intents_seo_sites__site_id__map_intents_post",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Site Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProposeIntentsRequest"
               }
             }
           }
@@ -46512,6 +46751,24 @@
             "description": "Optional kind filter, e.g. 'request_snapshot_capture_failure'. `kind` is the stable family name a producer records under, so it is what an alarm deep-links on — error_type is the exception class and changes with the code."
           },
           {
+            "name": "request_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional exact request_id filter. This is how a PRODUCER deep-links to the rows one of its own runs filed: the mandate reference patrol records the request_id its scan wrote (`mandate-scan/<repo>/<revision>`) on the run, and the board links here with it. Without this filter that link would land on an unfiltered list that merely LOOKS like the run's evidence.",
+              "title": "Request Id"
+            },
+            "description": "Optional exact request_id filter. This is how a PRODUCER deep-links to the rows one of its own runs filed: the mandate reference patrol records the request_id its scan wrote (`mandate-scan/<repo>/<revision>`) on the run, and the board links here with it. Without this filter that link would land on an unfiltered list that merely LOOKS like the run's evidence."
+          },
+          {
             "name": "unresolved_only",
             "in": "query",
             "required": false,
@@ -50311,7 +50568,9 @@
             "description": "Successful Response",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/DripSendReport"
+                }
               }
             }
           },
@@ -69858,6 +70117,73 @@
               "type": "string",
               "title": "Node Id"
             }
+          },
+          {
+            "name": "conversation_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reopen this exact conversation — it must be one this launcher itself listed for this person and this step; anything else is refused.",
+              "title": "Conversation Id"
+            },
+            "description": "Reopen this exact conversation — it must be one this launcher itself listed for this person and this step; anything else is refused."
+          },
+          {
+            "name": "new_conversation",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Start a fresh conversation with this step's Steward.",
+              "default": false,
+              "title": "New Conversation"
+            },
+            "description": "Start a fresh conversation with this step's Steward."
+          },
+          {
+            "name": "wizard",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "const": "run_agent",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Wizard"
+            }
+          },
+          {
+            "name": "wizard_step",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "agent",
+                    "variables"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Wizard Step"
+            }
           }
         ],
         "responses": {
@@ -69919,6 +70245,36 @@
               "title": "Selected Node Id"
             },
             "description": "The step the Creator has selected on the canvas (Conductor mode). Rendered into the envelope so 'this step' needs no name."
+          },
+          {
+            "name": "conversation_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Reopen this exact conversation — it must be one this launcher itself listed for this person and this workflow; anything else is refused.",
+              "title": "Conversation Id"
+            },
+            "description": "Reopen this exact conversation — it must be one this launcher itself listed for this person and this workflow; anything else is refused."
+          },
+          {
+            "name": "new_conversation",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Start a fresh conversation with the Conductor.",
+              "default": false,
+              "title": "New Conversation"
+            },
+            "description": "Start a fresh conversation with the Conductor."
           }
         ],
         "responses": {
@@ -70487,10 +70843,10 @@
                   "type": "null"
                 }
               ],
-              "description": "Stable client-supplied key. If a previous request from the same user with the same key on the same route succeeded within the last 24h, the existing run is returned (mode='duplicate') instead of a new one being created. Use to make double-clicks, retried webhooks, and cron-with-jitter safe.",
+              "description": "Stable client-supplied key for retry-safe workflow starts.",
               "title": "X-Idempotency-Key"
             },
-            "description": "Stable client-supplied key. If a previous request from the same user with the same key on the same route succeeded within the last 24h, the existing run is returned (mode='duplicate') instead of a new one being created. Use to make double-clicks, retried webhooks, and cron-with-jitter safe."
+            "description": "Stable client-supplied key for retry-safe workflow starts."
           }
         ],
         "requestBody": {
@@ -70505,10 +70861,28 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
+            "description": "A JSON start result or an NDJSON workflow event stream.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/IdempotentDuplicateRunResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/AwaitingInputRunResponse"
+                    },
+                    {
+                      "$ref": "#/components/schemas/StartQueuedRunResponse"
+                    }
+                  ],
+                  "title": "Response Start Workflow Run Workflows  Definition Id  Runs Post"
+                }
+              },
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
               }
             }
           },
@@ -91183,6 +91557,12 @@
             "type": "string",
             "title": "Id"
           },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id",
+            "description": "Owning agent definition id; equals id for a live definition and names the parent for a version snapshot.",
+            "default": ""
+          },
           "name": {
             "type": "string",
             "title": "Name"
@@ -96503,6 +96883,37 @@
         ],
         "title": "ApprovalDecision"
       },
+      "ApprovalDecisionResponse": {
+        "properties": {
+          "approval_id": {
+            "type": "string",
+            "title": "Approval Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "applied_now": {
+            "type": "boolean",
+            "title": "Applied Now"
+          },
+          "receipt": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "title": "Receipt"
+          }
+        },
+        "type": "object",
+        "required": [
+          "approval_id",
+          "status",
+          "applied_now",
+          "receipt"
+        ],
+        "title": "ApprovalDecisionResponse"
+      },
       "ApproveDraftsRequest": {
         "properties": {
           "organization_id": {
@@ -98903,13 +99314,63 @@
             ],
             "title": "Resource Id",
             "description": "users.integration_connection_resources.id, when known"
+          },
+          "resource_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Type",
+            "description": "Echoed from the candidate; the server re-reads the row."
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name",
+            "description": "Echoed from the candidate; the server re-reads the row."
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link",
+            "description": "Echoed from the candidate; the server re-reads the row."
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata",
+            "description": "Echoed from the candidate; the server re-reads the row."
           }
         },
         "type": "object",
         "required": [
           "provider"
         ],
-        "title": "AttachResourceRequest"
+        "title": "AttachResourceRequest",
+        "description": "What the chooser sends. Only `provider` plus one of `resource_ref` /\n`resource_id` decides anything — the display fields ride along so the\nclient can post a candidate back unchanged, and the server re-reads the\nreal row rather than trusting them."
       },
       "AttachableKindInfo": {
         "properties": {
@@ -100538,6 +100999,45 @@
         "type": "object",
         "title": "AutoTagPassRequest",
         "description": "Trigger the WHOLE auto-tag pass on demand (the \"Run now\" button).\n\n`max_calls` overrides how many included+scraped sources the pass tags this\nrun. When omitted, the topic's `rs_topic.max_auto_tag_calls` is used; if\nthat is 0 (the auto-pipeline default = OFF), the on-demand pass instead\ntags ALL eligible sources — the user explicitly asked for it, so it must\nnever silently no-op."
+      },
+      "AwaitingInputRunResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "mode": {
+            "type": "string",
+            "const": "awaiting_input",
+            "title": "Mode",
+            "default": "awaiting_input"
+          },
+          "status": {
+            "type": "string",
+            "const": "awaiting_input",
+            "title": "Status",
+            "default": "awaiting_input"
+          },
+          "missing": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Missing"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Run parked awaiting input — supply the missing values via POST /runs/{run_id}/resume to continue."
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id"
+        ],
+        "title": "AwaitingInputRunResponse",
+        "description": "A headless start missing require/ask inputs PARKED instead of dying\n(INPUT-SURFACE.md park-not-die). The run row exists at ``awaiting_input``\n— durable, announced, listed in the same \"waiting on you\" inbox as\n``interrupted`` — and resumes via POST /runs/{run_id}/resume with the\nmissing values in ``inputs``."
       },
       "AworkStatusResult": {
         "properties": {
@@ -122198,6 +122698,203 @@
         ],
         "title": "CoderPadServiceStatus"
       },
+      "CodexManagedAction": {
+        "type": "string",
+        "enum": [
+          "resume",
+          "start"
+        ],
+        "title": "CodexManagedAction"
+      },
+      "CodexManagedCancelResponse": {
+        "properties": {
+          "runtime_id": {
+            "type": "string",
+            "title": "Runtime Id"
+          },
+          "cancelled": {
+            "type": "boolean",
+            "title": "Cancelled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "runtime_id",
+          "cancelled"
+        ],
+        "title": "CodexManagedCancelResponse"
+      },
+      "CodexManagedCapabilitiesResponse": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "native_resume": {
+            "type": "boolean",
+            "title": "Native Resume"
+          },
+          "native_fork": {
+            "type": "boolean",
+            "title": "Native Fork"
+          },
+          "cli_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cli Version"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "available",
+          "native_resume",
+          "native_fork"
+        ],
+        "title": "CodexManagedCapabilitiesResponse"
+      },
+      "CodexManagedRestRequest": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/CodexManagedAction",
+            "default": "start"
+          },
+          "conversation": {
+            "$ref": "#/components/schemas/BridgeConversation"
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 200000,
+            "minLength": 1,
+            "title": "Prompt"
+          },
+          "workspace_root": {
+            "type": "string",
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Workspace Root",
+            "default": "/home/agent"
+          },
+          "thread_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thread Id"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "sandbox_mode": {
+            "type": "string",
+            "enum": [
+              "read-only",
+              "workspace-write"
+            ],
+            "title": "Sandbox Mode",
+            "default": "read-only"
+          },
+          "turn_timeout_seconds": {
+            "type": "integer",
+            "maximum": 7200,
+            "minimum": 30,
+            "title": "Turn Timeout Seconds",
+            "default": 1800
+          },
+          "max_budget_usd": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000,
+                "exclusiveMinimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Budget Usd"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation",
+          "prompt"
+        ],
+        "title": "CodexManagedRestRequest",
+        "description": "HTTP carrier that accepts, but never trusts, frontend-injected scope."
+      },
       "CodingReplyResponder": {
         "properties": {
           "agent_id": {
@@ -125096,6 +125793,26 @@
             "title": "Conversation Exists",
             "default": false
           },
+          "conversation_generation": {
+            "type": "integer",
+            "title": "Conversation Generation",
+            "description": "Which conversation on this person's ladder for this workflow is open.",
+            "default": 0
+          },
+          "conversations": {
+            "items": {
+              "$ref": "#/components/schemas/LauncherConversation"
+            },
+            "type": "array",
+            "title": "Conversations",
+            "description": "Every conversation this person holds with this workflow's Conductor, most recently touched first. Reopen one by sending its `conversation_id` back as the `conversation_id` query — the client never invents one."
+          },
+          "test_run_mode": {
+            "type": "string",
+            "title": "Test Run Mode",
+            "description": "The `workflow.conductor.test_run_mode` knob for this person and org: `ask` — the Conductor must get the Creator's word before it test-runs the workflow (the server refuses an unapproved run); `auto` — it may run a test on its own judgement.",
+            "default": "ask"
+          },
           "messages": {
             "items": {
               "additionalProperties": true,
@@ -125407,6 +126124,28 @@
             "type": "string",
             "title": "Display Name"
           },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
           "permission_level": {
             "anyOf": [
               {
@@ -125433,62 +126172,8 @@
           "resource_ref",
           "display_name"
         ],
-        "title": "ConnectionResource"
-      },
-      "ConnectionResourcesResponse": {
-        "properties": {
-          "provider": {
-            "type": "string",
-            "title": "Provider"
-          },
-          "connected": {
-            "type": "boolean",
-            "title": "Connected"
-          },
-          "kinds": {
-            "items": {
-              "$ref": "#/components/schemas/AttachableKindPayload"
-            },
-            "type": "array",
-            "title": "Kinds"
-          },
-          "resources": {
-            "items": {
-              "$ref": "#/components/schemas/ConnectionResource"
-            },
-            "type": "array",
-            "title": "Resources"
-          },
-          "total_matching": {
-            "type": "integer",
-            "title": "Total Matching"
-          },
-          "returned": {
-            "type": "integer",
-            "title": "Returned"
-          },
-          "query": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Query"
-          }
-        },
-        "type": "object",
-        "required": [
-          "provider",
-          "connected",
-          "kinds",
-          "resources",
-          "total_matching",
-          "returned"
-        ],
-        "title": "ConnectionResourcesResponse"
+        "title": "ConnectionResource",
+        "description": "One attachable candidate. `link` and `detail` are the SERVER's words —\nonly it knows what matters about a given provider's resources."
       },
       "ConnectionSummary": {
         "properties": {
@@ -127519,6 +128204,28 @@
             "type": "string",
             "title": "Display Name"
           },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
           "permission_level": {
             "anyOf": [
               {
@@ -127547,7 +128254,8 @@
           "resource_ref",
           "display_name"
         ],
-        "title": "ConversationAttachmentPayload"
+        "title": "ConversationAttachmentPayload",
+        "description": "One live attachment. `link` and `detail` are the server's words: only it\nknows what matters about a given provider's resources (THE DOOR LAW — the\nrow the UI names must open)."
       },
       "ConversationContinueRequest": {
         "properties": {
@@ -140889,6 +141597,68 @@
           "status"
         ],
         "title": "DrainRowResult"
+      },
+      "DripSendReport": {
+        "properties": {
+          "scanned": {
+            "type": "integer",
+            "title": "Scanned",
+            "default": 0
+          },
+          "hit_scan_cap": {
+            "type": "boolean",
+            "title": "Hit Scan Cap",
+            "default": false
+          },
+          "subscribed": {
+            "type": "integer",
+            "title": "Subscribed",
+            "default": 0
+          },
+          "active": {
+            "type": "integer",
+            "title": "Active",
+            "default": 0
+          },
+          "not_yet_their_hour": {
+            "type": "integer",
+            "title": "Not Yet Their Hour",
+            "default": 0
+          },
+          "already_asked_today": {
+            "type": "integer",
+            "title": "Already Asked Today",
+            "default": 0
+          },
+          "asked": {
+            "type": "integer",
+            "title": "Asked",
+            "default": 0
+          },
+          "adapted": {
+            "type": "integer",
+            "title": "Adapted",
+            "default": 0
+          },
+          "fell_back_to_base_question": {
+            "type": "integer",
+            "title": "Fell Back To Base Question",
+            "default": 0
+          },
+          "paused_for_silence": {
+            "type": "integer",
+            "title": "Paused For Silence",
+            "default": 0
+          },
+          "errors": {
+            "type": "integer",
+            "title": "Errors",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "title": "DripSendReport",
+        "description": "What one pass did. Every field is reported, including the boring ones, so\na pass that did nothing is distinguishable from a pass that never ran."
       },
       "DripServiceStatus": {
         "properties": {
@@ -161322,6 +162092,36 @@
         ],
         "title": "IdeWorkspaceState"
       },
+      "IdempotentDuplicateRunResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "mode": {
+            "type": "string",
+            "const": "duplicate",
+            "title": "Mode",
+            "default": "duplicate"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Existing run returned for idempotency key"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "status"
+        ],
+        "title": "IdempotentDuplicateRunResponse",
+        "description": "Returned when X-Idempotency-Key matches a prior request.\n\nThe FE recognizes ``mode='duplicate'`` and switches to polling the\nexisting run_id (no fresh stream — the original is already in flight or\nterminal)."
+      },
       "IdentityHealth": {
         "properties": {
           "window_days": {
@@ -163361,6 +164161,22 @@
             "title": "Own Replies Only",
             "description": "Read only threads this person actually replied in (knob `masterwork.shadow_inbox.own_replies_only`, default on). None = the organization's standing answer."
           },
+          "voice_keys": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Keys",
+            "description": "Which voices in these threads are the Expert (from /masterworks/inbox/preview). Used when no address in the thread matches — a mail client's copy labels the person's own message 'me', which is a voice, not an address."
+          },
           "organization_id": {
             "anyOf": [
               {
@@ -164487,6 +165303,22 @@
             ],
             "title": "Own Replies Only",
             "description": "Read only threads this person actually replied in (knob `masterwork.shadow_inbox.own_replies_only`, default on). None = the organization's standing answer."
+          },
+          "voice_keys": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array",
+                "maxItems": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Keys",
+            "description": "Which voices in these threads are the Expert (from /masterworks/inbox/preview). Used when no address in the thread matches — a mail client's copy labels the person's own message 'me', which is a voice, not an address."
           },
           "organization_id": {
             "anyOf": [
@@ -172901,6 +173733,58 @@
         ],
         "title": "LaunchDarklyServiceStatus"
       },
+      "LauncherConversation": {
+        "properties": {
+          "conversation_id": {
+            "type": "string",
+            "title": "Conversation Id"
+          },
+          "generation": {
+            "type": "integer",
+            "title": "Generation"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "message_count": {
+            "type": "integer",
+            "title": "Message Count",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation_id",
+          "generation",
+          "title"
+        ],
+        "title": "LauncherConversation",
+        "description": "One of a person's conversations with one launcher target."
+      },
       "LeakRule": {
         "type": "string",
         "enum": [
@@ -176612,7 +177496,9 @@
           },
           "relations": {
             "items": {
-              "additionalProperties": true,
+              "additionalProperties": {
+                "$ref": "#/components/schemas/JsonValue"
+              },
               "type": "object"
             },
             "type": "array",
@@ -176622,7 +177508,9 @@
           "root_blocker": {
             "anyOf": [
               {
-                "additionalProperties": true,
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
                 "type": "object"
               },
               {
@@ -179381,6 +180269,145 @@
         ],
         "title": "MandateOriginFacts"
       },
+      "MandatePatrolSection": {
+        "properties": {
+          "tool_name": {
+            "type": "string",
+            "title": "Tool Name"
+          },
+          "task_id": {
+            "type": "string",
+            "title": "Task Id"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          },
+          "schedule": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schedule"
+          },
+          "trigger_enabled": {
+            "type": "boolean",
+            "title": "Trigger Enabled"
+          },
+          "next_due_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Due At"
+          },
+          "last_run_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Run At"
+          },
+          "enabled_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled At"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/PatrolRunRow"
+            },
+            "type": "array",
+            "title": "Runs"
+          },
+          "runs_counted": {
+            "type": "integer",
+            "title": "Runs Counted"
+          },
+          "runs_failed": {
+            "type": "integer",
+            "title": "Runs Failed"
+          },
+          "cumulative_wall_seconds": {
+            "type": "number",
+            "title": "Cumulative Wall Seconds"
+          },
+          "cumulative_vcpu_seconds": {
+            "type": "number",
+            "title": "Cumulative Vcpu Seconds"
+          },
+          "cumulative_compute_cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cumulative Compute Cost Usd"
+          },
+          "cumulative_model_spend_usd": {
+            "type": "number",
+            "title": "Cumulative Model Spend Usd"
+          },
+          "cost_note": {
+            "type": "string",
+            "title": "Cost Note"
+          },
+          "read_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read Error"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tool_name",
+          "task_id",
+          "enabled",
+          "schedule",
+          "trigger_enabled",
+          "next_due_at",
+          "last_run_at",
+          "enabled_at",
+          "runs",
+          "runs_counted",
+          "runs_failed",
+          "cumulative_wall_seconds",
+          "cumulative_vcpu_seconds",
+          "cumulative_compute_cost_usd",
+          "cumulative_model_spend_usd",
+          "cost_note"
+        ],
+        "title": "MandatePatrolSection",
+        "description": "The patrol's own state and running cost (Arman, 2026-09-17: *\"if there is\na cost, make sure it's tracked and easy for me to see\"*)."
+      },
       "MandateProvenanceReport": {
         "properties": {
           "mandate_key": {
@@ -179483,6 +180510,16 @@
             },
             "type": "array",
             "title": "Unverified Repos"
+          },
+          "patrol": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MandatePatrolSection"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "source": {
             "type": "string",
@@ -181335,6 +182372,99 @@
           "output"
         ],
         "title": "ManualResultRequest"
+      },
+      "MapPagesRequest": {
+        "properties": {
+          "refresh": {
+            "type": "boolean",
+            "title": "Refresh",
+            "default": true
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
+          },
+          "batch_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batch Size"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MapPagesRequest",
+        "description": "The one body `POST /seo/sites/{site_id}/map/pages` takes."
+      },
+      "MapRegionsRequest": {
+        "properties": {
+          "derive_values": {
+            "type": "boolean",
+            "title": "Derive Values",
+            "default": true
+          },
+          "bind_pages": {
+            "type": "boolean",
+            "title": "Bind Pages",
+            "default": true
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
+          },
+          "retire_geography_topics": {
+            "type": "boolean",
+            "title": "Retire Geography Topics",
+            "default": false
+          },
+          "geography_topic_slugs": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geography Topic Slugs"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MapRegionsRequest",
+        "description": "The one body `POST /seo/sites/{site_id}/map/regions` takes."
       },
       "MappingIssue": {
         "properties": {
@@ -187918,6 +189048,33 @@
             ],
             "title": "Backing Agent Id"
           },
+          "wizard": {
+            "anyOf": [
+              {
+                "type": "string",
+                "const": "run_agent"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wizard"
+          },
+          "wizard_step": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "agent",
+                  "variables"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wizard Step"
+          },
           "conversation_id": {
             "type": "string",
             "title": "Conversation Id",
@@ -187927,6 +189084,20 @@
             "type": "boolean",
             "title": "Conversation Exists",
             "default": false
+          },
+          "conversation_generation": {
+            "type": "integer",
+            "title": "Conversation Generation",
+            "description": "Which conversation on this person's ladder for this step is open.",
+            "default": 0
+          },
+          "conversations": {
+            "items": {
+              "$ref": "#/components/schemas/LauncherConversation"
+            },
+            "type": "array",
+            "title": "Conversations",
+            "description": "Every conversation this person holds with this step's Steward, most recently touched first. Reopen one by sending its `conversation_id` back as the `conversation_id` query — the client never invents one."
           },
           "messages": {
             "items": {
@@ -197794,6 +198965,301 @@
         ],
         "title": "PatreonServiceStatus",
         "description": "Safe aggregate status projection for Patreon's fixed status page."
+      },
+      "PatrolRunRow": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "finished_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "wall_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Wall Seconds"
+          },
+          "seconds_source": {
+            "type": "string",
+            "enum": [
+              "derived_from_timestamps",
+              "recorded",
+              "unknown"
+            ],
+            "title": "Seconds Source"
+          },
+          "cpu_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpu Seconds"
+          },
+          "vcpu_seconds": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vcpu Seconds"
+          },
+          "cpu_count_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpu Count Source"
+          },
+          "compute_cost_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compute Cost Usd"
+          },
+          "compute_cost_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Compute Cost Note"
+          },
+          "model_spend_usd": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Spend Usd"
+          },
+          "model_spend_evidence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Spend Evidence"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "rows_submitted": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rows Submitted"
+          },
+          "findings": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Findings"
+          },
+          "error_rows_filed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Rows Filed"
+          },
+          "error_rows_resolved": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Rows Resolved"
+          },
+          "error_rows_request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Rows Request Id"
+          },
+          "git_clone_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Git Clone Bytes"
+          },
+          "spend_row": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Spend Row"
+          },
+          "failed_legs": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Failed Legs"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "cost_recorded": {
+            "type": "boolean",
+            "title": "Cost Recorded"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run_id",
+          "status",
+          "due_at",
+          "started_at",
+          "finished_at",
+          "wall_seconds",
+          "seconds_source",
+          "cpu_seconds",
+          "vcpu_seconds",
+          "cpu_count_source",
+          "compute_cost_usd",
+          "compute_cost_note",
+          "model_spend_usd",
+          "model_spend_evidence",
+          "revision",
+          "rows_submitted",
+          "findings",
+          "error_rows_filed",
+          "error_rows_resolved",
+          "error_rows_request_id",
+          "git_clone_bytes",
+          "spend_row",
+          "failed_legs",
+          "summary",
+          "error_message",
+          "cost_recorded"
+        ],
+        "title": "PatrolRunRow",
+        "description": "ONE `mandate_reference_patrol` run, and what it cost.\n\nEvery number here is READ off `scheduler.sch_run` — `result_metadata.cost`,\nwritten by the patrol itself (`reference_patrol.RunAccounting`). Nothing on\nthis row is recomputed here, so the board and the run ledger cannot drift."
       },
       "PauseRequest": {
         "properties": {
@@ -209006,6 +210472,60 @@
         "type": "object",
         "title": "ProposalStep"
       },
+      "ProposeIntentsRequest": {
+        "properties": {
+          "refresh": {
+            "type": "boolean",
+            "title": "Refresh",
+            "default": true
+          },
+          "limit": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit"
+          },
+          "batch_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batch Size"
+          },
+          "topic_slugs": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Topic Slugs"
+          },
+          "dry_run": {
+            "type": "boolean",
+            "title": "Dry Run",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ProposeIntentsRequest",
+        "description": "The one body `POST /seo/sites/{site_id}/map/intents` takes."
+      },
       "ProposifyServiceStatus": {
         "properties": {
           "__kind": {
@@ -216013,6 +217533,24 @@
           "verdict"
         ],
         "title": "RegressionRunResult"
+      },
+      "RejectApprovalRequest": {
+        "properties": {
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "title": "RejectApprovalRequest"
       },
       "RejectCandidateRequest": {
         "properties": {
@@ -237835,6 +239373,36 @@
           "site_id"
         ],
         "title": "StartLoopRequest"
+      },
+      "StartQueuedRunResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "mode": {
+            "type": "string",
+            "const": "queued",
+            "title": "Mode",
+            "default": "queued"
+          },
+          "status": {
+            "type": "string",
+            "const": "pending",
+            "title": "Status",
+            "default": "pending"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "job_id"
+        ],
+        "title": "StartQueuedRunResponse"
       },
       "StartRunBody": {
         "properties": {

@@ -30,6 +30,19 @@
 //
 // This is a PLATFORM primitive. Any action handler that today reads an
 // organization id and bails should call this instead.
+//
+// 🚨 WHAT IT WAITS FOR IS THE *SELECTED* ORGANIZATION (2026-09-17)
+// ----------------------------------------------------------------
+// This used to settle on `selectEffectiveOrganizationId` — `organization_id ??
+// personal_organization_id` — so a wait that timed out with nothing selected
+// still answered "ready" with the user's PERSONAL workspace, and the action
+// filed its work there with nothing on screen saying so. That is exactly the
+// silent tenant substitution `context-is-carried-never-rebuilt` forbids: the
+// organization an action writes in is the one the user selected, or the action
+// refuses. Now the wait watches ONLY the explicit selection, and settling with
+// nothing returns `unavailable` with the remedy. The exported names still say
+// "effective" because two consumers outside this feature import them by that
+// name; the rename is a follow-up, not a behaviour change.
 
 import {
   waitForOrganizationAdmission,
@@ -37,7 +50,7 @@ import {
 } from "@/lib/api/organization-admission";
 import { knobInt } from "@/lib/knobs/featureKnobs";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 
 export type WorkspaceResolution =
   | { status: "ready"; organizationId: string }
@@ -61,21 +74,23 @@ const WORKSPACE_KNOB_FEATURE = "organizations.workspace";
 const NO_WORKSPACE =
   "We could not tell which workspace to file this in. Pick one from the menu under your avatar, then press the button again — nothing was created.";
 
-/** The effective workspace right now, without waiting. Null when there is none. */
+/**
+ * The SELECTED organization right now, without waiting. Null when the user has
+ * not chosen one — never the personal workspace standing in for it.
+ */
 export function peekEffectiveOrganizationId(): string | null {
   const state = getStoreSingleton()?.getState();
-  return state ? (selectEffectiveOrganizationId(state as never) ?? null) : null;
+  return state ? (selectOrganizationId(state as never) ?? null) : null;
 }
 
 /**
  * The workspace this action will file its work in — waiting, bounded, for a
  * bootstrap still in flight, and answering honestly when there is none.
  *
- * Reads the EFFECTIVE workspace (explicit selection, else the personal one),
- * because that is what the surfaces this replaces were already writing with;
- * `waitForOrganizationAdmission` only watches the explicit selection, so the
- * effective value is re-read after it settles — a personal workspace that
- * lands during the same bootstrap is a perfectly good answer.
+ * Reads the EXPLICITLY SELECTED organization only. A bootstrap that lands a
+ * selection during the wait is a perfectly good answer; a bootstrap that ends
+ * with nothing selected is `unavailable`, never the personal workspace
+ * substituted for the one the user meant.
  */
 export async function awaitEffectiveOrganizationId(): Promise<WorkspaceResolution> {
   const immediate = peekEffectiveOrganizationId();

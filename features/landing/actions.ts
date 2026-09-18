@@ -30,6 +30,9 @@ export async function submitInvitationRequestStep1(
       use_case: data.use_case.trim(),
       user_type: data.user_type,
       user_type_other: data.user_type_other?.trim() || null,
+      // org-fallback-deliberate: an access request comes from someone who belongs
+      //   to NO organization yet — the platform itself is the only tenant that can
+      //   hold it
       organization_id: SYSTEM_ORGANIZATION_ID,
     };
 
@@ -143,6 +146,8 @@ export async function submitInvitationRequestStep2(
       .schema('users').from('invitation_requests')
       .update({
         ...data,
+        // org-fallback-deliberate: the same pre-membership access request as above —
+        //   the requester has no organization to file it under
         organization_id: SYSTEM_ORGANIZATION_ID,
         step_completed: 2,
       })
