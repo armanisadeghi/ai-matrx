@@ -23,12 +23,14 @@
 // many are on screen), Semrush / Surfer for a topical map that answers "where
 // are my pages going" and not only "what is this map".
 
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { ScanText } from "lucide-react";
 // eslint-disable-next-line no-restricted-syntax -- The ONE sanctioned React Flow import; this module is loaded only via the GraphView next/dynamic({ ssr:false }) wrapper (code-splitting skill + reactFlowStaticImportBan).
 import {
   Background,
   BackgroundVariant,
   Controls,
+  ControlButton,
   Handle,
   MiniMap,
   Panel,
@@ -36,6 +38,8 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useNodesState,
+  useNodesInitialized,
+  getNodesBounds,
   useEdgesState,
   useReactFlow,
   useStore,
@@ -161,13 +165,13 @@ function TopicFlowNode({ data, selected }: NodeProps) {
   const showLabel = useContext(LabelVisibilityContext);
   return (
     <>
-      <Handle id="tree" type="target" position={Position.Top} className={HANDLE_CLASS} />
+      <Handle id="tree" type="target" position={Position.Left} className={HANDLE_CLASS} />
       <Handle id="facet" type="target" position={Position.Left} className={HANDLE_CLASS} />
       <TopicBody
         band={flow.band}
         data={{ ...flow.body, showLabel, selected: selected || flow.body.selected }}
       />
-      <Handle type="source" position={Position.Bottom} className={HANDLE_CLASS} />
+      <Handle type="source" position={Position.Right} className={HANDLE_CLASS} />
     </>
   );
 }
@@ -243,7 +247,9 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const links = useMapLinks();
-  const { fitView } = useReactFlow();
+  const { fitView, getNodes, getViewport, setViewport } = useReactFlow();
+  const nodesInitialized = useNodesInitialized();
+  const toolbarRef = useRef<HTMLDivElement>(null);
   const openTopicPanel = useOpenTopicPanel();
 
   const groupBy = useAppSelector(selectMapGroupBy(mapId));
@@ -539,20 +545,28 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
     // Keyed on the content signature — see the comment above `signature`.
   }, [signature]);
 
-  // Re-frame after a focus change: the person clicked into a branch and the
-  // drawing must show that branch, not the corner of the old one. Two frames,
-  // so the new positions have painted before the fit is measured.
+  // Fit short branches normally. A large map opens at readable size from its
+  // top-left; React Flow's pan/zoom and minimap expose the rest of the canvas.
+  // Fitting a long forest into one screen must not erase every topic label.
+  const frameReadableView = useCallback(async () => {
+    await fitView({ padding: 0.15, minZoom: 0.1, maxZoom: 1 });
+    const readableZoom = Math.max(1, GRAPH_LABEL_MIN_PX / geometry.fontPx);
+    if (getViewport().zoom < readableZoom) {
+      const bounds = getNodesBounds(getNodes());
+      await setViewport({
+        x: 32 - bounds.x * readableZoom,
+        y: (toolbarRef.current?.offsetHeight ?? 68) + 32 - bounds.y * readableZoom,
+        zoom: readableZoom,
+      });
+    }
+  }, [fitView, getNodes, getViewport, setViewport, geometry.fontPx]);
+
   const focusSlug = graph.focusSlug;
   useEffect(() => {
-    let inner = 0;
-    const outer = requestAnimationFrame(() => {
-      inner = requestAnimationFrame(() => fitView({ padding: 0.2, duration: 300 }));
-    });
-    return () => {
-      cancelAnimationFrame(outer);
-      cancelAnimationFrame(inner);
-    };
-  }, [focusSlug, band, fitView]);
+    if (!nodesInitialized) return;
+    const frame = requestAnimationFrame(() => { void frameReadableView(); });
+    return () => cancelAnimationFrame(frame);
+  }, [focusSlug, band, nodesInitialized, frameReadableView]);
 
   // THE LEGIBILITY FLOOR. The live zoom lives in the flow store; the selector
   // returns a BOOLEAN, so this only re-renders when a label crosses the floor
@@ -590,7 +604,7 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
   }
 
   return (
-    <div className="min-h-0 flex-1">
+    <div className="relative h-full min-h-0 w-full flex-1">
       <LabelVisibilityContext.Provider value={labelsVisible}>
         <ReactFlow
           nodes={nodes}
@@ -639,15 +653,23 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
           nodesConnectable={false}
           edgesFocusable={false}
           deleteKeyCode={null}
-          fitView
-          fitViewOptions={{ padding: 0.2 }}
+          ariaLabelConfig={{ "controls.fitView.ariaLabel": "Show whole map" }}
+          minZoom={0.1}
+          maxZoom={2}
+          panOnScroll
+          zoomOnScroll={false}
+          zoomOnPinch
           proOptions={{ hideAttribution: true }}
           className="topical-map-graph bg-textured"
         >
           <Background variant={BackgroundVariant.Dots} gap={20} size={1} className="opacity-50" />
-          <Controls showInteractive={false} className="!shadow-md" />
-          <MiniMap pannable zoomable ariaLabel="A small map of the whole drawing" />
-          <Panel position="top-left" className="!right-0 flex flex-wrap items-start justify-between gap-2">
+          <Controls showInteractive={false} fitViewOptions={{ padding: 0.15, minZoom: 0.1, maxZoom: 1 }} className="!bottom-16 !shadow-md sm:!bottom-0">
+            <ControlButton onClick={() => { void frameReadableView(); }} title="Read topic names" aria-label="Read topic names">
+              <ScanText />
+            </ControlButton>
+          </Controls>
+          <MiniMap pannable zoomable ariaLabel="A small map of the whole drawing" className="!bottom-16 !h-24 !w-32 sm:!bottom-0 sm:!h-[150px] sm:!w-[200px]" />
+          <Panel ref={toolbarRef} position="top-left" className="!right-0 flex flex-wrap items-start justify-between gap-2">
             <GraphToolbar
               mapId={mapId}
               focusSlug={graph.focusSlug}
@@ -679,7 +701,7 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
                   }),
                 );
                 requestAnimationFrame(() =>
-                  requestAnimationFrame(() => fitView({ padding: 0.2, duration: 300 })),
+                  requestAnimationFrame(() => { void frameReadableView(); }),
                 );
               }}
               band={band}
