@@ -4,9 +4,9 @@ You did not build this. Your job is to return what the builder does not already 
 
 ## What you verify against (read in this order, fully)
 
-1. The owner's vision, §2.6 and §6 (acceptance): `/home/user/matrx-common-docs/inbox/topical-map-app-requirements.md`.
-2. The plan's Lane E brief and rulings R2, R3, R7, R8, R14: `/home/user/matrx-common-docs/projects/table-provisioning/TOPICAL-MAP-UI-PLAN.md` (§3, §6 "E — Home, start-a-map, sharing, entry points").
-3. The placement's seven link-in points, §7: `/home/user/matrx-common-docs/operations/for-arman/2026-09-16/topical-map-placement.md`.
+1. The owner's vision, §2.6 and §6 (acceptance): `/Users/armanisadeghi/code/common-docs/inbox/topical-map-app-requirements.md`.
+2. The plan's Lane E brief and rulings R2, R3, R7, R8, R14: `/Users/armanisadeghi/code/common-docs/projects/table-provisioning/TOPICAL-MAP-UI-PLAN.md` (§3, §6 "E — Home, start-a-map, sharing, entry points").
+3. The placement's seven link-in points, §7: `/Users/armanisadeghi/code/common-docs/operations/for-arman/2026-09-16/topical-map-placement.md`.
 4. The frozen contracts: `/home/user/ai-matrx/features/marketing/seo/topical-map/CONTRACTS.md` (§0, §1, §2, §6, §9).
 5. The wire the screen must obey, every comment: `features/marketing/seo/topical-map/map-author.ts`, `useAuthorTopicalMap.ts`.
 6. Only THEN the builder's walk: `features/marketing/seo/topical-map/start/VERIFY-E.md` — treat its "owed" list as claims to attack, not as excuses.
