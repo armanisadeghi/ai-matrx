@@ -15,6 +15,19 @@ import { createRoot, type Root } from "react-dom/client";
 
 const mockList = jest.fn();
 
+// The organization gate the surface reads (VERIFY-R7-FIX-WAVE NEW-1): three
+// states, not two. Stood in here with "settled, and this is the selection", so
+// the case under test is unchanged.
+jest.mock("@/features/organizations/useOrganizationRequired", () => ({
+  useOrganizationRequired: () => ({
+    organizationId: "11111111-2222-3333-4444-555555555555",
+    canLoad: true,
+    organizationRequired: false,
+    resolving: false,
+    organizationState: "ready",
+  }),
+}));
+
 jest.mock("./service", () => ({
   listGoogleTasks: (...args: unknown[]) => mockList(...args),
   importGoogleTasks: jest.fn(),

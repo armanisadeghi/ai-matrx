@@ -64,6 +64,7 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { useOrganizationGatedControl } from "@/features/organizations/useOrganizationGatedControl";
 import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { isGoogleAuthorizationCancelled } from "@/providers/google-provider/GoogleApiProvider";
@@ -444,6 +445,11 @@ function FirstAction({
   onOpened?: () => void;
 }) {
   const dispatch = useAppDispatch();
+  // Called unconditionally, above every early return — the rules of hooks, and
+  // the gate's sentence is what the disabled branch below renders.
+  const organizationGate = useOrganizationGatedControl(
+    `opening ${product.name.toLowerCase()}`,
+  );
   const action = product.firstAction;
   if (action.kind === "none") return null;
   if (action.kind === "route") {
@@ -458,7 +464,29 @@ function FirstAction({
     );
   }
   const { data, missing } = resolveFirstActionData(action.needs, context);
-  if (missing.length > 0) return null;
+  // 🚨 THREE STATES, NOT "ABSENT OR THERE" (VERIFY-R7-FIX-WAVE NEW-1).
+  // `missing` is derived from the ambient organization, which is `null` both
+  // while boot is resolving and when boot has settled with nothing — so the
+  // one door out of a consent that just SUCCEEDED simply vanished for the
+  // several seconds every cold load takes to answer, with nothing on screen
+  // saying it was coming. Absence is honest only for the terminal state; the
+  // resolving beat is a control that says it is checking.
+  const needsOrganization = (action.needs ?? []).includes("organizationId");
+  if (missing.length > 0 && !(needsOrganization && missing.length === 1)) return null;
+  if (missing.length > 0) {
+    return (
+      <button
+        type="button"
+        data-connector-first-action={product.key}
+        disabled
+        title={organizationGate.title}
+        className="inline-flex shrink-0 items-center gap-0.5 font-medium text-muted-foreground"
+      >
+        {action.label}
+        <ChevronRight className="h-3 w-3" aria-hidden />
+      </button>
+    );
+  }
   return (
     <button
       type="button"

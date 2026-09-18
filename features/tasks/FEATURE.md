@@ -161,6 +161,20 @@ Forward work order: [docs/handoffs/tasks-world-class.md](../../docs/handoffs/tas
 
 ## Change log
 
+- `2026-09-18` — **F-89 (V-22, NEW-1): the import control stops telling people
+  to pick an organization they already picked.** F-75 gave
+  `TasksHeaderControls`' "Import from Google Tasks" a `disabled` + reason off the
+  bare `selectOrganizationId`, which cannot tell "boot has not answered" from
+  "you belong to nothing" — and from the seat, signed in, it announced *"Select
+  an organization before importing Google Tasks."* from 4.0s to 17.4s after load
+  (the memberships read landed at 9.6s) and enabled itself at 20.6s. It now
+  reads `useOrganizationGatedControl("importing Google Tasks")`, so the waiting
+  beat says it is checking, the refusal appears only once boot has settled with
+  nothing, and neither state can open the window. New
+  `components/__tests__/the-import-control-waits-for-the-organization.test.tsx`
+  (3, RED on HEAD with the received title verbatim); F-75's own test now models
+  the settled state explicitly. Guard: `pnpm check:org-three-states`.
+
 - `2026-09-18` — F-75: main deleted `selectEffectiveOrganizationId` (the
   personal-workspace fallback the org-context law forbids). `TasksHeaderControls`'
   "Import from Google Tasks" button now reads the plain `selectOrganizationId`

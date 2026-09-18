@@ -20,7 +20,7 @@
 import { useCallback, useRef } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import {
   useConnectGoogle,
   useGoogleCapabilities,
@@ -361,7 +361,6 @@ export const MULTI_PRODUCT_CONSENT_UNSUPPORTED_MESSAGE =
 export function useGoogleConsentRunner() {
   const google = useGoogleAPI();
   const connectGoogle = useConnectGoogle();
-  const organizationContextId = useAppSelector(selectOrganizationId);
   const userId = useAppSelector(selectUserId);
   const running = useRef(false);
 
@@ -377,9 +376,14 @@ export function useGoogleConsentRunner() {
       if (running.current) {
         throw new Error("A Google authorization window is already open.");
       }
-      if (!organizationContextId) {
+      // 🚨 A PRESS WAITS FOR THE ANSWER, IT NEVER REFUSES ON A RACE
+      // (VERIFY-R7-FIX-WAVE NEW-1). The bounded platform wait joins the answer
+      // boot is already fetching and, settled with nothing, carries its own
+      // sentence and remedy.
+      const workspace = await awaitEffectiveOrganizationId();
+      if (workspace.status !== "ready") {
         throw new Error(
-          "Choose an organization before connecting Google — every connection is recorded against one.",
+          `${workspace.reason} Every Google connection is recorded against one organization.`,
         );
       }
       running.current = true;
@@ -399,7 +403,7 @@ export function useGoogleConsentRunner() {
               : { type: "user" },
           connectionPurpose: "google_products",
           options: {
-            organizationContextId,
+            organizationContextId: workspace.organizationId,
             expectedUserId: userId ?? undefined,
             capabilityKeys: request.capabilityKeys,
             ...(request.targetAccountId
@@ -412,7 +416,7 @@ export function useGoogleConsentRunner() {
         running.current = false;
       }
     },
-    [google, connectGoogle, organizationContextId, userId],
+    [google, connectGoogle, userId],
   );
 
   return {

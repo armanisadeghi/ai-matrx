@@ -18,6 +18,8 @@ import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 let mockOrganizationId: string | null = "org-9";
+/** Has boot ANSWERED the organization question? The second state, named. */
+let mockBootstrapResolved = true;
 const openGoogleTasksImport = jest.fn();
 
 jest.mock("@ai-matrx/tap-target/buttons", () => ({
@@ -50,6 +52,8 @@ jest.mock("@/features/tasks/redux/taskUiSlice", () => ({
 
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => mockOrganizationId,
+  selectShouldPromptForOrganization: () =>
+    mockBootstrapResolved && mockOrganizationId == null,
 }));
 
 jest.mock("@/lib/redux/hooks", () => ({
@@ -89,6 +93,7 @@ afterEach(() => {
 describe("the Import from Google Tasks control", () => {
   it("opens the import window with the selected organization", () => {
     mockOrganizationId = "org-9";
+    mockBootstrapResolved = true;
     mount();
 
     const button = importButton();
@@ -107,6 +112,7 @@ describe("the Import from Google Tasks control", () => {
 
   it("refuses honestly and never opens the opener with no organization selected", () => {
     mockOrganizationId = null;
+    mockBootstrapResolved = true;
     mount();
 
     const button = importButton();
