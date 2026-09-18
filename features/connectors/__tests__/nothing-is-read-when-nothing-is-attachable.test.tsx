@@ -17,7 +17,8 @@
  * declares one attachable resource, every failure from there on is loud again.
  *
  * Proven failing before passing: removing `hasAttachableConnection` from the
- * `shouldRead` condition makes the first case fetch (see the report).
+ * `shouldRead` condition makes the first case fetch, and restoring the retired
+ * `messageCount > 0` gate makes the third case stop reading (see the report).
  */
 
 import React, { act } from "react";
@@ -43,6 +44,8 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => dispatch,
 }));
 
+// Retained so a REGRESSION to a message-count gate fails loudly here rather
+// than silently re-reading a real selector: the hook must not consult this.
 jest.mock(
   "@/features/agents/redux/execution-system/messages/messages.selectors",
   () => ({ selectMessageCount: () => () => messageCount }),
@@ -121,11 +124,15 @@ describe("the attachments read is gated on the capability existing", () => {
     expect(loadThunk).toHaveBeenCalledTimes(1);
   });
 
-  it("still asks for nothing on a conversation that has produced nothing", () => {
+  it("reads a chat that has produced nothing yet — /chat/new is not a reason to wait", () => {
+    // The old workaround gated this on `messageCount > 0` because the server
+    // 404ed on an id it had not seen. It answers `[]` now (aidream
+    // 7e7ebf6da2), so waiting for a message would only make the picker lie
+    // about what is attached for the whole pre-send window.
     messageCount = 0;
     act(() => {
       root.render(<Probe hasAttachableConnection />);
     });
-    expect(loadThunk).not.toHaveBeenCalled();
+    expect(loadThunk).toHaveBeenCalledTimes(1);
   });
 });

@@ -7,17 +7,17 @@
  *   `rows`    — attachments the server has, read back from
  *               `GET /conversations/{id}/attachments`. These survive a reload
  *               because they are association edges, not browser state.
- *   `pending` — picks made while the conversation row did not exist yet.
+ *   `pending` — picks CARRIED IN from somewhere else (an agent switch copies
+ *               the source chat's selections forward) that have not yet been
+ *               written to this conversation.
  *
- * `pending` exists because of `/chat/new`. The composer there renders against
- * a conversation id that is minted in the browser before any row is created,
- * so a `POST` at pick time has nothing to attach to. The same shape already
- * exists one slice over for sandboxes (`sandboxBindingPersisted`: "the binding
- * exists only in memory because the cx_conversation row did not"), and the
- * per-run additions lost on exactly this handoff were the 2026-09-14 fix
- * (6843361ca1). So a pick is held against the SAME minted id and flushed the
- * moment the conversation is real — and until it lands it renders as its own
- * pending chip rather than passing for attached.
+ * 🚨 `pending` is NOT a `/chat/new` holding pen any more. The server creates
+ * the conversation row on the first write against the browser-minted id
+ * (aidream 7e7ebf6da2), so a pick made on `/chat/new` is POSTed the moment it
+ * is made and comes back as a real row. Holding it would mean showing a chip
+ * for something the server has never heard of — the optimistic lie a reload
+ * exposes. The only picks that wait are the inherited ones, and they are
+ * flushed the instant the read of this conversation succeeds.
  *
  * 🚨 A FAILED READ IS NEVER AN EMPTY LIST. `status: "failed"` + `error` is a
  * distinct state from "nothing attached", and the surfaces render it as such.
@@ -113,30 +113,26 @@ export const loadConversationAttachments = createAsyncThunk(
 );
 
 /**
- * Attach one pick.
+ * Attach one pick — ALWAYS a real request, including on `/chat/new`.
  *
- * `conversationExists: false` (the `/chat/new` case) queues it without a
- * request — there is no row to attach to, and a 404 is not a thing to show a
- * person who did nothing wrong. Everything else goes straight to the server.
+ * The server creates the conversation row on first write against the minted id
+ * (aidream 7e7ebf6da2), so there is no window in which a pick has nothing to
+ * POST to. The old `conversationExists` hold existed only because that POST
+ * used to 404; keeping it after the 404 was gone would mean the chip showed a
+ * pick the server had never heard of — an optimistic lie that a reload erases.
+ *
+ * What comes back is the server's own row, so the chip and the picker state
+ * are the server's answer, never the browser's hope.
  */
 export const attachResource = createAsyncThunk(
   "conversationAttachments/attach",
   async ({
     conversationId,
     pick,
-    conversationExists,
   }: {
     conversationId: string;
     pick: PendingAttachment;
-    conversationExists: boolean;
   }) => {
-    if (!conversationExists) {
-      return {
-        conversationId,
-        pick,
-        row: null as ConversationAttachment | null,
-      };
-    }
     const row = await attachConversationResource(conversationId, pick);
     return { conversationId, pick, row };
   },
@@ -317,19 +313,18 @@ const attachmentsSlice = createSlice({
         const entry = entryFor(state, action.payload.conversationId);
         const key = attachmentKey(action.payload.pick);
         entry.busyKeys = entry.busyKeys.filter((busy) => busy !== key);
-        if (action.payload.row) {
-          const row = action.payload.row;
-          const existing = entry.rows.findIndex(
-            (candidate) => attachmentKey(candidate) === attachmentKey(row),
-          );
-          if (existing >= 0) entry.rows[existing] = row;
-          else entry.rows.push(row);
-          entry.pending = entry.pending.filter(
-            (pick) => attachmentKey(pick) !== key,
-          );
-        } else if (!entry.pending.some((pick) => attachmentKey(pick) === key)) {
-          entry.pending.push(action.payload.pick);
-        }
+        // The server's row replaces anything held under the same key: a pick
+        // inherited from an agent switch stops being pending the instant the
+        // real edge exists.
+        const row = action.payload.row;
+        const existing = entry.rows.findIndex(
+          (candidate) => attachmentKey(candidate) === attachmentKey(row),
+        );
+        if (existing >= 0) entry.rows[existing] = row;
+        else entry.rows.push(row);
+        entry.pending = entry.pending.filter(
+          (pick) => attachmentKey(pick) !== key,
+        );
       })
       .addCase(attachResource.rejected, (state, action) => {
         const entry = entryFor(state, action.meta.arg.conversationId);

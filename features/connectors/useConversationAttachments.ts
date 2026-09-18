@@ -7,20 +7,29 @@
  * hook, so the composer rail, the Tools picker, and the header summary can
  * never disagree about what a conversation carries.
  *
- * ## The `/chat/new` handoff, which is the whole difficulty
+ * ## `/chat/new` — attach before the first message, for real
  *
- * On `/chat/new` the composer renders against a conversation id minted in the
- * browser; the row behind it does not exist until the first send. A pick made
- * in that window has nothing to POST to. So:
+ * The composer on `/chat/new` renders against a conversation id minted in the
+ * browser. The server now CREATES the row on the first write against that id
+ * (aidream 7e7ebf6da2): `POST /conversations/{id}/attachments` returns 200 and
+ * `GET` returns `[]` for an id it has never seen. So there is no window to
+ * work around any more:
  *
- *   1. picks are held in the slice against that SAME id (`pending`);
- *   2. the attachments GET is the proof the row now exists — not a message
- *      count, not a timer, not an optimistic guess;
- *   3. the moment that GET succeeds with picks still held, they are flushed.
+ *   1. the read starts as soon as the capability exists — no message count,
+ *      no timer, no waiting for a send;
+ *   2. a pick is POSTed the instant it is made and the chip shows the row the
+ *      SERVER returned, so nothing on screen outlives a reload;
+ *   3. picks inherited from an agent switch are still held and flushed when
+ *      the read succeeds — that handoff is the only remaining `pending` case.
  *
- * Choosing the GET as the proof matters: the first send and the row's creation
- * are not the same instant, and flushing on "a message appeared" produced 404s
- * against a conversation that was seconds away from existing.
+ * Because the id never changes between `/chat/new` and the real conversation,
+ * "carried over" now costs nothing: the attachment was already written to the
+ * same id the route ends up on.
+ *
+ * The workaround this replaced gated everything on `messageCount > 0`, and it
+ * existed for one reason only — the old server 404ed on an unseen id. With the
+ * 404 gone, the gate was a promise the UI could not keep: the picker looked
+ * live before the first send and quietly held everything instead.
  *
  * ## The capability gate, and why it is not a silent fallback
  *
@@ -43,7 +52,6 @@
 
 import { useCallback, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectMessageCount } from "@/features/agents/redux/execution-system/messages/messages.selectors";
 import {
   EMPTY_ATTACHMENTS_ENTRY,
   attachResource,
@@ -93,14 +101,10 @@ export function useConversationAttachments(
   const entry =
     useAppSelector(selectConversationAttachmentsEntry(conversationId ?? "")) ??
     EMPTY_ATTACHMENTS_ENTRY;
-  const messageCount = useAppSelector(selectMessageCount(conversationId ?? ""));
-
-  // A conversation with no messages at all has no row to read; asking would
-  // be a guaranteed 404 that teaches the user nothing. The read starts the
-  // moment the conversation has produced anything AND something on this chat
-  // can actually be chosen out of.
-  const shouldRead =
-    Boolean(conversationId) && messageCount > 0 && hasAttachableConnection;
+  // The ONE gate left is the capability: read the moment something on this
+  // chat can actually be chosen out of, message or no message. An id the
+  // server has never seen answers `[]`, which is the truth.
+  const shouldRead = Boolean(conversationId) && hasAttachableConnection;
 
   useEffect(() => {
     if (!conversationId || !shouldRead) return;
@@ -109,8 +113,9 @@ export function useConversationAttachments(
     }
   }, [conversationId, shouldRead, entry.status, dispatch]);
 
-  // The GET succeeded, so the row exists — carry over anything picked before
-  // it did. This is the `/chat/new` → real-conversation handoff.
+  // Picks inherited from another chat (an agent switch) are written once the
+  // read of THIS conversation has succeeded. Picks made here never come
+  // through this path — they were written when they were made.
   useEffect(() => {
     if (!conversationId) return;
     if (entry.status !== "succeeded" || entry.pending.length === 0) return;
@@ -121,19 +126,13 @@ export function useConversationAttachments(
     async (picks: PendingAttachment[]) => {
       if (!conversationId) return;
       for (const pick of picks) {
-        await dispatch(
-          attachResource({
-            conversationId,
-            pick,
-            // The GET is the proof. Before it has succeeded we do not claim to
-            // know the row exists, so the pick is held rather than thrown at a
-            // conversation that may not be there yet.
-            conversationExists: entry.status === "succeeded",
-          }),
-        ).unwrap();
+        // Straight to the server, on `/chat/new` as anywhere else. A failure
+        // surfaces as `writeError` in the server's own words — it is never
+        // absorbed into a chip that pretends the pick landed.
+        await dispatch(attachResource({ conversationId, pick })).unwrap();
       }
     },
-    [conversationId, entry.status, dispatch],
+    [conversationId, dispatch],
   );
 
   const remove = useCallback(
