@@ -13,7 +13,6 @@
 // second send path, which is the one thing this feature may never grow.
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   CircleCheck,
   CircleDot,
@@ -32,6 +31,8 @@ import type {
   EntityRowActionsResult,
 } from "@/lib/entity-list/config";
 import { buildRecordReferenceFence } from "@/features/matrx-envelope/recordReference";
+import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { toast } from "@/lib/toast";
 import { setInboxHandled } from "./service";
 import { InboxReplyDialog } from "./components/InboxReplyDialog";
@@ -49,8 +50,20 @@ function link(
 export function useInboxRowActions(
   list: EntityListController<InboxRow>,
 ): EntityRowActionsResult<InboxRow> {
-  const router = useRouter();
+  // 🚨 N7 (VERIFY-U-P1-R5) — THE ONE DOOR, and it opens IN PLACE. This file
+  // hand-built the party route `/crm/<id>` three times, so the one thing F-40 filed
+  // — "the reviewer had to leave the queue to find out who it was about" —
+  // was still true from the queue itself. The registered opener shows the
+  // contact as the person's own presentation (window by default, docked or a
+  // page if that is their setting) without leaving the inbox, and the URL, when
+  // one is genuinely needed, comes from the entity registry.
+  const openItem = useOpenItemPresentation();
   const [replyTo, setReplyTo] = useState<InboxRow | null>(null);
+
+  const openParty = (row: InboxRow): void => {
+    if (!row.party_id) return;
+    openItem("party", row.party_id, { name: row.party_name ?? null });
+  };
 
   async function toggleHandled(row: InboxRow) {
     const next = !row.handled;
@@ -71,7 +84,12 @@ export function useInboxRowActions(
   const menuFor = (row: InboxRow) => (): ItemMenuConfig => {
     const open: ItemMenuEntry[] = [];
     if (row.party_id) {
-      open.push(link("open-party", "Open contact record", Contact, `/crm/${row.party_id}`));
+      open.push({
+        id: "open-party",
+        label: "Open contact record",
+        icon: Contact,
+        onSelect: () => openParty(row),
+      });
     }
     if (row.outreach_list_id) {
       open.push(
@@ -131,8 +149,18 @@ export function useInboxRowActions(
               icon: Link2,
               hidden: !row.party_id,
               onSelect: () => {
+                const path = row.party_id
+                  ? resolveEntityDoors("party", row.party_id).href
+                  : null;
+                if (!path) {
+                  // Never a silent no-op: say why nothing was copied.
+                  toast.error(
+                    "This reply has no contact record to link to yet.",
+                  );
+                  return;
+                }
                 void navigator.clipboard.writeText(
-                  `${window.location.origin}/crm/${row.party_id}`,
+                  `${window.location.origin}${path}`,
                 );
                 toast.success("Link copied");
               },
@@ -160,7 +188,7 @@ export function useInboxRowActions(
   };
 
   const onOpenRow = (row: InboxRow) => {
-    if (row.party_id) router.push(`/crm/${row.party_id}`);
+    openParty(row);
   };
 
   return {
