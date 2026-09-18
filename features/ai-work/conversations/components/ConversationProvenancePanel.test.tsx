@@ -118,10 +118,6 @@ function codexBinding({
         from_provider_session_id: CLAUDE_SESSION,
         offered_at: "2026-09-15T19:00:00Z",
         claimed_at: claimed ? "2026-09-15T19:30:00Z" : null,
-        to_provider: "codex",
-        awaiting_consumer: false,
-        consumer: "the AI Matrx plugin for Codex (its use-ai-matrx skill)",
-        consumer_waiting_for: null,
       },
     },
     workspace_fingerprint: null,
@@ -248,9 +244,7 @@ test("an unclaimed offer says so instead of showing a placeholder as a session",
 
   expect(text).toContain("Seeded handoff offered");
   expect(text).toContain("No provider session yet");
-  expect(text).toContain("Waiting for Codex to claim");
-  // A tool that CAN claim is told how, not warned.
-  expect(text).toContain("Claim it with the AI Matrx plugin for Codex");
+  expect(text).toContain("Not yet claimed by a session of this tool");
   // The internal placeholder is never presented as a provider's own id.
   expect(text).not.toContain(OFFER_SESSION);
 });
@@ -421,74 +415,4 @@ describe("a rebind says where the moved session's earlier turns went", () => {
     expect(text).not.toContain("stayed on conversation");
     expect(text).not.toContain("moved with it");
   });
-});
-
-/**
- * XT-05b — AN OFFER NOBODY CAN CLAIM YET IS NOT "MERELY UNCLAIMED".
- *
- * The break: every unclaimed offer read the same on screen, so an offer to VS
- * Code — whose extension reads no seed packet and spools no hook events —
- * looked exactly like an offer to Codex, which claims one today. A person
- * would open VS Code, find nothing that can take it, and have no way to learn
- * that from the screen. The server records the verdict per direction
- * (`awaiting_consumer` + the remedy); the panel must render it.
- */
-function vscodeOffer(): CodingSessionBinding {
-  return {
-    id: "binding-vscode-offer",
-    conversation_id: CONVERSATION_ID,
-    provider: "vscode",
-    provider_session_id: "matrx-handoff:0f1e2d3c4b5a69788796a5b4c3d2e1f0",
-    provider_project_key: null,
-    fidelity: "event_mirror",
-    origin: "independent_hook",
-    status: "active",
-    last_seen_at: null,
-    ended_at: null,
-    runtime_kind: null,
-    capabilities: {
-      native_resume: false,
-      native_fork: false,
-      hook_event_mirror: false,
-    },
-    metadata: {
-      handoff: {
-        role: "received",
-        fidelity: "seeded",
-        native_resume: false,
-        state: "offered",
-        verdict: "Seeded handoff offered to vscode.",
-        from_provider: "claude_code",
-        from_provider_session_id: CLAUDE_SESSION,
-        to_provider: "vscode",
-        offered_at: "2026-09-17T19:00:00Z",
-        claimed_at: null,
-        awaiting_consumer: true,
-        consumer: "the AI Matrx VS Code extension",
-        consumer_waiting_for:
-          "The VS Code extension runs AI Matrx agents through its own client and does not yet read a seed packet or claim a binding, so nothing in VS Code can pick this up until it does.",
-      },
-    },
-    workspace_fingerprint: null,
-    writer_lease_expires_at: null,
-    error: null,
-  } as unknown as CodingSessionBinding;
-}
-
-test("an offer no tool can claim yet names the tool and says what is missing", async () => {
-  const text = await render([claudeBinding(), vscodeOffer()]);
-
-  expect(text).toContain("Waiting for VS Code to claim");
-  // The reason and the remedy, verbatim from the server — not a generic
-  // "unclaimed", which is what made the two cases indistinguishable.
-  expect(text).toContain("does not yet read a seed packet");
-  // And it never wears a delivery it has not made.
-  expect(text).not.toMatch(/VS Code[\s\S]{0,400}Delivered most recently/);
-});
-
-test("an offer a tool CAN claim is not described as waiting on a missing adapter", async () => {
-  const text = await render([claudeBinding(), codexBinding({ claimed: false })]);
-
-  expect(text).toContain("Waiting for Codex to claim");
-  expect(text).not.toContain("does not yet read a seed packet");
 });

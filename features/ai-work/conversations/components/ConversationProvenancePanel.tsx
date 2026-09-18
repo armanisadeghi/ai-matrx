@@ -276,19 +276,7 @@ function BindingCard({
             {handoff.claimedAt ? (
               <> Claimed {formatSessionTimestamp(handoff.claimedAt)}.</>
             ) : (
-              <>
-                {" "}
-                Waiting for {providerLabel(binding.provider)} to claim.
-                {/* An offer no adapter can take yet says so, with the
-                    server's own remedy: otherwise it is indistinguishable
-                    from one that is simply unclaimed, and the person waits
-                    on a tool that cannot answer. */}
-                {handoff.awaitingConsumer && handoff.consumerWaitingFor ? (
-                  <> {handoff.consumerWaitingFor}</>
-                ) : handoff.consumer ? (
-                  <> Claim it with {handoff.consumer}.</>
-                ) : null}
-              </>
+              <> Not yet claimed by a session of this tool.</>
             )}
             {handoff.reboundFromConversationId ? (
               <>
@@ -338,8 +326,7 @@ function BindingCard({
         <Fact label="Provider session id">
           {unclaimed ? (
             <Absent>
-              No provider session yet — waiting for{" "}
-              {providerLabel(binding.provider)} to claim
+              No provider session yet — the handoff is waiting to be claimed
             </Absent>
           ) : (
             <span className="font-mono text-[11px]">
