@@ -53,7 +53,6 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { GOOGLE_WORKSPACE_SEND_SCOPES } from "@/lib/googleScopes";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
-import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
 import { connectGoogle } from "@/features/marketing/google/service";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useConnectableMailboxes } from "@/features/crm/sending-identities/hooks";
@@ -68,6 +67,7 @@ import {
   PROMOTE_TO_CAMPAIGNS_TITLE,
   connectableStateOf,
 } from "@/features/crm/sending-identities/purpose";
+import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
 
 interface ConnectMailboxDialogProps {
   open: boolean;
@@ -99,7 +99,9 @@ function ConnectMailboxDialogBody({
   onConnected,
 }: ConnectMailboxDialogProps) {
   const { mailboxes, loading, error, reload } = useConnectableMailboxes(open);
-  const google = useGoogleAPI();
+  // 🚨 ONE Google authorization window per PERSON — never a per-component
+  // lock, never the raw provider primitive (V-23 NEW-3, lane F-103).
+  const googleAuth = useGoogleAuthorizationWindow();
   const [connecting, setConnecting] = useState<string | null>(null);
   const [addingAccount, setAddingAccount] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
@@ -150,7 +152,7 @@ function ConnectMailboxDialogBody({
     setAddingAccount(true);
     setFailure(null);
     try {
-      const code = await google.requestAuthorizationCode([
+      const code = await googleAuth.openAuthorizationWindow([
         ...GOOGLE_WORKSPACE_SEND_SCOPES,
       ]);
       await connectGoogle(code, { type: "user" });

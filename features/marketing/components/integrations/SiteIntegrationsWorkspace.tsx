@@ -133,6 +133,7 @@ import {
   listUrlChangeEvidence,
   type UrlChangeEvidenceRow,
 } from "@/features/marketing/data/url-change-evidence";
+import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
 
 const integrationValueLabels = surfaceValueLabels(
   marketingIntegrationsManifest,
@@ -262,6 +263,9 @@ function SiteIntegrationsEditor({
   const googleInventory = useGoogleConnectionInventory();
   const connectGoogle = useConnectGoogle();
   const google = useGoogleAPI();
+  // 🚨 ONE Google authorization window per PERSON — never a per-component
+  // lock, never the raw provider primitive (V-23 NEW-3, lane F-103).
+  const googleAuth = useGoogleAuthorizationWindow();
   const urlChangeEvidenceQuery = useQuery({
     queryKey: ["marketing", "url-change-evidence", site.id],
     queryFn: () => listUrlChangeEvidence(site.id),
@@ -509,7 +513,7 @@ function SiteIntegrationsEditor({
   ) => {
     setGoogleConnectionOwner(owner);
     try {
-      const code = await google.requestAuthorizationCode([
+      const code = await googleAuth.openAuthorizationWindow([
         ...GOOGLE_CONNECTION_SCOPES,
       ]);
       const result = await connectGoogle.mutateAsync({
@@ -615,7 +619,7 @@ function SiteIntegrationsEditor({
           (googleInventory.data?.connections.length === 1
             ? googleInventory.data.connections[0].account_email
             : undefined);
-        const code = await google.requestAuthorizationCode(
+        const code = await googleAuth.openAuthorizationWindow(
           [...GOOGLE_ANALYTICS_SCOPES],
           loginHint ?? undefined,
           reviewMode ? { forceConsent: true } : undefined,
@@ -684,7 +688,7 @@ function SiteIntegrationsEditor({
           "Confirm the read-only Google Analytics disclosure before continuing.",
         );
       }
-      const code = await google.requestAuthorizationCode(
+      const code = await googleAuth.openAuthorizationWindow(
         [...GOOGLE_ANALYTICS_SCOPES],
         undefined,
         reviewMode ? { forceConsent: true } : undefined,

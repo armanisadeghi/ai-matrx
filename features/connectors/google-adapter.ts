@@ -17,7 +17,7 @@
 // `useGoogleCapabilities`, and the exchange from `useConnectGoogle`. Nothing
 // here re-reads a table or re-derives a scope mapping.
 
-import { useCallback, useRef } from "react";
+import { useCallback } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
@@ -35,7 +35,7 @@ import type {
   GoogleConnectionResource,
   GoogleConnectionSummary,
 } from "@/features/marketing/google/types";
-import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
+import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
 import { extractErrorMessage } from "@/utils/errors";
 import { BackendApiError } from "@/lib/api/errors";
 import type { ConsentRequest } from "./consent-plan";
@@ -359,10 +359,9 @@ export const MULTI_PRODUCT_CONSENT_UNSUPPORTED_MESSAGE =
  * A cancelled window is control flow, not a failure.
  */
 export function useGoogleConsentRunner() {
-  const google = useGoogleAPI();
+  const googleAuth = useGoogleAuthorizationWindow();
   const connectGoogle = useConnectGoogle();
   const userId = useAppSelector(selectUserId);
-  const running = useRef(false);
 
   const run = useCallback(
     async (
@@ -373,17 +372,17 @@ export function useGoogleConsentRunner() {
         loginHint: string | null;
       },
     ): Promise<ConsentRunResult> => {
-      if (running.current) {
-        throw new Error("A Google authorization window is already open.");
-      }
-      // 🚨 THE LOCK COVERS EVERY AWAIT IN THIS FUNCTION — IT IS TAKEN HERE, ON
-      // THE LINE AFTER THE GUARD, AND NOWHERE LATER (Bugbot MEDIUM on d9dbbc61).
-      // The organization wait below is a MULTI-SECOND gap on a cold load — the
-      // exact gap this change exists to survive — and taking the lock after it
-      // meant a second press walked straight through `running.current` and
-      // opened a second Google authorization window. A lock that does not cover
-      // the slowest await in the function is not a lock.
-      running.current = true;
+      // 🚨 THE LOCK COVERS EVERY AWAIT IN THIS FUNCTION — AND IT IS THE
+      // PLATFORM'S LOCK, NOT THIS COMPONENT'S (V-23 NEW-3, lane F-103).
+      //
+      // It used to be a `useRef` here, which made "one window at a time" true
+      // per MOUNTED COMPONENT: Settings → Connectors and the consent dialog each
+      // held their own ref and each opened its own Google window for one person.
+      // `beginAuthorization` takes the module-level gate every authorization
+      // call site shares, and it is taken BEFORE the organization wait — that
+      // multi-second gap on a cold load is the exact gap a second press used to
+      // walk through (Bugbot MEDIUM on d9dbbc61, lane F-89).
+      const gate = googleAuth.beginAuthorization();
       try {
         // 🚨 A PRESS WAITS FOR THE ANSWER, IT NEVER REFUSES ON A RACE
         // (VERIFY-R7-FIX-WAVE NEW-1). The bounded platform wait joins the answer
@@ -396,9 +395,11 @@ export function useGoogleConsentRunner() {
             `${workspace.reason} Every Google connection is recorded against one organization.`,
           );
         }
-        const code = await google.requestAuthorizationCode(
+        const code = await googleAuth.openAuthorizationWindow(
           request.scopes,
           options.loginHint ?? undefined,
+          undefined,
+          gate,
         );
         const result = await connectGoogle.mutateAsync({
           code,
@@ -421,16 +422,16 @@ export function useGoogleConsentRunner() {
         });
         return { connectionId: result.connectionId };
       } finally {
-        running.current = false;
+        gate.release();
       }
     },
-    [google, connectGoogle, userId],
+    [googleAuth, connectGoogle, userId],
   );
 
   return {
     run,
     /** Google's own script has to be up before any window can open. */
-    ready: google.isGoogleLoaded,
+    ready: googleAuth.ready,
   };
 }
 

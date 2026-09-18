@@ -53,6 +53,7 @@ import {
   useGoogleAPI,
 } from "@/providers/google-provider/GoogleApiProvider";
 import { extractErrorMessage } from "@/utils/errors";
+import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
 
 export interface GoogleWorkspaceOverviewBodyProps {
   initialConnectionId?: string | null;
@@ -80,6 +81,9 @@ function GoogleWorkspaceOverviewBodyContent({
   const userId = useAppSelector(selectUserId);
   const organizationContextId = useAppSelector(selectOrganizationId);
   const google = useGoogleAPI();
+  // 🚨 ONE Google authorization window per PERSON — never a per-component
+  // lock, never the raw provider primitive (V-23 NEW-3, lane F-103).
+  const googleAuth = useGoogleAuthorizationWindow();
   const inventory = useGoogleConnectionInventory();
   const capabilities = useGoogleCapabilities();
   const connectGoogle = useConnectGoogle();
@@ -120,7 +124,7 @@ function GoogleWorkspaceOverviewBodyContent({
     setBusy("reconnect");
     try {
       const request = buildGoogleReconnectRequest(selectedConnection);
-      const code = await google.requestAuthorizationCode(
+      const code = await googleAuth.openAuthorizationWindow(
         request.scopes,
         request.loginHint,
       );
@@ -176,26 +180,40 @@ function GoogleWorkspaceOverviewBodyContent({
         // wins when it has one; only the ambient fallback can be mid-boot, and
         // that is what the bounded platform wait answers — honestly in both
         // states, with the remedy in its own sentence.
-        const redirectOrganizationId =
-          frozenOrganizationContextId ??
-          (await (async () => {
-            const workspace = await awaitEffectiveOrganizationId();
-            if (workspace.status !== "ready") throw new Error(workspace.reason);
-            return workspace.organizationId;
-          })());
-        await google.startAuthorizationCodeRedirect(request.scopes, {
-          returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`,
-          owner: frozenOwner,
-          organizationContextId: redirectOrganizationId,
-          connectionPurpose: "google_capability",
-          loginHint: request.loginHint,
-          forceConsent: true,
-          targetConnectionId: frozenConnectionId,
-          capabilityKey: frozenCapabilityKey,
-        });
+        // 🚨 THE GATE IS TAKEN BEFORE THE WAIT, NOT AFTER IT (V-23 NEW-3) —
+        // a second press during the organization wait must be refused, not
+        // given a second Google window.
+        const gate = googleAuth.beginAuthorization();
+        try {
+          const redirectOrganizationId =
+            frozenOrganizationContextId ??
+            (await (async () => {
+              const workspace = await awaitEffectiveOrganizationId();
+              if (workspace.status !== "ready")
+                throw new Error(workspace.reason);
+              return workspace.organizationId;
+            })());
+          await googleAuth.openAuthorizationRedirect(
+            request.scopes,
+            {
+              returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+              owner: frozenOwner,
+              organizationContextId: redirectOrganizationId,
+              connectionPurpose: "google_capability",
+              loginHint: request.loginHint,
+              forceConsent: true,
+              targetConnectionId: frozenConnectionId,
+              capabilityKey: frozenCapabilityKey,
+            },
+            gate,
+          );
+        } catch (cause) {
+          gate.release();
+          throw cause;
+        }
         return;
       }
-      const code = await google.requestAuthorizationCode(
+      const code = await googleAuth.openAuthorizationWindow(
         request.scopes,
         request.loginHint,
         { forceConsent: true },
@@ -439,9 +457,13 @@ function CapabilityCatalog({
             connection?.health === "connected" &&
             !permissionGranted,
           );
-          const capabilityBusy = busy?.startsWith(
-            `capability:${capabilityKey}:`,
-          );
+          // 🚨 `busy` holds the FULL press key (`capability:<key>:popup` /
+          // `:redirect`). It used to be folded to a boolean with
+          // `busy?.startsWith(...)` and then compared to those strings, which
+          // is never true — so neither button ever showed that its own press
+          // was running, and only a type error nobody ran said so (TS2367).
+          const popupBusyKey = `capability:${capabilityKey}:popup`;
+          const redirectBusyKey = `capability:${capabilityKey}:redirect`;
           return (
             <article
               key={capability.key}
@@ -560,7 +582,7 @@ function CapabilityCatalog({
                     onClick={() => onEnableCapability(capability)}
                     disabled={authorizationActionDisabled}
                   >
-                    {capabilityBusy === "capability:" + capabilityKey + ":popup"
+                    {busy === popupBusyKey
                       ? `Enabling ${capability.title}…`
                       : `Enable ${capability.title}`}
                   </Button>
@@ -570,8 +592,7 @@ function CapabilityCatalog({
                     onClick={() => onEnableCapability(capability, true)}
                     disabled={authorizationActionDisabled}
                   >
-                    {capabilityBusy ===
-                    "capability:" + capabilityKey + ":redirect"
+                    {busy === redirectBusyKey
                       ? "Opening Google…"
                       : "Continue in this tab"}
                   </Button>

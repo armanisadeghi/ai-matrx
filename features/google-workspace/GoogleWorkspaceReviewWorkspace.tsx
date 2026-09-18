@@ -85,6 +85,7 @@ import {
   hasGoogleDocumentRecord,
   pickedGoogleRecordResource,
 } from "@/features/google-workspace/documents/openRecord";
+import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
 
 type BusyAction =
   | "connect-files"
@@ -150,6 +151,9 @@ export function GoogleWorkspaceReviewWorkspace({
 }: GoogleWorkspaceReviewWorkspaceProps) {
   const router = useRouter();
   const google = useGoogleAPI();
+  // 🚨 ONE Google authorization window per PERSON — never a per-component
+  // lock, never the raw provider primitive (V-23 NEW-3, lane F-103).
+  const googleAuth = useGoogleAuthorizationWindow();
   const inventory = useGoogleConnectionInventory();
   const connectGoogle = useConnectGoogle();
   const disconnectGoogle = useDisconnectGoogle();
@@ -268,7 +272,7 @@ export function GoogleWorkspaceReviewWorkspace({
 
   const connectFiles = () =>
     run("connect-files", async () => {
-      const code = await google.requestAuthorizationCode([
+      const code = await googleAuth.openAuthorizationWindow([
         ...GOOGLE_WORKSPACE_FILE_SCOPES,
       ]);
       const result = await connectGoogle.mutateAsync({
@@ -282,7 +286,7 @@ export function GoogleWorkspaceReviewWorkspace({
   const enableGmail = () => {
     if (!activeConnection) return;
     void run("enable-gmail", async () => {
-      const code = await google.requestAuthorizationCode(
+      const code = await googleAuth.openAuthorizationWindow(
         [...GOOGLE_WORKSPACE_SEND_SCOPES],
         activeConnection.account_email ?? undefined,
       );

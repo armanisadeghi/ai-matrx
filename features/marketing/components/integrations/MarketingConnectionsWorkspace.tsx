@@ -76,6 +76,7 @@ import {
   assertGoogleYouTubeCampaignActive,
   canUseGoogleYouTube,
 } from "@/features/marketing/google/youtube-campaign";
+import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
 
 export function MarketingConnectionsWorkspace({
   reviewMode = false,
@@ -97,6 +98,9 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
   const disconnect = useDisconnectGoogle();
   const youtubePreview = useYouTubeChannelPreview();
   const google = useGoogleAPI();
+  // 🚨 ONE Google authorization window per PERSON — never a per-component
+  // lock, never the raw provider primitive (V-23 NEW-3, lane F-103).
+  const googleAuth = useGoogleAuthorizationWindow();
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
   const userEmail = useAppSelector(selectUserEmail);
   const canUseReadOnlyReview = canUseGoogleOAuthInternalTest(
@@ -187,7 +191,7 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
           )
         : null;
       const scopes = reconnect?.scopes ?? [...requestedFeatureScopes];
-      const code = await google.requestAuthorizationCode(
+      const code = await googleAuth.openAuthorizationWindow(
         scopes,
         reconnect?.loginHint,
         existingConnection ? { forceConsent: true } : undefined,
@@ -240,7 +244,7 @@ function MarketingConnectionsContent({ reviewMode }: { reviewMode: boolean }) {
           "Confirm the read-only YouTube disclosure before continuing.",
         );
       }
-      const code = await google.requestAuthorizationCode(
+      const code = await googleAuth.openAuthorizationWindow(
         [...GOOGLE_YOUTUBE_SCOPES],
         undefined,
         reviewMode ? { forceConsent: true } : undefined,

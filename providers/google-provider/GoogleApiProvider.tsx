@@ -20,6 +20,10 @@ import {
   storeGoogleOAuthRedirectPending,
 } from "./oauthRedirect";
 import type { GoogleOAuthRedirectStartOptions } from "./oauthRedirect";
+import {
+  acquireOrJoinGoogleAuthorizationGate,
+  type GoogleAuthorizationGateHandle,
+} from "./googleAuthorizationGate";
 
 export class GoogleAuthorizationCancelledError extends Error {
   constructor() {
@@ -146,10 +150,17 @@ interface GoogleAPIContextType {
     scopesToRequest: string[],
     loginHint?: string,
     options?: GoogleAuthorizationCodeOptions,
+    /**
+     * The one-window gate, when the caller already took it (the consent runner
+     * holds it across its organization wait). Omitted, the primitive takes the
+     * gate itself, so no call site can bypass it.
+     */
+    gate?: GoogleAuthorizationGateHandle | null,
   ) => Promise<string>;
   startAuthorizationCodeRedirect: (
     scopesToRequest: string[],
     options: GoogleOAuthRedirectStartOptions,
+    gate?: GoogleAuthorizationGateHandle | null,
   ) => Promise<void>;
   signOut: () => Promise<void>;
   getGrantedScopes: () => string[];
@@ -360,6 +371,7 @@ export default function GoogleAPIProvider({
     scopesToRequest: string[],
     loginHint?: string,
     options?: GoogleAuthorizationCodeOptions,
+    gate?: GoogleAuthorizationGateHandle | null,
   ): Promise<string> => {
     if (!isGoogleLoaded || !window.google?.accounts?.oauth2) {
       throw new Error("Google authorization is still loading.");
@@ -367,57 +379,75 @@ export default function GoogleAPIProvider({
     if (!clientId) {
       throw new Error("Google client ID is not configured.");
     }
-    if (authInProgress) {
-      throw new Error("A Google authorization window is already open.");
-    }
+    // 🚨 THE GATE, NOT `authInProgress`. The state flag is read from a rendered
+    // closure, so two presses in one tick both saw the stale `false`. The gate
+    // is module scope: one person, one window. Joining the caller's handle
+    // keeps the consent runner's organization wait covered by ONE lock.
+    const held = acquireOrJoinGoogleAuthorizationGate(gate);
 
     resetError();
     setAuthInProgress(true);
-    return new Promise<string>((resolve, reject) => {
-      const client = window.google.accounts.oauth2.initCodeClient({
-        client_id: clientId,
-        scope: (scopesToRequest.length ? scopesToRequest : allScopes).join(" "),
-        ux_mode: "popup",
-        select_account: true,
-        include_granted_scopes: false,
-        enable_granular_consent: true,
-        ...(options?.forceConsent ? { prompt: "consent" as const } : {}),
-        ...(loginHint ? { login_hint: loginHint } : {}),
-        callback: (response: CodeResponse) => {
-          setAuthInProgress(false);
-          if (response.code) {
-            resolve(response.code);
-            return;
-          }
-          const message =
-            response.error_description ||
-            response.error ||
-            "Google did not return an authorization code.";
-          setError(message);
-          reject(new Error(message));
-        },
-        error_callback: (response: ErrorResponse) => {
-          setAuthInProgress(false);
-          if (
-            response.type === "popup_closed" ||
-            response.type === "popup_closed_by_user"
-          ) {
-            reject(new GoogleAuthorizationCancelledError());
-            return;
-          }
-          const message =
-            response.message || `Google authorization failed: ${response.type}`;
-          setError(message);
-          reject(new Error(message));
-        },
+    try {
+      return await new Promise<string>((resolve, reject) => {
+        const client = window.google.accounts.oauth2.initCodeClient({
+          client_id: clientId,
+          scope: (scopesToRequest.length ? scopesToRequest : allScopes).join(
+            " ",
+          ),
+          ux_mode: "popup",
+          select_account: true,
+          include_granted_scopes: false,
+          enable_granular_consent: true,
+          ...(options?.forceConsent ? { prompt: "consent" as const } : {}),
+          ...(loginHint ? { login_hint: loginHint } : {}),
+          callback: (response: CodeResponse) => {
+            setAuthInProgress(false);
+            held.release();
+            if (response.code) {
+              resolve(response.code);
+              return;
+            }
+            const message =
+              response.error_description ||
+              response.error ||
+              "Google did not return an authorization code.";
+            setError(message);
+            reject(new Error(message));
+          },
+          error_callback: (response: ErrorResponse) => {
+            setAuthInProgress(false);
+            held.release();
+            if (
+              response.type === "popup_closed" ||
+              response.type === "popup_closed_by_user"
+            ) {
+              reject(new GoogleAuthorizationCancelledError());
+              return;
+            }
+            const message =
+              response.message ||
+              `Google authorization failed: ${response.type}`;
+            setError(message);
+            reject(new Error(message));
+          },
+        });
+        client.requestCode();
       });
-      client.requestCode();
-    });
+    } catch (cause) {
+      // Anything that threw before a callback could run — GIS refusing to build
+      // the client, `requestCode` throwing — means the window never opened. The
+      // gate must not stay held for the rest of the session. `release` is
+      // idempotent, so a callback that already released is unaffected.
+      setAuthInProgress(false);
+      held.release();
+      throw cause;
+    }
   };
 
   const startAuthorizationCodeRedirect = async (
     scopesToRequest: string[],
     options: GoogleOAuthRedirectStartOptions,
+    gate?: GoogleAuthorizationGateHandle | null,
   ): Promise<void> => {
     if (!isGoogleLoaded || !window.google?.accounts?.oauth2) {
       throw new Error("Google authorization is still loading.");
@@ -425,9 +455,11 @@ export default function GoogleAPIProvider({
     if (!clientId) {
       throw new Error("Google client ID is not configured.");
     }
-    if (authInProgress) {
-      throw new Error("A Google authorization window is already open.");
-    }
+    // The redirect path takes the SAME gate as the popup path — one person, one
+    // authorization window, whichever shape it has. It is deliberately never
+    // released on success: the page is leaving, and the next page load gets a
+    // fresh module with a free gate.
+    const held = acquireOrJoinGoogleAuthorizationGate(gate);
 
     resetError();
     setAuthInProgress(true);
@@ -493,6 +525,7 @@ export default function GoogleAPIProvider({
       client.requestCode();
     } catch (cause) {
       setAuthInProgress(false);
+      held.release();
       throw cause;
     }
   };

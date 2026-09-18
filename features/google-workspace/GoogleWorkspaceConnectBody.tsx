@@ -50,6 +50,7 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { isGoogleAuthorizationActionDisabled } from "./authorizationReadiness";
+import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
 
 export interface GoogleWorkspaceConnectBodyProps {
   onClose: () => void;
@@ -95,6 +96,9 @@ function GoogleWorkspaceConnectBodyContent({
   initialConnectionId,
 }: GoogleWorkspaceConnectBodyProps) {
   const google = useGoogleAPI();
+  // 🚨 ONE Google authorization window per PERSON — never a per-component
+  // lock, never the raw provider primitive (V-23 NEW-3, lane F-103).
+  const googleAuth = useGoogleAuthorizationWindow();
   const organizationContextId = useAppSelector(selectOrganizationId);
   const connectGoogle = useConnectGoogle();
   const inventory = useGoogleConnectionInventory();
@@ -186,7 +190,7 @@ function GoogleWorkspaceConnectBodyContent({
 
   const connect = () =>
     void run("connect", async () => {
-      const code = await google.requestAuthorizationCode([
+      const code = await googleAuth.openAuthorizationWindow([
         ...GOOGLE_WORKSPACE_FILE_SCOPES,
       ]);
       const result = await connectGoogle.mutateAsync({
@@ -205,23 +209,35 @@ function GoogleWorkspaceConnectBodyContent({
       // refused a person who HAS one, with a sentence about not having one, for
       // as long as boot took to answer. The bounded platform wait answers both
       // states, and its own reason carries the remedy.
-      const workspace = await awaitEffectiveOrganizationId();
-      if (workspace.status !== "ready") {
-        throw new Error(workspace.reason);
+      // 🚨 THE GATE IS TAKEN BEFORE THE WAIT, NOT AFTER IT (V-23 NEW-3).
+      // The organization wait above is a multi-second gap on a cold load; a
+      // second press inside it used to open a SECOND Google window for one
+      // intent. Held here, released only if we never get to leave the page —
+      // on success the redirect takes the page and the gate with it.
+      const gate = googleAuth.beginAuthorization();
+      try {
+        const workspace = await awaitEffectiveOrganizationId();
+        if (workspace.status !== "ready") {
+          throw new Error(workspace.reason);
+        }
+        await googleAuth.openAuthorizationRedirect(
+          [...GOOGLE_WORKSPACE_FILE_SCOPES],
+          {
+            returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+            owner: { type: "user" },
+            organizationContextId: workspace.organizationId,
+          },
+          gate,
+        );
+      } catch (cause) {
+        gate.release();
+        throw cause;
       }
-      await google.startAuthorizationCodeRedirect(
-        [...GOOGLE_WORKSPACE_FILE_SCOPES],
-        {
-          returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`,
-          owner: { type: "user" },
-          organizationContextId: workspace.organizationId,
-        },
-      );
     });
 
   const enableSending = () =>
     void run("send", async () => {
-      const code = await google.requestAuthorizationCode(
+      const code = await googleAuth.openAuthorizationWindow(
         [...GOOGLE_WORKSPACE_SEND_SCOPES],
         connection?.account_email ?? undefined,
       );

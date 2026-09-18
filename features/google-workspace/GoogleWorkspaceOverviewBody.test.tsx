@@ -464,6 +464,10 @@ describe("GoogleWorkspaceOverviewBody", () => {
         targetConnectionId: "connection-one",
         capabilityKey: "contacts",
       }),
+      // 🚨 The one-window gate, taken BEFORE the organization wait and carried
+      // into the redirect (V-23 NEW-3): a second press during that wait is
+      // refused instead of opening a second Google window.
+      expect.objectContaining({ release: expect.any(Function) }),
     );
   });
 

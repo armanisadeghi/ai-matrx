@@ -99,6 +99,8 @@
     "check:thinking-leak": "tsx scripts/check-thinking-leak.ts",
     "check:thinking-leak:self-test": "tsx scripts/check-thinking-leak.ts --self-test",
     "check:static-loader": "tsx scripts/check-static-loader.ts",
+    "check:google-auth-gate": "tsx scripts/check-google-auth-gate.ts",
+    "check:google-auth-gate:self-test": "tsx scripts/check-google-auth-gate.ts --self-test",
     "check:static-loader:self-test": "tsx scripts/check-static-loader.ts --self-test",
     "check:picker-add:strict": "tsx scripts/check-picker-custom-entry.ts --strict",
     "check:surface-routes": "tsx scripts/check-surface-routes.ts",
