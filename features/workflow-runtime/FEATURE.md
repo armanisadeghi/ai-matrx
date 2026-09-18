@@ -176,6 +176,16 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-09-18 — **The agent's words are visible while it writes.** The live
+  `ai.agent.start` lane carried ordinary prose, but its declared settled
+  `agent_result` envelope made `InvocationBody` reserve an arriving kind slot
+  over the live renderer. On run `75be076b`, the server reported writing and
+  the second agent readout stayed blank until settlement. The shared readout
+  now treats `agent_result` as the eventual result envelope, allowing live
+  prose to render while bare JSON still reserves its arriving shape, including
+  a tracked tail cut mid-document. Actual declared structured outputs retain
+  the same guard. Guard: `__tests__/agent-result-live-readout.test.tsx`.
+
 - 2026-09-17 — `RunSurfaceBuilder` reads the EXPLICIT active organization instead of the legacy `selectEffectiveOrganizationId` (`organization_id ?? personal_organization_id`); creating a run surface with none selected already refuses by name and now writes nothing anywhere else either.
 
 - 2026-09-17 — **A STEP LABEL IS DECLARED, NEVER SCRAPED — and a finished run
