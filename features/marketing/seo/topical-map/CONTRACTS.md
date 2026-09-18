@@ -215,7 +215,20 @@ The body mounts `<SurfaceRuntimeProvider surfaceName="matrx-user/marketing-topic
 getScope={…createMarketingTopicalMapScope(values)} />` with the live store values. Manifest
 readiness → `partial` in Phase 0. `agentRoles` are added ONLY by the lane that ships the control
 running that mandate (E: `seo.map_author`; F: `seo.page_mapper`, `seo.page_intent_proposer`;
-D: `seo.topic_agent`; G: `seo.map_agent`) — never ahead of the control (agent-disclosure law).
+D: `seo.topic_curation`; G: `seo.map_curation`) — never ahead of the control (agent-disclosure law).
+
+**The two in-map agents are `seo.map_curation` ("Topical Map Agent") and `seo.topic_curation`
+("Topical Map Topic Agent")** — aidream `df5603a3`/`d2b14cee` on this branch; `declare_mandate`
+refuses a key ending in `_agent`, so the plan's `seo.map_agent`/`seo.topic_agent` names do not
+exist. Their published client keys are `seo__map_curation` / `seo__topic_curation`, regenerated in
+aidream's `apps/shared/matrx-agents/mandates/keys.generated.ts` but NOT yet on npm (publishing
+needs an `npm/*/v*` tag, a release action). Until `@ai-matrx/agents` republishes, a lane that
+launches either key adds it to `scripts/mandate-keys-allowlist.json` WITH the reason "declared in
+aidream d2b14cee; package republish pending" and uses the string literal; the coordinator removes
+the allowlist rows on adoption. Same for `seo__page_mapper` / `seo__page_intent_proposer`, which
+that regeneration added for the first time. Change mode is a GATE on the server: in `propose`,
+`upsert`/`replace_section`/`split` write `status='proposed'` and every other writing action is
+converted to a rolled-back dry run whose result carries a note — a screen shows that note.
 
 ## 7. Knobs — `knobs.ts`
 
@@ -272,3 +285,4 @@ local adapter; the coordinator lands it.
 ## Change log
 
 - 2026-09-18 — Frozen at Phase 0.
+- 2026-09-18 — Amendment: the in-map mandate keys are `seo.map_curation` / `seo.topic_curation` (Lane S); allowlist rule until the package republishes; propose mode is a server gate.
