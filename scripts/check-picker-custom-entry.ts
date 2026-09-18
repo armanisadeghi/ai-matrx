@@ -96,16 +96,35 @@ const ALLOW: Array<{ match: RegExp; reason: string }> = [
   },
 ];
 
-const ADD_AFFORDANCE = [
+/**
+ * An add affordance is a CREATION, not a caption. Until 2026-09-18 a string
+ * like "Create or manage …" on a `<Link>` title satisfied this list, so a
+ * picker whose only "add" was a new-tab door to a management page passed —
+ * and the 2026-08-30 P13 run certified exactly that shape. Arman's ruling
+ * (policy `every-picker-takes-new-input.md` §3): a door is a companion, never
+ * the fix. So a caption counts ONLY when the same file also carries a write
+ * path (`WRITE_PATH` below) or the creatable picker primitive; a caption on a
+ * link never counts on its own.
+ */
+const ADD_CAPTION = [
   /\+\s*(Add|New|Create)/i,
   /["'`]\s*(Add|Create|New)\s+[a-z]/i,
   /Create\s+["'“]/i,
-  /quick_add|quickAdd|gsc_quick_add_value/,
-  /onCreate|allowCreate|allowOther|creatable|onAddNew|handleCreate/i,
-  /facet_value_upsert|facet_dimension_upsert|save_value_vocabulary/,
-  // P11 path: the file explains a shared vocabulary and offers the local override
-  /your own dimension|platform-governed|shared dimension/i,
 ];
+const WRITE_PATH = [
+  /quick_add|quickAdd|gsc_quick_add_value/,
+  /onCreate|allowCreate|allowOther|creatable|onAddNew|handleCreate|onCreateRequiresMore/i,
+  /facet_value_upsert|facet_dimension_upsert|save_value_vocabulary/,
+  /\b(create|add|insert|upsert)[A-Z]\w*\s*\(/,
+  /\.rpc\(\s*["'`](create|add|insert|upsert)_/,
+  /CreatablePicker|creatable-picker/,
+];
+const P11_PATH = [
+  // P11 path: the file explains a shared vocabulary and offers the local override
+  /your own dimension|platform-governed|shared dimension|curated centrally|lockedNote/i,
+];
+/** A `+` that only opens a page somewhere else — the pattern this law forbids. */
+const DOOR_ONLY = /<Link\b[^>]*\btarget=["']_blank["'][\s\S]{0,400}?<Plus\b/;
 
 const ITEM_TAGS = /<(SelectItem|CommandItem|DropdownMenuItem|ComboboxItem)\b/;
 /**
@@ -121,6 +140,17 @@ const DATA_DRIVEN =
 interface Finding {
   file: string;
   items: number;
+}
+
+function hasAddAffordance(source: string): boolean {
+  const writes = WRITE_PATH.some((re) => re.test(source));
+  const p11 = P11_PATH.some((re) => re.test(source));
+  if (p11) return true;
+  if (writes) return true;
+  // A caption with no write path in the file is a door or a lie — never an add.
+  void ADD_CAPTION;
+  void DOOR_ONLY;
+  return false;
 }
 
 function scan(): Finding[] {
@@ -146,7 +176,7 @@ function scan(): Finding[] {
       }
       if (!ITEM_TAGS.test(source)) continue;
       if (!DATA_DRIVEN.test(source)) continue; // literal switches are fine
-      if (ADD_AFFORDANCE.some((re) => re.test(source))) continue;
+      if (hasAddAffordance(source)) continue;
       const items = (source.match(new RegExp(ITEM_TAGS.source, "g")) ?? [])
         .length;
       findings.push({ file: rel, items });
