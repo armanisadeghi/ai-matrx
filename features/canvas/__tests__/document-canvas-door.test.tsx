@@ -40,9 +40,9 @@ import {
   canvasSlice,
   offerCanvasItem,
   openCanvas,
-  registerCanvasDock,
   selectCanvasItems,
   selectCanvasIsOpen,
+  setCanvasAvailable,
   isPersistableCanvasType,
   type CanvasContent,
 } from "@/features/canvas/redux/canvasSlice";
@@ -210,7 +210,7 @@ describe("a document tool result reaches the canvas", () => {
 
   it("renders a card in the thread whose canvas action opens THAT document", () => {
     const store = makeStore();
-    store.dispatch(registerCanvasDock()); // a DOCKED chat route — the default
+    store.dispatch(setCanvasAvailable(true)); // the ONE canvas surface, as on every route
     const { container, unmount } = mount(
       store,
       <DocumentInline entry={entryWith(CREATE_RESULT)} />,

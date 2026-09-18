@@ -20,8 +20,12 @@
  *    there is nothing to show). Bound here — not in the Impl — because the
  *    Impl isn't mounted until an item exists.
  *
- * Mount gate: `currentItemId != null` AND no dock host is mounted (see
- * `selectCanvasIsDocked` — a docked route owns the presentation). `closeCanvas` keeps items and
+ * Mount gate: `currentItemId != null`. THIS IS THE ONLY PRESENTATION OF THE
+ * CANVAS — every route gets the same one; a route never wraps its body in a
+ * presentation of its own (owner, 2026-09-16, on the docked column that used
+ * to exist for chat: *"adds an unnecessary layer… FOLLOW established
+ * patterns"*). A capability one route needs is added to THIS surface for all
+ * of them. `closeCanvas` keeps items and
  * `currentItemId` for reopen, so once opened the Impl stays mounted and the
  * Sheet's close animation plays normally; `clearCanvas` unmounts it again.
  */
@@ -30,7 +34,6 @@ import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
-  selectCanvasIsDocked,
   selectCurrentItemId,
   setCanvasAvailable,
   toggleCanvas,
@@ -44,11 +47,6 @@ const CanvasSideSheetImpl = dynamic(
 export function CanvasSideSheet() {
   const dispatch = useAppDispatch();
   const currentItemId = useAppSelector(selectCurrentItemId);
-  // A route that mounted a `CanvasDock` shows the canvas as a real resizable
-  // column beside its own content. The overlay must then render NOTHING —
-  // two presentations of one canvas on screen at once is the defect this
-  // check exists to make impossible.
-  const isDocked = useAppSelector(selectCanvasIsDocked);
 
   // The canvas surface is reachable on this route → mark it available so
   // blocks which gate their "Open in canvas" affordance on availability
@@ -82,7 +80,6 @@ export function CanvasSideSheet() {
     return () => window.removeEventListener("keydown", onKey);
   }, [dispatch]);
 
-  if (isDocked) return null;
   if (!currentItemId) return null;
   return <CanvasSideSheetImpl />;
 }
