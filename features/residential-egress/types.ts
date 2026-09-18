@@ -156,3 +156,27 @@ export const HELPER_DOWNLOADS: ReadonlyArray<{
     detail: "Debian and Ubuntu, 64-bit",
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Where a person's computers live (one spelling, one place)
+// ---------------------------------------------------------------------------
+
+/**
+ * The DURABLE route for "my computers" — the Devices & sync settings tab
+ * (registry id `files.devices`) on the route-driven settings surface.
+ *
+ * 🚨 NOT `/settings?tab=devices`. That URL — the one the helper's tray menu
+ * opens — hits `app/(transitional)/settings/page.tsx`, which redirects to
+ * `/settings/profile` and drops the whole query string on the way, so neither
+ * the tab nor `?computer=` ever reaches this list. Every link WE own points
+ * here; the tray's link is matrx-local's to change (recorded in the feature
+ * doc and in the cross-repo contract).
+ */
+export const HOME_CONNECTIONS_HREF = "/user-settings/files/devices";
+
+/**
+ * The query parameter that names ONE computer to bring into view on that page
+ * (`?computer=<egress_device id>`). Named once so the writer and the reader
+ * can never drift.
+ */
+export const HOME_CONNECTION_FOCUS_PARAM = "computer";

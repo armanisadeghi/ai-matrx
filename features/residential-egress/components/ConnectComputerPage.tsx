@@ -13,12 +13,22 @@
  *
  * THE DOWNLOAD LINKS COME FROM THE REGISTER, never from a constant: the knob
  * `residential_egress.helper_download_base_url` is read through the shared
- * client resolver (`useScopedKnobs`, one `platform.knob_index` RPC). When the
- * register cannot answer, the page SAYS the downloads are not configured and
- * names the remedy — it never renders a button that would 404.
+ * client resolver (`useScopedKnobs`, one `platform.knob_index` RPC).
+ *
+ * 🚨 AN EMPTY VALUE MEANS "NOT PUBLISHED YET", AND IT IS THE LIVENESS CHECK.
+ * The standalone installers live on a release tag that the packaging workflow
+ * has never run, so a button pointing at it would hand a non-technical person
+ * a 404. There is no browser-side reachability test worth trusting (the
+ * release host answers a cross-origin HEAD with an opaque response), so the
+ * knob IS the switch: blank until the release exists, set the moment it does,
+ * and this page renders the buttons with no new release of its own. Blank —
+ * or absent, or not a web address — renders the plain sentence and the
+ * desktop-app path instead, never a button.
  *
  * Copy discipline (contract § Names): "Home connection". No "proxy", "egress",
- * "residential" or "IP" anywhere a person reads.
+ * "residential" or "IP" anywhere a person reads — and no setting key, table
+ * name or route either: an internal identifier on a user's screen is the same
+ * defect wearing different words.
  */
 
 "use client";
@@ -52,6 +62,7 @@ import {
 import {
   HELPER_DOWNLOADS,
   HELPER_DOWNLOAD_BASE_URL_KNOB,
+  HOME_CONNECTIONS_HREF,
   RESIDENTIAL_EGRESS_FEATURE,
   type EgressPairingByCode,
   type EgressStatus,
@@ -78,30 +89,30 @@ function platformLabel(platform: string | null): string {
 // ---------------------------------------------------------------------------
 
 /**
- * PURE so the decision is testable without a browser: the rows `knob_index`
- * returned → the base URL, or the sentence that says why there isn't one.
+ * Is the standalone helper published?
+ *
+ * PURE so the decision is testable without a browser, and deliberately
+ * BOOLEAN: there is one honest answer a person can act on ("download it" /
+ * "it isn't ready"), and every way of not having a web address — the row
+ * absent, the value blank, the value something that is not a link — is the
+ * same answer. It never returns a reason string for the screen, because the
+ * reason is ours and the screen is theirs.
  */
 export function resolveDownloadBaseUrl(
   knobs: ReadonlyArray<{ key: string; origin: string; effective_value: unknown }>,
-): { url: string } | { refusal: string } {
+): { published: true; baseUrl: string } | { published: false } {
   const knob = knobs.find((k) => k.key === HELPER_DOWNLOAD_BASE_URL_KNOB);
-  if (!knob || knob.origin === "missing") {
-    return {
-      refusal:
-        `the setting "${RESIDENTIAL_EGRESS_FEATURE}.${HELPER_DOWNLOAD_BASE_URL_KNOB}" ` +
-        `is not in the settings register yet, so there is nowhere to download from.`,
-    };
-  }
+  if (!knob || knob.origin === "missing") return { published: false };
   const value = knob.effective_value;
-  if (typeof value !== "string" || !/^https?:\/\//.test(value)) {
-    return {
-      refusal:
-        `the setting "${RESIDENTIAL_EGRESS_FEATURE}.${HELPER_DOWNLOAD_BASE_URL_KNOB}" ` +
-        `is ${JSON.stringify(value)}, which is not a web address.`,
-    };
-  }
-  return { url: value.replace(/\/+$/, "") };
+  if (typeof value !== "string") return { published: false };
+  const trimmed = value.trim().replace(/\/+$/, "");
+  if (!/^https?:\/\/\S+$/.test(trimmed)) return { published: false };
+  return { published: true, baseUrl: trimmed };
 }
+
+/** The one sentence, in one place, so the page and its test agree. */
+export const HELPER_NOT_PUBLISHED_SENTENCE =
+  "The standalone helper for computers without the AI Matrx desktop app is not published yet.";
 
 function Downloads() {
   const organizationId = useAppSelector(selectOrganizationId);
@@ -110,16 +121,13 @@ function Downloads() {
     featurePrefix: RESIDENTIAL_EGRESS_FEATURE,
   });
 
-  const resolved = useMemo(() => {
-    if (error) return { refusal: `the settings resolver failed: ${error}` };
-    return resolveDownloadBaseUrl(knobs);
-  }, [knobs, error]);
+  const resolved = useMemo(() => resolveDownloadBaseUrl(knobs), [knobs]);
 
-  // NO ORGANIZATION YET IS NOT A MISSING SETTING. The resolver answers per
+  // NO ORGANIZATION YET IS NOT AN ANSWER. The resolver answers per
   // organization and holds its read until one is active, so before the shell
-  // has hydrated it returns an empty list — which `resolveDownloadBaseUrl`
-  // would otherwise report as "the setting is not in the register", a
-  // confident wrong sentence on every first paint. It is a wait, and it says so.
+  // has hydrated it returns an empty list — which would otherwise read as
+  // "not published", a confident wrong sentence on every first paint. It is a
+  // wait, and it says so.
   if (!organizationId || isLoading) {
     return (
       <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-4 text-xs text-muted-foreground">
@@ -129,15 +137,34 @@ function Downloads() {
     );
   }
 
-  if ("refusal" in resolved) {
+  // A read that FAILED is a different fact from a read that said "not yet",
+  // and the person is told which one happened — but neither one gets a button.
+  if (error) {
     return (
       <div className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-3 text-xs text-amber-700 dark:text-amber-400">
         <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
         <span>
-          The download is not available right now because {resolved.refusal} An
-          administrator can set it under Settings, and this page works the
-          moment they do — nothing here needs a new release. In the meantime you
-          can still use the AI Matrx desktop app, below.
+          We could not check whether the download is ready, so there is nothing
+          to offer here yet. Reload the page to try again. If you already have
+          the AI Matrx desktop app, you do not need this download at all — turn
+          it on there instead, as described below.
+        </span>
+      </div>
+    );
+  }
+
+  if (!resolved.published) {
+    return (
+      <div className="flex items-start gap-2 rounded-md border border-border bg-card px-3 py-3 text-xs text-muted-foreground">
+        <HouseWifi className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+        <span>
+          <span className="font-medium text-foreground">
+            {HELPER_NOT_PUBLISHED_SENTENCE}
+          </span>{" "}
+          Until it is, use the AI Matrx desktop app: open it on the computer you
+          want to use and turn on Settings &rarr; Home Connection. The download
+          appears here by itself once it is ready — you will not need to update
+          anything.
         </span>
       </div>
     );
@@ -148,7 +175,7 @@ function Downloads() {
       {HELPER_DOWNLOADS.map((item) => (
         <a
           key={item.os}
-          href={`${resolved.url}/${item.asset}`}
+          href={`${resolved.baseUrl}/${item.asset}`}
           className="flex flex-col gap-1 rounded-md border border-border bg-card px-3 py-3 transition-colors hover:border-primary/50"
         >
           <span className="flex items-center gap-2 text-sm font-medium text-foreground">
@@ -330,7 +357,10 @@ function ApprovalCard({ code }: { code: string }) {
           size="sm"
           variant="outline"
           className="mt-3 h-7 text-xs"
-          onClick={() => router.push("/settings?tab=devices")}
+          // The DURABLE devices route. `/settings?tab=devices` (the tray's
+          // link) redirects to the profile page and drops the query on the
+          // way, so it never reaches this list — see the feature doc.
+          onClick={() => router.push(HOME_CONNECTIONS_HREF)}
         >
           See my computers
         </Button>

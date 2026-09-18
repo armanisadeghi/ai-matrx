@@ -23,6 +23,7 @@ import { StorageQuotaChip } from "@/features/files/components/surfaces/desktop/S
 
 import { HomeConnectionRow } from "@/features/residential-egress/components/HomeConnectionRow";
 import { useHomeConnections } from "@/features/residential-egress/hooks/useHomeConnections";
+import { useHomeConnectionFocus } from "@/features/residential-egress/hooks/useHomeConnectionFocus";
 
 import { DeviceCard } from "./components/DeviceCard";
 import { useDevicesAndSync } from "./useDevicesAndSync";
@@ -33,6 +34,15 @@ export function DevicesSyncTab() {
   // Home connections are a SECOND list over the same computers, so they are
   // read once here and handed down — never re-read per card.
   const home = useHomeConnections();
+  // `?computer=<id>` — the helper's tray menu names one computer; this page
+  // scrolls to it and rings it once, so the link lands on the row rather than
+  // on a list of rows.
+  const focus = useHomeConnectionFocus(
+    home.devices.map((d) => d.id).join(","),
+    !loading && !home.loading,
+  );
+  const focusRing =
+    "rounded-md ring-2 ring-primary ring-offset-2 ring-offset-background transition-shadow";
 
   const mappingsByDevice = new Map<string, typeof mappings>();
   for (const mapping of mappings) {
@@ -123,17 +133,32 @@ export function DevicesSyncTab() {
           </div>
         ) : null}
 
-        {devices.map((device) => (
-          <DeviceCard
-            key={device.id}
-            device={device}
-            mappings={mappingsByDevice.get(device.id) ?? []}
-            homeConnection={home.byAppInstanceId.get(device.id) ?? null}
-            homeConnectionError={home.error}
-            onHomeConnectionChanged={() => void home.refresh()}
-            onChanged={() => void refresh()}
-          />
-        ))}
+        {devices.map((device) => {
+          const homeConnection = home.byAppInstanceId.get(device.id) ?? null;
+          // The focus id is the home connection's id (what the helper knows
+          // itself by), not the device card's — a computer card with no home
+          // connection simply never matches.
+          return (
+            <div
+              key={device.id}
+              ref={homeConnection ? focus.register(homeConnection.id) : undefined}
+              className={
+                homeConnection && focus.highlighted === homeConnection.id
+                  ? focusRing
+                  : undefined
+              }
+            >
+              <DeviceCard
+                device={device}
+                mappings={mappingsByDevice.get(device.id) ?? []}
+                homeConnection={homeConnection}
+                homeConnectionError={home.error}
+                onHomeConnectionChanged={() => void home.refresh()}
+                onChanged={() => void refresh()}
+              />
+            </div>
+          );
+        })}
 
         {otherComputers.length > 0 ? (
           <section className="rounded-md border border-border bg-card">
@@ -148,15 +173,34 @@ export function DevicesSyncTab() {
               </p>
             </header>
             {otherComputers.map((computer) => (
-              <HomeConnectionRow
+              <div
                 key={computer.id}
-                device={computer}
-                deviceName={computer.display_name}
-                showName
-                onChanged={() => void home.refresh()}
-              />
+                ref={focus.register(computer.id)}
+                className={
+                  focus.highlighted === computer.id ? focusRing : undefined
+                }
+              >
+                <HomeConnectionRow
+                  device={computer}
+                  deviceName={computer.display_name}
+                  showName
+                  onChanged={() => void home.refresh()}
+                />
+              </div>
             ))}
           </section>
+        ) : null}
+
+        {/* A link that named a computer this list does not have says so —
+            silence would leave the person hunting a card that is not here. */}
+        {focus.requested &&
+        !loading &&
+        !home.loading &&
+        !home.devices.some((d) => d.id === focus.requested) ? (
+          <p className="text-[11px] text-muted-foreground">
+            The computer that link pointed at is not on this list. It may have
+            been removed from your account, or signed in under a different one.
+          </p>
         ) : null}
 
         {orphaned.length > 0 ? (
