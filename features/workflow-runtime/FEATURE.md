@@ -176,6 +176,15 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-09-18 — **Workflow documents use the platform document-action system.** Static
+  readouts render through `RichDocument`; persisted kind and emission renderers keep their one
+  canonical kind component and mount `RichDocumentActionProvider` plus its shared mini action
+  surface underneath. `workflowDocumentText` only exposes a complete document: it unwraps an
+  agent answer or a single document field, but refuses prompts, usage envelopes, mixed typed
+  content, and partial structured results. This gives workflow Markdown the same copy, Notes,
+  Tasks, export, and overflow actions as other document surfaces without creating a second
+  renderer for any registered `__kind`.
+
 - 2026-09-18 — **The agent's words are visible while it writes.** The live
   `ai.agent.start` lane carried ordinary prose, but its declared settled
   `agent_result` envelope made `InvocationBody` reserve an arriving kind slot
