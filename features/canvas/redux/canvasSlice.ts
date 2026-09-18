@@ -62,7 +62,15 @@ export type CanvasContentType =
   // Cloud Browser. It shares the canvas region with the browser, documents
   // and artifacts and NEVER owns it (the champions — Claude Code, Codex,
   // Cursor — all show the terminal on demand in one shared side region).
-  | "sandbox";
+  | "sandbox"
+  // A TOPICAL MAP hosted in the canvas pane (Lane G, R12). `data` is a pointer
+  // `{ mapId, screen, siteId }`; the body mounts the canonical
+  // `TopicalMapWorkspaceBody` in `host="canvas"` — the same component the
+  // page route and the floating window render — which reads the live map from
+  // the store and the `seo.*` functions. The map's truth is its rows, so a
+  // `canvas_items` copy would be a stale second map: NON_PERSISTABLE, like
+  // `working_document`, never an artifact type.
+  | "topical_map";
 
 /**
  * Canvas content types that hold live, non-serializable runtime state —
@@ -90,6 +98,10 @@ export const NON_PERSISTABLE_CANVAS_TYPES: ReadonlySet<string> = new Set([
   // pane is a pointer and only a pointer. Unlike the other live surfaces it
   // still HAS a real source — see `canvasSource.ts`.
   "udt_document",
+  // A topical map pane is a pointer to live rows the workspace body reads; the
+  // rows are the truth and a frozen copy would drift on the next accepted
+  // proposal (see the type's comment above).
+  "topical_map",
 ]);
 
 export function isPersistableCanvasType(type: string): boolean {

@@ -45,6 +45,7 @@ import {
   listMapTopicStats,
   listMapTopics,
   listPageIntents,
+  listPagesWithoutTopic,
   listTopicGaps,
   listTopicalMaps,
   mapDiagnostics,
@@ -57,6 +58,9 @@ import {
   mapTree,
   mergeMapTopics,
   moveMapTopic,
+  pageMappingStatus,
+  pageMappingWantedTopics,
+  pageMappingWantedTopicsHeldBack,
   patchMapTopics,
   rejectMapTopics,
   replaceMapSection,
@@ -155,7 +159,37 @@ export const topicalMapKeys = {
   facetValue: (valueId: string) => [...topicalMapKeys.root, "facet-value", valueId] as const,
   facetValueRef: (valueId: string) => [...topicalMapKeys.facetValue(valueId), "ref"] as const,
   siteMap: (siteId: string) => [...topicalMapKeys.root, "site-map", siteId] as const,
+  /**
+   * The feature's 53 `seo.topical_map` knob rows (CONTRACTS §7). ONE entry for
+   * every surface, so the body, the topic panel and a peek mounted together
+   * share one read rather than each running its own effect.
+   */
+  knobs: ["seo", "topical-map", "knobs"] as const,
+  /** The page-mapping ledger of one SITE — not scoped to a map, because the ledger is not. */
+  pageMappingStatus: (siteId: string) =>
+    [...topicalMapKeys.root, "page-mapping-status", siteId] as const,
+  pageMappingWantedTopics: (siteId: string, limit: number | null) =>
+    [...topicalMapKeys.root, "page-mapping-wanted", siteId, limit] as const,
+  pageMappingWantedTopicsHeldBack: (siteId: string, limit: number | null) =>
+    [...topicalMapKeys.root, "page-mapping-wanted-held-back", siteId, limit] as const,
+  pagesWithoutTopic: (siteId: string, limit: number | null, offset: number | null) =>
+    [...topicalMapKeys.root, "pages-without-topic", siteId, limit, offset] as const,
 };
+
+/**
+ * Every read that goes stale when a page-mapping, region or intent run lands.
+ * The three run hooks invalidate exactly these plus `topicalMapKeys.map(mapId)`
+ * — a run writes the site's LEDGER as well as the map, and the ledger keys do
+ * not descend from `map(mapId)` because the ledger belongs to the site.
+ */
+export function siteMappingReaderKeys(siteId: string): readonly (readonly unknown[])[] {
+  return [
+    [...topicalMapKeys.root, "page-mapping-status", siteId],
+    [...topicalMapKeys.root, "page-mapping-wanted", siteId],
+    [...topicalMapKeys.root, "page-mapping-wanted-held-back", siteId],
+    [...topicalMapKeys.root, "pages-without-topic", siteId],
+  ];
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Reads — one query hook per read wrapper
@@ -413,6 +447,15 @@ export function usePageIntents(
   mapId: string,
   options: PageIntentsListOptions = {},
   enabled = true,
+  /**
+   * `feed: false` reads WITHOUT writing the slice's page listing. The slice
+   * holds the rows the pages workspace LISTED; a second reader (the graph's
+   * convergence rollup, which keeps its own pages) mounted beside it in a
+   * window host must never replace that listing with its own window (Lane C,
+   * C-7). The outline/graph colouring reads `intentsByPageId`, which only the
+   * feeding reader fills.
+   */
+  behaviour: { feed: boolean } = { feed: true },
 ) {
   const dispatch = useAppDispatch();
   const query = useQuery({
@@ -424,12 +467,13 @@ export function usePageIntents(
   });
 
   const result = query.data;
+  const feed = behaviour.feed;
   useEffect(() => {
-    if (!result || !mapId) return;
+    if (!feed || !result || !mapId) return;
     dispatch(
       pageIntentsLoaded({ mapId, result, replace: (options.offset ?? 0) === 0 }),
     );
-  }, [dispatch, mapId, result, options.offset]);
+  }, [dispatch, feed, mapId, result, options.offset]);
 
   return query;
 }
@@ -972,6 +1016,94 @@ export function useSetMapTopicLayout(mapId: string) {
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: topicalMapKeys.topicRows(mapId) });
+      // The graph's own read carries `layout` too (every groupBy/site variant);
+      // without this a dragged topic's `auto_layout`/`position` in query data
+      // stay stale until the next refetch and the node snaps back (Lane C, C-3).
+      void queryClient.invalidateQueries({
+        queryKey: [...topicalMapKeys.map(mapId), "graph"],
+      });
     },
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// The page-mapping ledger — one hook per wrapper (CONTRACTS §8)
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * `seo.page_mapping_status` — one site's mapping ledger, rolled up. This is the
+ * read the "map the pages" control shows before, during and after a run.
+ *
+ * `retry: false`: a caller with no access on the site gets a 42501 REFUSAL, and
+ * re-asking a refusal three times only delays the sentence the person needs.
+ */
+export function usePageMappingStatus(siteId: string, enabled = true) {
+  return useQuery({
+    queryKey: topicalMapKeys.pageMappingStatus(siteId),
+    queryFn: () =>
+      withTopicalMapErrors("seo.page_mapping_status", () => pageMappingStatus(siteId)),
+    enabled: enabled && Boolean(siteId),
+    retry: false,
+  });
+}
+
+/** `seo.page_mapping_wanted_topics` — the subjects this map is missing. */
+export function usePageMappingWantedTopics(
+  siteId: string,
+  limit?: number | null,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: topicalMapKeys.pageMappingWantedTopics(siteId, limit ?? null),
+    queryFn: () =>
+      withTopicalMapErrors("seo.page_mapping_wanted_topics", () =>
+        pageMappingWantedTopics(siteId, limit),
+      ),
+    enabled: enabled && Boolean(siteId),
+    retry: false,
+  });
+}
+
+/**
+ * `seo.page_mapping_wanted_topics_held_back` — the suggestions the bar held
+ * back, each with the sentence saying what would promote it. A surface that
+ * renders the wanted list without this one hides a decision the system made.
+ */
+export function usePageMappingWantedTopicsHeldBack(
+  siteId: string,
+  limit?: number | null,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: topicalMapKeys.pageMappingWantedTopicsHeldBack(siteId, limit ?? null),
+    queryFn: () =>
+      withTopicalMapErrors("seo.page_mapping_wanted_topics_held_back", () =>
+        pageMappingWantedTopicsHeldBack(siteId, limit),
+      ),
+    enabled: enabled && Boolean(siteId),
+    retry: false,
+  });
+}
+
+/**
+ * `seo.list_pages_without_topic` — the site's bare pages, most clicks first.
+ * Paged; `keepPreviousData` so paging does not blank the table under the
+ * person's cursor.
+ */
+export function usePagesWithoutTopic(
+  siteId: string,
+  limit?: number | null,
+  offset?: number | null,
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: topicalMapKeys.pagesWithoutTopic(siteId, limit ?? null, offset ?? null),
+    queryFn: () =>
+      withTopicalMapErrors("seo.list_pages_without_topic", () =>
+        listPagesWithoutTopic(siteId, limit, offset),
+      ),
+    enabled: enabled && Boolean(siteId),
+    placeholderData: keepPreviousData,
+    retry: false,
   });
 }

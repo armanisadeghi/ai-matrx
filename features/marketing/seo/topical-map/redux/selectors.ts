@@ -16,11 +16,18 @@ import type { RootState } from "@/lib/redux/store";
 import type { MapTopicStatus, PageIntentRecord } from "../types";
 import { createWorkspaceState } from "./slice";
 import type {
+  MapGraphState,
+  MapPageFilters,
+  MapReviewState,
+  MapSiblingSort,
+  MapTableState,
   MapTopicFilters,
   MapViewKey,
   NormalizedMapTopic,
   PageIntentTone,
   PageIntentView,
+  PageTopicState,
+  PageTopicView,
   TopicalMapWorkspaceState,
   VisibleMapTopic,
 } from "./types";
@@ -36,6 +43,47 @@ function cached<T>(key: string, factory: () => T): T {
 }
 
 /**
+ * Drops every cached selector belonging to one map (CONTRACTS §3, R16).
+ *
+ * WHY THIS IS A FUNCTION AND NOT A SUBSCRIPTION. The cache is keyed
+ * `<name>:<mapId>` and `<name>:<mapId>:<slug|pageId>`, so the per-topic and
+ * per-page families grow with every slug a user touches and NOTHING ever
+ * removes them — a workspace closed after a long session leaves one dead
+ * `createSelector` per topic, per page, forever. Two ways to clear them were
+ * available and both were rejected:
+ *
+ *   - clearing inside `mapClosed`. A reducer must be pure; reaching out of the
+ *     draft into a module-level Map is a side effect, and it would also make
+ *     `slice.ts` import `selectors.ts` while `selectors.ts` already imports
+ *     `createWorkspaceState` from `slice.ts` — a cycle.
+ *   - subscribing to the store from here. This module has no store reference
+ *     (it takes `RootState` as an argument, by design), so acquiring one would
+ *     invert the dependency and make every consumer of a selector depend on a
+ *     live store at import time.
+ *
+ * So the cache's owner exports the one door to it, and whoever dispatches
+ * `mapClosed` calls this in the same breath. There is deliberately NO LRU: a
+ * bounded cache would evict a selector a mounted component is still reading
+ * and silently restart its memo, which is the render loop `cached()` exists to
+ * prevent.
+ *
+ * It clears the map-level keys too, not only `topic:${mapId}:` — the workspace
+ * those selectors read is gone, so keeping them caches a function over an
+ * absent map. Reopening the map rebuilds them on first read.
+ */
+export function evictMapSelectorCache(mapId: string): void {
+  const prefix = `:${mapId}`;
+  for (const key of [...selectorCache.keys()]) {
+    const at = key.indexOf(prefix);
+    if (at === -1) continue;
+    const after = key.charAt(at + prefix.length);
+    // `:` → a per-slug/per-page key; "" → the map-level key. Anything else is a
+    // different map whose id merely starts with this one.
+    if (after === ":" || after === "") selectorCache.delete(key);
+  }
+}
+
+/**
  * The workspace for a map that has never been opened. A stable module-level
  * object, because returning a fresh `{}` from a selector re-renders every
  * consumer on every store change.
@@ -46,6 +94,7 @@ const ABSENT_WORKSPACE: TopicalMapWorkspaceState = Object.freeze(
 
 const EMPTY_VISIBLE: readonly VisibleMapTopic[] = Object.freeze([]);
 const EMPTY_SLUGS: readonly string[] = Object.freeze([]);
+const EMPTY_PAGE_IDS: readonly string[] = Object.freeze([]);
 const EMPTY_FACETS: Readonly<Record<string, string>> = Object.freeze({});
 
 export const selectTopicalMapState = (state: RootState) => state.topicalMap;
@@ -167,6 +216,42 @@ function matchesFilters(topic: NormalizedMapTopic, filters: MapTopicFilters): bo
 }
 
 /**
+ * Orders one sibling list by the workspace's {@link MapSiblingSort}.
+ *
+ * `sort_order` returns the array UNTOUCHED — it is the tree's own order, and
+ * copying it would only cost a new reference per walk.
+ *
+ * A count sort reads the RAW optional field, never `?? 0`: `undefined` means
+ * `map_tree` was read without `include: ["counts"]` for that topic, and such a
+ * topic sorts LAST in every direction rather than claiming a zero it never
+ * reported. `Array.prototype.sort` is stable, so ties — including a whole
+ * unloaded tree — keep the map's own order.
+ */
+function sortedSiblings(
+  slugs: readonly string[],
+  topics: Record<string, NormalizedMapTopic>,
+  sort: MapSiblingSort,
+): readonly string[] {
+  if (sort === "sort_order" || slugs.length < 2) return slugs;
+  const ordered = [...slugs];
+  if (sort === "name") {
+    ordered.sort((a, b) =>
+      (topics[a]?.name ?? a).localeCompare(topics[b]?.name ?? b),
+    );
+    return ordered;
+  }
+  ordered.sort((a, b) => {
+    const left = topics[a]?.[sort];
+    const right = topics[b]?.[sort];
+    if (left === undefined && right === undefined) return 0;
+    if (left === undefined) return 1;
+    if (right === undefined) return -1;
+    return right - left;
+  });
+  return ordered;
+}
+
+/**
  * The flattened rows an outline, a table or a text view draws, in tree order,
  * honouring expansion.
  *
@@ -212,9 +297,13 @@ export function selectVisibleMapTopics(mapId: string) {
         const topic = ws.topicsBySlug[slug];
         if (!topic) return;
         if (filtering && !keep.has(slug)) return;
-        const children = filtering
-          ? topic.childSlugs.filter((child) => keep.has(child))
-          : topic.childSlugs;
+        const children = sortedSiblings(
+          filtering
+            ? topic.childSlugs.filter((child) => keep.has(child))
+            : topic.childSlugs,
+          ws.topicsBySlug,
+          ws.siblingSort,
+        );
         const hasChildren = children.length > 0 || (topic.childrenCount ?? 0) > 0;
         // A filter reveals its own path; without one the user's choice rules.
         const isExpanded = filtering ? hasChildren : expanded.has(slug);
@@ -231,7 +320,10 @@ export function selectVisibleMapTopics(mapId: string) {
         if (isExpanded) for (const child of children) walk(child);
       };
 
-      for (const root of ws.rootSlugs) walk(root);
+      // The roots are siblings of each other, so the same order applies to them.
+      for (const root of sortedSiblings(ws.rootSlugs, ws.topicsBySlug, ws.siblingSort)) {
+        walk(root);
+      }
       return rows;
     }),
   );
@@ -412,4 +504,149 @@ export function pageIntentTone(
   if (covers && !intended) return "leaving";
   if (covers && intended) return "in_place";
   return null;
+}
+
+// ── Round 22 — a page never vanishes ───────────────────────────────────────
+//
+// `seo_topical_map_22_a_page_never_vanishes` (live 2026-09-17) changed two
+// MEANINGS without changing a signature:
+//
+//   1. A `covers` edge into a topic that is not live is not coverage. A page
+//      whose only topic was rejected or retired now comes back from
+//      `seo.list_page_intents` with `current_topics: []` and is counted by
+//      `seo.map_diagnostics.pages_on_no_topic`. Before the migration the page
+//      fell out of BOTH readers and simply stopped existing.
+//   2. An intent SURVIVES its topic being hidden but omits its `topic` key
+//      while that topic is not live — the decision is still true, the
+//      destination is gone.
+//
+// Everything below exists so a screen renders those two states honestly
+// instead of printing a blank cell, which is law 4 from the other side.
+
+/** The live topic slugs one listed page covers today, or `[]`. */
+export function selectPageCoverage(mapId: string, pageId: string) {
+  return cached(`coverage:${mapId}:${pageId}`, () =>
+    createSelector(
+      [selectMapWorkspace(mapId)],
+      (ws): readonly string[] => ws.coverageByPageId[pageId] ?? EMPTY_PAGE_IDS,
+    ),
+  );
+}
+
+/**
+ * Every LISTED page that covers no live topic of this map — the client-side
+ * twin of `map_diagnostics.pages_on_no_topic`, over the pages actually loaded.
+ *
+ * It answers only for pages `seo.list_page_intents` has returned into this
+ * workspace: a page nobody listed is absent from `coverageByPageId` entirely
+ * and can never be mistaken for one that covers nothing.
+ */
+export function selectPagesOnNoTopic(mapId: string) {
+  return cached(`pagesOnNoTopic:${mapId}`, () =>
+    createSelector([selectMapWorkspace(mapId)], (ws): readonly string[] => {
+      const out: string[] = [];
+      for (const [pageId, slugs] of Object.entries(ws.coverageByPageId)) {
+        if (slugs.length === 0) out.push(pageId);
+      }
+      return out.length > 0 ? out : EMPTY_PAGE_IDS;
+    }),
+  );
+}
+
+/**
+ * Where ONE page stands in the map's topic structure — the state the plain
+ * page list and the bulk screen colour by. See {@link PageTopicState} for what
+ * each value means and why the last two have no `intent_colors` entry.
+ *
+ * PRECEDENCE, and the reason for it:
+ *   1. `intent_topic_hidden` first. A destination that left the map is the
+ *      most actionable thing true about the page, and it is the one state a
+ *      reader cannot infer from anything else on the row.
+ *   2. then the intent's own direction (`in_place` / `leaving` / `arriving`),
+ *      because a page heading somewhere is better described by where it is
+ *      going than by the hole it is currently in.
+ *   3. then coverage alone: covering something live is `in_place`; covering
+ *      nothing is `on_no_topic`.
+ *
+ * Pure, so a view, a test or a bulk action can call it without a store.
+ */
+export function pageTopicState(view: PageTopicView): PageTopicState {
+  if (view.hasIntent && view.intendedTopicSlug === null) return "intent_topic_hidden";
+  if (view.intendedTopicSlug !== null) {
+    if (view.currentTopicSlugs.includes(view.intendedTopicSlug)) return "in_place";
+    return view.currentTopicSlugs.length > 0 ? "leaving" : "arriving";
+  }
+  return view.currentTopicSlugs.length > 0 ? "in_place" : "on_no_topic";
+}
+
+/** {@link pageTopicState} for a page this workspace has listed. */
+export function selectPageTopicState(mapId: string, pageId: string) {
+  return cached(`topicState:${mapId}:${pageId}`, () =>
+    createSelector(
+      [selectPageCoverage(mapId, pageId), selectPageIntent(mapId, pageId)],
+      (coverage, intent): PageTopicState =>
+        pageTopicState({
+          pageId,
+          currentTopicSlugs: coverage as string[],
+          hasIntent: intent !== null,
+          intendedTopicSlug: intent?.topic?.slug ?? null,
+        }),
+    ),
+  );
+}
+
+/**
+ * One listed row as {@link pageTopicState} reads it, built straight from what
+ * `seo.list_page_intents` returned. The list screen uses this rather than the
+ * store so a page is described by the bytes on the row it is drawing.
+ */
+export function pageTopicViewOf(item: {
+  page: { id: string };
+  current_topics: { slug: string }[];
+  intent: PageIntentRecord | null;
+}): PageTopicView {
+  return {
+    pageId: item.page.id,
+    currentTopicSlugs: item.current_topics.map((topic) => topic.slug),
+    hasIntent: item.intent !== null,
+    intendedTopicSlug: item.intent?.topic?.slug ?? null,
+  };
+}
+
+// ── CONTRACTS §3 additions — one property per selector ─────────────────────
+
+export function selectMapPageFilters(mapId: string) {
+  return cached(`pageFilters:${mapId}`, () =>
+    createSelector([selectMapWorkspace(mapId)], (ws): MapPageFilters => ws.pageFilters),
+  );
+}
+
+export function selectMapCheckedPageIds(mapId: string) {
+  return cached(`checkedPages:${mapId}`, () =>
+    createSelector([selectMapWorkspace(mapId)], (ws) => ws.checkedPageIds),
+  );
+}
+
+export function selectMapGraph(mapId: string) {
+  return cached(`graph:${mapId}`, () =>
+    createSelector([selectMapWorkspace(mapId)], (ws): MapGraphState => ws.graph),
+  );
+}
+
+export function selectMapTable(mapId: string) {
+  return cached(`table:${mapId}`, () =>
+    createSelector([selectMapWorkspace(mapId)], (ws): MapTableState => ws.table),
+  );
+}
+
+export function selectMapReview(mapId: string) {
+  return cached(`review:${mapId}`, () =>
+    createSelector([selectMapWorkspace(mapId)], (ws): MapReviewState => ws.review),
+  );
+}
+
+export function selectMapSiblingSort(mapId: string) {
+  return cached(`siblingSort:${mapId}`, () =>
+    createSelector([selectMapWorkspace(mapId)], (ws): MapSiblingSort => ws.siblingSort),
+  );
 }

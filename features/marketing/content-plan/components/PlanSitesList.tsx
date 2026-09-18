@@ -32,6 +32,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { PlanSiteMapCell } from "@/features/marketing/seo/topical-map/linkins/PlanSiteMapCell";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -541,6 +542,15 @@ export function PlanSitesList({
             ) : null}
           </span>
         ),
+      },
+      {
+        // Placement §7 #5 — "Built on map X": the topical map the site uses.
+        id: "map",
+        header: "Map",
+        accessorFn: (row) => row.site.id,
+        filter: false,
+        sortable: false,
+        cell: (row) => <PlanSiteMapCell siteId={row.site.id} />,
       },
       {
         id: "brand",

@@ -33,6 +33,7 @@ import {
   ExternalLink,
   Gauge,
   Map as MapIcon,
+  Network,
   Plus,
   Globe,
 } from "lucide-react";
@@ -48,6 +49,7 @@ import { useCmsSiteSurfaceScope } from "@/features/cms/hooks/useCmsSiteSurfaceSc
 import { CMS_SITE_CONTEXT_MENU_PROPS } from "@/features/cms/agent-context/cmsSiteContextMenuProps";
 import type { CmsSiteMode } from "@/features/cms/agent-context/buildCmsSiteContextData";
 import { cmsDocumentTitle } from "@/features/cms/utils/cmsDocumentMetadata";
+import { useSiteMapId } from "@/features/marketing/seo/topical-map/hooks";
 
 interface SiteContextValue {
   site: ClientSite;
@@ -178,6 +180,10 @@ export default function SiteLayoutClient({
   // SUMMARY rows — `listSites` returns a column subset (switcher + inherited
   // hub inventory only). The open site itself is a FULL row from `getSite`.
   const [allSites, setAllSites] = useState<ClientSiteSummary[]>([]);
+
+  // access-errors: ok — a refusal only omits the nav door; the marketing site
+  // itself renders the sentence. `useSiteMapId` never retries a 42501.
+  const siteMapId = useSiteMapId(site?.web_site_id ?? "", Boolean(site?.web_site_id));
 
   const [pages, setPages] = useState<ClientPageSummary[]>([]);
   const [pagesLoading, setPagesLoading] = useState(true);
@@ -393,6 +399,19 @@ export default function SiteLayoutClient({
           // web_site_id pairing exists — never a fake door.
           ...(site.web_site_id
             ? [
+                // Placement §7 #6: the topical map beside the content plan —
+                // the tree the plan is built on. Only when the paired site
+                // uses one (`seo.site_map_id`); the flat id door resolves the
+                // brand server-side.
+                ...(siteMapId.data
+                  ? [
+                      {
+                        label: "Topical map",
+                        icon: Network,
+                        href: marketingRoutes.topicalMapDoor(siteMapId.data),
+                      },
+                    ]
+                  : []),
                 {
                   label: "Content plan",
                   icon: MapIcon,

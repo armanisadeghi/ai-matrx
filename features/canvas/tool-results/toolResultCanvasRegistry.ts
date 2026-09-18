@@ -28,6 +28,10 @@ import {
   buildDocumentCanvasContent,
   documentCanvasSourceId,
 } from "@/features/data-tables/hooks/useOpenDocumentCanvas";
+import {
+  buildTopicalMapCanvasContent,
+  topicalMapCanvasSourceId,
+} from "@/features/marketing/seo/topical-map/canvas/topicalMapCanvasContent";
 
 /** One canvas-renderable record found in a tool result. */
 export interface ToolResultCanvasOffer {
@@ -178,3 +182,49 @@ registerToolResultCanvasReader("document", readDocumentResult);
 // The same reader by KIND, so any tool that emits a `udt_document` record —
 // today or later — inherits the door without a second registration.
 registerToolResultCanvasReader("udt_document", readDocumentResult);
+
+/**
+ * `topical_map` (aidream `tools/topical_map_tool.py`) — action-dispatched over
+ * one brand's map. Only a call that CREATED or CHANGED the map is offered
+ * (`create_map`, `upsert`, `replace_section`, `patch`, `move`, `merge`,
+ * `split`, `retire`, `reject_topics`, the facet writes): a read already showed
+ * the person its answer in the thread, and the card's own Open menu still
+ * carries "Open map in canvas" for those. The pane is the live workspace
+ * (`topical_map` pointer, NON_PERSISTABLE), keyed by map so a run that edits
+ * the same map ten times shows ONE pane.
+ */
+const TOPICAL_MAP_OFFERED_ACTIONS = new Set([
+  "create_map",
+  "upsert",
+  "replace_section",
+  "patch",
+  "move",
+  "merge",
+  "split",
+  "retire",
+  "reject_topics",
+  "set_facet",
+  "add_facet_values",
+]);
+
+const readTopicalMapToolResult: ToolResultCanvasReader = (result, ctx) => {
+  const r = asObject(result);
+  if (!r) return null;
+  const action = asStr(r.action);
+  if (!action || !TOPICAL_MAP_OFFERED_ACTIONS.has(action)) return null;
+  const mapId = asStr(r.map_id) ?? asStr(asObject(r.map)?.id);
+  if (!mapId) return null;
+  const title = asStr(asObject(r.map)?.name) ?? "Topical map";
+  return {
+    sourceId: topicalMapCanvasSourceId(mapId),
+    label: title,
+    content: buildTopicalMapCanvasContent({
+      mapId,
+      screen: "outline",
+      title,
+      conversationId: ctx.conversationId ?? null,
+    }),
+  };
+};
+
+registerToolResultCanvasReader("topical_map", readTopicalMapToolResult);
