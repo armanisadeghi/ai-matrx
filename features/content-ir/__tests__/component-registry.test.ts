@@ -20,6 +20,8 @@ import {
   type KindComponentProjection,
 } from "../registry/schema-source-kind-components";
 
+import * as errorCaptureStore from "@/lib/diagnostics/errorCaptureStore";
+
 jest.mock("../registry/schema-source-kind-components", () => ({
   listKindComponentsFromTables: jest.fn(),
 }));
@@ -297,10 +299,15 @@ describe("ComponentRegistry — warm tier", () => {
     });
   });
 
-  it("warm failure: compiled floor keeps serving, ONE console.error, retryable", async () => {
-    const consoleError = jest
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
+  it("warm failure: compiled floor keeps serving, one captured error per refused attempt, retryable", async () => {
+    // The scream is the host's `reportError` seam — the registry binds it to
+    // `captureError` (Error Inspector). Since @ai-matrx/content-ir-react
+    // 0.11.8 the package no longer ALSO prints its own console.error, so the
+    // seam is the only place the failure lands and the only honest assertion.
+    // Spy BEFORE construction: the registry captures the binding then.
+    const captured = jest
+      .spyOn(errorCaptureStore, "captureError")
+      .mockImplementation(() => "captured");
     try {
       mockList.mockRejectedValue(new Error("db unreachable"));
       const registry = new ComponentRegistry(getSystemComponentEntries);
@@ -315,13 +322,16 @@ describe("ComponentRegistry — warm tier", () => {
       // Failure reset the promise — the next call retries the fetch...
       await registry.ensureWarm();
       expect(mockList).toHaveBeenCalledTimes(2);
-      // ...but the console scream fired exactly once.
-      expect(consoleError).toHaveBeenCalledTimes(1);
+      // ...and EVERY failed attempt is reported, once each, through the
+      // capture seam — two fetches refused, two reports, never a silent retry.
+      expect(captured).toHaveBeenCalledTimes(2);
       // The scream is worded by the shared resolver
-      // (`@ai-matrx/content-ir-react`), which now owns the warm lifecycle.
-      expect(String(consoleError.mock.calls[0]?.[0])).toContain(
-        "component-resolver warm load failed",
-      );
+      // (`@ai-matrx/content-ir-react`), which owns the warm lifecycle.
+      for (const call of captured.mock.calls) {
+        expect(String(call[0]?.message)).toContain(
+          "component-resolver warm load failed",
+        );
+      }
 
       // Recovery: a later successful fetch upgrades in place.
       mockList.mockResolvedValue([
@@ -333,7 +343,7 @@ describe("ComponentRegistry — warm tier", () => {
         resolvedBy: "db",
       });
     } finally {
-      consoleError.mockRestore();
+      captured.mockRestore();
     }
   });
 });
