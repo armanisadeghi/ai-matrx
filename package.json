@@ -96,6 +96,7 @@
     "check:menu-live-items": "tsx scripts/check-context-menu.ts --strict --population=dead-item",
     "check:menu-live-items:self-test": "tsx scripts/check-context-menu.ts --self-test",
     "check:picker-add": "tsx scripts/check-picker-custom-entry.ts",
+    "check:picker-add:self-test": "tsx scripts/check-picker-add-self-test.ts",
     "check:thinking-leak": "tsx scripts/check-thinking-leak.ts",
     "check:thinking-leak:self-test": "tsx scripts/check-thinking-leak.ts --self-test",
     "check:static-loader": "tsx scripts/check-static-loader.ts",

@@ -47,6 +47,7 @@ import type {
 import {
   getRegisteredWriteHandlers,
   getSurfaceRuntimeStack,
+  type SurfaceRuntimeValue,
 } from "./SurfaceRuntimeContext";
 
 /**
@@ -167,6 +168,8 @@ export interface SurfaceWriteApprovalProposal {
   surfaceName: string;
   target: SurfaceWriteTarget;
   value: unknown;
+  /** Live text captured from the target’s declared read twin, never model supplied. */
+  currentValue?: string | null;
   actorLabel?: string;
 }
 
@@ -282,6 +285,7 @@ async function agentWriteAllowed(
   actorLabel: string | undefined,
   value: unknown,
   requestApproval: ApplySurfaceWriteOptions["requestApproval"],
+  runtime: SurfaceRuntimeValue,
 ): Promise<SurfaceWriteResult | true> {
   const policy = resolveApplyPolicy(target, surfaceName);
   if (policy === "auto") return true;
@@ -299,13 +303,75 @@ async function agentWriteAllowed(
       { targetName: target.name, surfaceName, policy },
     );
   }
+  // Read the owning live surface, not the agent's potentially stale context.
+  // Append targets carry a fragment, not the replacement document.
+  const originalName = target.updatesValue;
+  const originalDefinition = getManifest(surfaceName)?.values?.find(
+    (entry) => entry.name === originalName,
+  );
+  // A string input can be an operation ON a structured record (add_note,
+  // end_employment, etc.). Only an exact text read twin is a replacement.
+  const compareText =
+    target.approvalComparison === "text-replacement" &&
+    originalName !== undefined &&
+    (originalDefinition?.valueType === "string" ||
+      originalDefinition?.valueType === "document") &&
+    typeof value === "string" &&
+    !target.name.startsWith("append");
+  let currentValue: string | null | undefined;
+  async function readCurrentText(): Promise<string | null> {
+    if (!originalName)
+      throw new Error("The original text source is not declared.");
+    const scope = await runtime.getScope();
+    const current = scope[originalName];
+    if (current !== null && typeof current !== "string") {
+      throw new Error(
+        `The current text for "${target.label}" is unavailable. Reopen the editor and request the change again.`,
+      );
+    }
+    return current;
+  }
+  if (compareText) {
+    try {
+      currentValue = await readCurrentText();
+    } catch (error) {
+      return fail(
+        error instanceof Error
+          ? error.message
+          : "Could not read the original text for comparison.",
+        { targetName: target.name, surfaceName, error },
+      );
+    }
+  }
   const decision = await requestApproval({
     surfaceName,
     target,
     value,
     actorLabel,
+    ...(currentValue !== undefined ? { currentValue } : {}),
   });
-  if (decision.kind === "approved") return true;
+  if (decision.kind === "approved") {
+    if (compareText) {
+      try {
+        if (
+          !getSurfaceRuntimeStack().includes(runtime) ||
+          (await readCurrentText()) !== currentValue
+        ) {
+          const message = `"${target.label}" changed while you were reviewing it. Nothing was applied. Request the change again to review an updated comparison.`;
+          toast.error(message);
+          return { ok: false, refused: true, error: message };
+        }
+      } catch (error) {
+        return fail(
+          error instanceof Error
+            ? error.message
+            : "Could not verify the original text before applying.",
+          { targetName: target.name, surfaceName, error },
+        );
+      }
+    }
+    return true;
+  }
   return declined(
     target,
     decision.kind === "declined" ? decision.instructions : undefined,
@@ -469,7 +535,11 @@ export async function applySurfaceWrite(
     // The declared value contract binds before anything else looks at the
     // value — no approval card for a malformed payload, no handler asked to
     // re-validate what the kind already describes.
-    const contract = await valueContractHolds(target, runtime.surfaceName, value);
+    const contract = await valueContractHolds(
+      target,
+      runtime.surfaceName,
+      value,
+    );
     if (contract !== true) return contract;
 
     if ((opts?.origin ?? "user") === "agent") {
@@ -481,6 +551,7 @@ export async function applySurfaceWrite(
         opts?.actorLabel,
         value,
         opts?.requestApproval,
+        runtime,
       );
       if (verdict !== true) return verdict;
     }

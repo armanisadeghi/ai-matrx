@@ -342,6 +342,7 @@ const writeTargets: SurfaceWriteTarget[] = [
       "REPLACES the entire body of this session's working document with the markdown you pass. This is a full replacement, not a merge: read `working_document_content` first and include everything you want kept, or use `append_working_document` when you only mean to add. Pass plain multi-line markdown with real line breaks — do not JSON-encode it or escape the newlines. Saved immediately through the same path the document editor's autosave uses, and it appears in the editor as soon as the user is not mid-keystroke. Refused when the session has no working document yet. Prefer appending unless the user actually asked for a rewrite — this one overwrites work.",
     valueType: "string",
     updatesValue: "working_document_content",
+    approvalComparison: "text-replacement",
     mode: "entity",
     applyPolicy: "ask",
     group: "working_document",

@@ -72,3 +72,31 @@ export async function readFileRowById<C extends SupabaseClient<Database>>(
   if (error) throw error;
   return data;
 }
+
+/**
+ * Batch-read just the byte size for a set of file ids, RLS-authorized like
+ * every other read here.
+ *
+ * Built for a source list that names files by id (a Rulebook's attached
+ * sources, a resource pile) and needs to show — before any run touches
+ * them — which of those files are genuinely empty. `size_bytes` alone (no
+ * `storage_uri`, no need for the single-row reader's full column list) keeps
+ * this cheap enough to call for a whole pile at once.
+ */
+export async function readFileSizesByIds<C extends SupabaseClient<Database>>(
+  client: C,
+  fileIds: string[],
+): Promise<Map<string, number | null>> {
+  const out = new Map<string, number | null>();
+  if (fileIds.length === 0) return out;
+  const { data, error } = await filesDb(client)
+    .from("files")
+    .select("id, size_bytes")
+    .in("id", fileIds)
+    .is("deleted_at", null);
+  if (error) throw error;
+  for (const row of data ?? []) {
+    out.set(row.id, row.size_bytes ?? null);
+  }
+  return out;
+}

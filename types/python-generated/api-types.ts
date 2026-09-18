@@ -6523,6 +6523,26 @@ export interface paths {
          *     remedy alone ("Connect GitHub in AI Matrx…"), which sent a connected user
          *     (2026-09-18) to reconnect an account that was already connected and hid the
          *     only datum that could have identified the real cause.
+         *
+         *     Hand a sandbox the user's short-lived GitHub token.
+         *
+         *     WHAT THE ORGANIZATION DOES AND DOES NOT DO HERE. The bridge handshake
+         *     (``_bridge_user_id``) admits the call only with BOTH halves of the request
+         *     context and installs them, and it PROVES the forwarded user is a member of
+         *     the forwarded organization before admitting anything — that membership
+         *     proof is what bounds the shared bridge secret to a tenant the actor already
+         *     belongs to. The token itself is NOT org-scoped, and saying so would be a
+         *     lie: ``resolve_github_access_token(user_id)`` resolves the person's own
+         *     GitHub connection, by user. A personal integration connection carries NO
+         *     organization at all — ``users.integration_connections`` is constrained to
+         *     ``owner_type='user' AND owner_user_id IS NOT NULL AND organization_id IS
+         *     NULL`` (CHECK ``integration_connections_owner_shape``; see
+         *     ``aidream/services/microsoft_integrations/FEATURE.md``), where that column
+         *     is the owner discriminator, not a tenancy stamp.
+         *
+         *     So: membership is proven at the bridge; the credential handed back is the
+         *     person's own, the same one they would get anywhere else in the product.
+         *     This route resolves no organization of its own.
          */
         get: operations["internal_access_token_github_integrations_internal_access_token_get"];
         put?: never;
@@ -30636,8 +30656,9 @@ export interface paths {
          *     does not own resolves to nothing and streams a clean "source_not_found"
          *     result rather than an error or a cross-tenant leak.
          *
-         *     The effective org is resolved (personal-org fallback) before the ingest
-         *     call so the written kg_chunks are always org-scoped (non-NULL invariant).
+         *     The organization is READ off the request context before the ingest call,
+         *     so the written kg_chunks are always org-scoped (non-NULL invariant) and
+         *     always in the tenant the caller was admitted for.
          */
         post: operations["rag_ingest_conversation_rag_conversations__conversation_id__ingest_post"];
         delete?: never;
@@ -37594,27 +37615,36 @@ export interface paths {
         };
         /**
          * List Changes
-         * @description Polling fallback for the in-sandbox watcher's down-direction.
+         * @description THE downstream path for the in-sandbox replica — the whole of it.
          *
-         *     The recommended live path is Supabase Realtime on ``cld_files`` (see
-         *     ``db/migrations/0002_cld_files_realtime.sql``). When Realtime isn't
-         *     available — sandbox missing the realtime client lib, missing Supabase
-         *     creds, or a transient WebSocket drop — the watcher polls this endpoint
-         *     every ~30s with the ISO timestamp of the most recent change it has
-         *     already processed.
+         *     A sandbox never talks to the platform database; the bridge is the one hop,
+         *     and it is what carries the organization. The Supabase-Realtime subscriber
+         *     that used to sit beside the poller was deleted on 2026-09-17, so everything
+         *     a replica must learn has to be in this answer. The box polls with the ISO
+         *     timestamp of the newest change it has already applied and follows the
+         *     cadence this response instructs (``poll_after_seconds`` / ``Retry-After``).
          *
-         *     Returns only **modifications** (rows with ``updated_at > since``,
-         *     ``deleted_at IS NULL``), filtered and bounded server-side via
-         *     ``list_changed_files_async``. Soft-deletes are not surfaced through this
-         *     endpoint — they only show up via Realtime, or are picked up by the next
-         *     session's bulk down-sync.
+         *     Returns every change with ``updated_at > since`` in this tenant, oldest
+         *     first, bounded server-side — **modifications and deletions alike**. A
+         *     soft-deleted row is sent marked ``deleted: true`` (with its ``deleted_at``)
+         *     and ``deletions_supported`` is ``true``: until 2026-09-17 it was ``false``
+         *     and tombstones were filtered out, so a file the person deleted in the UI
+         *     stayed on the sandbox's disk and the shutdown up-sync PUT IT BACK — the
+         *     delete undid itself. Deletions ride the same cursor because
+         *     ``platform._touch_row`` stamps ``updated_at`` on a soft-delete.
+         *
+         *     Contract both halves meet on: matrx-sandbox
+         *     ``sandbox-image/sdk/matrx_agent/cloud_sync/FEATURE.md`` § The ``/changes``
+         *     contract.
          *
          *     Response shape:
          *         {
-         *             "files":       [{ id, file_path, file_size, mime_type,
-         *                               current_version, checksum, updated_at }, ...],
+         *             "files":       [{ id, file_path, file_size, size_bytes, mime_type,
+         *                               current_version, checksum, updated_at,
+         *                               deleted, deleted_at }, ...],
          *             "next_cursor": "<iso of most recent updated_at>",
-         *             "deletions_supported": false
+         *             "deletions_supported": true,
+         *             "poll_after_seconds": 30
          *         }
          */
         get: operations["list_changes_cloud_files_changes_get"];
@@ -42410,7 +42440,7 @@ export interface components {
             include_parent?: boolean;
             /**
              * Organization Id
-             * @description Admin-only org override — should match the org used for the search.
+             * @description The organization the search ran in; must match the organization this request was admitted for (a disagreeing value is a 409).
              */
             organization_id?: string | null;
         };
@@ -48775,7 +48805,7 @@ export interface components {
          *     overloading the entry-ledger counters.
          * @enum {string}
          */
-        BridgeAction: "append_native" | "capabilities" | "delete" | "diagnose" | "handoff" | "health" | "list_native" | "load_native" | "observe_hook" | "reproject" | "send";
+        BridgeAction: "append_native" | "capabilities" | "delete" | "delete_native_stream" | "diagnose" | "handoff" | "health" | "list_native" | "load_native" | "observe_hook" | "reproject" | "send";
         /** BridgeCapabilities */
         BridgeCapabilities: {
             /** Native Resume */
@@ -48821,10 +48851,51 @@ export interface components {
             /** Supported Actions */
             supported_actions: components["schemas"]["BridgeAction"][];
         };
+        /**
+         * BridgeChangeEntry
+         * @description A change-feed row: a modification, or a DELETION that says so.
+         *
+         *     Two fields the plain listing has no use for, both named by the contract the
+         *     sandbox implements (matrx-sandbox
+         *     ``sandbox-image/sdk/matrx_agent/cloud_sync/FEATURE.md`` § The ``/changes``
+         *     contract):
+         *
+         *     * ``deleted`` — the marker. ``true`` means this path is gone for this
+         *       person; the replica unlinks it. Stated, never inferred from absence,
+         *       because absence is also what a page limit looks like.
+         *     * ``file_size`` — the contract's name for ``size_bytes``. Both are sent so
+         *       the poller finds the name it reads and nothing loses the one it had.
+         */
+        BridgeChangeEntry: {
+            /** Id */
+            id?: string | null;
+            /** File Path */
+            file_path?: string | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
+            /** Mime Type */
+            mime_type?: string | null;
+            /**
+             * Current Version
+             * @default 1
+             */
+            current_version?: number;
+            updated_at?: components["schemas"]["JsonValue"] | null;
+            /** Checksum */
+            checksum?: string | null;
+            /**
+             * Deleted
+             * @default false
+             */
+            deleted?: boolean;
+            deleted_at?: components["schemas"]["JsonValue"] | null;
+            /** File Size */
+            file_size?: number | null;
+        };
         /** BridgeChangesResponse */
         BridgeChangesResponse: {
             /** Files */
-            files: components["schemas"]["BridgeFileEntry"][];
+            files: components["schemas"]["BridgeChangeEntry"][];
             /** Next Cursor */
             next_cursor: string;
             /**
@@ -49344,6 +49415,10 @@ export interface components {
              * @default false
              */
             deleted?: boolean;
+            /** Stream Keys */
+            stream_keys?: string[] | null;
+            /** Deleted Entries */
+            deleted_entries?: number | null;
             /** Hookspecificoutput */
             hookSpecificOutput?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -54095,6 +54170,10 @@ export interface components {
             workspace_root?: string;
             /** Session Id */
             session_id?: string | null;
+            /** Hosted Runtime Id */
+            hosted_runtime_id?: string | null;
+            /** Hosted Project Key */
+            hosted_project_key?: string | null;
             /** Fork Up To Message Id */
             fork_up_to_message_id?: string | null;
             /** Model */
@@ -59470,7 +59549,7 @@ export interface components {
             owner_user_id?: string | null;
             /**
              * Owner Organization Id
-             * @description Optional org placement for an owned agent. Ignored unless owner_user_id is set; when omitted it resolves to the owner's personal org via resolve_effective_organization_id. Never NULL on the written row.
+             * @description Org placement for an owned agent. Ignored unless owner_user_id is set; REQUIRED when it is — the organization the caller was admitted for (context_organization_id(ctx)) or the one on the record being processed. Never NULL on the written row, never defaulted.
              */
             owner_organization_id?: string | null;
         };
@@ -64387,6 +64466,10 @@ export interface components {
             schema?: string | null;
             /** Schema Source */
             schema_source?: string | null;
+            /** Organization Id */
+            organization_id?: string | null;
+            /** Organization Source */
+            organization_source?: string | null;
         };
         /**
          * DripSendReport

@@ -69,7 +69,8 @@ const SAMPLES: PendingAsk[] = [
       "Badass Agent proposed this change. Replaces the agent's description — the prose shown in agent lists and the catalog explaining what this agent is for. Plain text, no markdown headings; a few sentences. Approval only stages it in the editor; you still review and save.",
     fields: [
       {
-        label: "Proposed value",
+        label: "Agent description",
+        before: "I review intake photos and return a short written summary for each item.",
         after:
           "I'm the last set of eyes on every item that hits your intake dock.\n\n" +
           "You hand me the photos — dim, dusty, shot in a hurry off the back of a pallet — and I turn them into a permanent, structured record. I work in JSON only, and I return exactly one analysis object per batch.\n\n" +
