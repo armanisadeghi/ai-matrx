@@ -179,14 +179,23 @@ function item(overrides: Record<string, unknown>) {
 // ═══════════════════════════════ A ═══════════════════════════════════════════
 
 describe("A · a field that changed shape on the wire never reaches React", () => {
-    it("says what it could not read instead of crashing the panel", async () => {
+    /**
+     * 🚨 CLASS FIX, 2026-09-18. This used to assert the WHOLE panel fell to an
+     * error state ("Read it again") the moment ONE item's field shape-shifted
+     * — the same all-or-nothing bug `mapListRows` (`lib/contract/narrow.ts`)
+     * closed for the Jobs lane list itself (commit 509e2bffb5) and, the same
+     * day, for `features/exports`. `parseJobDetailResponse` now drops only the
+     * unreadable item and keeps every sibling item that DID read — proven
+     * here by item i1 staying on screen beside the named problem for i2.
+     */
+    it("drops one unreadable item and names it, but keeps every item that reads fine", async () => {
         // THE 2026-09-17 SHAPE-SHIFT, on this screen's rows: a scalar the
         // client renders as a JSX child arrives as an object.
         transport.mockResolvedValue({
             data: {
                 job: JOB,
                 items: [
-                    item({ id: "i1" }),
+                    item({ id: "i1", title: "The first video" }),
                     item({
                         id: "i2",
                         video_id: "v2",
@@ -202,18 +211,27 @@ describe("A · a field that changed shape on the wire never reaches React", () =
 
         // The screen is up — React did not throw, the panel painted its header.
         expect(container!.querySelector("h2")).not.toBeNull();
-        // And it says, in words, exactly which field it could not read.
+        // The sibling item that DID read survived being next to the broken one:
+        // two items came in, one was unreadable, and this panel still holds
+        // ONE — never zero, the all-or-nothing outcome the old code gave.
+        // (jsdom's virtualizer measures zero height and mounts no item rows,
+        // so this reads the panel's own read-count sentence, not a row's text
+        // — see this file's header comment.)
+        expect(text()).toContain("Showing the 1 items this panel has read");
+        // And the panel says, in words, exactly which field it could not read —
+        // named beside the good item, never taking it down with it.
         expect(text()).toContain("items[1].title");
         expect(text()).toContain("an object with keys {label, block}");
         expect(text()).toContain("Nothing has been guessed or hidden");
         // The object that used to reach React as a child is nowhere in the DOM.
         expect(text()).not.toContain("[object Object]");
-        // And the door out is real: the read can be tried again.
+        // This is NOT the panel-level "the whole read failed" door: the read
+        // succeeded, one row within it did not.
         expect(
             Array.from(container!.querySelectorAll("button")).some((button) =>
                 (button.textContent ?? "").includes("Read it again"),
             ),
-        ).toBe(true);
+        ).toBe(false);
     });
 
     it("a count that became a list is named too, never rendered", async () => {

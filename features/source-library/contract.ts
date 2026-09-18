@@ -705,15 +705,26 @@ export function parseJobItemRow(payload: unknown, field: string): JobItemRow {
     };
 }
 
-/** `GET /media/jobs/{id}` — the mount read the whole panel is built from. */
+/**
+ * `GET /media/jobs/{id}` — the mount read the whole panel is built from.
+ *
+ * 🚨 PER-ROW, NEVER ALL-OR-NOTHING. One item this build cannot read must not
+ * blank the whole queue for every OTHER item that reads fine — see
+ * `mapListRows` in `lib/contract/narrow.ts`. The bad row is dropped and its
+ * sentence collected in `row_problems`, which `JobPanel` shows as one honest
+ * line per unreadable item, the same treatment the Jobs lane gets in
+ * `parseJobListResponse` above.
+ */
 export function parseJobDetailResponse(payload: unknown): JobDetailResponse {
     const root = obj(payload, "this job");
-    const items = arr(root.items ?? [], "items").map((entry, index) =>
-        parseJobItemRow(entry, `items[${index}]`),
+    const { rows: items, problems: row_problems } = mapListRows(
+        arr(root.items ?? [], "items"),
+        (entry, index) => parseJobItemRow(entry, `items[${index}]`),
     );
     return {
         job: parseJobRow(root.job, "job"),
         items,
+        row_problems,
         items_total: number(root.items_total, "items_total", items.length),
     };
 }
@@ -917,16 +928,29 @@ export function parseSyncEvent(payload: unknown, standIns: string[]): EventRead<
                         ),
                     },
                 };
-            case "library.sync.page":
+            case "library.sync.page": {
+                // 🚨 ONE UNREADABLE VIDEO MUST NOT DROP THE WHOLE PAGE. This
+                // page's videos are decoration only — the mount read owns the
+                // real list — but before this fix a single bad row in a page of
+                // (typically) 50 threw out of the `.map()` and the try/catch
+                // above treated the WHOLE event as unreadable, losing every
+                // sibling video's live-progress row along with it.
+                // `mapListRows` (`lib/contract/narrow.ts`) drops only the bad
+                // row; its sentence rides the same `standIns` channel every
+                // other recovered field on this event already uses, so it
+                // reaches the sync banner the normal way.
+                const { rows: pageVideos, problems: pageVideoProblems } = mapListRows(
+                    arr(row.videos ?? [], `${type}.videos`),
+                    (entry, index) => parseVideoRow(entry, `${type}.videos[${index}]`),
+                );
+                standIns.push(...pageVideoProblems);
                 return {
                     event: {
                         type,
                         ...head,
                         page_index: number(row.page_index, `${type}.page_index`),
                         page_size: number(row.page_size, `${type}.page_size`),
-                        videos: arr(row.videos ?? [], `${type}.videos`).map((entry, index) =>
-                            parseVideoRow(entry, `${type}.videos[${index}]`),
-                        ),
+                        videos: pageVideos,
                         cumulative: number(row.cumulative, `${type}.cumulative`),
                         next_page_token_present: optBool(
                             row.next_page_token_present,
@@ -935,6 +959,7 @@ export function parseSyncEvent(payload: unknown, standIns: string[]): EventRead<
                         ),
                     },
                 };
+            }
             case "library.sync.classified":
                 return {
                     event: {

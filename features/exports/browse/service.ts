@@ -93,6 +93,7 @@ export function createExportItemsService(
         filteredTotal: Number(response.filtered_total ?? 0),
         filterDescription: response.filter_description ?? "",
         filter,
+        rowProblems: response.row_problems ?? [],
       };
       onPageRead?.(lastFacts);
       return {

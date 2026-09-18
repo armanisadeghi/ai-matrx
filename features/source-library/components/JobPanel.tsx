@@ -343,8 +343,20 @@ export function JobPanel({
     onOpenVideo?: (videoId: string) => void;
     onDismiss?: () => void;
 }) {
-    const { job, items, loaded, error, elapsedMs, etaSeconds, isLive, reload, retryFailed, resume, cancel } =
-        useJob(jobId);
+    const {
+        job,
+        items,
+        rowProblems,
+        loaded,
+        error,
+        elapsedMs,
+        etaSeconds,
+        isLive,
+        reload,
+        retryFailed,
+        resume,
+        cancel,
+    } = useJob(jobId);
 
     const [filter, setFilter] = useState<ItemFilter>("all");
     const [confirming, setConfirming] = useState<"retry" | "cancel" | null>(null);
@@ -544,6 +556,19 @@ export function JobPanel({
                             <ServerSentence text={job.error} />
                         </div>
                     )}
+
+                    {/* One line per item the server sent that this build could
+                        not read — dropped, never guessed, and never hiding the
+                        items below that DID read correctly. */}
+                    {rowProblems.map((problem, index) => (
+                        <div
+                            key={`job-item-row-problem-${index}`}
+                            className="flex items-start gap-2 rounded-md border border-warning/40 bg-warning/5 px-3 py-2"
+                        >
+                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" aria-hidden />
+                            <ServerSentence text={problem} tone="muted" />
+                        </div>
+                    ))}
 
                     {/* A read that failed while rows are still on screen: the rows
                         are durable and right, and the staleness is named, not hidden. */}

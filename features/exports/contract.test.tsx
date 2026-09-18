@@ -41,11 +41,7 @@ jest.mock("@/lib/python-client", () => ({
 // Imported AFTER the transport mock so the real module graph binds to it.
 import { AdapterCatalog } from "./components/AdapterCatalog";
 import { fetchExportAdapters } from "./api";
-import {
-  ExportContractError,
-  parseAdapterCatalog,
-  parseExportLibrary,
-} from "./contract";
+import { parseAdapterCatalog, parseExportItemsResponse, parseExportLibrary } from "./contract";
 
 declare global {
   // eslint-disable-next-line no-var
@@ -130,23 +126,35 @@ describe("the /exports screen against the bytes production actually sent", () =>
 });
 
 describe("every value the screen renders has been checked, not assumed", () => {
-  it("refuses a payload whose adapters are not adapters, with a sentence", () => {
-    expect(() =>
-      parseAdapterCatalog({ adapters: [{ key: "x", label: { a: 1 } }] }),
-    ).toThrow(ExportContractError);
+  /**
+   * 🚨 CLASS FIX, 2026-09-18. This used to assert `parseAdapterCatalog`
+   * THROWS when one adapter row is unreadable — the exact all-or-nothing bug
+   * `mapListRows` (`lib/contract/narrow.ts`) exists to close, the sibling of
+   * the one that blanked the Jobs panel in `features/source-library` (see
+   * commit 509e2bffb5). One unreadable row must drop and name itself in
+   * `problems`, never take its neighbors with it.
+   */
+  it("drops one unreadable adapter and names it, but keeps every adapter that reads fine", () => {
+    const parsed = parseAdapterCatalog({
+      adapters: [
+        { key: "google_takeout", label: "Google Takeout", accepts: ".zip", implemented: true },
+        { key: "x", label: { a: 1 }, accepts: ".pst", implemented: false },
+        { key: "imessage", label: "iMessage", accepts: ".db", implemented: true },
+      ],
+    });
 
-    try {
-      parseAdapterCatalog({ adapters: [{ key: "x", label: { a: 1 } }] });
-      throw new Error("the parser accepted an object where text was promised");
-    } catch (error) {
-      expect(error).toBeInstanceOf(ExportContractError);
-      const message = (error as ExportContractError).message;
-      // A person reads this. It names the field and what arrived — no stack,
-      // no "something went wrong", no silent empty screen.
-      expect(message).toContain("adapters[0].label");
-      expect(message).toContain("should be text");
-      expect(message).toContain("an object with keys {a}");
-    }
+    // The two good siblings survived the one broken row between them.
+    expect(parsed.value.adapters.map((a) => a.key)).toEqual([
+      "google_takeout",
+      "imessage",
+    ]);
+
+    // The broken row is named, not silently dropped and not thrown.
+    const rowProblem = parsed.problems.find((p) => p.includes("adapters[1]"));
+    expect(rowProblem).toBeDefined();
+    expect(rowProblem).toContain("adapters[1].label");
+    expect(rowProblem).toContain("should be text");
+    expect(rowProblem).toContain("an object with keys {a}");
   });
 
   it("shows the honest sentence on the screen when the list itself is unreadable", async () => {
@@ -244,5 +252,88 @@ describe("a finished export is recognised as finished", () => {
       },
     });
     expect(library.summary?.total_items).toBe(7);
+  });
+});
+
+describe("the items list, against the same class of defect (2026-09-18)", () => {
+  /**
+   * 🚨 THE SIBLING OF THE JOBS-PANEL FIX. `features/source-library`'s Jobs
+   * lane blanked entirely when one job row failed narrowing (commit
+   * 509e2bffb5, `mapListRows` in `lib/contract/narrow.ts`). `parseExportItemsResponse`
+   * had the identical `.map(parseExportItem)` shape — one bad item in a
+   * 20,000-row Google Takeout would have blanked the whole items list.
+   *
+   * PROVEN FAILING BEFORE THE FIX: with the old `arr(root.items, "items").map(...)`,
+   * this exact payload throws `ExportContractError` out of
+   * `parseExportItemsResponse` and neither good item is ever returned.
+   */
+  it("keeps two good items when one sibling item is unreadable", () => {
+    const response = parseExportItemsResponse({
+      items: [
+        {
+          id: "item-1",
+          kind: "email",
+          direction: "inbound",
+          char_count: 100,
+          word_count: 20,
+          attachment_count: 0,
+        },
+        // Broken: `direction` is a number where the contract requires text.
+        { id: "item-2", kind: "email", direction: 4, char_count: 1, word_count: 1, attachment_count: 0 },
+        {
+          id: "item-3",
+          kind: "email",
+          direction: "outbound",
+          char_count: 50,
+          word_count: 9,
+          attachment_count: 1,
+        },
+      ],
+      total: 3,
+      filtered_total: 3,
+      limit: 100,
+      offset: 0,
+    });
+
+    expect(response.items.map((item) => item.id)).toEqual(["item-1", "item-3"]);
+    const rowProblem = response.row_problems.find((p) => p.includes("items[1]"));
+    expect(rowProblem).toBeDefined();
+    expect(rowProblem).toContain("items[1].direction");
+    expect(rowProblem).toContain("should be text");
+  });
+
+  it("drops one unreadable recipient without losing the item or its other recipients", () => {
+    const response = parseExportItemsResponse({
+      items: [
+        {
+          id: "item-1",
+          kind: "email",
+          direction: "outbound",
+          char_count: 10,
+          word_count: 2,
+          attachment_count: 0,
+          recipients: [
+            { name: "Good One", email: "good1@example.com" },
+            // Broken: a recipient entry that is not an object at all.
+            "not-a-party",
+            { name: "Good Two", email: "good2@example.com" },
+          ],
+        },
+      ],
+      total: 1,
+      filtered_total: 1,
+      limit: 100,
+      offset: 0,
+    });
+
+    expect(response.items).toHaveLength(1);
+    expect(response.items[0].recipients.map((r) => r.name)).toEqual([
+      "Good One",
+      "Good Two",
+    ]);
+    const rowProblem = response.row_problems.find((p) =>
+      p.includes("items[0].recipients[1]"),
+    );
+    expect(rowProblem).toBeDefined();
   });
 });

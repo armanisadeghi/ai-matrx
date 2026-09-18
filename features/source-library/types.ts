@@ -443,6 +443,9 @@ export interface JobItemRow {
 export interface JobDetailResponse {
     job: JobRow;
     items: JobItemRow[];
+    /** One honest sentence per item this build could not read — dropped, never
+     *  guessed. See `mapListRows` in `lib/contract/narrow.ts`. */
+    row_problems: string[];
     items_total: number;
 }
 

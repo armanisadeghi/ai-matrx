@@ -35,6 +35,7 @@ import {
     jobLoaded,
     selectJobItems,
     selectJobLive,
+    selectJobRowProblems,
 } from "../redux/sourceLibrarySlice";
 import type { JobItemRow, JobRow } from "../types";
 
@@ -51,6 +52,9 @@ const LIVE_REREAD_INTERVAL_MS = 2_000;
 export interface UseJob {
     job: JobRow | null;
     items: JobItemRow[];
+    /** One honest sentence per item this build could not read — see
+     *  `JobDetailResponse.row_problems`. Never taken as "no items". */
+    rowProblems: string[];
     /** False until the mount read answered. A panel may say nothing before it. */
     loaded: boolean;
     error: string | null;
@@ -69,6 +73,9 @@ export function useJob(jobId: string | null): UseJob {
         jobId ? selectJobLive(state, jobId) : null,
     );
     const items = useAppSelector((state) => (jobId ? selectJobItems(state, jobId) : EMPTY));
+    const rowProblems = useAppSelector((state) =>
+        jobId ? selectJobRowProblems(state, jobId) : EMPTY_ROW_PROBLEMS,
+    );
     const [now, setNow] = useState(() => Date.now());
 
     const job = live?.job ?? null;
@@ -78,7 +85,9 @@ export function useJob(jobId: string | null): UseJob {
         if (!jobId) return;
         try {
             const detail = await getJob(dispatch, jobId);
-            dispatch(jobLoaded({ job: detail.job, items: detail.items }));
+            dispatch(
+                jobLoaded({ job: detail.job, items: detail.items, rowProblems: detail.row_problems }),
+            );
         } catch (error) {
             dispatch(
                 jobLoadFailed({
@@ -144,6 +153,7 @@ export function useJob(jobId: string | null): UseJob {
     return {
         job,
         items,
+        rowProblems,
         loaded: live?.loadedFromServer ?? false,
         error: live?.error ?? null,
         elapsedMs: Math.max(0, elapsedMs),
@@ -157,3 +167,4 @@ export function useJob(jobId: string | null): UseJob {
 }
 
 const EMPTY: JobItemRow[] = [];
+const EMPTY_ROW_PROBLEMS: string[] = [];

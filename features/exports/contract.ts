@@ -34,6 +34,7 @@ import {
   ContractError,
   createReaders,
   describe,
+  mapListRows,
   recovered,
   type Parsed,
 } from "@/lib/contract/narrow";
@@ -100,15 +101,21 @@ function parseAdapter(value: unknown, field: string): ExportAdapter {
  *
  * The two counts are recoverable on purpose: `adapters` already proves them, so
  * a server that mislabels a count must not cost a person the list of what they
- * can drop. `adapters` itself is not recoverable — a screen that cannot say
- * what it accepts has nothing honest to show.
+ * can drop. The LIST ITSELF is not recoverable if it is not a list at all — a
+ * screen that cannot say what it accepts has nothing honest to show — but ONE
+ * unreadable adapter row must not cost every other adapter: see `mapListRows`
+ * in `lib/contract/narrow.ts`. The bad row is dropped and its sentence
+ * collected in `problems`, which `AdapterCatalog.tsx` already renders as one
+ * honest line per issue, beside the adapters that read fine.
  */
 export function parseAdapterCatalog(payload: unknown): Parsed<ExportAdapterCatalog> {
   const root = obj(payload, "the list of formats");
-  const adapters = arr(root.adapters, "adapters").map((entry, index) =>
-    parseAdapter(entry, `adapters[${index}]`),
-  );
   const problems: string[] = [];
+  const { rows: adapters, problems: adapterRowProblems } = mapListRows(
+    arr(root.adapters, "adapters"),
+    (entry, index) => parseAdapter(entry, `adapters[${index}]`),
+  );
+  problems.push(...adapterRowProblems);
   const readable = recovered(
     problems,
     "readable",
@@ -149,8 +156,23 @@ function parseCorrespondent(value: unknown, field: string): ExportCorrespondent 
   };
 }
 
+/**
+ * 🚨 ONE UNREADABLE CORRESPONDENT MUST NOT CRASH THE WHOLE SUMMARY. Before
+ * this fix, `top_correspondents.map(parseCorrespondent)` aborted the whole
+ * summary parse the moment a single ranked correspondent had a bad field — a
+ * finished export whose 30th correspondent was malformed would render as
+ * "not indexed yet" for every OTHER number on the card. `mapListRows`
+ * (`lib/contract/narrow.ts`) drops only that one correspondent; its sentence
+ * is folded into `warnings`, which `LibrarySummary.tsx` already renders as
+ * "What we could not work out" beside the numbers that DID read.
+ */
 export function parseExportSummary(value: unknown, field = "summary"): ExportSummary {
   const row = obj(value, field);
+  const { rows: topCorrespondents, problems: correspondentRowProblems } = mapListRows(
+    arr(row.top_correspondents, `${field}.top_correspondents`),
+    (entry, index) =>
+      parseCorrespondent(entry, `${field}.top_correspondents[${index}]`),
+  );
   return {
     total_items: num(row.total_items, `${field}.total_items`),
     counts_by_kind: countMap(row.counts_by_kind, `${field}.counts_by_kind`),
@@ -158,12 +180,7 @@ export function parseExportSummary(value: unknown, field = "summary"): ExportSum
     counts_by_label: countMap(row.counts_by_label, `${field}.counts_by_label`),
     counts_by_container: countMap(row.counts_by_container, `${field}.counts_by_container`),
     date_range: parseDateRange(row.date_range, `${field}.date_range`),
-    top_correspondents: arr(
-      row.top_correspondents,
-      `${field}.top_correspondents`,
-    ).map((entry, index) =>
-      parseCorrespondent(entry, `${field}.top_correspondents[${index}]`),
-    ),
+    top_correspondents: topCorrespondents,
     total_chars: num(row.total_chars, `${field}.total_chars`),
     total_words: num(row.total_words, `${field}.total_words`),
     with_attachments: num(row.with_attachments, `${field}.with_attachments`),
@@ -172,7 +189,10 @@ export function parseExportSummary(value: unknown, field = "summary"): ExportSum
       row.owner_identity_basis,
       `${field}.owner_identity_basis`,
     ),
-    warnings: strList(row.warnings ?? [], `${field}.warnings`),
+    warnings: [
+      ...strList(row.warnings ?? [], `${field}.warnings`),
+      ...correspondentRowProblems,
+    ],
   };
 }
 
@@ -273,8 +293,26 @@ function parseParty(value: unknown, field: string): ExportItemParty | null {
   };
 }
 
-export function parseExportItem(value: unknown, field: string): ExportItem {
+/**
+ * `rowProblems`, when given, collects one sentence per RECIPIENT this build
+ * could not read — dropped, never guessed, and never costing the item its
+ * other recipients, its author, or its body fields. See `mapListRows` in
+ * `lib/contract/narrow.ts`. Omitted by callers that parse a single item in
+ * isolation (the create-export response), where there is nowhere yet for a
+ * sub-row problem to surface; `parseExportItemsResponse` below always passes
+ * one, and its sentences land in `ExportItemsResponse.row_problems`.
+ */
+export function parseExportItem(
+  value: unknown,
+  field: string,
+  rowProblems?: string[],
+): ExportItem {
   const row = obj(value, field);
+  const { rows: recipients, problems: recipientProblems } = mapListRows(
+    arr(row.recipients ?? [], `${field}.recipients`),
+    (entry, index) => parseParty(entry, `${field}.recipients[${index}]`),
+  );
+  if (recipientProblems.length > 0) rowProblems?.push(...recipientProblems);
   return {
     id: str(row.id, `${field}.id`),
     external_id: optStr(row.external_id, `${field}.external_id`),
@@ -282,9 +320,9 @@ export function parseExportItem(value: unknown, field: string): ExportItem {
     title: optStr(row.title, `${field}.title`),
     direction: str(row.direction, `${field}.direction`),
     author: parseParty(row.author, `${field}.author`),
-    recipients: arr(row.recipients ?? [], `${field}.recipients`).map(
-      (entry, index) => parseParty(entry, `${field}.recipients[${index}]`),
-    ).filter((party): party is ExportItemParty => party !== null),
+    recipients: recipients.filter(
+      (party): party is ExportItemParty => party !== null,
+    ),
     occurred_at: optStr(row.occurred_at, `${field}.occurred_at`),
     container_id: optStr(row.container_id, `${field}.container_id`),
     container_label: optStr(row.container_label, `${field}.container_label`),
@@ -297,13 +335,28 @@ export function parseExportItem(value: unknown, field: string): ExportItem {
   };
 }
 
+/**
+ * `GET /media/libraries/{id}/items`.
+ *
+ * 🚨 PER-ROW, NEVER ALL-OR-NOTHING. One item this build cannot read must not
+ * blank the list for every OTHER item that reads fine — see `mapListRows` in
+ * `lib/contract/narrow.ts`. The bad row is dropped and its sentence collected
+ * in `row_problems`, alongside any single-recipient problems `parseExportItem`
+ * reports for items that otherwise parsed; `ExportLibraryPage` shows one
+ * honest line per problem, the same way the Libraries lane in
+ * `features/source-library` does.
+ */
 export function parseExportItemsResponse(payload: unknown): ExportItemsResponse {
   const root = obj(payload, "the items");
-  const items = arr(root.items, "items").map((entry, index) =>
-    parseExportItem(entry, `items[${index}]`),
+  const rowProblems: string[] = [];
+  const { rows: items, problems: badItemProblems } = mapListRows(
+    arr(root.items, "items"),
+    (entry, index) => parseExportItem(entry, `items[${index}]`, rowProblems),
   );
+  rowProblems.push(...badItemProblems);
   return {
     items,
+    row_problems: rowProblems,
     total: num(root.total, "total"),
     filtered_total: num(root.filtered_total, "filtered_total"),
     limit: num(root.limit, "limit"),

@@ -95,6 +95,7 @@ const MID_INDEX_FACTS: ExportPageFacts = {
   filteredTotal: 158,
   filterDescription: "with an attachment",
   filter: { has_attachment: true },
+  rowProblems: [],
 };
 
 function midIndexCounts() {

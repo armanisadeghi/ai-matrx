@@ -343,6 +343,20 @@ export function ExportLibraryPage({ libraryId }: { libraryId: string }) {
             </p>
           )}
 
+          {/* One line per item (or item recipient) the server sent that this
+              build could not read — dropped, never guessed, and never hiding
+              the items below that DID read correctly. Same treatment as the
+              Libraries lane in `features/source-library`. */}
+          {facts?.rowProblems.map((problem, index) => (
+            <p
+              key={`export-item-row-problem-${index}`}
+              className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-xs"
+            >
+              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+              <span>{problem}</span>
+            </p>
+          ))}
+
           <LibrarySummary
             library={library}
             summary={summary}

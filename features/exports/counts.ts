@@ -75,6 +75,12 @@ export interface ExportPageFacts {
    * that and nothing else, which is what this field lets the derivation check.
    */
   filter: ExportItemFilter;
+  /**
+   * One sentence per item (or item recipient) the last page read could not
+   * read — see `ExportItemsResponse.row_problems`. The list itself already
+   * dropped these rows; this is only here so the screen can say so.
+   */
+  rowProblems: string[];
 }
 
 export interface ExportCountsInput {
