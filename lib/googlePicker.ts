@@ -24,6 +24,12 @@ import {
   type GoogleWorkspaceResourceType,
 } from "@/features/google-workspace/resource-types";
 
+import {
+  GOOGLE_IDENTITY_POLL_INTERVAL_MS,
+  GOOGLE_IDENTITY_READY_TIMEOUT_MS,
+  GOOGLE_IDENTITY_UNAVAILABLE_MESSAGE,
+} from "@/providers/google-provider/googleIdentityReadiness";
+
 const PICKER_SCRIPT = "https://apis.google.com/js/api.js";
 
 interface GooglePickerView {
@@ -86,17 +92,53 @@ export interface GooglePickerOptions {
   initialQuery?: string;
 }
 
+/**
+ * 🚨 BOUNDED, like the Identity Services wait (V-24 NEW-4, lane F-111).
+ *
+ * The old version had two ways to hang forever: a script served but stripped
+ * of its body never fires `error` and never defines `window.gapi`, and reusing
+ * an `existing` tag that had ALREADY loaded waited on a `load` event that was
+ * never coming again. Both left the caller's promise pending for the life of
+ * the tab. The bound is the same technical readiness limit as the Identity
+ * script's — a constant, not an organization knob — and its rejection is a
+ * sentence a caller can show.
+ */
 function loadScript(): Promise<void> {
   if (window.gapi) return Promise.resolve();
   const existing = document.querySelector<HTMLScriptElement>(
     `script[src="${PICKER_SCRIPT}"]`,
   );
   return new Promise((resolve, reject) => {
+    let settled = false;
+    let poll: ReturnType<typeof setTimeout> | undefined;
+    const deadline = Date.now() + GOOGLE_IDENTITY_READY_TIMEOUT_MS;
+
+    const finish = (error?: Error) => {
+      if (settled) return;
+      settled = true;
+      if (poll !== undefined) clearTimeout(poll);
+      if (error) reject(error);
+      else resolve();
+    };
+
+    const check = () => {
+      if (settled) return;
+      if (window.gapi) {
+        finish();
+        return;
+      }
+      if (Date.now() >= deadline) {
+        finish(new Error(GOOGLE_IDENTITY_UNAVAILABLE_MESSAGE));
+        return;
+      }
+      poll = setTimeout(check, GOOGLE_IDENTITY_POLL_INTERVAL_MS);
+    };
+
     const script = existing ?? document.createElement("script");
-    script.addEventListener("load", () => resolve(), { once: true });
+    script.addEventListener("load", () => check(), { once: true });
     script.addEventListener(
       "error",
-      () => reject(new Error("Google Picker could not be loaded.")),
+      () => finish(new Error(GOOGLE_IDENTITY_UNAVAILABLE_MESSAGE)),
       { once: true },
     );
     if (!existing) {
@@ -104,6 +146,10 @@ function loadScript(): Promise<void> {
       script.async = true;
       document.head.appendChild(script);
     }
+    // An `existing` tag that already finished loading will never fire another
+    // event; polling under the bound is what notices that, and what notices a
+    // tag that loaded but defined nothing.
+    check();
   });
 }
 
