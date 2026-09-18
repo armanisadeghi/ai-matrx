@@ -272,7 +272,6 @@ export function NoteTabBar({ instanceId, syncUrl = true }: NoteTabBarProps) {
       }}
       onDrop={handleDrop}
     >
-      {draftControl.error && <p role="alert" className="sr-only">{draftControl.error}</p>}
       {/* Pinned cluster: new-note button + active tab. Stays put while the
           rest of the strip scrolls underneath the scrolling region. */}
       <div className="flex items-stretch shrink-0 bg-background z-10">
@@ -280,8 +279,8 @@ export function NoteTabBar({ instanceId, syncUrl = true }: NoteTabBarProps) {
           className="flex items-center justify-center w-8 h-8 shrink-0 self-stretch border-r border-border/60 cursor-pointer transition-colors text-muted-foreground hover:bg-accent hover:text-foreground [&_svg]:w-3.5 [&_svg]:h-3.5"
           onClick={() => { void handleNewTab().catch(() => undefined); }}
           disabled={draftControl.pending}
-          title={draftControl.error ?? "New note"}
-          aria-label={draftControl.error ?? "New note"}
+          title="New note"
+          aria-label="New note"
         >
           <Plus />
         </button>

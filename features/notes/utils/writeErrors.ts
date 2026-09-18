@@ -42,6 +42,41 @@ export function noteSaveErrorMessage(
   return error?.message || "Saving this note failed — your latest changes are not persisted.";
 }
 
+// ── A failed "+" — the sentence a person reads ─────────────────────────────
+//
+// A thrown error keeps its diagnostic text for capture; the person gets a
+// sentence. This is the ONE table for new-note / new-folder failures, read by
+// `useDraftInitializationControl`, which every "+" on every Notes surface runs
+// through. Codes are matched as a PREFIX of the message because RTK serializes a
+// rejected thunk's error to a plain object and a Postgres RAISE carries only text.
+
+/** Raised by `workbench.note_folder_get_or_create` while the retired
+ *  org-blind `(created_by, name)` key is still live and holds this name for
+ *  the same person in another organization. */
+export const NOTE_FOLDER_CROSS_ORG_CODE = "notes_folder_cross_org_legacy_key";
+
+export const NOTE_FOLDER_CROSS_ORG_MESSAGE =
+  "You already have a folder with this name in another organization, and a folder name cannot repeat across your organizations yet. Switch to that organization, or choose a different folder name.";
+
+const NOTE_CREATE_FALLBACK_MESSAGE = "The new note could not be started. Nothing was created.";
+
+function rawMessage(error: unknown): string | null {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string" && message.trim()) return message;
+  }
+  return null;
+}
+
+/** The sentence shown when starting a note or folder fails. */
+export function noteCreateErrorMessage(error: unknown): string {
+  const message = rawMessage(error);
+  if (!message) return NOTE_CREATE_FALLBACK_MESSAGE;
+  if (message.includes(NOTE_FOLDER_CROSS_ORG_CODE)) return NOTE_FOLDER_CROSS_ORG_MESSAGE;
+  return message;
+}
+
 // Autosave retries every few seconds; scream once per burst, not per retry.
 const lastToastAt = new Map<string, number>();
 const TOAST_DEDUPE_MS = 15_000;

@@ -104485,6 +104485,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      note_folder_get_or_create: {
+        Args: { p_name: string; p_organization_id: string }
+        Returns: string
+      }
       udt_dataset_access: {
         Args: {
           p_required?: Database["public"]["Enums"]["permission_level"]
