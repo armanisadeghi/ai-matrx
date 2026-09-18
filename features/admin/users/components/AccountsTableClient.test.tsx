@@ -2,9 +2,37 @@
 
 import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { Provider } from "react-redux";
+import { configureStore } from "@reduxjs/toolkit";
 import type { MatrxDataTableProps } from "@ai-matrx/design-system/data-table/types";
+// eslint-disable-next-line no-restricted-syntax -- the real Surface A organization selection, because the table reads it.
+import appContext, { setOrganization } from "@/lib/redux/slices/appContextSlice";
+import userAuth, { setUserAuth } from "@/lib/redux/slices/userAuthSlice";
 import type { AdminUserRow } from "../types";
 import { AccountsTableClient } from "./AccountsTableClient";
+
+/**
+ * The table reads the SELECTED organization out of Redux (it is the workspace a
+ * DM from this screen is filed in), so the render gets the REAL store with the
+ * REAL reducers, seeded the way boot seeds them — never a stubbed
+ * `@/lib/redux/hooks`, which would hide a selector that stopped working.
+ */
+const ORG = "9a0a9f3c-1c2f-4a1b-9c0d-0b3b7e2f4a11";
+function createStore() {
+  const store = configureStore({ reducer: { appContext, userAuth } });
+  store.dispatch(setUserAuth({ id: "5c2b1f7a-7a4d-4f6a-9c11-0d1a2b3c4d5e" }));
+  store.dispatch(setOrganization({ id: ORG }));
+  return store;
+}
+let store: ReturnType<typeof createStore>;
+
+function renderTable(root: Root) {
+  root.render(
+    <Provider store={store}>
+      <AccountsTableClient />
+    </Provider>,
+  );
+}
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean })
   .IS_REACT_ACT_ENVIRONMENT = true;
@@ -40,6 +68,7 @@ describe("AccountsTableClient", () => {
   beforeEach(() => {
     window.history.replaceState({}, "", "/administration/users");
     mockTableProps = null;
+    store = createStore();
     host = document.createElement("div");
     document.body.append(host);
     root = createRoot(host);
@@ -88,7 +117,7 @@ describe("AccountsTableClient", () => {
 
   it("gives controlled-local query state a single URL-backed owner", async () => {
     await act(async () => {
-      root.render(<AccountsTableClient />);
+      renderTable(root);
     });
 
     if (!mockTableProps) throw new Error("Accounts table did not render");
@@ -115,7 +144,7 @@ describe("AccountsTableClient", () => {
 
   it("shows MCP access as independent from the admin role", async () => {
     await act(async () => {
-      root.render(<AccountsTableClient />);
+      renderTable(root);
     });
 
     if (!mockTableProps) throw new Error("Accounts table did not render");
