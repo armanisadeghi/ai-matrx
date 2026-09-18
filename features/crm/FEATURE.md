@@ -1067,6 +1067,26 @@ module in the folder + the two deleted filenames).
   name a Person with a plain `Link` and therefore have no peek — they are
   EntityRef-adoption debt, not registry debt.
 
+- 2026-09-18 — **F-43: closed most of F-40's EntityRef-adoption debt.** Every
+  hand-built `/crm/${partyId}` `Link`/`<a>` in the dedup cards
+  (`DuplicateReviewPage`, `MergeStatusCard`, `CandidatePairCard`),
+  `EmploymentCard`, `CallQueuePage`, `ChaseboxDraftDialog`,
+  `InboxReplyDialog`, and `features/research/components/experts/TopicExperts.tsx`
+  / `features/marketing/content-plan/components/{NodeAssociations,EntityManager}.tsx`
+  now names the Person through `EntityRef token="party"` (route + peek + the
+  explicit new-tab door), each keeping its own surface behaviour — a dialog
+  or triage queue's door opens in a new tab so a reviewer never loses their
+  place, a plain page's door stays in-place. `CrmListPage`'s row-open and
+  `OutreachListDetailPage`'s member table were left as-is: both already open
+  through `MatrxDataTable`'s own `href` column (real anchor, keyboard/SR/
+  middle-click, D112) plus `onRowOpen` — a working door, just without a peek,
+  and adding one means touching the `@ai-matrx/design-system` table component
+  itself (a package, out of scope for this lane). `useInboxRowActions.tsx`
+  was left as-is too: its `/crm/${row.party_id}` links live inside
+  `ItemMenuEntry` action-registry builders, the sanctioned door primitive for
+  a row-actions menu, not a bypass of one. Census guard:
+  `features/crm/__tests__/person-doors-census.test.ts`.
+
 - 2026-09-17 — **F-37: the client adopted the reviewed-send spine and STOPPED
   writing the sent record.** The server now gates every recipient, sends, and
   writes the `crm.interaction` row, its association edges and the

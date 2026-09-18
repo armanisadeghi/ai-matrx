@@ -30,7 +30,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/lib/toast";
 import { getUserMessage } from "@/lib/api/errors";
-import Link from "next/link";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   importGoogleContacts,
   searchGoogleContacts,
@@ -302,17 +302,19 @@ export function GoogleContactsImportPanel({
               className="rounded-md border border-border bg-card p-3"
             >
               <div className="flex flex-wrap items-center gap-2">
-                {/* THE DOOR LAW: the Person this import named opens. The
-                    window keeps its state, so the record opens in a new tab —
-                    the same rule the CRM list's own out-of-route links use. */}
+                {/* THE DOOR LAW: the Person this import named opens — via
+                    EntityRef (route, new tab, and peek), the one door
+                    primitive, never a hand-rolled Link. The window keeps its
+                    state, so the record opens in a new tab — the same rule
+                    the CRM list's own out-of-route links use. */}
                 {outcome.person_id ? (
-                  <Link
-                    href={`/crm/${outcome.person_id}`}
-                    target="_blank"
-                    className="text-sm font-medium text-foreground underline-offset-2 hover:underline"
-                  >
-                    {outcome.person_name ?? outcome.display_name}
-                  </Link>
+                  <EntityRef
+                    token="party"
+                    id={outcome.person_id}
+                    name={outcome.person_name ?? outcome.display_name}
+                    openInNewTab
+                    labelClassName="text-sm font-medium text-foreground"
+                  />
                 ) : (
                   <span className="text-sm font-medium text-foreground">
                     {outcome.person_name ?? outcome.display_name}
@@ -401,13 +403,15 @@ export function GoogleContactsImportPanel({
                   {/* THE DOOR LAW: the Person this plan would write to opens
                       before anything is written, not only afterwards. */}
                   {plan.person_id ? (
-                    <Link
-                      href={`/crm/${plan.person_id}`}
-                      target="_blank"
-                      className="text-xs text-muted-foreground underline-offset-2 hover:underline"
+                    <EntityRef
+                      token="party"
+                      id={plan.person_id}
+                      name={plan.person_name ?? "the Person"}
+                      openInNewTab
+                      labelClassName="text-xs text-muted-foreground"
                     >
                       Open the Person
-                    </Link>
+                    </EntityRef>
                   ) : null}
                   {plan.choice_required ? (
                     /* 🚨 SEVERAL PEOPLE MATCH, SO NOTHING IS WRITTEN — in the
@@ -554,14 +558,16 @@ export function GoogleContactsImportPanel({
                     </span>
                     {/* THE DOOR LAW: every Person named here opens. */}
                     {plan.candidates.map((candidate) => (
-                      <Link
+                      <EntityRef
                         key={candidate.person_id}
-                        href={`/crm/${candidate.person_id}`}
-                        target="_blank"
-                        className="text-foreground underline-offset-2 hover:underline"
+                        token="party"
+                        id={candidate.person_id}
+                        name={candidate.person_name}
+                        openInNewTab
+                        labelClassName="text-foreground"
                       >
                         {candidate.person_name} ({importMatchKeyWords(candidate.matched_by)})
-                      </Link>
+                      </EntityRef>
                     ))}
                   </p>
                 ) : null}
@@ -694,14 +700,16 @@ export function GoogleContactsImportPanel({
                   <p className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
                     <span>Merge or separate these first:</span>
                     {contact.candidates.map((candidate) => (
-                      <Link
+                      <EntityRef
                         key={candidate.person_id}
-                        href={`/crm/${candidate.person_id}`}
-                        target="_blank"
-                        className="text-foreground underline-offset-2 hover:underline"
+                        token="party"
+                        id={candidate.person_id}
+                        name={candidate.person_name}
+                        openInNewTab
+                        labelClassName="text-foreground"
                       >
                         {candidate.person_name} ({importMatchKeyWords(candidate.matched_by)})
-                      </Link>
+                      </EntityRef>
                     ))}
                   </p>
                 ) : null}

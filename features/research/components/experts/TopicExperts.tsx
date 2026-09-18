@@ -16,8 +16,8 @@
 // doctrine as the dedup merge candidates. No name is ever written by a scan.
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
 import { toast, toastErrorAlreadyCaptured } from "@/lib/toast";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   ExternalLink,
   GraduationCap,
@@ -106,16 +106,19 @@ function CandidateRow({
           </span>
           {/* Already in the CRM: a door, never a silent no-op checkbox. */}
           {already && (
-            <Link
-              href={`/crm/${already}`}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+            <EntityRef
+              token="party"
+              id={already}
+              name={candidate.display_name}
+              showIcon={false}
+              labelClassName="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
             >
               <ExternalLink className="h-3 w-3" />
               Already a contact
               {statusLabel(candidate.existing_expert_status)
                 ? ` · ${statusLabel(candidate.existing_expert_status)}`
                 : ""}
-            </Link>
+            </EntityRef>
           )}
         </div>
         {candidate.why.length > 0 && (
@@ -262,22 +265,29 @@ export default function TopicExperts() {
             ) : (
               <div className="divide-y divide-border/60">
                 {roster.map(({ party }) => (
-                  <Link
+                  <EntityRef
                     key={party.id}
-                    href={`/crm/${party.id}`}
-                    className="flex items-center gap-2 px-1 py-1.5 hover:bg-accent"
+                    token="party"
+                    id={party.id}
+                    name={party.display_name}
+                    showIcon={false}
+                    fill
+                    alwaysShowActions
+                    className="gap-2 px-1 py-1.5 hover:bg-accent"
+                    labelClassName="min-w-0 flex-1 truncate text-sm text-foreground"
                   >
-                    <GraduationCap className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                    <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-                      {party.display_name}
-                    </span>
-                    {statusLabel(party.expert_status) && (
-                      <span className="text-[11px] text-muted-foreground">
-                        {statusLabel(party.expert_status)}
+                    <span className="flex min-w-0 flex-1 items-center gap-2">
+                      <GraduationCap className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                      <span className="min-w-0 flex-1 truncate">
+                        {party.display_name}
                       </span>
-                    )}
-                    <ExternalLink className="h-3 w-3 shrink-0 text-muted-foreground" />
-                  </Link>
+                      {statusLabel(party.expert_status) && (
+                        <span className="text-[11px] text-muted-foreground">
+                          {statusLabel(party.expert_status)}
+                        </span>
+                      )}
+                    </span>
+                  </EntityRef>
                 ))}
               </div>
             )}

@@ -11,6 +11,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   ArrowRight,
   Building2,
@@ -405,13 +406,14 @@ export function CallQueuePage({ listId }: { listId: string }) {
               <span key={p.id}>
                 {i > 0 && ", "}
                 {/* Opens in a new tab: the dialer holds a claim on someone. */}
-                <Link
-                  href={`/crm/${p.id}`}
-                  target="_blank"
-                  className="font-medium underline underline-offset-2 hover:text-foreground"
-                >
-                  {p.name}
-                </Link>
+                <EntityRef
+                  token="party"
+                  id={p.id}
+                  name={p.name}
+                  showIcon={false}
+                  openInNewTab
+                  labelClassName="font-medium underline underline-offset-2 hover:text-foreground"
+                />
               </span>
             ))}
           </div>
@@ -517,13 +519,14 @@ export function CallQueuePage({ listId }: { listId: string }) {
                 ) : (
                   <Building2 className="h-4 w-4 shrink-0 text-muted-foreground" />
                 )}
-                <Link
-                  href={`/crm/${party.id}`}
-                  target="_blank"
-                  className="truncate text-base font-semibold text-foreground underline-offset-2 hover:underline"
-                >
-                  {party.display_name}
-                </Link>
+                <EntityRef
+                  token="party"
+                  id={party.id}
+                  name={party.display_name}
+                  showIcon={false}
+                  openInNewTab
+                  labelClassName="truncate text-base font-semibold text-foreground"
+                />
                 <span className="text-xs text-muted-foreground">
                   Attempt {entry.member.attempt_count + 1}
                   {entry.member.last_attempt_at &&

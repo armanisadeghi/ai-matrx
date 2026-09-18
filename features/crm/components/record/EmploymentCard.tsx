@@ -11,8 +11,8 @@
 // to the person).
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { toast } from "@/lib/toast";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Briefcase, Building2, LogOut, Plus, Users, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
@@ -379,17 +379,18 @@ export function EmploymentCard(props: Props) {
                     )}
                   />
                   {a.employer ? (
-                    <Link
-                      href={`/crm/${a.employer.id}`}
-                      className={cn(
-                        "min-w-0 truncate text-sm ",
+                    <EntityRef
+                      token="party"
+                      id={a.employer.id}
+                      name={a.employer.display_name}
+                      showIcon={false}
+                      labelClassName={cn(
+                        "min-w-0 truncate text-sm",
                         a.is_current
                           ? "font-medium text-foreground"
                           : "text-muted-foreground",
                       )}
-                    >
-                      {a.employer.display_name}
-                    </Link>
+                    />
                   ) : (
                     <span className="text-sm text-muted-foreground">
                       Unknown company
@@ -431,17 +432,18 @@ export function EmploymentCard(props: Props) {
                   className="flex items-center gap-2 rounded px-1.5 py-1 hover:bg-accent/50"
                 >
                   {a.person ? (
-                    <Link
-                      href={`/crm/${a.person.id}`}
-                      className={cn(
-                        "min-w-0 truncate text-sm ",
+                    <EntityRef
+                      token="party"
+                      id={a.person.id}
+                      name={a.person.display_name}
+                      showIcon={false}
+                      labelClassName={cn(
+                        "min-w-0 truncate text-sm",
                         a.is_current
                           ? "font-medium text-foreground"
                           : "text-muted-foreground",
                       )}
-                    >
-                      {a.person.display_name}
-                    </Link>
+                    />
                   ) : (
                     <span className="text-sm text-muted-foreground">
                       Unknown person

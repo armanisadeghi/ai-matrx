@@ -11,17 +11,16 @@
 // place their name renders.
 
 import { useState } from "react";
-import Link from "next/link";
 import {
   ArrowRight,
   Building2,
   ChevronDown,
   ChevronRight,
-  ExternalLink,
   Merge,
   User,
   X,
 } from "lucide-react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { recordToast, toast } from "@/lib/toast";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Button } from "@/components/ui/button";
@@ -70,20 +69,14 @@ function PartyName({ party }: { party: MergePartyRef }) {
       ) : (
         <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
       )}
-      <Link
-        href={`/crm/${party.id}`}
-        className="min-w-0 truncate font-medium text-foreground "
-      >
-        {party.display_name}
-      </Link>
-      <Link
-        href={`/crm/${party.id}`}
-        target="_blank"
-        aria-label={`Open ${party.display_name} in a new tab`}
-        className="shrink-0 text-muted-foreground hover:text-foreground"
-      >
-        <ExternalLink className="h-3 w-3" />
-      </Link>
+      <EntityRef
+        token="party"
+        id={party.id}
+        name={party.display_name}
+        showIcon={false}
+        alwaysShowActions
+        labelClassName="min-w-0 truncate font-medium text-foreground"
+      />
     </span>
   );
 }

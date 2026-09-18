@@ -275,6 +275,16 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-18` — **F-43: `GoogleContactsImportPanel.tsx` names every Person
+  through `EntityRef`, never a hand-built `Link`.** THE DOOR LAW (F-40's
+  census): the four `/crm/${personId}` links in the review step and the done
+  step (the saved outcome's name, "Open the Person", and both candidate
+  lists) were plain `next/link` anchors with no peek — `EntityRef
+  token="party"` now renders all four, `openInNewTab` on each since this
+  panel lives inside a window and navigating in place would cost the person
+  their import session. Covered by
+  `features/crm/__tests__/person-doors-census.test.ts`.
+
 - `2026-09-17` — **The capability census grew a RENDER leg (V13-3, second half).**
   The first census proved a declared capability had a product row and its resource
   types were attachable; it could not see that `google_presentation` was

@@ -38,6 +38,7 @@ import {
   X,
 } from "lucide-react";
 import Link from "next/link";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -610,15 +611,22 @@ export function ChaseboxDraftDialog({
                       Read it against the conversation before approving.
                     </p>
                   )}
-                  {/* THE DOOR: the message this one answers. */}
+                  {/* THE DOOR: the message this one answers. Opens in a new
+                      tab — this dialog is a triage queue, and navigating in
+                      place would cost the reviewer their position in it. */}
                   {reply.replyingToInteractionId && row.party_id && (
-                    <Link
+                    <EntityRef
+                      token="party"
+                      id={row.party_id}
+                      name={row.party_name ?? "this contact"}
                       href={`/crm/${row.party_id}?interaction=${reply.replyingToInteractionId}`}
-                      className="inline-flex items-center gap-1 text-xs text-primary underline underline-offset-2"
+                      openInNewTab
+                      showIcon={false}
+                      labelClassName="inline-flex items-center gap-1 text-xs text-primary underline underline-offset-2"
                     >
                       Read what they actually said
                       <ExternalLink className="h-3 w-3" aria-hidden />
-                    </Link>
+                    </EntityRef>
                   )}
                 </div>
               </div>

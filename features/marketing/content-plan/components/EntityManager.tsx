@@ -19,11 +19,10 @@
  * mutation the dialog's own buttons run.
  */
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import {
   Building2,
   Check,
-  ExternalLink,
   Lightbulb,
   Link2,
   Loader2,
@@ -942,26 +941,20 @@ export function EntityManager({
                     )}
                     {party.party_kind === "organization" ? "org" : "person"}
                   </span>
-                  <Link
-                    href={`/crm/${party.id}`}
-                    className="min-w-0 flex-1 truncate text-sm font-medium text-foreground hover:underline"
-                  >
-                    {party.display_name}
-                  </Link>
+                  <EntityRef
+                    token="party"
+                    id={party.id}
+                    name={party.display_name}
+                    showIcon={false}
+                    fill
+                    alwaysShowActions
+                    labelClassName="min-w-0 flex-1 truncate text-sm font-medium text-foreground"
+                  />
                   {party.job_title ? (
                     <span className="hidden max-w-40 truncate text-xs text-muted-foreground sm:inline">
                       {party.job_title}
                     </span>
                   ) : null}
-                  <Link
-                    href={`/crm/${party.id}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label={`Open ${party.display_name} in CRM (new tab)`}
-                    className="text-muted-foreground opacity-0 hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5" />
-                  </Link>
                   <Button
                     variant="ghost"
                     size="sm"
