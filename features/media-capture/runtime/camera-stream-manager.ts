@@ -63,6 +63,7 @@ import {
 import {
   adoptWarmMicStream,
   buildWarmMicConstraints,
+  prepareAudioSessionForCapture,
 } from "@ai-matrx/browser-audio/core";
 import type { CaptureQualityProfile } from "@/features/media-capture/core/capture-types";
 import {
@@ -394,6 +395,12 @@ async function performGetUserMedia(
     // chokepoint selector still matches both — never teach an evading shape.
     let stream: MediaStream;
     if (includeMic) {
+      // WebKit refuses audio capture while the page's audio session category
+      // is "playback" (the TTS unlock declares it). The mic singleton owns the
+      // category and switches it before ITS getUserMedia; this combined prompt
+      // is the one audio capture the singleton does not perform, so it asks
+      // first. The adopted tracks' stop restores the host's category.
+      prepareAudioSessionForCapture();
       stream = await navigator.mediaDevices.getUserMedia({
         // eslint-disable-next-line no-restricted-syntax -- this IS the camera-stream-manager chokepoint the ban protects (combined camera+mic prompt)
         video: constraints,

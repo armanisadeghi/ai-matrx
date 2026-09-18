@@ -111,6 +111,7 @@ console.log('Can fix:', canUserFixIssue(diagnostics));
 - `NO_DEVICE` - No microphone found
 - `DEVICE_BUSY` - Microphone in use by another application
 - `SECURITY_ERROR` - Not on HTTPS
+- `AUDIO_SESSION_INCOMPATIBLE` - WebKit (iOS/Safari) refused capture because the page's audio session category was playback-only; the mic manager switches it to play-and-record before capture (browser-audio ≥ 0.4.0), so this code means that switch was rejected
 - `NO_MEDIA_DEVICES` - Browser doesn't support MediaDevices API
 - `NO_GET_USER_MEDIA` - Browser doesn't support getUserMedia
 - `ACCESS_TEST_FAILED` - Permission granted but access still failed

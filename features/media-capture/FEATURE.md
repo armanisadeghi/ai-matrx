@@ -126,6 +126,7 @@ The studio matches the audio recorder's bar. Three rules:
 
 ## Change log
 
+- 2026-09-17 — The combined camera + mic prompt in `runtime/camera-stream-manager.ts` calls `prepareAudioSessionForCapture()` (`@ai-matrx/browser-audio` ≥ 0.4.0) before `getUserMedia({video, audio})`: WebKit refuses audio capture while the page's audio session category is `"playback"` (declared by the TTS unlock), and this is the one audio capture the mic singleton does not perform itself. See `features/audio/FEATURE.md` § Audio device + permission system.
 - 2026-09-01 — Centralized user-picked video metadata inspection in `core/video-file-inspection.ts`; commerce intake and Product Capture now share the bounded MIME/duration probe while recorded video keeps the stronger capture-engine terminal contract.
 
 - 2026-08-30 — **Embedded-recorder isolation.** `LiveCaptureIndicator` now requires owning-surface `LiveCaptureControls` before it renders or guards navigation; product capture video no longer gets a duplicate global pill whose `/camera` fallback could pull the user out of the item and strand the clip in recovery. Regression coverage pins low-level identity-without-controls as hidden.
