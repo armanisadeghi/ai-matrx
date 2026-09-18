@@ -53,6 +53,8 @@ export interface TopicLayoutInput {
   rankSep: number;
   /** `graph_auto_layout`. See the header for what each state does. */
   autoLayout: boolean;
+  /** Display-only company anchor; never persisted as a topic. */
+  companyRootId?: string;
 }
 
 /** The gap left between a hand-arranged cluster and the auto-placed column. */
@@ -79,6 +81,13 @@ function dagrePositions(input: TopicLayoutInput): Map<string, XY> {
   for (const edge of input.treeEdges) {
     if (ids.has(edge.source) && ids.has(edge.target)) graph.setEdge(edge.source, edge.target);
   }
+  if (input.companyRootId) {
+    graph.setNode(input.companyRootId, { width: 240, height: 64 });
+    const children = new Set(input.treeEdges.filter(edge => ids.has(edge.source)).map(edge => edge.target));
+    for (const topic of input.topics) {
+      if (!children.has(topic.id)) graph.setEdge(input.companyRootId, topic.id);
+    }
+  }
   dagre.layout(graph);
 
   const out = new Map<string, XY>();
@@ -89,6 +98,10 @@ function dagrePositions(input: TopicLayoutInput): Map<string, XY> {
       x: (node?.x ?? 0) - input.width / 2,
       y: (node?.y ?? 0) - input.height / 2,
     });
+  }
+  if (input.companyRootId) {
+    const root = graph.node(input.companyRootId);
+    out.set(input.companyRootId, { x: root.x - 120, y: root.y - 32 });
   }
   return out;
 }
@@ -120,15 +133,25 @@ export function layoutTopics(input: TopicLayoutInput): Map<string, XY> {
   for (const topic of placed) {
     positions.set(topic.id, { x: topic.position.x, y: topic.position.y });
   }
-  if (unplaced.length === 0) return positions;
-
   const dagreAll = dagrePositions(input);
+  const finish = () => {
+    if (input.companyRootId) {
+      // Keep the company clear of ALL final positions, including both stored
+      // placements and automatically placed arrivals.
+      const corner = topLeftOf(positions.values());
+      positions.set(input.companyRootId, placed.length
+        ? { x: corner.x - 240 - input.rankSep, y: corner.y }
+        : dagreAll.get(input.companyRootId)!);
+    }
+    return positions;
+  };
+  if (unplaced.length === 0) return finish();
 
   if (input.autoLayout) {
     for (const topic of unplaced) {
       positions.set(topic.id, dagreAll.get(topic.id) ?? { x: 0, y: 0 });
     }
-    return positions;
+    return finish();
   }
 
   // OFF: keep the person's arrangement untouched and put the arrivals clear of
@@ -149,7 +172,7 @@ export function layoutTopics(input: TopicLayoutInput): Map<string, XY> {
     const position = dagreAll.get(topic.id) ?? { x: 0, y: 0 };
     positions.set(topic.id, { x: position.x + dx, y: position.y + dy });
   }
-  return positions;
+  return finish();
 }
 
 /**
