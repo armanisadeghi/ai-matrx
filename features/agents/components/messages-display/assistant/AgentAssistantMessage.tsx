@@ -69,6 +69,8 @@ import { friendlyStreamError } from "../../run/friendlyStreamError";
 import { AssistantWarning } from "../../run/AssistantWarning";
 import { BreathingOrb } from "./BreathingOrb";
 import { AssistantActionBar } from "./AssistantActionBar";
+import { AssistantNoAnswer } from "./AssistantNoAnswer";
+import { isAnswerlessTurn } from "./answerless-turn";
 import { retryConversationTurn } from "@/features/agents/redux/execution-system/message-crud/retry-turn.thunk";
 import { commitInlineContentEdit } from "@/features/agents/redux/execution-system/message-crud/commit-inline-edit.thunk";
 import { toast } from "@/lib/toast";
@@ -115,6 +117,13 @@ interface AgentAssistantMessageProps {
   canRetry?: boolean;
   /** Chat cold-load only: show a short text skeleton before DB markdown mounts. */
   deferColdMarkdown?: boolean;
+  /**
+   * False for the intermediate iterations of a multi-step agentic turn. Only
+   * the LAST member of a turn carries the answer, so only it may say "this run
+   * produced no answer" — see `answerless-turn.ts`. Defaults to true, which is
+   * correct for every single-message surface.
+   */
+  isTurnAnswer?: boolean;
 }
 
 export function AgentAssistantMessage({
@@ -126,6 +135,7 @@ export function AgentAssistantMessage({
   hideActionBar = false,
   canRetry = false,
   deferColdMarkdown = false,
+  isTurnAnswer = true,
 }: AgentAssistantMessageProps) {
   useDebugContext("AgentAssistantMessage");
 
@@ -381,6 +391,19 @@ export function AgentAssistantMessage({
     (serverProcessedBlocks?.length ?? 0) > 0 ||
     streamedBlockCount > 0;
 
+  // A run that finished and produced NOTHING says so, in words, with a remedy —
+  // never an empty bubble wearing a like/copy/speak bar (see answerless-turn.ts).
+  const answerless = isAnswerlessTurn({
+    isTurnAnswer,
+    isStreamActive,
+    failed,
+    coldMarkdownReady,
+    messageId,
+    renderedText,
+    attachmentCount: attachmentParts.length,
+    mediaBlockCount: serverProcessedBlocks?.length ?? 0,
+  });
+
   const showProviderRetry =
     providerRetry !== null &&
     (isStreamActive || providerRetry.state !== "recovered");
@@ -576,6 +599,12 @@ export function AgentAssistantMessage({
           warning={warning}
         />
       ))}
+      {answerless && (
+        <AssistantNoAnswer
+          onRetry={canRetry ? handleRetry : undefined}
+          retrying={retrying}
+        />
+      )}
       {!hasInlineError && failedError}
       {messageId && (
         <MessageFilesStrip
