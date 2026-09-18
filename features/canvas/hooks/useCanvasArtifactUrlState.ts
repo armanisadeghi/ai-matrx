@@ -106,45 +106,47 @@ export function useCanvasArtifactUrlState(): void {
   }, []);
 
   useEffect(() => {
-    // FIRST RECONCILE — decide who is right, once.
-    if (agreedRef.current === null) {
-      if (urlArtifactId) {
-        // The address asked for an artifact. Wait for the canvas to exist.
+    const agreed = agreedRef.current;
+
+    // Which side moved? On the very first pass there is nothing agreed yet, so
+    // a NON-EMPTY address is the mover and an empty one is not.
+    const addressMoved = agreed === null ? urlArtifactId !== "" : urlArtifactId !== agreed;
+
+    // THE ADDRESS MOVED — a reload, Back, Forward, or a pasted link.
+    if (addressMoved) {
+      if (urlArtifactId && urlArtifactId !== canvasArtifactId) {
+        // 🚨 AN OPEN NEEDS A CANVAS, ON EVERY PASS AND NOT ONLY THE FIRST.
+        // `agreedRef` is left ALONE here so this same decision is retaken when
+        // availability arrives. Committing it would burn the request: the
+        // opener refuses with "the canvas isn't available on this screen" and
+        // nothing ever asks again. That is exactly what shipped on 2026-09-18
+        // and was caught on production — the page hydrates with the server's
+        // empty query snapshot, so the real address arrives on a LATER pass,
+        // never the first one this wait used to guard.
         if (!isAvailable && !graceExpired) return;
         agreedRef.current = urlArtifactId;
-        if (urlArtifactId !== canvasArtifactId) {
-          void openItem({ artifactId: urlArtifactId });
-        }
+        void openItem({ artifactId: urlArtifactId });
         return;
       }
-      // The address asked for nothing. If the canvas already holds an artifact
-      // (a client-side navigation arrived with the pane open), the address is
-      // the side that is wrong — correct it WITHOUT a history entry, because
-      // nobody pressed anything.
-      agreedRef.current = canvasArtifactId;
-      if (canvasArtifactId) {
-        setUrlArtifactId(canvasArtifactId, "replace");
-      }
-      return;
-    }
-
-    // URL MOVED — reload, Back, Forward, or a pasted link. The address wins.
-    if (urlArtifactId !== agreedRef.current) {
       agreedRef.current = urlArtifactId;
-      if (urlArtifactId) {
-        if (urlArtifactId !== canvasArtifactId) {
-          void openItem({ artifactId: urlArtifactId });
-        }
-      } else if (canvasArtifactId) {
-        dispatch(closeCanvas());
-      }
+      if (!urlArtifactId && canvasArtifactId) dispatch(closeCanvas());
       return;
     }
 
-    // CANVAS MOVED — a click opened, switched or closed something. Opening,
+    // FIRST PASS, EMPTY ADDRESS — if the canvas already holds an artifact (a
+    // client-side navigation arrived with the pane open), the address is the
+    // side that is wrong. Correct it WITHOUT a history entry: nobody pressed
+    // anything.
+    if (agreed === null) {
+      agreedRef.current = canvasArtifactId;
+      if (canvasArtifactId) setUrlArtifactId(canvasArtifactId, "replace");
+      return;
+    }
+
+    // THE CANVAS MOVED — a click opened, switched or closed something. Opening,
     // switching and closing are all discrete decisions, so each PUSHES and Back
     // undoes exactly that one step.
-    if (canvasArtifactId !== agreedRef.current) {
+    if (canvasArtifactId !== agreed) {
       agreedRef.current = canvasArtifactId;
       setUrlArtifactId(canvasArtifactId);
     }
