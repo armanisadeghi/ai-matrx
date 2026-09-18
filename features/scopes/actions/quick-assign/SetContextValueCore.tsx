@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import * as SliderPrimitive from "@radix-ui/react-slider";
 import IconButton from "@/components/official/IconButton";
 import {
   Tooltip,
@@ -42,6 +41,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
+import { TrimControl } from "@/components/content-refine/TrimControl";
+import { useTrimEdgeScrollIntent } from "@/components/matrx/useTrimEdgeScrollIntent";
 import {
   NoteEditorCore,
   type EditorMode,
@@ -153,11 +154,6 @@ export function SetContextValueCore({
     }
   }, [workingContent]);
 
-  const handleResetTrim = useCallback(() => {
-    setTrimStart(0);
-    setTrimEnd(0);
-  }, [setTrimStart, setTrimEnd]);
-
   const handlePostSaveAction = useCallback(
     (action: PostSaveAction) => {
       if (!savedScopeId || !target.orgId) return;
@@ -179,6 +175,17 @@ export function SetContextValueCore({
   const rawLen = safeInitialContent.length;
   const charCount = workingContent.length;
   const trimMax = Math.max(0, maxTrim);
+  const trimScroll = useTrimEdgeScrollIntent(
+    trimStart,
+    setTrimStart,
+    trimEnd,
+    setTrimEnd,
+  );
+  const handleResetTrim = () => {
+    trimScroll.requestEdge("start");
+    setTrimStart(0);
+    setTrimEnd(0);
+  };
 
   return (
     <TooltipProvider delayDuration={200}>
@@ -291,11 +298,11 @@ export function SetContextValueCore({
         )}
 
         {!savedScopeId && (
-          <TrimRow
+          <TrimControl
             label="Trim start"
             max={Math.max(0, trimMax - trimEnd)}
             value={trimStart}
-            onChange={setTrimStart}
+            onChange={trimScroll.setTrimStart}
             tooltip="Drag to trim characters from the start of the content"
           />
         )}
@@ -310,15 +317,17 @@ export function SetContextValueCore({
             placeholder="Enter the content to save…"
             className="flex-1 min-h-0"
             resetKey={`${stripThinkingEnabled}:${trimStart}:${trimEnd}:${savedScopeId ?? "draft"}`}
+            scrollIntent={trimScroll.intent}
+            embedded
           />
         </div>
 
         {!savedScopeId && (
-          <TrimRow
+          <TrimControl
             label="Trim end"
             max={Math.max(0, trimMax - trimStart)}
             value={trimEnd}
-            onChange={setTrimEnd}
+            onChange={trimScroll.setTrimEnd}
             tooltip="Drag to trim characters from the end of the content"
           />
         )}
@@ -492,93 +501,6 @@ export function SetContextValueCore({
         </AlertDialog>
       </div>
     </TooltipProvider>
-  );
-}
-
-interface TrimRowProps {
-  label: string;
-  max: number;
-  value: number;
-  onChange: (value: number) => void;
-  tooltip?: string;
-}
-
-function TrimRow({ label, max, value, onChange, tooltip }: TrimRowProps) {
-  const safeMax = Math.max(0, max);
-  const clamped = Math.min(value, safeMax);
-  const disabled = safeMax === 0;
-
-  const labelEl = (
-    <span
-      className={cn(
-        "text-xs shrink-0 w-20 tabular-nums select-none font-medium",
-        disabled ? "text-muted-foreground/60" : "text-foreground",
-      )}
-    >
-      {label}
-    </span>
-  );
-
-  return (
-    <div className="flex items-center gap-3 shrink-0 w-full min-w-0 h-8">
-      {tooltip ? (
-        <Tooltip>
-          <TooltipTrigger asChild>{labelEl}</TooltipTrigger>
-          <TooltipContent side="top" className="z-[9999]">
-            {tooltip}
-          </TooltipContent>
-        </Tooltip>
-      ) : (
-        labelEl
-      )}
-
-      <SliderPrimitive.Root
-        min={0}
-        max={safeMax || 1}
-        step={1}
-        value={[clamped]}
-        onValueChange={(vals) => onChange(vals[0] ?? 0)}
-        disabled={disabled}
-        className={cn(
-          "relative flex items-center select-none touch-none flex-1 min-w-0 h-5 cursor-pointer",
-          disabled && "opacity-50 cursor-not-allowed",
-        )}
-      >
-        <SliderPrimitive.Track className="relative grow h-2 rounded-full bg-neutral-200 dark:bg-neutral-800 border border-border overflow-hidden">
-          <SliderPrimitive.Range className="absolute h-full bg-primary" />
-        </SliderPrimitive.Track>
-        <SliderPrimitive.Thumb
-          className="block h-4 w-4 rounded-full bg-primary border-2 border-background shadow-md transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 disabled:pointer-events-none cursor-grab active:cursor-grabbing active:scale-110"
-          aria-label={label}
-        />
-      </SliderPrimitive.Root>
-
-      <input
-        type="number"
-        min={0}
-        max={safeMax}
-        value={clamped}
-        onChange={(e) => {
-          const n = Number(e.target.value) || 0;
-          onChange(Math.max(0, Math.min(n, safeMax)));
-        }}
-        disabled={disabled}
-        className={cn(
-          "h-7 w-20 shrink-0 rounded-md border border-border bg-background px-2 text-xs tabular-nums",
-          "text-foreground placeholder:text-muted-foreground",
-          "focus:outline-none focus:ring-2 focus:ring-ring",
-          "disabled:opacity-50 disabled:cursor-not-allowed",
-        )}
-      />
-      <span
-        className={cn(
-          "text-[10px] tabular-nums shrink-0 w-14 text-right",
-          disabled ? "text-muted-foreground/60" : "text-muted-foreground",
-        )}
-      >
-        / {safeMax.toLocaleString()}
-      </span>
-    </div>
   );
 }
 

@@ -223,11 +223,18 @@ interface FsNode {
 
 interface AgentEnvKv {
   key: string;
-  value: string;
+  /** Whether the name is set to a non-empty value inside the box. */
+  present?: boolean;
+  /** Length of the value, in characters. */
+  chars?: number;
+  /** Always true — the orchestrator never returns env VALUES. */
+  redacted?: boolean;
 }
 
 interface AgentEnvResponse {
   sandbox_id: string;
+  values_redacted?: boolean;
+  values_redacted_reason?: string;
   container_config_env?: AgentEnvKv[];
   runtime_env?: AgentEnvKv[];
   runtime_env_error?: string;
@@ -1039,7 +1046,7 @@ export const SandboxDiagnosticsPanel = forwardRef<
                 <table className="w-full text-[11px] font-mono">
                   <thead className="text-left text-muted-foreground sticky top-0 bg-background">
                     <tr>
-                      <th className="p-2 w-1/3">key</th>
+                      <th className="p-2 w-2/3">name</th>
                       <th className="p-2">value</th>
                     </tr>
                   </thead>
@@ -1047,15 +1054,14 @@ export const SandboxDiagnosticsPanel = forwardRef<
                     {(() => {
                       const list: AgentEnvKv[] =
                         (agentEnv?.[envView] as AgentEnvKv[]) || [];
+                      // Filtering is by NAME only: the orchestrator does not
+                      // return values (feedback 34dcf28a), so there is nothing
+                      // else here to search.
                       const filtered = envFilter
-                        ? list.filter(
-                            (kv) =>
-                              kv.key
-                                .toLowerCase()
-                                .includes(envFilter.toLowerCase()) ||
-                              kv.value
-                                .toLowerCase()
-                                .includes(envFilter.toLowerCase()),
+                        ? list.filter((kv) =>
+                            kv.key
+                              .toLowerCase()
+                              .includes(envFilter.toLowerCase()),
                           )
                         : list;
                       if (!filtered.length) {
@@ -1084,7 +1090,11 @@ export const SandboxDiagnosticsPanel = forwardRef<
                           className="border-t border-border align-top"
                         >
                           <td className="p-2 break-all">{kv.key}</td>
-                          <td className="p-2 break-all">{kv.value}</td>
+                          <td className="p-2 break-all text-muted-foreground">
+                            {kv.present === false
+                              ? "set, empty"
+                              : `set · ${kv.chars ?? 0} chars`}
+                          </td>
                         </tr>
                       ));
                     })()}
@@ -1092,6 +1102,10 @@ export const SandboxDiagnosticsPanel = forwardRef<
                 </table>
               </ScrollArea>
               <p className="text-[11px] text-muted-foreground mt-2 shrink-0">
+                <strong>Values are never shown here.</strong> The orchestrator
+                returns the NAME, whether it is set, and how long the value is —
+                never the value itself. To read one, open a shell in the box.
+                <br />
                 <strong>aidream process env</strong> is the ground truth —
                 it&apos;s what the FastAPI process actually sees. If a var is
                 here, the agent has it. If not, no amount of{" "}

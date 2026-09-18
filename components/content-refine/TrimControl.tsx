@@ -109,8 +109,8 @@ export function TrimControl({
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className={cn("matrx-touch-targets min-w-0", className)}>
-        <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto_8rem] items-center gap-1.5 sm:grid-cols-[5rem_auto_minmax(0,1fr)_auto_7rem_auto_auto]">
+      <div className={cn("matrx-touch-targets @container min-w-0", className)}>
+        <div className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)_auto_8rem] items-center gap-1.5 @[600px]:grid-cols-[5rem_auto_minmax(0,1fr)_auto_7rem_auto_auto]">
           {tooltip ? (
             <Tooltip>
               <TooltipTrigger asChild>{labelElement}</TooltipTrigger>
@@ -123,7 +123,7 @@ export function TrimControl({
           )}
 
           <span
-            className="col-start-2 row-start-1 min-w-0 truncate text-right text-[10px] tabular-nums text-muted-foreground sm:hidden"
+            className="col-start-2 row-start-1 min-w-0 truncate text-right text-[10px] tabular-nums text-muted-foreground @[600px]:hidden"
             title={
               isZoomed
                 ? `Fine range: ${sliderRange.start.toLocaleString()}–${sliderRange.end.toLocaleString()}`
@@ -140,7 +140,7 @@ export function TrimControl({
             tooltip={`Decrease ${label} by one character`}
             onClick={() => updateExactValue(clampedValue - 1)}
             disabled={disabled || clampedValue === 0}
-            className="col-start-1 row-start-2 rounded-md sm:col-start-2 sm:row-start-1"
+            className="col-start-1 row-start-2 rounded-md @[600px]:col-start-2 @[600px]:row-start-1"
           />
 
           <SliderPrimitive.Root
@@ -177,7 +177,7 @@ export function TrimControl({
             }}
             disabled={disabled}
             className={cn(
-              "relative col-start-2 row-start-2 flex h-11 min-w-0 touch-none select-none items-center sm:col-start-3 sm:row-start-1 sm:h-5",
+              "relative col-start-2 row-start-2 flex h-11 min-w-0 touch-none select-none items-center @[600px]:col-start-3 @[600px]:row-start-1 @[600px]:h-5",
               disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
             )}
           >
@@ -198,7 +198,7 @@ export function TrimControl({
             tooltip={`Increase ${label} by one character`}
             onClick={() => updateExactValue(clampedValue + 1)}
             disabled={disabled || clampedValue === safeMax}
-            className="col-start-3 row-start-2 rounded-md sm:col-start-4 sm:row-start-1"
+            className="col-start-3 row-start-2 rounded-md @[600px]:col-start-4 @[600px]:row-start-1"
           />
 
           <label className="sr-only" htmlFor={inputId}>
@@ -217,7 +217,7 @@ export function TrimControl({
               if (Number.isFinite(next)) updateExactValue(next);
             }}
             disabled={disabled}
-            className="col-start-4 row-start-1 h-8 min-w-0 rounded-md border border-border bg-background px-2 text-base tabular-nums text-foreground outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 sm:col-start-5 sm:text-xs"
+            className="col-start-4 row-start-1 h-8 min-w-0 rounded-md border border-border bg-background px-2 text-base tabular-nums text-foreground outline-none focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 @[600px]:col-start-5 @[600px]:text-xs"
             aria-label={`${label} character count`}
           />
 
@@ -228,7 +228,7 @@ export function TrimControl({
             tooltip="Restore the full trim range"
             onClick={() => setRange(FULL_RANGE)}
             disabled={!isZoomed}
-            className="col-start-3 row-start-1 rounded-md sm:col-start-7 sm:row-start-1"
+            className="col-start-3 row-start-1 rounded-md @[600px]:col-start-7 @[600px]:row-start-1"
           />
 
           <Button
@@ -237,17 +237,17 @@ export function TrimControl({
             size="sm"
             onClick={fineTune}
             disabled={disabled || sliderWidth <= FINE_WIDTH}
-            className="col-start-4 row-start-2 h-8 justify-center gap-1 px-2 text-xs sm:col-start-6 sm:row-start-1"
+            className="col-start-4 row-start-2 h-8 justify-center gap-1 px-2 text-xs @[600px]:col-start-6 @[600px]:row-start-1"
             aria-label="Fine tune trim range"
           >
             <ZoomIn className="size-3.5" />
-            <span className="hidden sm:inline">
+            <span className="hidden @[600px]:inline">
               Fine tune
             </span>
           </Button>
         </div>
 
-        <div className="mt-1 hidden h-3 pl-[5.5rem] text-[10px] tabular-nums text-muted-foreground sm:block">
+        <div className="mt-1 hidden h-3 pl-[5.5rem] text-[10px] tabular-nums text-muted-foreground @[600px]:block">
           {isZoomed && (
             <span>
               Fine range: {sliderRange.start.toLocaleString()}–

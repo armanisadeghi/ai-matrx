@@ -10,8 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAppSelector } from "@/lib/redux/hooks";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import {
   ContextItemPicker,
   type ContextItemSelection,
@@ -56,10 +54,17 @@ export function ContextItemBindingEditor({
   onChange,
   readonly,
 }: ContextItemBindingEditorProps) {
-  const activeOrgId = useAppSelector(selectActiveOrganizationId);
   // Org and source are picker-only concerns (the binding stores the item's
   // id/type/key). A stored binding with no scopeTypeId IS a System binding.
-  const [orgId, setOrgId] = useState<string>(activeOrgId ?? "");
+  //
+  // THE ORG IS NOT SEEDED FROM THE ACTIVE ORGANIZATION. Seeding it that way
+  // told the picker "the org is X" for every reopened binding, so a binding
+  // whose scope type lives in another org showed the wrong organization, a
+  // scope type that resolved to nothing, and a frozen item picker (PNI-000
+  // re-verify 1). Empty means "not chosen here": the picker derives the org
+  // from the stored scope type and falls back to the active org only when the
+  // binding has none.
+  const [orgId, setOrgId] = useState<string>("");
   const [source, setSource] = useState<ContextItemSource | undefined>(
     undefined,
   );

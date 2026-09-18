@@ -13,8 +13,9 @@
  *     (`839d3c8a75^`) — the door-only cascade Arman ruled on;
  *   • GREEN-1 is the REAL shipped file at HEAD.
  * The other three are minimal fixtures for shapes no file in this repo has:
- * a caption with no write path, a P11 sentence with no alternative, and a P11
- * control that pairs its sentence with a live `lockedAction`.
+ * a caption with no write path, a P11 sentence with no alternative, a P11
+ * sentence whose only alternative is a COMMENT, and a P11 control that pairs
+ * its sentence with a live `lockedAction`.
  *
  * Each case is a throwaway repo root (the detector keys off `process.cwd()`),
  * so the real tree is never touched.
@@ -60,6 +61,23 @@ export function TierPicker({ options }: { options: { id: string; label: string }
   p11SentenceOnly: `"use client";
 import { Select, SelectContent, SelectItem } from "@/components/ui/select";
 // This vocabulary is curated centrally.
+export function ClassPicker({ options }: { options: { id: string; label: string }[] }) {
+  return (
+    <Select>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={o.id} value={o.id}>{o.label}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+`,
+  /** A comment promising an alternative — PNI-000 re-verify 1's residual. */
+  p11CommentOnly: `"use client";
+import { Select, SelectContent, SelectItem } from "@/components/ui/select";
+// This vocabulary is curated centrally.
+// TODO: one day wire a lockedAction here so people can make their own.
 export function ClassPicker({ options }: { options: { id: string; label: string }[] }) {
   return (
     <Select>
@@ -178,6 +196,16 @@ try {
     flaggedIn(redP11).includes("features/fixtures/ClassPicker.tsx"),
   );
 
+  // ── RED 4 — a comment is not an affordance: "TODO … lockedAction" is prose
+  const redComment = rootWith({
+    "features/fixtures/ClassPicker.tsx": FIXTURES.p11CommentOnly,
+  });
+  roots.push(redComment);
+  check(
+    "RED: a commented-out promise of a lockedAction is flagged (re-verify 1 residual)",
+    flaggedIn(redComment).includes("features/fixtures/ClassPicker.tsx"),
+  );
+
   // ── GREEN 1 — the real shipped file: every level creates in place
   const greenReal = rootWith({ [PICKER]: fileAt("HEAD", PICKER) });
   roots.push(greenReal);
@@ -211,6 +239,6 @@ if (failures.length > 0) {
   exitAfterDrain(1);
 }
 console.log(
-  "  ✓ check:picker-add:self-test — the detector is RED on the door-only, caption-only and P11-sentence-only shapes, GREEN on the creatable and P11-with-alternative shapes.\n",
+  "  ✓ check:picker-add:self-test — the detector is RED on the door-only, caption-only, P11-sentence-only and commented-promise shapes, GREEN on the creatable and P11-with-alternative shapes.\n",
 );
 exitAfterDrain(0);

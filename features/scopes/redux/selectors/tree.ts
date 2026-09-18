@@ -107,6 +107,28 @@ export const makeSelectScopeType = () =>
     },
   );
 
+/**
+ * The organization a scope type belongs to. A scope type lives in exactly ONE
+ * org, so anything holding only a `scope_type_id` (an agent-variable context
+ * binding stores no org) can recover the org from the tree instead of guessing
+ * with the ACTIVE org — which is how the context-item picker came to show the
+ * wrong organization and a scope type it could not resolve (PNI-000).
+ */
+export const makeSelectOrgIdForScopeType = () =>
+  createSelector(
+    selectOrganizations,
+    (_: RootState, scopeTypeId: string | null | undefined) => scopeTypeId,
+    (byId, scopeTypeId): string | null => {
+      if (!scopeTypeId) return null;
+      for (const orgId of Object.keys(byId)) {
+        if (byId[orgId].scope_types.some((t) => t.id === scopeTypeId)) {
+          return orgId;
+        }
+      }
+      return null;
+    },
+  );
+
 export const makeSelectScopesForType = () =>
   createSelector(
     selectOrganizations,

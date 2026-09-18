@@ -13,6 +13,10 @@ import MarkdownStream, {
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Eye, PenLine } from "lucide-react";
+import {
+  type ScrollEdgeIntent,
+  useScrollEdgeIntent,
+} from "./useTrimEdgeScrollIntent";
 import type {
   ContentSource,
   RichDocumentActionId,
@@ -112,6 +116,10 @@ export interface MatrxSplitProps {
   actionsSurfaceId?: string;
   /** Action IDs to hide in the preview's action surface. */
   actionsExclude?: (RichDocumentActionId | string)[];
+  /** Remount only the rich preview body when its edit overlay is invalidated. */
+  contentResetKey?: string;
+  /** One finite request to reveal a trim edge in both panes. */
+  scrollIntent?: ScrollEdgeIntent;
 }
 
 /**
@@ -163,6 +171,8 @@ export function MatrxSplit({
   actionsBehavior,
   actionsSurfaceId,
   actionsExclude,
+  contentResetKey,
+  scrollIntent,
 }: MatrxSplitProps) {
   const previewChange = onPreviewChange ?? onChange;
   const isMobile = useIsMobile();
@@ -175,6 +185,7 @@ export function MatrxSplit({
     if (actionsSource) {
       return (
         <RichDocument
+          key={contentResetKey}
           content={previewValue}
           source={actionsSource}
           actionsVariant={
@@ -197,6 +208,7 @@ export function MatrxSplit({
     }
     return (
       <MarkdownStream
+        key={contentResetKey}
         content={previewValue}
         isStreamActive={false}
         hideCopyButton={hideCopyButton}
@@ -212,6 +224,12 @@ export function MatrxSplit({
   const internalTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const previewRef = useRef<HTMLDivElement | null>(null);
   const isSyncing = useRef(false);
+
+  useScrollEdgeIntent(
+    scrollIntent,
+    [internalTextareaRef, previewRef],
+    `${isMobile}:${mobileView}`,
+  );
 
   const mergedPreviewRef = useCallback(
     (node: HTMLDivElement | null) => {
