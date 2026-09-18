@@ -29,6 +29,7 @@
 import {
   failureSummary,
   type ProgressStep,
+  type RunShape,
 } from "./honestSummary";
 
 const MINUTE_MS = 60_000;
@@ -55,6 +56,13 @@ export interface EstimateSentenceInput {
    * surface that genuinely renders no steps — and then say so out loud.
    */
   steps: readonly ProgressStep[];
+  /**
+   * Whether those steps are ordered milestones or independent units over a
+   * pile. Required for the same reason `steps` is: the sentence a failure
+   * earns is different in each, and guessing produced "Nothing after it will
+   * run" over fifteen files that ran perfectly well (see `honestSummary.ts`).
+   */
+  shape: RunShape;
   /** What the person can do when a step has failed. */
   failureRemedy?: string;
 }
@@ -91,11 +99,12 @@ export function estimateSentence({
   doing,
   keepsGoingWithoutYou = false,
   steps,
+  shape,
   failureRemedy,
 }: EstimateSentenceInput): string {
   // The steps outrank the clock. Whatever the elapsed time says, a person
   // looking at a red "Failed" row must never be told nothing has failed.
-  const failed = failureSummary(steps, failureRemedy);
+  const failed = failureSummary(steps, shape, failureRemedy);
   if (failed) return failed;
 
   const overdueAt = usualMs * OVERDUE_GRACE_FACTOR;

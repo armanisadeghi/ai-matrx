@@ -283,7 +283,7 @@ function ResourceAttachPickerBody({
             placeholder={
               live ? `Search your ${providerName} ${noun}…` : `Search ${noun}…`
             }
-            className="h-9 pl-8 text-base sm:text-sm"
+            className="h-9 pl-8 text-base sm:text-sm max-sm:min-h-11"
           />
         </div>
 
@@ -342,7 +342,7 @@ function ResourceAttachPickerBody({
                           ? `${candidate.display_name} is already attached to this chat`
                           : `Attach ${candidate.display_name}`
                       }
-                      className="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-default"
+                      className="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-default max-sm:min-h-11"
                     >
                       <span
                         className={cn(
@@ -383,16 +383,28 @@ function ResourceAttachPickerBody({
                             name: candidate.display_name,
                           })
                         }
-                        className="shrink-0 text-muted-foreground hover:text-foreground"
+                        className="inline-flex shrink-0 flex-col items-center justify-center gap-0.5 rounded text-muted-foreground hover:text-foreground max-sm:min-h-11 max-sm:min-w-11 sm:flex-row sm:gap-1"
                         aria-label={`Open ${candidate.display_name}`}
                         title={`Open ${candidate.display_name}`}
                       >
-                        <ArrowUpRight className="h-3 w-3" />
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                        {/* Always visible — icon-only doors are told apart
+                            only by hover/tint, which fails on a phone with no
+                            hover (F-80's standard: distinct without hover at
+                            every width). Stacks under the icon below `sm`. */}
+                        <span className="text-[10px] leading-none sm:text-xs">
+                          Open
+                        </span>
                       </button>
                     )}
                     {candidate.link && (
                       <a
-                        className="shrink-0 text-muted-foreground hover:text-foreground"
+                        className={cn(
+                          "inline-flex shrink-0 flex-col items-center justify-center gap-0.5 rounded max-sm:min-h-11 max-sm:min-w-11 sm:flex-row sm:gap-1",
+                          candidate.record_table
+                            ? "text-primary hover:underline"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
                         href={candidate.link}
                         target="_blank"
                         rel="noreferrer"
@@ -403,7 +415,13 @@ function ResourceAttachPickerBody({
                         }
                         title={candidate.record_table ? "Join the meeting" : undefined}
                       >
-                        <ExternalLink className="h-3 w-3" />
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        {/* Always visible, same reasoning as the "Open" door
+                            above — the two doors must stay distinguishable
+                            without hover at phone width. */}
+                        <span className="text-[10px] leading-none sm:text-xs">
+                          {candidate.record_table ? "Join" : "Open"}
+                        </span>
                       </a>
                     )}
                   </div>
@@ -453,6 +471,7 @@ function ResourceAttachPickerBody({
               size="sm"
               onClick={onClose}
               disabled={saving}
+              className="max-sm:min-h-11"
             >
               Cancel
             </Button>
@@ -465,6 +484,7 @@ function ResourceAttachPickerBody({
                   ? `Pick at least one of your ${noun} to attach`
                   : undefined
               }
+              className="max-sm:min-h-11"
             >
               {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               Attach

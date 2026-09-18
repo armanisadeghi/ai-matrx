@@ -54,7 +54,13 @@ export type KnownItemType =
   // `communication.calendar_event` (aidream migration 0766). Read-only toward
   // Google: `visibility personal` by default (ruling R1), because a person's
   // agenda is theirs.
-  | "calendar_event";
+  | "calendar_event"
+  // A Marketing SITE — `web.site`, the module's central identity (every Search
+  // Console number, crawl, page and keyword belongs to one). The word is the
+  // canonical `platform.entity_types` token, `web_site`, never a twin spelled
+  // `site`: the token already carries the route and the peek, and only the
+  // in-place opener was missing (F-87).
+  | "web_site";
 
 export type ItemType = KnownItemType | (string & {});
 

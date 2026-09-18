@@ -27,6 +27,7 @@ import { useOpenAgentRunWindow } from "@/features/overlays/openers/agentRunWindo
 import { useOpenNoteInfoWindow } from "@/features/overlays/openers/noteInfoWindow";
 import { useOpenFilePreviewWindow } from "@/features/overlays/openers/filePreviewWindow";
 import { useOpenStructuredListManagerV2Window } from "@/features/overlays/openers/structuredListManagerV2Window";
+import { useOpenSiteQuickViewWindow } from "@/features/overlays/openers/siteQuickViewWindow";
 import { useOpenDetail } from "@/lib/detail/useOpenDetail";
 
 import { getItemConfig } from "./registry";
@@ -43,6 +44,7 @@ export function useOpenItemPresentation() {
   const openNote = useOpenNoteInfoWindow();
   const openFile = useOpenFilePreviewWindow();
   const openPicklist = useOpenStructuredListManagerV2Window();
+  const openSite = useOpenSiteQuickViewWindow();
   const openDetail = useOpenDetail();
 
   return useCallback(
@@ -112,6 +114,17 @@ export function useOpenItemPresentation() {
         case "picklist":
           openPicklist({ forcedListId: id });
           return true;
+        // A Marketing SITE (F-87): the platform's own site Quick view — the
+        // floating panel the Sites portfolio and the Content Plan list already
+        // open on a row — wrapped so it can be opened from an id alone. It
+        // carries the KPI tiles, the Search Console trend and a door to the
+        // full site workspace, which is what a reader meeting a site in a chat
+        // answer or a reference chip actually needs. `/detail/web_site/<id>`
+        // still resolves through the type map (the registry's `detailSource`),
+        // exactly as a file's does beside its bespoke preview window.
+        case "web_site":
+          openSite({ siteId: id, siteLabel: seed?.name ?? null });
+          return true;
         // Everything else opens the Detail primitive. As a type earns a
         // bespoke window, add its branch above — nothing else changes.
         case "app":
@@ -141,6 +154,6 @@ export function useOpenItemPresentation() {
           return openGenericDetail();
       }
     },
-    [openAgent, openNote, openFile, openPicklist, openDetail],
+    [openAgent, openNote, openFile, openPicklist, openSite, openDetail],
   );
 }

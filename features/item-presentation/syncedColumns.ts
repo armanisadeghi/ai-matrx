@@ -98,6 +98,58 @@ export const PROJECTED_ROLE_COLUMNS = Object.freeze({
 export type SyncedRoleColumn = SyncedTableColumn | keyof typeof PROJECTED_ROLE_COLUMNS;
 
 /**
+ * THE ACCOUNT ROLE IS RECOGNISED BY STRUCTURE, NOT BY SPELLING (lane F-81,
+ * hostile verifier V-21).
+ *
+ * The five other roles are naming conventions and nothing more. The ACCOUNT role
+ * is not: a column plays it when it POINTS AT THE CONNECTION SIDE of the
+ * integrations model — `users.integration_connections` (the connected account
+ * itself) or `users.integration_connection_resources` (a resource that BELONGS to
+ * one, `integration_connection_resources.connection_id → integration_connections`,
+ * the one hop the generated `Relationships` does declare). So the shape is the
+ * noun set of those two relations with the `_id` suffix and any prefix a table
+ * chooses, not a list of remembered spellings.
+ *
+ * WHAT THE SPELLING LIST MISSED. `ACCOUNT_COLUMNS` enumerated
+ * `synced_via_connection_id | connection_id | account_id | refreshed_via_account`,
+ * so the reverse census asked "does a mirror carry an ACCOUNT-shaped column no
+ * list names?" with a pattern that could only recognise names somebody had
+ * already thought of. `web.youtube_video` IS a mirror (`external_id`,
+ * `external_url`, `synced_at`) and names its connection side
+ * `channel_resource_id` — matching no spelling and no alternative — so
+ * `UNREAD_ROLE_COLUMNS` came back EMPTY and the guard built to prevent F-51 was
+ * green while the strip could not read that table's account at all. F-51 re-armed
+ * on the third mirror table, invisibly. `workbench.google_document.resource_id`
+ * was in the same blind spot.
+ *
+ * 🚨 THE RESIDUAL BLIND SPOT, STATED. The rule would rather read the FK itself,
+ * and it cannot: every FK on all three mirror tables points OUT of the generated
+ * schema set (`users.*`, `iam.*`, `auth.*`), and Supabase typegen drops a
+ * cross-schema relationship — all three mirrors carry `Relationships: []` in
+ * `types/database.types.ts` even though the constraints are live
+ * (`youtube_video_channel_resource_id_fkey → users.integration_connection_resources`,
+ * `calendar_event_synced_via_connection_id_fkey → users.integration_connections`,
+ * read live 2026-09-18). So the seed relation is NAMED here once and the family is
+ * derived from the generated `Relationships` of the seed's own schema; the guard
+ * asserts both still exist. A mirror that names its connection side WITHOUT one of
+ * these nouns (`refreshed_through`, `google_account_ref`) is still invisible to
+ * the census — the day typegen carries cross-schema FKs, delete the noun set and
+ * read the FK.
+ */
+export const ACCOUNT_RELATION_SEED = "integration_connections" as const;
+/** The relation a connection-side column may point at besides the seed — DERIVED: it is the seed's own child in the generated `Relationships`. */
+export const ACCOUNT_RELATION_CHILD = "integration_connection_resources" as const;
+/**
+ * The nouns those two relations are addressed by in a column name, plus
+ * `account` — the word the platform's own vocabulary uses for a connection on a
+ * screen. `refreshed_via_account` is kept as an explicit tail alternative purely
+ * so this shape is a strict SUPERSET of the spelling list it replaces: no column
+ * the old pattern would have censused can escape the new one.
+ */
+const ACCOUNT_COLUMN_SHAPE =
+  /^([a-z0-9_]+_)?(connection|resource|account)_id$|^refreshed_via_account$/;
+
+/**
  * The naming convention behind each role the strip reads, so the guard can ask
  * the reverse question: does a synced table carry a column that plays this role
  * and that no candidate list names? Deliberately tight — `meeting_url` is a
@@ -108,7 +160,7 @@ export const ROLE_COLUMN_SHAPE: Readonly<Record<string, RegExp>> = Object.freeze
   PROVIDER_COLUMNS: /^(provider|source_provider|sync_provider)$/,
   PRODUCT_COLUMNS: /^(provider_product|capability_key|product_key)$/,
   EXTERNAL_ID_COLUMNS: /^(external_id|external_[a-z_]+_id|provider_id)$/,
-  ACCOUNT_COLUMNS: /^(synced_via_connection_id|connection_id|account_id|refreshed_via_account)$/,
+  ACCOUNT_COLUMNS: ACCOUNT_COLUMN_SHAPE,
   REFRESHED_COLUMNS: /^(synced_at|last_synced_at|refreshed_at|last_refreshed_at|external_(modified|updated)_at)$/,
   SOURCE_URL_COLUMNS: /^(web_url|external_url|source_url|html_link|provider_url)$/,
 });
@@ -163,8 +215,27 @@ export const EXTERNAL_ID_COLUMNS = ["external_id"] as const satisfies readonly S
  * a projection to rename its own column into a name invented here. The producer
  * reads what the tables say; the next synced table inherits the strip by naming
  * its connection the same way `platform.create_entity_table` already does.
+ *
+ * 🚨 ORDER IS THE RULING, AND A CONNECTION ID IS NOT A RESOURCE ID (lane F-81).
+ * The structural census above found two more live connection-side columns the
+ * spelling list could not see: `workbench.google_document.resource_id` and
+ * `web.youtube_video.channel_resource_id`, both FK'd to
+ * `users.integration_connection_resources` (live, read 2026-09-18) — and
+ * `web.youtube_video` has NO connection column at all, so on the day U-M3 ships
+ * YouTube the strip would have had nothing to read and would have ranked the
+ * accounts, which is F-51 exactly. The connection column comes FIRST because it
+ * is the account outright; a resource id needs one hop
+ * (`integration_connection_resources.connection_id`) and `resolveRowAccountId` in
+ * `sourceHealth.ts` takes it, off the inventory both reads already fetch. Adding a
+ * resource id to this list WITHOUT that hop would have been the F-51 defect in a
+ * new spelling: `preferredAccountId` compares the value against account ids, finds
+ * nothing, and silently ranks.
  */
-export const ACCOUNT_COLUMNS = ["synced_via_connection_id"] as const satisfies readonly SyncedRoleColumn[];
+export const ACCOUNT_COLUMNS = [
+  "synced_via_connection_id",
+  "resource_id",
+  "channel_resource_id",
+] as const satisfies readonly SyncedRoleColumn[];
 /**
  * Columns holding when we last refreshed the row from the source, most specific
  * first — `stringColumn` in `sourceHealth.ts` returns the first of these that is

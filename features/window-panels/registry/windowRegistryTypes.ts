@@ -139,6 +139,22 @@ export interface WindowStaticMetadata {
    */
   preservation?: WindowPreservationConfig;
   /**
+   * WHERE THIS WINDOW MAY OPEN ITSELF WITH NOBODY HAVING CLICKED ANYTHING.
+   *
+   * Route prefixes — `/administration` covers `/administration/spend`. A
+   * window that omits this may NOT raise itself on any route (default deny);
+   * `mayRaiseUnbidden` warns when an automatic raiser asks for one that
+   * declared no home.
+   *
+   * This governs UNBIDDEN raises only. Clicking an opener still works
+   * everywhere, on every route, whatever this says.
+   *
+   * D11: the daily spend window opened over the `/exports` drop zone. Its
+   * home is the dashboard and administration surfaces — not wherever the
+   * viewer happened to be when the app booted.
+   */
+  unbiddenHome?: readonly string[];
+  /**
    * Optional seed data builder invoked when opening this overlay from the
    * Tools grid (or other generic entry points). Runs client-side at click
    * time; can read Redux state via selectors passed by the grid host.

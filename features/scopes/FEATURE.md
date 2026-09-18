@@ -332,6 +332,22 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-09-18 — **Two registries, and this one was not told (V-21, F-82).** `calendar_event`
+  (`communication.calendar_event`) and `google_document` (`workbench.google_document`) were
+  registered as openable kinds in the item-presentation registry (F-63) but absent from
+  `registry/entityRegistry.ts` — the registry `<EntityRef token=…>`, `resolveEntityDoors` and the
+  dead-ends rules read. So `<EntityRef token="calendar_event">` rendered no controls at all (neither
+  table carries a `title_column`, so `RegistryPeek` could not stand in either), and the
+  `toast-names-record` rule, whose vocabulary comes from this file, could not see a doorless
+  "Calendar event created" while reporting "Google document imported" against `udt_document` — the
+  wrong record. Both tokens now carry `hrefFor` built by the new `detailRecordHref` helper: the
+  Detail primitive's PAGE presentation (`/detail/<token>/<id>`), which is the addressable form of the
+  SAME open path the item-presentation registration already uses in place, and the only route that
+  keys on exactly this token and id. `DetailHost` is a `"use client"` module with the whole
+  window-manager graph behind it and this registry feeds the deliberately component-free door
+  resolver, so the path is spelled here and held in step by a test that reads `DetailHost`'s own
+  template (`registry/entityRegistry.test.ts`).
+
 
 - 2026-09-17 — **The associations `ensureOrgId` port speaks its refusal.** The port resolved the active organization with a loud personal-org fallback; that fallback was deleted platform-wide on 2026-09-17 and the port now THROWS. The package's `errorSink` reaches the admin Error Inspector, not the person, so a category created with no organization selected would simply never have appeared. The port is wrapped in `withOrganizationRefusalShown`: the person is told, and the package still fails.
 

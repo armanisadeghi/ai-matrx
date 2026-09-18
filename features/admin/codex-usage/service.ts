@@ -90,6 +90,14 @@ interface LocalProxyBinding {
   target_kind: "local_machine";
 }
 
+/** A bounded local collector is already scanning a different date range. */
+export class CodexUsageCollectionBusyError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "CodexUsageCollectionBusyError";
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -251,6 +259,13 @@ export async function readCodexUsage(
     headers: { "X-Sandbox-Access-Token": target.access_token },
   });
   const body: unknown = await response.json().catch(() => null);
+  if (response.status === 409) {
+    const reason =
+      isRecord(body) && typeof body.detail === "string"
+        ? body.detail
+        : "Another usage range is collecting.";
+    throw new CodexUsageCollectionBusyError(reason);
+  }
   if (!response.ok) {
     const reason =
       isRecord(body) && typeof body.detail === "string"

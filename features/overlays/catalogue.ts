@@ -892,6 +892,13 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  // F-87 — one site's Quick view, opened from nothing but its id (the ONE
+  // in-place door for the `web_site` record).
+  siteQuickViewWindow: {
+    label: "Site Quick view",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   serpAnalyzerWindow: {
     label: "Search Appearance",
     instanceMode: "singleton",

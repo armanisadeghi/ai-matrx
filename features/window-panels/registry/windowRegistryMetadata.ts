@@ -1640,6 +1640,12 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     defaultData: {},
     ephemeral: true,
     mobilePresentation: "drawer",
+    // D11: it raises itself once a day, so it must say where it is allowed to
+    // do that. The dashboard and the administration surfaces are where a
+    // super admin is already looking at how the platform is doing; a drop
+    // zone, a chat, or a document is not. Away from home it DEFERS — the
+    // "shown today" record is untouched and it raises on the next visit here.
+    unbiddenHome: ["/dashboard", "/administration"],
   },
 
   // ── Details (one structured value, through the canonical renderer) ────────
@@ -1752,6 +1758,27 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     // A review is about a run that just happened. Restoring one tomorrow would
     // present a stale table as a fresh result.
     ephemeral: true,
+  },
+
+  // The site Quick view (F-87): one site's KPI tiles, Search Console trend, top
+  // pages and connection chips, opened from nothing but an id. F-88 gave it a
+  // metadata entry because without one `preservationEnabled` is false, so the
+  // window's `onCollectData` was never called and "Save window state" wrote
+  // nothing — the prop looked like persistence and was inert. Preserved: the
+  // subject is one site id and everything on screen is a fresh read of it.
+  {
+    slug: "site-quick-view-window",
+    overlayId: "siteQuickViewWindow",
+    kind: "window",
+    label: "Site Quick view",
+    defaultData: { siteId: "", siteLabel: "" },
+    mobilePresentation: "drawer",
+    instanceMode: "singleton",
+    preservation: {
+      dataKeys: ["siteId", "siteLabel"],
+      // A restored Quick view with no site is an empty frame, not a window.
+      requiredDataKeys: ["siteId"],
+    },
   },
 
   // The site discovery panel (KI-040): the canonical `DiscoveryWorkspace` —

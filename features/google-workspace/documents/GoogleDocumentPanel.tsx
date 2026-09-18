@@ -18,6 +18,11 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
+import {
+  organizationRefusalMessage,
+  presentOrganizationRefusal,
+} from "@/lib/organizations/organizationRefusalToast";
 import {
   appendGoogleDocument,
   approvalQueueHref,
@@ -232,6 +237,11 @@ function KeepAndArchiveActions({
       );
       onDetached();
     } catch (error: unknown) {
+      // NOTHING FAILS SILENTLY, and never with the raw wire sentence either:
+      // `presentOrganizationRefusal` recognises the fail-closed refusal and
+      // shows the honest, actionable toast instead of "Select an organization
+      // before sending this request."
+      if (presentOrganizationRefusal(error, { act: "kept" })) return;
       toast.error(extractErrorMessage(error));
     } finally {
       setRunning(null);
@@ -262,6 +272,7 @@ function KeepAndArchiveActions({
         "Archived. It is out of the way and recoverable from the archive; your file in Google is untouched.",
       );
     } catch (error: unknown) {
+      if (presentOrganizationRefusal(error, { act: "archived" })) return;
       toast.error(extractErrorMessage(error));
     } finally {
       setRunning(null);
@@ -542,8 +553,15 @@ export function GoogleDocumentPanel({ initialRow }: { initialRow: GoogleDocument
       announceDocumentRefreshed(row.id);
     } catch (error: unknown) {
       // NOTHING FAILS SILENTLY: a refresh that could not run says so in place,
-      // and the copy we already hold stays on screen.
-      setRefreshError(extractErrorMessage(error));
+      // and the copy we already hold stays on screen. The fail-closed "no
+      // organization selected" refusal gets its OWN honest sentence, never the
+      // raw wire message ("Select an organization before sending this
+      // request.") — that instruction is for a programmer, not this person.
+      setRefreshError(
+        isOrganizationRequiredError(error)
+          ? organizationRefusalMessage({ act: "refreshed", subject: "This document" })
+          : extractErrorMessage(error),
+      );
     }
   }, [reload, row.external_id, row.id]);
 
