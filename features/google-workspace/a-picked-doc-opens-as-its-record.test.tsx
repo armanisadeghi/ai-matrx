@@ -22,10 +22,14 @@
  * returns is the one that opens; and neither textarea exists any more.
  */
 
-import { act, type ReactNode } from "react";
+import { act, useEffect, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { GoogleWorkspaceReviewWorkspace } from "@/features/google-workspace/GoogleWorkspaceReviewWorkspace";
+import {
+  useOpenGoogleDocumentRecord,
+  type PickedGoogleRecordResource,
+} from "@/features/google-workspace/documents/openRecord";
 import type {
   GoogleConnectionInventory,
   GoogleConnectionResource,
@@ -40,6 +44,9 @@ const mockInventory = jest.fn();
 const mockOpenDetail = jest.fn();
 const mockRefresh = jest.fn();
 const mockToastError = jest.fn();
+/** F-69: fires the moment the `existingRecordId` read is attempted, so a test can
+ * assert the pre-F-57 read-then-refresh leg was NEVER entered. */
+const mockExistingRecordRead = jest.fn();
 /** What the `workbench.google_document` read answers for the picked resource. */
 let existingRow: { id: string; title: string } | null = null;
 let readError: string | null = null;
@@ -103,20 +110,23 @@ jest.mock("@/utils/supabase/client", () => ({
     schema: () => ({
       from: () => ({
         select: () => ({
-          eq: () => ({
-            is: () => ({
-              order: () => ({
-                limit: () => ({
-                  maybeSingle: () =>
-                    Promise.resolve(
-                      readError
-                        ? { data: null, error: { message: readError } }
-                        : { data: existingRow, error: null },
-                    ),
+          eq: (...args: unknown[]) => {
+            mockExistingRecordRead(...args);
+            return {
+              is: () => ({
+                order: () => ({
+                  limit: () => ({
+                    maybeSingle: () =>
+                      Promise.resolve(
+                        readError
+                          ? { data: null, error: { message: readError } }
+                          : { data: existingRow, error: null },
+                      ),
+                  }),
                 }),
               }),
-            }),
-          }),
+            };
+          },
         }),
       }),
     }),
@@ -278,5 +288,122 @@ it(
     expect(mockToastError).not.toHaveBeenCalledWith(
       expect.stringContaining("permission denied"),
     );
+  },
+);
+
+/**
+ * 🚨 F-69 — THE REGISTRATION RESPONSE IS ALREADY THE BIRTH DOOR (aidream F-57, R29).
+ *
+ * These three exercise `useOpenGoogleDocumentRecord` directly rather than through
+ * the mounted workspace's "Open the record" button: the resource a caller hands
+ * this hook right after a fresh pick or re-pick is the registration response
+ * (`SelectedFileResponse`), not the plain inventory row `pickedGoogleRecordResource`
+ * narrows — that row has never carried `record_id` and still takes the
+ * read-then-refresh leg, proven by the two tests above and by the third case here.
+ */
+function OpenHarness({
+  resource,
+  onDone,
+}: {
+  resource: PickedGoogleRecordResource;
+  onDone: (opened: boolean) => void;
+}) {
+  const openRecord = useOpenGoogleDocumentRecord();
+  useEffect(() => {
+    void openRecord(resource).then(onDone);
+    // Exactly one open attempt per mount — this harness exists to observe it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
+}
+
+async function runHarness(resource: PickedGoogleRecordResource): Promise<boolean> {
+  let result = false;
+  const done = (opened: boolean) => {
+    result = opened;
+  };
+  const harnessContainer = document.createElement("div");
+  document.body.appendChild(harnessContainer);
+  const harnessRoot = createRoot(harnessContainer);
+  await act(async () => {
+    harnessRoot.render(<OpenHarness resource={resource} onDone={done} />);
+  });
+  act(() => harnessRoot.unmount());
+  harnessContainer.remove();
+  return result;
+}
+
+it(
+  "opens the record_id the registration response already carries — no second " +
+    "read, no refresh call (red on HEAD: the pre-F-57 leg always reads first)",
+  async () => {
+    const opened = await runHarness({
+      id: "resource-doc",
+      resource_ref: "1DocFileId",
+      resource_type: "google_document",
+      display_name: "Client onboarding notes",
+      record_id: "record-from-registration",
+      record_sync_status: "available",
+    });
+    expect(opened).toBe(true);
+    expect(mockExistingRecordRead).not.toHaveBeenCalled();
+    expect(mockRefresh).not.toHaveBeenCalled();
+    expect(mockOpenDetail).toHaveBeenCalledTimes(1);
+    expect(mockOpenDetail).toHaveBeenCalledWith({
+      type: "google_document",
+      id: "record-from-registration",
+      seed: { name: "Client onboarding notes", about: null },
+    });
+  },
+);
+
+it(
+  "opens a detached record as its kept Record, without calling refresh " +
+    "(F-68's record_sync_status === \"detached\")",
+  async () => {
+    const opened = await runHarness({
+      id: "resource-doc",
+      resource_ref: "1DocFileId",
+      resource_type: "google_document",
+      display_name: "Client onboarding notes",
+      record_id: "record-detached",
+      record_sync_status: "detached",
+    });
+    expect(opened).toBe(true);
+    expect(mockExistingRecordRead).not.toHaveBeenCalled();
+    expect(mockRefresh).not.toHaveBeenCalled();
+    expect(mockOpenDetail).toHaveBeenCalledWith({
+      type: "google_document",
+      id: "record-detached",
+      seed: { name: "Client onboarding notes", about: null },
+    });
+  },
+);
+
+it(
+  "a picked-resource row with no record_id — registered before F-57 shipped " +
+    "the field — still takes the read-then-refresh leg (positive control)",
+  async () => {
+    existingRow = null;
+    mockRefresh.mockResolvedValue({
+      id: "record-born-pre-f57",
+      title: "Client onboarding notes",
+    });
+    const opened = await runHarness({
+      id: "resource-doc",
+      resource_ref: "1DocFileId",
+      resource_type: "google_document",
+      display_name: "Client onboarding notes",
+      // No record_id: exactly what a plain inventory row (or one registered
+      // before F-57) hands this hook.
+    });
+    expect(opened).toBe(true);
+    expect(mockExistingRecordRead).toHaveBeenCalled();
+    expect(mockRefresh).toHaveBeenCalledWith({ fileId: "1DocFileId" });
+    expect(mockOpenDetail).toHaveBeenCalledWith({
+      type: "google_document",
+      id: "record-born-pre-f57",
+      seed: { name: "Client onboarding notes", about: null },
+    });
   },
 );

@@ -738,6 +738,49 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
   with 422 — it now sends the RECORD's `organization_id`. Not done here and named: the client
   append route has no `dry_run` (the preview is exact because the client composes the heading),
   and the two "not wired up yet" actions need a server half.
+- 2026-09-18 — **F-69: a picked Doc opens the Record its registration returned.**
+  aidream F-57 (R29) made the three registration doors
+  (`/google-workspace/files/register`, `/documents/create`, `/sheets/create`) write or keep the
+  Record in the SAME request and answer with `record_id` beside the picked-resource `id`, on
+  `SelectedFileResponse`. `openRecord.tsx`'s `PickedGoogleRecordResource` now carries an
+  optional `record_id` / `record_sync_status`, and `useOpenGoogleDocumentRecord` opens
+  `record_id` directly when a caller already holds it — no second read of
+  `workbench.google_document`, no refresh call. That single branch covers a fresh pick and a
+  detached Record alike (F-68's `record_sync_status === "detached"` still carries a `record_id`,
+  and a detached Record is never refreshed): the hook never distinguishes on status, only on
+  whether `record_id` is present. `pickedGoogleRecordResource()`'s narrowing widened to pass
+  those two fields through when a caller has them, but a plain inventory row
+  (`GoogleConnectionResource`, `users.integration_connection_resources`) still has neither today,
+  so it keeps taking the pre-F-57 read-then-refresh leg — the same leg a row registered before
+  F-57 shipped this field takes. Red-then-green, three new cases in
+  `a-picked-doc-opens-as-its-record.test.tsx` against a harness that calls the hook directly: a
+  `record_id`-bearing resource opens it with no read and no refresh (red on HEAD — the old code
+  always read `workbench.google_document` first); a `record_sync_status: "detached"` resource
+  opens the same way; a resource with no `record_id` still reads then refreshes (positive
+  control, unchanged). All 236 `features/google-workspace` tests pass.
+  🚨 **NOT DONE, and out of this lane's touch scope (SHARED CHECKOUT):** the registration
+  CLIENT — `registerSelectedGoogleFile` / `SelectedGoogleFile` in `service.ts` / `types.ts`,
+  called from `GoogleWorkspaceReviewWorkspace.tsx`'s `chooseFile` and from
+  `GoogleDocumentPanel.tsx`'s repick — does not yet parse `record_id` /
+  `record_sync_status` off the server's response, and does not yet send `organization_id` on
+  the registration request (the effective-organization selector, `selectOrganizationId` +
+  `requireOrganizationContext`, the same pattern `sendReviewedGmail` and
+  `documents/service.ts`'s refresh already use). `openRecord.tsx` is ready to consume
+  `record_id` the moment a caller supplies it; until that parsing and the `organization_id`
+  body field land, every real pick still takes the read-then-refresh leg, and a fresh Doc/Sheet
+  registered with no organization selected gets no Record at all (the server's own
+  `record_absent_reason` says so). A follow-up lane should touch `service.ts` + `types.ts` for
+  this.
+  ⚠️ **`pnpm sync-types` could not run in this environment.** Full mode fails at Step 1
+  (`pnpm db-types`) with `LegacyPlatformAuthRequiredError: Access token not provided` (no
+  `SUPABASE_ACCESS_TOKEN`/`supabase login` in this sandbox); `--fast` mode fails at Step 2
+  because no local Python backend is running at `localhost:8000`; and manually running the
+  checkout-mode generator against `../aidream`'s working tree was not attempted because that
+  tree is stale and dirty (another session holds `uv.lock`), so it would not reflect F-57/F-68.
+  `pnpm check:api-types-fresh` reports UNMEASURED for the same reason. Nothing was hand-edited in
+  `types/python-generated/`. `PickedGoogleRecordResource`'s new fields are this file's own
+  hand-written type, not derived from the generated API types, so this gap did not block the
+  hook logic above.
 
 - `2026-09-17` — **F-37: the reviewed send carries the record, and the server
   writes it.** `sendReviewedGmail` now posts the whole reviewed-send contract

@@ -22,6 +22,20 @@
  *      default, docked or page per `ui.detail.default_presentation`. Nothing
  *      navigates away and no surface links to a mandate or a detail route.
  *
+ * 🚨 F-69 — REGISTRATION IS ALREADY THE BIRTH DOOR (aidream F-57, R29): the same
+ * request that registers a picked file now writes or keeps its
+ * `workbench.google_document` Record and answers with `record_id` beside the
+ * picked-resource `id`. When the caller already holds that answer, steps 1 and 2
+ * above are BOTH skipped — no second read, no second refresh call for a Record
+ * the server just told this client about — and step 3 opens `record_id`
+ * directly. That covers a fresh pick and a detached Record alike (F-68's
+ * `record_sync_status === "detached"` still carries a `record_id`, and a
+ * detached Record is never refreshed). The read-then-refresh leg (1-2) stays for
+ * the one case it is still needed: a picked-resource row with no `record_id` on
+ * it, because it was registered before F-57 shipped this field, or because the
+ * caller only has the plain inventory row (`pickedGoogleRecordResource`, which
+ * carries none of this — see its own doc comment).
+ *
  * Refresh-on-open is NOT repeated here. `GoogleDocumentPanel` is the one place
  * that decides it, against `google.refresh.on_open_min_age_seconds` and with the
  * detached guard — so an already-born Record opens and the panel spends a Google
@@ -115,6 +129,21 @@ export interface PickedGoogleRecordResource {
   resource_ref: string;
   resource_type: string;
   display_name: string;
+  /**
+   * 🚨 F-69 — THE REGISTRATION DOOR IS THE RECORD'S BIRTH DOOR (F-57, R29): when the
+   * caller's registration response already carries the Record `registerSelectedGoogleFile`
+   * created in the SAME request, it is handed through here and this hook opens it
+   * directly — no second read of `workbench.google_document`, no refresh call. This
+   * covers a fresh pick AND a detached Record (F-68's `record_sync_status ===
+   * "detached"`): a detached Record still gets a `record_id` on the response, so it
+   * opens as the kept Record it is, never re-synced. Absent (a row picked before
+   * F-57 shipped this field, or a plain inventory row `pickedGoogleRecordResource`
+   * narrows without it), the hook falls back to the pre-F-57 leg below: read the
+   * Record this resource already has, and birth one through refresh when it has none.
+   * Never invented — an empty string is treated the same as absent.
+   */
+  record_id?: string | null;
+  record_sync_status?: string | null;
 }
 
 /**
@@ -129,6 +158,17 @@ export function useOpenGoogleDocumentRecord(): (
   return useCallback(
     async (resource) => {
       if (!hasGoogleDocumentRecord(resource.resource_type)) return false;
+      // THE REGISTRATION RESPONSE ALREADY BORE THE RECORD (F-69): open it as-is.
+      // Never a second read, never a refresh call — this is exactly what the
+      // registration door's own refresh writer just wrote or kept.
+      if (resource.record_id) {
+        await openDetail({
+          type: GOOGLE_DOCUMENT_TYPE,
+          id: resource.record_id,
+          seed: { name: resource.display_name, about: null },
+        });
+        return true;
+      }
       const existing = await existingRecordId(resource.id);
       if (existing) {
         await openDetail({
@@ -219,14 +259,29 @@ export function OpenGoogleDocumentRecordButton({
   );
 }
 
-/** Narrowing helper for inventory rows, which carry more than the four fields. */
+/**
+ * Narrowing helper for inventory rows, which carry more than the four fields.
+ *
+ * A plain `GoogleConnectionResource` from the inventory list has no
+ * `record_id` today — it is `users.integration_connection_resources`, not the
+ * registration response — so a row narrowed here always takes the pre-F-57
+ * read-then-refresh leg above. A caller holding the FRESH registration
+ * response (`SelectedFileResponse`'s `record_id` / `record_sync_status`
+ * beside the picked-resource fields, F-57/F-69) passes the widened shape so
+ * the same narrowing carries them through instead of opening a second way.
+ */
 export function pickedGoogleRecordResource(
-  resource: GoogleConnectionResource,
+  resource: GoogleConnectionResource & {
+    record_id?: string | null;
+    record_sync_status?: string | null;
+  },
 ): PickedGoogleRecordResource {
   return {
     id: resource.id,
     resource_ref: resource.resource_ref,
     resource_type: resource.resource_type,
     display_name: resource.display_name,
+    record_id: resource.record_id ?? null,
+    record_sync_status: resource.record_sync_status ?? null,
   };
 }
