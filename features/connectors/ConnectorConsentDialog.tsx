@@ -474,12 +474,17 @@ function FirstAction({
   const needsOrganization = (action.needs ?? []).includes("organizationId");
   if (missing.length > 0 && !(needsOrganization && missing.length === 1)) return null;
   if (missing.length > 0) {
+    // THE REMEDY IS THE PRESS (V-24 NEW-3). While the answer is still coming and
+    // once it has settled with nothing, this control is disabled and says which
+    // of the two it is. When the READ FAILED it stays pressable, because its own
+    // sentence ends "Press to try again." — and this is the button that does it.
     return (
       <button
         type="button"
         data-connector-first-action={product.key}
-        disabled
+        disabled={organizationGate.disabled}
         title={organizationGate.title}
+        onClick={organizationGate.press(() => {})}
         className="inline-flex shrink-0 items-center gap-0.5 font-medium text-muted-foreground"
       >
         {action.label}

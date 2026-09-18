@@ -38,6 +38,8 @@ import {
   busyActionKey,
   type ConnectorBusyAction,
 } from "./ConnectedAccountHealth";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { ConsentFailureNotice } from "./ConsentFailureNotice";
 import { ConnectorConsentBody } from "./ConnectorConsentDialog";
 import { ConnectorPromptCard } from "./ConnectorPromptCard";
@@ -85,6 +87,17 @@ function ProviderConnectorsPanel({
   const runner = useGoogleConsentRunner();
   const disconnect = useDisconnectGoogle();
   const organizations = useAppSelector(selectOrganizationsList);
+  /**
+   * 🚨 THE FOURTH STATE IS SAID OUT LOUD HERE (V-24 NEW-3, 2026-09-18). With
+   * every Supabase read aborted, this page said NOTHING about the organization
+   * at any second — no sentence, no notice, no retry — while the row controls
+   * below quietly lost the organization they need and the consent body's
+   * "Connect for <org>" switch silently could not appear. A screen is absent or
+   * honest, never dead (law 4). Only the FAILED read gets a notice: `resolving`
+   * is a beat the rest of this page already spends loading, and `required` is
+   * not a problem here at all — a personal connection needs no organization.
+   */
+  const organizationGate = useOrganizationRequired();
   /**
    * WHICH PRESSES ARE RUNNING, AND ON WHICH ACCOUNTS. A SET, and each entry
    * names its account — two defects, two lessons. One bare product key was
@@ -256,22 +269,33 @@ function ProviderConnectorsPanel({
     ),
   );
 
+  // Rendered in BOTH branches below: the read that failed is just as true while
+  // this page is still loading its connections, and a page that waits for one
+  // read to finish before admitting another one failed is the silence V-24 saw.
+  const organizationNotice =
+    organizationGate.organizationState === "unavailable" ? (
+      <OrganizationContextNotice
+        state="unavailable"
+        compact
+        className="rounded-xl border border-border bg-textured"
+      />
+    ) : null;
+
   if (state.isLoading) {
     return (
-      <div
-        className={cn(
-          "flex items-center gap-2 rounded-xl border border-border p-4 text-sm text-muted-foreground",
-          className,
-        )}
-      >
-        <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-        Loading your {provider.name} connections…
+      <div className={cn("flex flex-col gap-4", className)}>
+        {organizationNotice}
+        <div className="flex items-center gap-2 rounded-xl border border-border p-4 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          Loading your {provider.name} connections…
+        </div>
       </div>
     );
   }
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
+      {organizationNotice}
       {failure ? <ConsentFailureNotice failure={failure} /> : null}
 
       {state.accounts.length === 0 ? (

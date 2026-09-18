@@ -28,8 +28,13 @@ jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => jest.fn(),
 }));
 
+// The panel reads the organization GATE (it says the fourth state out loud —
+// V-24 NEW-3), so the stand-in carries the selectors the gate reads. An
+// organization is selected here, so the gate answers `ready` and the notice
+// renders nothing: this file is about two presses, not about the organization.
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => "org-1",
+  selectShouldPromptForOrganization: () => false,
 }));
 
 jest.mock("@/features/scopes/redux/selectors/tree", () => ({

@@ -540,14 +540,33 @@ export function hasSubstantiveContent(
  * string is nothing at all. Counting either as content is how `rows: []` — the
  * literal thing a GA4 read with no rows returns — made the card believe
  * something came back. A number or a boolean IS a stated fact, however small.
+ *
+ * 🚨 AND IT IS RECURSIVE (Cursor Bugbot on `11aaca7c`). The first version asked
+ * only whether a record had KEYS, so `data: { rows: [] }` — the same empty GA4
+ * read with the wrapper the tool actually sends — read as content and the
+ * empty-read sentence never fired: four spellings fixed, the class not. A record
+ * is substantive only when one of its own values is, an array only when one of
+ * its elements is, to a bounded depth.
  */
-export function isSubstantiveValue(item: unknown): boolean {
+/** How far down {@link isSubstantiveValue} looks for one real fact. */
+const MAX_SUBSTANCE_DEPTH = 8;
+
+export function isSubstantiveValue(item: unknown, depth = 0): boolean {
   if (item === null || item === undefined) return false;
   if (typeof item === "string") return item.trim() !== "";
-  if (Array.isArray(item)) return item.length > 0;
-  if (isRecord(item)) return Object.keys(item).length > 0;
+  if (Array.isArray(item) || isRecord(item)) {
+    // A container that is only containers all the way down carries no fact. The
+    // bound stops a cyclic or pathological value from hanging the render; at the
+    // bound we say "substantive" rather than "empty", because a payload this
+    // deep is never the empty read this predicate exists to recognise, and the
+    // safe answer is the one that does not claim nothing came back.
+    if (depth >= MAX_SUBSTANCE_DEPTH) return true;
+    const children = Array.isArray(item) ? item : Object.values(item);
+    return children.some((child) => isSubstantiveValue(child, depth + 1));
+  }
   return true;
 }
+
 
 /**
  * 🚨 THE REQUEST'S OWN PARAMETERS ARE THE FRAME, NEVER THE ANSWER (F-109,
