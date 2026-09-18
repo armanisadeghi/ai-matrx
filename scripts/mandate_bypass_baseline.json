@@ -1,0 +1,101 @@
+{
+  "comment": "Pre-existing intelligence-outside-a-mandate sites (matrx-mandate-scan). RATCHET: the count only goes DOWN \u2014 never add an entry by hand; convert the site to a Mandate and regenerate with --write-baseline. D20: no entry here is an approved class; every one is a defect awaiting conversion.",
+  "sites": [
+    {
+      "identity_hash": "e949a91b02d22519c8f418a62b914274efb65ced85973b53184ebc0220afb8d4",
+      "repo_slug": "matrx-frontend",
+      "package_path": ".",
+      "file_path": "actions/quiz.ts",
+      "symbol": "<module>",
+      "line": 3
+    },
+    {
+      "identity_hash": "5d3ee9d95cc10890f67b9ec388f886a228403a8105f01f4d545881699bf917b4",
+      "repo_slug": "matrx-frontend",
+      "package_path": ".",
+      "file_path": "actions/quiz.ts",
+      "symbol": "<module>",
+      "line": 4
+    },
+    {
+      "identity_hash": "b9b052fa027708c3e33e7a89e54acf7d133e61c50704c686a3893cbf923c2ab1",
+      "repo_slug": "matrx-frontend",
+      "package_path": ".",
+      "file_path": "app/api/generate-quiz/route.ts",
+      "symbol": "<module>",
+      "line": 2
+    },
+    {
+      "identity_hash": "3225299ec7d9094ddd8f92aeba21f9786177b89cdf20f87858f8197d734d05fd",
+      "repo_slug": "matrx-frontend",
+      "package_path": ".",
+      "file_path": "app/api/generate-quiz/route.ts",
+      "symbol": "<module>",
+      "line": 3
+    },
+    {
+      "identity_hash": "6829da979c7fb16a7f26cd05be1185511d59ee9b940348e2a93db52ce5c5e7f1",
+      "repo_slug": "matrx-frontend",
+      "package_path": ".",
+      "file_path": "features/voice-agent/constants.ts",
+      "symbol": "XAI_REALTIME_URL",
+      "line": 9
+    },
+    {
+      "identity_hash": "c4c6ef2e1de6f459f79ccd08853afae62c9642457e51986b961bc8d0823887c0",
+      "repo_slug": "matrx-frontend",
+      "package_path": ".",
+      "file_path": "lib/ai/adapters/MultiApiBaseAdapter.ts",
+      "symbol": "<module>",
+      "line": 3
+    },
+    {
+      "identity_hash": "3e37ae6615b9b87e1afaae1b1a84ebf6259da6db22647ebb5ec67708ee66fba8",
+      "repo_slug": "matrx-frontend",
+      "package_path": ".",
+      "file_path": "lib/ai/adapters/MultiApiBaseAdapter.ts",
+      "symbol": "<module>",
+      "line": 4
+    },
+    {
+      "identity_hash": "7ca5e980ff59a861fbcc0d069d07fe487a239e465000f47d8a3ad0805e64e1c3",
+      "repo_slug": "matrx-frontend",
+      "package_path": ".",
+      "file_path": "lib/ai/adapters/MultiApiBaseAdapter.ts",
+      "symbol": "<module>",
+      "line": 5
+    },
+    {
+      "identity_hash": "d034ecee9bd901c3f236e6ad701e52b590a07d674bf3fc1f118741761eb98387",
+      "repo_slug": "matrx-frontend",
+      "package_path": ".",
+      "file_path": "lib/ai/adapters/anthropicAdapter.ts",
+      "symbol": "<module>",
+      "line": 4
+    },
+    {
+      "identity_hash": "7dca27f65688d344087653c381ff03789e20cf86e8333b82903aa04e52df6b8d",
+      "repo_slug": "matrx-frontend",
+      "package_path": ".",
+      "file_path": "lib/ai/providers/anthropic/anthropicProvider.ts",
+      "symbol": "<module>",
+      "line": 4
+    },
+    {
+      "identity_hash": "40705271fc3158ab10b1daaa18e47ee70d55435bf3b624a1091b3a8f8f7753ad",
+      "repo_slug": "matrx-frontend",
+      "package_path": ".",
+      "file_path": "lib/ai/providers/openai/openAIProvider.ts",
+      "symbol": "<module>",
+      "line": 4
+    },
+    {
+      "identity_hash": "2d34f81a7c7fe28f294893eef9d027cc081b4c944d2cc9d7126c5f82c4633278",
+      "repo_slug": "matrx-frontend",
+      "package_path": ".",
+      "file_path": "lib/ai/providers/openai/openAITypes.ts",
+      "symbol": "<module>",
+      "line": 3
+    }
+  ]
+}
