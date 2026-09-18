@@ -45,7 +45,7 @@
 set lock_timeout = '5s';
 set statement_timeout = '300s';
 
-create or replace function platform.relation_delete_effects(p_organization_id uuid, p_record_id uuid)
+create function platform.relation_delete_effects(p_organization_id uuid, p_record_id uuid)
 returns table(action text, role text, other_type text, other_id uuid, label text)
 language plpgsql
 stable
@@ -69,7 +69,7 @@ begin
 end;
 $fn$;
 
-create or replace function platform.relation_on_delete(p_organization_id uuid, p_record_id uuid)
+create function platform.relation_on_delete(p_organization_id uuid, p_record_id uuid)
 returns jsonb
 language plpgsql
 set search_path to 'pg_catalog'

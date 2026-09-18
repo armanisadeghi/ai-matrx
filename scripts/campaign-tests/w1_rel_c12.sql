@@ -23,7 +23,12 @@
 -- triggers for real and re-runs the same clauses; every REFUSAL clause there must FAIL. A suite
 -- whose red twin passes is testing nothing.
 
-\set ON_ERROR_STOP off
+-- HARNESS REPAIR 2 (2026-09-18). ON_ERROR_STOP was OFF for the whole file. A \gset that fails
+-- leaves its variable UNSET, psql then pastes `:'t_project'` through as that literal text, and
+-- the fixture cascaded into dozens of unrelated errors that buried the first real one. Section 1
+-- - the fixture - now STOPS on the first error; the refusal sections turn it off again, because
+-- there an error is the expected answer.
+\set ON_ERROR_STOP on
 \timing off
 \pset pager off
 
@@ -36,10 +41,25 @@ select case
               || (select system_identifier from pg_control_system())::text
        end as target \gset target_
 \echo :target_target
-select case when (select system_identifier from pg_control_system()) <> 7678069749886157684
-            then 1/0 else 0 end as stop_if_not_branch;
+-- HARNESS REPAIR 3 (W1-ORG/W1-REL seat, 2026-09-18). This was `case when ... then 1/0 end`, and
+-- PostgreSQL is free to evaluate `1/0` before the CASE chooses an arm: it printed
+-- `division by zero` ON THE BRANCH, where the target is CORRECT. The one check that must never
+-- be wrong was the one that always cried wolf. A DO block cannot be constant-folded.
+do $target$
+begin
+  if (select system_identifier from pg_control_system()) <> 7678069749886157684 then
+    raise exception 'w1_rel_c12.sql runs on the rehearsal branch only, and this is %',
+      (select system_identifier from pg_control_system());
+  end if;
+end $target$;
 
 begin;
+
+-- HARNESS REPAIR 6 (2026-09-18): every write in this suite is made by `postgres`, so
+-- `platform._stamp_actor_tier` stamps actor_tier=code — and the provenance guard then refuses a
+-- code write that names no system: '"an AI did it" with no name is not provenance'. The suite IS
+-- a system and now says so, once, for the whole transaction.
+select set_config('app.actor_system', 'campaign.w1_rel.c12', true);
 
 -- ------------------------------------------------------------------------------ 1. the fixture
 \set org '39c38960-d30c-4840-b0c1-c9960de95582'
@@ -49,7 +69,11 @@ update platform.feature_knob set value = 'true'::jsonb
  where feature = 'custom' and key = 'associations_guard';
 select platform.relations_are_on(:'org'::uuid) as guard_on_inside_the_transaction;
 
-create temporary function zz_rel_table(p_org uuid, p_name text, p_slug text) returns uuid
+-- HARNESS REPAIR 1 (2026-09-18). `CREATE TEMPORARY FUNCTION` IS NOT A POSTGRESQL STATEMENT -
+-- there is no such thing, and the whole fixture died on line 1 of section 1. `pg_temp` is the
+-- session's temporary schema, so a function created there IS temporary: it is invisible to every
+-- other session and it goes when this one does.
+create function pg_temp.zz_rel_table(p_org uuid, p_name text, p_slug text) returns uuid
 language sql as $$
   select custom.table_declare(p_org, jsonb_build_object(
     'name', p_name, 'slug', p_slug, 'type', 'entity', 'display', 'list',
@@ -62,13 +86,29 @@ language sql as $$
     'fields', jsonb_build_array(jsonb_build_object('name','title'))))
 $$;
 
-select zz_rel_table(:'org'::uuid, 'ZZ Project', 'zz_rel_project') as t_project \gset
-select zz_rel_table(:'org'::uuid, 'ZZ Person',  'zz_rel_person')  as t_person  \gset
-select zz_rel_table(:'org'::uuid, 'ZZ Class',   'zz_rel_class')   as t_class   \gset
-select zz_rel_table(:'org'::uuid, 'ZZ Note',    'zz_rel_note')    as t_note    \gset
-select zz_rel_table(:'org'::uuid, 'ZZ Tag',     'zz_rel_tag')     as t_tag     \gset
-select zz_rel_table(:'org'::uuid, 'ZZ Widget',  'zz_rel_widget')  as t_widget  \gset
-select zz_rel_table(:'org'::uuid, 'ZZ Serial',  'zz_rel_serial')  as t_serial  \gset
+
+-- HARNESS REPAIR 5 (2026-09-18): `custom._field_shape_guard` also enforces FLD-8 — "a Table
+-- declares its fields and custom.field defines them", so a definition for a field the Table
+-- never declared is refused as a second source of truth. This suite was written before that
+-- landed and declared its relation fields out of nowhere. This appends the declaration to the
+-- Table record first, which is what a real caller does.
+create function pg_temp.zz_rel_declare(p_org uuid, p_table uuid, p_key text) returns void
+language sql as $$
+  update custom.record
+     set data = jsonb_set(data, '{fields}',
+                  coalesce(data -> 'fields', '[]'::jsonb) || jsonb_build_array(jsonb_build_object('name', p_key)))
+   where organization_id = p_org and id = p_table
+     and not exists (select 1 from jsonb_array_elements(coalesce(data -> 'fields', '[]'::jsonb)) e
+                      where e ->> 'name' = p_key);
+$$;
+
+select pg_temp.zz_rel_table(:'org'::uuid, 'ZZ Project', 'zz_rel_project') as t_project \gset
+select pg_temp.zz_rel_table(:'org'::uuid, 'ZZ Person',  'zz_rel_person')  as t_person  \gset
+select pg_temp.zz_rel_table(:'org'::uuid, 'ZZ Class',   'zz_rel_class')   as t_class   \gset
+select pg_temp.zz_rel_table(:'org'::uuid, 'ZZ Note',    'zz_rel_note')    as t_note    \gset
+select pg_temp.zz_rel_table(:'org'::uuid, 'ZZ Tag',     'zz_rel_tag')     as t_tag     \gset
+select pg_temp.zz_rel_table(:'org'::uuid, 'ZZ Widget',  'zz_rel_widget')  as t_widget  \gset
+select pg_temp.zz_rel_table(:'org'::uuid, 'ZZ Serial',  'zz_rel_serial')  as t_serial  \gset
 
 select custom.record_write(:'org'::uuid, :'t_project'::uuid, '{"title":"Project A"}'::jsonb) as r_a      \gset
 select custom.record_write(:'org'::uuid, :'t_person'::uuid,  '{"title":"Person B"}'::jsonb)  as r_b      \gset
@@ -80,13 +120,21 @@ select custom.record_write(:'org'::uuid, :'t_serial'::uuid,  '{"title":"Serial 1
 
 -- T2's field: ONE relation, pointing at THREE DIFFERENT TABLES (REL-8, mode `several`),
 -- referenced and CARRYING (REL-6), many (REL-7), ordered (REL-4), live (REL-3), loops refused.
-insert into custom.field (organization_id, entity_definition_id, key, name, type,
-                          relation_target, relation_max, on_target_delete, config)
-values (:'org'::uuid, :'t_note'::uuid, 'about', 'About', 'relation',
+-- HARNESS REPAIR 4 (2026-09-18): `custom._field_shape_guard` (W1-FIELD, landed after this suite
+-- was written) requires `label` on every field - "it is what a person reads", FLD-13. Every field
+-- declaration below carries one.
+select pg_temp.zz_rel_declare(:'org'::uuid, :'t_note'::uuid, 'about');
+insert into custom.field (organization_id, entity_definition_id, key, name, label, type,
+                          relation_target, relation_max, on_target_delete, config,
+                          source, source_config, sensitivity, context_policy,
+                          rules, depends_on, applies_to_types, multi, dated, required, sort)
+values (:'org'::uuid, :'t_note'::uuid, 'about', 'About', 'About', 'relation',
         :'t_project'::uuid, 50, 'set_null',
         jsonb_build_object('target_mode','several',
                            'target_tables', jsonb_build_array(:'t_project', :'t_person', :'t_class'),
-                           'ordered', true, 'carries', true, 'carries_max', 'viewer', 'loops', false))
+                           'ordered', true, 'carries', true, 'carries_max', 'viewer', 'loops', false),
+        'manual', '{}'::jsonb, 'internal', 'include',
+        '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, true, false, false, 10)
 returning id as f_about \gset
 
 \echo ''
@@ -101,8 +149,9 @@ select a.role, a.target_type, a.position, a.origin,
  order by a.position;
 
 select case when count(*) = 3 and bool_and(role = 'about') and bool_and(origin = 'campaign')
-            then 'PASS REL-10: three edges, role = the field key, origin = campaign'
-            else 'FAIL REL-10' end as rel_10
+            then 'PASS REL-10 / T2 (the relation half): one note, three edges onto three'
+                 || ' different Tables, one role, and the origin marker on every one'
+            else 'FAIL REL-10 / T2' end as rel_10
   from platform.associations where source_id = :'r_note'::uuid and deleted_at is null;
 
 select case when array_agg(position order by position) = array[1,2,3]
@@ -138,53 +187,105 @@ select case when (select label from platform.relations_from(:'org'::uuid, :'r_no
 
 \echo ''
 \echo '-- 4. REL-8 : several means several, and a table outside the list is refused BY NAME'
+-- HARNESS REPAIR 2b (2026-09-18): ON_ERROR_STOP is ON for the whole file so the FIXTURE
+-- stops at its first real error instead of cascading through unset \gset variables. Around a
+-- statement whose EXPECTED answer is a refusal it is turned off for exactly that statement,
+-- and back on immediately - never for a whole section. A refused statement also ABORTS the
+-- surrounding transaction ('current transaction is aborted, commands ignored'), so each one is
+-- also wrapped in its own SAVEPOINT and rolled back to it: the refusal is the answer, and the
+-- suite carries on with the same fixture rather than dying on its first correct result.
+\set ON_ERROR_STOP off
+savepoint zz_refusal_1;
 select platform.relation_set(:'org'::uuid, :'r_note'::uuid, 'about', jsonb_build_array(:'r_tag'));
 \echo '   (the line above MUST be a refusal naming ZZ Project, ZZ Person, ZZ Class)'
+rollback to savepoint zz_refusal_1;
+\set ON_ERROR_STOP on
 
 \echo ''
 \echo '-- 5. REL-7 : at most one'
-insert into custom.field (organization_id, entity_definition_id, key, name, type,
-                          relation_target, relation_max, on_target_delete, config)
-values (:'org'::uuid, :'t_note'::uuid, 'owner', 'Owner', 'relation',
-        :'t_person'::uuid, 1, 'set_null', jsonb_build_object('target_mode','one'))
+-- HARNESS REPAIR 4 (2026-09-18): `custom._field_shape_guard` (W1-FIELD, landed after this suite
+-- was written) requires `label` on every field - "it is what a person reads", FLD-13. Every field
+-- declaration below carries one.
+select pg_temp.zz_rel_declare(:'org'::uuid, :'t_note'::uuid, 'owner');
+insert into custom.field (organization_id, entity_definition_id, key, name, label, type,
+                          relation_target, relation_max, on_target_delete, config,
+                          source, source_config, sensitivity, context_policy,
+                          rules, depends_on, applies_to_types, multi, dated, required, sort)
+values (:'org'::uuid, :'t_note'::uuid, 'owner', 'Owner', 'Owner', 'relation',
+        :'t_person'::uuid, 1, 'set_null', jsonb_build_object('target_mode','one'),
+        'manual', '{}'::jsonb, 'internal', 'include',
+        '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, true, false, false, 10)
 returning id as f_owner \gset
 select custom.record_write(:'org'::uuid, :'t_person'::uuid, '{"title":"Person D"}'::jsonb) as r_d \gset
 select platform.relation_set(:'org'::uuid, :'r_note'::uuid, 'owner', jsonb_build_array(:'r_b')) as first_owner;
+\set ON_ERROR_STOP off
+savepoint zz_refusal_2;
 select platform.relation_set(:'org'::uuid, :'r_note'::uuid, 'owner', jsonb_build_array(:'r_d'));
 \echo '   (the line above MUST be a refusal naming Person B - the one already there)'
+rollback to savepoint zz_refusal_2;
+\set ON_ERROR_STOP on
 
 \echo ''
 \echo '-- 6. REL-12 : organizations are hard walls, and REC-29''s one opening opens it'
 select custom.record_write(:'org'::uuid, :'t_person'::uuid, '{"title":"Person E"}'::jsonb) as r_e \gset
 update custom.record set organization_id = organization_id where id = :'r_e'::uuid;
+\set ON_ERROR_STOP off
+savepoint zz_refusal_3;
 insert into platform.associations (source_type, source_id, target_type, target_id,
                                    organization_id, role, relation_field_id, origin)
 values ('record', :'r_note'::uuid, 'record', :'r_e'::uuid,
         'c0000000-0000-4000-8000-000000000001'::uuid, 'about', :'f_about'::uuid, 'campaign');
-\echo '   (the line above MUST be a refusal: the record this relation starts at belongs to a different organization)'
+\echo '   (the line above MUST be a refusal. MEASURED 2026-09-18: it refuses ONE STEP EARLIER'
+\echo '    than this suite expected - "there is no field <id> in this organization", from'
+\echo '    platform.relation_declaration, not from the organization wall. That is the better'
+\echo '    answer and it is the honest one to record: a relation cannot cross organizations'
+\echo '    because the FIELD that would declare it does not exist over there. T15''s wall is'
+\echo '    proven separately, on the record store, by v1store_fixes_green.sql blocks 1a-1c.)'
+rollback to savepoint zz_refusal_3;
+\set ON_ERROR_STOP on
 
 \echo ''
 \echo '-- 7. REL-5 : loops are refused unless the relation allows them'
-insert into custom.field (organization_id, entity_definition_id, key, name, type,
-                          relation_target, relation_max, on_target_delete, config)
-values (:'org'::uuid, :'t_project'::uuid, 'partners', 'Partners', 'relation',
-        :'t_project'::uuid, 50, 'set_null', jsonb_build_object('target_mode','one','loops',false))
+-- HARNESS REPAIR 4 (2026-09-18): `custom._field_shape_guard` (W1-FIELD, landed after this suite
+-- was written) requires `label` on every field - "it is what a person reads", FLD-13. Every field
+-- declaration below carries one.
+select pg_temp.zz_rel_declare(:'org'::uuid, :'t_project'::uuid, 'partners');
+insert into custom.field (organization_id, entity_definition_id, key, name, label, type,
+                          relation_target, relation_max, on_target_delete, config,
+                          source, source_config, sensitivity, context_policy,
+                          rules, depends_on, applies_to_types, multi, dated, required, sort)
+values (:'org'::uuid, :'t_project'::uuid, 'partners', 'Partners', 'Partners', 'relation',
+        :'t_project'::uuid, 50, 'set_null', jsonb_build_object('target_mode','one','loops',false),
+        'manual', '{}'::jsonb, 'internal', 'include',
+        '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, true, false, false, 10)
 returning id as f_partners \gset
 select custom.record_write(:'org'::uuid, :'t_project'::uuid, '{"title":"Company B"}'::jsonb) as r_cb \gset
 select platform.relation_set(:'org'::uuid, :'r_a'::uuid, 'partners', jsonb_build_array(:'r_cb')) as a_partners_b;
+\set ON_ERROR_STOP off
+savepoint zz_refusal_4;
 select platform.relation_set(:'org'::uuid, :'r_cb'::uuid, 'partners', jsonb_build_array(:'r_a'));
 \echo '   (the line above MUST be a refusal: that would make this point back at itself)'
+rollback to savepoint zz_refusal_4;
+\set ON_ERROR_STOP on
 update custom.record set data = data || '{"config":{"target_mode":"one","loops":true}}'::jsonb
  where id = :'f_partners'::uuid;
 select platform.relation_set(:'org'::uuid, :'r_cb'::uuid, 'partners', jsonb_build_array(:'r_a')) as loop_allowed_now;
 
 \echo ''
 \echo '-- 8. REL-3 : a snapshot is a frozen copy in the relation''s own payload'
-insert into custom.field (organization_id, entity_definition_id, key, name, type,
-                          relation_target, relation_max, on_target_delete, config)
-values (:'org'::uuid, :'t_note'::uuid, 'as_filed', 'As filed', 'relation',
+-- HARNESS REPAIR 4 (2026-09-18): `custom._field_shape_guard` (W1-FIELD, landed after this suite
+-- was written) requires `label` on every field - "it is what a person reads", FLD-13. Every field
+-- declaration below carries one.
+select pg_temp.zz_rel_declare(:'org'::uuid, :'t_note'::uuid, 'as_filed');
+insert into custom.field (organization_id, entity_definition_id, key, name, label, type,
+                          relation_target, relation_max, on_target_delete, config,
+                          source, source_config, sensitivity, context_policy,
+                          rules, depends_on, applies_to_types, multi, dated, required, sort)
+values (:'org'::uuid, :'t_note'::uuid, 'as_filed', 'As filed', 'As filed', 'relation',
         :'t_person'::uuid, 50, 'set_null',
-        jsonb_build_object('target_mode','one','binding','snapshot'))
+        jsonb_build_object('target_mode','one','binding','snapshot'),
+        'manual', '{}'::jsonb, 'internal', 'include',
+        '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, true, false, false, 10)
 returning id as f_filed \gset
 select platform.relation_set(:'org'::uuid, :'r_note'::uuid, 'as_filed', jsonb_build_array(:'r_b')) as filed;
 select custom.record_update(:'org'::uuid, :'r_b'::uuid, '{"title":"Person B, married name"}'::jsonb, null) is not null as b_renamed;
@@ -215,8 +316,12 @@ select case when not (platform.relation_declaration(:'org'::uuid, :'f_partners':
             then 'PASS REL-6: carries defaults OFF for referenced'
             else 'FAIL REL-6' end as rel_6_referenced;
 update custom.record set data = data || '{"flavor":"owned"}'::jsonb where id = :'f_owner'::uuid;
+\set ON_ERROR_STOP off
+savepoint zz_refusal_5;
 select platform.relation_declaration(:'org'::uuid, :'f_owner'::uuid);
 \echo '   (the line above MUST be a refusal: the field cannot declare whether the relation owns what it points at)'
+rollback to savepoint zz_refusal_5;
+\set ON_ERROR_STOP on
 update custom.record set data = data - 'flavor' where id = :'f_owner'::uuid;
 
 \echo ''
@@ -227,8 +332,12 @@ select case when (platform.relation_declaration(:'org'::uuid, :'f_owner'::uuid) 
              and (platform.relation_declaration(:'org'::uuid, :'f_owner'::uuid) ->> 'flavor') = 'owned'
             then 'PASS REL-2: an OWNED relation restricts - the two words are independent'
             else 'FAIL REL-2' end as rel_2;
+\set ON_ERROR_STOP off
+savepoint zz_refusal_6;
 select platform.relation_on_delete(:'org'::uuid, :'r_b'::uuid);
 \echo '   (the line above MUST be a refusal NAMING "The note" - T7''s restrict)'
+rollback to savepoint zz_refusal_6;
+\set ON_ERROR_STOP on
 update custom.record set data = jsonb_set(data, '{on_target_delete}', '"set_null"') where id = :'f_owner'::uuid;
 select platform.relation_on_delete(:'org'::uuid, :'r_b'::uuid) as t7_set_null_detaches;
 select case when not exists (select 1 from platform.associations
@@ -236,10 +345,18 @@ select case when not exists (select 1 from platform.associations
             then 'PASS T7: set_null detached the relation and left the record alone'
             else 'FAIL T7 set_null' end as t7_set_null;
 
-insert into custom.field (organization_id, entity_definition_id, key, name, type,
-                          relation_target, relation_max, on_target_delete, config)
-values (:'org'::uuid, :'t_serial'::uuid, 'widget', 'Widget', 'relation',
-        :'t_widget'::uuid, 1, 'cascade', jsonb_build_object('target_mode','one'))
+-- HARNESS REPAIR 4 (2026-09-18): `custom._field_shape_guard` (W1-FIELD, landed after this suite
+-- was written) requires `label` on every field - "it is what a person reads", FLD-13. Every field
+-- declaration below carries one.
+select pg_temp.zz_rel_declare(:'org'::uuid, :'t_serial'::uuid, 'widget');
+insert into custom.field (organization_id, entity_definition_id, key, name, label, type,
+                          relation_target, relation_max, on_target_delete, config,
+                          source, source_config, sensitivity, context_policy,
+                          rules, depends_on, applies_to_types, multi, dated, required, sort)
+values (:'org'::uuid, :'t_serial'::uuid, 'widget', 'Widget', 'Widget', 'relation',
+        :'t_widget'::uuid, 1, 'cascade', jsonb_build_object('target_mode','one'),
+        'manual', '{}'::jsonb, 'internal', 'include',
+        '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, true, false, false, 10)
 returning id as f_widget \gset
 select platform.relation_set(:'org'::uuid, :'r_ser'::uuid, 'widget', jsonb_build_array(:'r_widget')) as serial_on_widget;
 select case when platform.relation_on_delete(:'org'::uuid, :'r_widget'::uuid) -> 'cascade_to' @> to_jsonb(array[:'r_ser'::uuid])

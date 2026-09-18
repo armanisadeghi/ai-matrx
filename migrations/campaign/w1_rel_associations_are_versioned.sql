@@ -70,19 +70,19 @@ set statement_timeout = '300s';
 comment on trigger trg_associations_reachability on platform.associations is
   'Live platform trigger, untouched by W1-REL. Recorded here only so this file states, beside the three triggers it adds, which trigger on this table it does not change. The campaign knob that holds W1-REL''s additions off is custom/associations_guard.';
 
-create or replace trigger trg_associations_zzz_touch_row
+create trigger trg_associations_zzz_touch_row
   before insert or update on platform.associations
   for each row
   when (platform.relations_are_on(new.organization_id))
   execute function platform._touch_row();
 
-create or replace trigger trg_associations_zzz_version_capture
+create trigger trg_associations_zzz_version_capture
   after insert or update on platform.associations
   for each row
   when (platform.relations_are_on(new.organization_id))
   execute function platform._version_capture('agent_surface_binding');
 
-create or replace trigger trg_associations_zzz_version_capture_delete
+create trigger trg_associations_zzz_version_capture_delete
   after delete on platform.associations
   for each row
   when (platform.relations_are_on(old.organization_id))
@@ -91,7 +91,7 @@ create or replace trigger trg_associations_zzz_version_capture_delete
 -- REL-13's read: the history of one relation, from the rows the capture writes. It is a function
 -- and not a view so the door applies to it like everything else this lane built - a relation's
 -- history is as dark as the relation while the switch is off.
-create or replace function platform.relation_history(p_organization_id uuid, p_association_id uuid)
+create function platform.relation_history(p_organization_id uuid, p_association_id uuid)
 returns table(version integer, operation text, at_time timestamp with time zone,
               actor_id uuid, role text, target_type text, target_id uuid)
 language plpgsql
@@ -101,7 +101,10 @@ as $fn$
 begin
   perform platform.assert_relations_door(p_organization_id);
   return query
-    select v.version, v.operation, v.created_at, v.actor_id,
+    -- `history.row_versions` stamps the moment in `occurred_at`; it carries no `created_at`
+    -- (measured on the branch 2026-09-18, which is how this was caught: the whole function
+    -- failed 42703 the first time anything asked a relation for its history).
+    select v.version, v.operation, v.occurred_at, v.actor_id,
            v.row_data ->> 'role',
            v.row_data ->> 'target_type',
            nullif(v.row_data ->> 'target_id', '')::uuid
@@ -109,7 +112,7 @@ begin
      where v.entity_type = 'agent_surface_binding'
        and v.row_id = p_association_id
        and v.organization_id = p_organization_id
-     order by v.version, v.created_at;
+     order by v.version, v.occurred_at;
 end;
 $fn$;
 
