@@ -25,6 +25,15 @@
  *       healthy one, its reason is shown beside the row;
  *   (c) the ordinary healthy pick is unchanged: "ready to use"/"ready", the
  *       door is offered, no reason line appears.
+ *
+ * F-83 (Bugbot LOW on 80c8027b, thread on both files' ~279-287/327-335): the
+ * no-Record toast in (a), and the sync-reason toast in (b), must go through
+ * the SAME `recordToast` resource-identified helper the success path in (c)
+ * uses (so they are dismissed with the file, never outliving it) and at a
+ * level that reads as a notice — `info`, never `warning` — because a picked
+ * file with no Record table (a Slides deck) is an EXPECTED outcome, not a
+ * fault, and `warning`/`error` are the two levels that feed the Error
+ * Inspector (`lib/toast.ts`'s own doc comment).
  */
 
 import { act, type ReactNode } from "react";
@@ -50,6 +59,7 @@ const mockToastWarning = jest.fn();
 const mockToastError = jest.fn();
 const mockToastInfo = jest.fn();
 const mockRecordToastSuccess = jest.fn();
+const mockRecordToastInfo = jest.fn();
 
 jest.mock("@/features/marketing/google/hooks", () => ({
   useGoogleConnectionInventory: () => mockInventory(),
@@ -107,6 +117,7 @@ jest.mock("@/lib/toast", () => ({
   },
   recordToast: {
     success: (...args: unknown[]) => mockRecordToastSuccess(...args),
+    info: (...args: unknown[]) => mockRecordToastInfo(...args),
     error: jest.fn(),
   },
 }));
@@ -263,13 +274,19 @@ describe("GoogleWorkspaceConnectBody — a record write failure says so", () => 
       expect(
         container.querySelector('[data-google-record-open="resource-doc"]'),
       ).toBeNull();
-      expect(mockToastWarning).toHaveBeenCalledWith(
+      // F-83: the no-Record notice is `recordToast.info`, carrying the SAME
+      // resource identity ({ id: "resource-doc" }) the success toast in (c)
+      // uses — never `toast.warning`, which would (1) risk outliving the file
+      // on screen and (2) feed the Error Inspector for an EXPECTED absence.
+      expect(mockRecordToastInfo).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "resource-doc" }),
         expect.stringContaining("picked and usable"),
         expect.objectContaining({
           description:
             "This file's record could not be written (TimeoutError).",
         }),
       );
+      expect(mockToastWarning).not.toHaveBeenCalled();
       expect(mockRecordToastSuccess).not.toHaveBeenCalled();
     },
   );
@@ -296,6 +313,12 @@ describe("GoogleWorkspaceConnectBody — a record write failure says so", () => 
         container.querySelector('[data-google-record-open="resource-doc"]'),
       ).not.toBeNull();
       expect(mockRecordToastSuccess).toHaveBeenCalled();
+      // F-83: the sync-reason notice also rides `recordToast.info` with the
+      // same picked-file identity, not a bare `toast.info` with no identity.
+      expect(mockRecordToastInfo).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "resource-doc" }),
+        "Google reports this file was deleted.",
+      );
     },
   );
 
@@ -356,13 +379,17 @@ describe("GoogleWorkspaceReviewWorkspace — a record write failure says so", ()
       expect(
         container.querySelector('[data-google-record-open="resource-doc"]'),
       ).toBeNull();
-      expect(mockToastWarning).toHaveBeenCalledWith(
+      // F-83: same as ConnectBody — `recordToast.info` with the picked-file
+      // identity, never `toast.warning`.
+      expect(mockRecordToastInfo).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "resource-doc" }),
         expect.stringContaining("picked and usable"),
         expect.objectContaining({
           description:
             "This file's record could not be written (TimeoutError).",
         }),
       );
+      expect(mockToastWarning).not.toHaveBeenCalled();
       expect(mockRecordToastSuccess).not.toHaveBeenCalled();
     },
   );
@@ -389,6 +416,10 @@ describe("GoogleWorkspaceReviewWorkspace — a record write failure says so", ()
         container.querySelector('[data-google-record-open="resource-doc"]'),
       ).not.toBeNull();
       expect(mockRecordToastSuccess).toHaveBeenCalled();
+      expect(mockRecordToastInfo).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "resource-doc" }),
+        "Google reports this file was deleted.",
+      );
     },
   );
 

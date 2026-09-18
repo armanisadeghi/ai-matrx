@@ -408,6 +408,16 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 ## Change log
 
+- `2026-09-18` — **F-83 (Bugbot LOW on `80c8027b`): the no-Record and unhealthy-sync-status toasts
+  in `chooseFile` (both `GoogleWorkspaceConnectBody.tsx` and `GoogleWorkspaceReviewWorkspace.tsx`)
+  now go through `recordToast.info` with the same picked-file identity the success toast already
+  carries, instead of a bare `toast.warning`/`toast.info`.** A Slides deck (or any file type with
+  no Record table) having no Record is an EXPECTED outcome of a pick, not a fault — `warning` fed
+  it into the Error Inspector alongside real errors, and a bare (non-record) toast could outlive
+  the file if it left the screen before the toast's timer ran. `info` never reaches the Error
+  Inspector (only `error`/`warning` do — see `lib/toast.ts`'s own doc comment), and `recordToast`
+  ties the toast's dismissal to the picked file leaving the route, same as every other toast this
+  row raises. Proven red-then-green in `a-record-write-failure-says-so.test.tsx`.
 - `2026-09-18` — **F-76: an organization refusal with no organization selected is now honest
   everywhere `calendar/service.ts` / `documents/service.ts` resolve one.** CI's
   `check-org-refusal-honesty` found both modules calling `requireOrganizationContext` and leaving
