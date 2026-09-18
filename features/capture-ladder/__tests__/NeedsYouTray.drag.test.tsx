@@ -98,7 +98,7 @@ describe("NeedsYouTray dragging", () => {
     expect(launcher?.getAttribute("aria-expanded")).toBe("false");
   });
 
-  it("leaves phone scrolling alone instead of exposing a disabled drag surface", () => {
+  it("does not expose the desktop drag affordance at phone width", () => {
     mockedUseIsMobile.mockReturnValue(true);
 
     act(() => {
@@ -110,9 +110,8 @@ describe("NeedsYouTray dragging", () => {
     );
 
     expect(launcher).toBeDefined();
-    expect(launcher?.classList.contains("touch-none")).toBe(false);
+    expect(launcher?.classList.contains("touch-none")).toBe(true);
     expect(launcher?.classList.contains("cursor-grab")).toBe(false);
     expect(launcher?.classList.contains("active:cursor-grabbing")).toBe(false);
-    expect(launcher?.classList.contains("touch-pan-y")).toBe(true);
   });
 });

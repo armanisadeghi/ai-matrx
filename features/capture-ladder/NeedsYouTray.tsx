@@ -35,6 +35,7 @@ import {
   X,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useFixedControlScrollPassthrough } from "@/hooks/use-fixed-control-scroll-passthrough";
 import { cn } from "@/lib/utils";
 import { useDockDrag } from "@/features/assists/components/useDockDrag";
 import type { DockOffset } from "@/features/assists/dock-position";
@@ -75,6 +76,7 @@ export function NeedsYouTray() {
     setDockPosition,
     !isMobile,
   );
+  const mobileScroll = useFixedControlScrollPassthrough(isMobile);
 
   const broken = state.kind === "failed";
 
@@ -130,15 +132,20 @@ export function NeedsYouTray() {
       <button
         type="button"
         onPointerDown={isMobile ? undefined : onPointerDown}
+        onTouchStart={mobileScroll.onTouchStart}
+        onTouchMove={mobileScroll.onTouchMove}
+        onTouchEnd={mobileScroll.onTouchEnd}
+        onTouchCancel={mobileScroll.onTouchEnd}
         onClick={() => {
-          if (suppressClickRef.current) return;
+          if (suppressClickRef.current || mobileScroll.suppressClickRef.current)
+            return;
           setOpen((v) => !v);
         }}
         aria-expanded={open}
         className={cn(
           "group flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-lg backdrop-blur transition-colors",
           isMobile
-            ? "touch-pan-y"
+            ? "touch-none"
             : "touch-none cursor-grab active:cursor-grabbing",
           dragging && "ring-1 ring-primary/40",
           broken
