@@ -4614,3 +4614,25 @@ What still stops a regeneration on a box without credentials: step 1 (`pnpm db-t
 `SUPABASE_MATRIX_*` variables. Run `pnpm sync-types` on a credentialed machine; until then the
 topical map's three run clients (`map-pages.ts`, `map-regions.ts`, `map-intents.ts`) carry
 transcribed bodies with a red test naming the remedy. Found by the topical-map UI build (P0-A).
+
+## 2026-09-18 — `udt_bulk_write`'s delete op HARD-DELETES a soft-deletable row
+
+`public.udt_bulk_write`'s `{op:"delete"}` runs `DELETE FROM workbench.udt_dataset_rows WHERE
+id = … AND table_id = …` — a real destroy — even though the table carries `deleted_at`. That is
+the DD-119 class ("a registered entity carrying `deleted_at` is REMOVED, never destroyed, from a
+client"), one layer further in: `pnpm check:client-hard-delete` scans for supabase-js `.delete()`
+calls, so an RPC that destroys on the client's behalf is invisible to it. Every dataset-row
+delete in the product goes through this op (`features/data-tables/bulk-row-actions.ts`, the grid's
+row menu, `replaceTable`'s delete-all, and now an accepted `remove` proposal), so a deleted row is
+unrecoverable and `udt_dataset_row_versions` keeps only the versions, not the row.
+
+**Not fixed here** because flipping the op to a soft delete changes behaviour for every existing
+caller at once — the readers (`get_user_table_complete`, `get_full_table`, `udt_column_facets`,
+the realtime subscription) would each need a `deleted_at is null` filter in the same change, and
+`udt_datasets`' own delete path has the same shape. That is a data-tables repair with its own
+verification, not a side effect of the list-change-proposals feature.
+
+**What this lane did instead:** the proposal reviewer's confirm dialog says exactly what happens —
+"This DELETES the row … outright — it is gone from <list>, not archived, and this cannot be
+undone" — rather than a generic warning that implies recovery. Found by building
+`features/list-change-proposals/`.
