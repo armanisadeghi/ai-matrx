@@ -49,7 +49,7 @@ import {
 } from "@/components/ui/select";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { cn } from "@/styles/themes/utils";
-import { formatUsd } from "@ai-matrx/kit/format";
+import { formatCount, formatUsd } from "@ai-matrx/kit/format";
 import { extractErrorMessage, humanizeBackendError } from "@/utils/errors";
 // THE package duration formatter (`@ai-matrx/kit/format`, census H1
 // 2026-09-07). `compact` is the elapsed-work voice: 250ms / 5.2s / 5m 30s /
@@ -82,8 +82,6 @@ import {
 
 const formatDuration = (ms: number | null): string =>
   formatDurationMs(ms, { style: "compact" });
-
-const formatCount = (n: number): string => n.toLocaleString();
 
 function formatWhen(iso: string | null): string {
   if (!iso) return "—";

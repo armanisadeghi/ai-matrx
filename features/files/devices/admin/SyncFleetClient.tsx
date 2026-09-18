@@ -82,7 +82,7 @@ function Stat({
   );
 }
 
-function Table({
+function FleetSection({
   id,
   title,
   rows,
@@ -260,28 +260,28 @@ export function SyncFleetClient({ rows }: { rows: SyncAdminRow[] }) {
         </div>
       ) : null}
 
-      <Table
+      <FleetSection
         id="over-quota"
         title="Over quota"
         rows={overQuota}
         empty="No account is over its storage limit."
         now={now}
       />
-      <Table
+      <FleetSection
         id="stopped"
         title="Sync stopped — needs the person at that machine"
         rows={stalled}
         empty="Nothing is stopped."
         now={now}
       />
-      <Table
+      <FleetSection
         id="degraded"
         title="Degraded but moving"
         rows={degraded}
         empty="Nothing is degraded."
         now={now}
       />
-      <Table
+      <FleetSection
         id="behind"
         title="Devices behind — active mappings whose device stopped checking in"
         rows={behind}

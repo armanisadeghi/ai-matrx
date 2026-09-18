@@ -36,7 +36,7 @@ import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@ai-matrx/design-system";
 import { useOrgAutoRagPreference } from "../hooks/useOrgAutoRagPreference";
-import { formatDurationMs, formatUsd } from "@ai-matrx/kit/format";
+import { formatDurationMs, formatPercent, formatUsd } from "@ai-matrx/kit/format";
 
 interface OrgPrivacyTabProps {
   organizationId: string;
@@ -45,10 +45,13 @@ interface OrgPrivacyTabProps {
   canEdit: boolean;
 }
 
-function formatPercent(value: number): string {
-  if (!Number.isFinite(value)) return "—";
-  return `${value.toFixed(1)}%`;
-}
+/**
+ * A quota figure that is ALREADY on the 0..100 scale, so it goes to kit's
+ * 0..100 spelling (0.14.0). THE UNIT LAW is why the package has two: half the
+ * fleet's percentage twins took a 0..1 fraction and half took a 0..100 value,
+ * and the two are indistinguishable at a call site.
+ */
+const quotaPercent = (value: number): string => formatPercent(value, { digits: 1 });
 
 /**
  * Returns a relative "Resets in Xh Ym" string for a 24h window that started
@@ -352,7 +355,7 @@ export function OrgPrivacyTab({ organizationId, canEdit }: OrgPrivacyTabProps) {
                       of {formatUsd(pref.budgetUsd)} (
                     </span>
                     <span className={percentToneClass(pref.percentUsed)}>
-                      {formatPercent(pref.percentUsed)}
+                      {quotaPercent(pref.percentUsed)}
                     </span>
                     <span className="text-muted-foreground"> of cap)</span>
                   </span>

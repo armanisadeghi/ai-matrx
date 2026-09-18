@@ -15,7 +15,8 @@
 
 import type { ReactNode } from "react";
 
-import { deltaPercent, formatDelta, usd, count } from "./format";
+import { deltaPercent, formatDelta, usd } from "./format";
+import { formatCount } from "@ai-matrx/kit/format";
 
 export interface SpendHeadlineProps {
   today: number;
@@ -138,11 +139,11 @@ export function SpendHeadline({
             hint={
               alarm
                 ? `Past the ${usd(scareThresholdUsd)} alarm line${
-                    todayRuns === undefined ? "" : ` · ${count(todayRuns)} runs`
+                    todayRuns === undefined ? "" : ` · ${formatCount(todayRuns)} runs`
                   }`
                 : todayRuns === undefined
                   ? undefined
-                  : `${count(todayRuns)} runs`
+                  : `${formatCount(todayRuns)} runs`
             }
           />
         </div>
