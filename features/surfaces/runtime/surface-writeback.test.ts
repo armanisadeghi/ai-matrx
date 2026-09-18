@@ -37,6 +37,11 @@ import {
   __resetUnwiredTargetReports,
 } from "./surface-writeback";
 import { invalidateKindContractCache } from "@/features/content-ir/registry/validate-against-kind";
+import type {
+  SurfaceManifest,
+  SurfaceValue,
+  SurfaceWriteTarget,
+} from "@/features/surfaces/types";
 import { registerSurfaceRuntime } from "./SurfaceRuntimeContext";
 
 const target = {
@@ -46,7 +51,7 @@ const target = {
   valueType: "string" as const,
   mode: "entity" as const,
   applyPolicy: "ask" as const,
-};
+} satisfies SurfaceWriteTarget;
 
 describe("surface writeback handler outcomes", () => {
   beforeEach(() => {
@@ -436,12 +441,18 @@ describe("surface approval comparison", () => {
     description: "The live text being replaced.",
     valueType: "string" as const,
     alwaysAvailable: true,
-  };
-  const contentReadTwin = { ...stringReadTwin, name: "content" };
+  } satisfies SurfaceValue;
+  const contentReadTwin = {
+    ...stringReadTwin,
+    name: "content",
+  } satisfies SurfaceValue;
   const manifestFor = (
-    writeTargets: readonly (typeof replacementTarget)[],
-    values: readonly (typeof stringReadTwin)[] = [stringReadTwin],
-  ) => ({ values, writeTargets });
+    writeTargets: readonly SurfaceWriteTarget[],
+    values: readonly SurfaceValue[] = [stringReadTwin],
+  ): Pick<SurfaceManifest, "values" | "writeTargets"> => ({
+    values,
+    writeTargets,
+  });
 
   it("carries the live original into approval and applies only after approval", async () => {
     const { buildSurfaceWriteApprovalChange } =
@@ -541,7 +552,7 @@ describe("surface approval comparison", () => {
     const documentReadTwin = {
       ...stringReadTwin,
       valueType: "document" as const,
-    };
+    } satisfies SurfaceValue;
     mockGetManifest.mockReturnValue(
       manifestFor([replacementTarget], [documentReadTwin]),
     );
@@ -570,7 +581,7 @@ describe("surface approval comparison", () => {
     const structuredReadTwin = {
       ...stringReadTwin,
       valueType: "object" as const,
-    };
+    } satisfies SurfaceValue;
     mockGetManifest.mockReturnValue(
       manifestFor([replacementTarget], [structuredReadTwin]),
     );
