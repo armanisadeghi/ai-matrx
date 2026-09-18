@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, Ban, Hourglass } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { CopyExportConfig } from "@ai-matrx/design-system/data-table/copy-types";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { CxFiltersBar } from "@/features/cx-dashboard/components/CxFiltersBar";
 import { CxEmptyState } from "@/features/cx-dashboard/components/CxEmptyState";
@@ -25,7 +26,7 @@ import {
   formatTokens,
   formatDuration,
 } from "@/features/cx-dashboard/utils/format";
-import { exportToJSON } from "@/features/cx-dashboard/utils/export";
+import { buildCxJsonExport } from "@/features/cx-dashboard/utils/export";
 import type {
   CxUserRequest,
   CxToolCall,
@@ -277,6 +278,22 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
     ];
   }, []);
 
+  // Preserve the existing combined download, independent of either local table view.
+  const allIssuesExport: CopyExportConfig = {
+    items: allIssues > 0 ? [{
+      id: "all-source-issues-json",
+      label: "JSON (all loaded issues)",
+      build: () => {
+        const file = buildCxJsonExport(
+          [...errors.error_requests, ...errors.error_tool_calls],
+          "errors",
+        );
+        if (!file) throw new Error("There are no loaded issues to export.");
+        return file;
+      },
+    }] : [],
+  };
+
   return (
     <SurfaceRuntimeProvider
       surfaceName={ADMIN_CX_DASHBOARD_SURFACE_NAME}
@@ -320,12 +337,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
           showSearch={false}
           showStatusFilter={false}
           onRefresh={() => router.refresh()}
-          onExportJSON={() =>
-            exportToJSON(
-              [...errors.error_requests, ...errors.error_tool_calls],
-              "errors",
-            )
-          }
+
         />
 
         {/* Summary cards */}
@@ -379,6 +391,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
                 refresh: { onRefresh: () => router.refresh() },
               }}
               copy={{
+                export: () => allIssuesExport,
                 label: "Problem request",
                 listLabel: "Problem requests (this view)",
                 location: "/administration/chat/cx-dashboard/errors",
@@ -451,6 +464,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
                 refresh: { onRefresh: () => router.refresh() },
               }}
               copy={{
+                export: () => allIssuesExport,
                 label: "Tool call error",
                 listLabel: "Tool call errors (this view)",
                 location: "/administration/chat/cx-dashboard/errors",
