@@ -1,7 +1,7 @@
 {
   "version": 1,
   "app": "matrx-frontend",
-  "routeCount": 1188,
+  "routeCount": 1200,
   "routes": [
     {
       "pattern": "/",
@@ -1594,6 +1594,11 @@
       "source": "app/(public)/canvas/shared/[token]/page.tsx"
     },
     {
+      "pattern": "/capture/needs-you",
+      "status": "live",
+      "source": "app/(core)/capture/needs-you/page.tsx"
+    },
+    {
       "pattern": "/chat",
       "status": "live",
       "source": "app/(core)/chat/page.tsx"
@@ -1829,6 +1834,11 @@
       "source": "app/(core)/commerce/triage/page.tsx"
     },
     {
+      "pattern": "/connected-sources",
+      "status": "live",
+      "source": "app/(core)/connected-sources/page.tsx"
+    },
+    {
       "pattern": "/contact",
       "status": "live",
       "source": "app/(public)/contact/page.tsx"
@@ -1952,6 +1962,11 @@
       "pattern": "/download",
       "status": "live",
       "source": "app/(public)/download/page.tsx"
+    },
+    {
+      "pattern": "/drive",
+      "status": "live",
+      "source": "app/(core)/drive/page.tsx"
     },
     {
       "pattern": "/education",
@@ -2432,6 +2447,16 @@
       "pattern": "/error",
       "status": "live",
       "source": "app/error/page.tsx"
+    },
+    {
+      "pattern": "/exports",
+      "status": "live",
+      "source": "app/(core)/exports/page.tsx"
+    },
+    {
+      "pattern": "/exports/[libraryId]",
+      "status": "live",
+      "source": "app/(core)/exports/[libraryId]/page.tsx"
     },
     {
       "pattern": "/features",
@@ -3229,6 +3254,16 @@
       "pattern": "/legal/ca-wc/utilities/weeks",
       "status": "live",
       "source": "app/(core)/legal/ca-wc/utilities/weeks/page.tsx"
+    },
+    {
+      "pattern": "/libraries",
+      "status": "live",
+      "source": "app/(core)/libraries/page.tsx"
+    },
+    {
+      "pattern": "/libraries/[id]",
+      "status": "live",
+      "source": "app/(core)/libraries/[id]/page.tsx"
     },
     {
       "pattern": "/lists",
@@ -4376,6 +4411,11 @@
       "source": "app/(core)/masterwork/[id]/drip/page.tsx"
     },
     {
+      "pattern": "/masterwork/[id]/drive",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/drive/page.tsx"
+    },
+    {
       "pattern": "/masterwork/[id]/import",
       "status": "live",
       "source": "app/(core)/masterwork/[id]/import/page.tsx"
@@ -4419,6 +4459,16 @@
       "pattern": "/masterwork/[id]/sources",
       "status": "live",
       "source": "app/(core)/masterwork/[id]/sources/page.tsx"
+    },
+    {
+      "pattern": "/masterwork/[id]/sources/kept",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/sources/kept/page.tsx"
+    },
+    {
+      "pattern": "/masterwork/[id]/sources/kept/[sourceKey]",
+      "status": "live",
+      "source": "app/(core)/masterwork/[id]/sources/kept/[sourceKey]/page.tsx"
     },
     {
       "pattern": "/masterwork/[id]/teach-back",
@@ -5336,6 +5386,11 @@
       "source": "app/(core)/scopes/page.tsx"
     },
     {
+      "pattern": "/scopes/fade-lab",
+      "status": "live",
+      "source": "app/(core)/scopes/fade-lab/page.tsx"
+    },
+    {
       "pattern": "/scopes/manage",
       "status": "live",
       "source": "app/(core)/scopes/manage/page.tsx"
@@ -5364,6 +5419,11 @@
       "pattern": "/scraper/[id]",
       "status": "live",
       "source": "app/(core)/scraper/[id]/page.tsx"
+    },
+    {
+      "pattern": "/scraper/batch",
+      "status": "live",
+      "source": "app/(core)/scraper/batch/page.tsx"
     },
     {
       "pattern": "/scraper/quick",
