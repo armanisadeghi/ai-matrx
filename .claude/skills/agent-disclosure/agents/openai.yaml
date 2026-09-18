@@ -1,4 +1,4 @@
 interface:
   display_name: "Agent Disclosure"
   short_description: "Register fixed AI jobs in the top Agents menu"
-  default_prompt: "Use $agent-disclosure to identify AI jobs the surface already runs, register only fixed jobs in the existing top Agents menu, exempt agent-authoring and universal-host surfaces, never add visible page content, and verify the result live."
+  default_prompt: "Use $agent-disclosure to register only existing fixed jobs in the top Agents menu, record approved helper context contracts separately, preserve native and resident agent isolation, never add visible page content, and verify the result live."

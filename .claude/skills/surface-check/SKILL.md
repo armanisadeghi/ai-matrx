@@ -29,12 +29,10 @@ coordinator for another atomic claim. A direct human request may name a surface
 without Work Loop, but it still needs independent verification before it is
 certified.
 
-**Fleet eligibility comes first.** A rolling or live-UI fleet skips every
-agent-native surface: Chat, Agents Hub, Agent Apps, Agent Build/Run/Battle,
-mandate authoring, agent comparison/history, and agent/widget test harnesses.
-Replace it with the next ordinary product surface. A direct user-requested UI
-check may inspect one, but S5 is the agent-native exclusion—not authority to add
-roles, bindings, disclosure, or agent UI.
+**Fleet eligibility includes agent-native surfaces.** Chat, Agent Builder,
+runners, tests, and window panels receive the same check when registered. S5
+tests outside-helper access and native/resident isolation separately; a saved
+binding or placement is never approval to inherit page values.
 
 ## Step 1 — Gather, briefly (≤ 10 minutes)
 
@@ -166,7 +164,7 @@ Admin view of the ledger: `/administration/ui/surfaces` (Last checked column, ne
 
 ## What is ARMAN-class (log, don't ask)
 
-Product semantics only: **creating a new parent surface or re-homing one in the hierarchy** (and anything that edits a SIBLING's manifest — you were scoped to one surface and other agents may be inside the others), whether a feature exists, a grouping of menu rows not yet approved, and whether a text field's length _matters_ when THE LENGTH RULE is genuinely ambiguous (default: ON if `typicalCharCount` ≥ 1,000, else OFF — log it). Agent-native exclusion is absolute, never ARMAN-class.
+Product semantics only: **creating a new parent surface or re-homing one in the hierarchy** (and anything that edits a SIBLING's manifest — you were scoped to one surface and other agents may be inside the others), whether a feature exists, a grouping of menu rows not yet approved, and whether a text field's length _matters_ when THE LENGTH RULE is genuinely ambiguous (default: ON if `typicalCharCount` ≥ 1,000, else OFF — log it). Context approval must cite its actual approval provenance; it is not created by certification.
 
 NOT Arman-class — decide these yourself: whether THIS surface's existing `inheritsFrom` is correct, its own label/readiness/groups, every value and write target it should declare, and every fix the sections name. Everything else has a rule — apply it.
 
@@ -194,6 +192,6 @@ It is also an advisory release gate ("Surface value blast radius").
 1. ~~Ledger columns~~ — LIVE (`ui.ui_surface.last_checked_at / last_checked_by / last_check`; `check_claimed_*` is display-only, never lock authority).
 2. ~~`/administration/ui/surfaces` Checked column + never/stale filter~~ — LIVE (sortable; never-checked first). Still missing: the per-section result popover reading `last_check.sections`.
 3. `pnpm check:textareas` ratchet — non-Pro textarea count per feature, baseline only goes down (S7 has no guard today; ~528 sites).
-4. Structural guards for S5 — (a) an eslint rule or test that every primary `launchAgentExecution`/`launchMandate` call inside an agent-native feature passes `surfaceName: null` (never `undefined` or a literal surface); an ordinary nested child must be explicitly classified as an eligible ordinary surface before it may pass its literal name; (b) a static candidate report that compares explicit Mandate/agent launch points with manifest roles and live bindings. Historical tool-call reduction still requires runtime telemetry, so the static report is a scout, not proof.
-5. Add a structural campaign-eligibility guard so agent-native routes cannot enter rolling/live-UI fleets; until it lands, the explicit eligibility gate above is mandatory.
+4. Structural guards for S5 — a static candidate report that compares explicit Mandate/agent launch points with invocation-contract records, manifest roles, and live bindings; plus a guard that rejects unapproved automatic inheritance for native subject agents and permanent residents. Historical tool-call reduction still requires runtime telemetry, so the static report is a scout, not proof.
+5. Add a structural campaign-eligibility guard that requires every registered surface, including agent-native routes, to carry the current S5 contract and evidence; until it lands, the explicit S5 gate above is mandatory.
 6. `create<X>Scope` builders are hand-written and drift silently — nothing validates that a builder's param keys match its manifest's value names. A generated `ValueNameOf<M>` type would make a rename a compile error.

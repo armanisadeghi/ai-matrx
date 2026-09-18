@@ -42,34 +42,40 @@ for this page. Confirm the integration already exists before registering it.
 - Open the mandate through `useOpenMandateWindow`; never link away to a mandate
   route from a working surface.
 
-### Agent-native surface — excluded and unbound
+### Agent-native and resident agents — explicit isolation
 
-If the product is choosing, building, editing, running, testing, reviewing, or
-comparing agents, the agent is the subject—not a hidden worker and not a surface
-binding. This includes Chat, Agents Hub, Agent Apps, Agent Build/Builder, Agent
-Run/Runner/history, Agent Battle/comparison, mandate authoring/settings, and
-agent/widget test harnesses.
+Chat, Agent Builder, runners, tests, and window-panel residents may host an
+**outside helper** that works on the page's data. They are not blanket binding
+exclusions. The page's native subject agent and any permanent resident helper
+must never acquire ad-hoc surface values merely because it is placed on, shown
+in, or bound to that surface. Their engineered state and context remain theirs.
 
-- Do not add manifest `agentRoles`, defaults, bindings, a bound roster, or Bind.
-- Do not register a "separate fixed job" merely because one appears inside the
-  host; the whole agent-native surface is outside disclosure.
-- Do not add visible agent content. Existing agent cards, pickers, runs, and
-  controls are the product itself, not disclosure.
+Each invocation follows an approved context mode: `none`, `named_inputs`, or
+`approved_surface_context`; the latter may use explicit mappings or a
+user-approved task-appropriate page snapshot. A documented integration contract
+or explicit user choice is approval provenance and persists until its scope
+changes; it does not require a new prompt for every run. Placement or a saved
+binding does not approve a mode or any value. Record the agent/job,
+surface, purpose, mode, allowed value names, approval provenance, and evidence
+before treating a helper context handoff as complete. This documentation sets
+the required contract and evidence; it does not claim runtime enforcement
+exists until a run proves it or a unified tracker exists.
 
-### Universal agent host — exempt and structurally unbound
-
-If the user may choose or chat with arbitrary agents, there is no fixed surface
-roster. Chat, generic agent runners, agent pickers, pinned agents, history, and
-quick-action choices are universal-host content/navigation.
-
-- Set the manifest's `agentRosterMode: "universal"`.
-- Do not add manifest `agentRoles` for available agents.
-- Do not bind default, public, organization, or user agents to the surface.
-- The top Agents menu must omit the bound-agent list and Bind control.
-- The binding service must reject direct writes for the surface.
-
-An agent-native host never becomes eligible because it also runs a fixed
-mandate. Keep that job out of surface roles and bindings.
+- A native subject launch receives only its explicit engineered inputs. It never
+  receives ambient or ad-hoc surface context; helper approval cannot create an
+  exception.
+- A permanent resident, including a window-panel helper, has no automatic
+  inheritance. Its deliberate job contract may use named inputs or approved
+  surface context when it works on page data.
+- An outside helper may use any page, including Chat or Agent Builder, under its
+  recorded integration contract. Binding availability and a data handoff are
+  separate decisions; saving a binding does not require or grant context.
+- When the approved purpose is agent definition work, the outside helper may
+  edit every user-editable definition field, enter runtime variables and human
+  input, and run the test. The contract records the actual installed targets;
+  it does not pretend an unavailable target or runtime enforcement exists.
+- Disclosure still names only an existing fixed job in the top Agents menu. It
+  never adds visible agent content or invents an agent.
 
 ## Find the work
 
@@ -148,10 +154,11 @@ The existing menu row is the door. A link from a working surface to
 
 | Situation | Verdict |
 | --- | --- |
-| On an eligible ordinary product surface, an existing action runs one fixed mandate | Register that job in the top menu only. |
-| Page chooses, builds, runs, tests, reviews, or compares agents | Excluded and unbound; the agent is the subject. |
-| Page lets the user choose or chat with any agent | Exempt universal host; no bound roster or Bind control. |
-| On an eligible ordinary product surface, runtime mode selects one of several fixed jobs | Register the live fixed job without rendering UI. |
+| Any surface, including Chat or Agent Builder, has an existing outside helper | It may bind under its recorded approved integration contract; binding availability and data handoff are separate. |
+| The launch is the page's native subject agent | Give it only its engineered inputs; never an ambient or ad-hoc page snapshot. |
+| The launch is a permanent resident helper | Use `none`, named inputs, or approved surface context only under its deliberate documented contract. |
+| An existing fixed job runs on a surface | Register it in the top menu only; this is separate from context approval. |
+| Runtime mode selects one of several existing fixed jobs | Register the live fixed job without rendering UI. |
 | On an eligible ordinary product surface, service/thunk/tool machinery runs a mandate | Register on the calling surface, not in machinery. |
 | No AI job exists yet | Do nothing; disclosure cannot invent one. |
 | Agent uses a raw UUID with no mandate | Fix hardcoded-agent architecture first; do not invent a key. |
@@ -163,8 +170,9 @@ The existing menu row is the door. A link from a working surface to
 2. For a fixed job, open the existing top Agents menu and confirm the job
    appears exactly once. Open it and confirm the mandate window appears over
    the page.
-3. For a universal host, confirm the menu contains no default/public/bound
-   roster and no Bind control for that surface.
+3. For each helper invocation, verify the saved record and a run: allowed names
+   arrive for `approved_surface_context`; no ad-hoc surface values reach a native
+   or resident agent whose mode is `none`.
 4. Confirm no `PageAgents` import, JSX, agent chip, or disclosure-only page
    content exists.
 5. Run `pnpm check:agent-disclosure`, focused tests, and `pnpm type-check`.

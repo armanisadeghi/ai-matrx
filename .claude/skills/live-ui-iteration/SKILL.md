@@ -16,11 +16,10 @@ Own the focused surface continuously: **requested changes first, then full surfa
 
 ## Eligibility and continuity
 
-- **Exclude agent-native surfaces from every fleet.** Chat, Agents Hub, Agent Apps,
-  Agent Build/Builder, Agent Run/Runner/history, Agent Battle/comparison, mandate
-  authoring, and agent/widget test harnesses are subjects or universal hosts—not
-  product surfaces for this workflow. Do not add bindings, roles, disclosure, or
-  agent UI to them. Replace an excluded candidate with an ordinary product route.
+- **Agent-native surfaces remain eligible.** Chat, Agent Builder, runners, and
+  window panels may use an outside helper with a recorded approved invocation
+  contract. Keep their native subject agents and permanent residents isolated
+  from ad-hoc surface values; placement or binding alone is never approval.
 - **Integration never pauses this loop.** Periodic integration, type sync, release,
   or shared-checkout sweeps are expected background activity. Checkpoint and push
   the current coherent owned files, then resume immediately; never wait for a
