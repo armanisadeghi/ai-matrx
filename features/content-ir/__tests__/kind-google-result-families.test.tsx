@@ -46,6 +46,8 @@ import GoogleWorkspaceResultBlock from "@/components/mardown-display/blocks/goog
 import GoogleMarketingResultBlock, {
   PROMOTED as MARKETING_PROMOTED,
 } from "@/components/mardown-display/blocks/google-kinds/GoogleMarketingResultBlock";
+// The real registry — the door's own gate (F-87 asserts the token it opens on).
+import { getItemConfig } from "@/features/item-presentation/registry";
 
 jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
   ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
@@ -380,6 +382,11 @@ const FIXTURES: Fixture[] = [
       // skipped it) while no branch ever printed it — a Search Console answer
       // that never named WHICH site the numbers belonged to.
       "site 3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      // 🚨 F-87 — AND NAMING IT IS NOT REACHING IT. The chip alone is a uuid a
+      // reader cannot open. RED before F-87: the door was written against the
+      // token `site`, which the item registry does not know, so `RecordDoor`
+      // rendered nothing at all and the reader was left with the bare id.
+      "Open site in AI Matrx",
     ],
   },
   {
@@ -406,6 +413,8 @@ const FIXTURES: Fixture[] = [
       // The site the numbers belong to, printed in the same ChipRow as the
       // channel chip — the reader's first question about any number here.
       "site 7c6a1f5e-4b8e-4c2d-9a1c-9e0b2f5d8a41",
+      // The door beside it (F-87) — see the Search Console fixture above.
+      "Open site in AI Matrx",
       "channel UC456",
       "owner@example.com",
       "Stored GA4 landing-page rows only",
@@ -698,6 +707,36 @@ describe("the two Google tool-result kinds route to their own component", () => 
     expect(censusedKeys).toEqual(
       expect.arrayContaining(["google_account", "site_id", "channel_id", "limit_note", "note", "verdict", "freshness"]),
     );
+  });
+
+  /**
+   * 🚨 F-87 — THE SITE DOOR OPENS THE PLATFORM'S OWN SITE RECORD.
+   *
+   * The door is gated on the item registry's `open` discriminant, so the token
+   * it is written against decides whether it exists at all. `web_site` is the
+   * platform's registered name for `web.site`; `site` is not a token anything
+   * resolves, and a door spelled that way renders absent forever — which is how
+   * F-86's new door shipped. This asserts BOTH halves: the canonical token
+   * produces a control, and the twin spelling produces none.
+   */
+  it("the site door is written against web_site, the token the platform knows", () => {
+    expect(getItemConfig("web_site").config.open).toEqual({ kind: "web_site" });
+    expect(getItemConfig("site").recognized).toBe(false);
+    const markup = mount(
+      <GoogleMarketingResultBlock
+        content={JSON.stringify({
+          __kind: MARKETING_KIND,
+          action: "read_search_console",
+          source: "persisted",
+          site_id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+          returned_count: 5,
+          count_unit: "rows",
+          truncated: false,
+        })}
+        metadata={undefined}
+      />,
+    );
+    expect(markup).toContain("Open site in AI Matrx");
   });
 
   it("an unknowable completeness never reads as complete", () => {

@@ -754,6 +754,11 @@ const SiteAnalyticsWindow = lazyOverlay(
     import("@/features/window-panels/windows/marketing/SiteAnalyticsWindow"),
   { ssr: false },
 );
+const SiteQuickViewWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/marketing/SiteQuickViewWindow"),
+  { ssr: false },
+);
 const KeywordWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/seo/KeywordWindow"),
   { ssr: false },
@@ -1523,6 +1528,9 @@ export default function OverlayController() {
     matcherReviewWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "matcherReviewWindow"),
     ),
+    siteQuickViewWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "siteQuickViewWindow"),
+    ),
     siteAnalyticsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "siteAnalyticsWindow"),
     ),
@@ -1965,6 +1973,9 @@ export default function OverlayController() {
     matcherReviewWindow: useAppSelector((s) =>
       selectOverlayData(s, "matcherReviewWindow"),
     ) as Record<string, unknown> | null,
+    siteQuickViewWindow: useAppSelector((s) =>
+      selectOverlayData(s, "siteQuickViewWindow"),
+    ),
     siteAnalyticsWindow: useAppSelector((s) =>
       selectOverlayData(s, "siteAnalyticsWindow"),
     ) as Record<string, unknown> | null,
@@ -5345,6 +5356,31 @@ export default function OverlayController() {
             siteId={siteId}
             brandId={str("brandId")}
             organizationId={str("organizationId")}
+            siteLabel={str("siteLabel")}
+          />
+        );
+      })()}
+
+      {/* siteQuickViewWindow — F-87: the ONE in-place door for a site record. */}
+      {(() => {
+        const isOpen = isOpenById.siteQuickViewWindow;
+        const data = dataById.siteQuickViewWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const str = (key: string): string | null =>
+          typeof data?.[key] === "string" && data[key]
+            ? (data[key] as string)
+            : null;
+        const siteId = str("siteId");
+        // The window's whole subject is one site.
+        if (!siteId) return null;
+        return (
+          <SiteQuickViewWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "siteQuickViewWindow" }))
+            }
+            siteId={siteId}
             siteLabel={str("siteLabel")}
           />
         );

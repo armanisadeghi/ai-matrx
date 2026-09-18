@@ -42,6 +42,7 @@ import type { EnrichedItem, ItemType, KnownItemType } from "./types";
 import type { DetailRecordType } from "@/lib/detail/types";
 import { GOOGLE_DOCUMENT_ITEM_TYPE } from "@/features/google-workspace/documents/itemType";
 import { CALENDAR_EVENT_ITEM_TYPE } from "@/features/google-workspace/calendar/itemType";
+import { WEB_SITE_ITEM_TYPE } from "@/features/marketing/site-item-type";
 import { formatFileSize } from "@ai-matrx/kit/format";
 import { refinePartyDetail } from "@/features/crm/party-detail";
 import { partyKindWord } from "@/features/crm/party-words";
@@ -151,7 +152,8 @@ export type ItemOpenKind =
   | { kind: "email" }
   | { kind: "party" }
   | { kind: "google_document" }
-  | { kind: "calendar_event" };
+  | { kind: "calendar_event" }
+  | { kind: "web_site" };
 
 // ---------------------------------------------------------------------------
 // Enrichment helpers
@@ -788,6 +790,11 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
   // map is where the platform learns about it.
   google_document: GOOGLE_DOCUMENT_ITEM_TYPE,
   calendar_event: CALENDAR_EVENT_ITEM_TYPE,
+  // 🚨 F-87 — A MARKETING SITE OPENS IN PLACE. Its registration lives beside
+  // its own feature (`features/marketing/site-item-type.ts`); this map is where
+  // the platform learns about it. The key is the canonical entity token
+  // (`web_site`), so no `entityToken` alias is needed and no twin exists.
+  web_site: WEB_SITE_ITEM_TYPE,
 };
 
 async function enrichFile(

@@ -52,6 +52,9 @@ const ALL_REGISTERED_TYPES: KnownItemType[] = [
   "party",
   "google_document",
   "calendar_event",
+  // F-87 — a Marketing site. The token existed everywhere EXCEPT here, so
+  // nothing could open one in place.
+  "web_site",
 ];
 
 /**
@@ -82,6 +85,19 @@ describe("every registered item type opens, or says on the record why not", () =
       expect(config.open).toBeDefined();
     });
   }
+
+  // 🚨 F-87 — RED on HEAD: `getItemConfig("web_site").recognized` was `false`
+  // and `config.open` undefined, so `useOpenItemPresentation` refused, F-86's
+  // marketing door rendered nothing, and `/detail/web_site/<id>` said nothing
+  // about a fully stored record. The census above is red on it; this names it.
+  it("web_site opens through the Detail primitive, on the canonical token", () => {
+    const { config, recognized } = getItemConfig("web_site");
+    expect(recognized).toBe(true);
+    expect(config.open).toEqual({ kind: "web_site" });
+    // The item type IS the entity token — never a twin spelled `site`.
+    expect(config.entityToken).toBeUndefined();
+    expect(getItemConfig("site").recognized).toBe(false);
+  });
 
   it("google_document and calendar_event open through the Detail primitive", () => {
     expect(getItemConfig("google_document").config.open).toEqual({
