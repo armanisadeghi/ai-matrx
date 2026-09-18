@@ -408,6 +408,35 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 ## Change log
 
+- `2026-09-18` — **F-76: an organization refusal with no organization selected is now honest
+  everywhere `calendar/service.ts` / `documents/service.ts` resolve one.** CI's
+  `check-org-refusal-honesty` found both modules calling `requireOrganizationContext` and leaving
+  the person with nothing: `useAgenda`'s window-read effect never ran with no organization
+  selected (`if (!organizationId || !userId) return;`), but `isLoading` also read false (its own
+  guard needs an organization), so `AgendaPanel` fell through to "Your Google Calendar is
+  connected and there is nothing on it" — a confident, wrong claim for a person who has not
+  picked an organization at all. `useAgenda` now reads `useOrganizationRequired()` (the shared
+  boot-settled gate) instead of `selectOrganizationId` directly and exposes
+  `organizationRequired`; `AgendaPanel` checks it first and renders the ONE honest
+  `<OrganizationRequiredNotice compact what="Your agenda" />` before every other branch — covering
+  the home screen, the window panel, and `PersonUpcomingCard` (same component, composed). On the
+  Docs side, the birth door (`useOpenGoogleDocumentRecord` in `openRecord.tsx`) resolves the
+  ACTIVE organization itself with no explicit `organizationId`, and its button's catch used to
+  hand the raw wire sentence ("Select an organization before sending this request.") straight to
+  a toast via `failureSentence`; it now recognises the refusal with
+  `presentOrganizationRefusal` and shows the honest, actionable message instead. The action
+  catches in `GoogleDocumentPanel.tsx` (keep/archive/refresh) and `CalendarEventSections.tsx`
+  (keep/archive) get the same treatment for defence in depth, even though those calls pass the
+  record's own `organization_id` and so rarely hit the refusal in practice. 2 new red-then-green
+  test suites (`calendar/__tests__/the-agenda-is-honest-with-no-organization.test.tsx`,
+  `documents/__tests__/open-record-is-honest-with-no-organization.test.tsx`), each proven red
+  against the pre-fix files first (empty-calendar sentence / raw wire sentence shown; both fixed
+  files reverted via `git stash`, tests failed, changes restored) and green after; 5 existing
+  calendar suites needed `selectShouldPromptForOrganization` added to their `appContextSlice`
+  mock once `useAgenda` started reading it. `check:organization-context`'s full chain green;
+  `npx jest features/google-workspace` (36 suites / 248 tests) green; `check:parse` green. No
+  screen was seen.
+
 - `2026-09-18` — **F-72: the no-append line is chosen by the file's kind (Cursor Bugbot LOW,
   thread 4043568378 on PR 228, commit `2445ceae`, `GoogleDocumentPanel.tsx:622-636`).** F-67's
   append-unsupported branch runs for every non-`document` `mime_kind`, but its sentence always
@@ -673,6 +702,27 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
   `the-last-two-actions-are-real.test.tsx`, and the four-way `inGoogleValue` mapping in
   `the-strip-and-the-composer-tell-the-truth.test.tsx`. No screen was seen — the table still holds
   zero live rows.
+
+- `2026-09-18` — **F-77 (hostile verifier V-21, finding N1, HIGH): a Record that was never written is
+  never called "ready", and its door is never offered.** `registerSelectedGoogleFile`'s response
+  carries `record_id` plus, when the server could NOT write the `workbench.google_document` Record,
+  a plain `record_absent_reason` sentence saying why (no Record table for a Slides deck, no
+  organization named, or the write itself failed, naming the exception class); when it could, an
+  optional `record_sync_status_reason` beside a status that is not the healthy one. F-74 parsed all
+  four onto `SelectedGoogleFile` and F-77 closes the gap it left open: both `chooseFile`s
+  (`GoogleWorkspaceConnectBody.tsx`, `GoogleWorkspaceReviewWorkspace.tsx`) now carry both reasons
+  through `freshRecords`, keyed the same way. A row whose fresh pick answered no `record_id` says
+  the file is picked and usable, states the server's own sentence verbatim (never a paraphrase),
+  and drops the "Open the record" door — the file's own Google link stays; a row whose Record was
+  written but is not in the healthy sync state shows that reason beside it. The pick-time toast
+  matches: a missing Record gets `toast.warning` with the server's sentence as its description
+  instead of "is ready to use"/"is ready", never `recordToast.success`. Red-then-green: new
+  `a-record-write-failure-says-so.test.tsx` (6 cases across both surfaces) fails 4 of 6 against
+  `HEAD` (468e1bd8) — the door is offered and the sentence is absent — and all 6 pass restored. All
+  248 `features/google-workspace` tests pass (35 suites); `pnpm check:parse`, `check:kind-marker-law`
+  and `check:dead-ends` are clean on both files; a scoped `tsc` over just these two files reports no
+  errors of their own (the repo's ~40 pre-existing errors elsewhere are untouched). No screen was
+  seen.
 
 - `2026-09-18` — **F-51: the projections are gone and Calendar's account is chosen by the product.** `googleDocumentDetailRow` / `calendarEventDetailRow` no longer rename `synced_via_connection_id` to `connection_id` — the shared producer (`features/item-presentation/sourceHealth.ts`) reads the live column, so a registration projects only what its row genuinely does not say. `useAgenda` now names its product when it asks for an account (`forProductKey`), so the agenda stops reading Calendar's health on whichever account holds the most other products. Red-then-green: `calendar/__tests__/the-refresh-runs-through-the-account-that-holds-calendar.test.tsx` (3 cases, real health derivation, bigger account listed first) and `features/item-presentation/__tests__/the-strip-reads-the-connection-the-row-names.test.ts`. Calendar and Tasks also got their first useful action in the consent dialog (`features/connectors/provider-config.ts`). No screen was seen.
 

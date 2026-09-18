@@ -57,6 +57,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 }));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
+  selectShouldPromptForOrganization: () => false,
 }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: () => "dddddddd-1111-2222-3333-444444444444",

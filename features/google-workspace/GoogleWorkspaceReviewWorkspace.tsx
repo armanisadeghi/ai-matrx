@@ -181,9 +181,24 @@ export function GoogleWorkspaceReviewWorkspace({
    * read-then-refresh leg `useOpenGoogleDocumentRecord` falls back to. Keyed by
    * the picked-resource id, which is stable across the `inventory.refetch()`
    * that follows registration.
+   *
+   * 🚨 F-77 (V-21 N1) — THE SERVER'S TWO REASONS RIDE ALONG TOO. See the same
+   * note in `GoogleWorkspaceConnectBody.tsx`: a registration that could not
+   * write the Record answers `record_id: null` plus a plain
+   * `record_absent_reason` sentence; one that could still answers an optional
+   * `record_sync_status_reason` when the kept status is not the healthy one.
+   * Both used to be parsed and thrown away here.
    */
   const [freshRecords, setFreshRecords] = useState<
-    Record<string, { record_id: string | null; record_sync_status: string | null }>
+    Record<
+      string,
+      {
+        record_id: string | null;
+        record_sync_status: string | null;
+        record_sync_status_reason: string | null;
+        record_absent_reason: string | null;
+      }
+    >
   >({});
 
   const personalConnections = useMemo(
@@ -299,10 +314,27 @@ export function GoogleWorkspaceReviewWorkspace({
         [registered.id]: {
           record_id: registered.recordId,
           record_sync_status: registered.recordSyncStatus,
+          record_sync_status_reason: registered.recordSyncStatusReason,
+          record_absent_reason: registered.recordAbsentReason,
         },
       }));
       await inventory.refetch();
       setSelectedResourceId(registered.id);
+      // 🚨 F-77 (V-21 N1) — a Record that could not be written is never called
+      // "ready": the file is still picked and usable (its Google link stays),
+      // but the door to a Record that does not exist is not offered, and the
+      // server's own sentence — never a paraphrase — says why.
+      if (!registered.recordId) {
+        toast.warning(
+          `${registered.name} is picked and usable, but its record could not be created.`,
+          {
+            description:
+              registered.recordAbsentReason ??
+              "AI Matrx did not say why. Try picking it again; if it keeps happening, tell us.",
+          },
+        );
+        return;
+      }
       recordToast.success(
         {
           type: "google_workspace_resource",
@@ -311,6 +343,13 @@ export function GoogleWorkspaceReviewWorkspace({
         },
         `${registered.name} is ready.`,
       );
+      if (
+        registered.recordSyncStatus &&
+        registered.recordSyncStatus !== "available" &&
+        registered.recordSyncStatusReason
+      ) {
+        toast.info(registered.recordSyncStatusReason);
+      }
     });
   };
 
@@ -731,62 +770,98 @@ export function GoogleWorkspaceReviewWorkspace({
                         // record we can address by id.
                         const link = resourceDoor(resource);
                         const selected = resource.id === selectedResourceId;
+                        // 🚨 F-77 (V-21 N1) — a fresh pick that could not
+                        // write a Record is never offered the door to one
+                        // that does not exist; the plain sentence the server
+                        // composed is shown instead, and the sync reason
+                        // rides beside a Record that was kept but is not in
+                        // the healthy state.
+                        const fresh = freshRecords[resource.id];
+                        const recordAbsent = fresh
+                          ? fresh.record_id === null
+                          : false;
+                        const showRecordDoor =
+                          hasGoogleDocumentRecord(resource.resource_type) &&
+                          !recordAbsent;
+                        const syncReason =
+                          fresh?.record_id &&
+                          fresh.record_sync_status &&
+                          fresh.record_sync_status !== "available"
+                            ? fresh.record_sync_status_reason
+                            : null;
                         return (
                           <div
                             key={resource.id}
-                            className={`flex items-center rounded-lg border transition-colors ${
+                            className={`rounded-lg border transition-colors ${
                               selected
                                 ? "border-primary bg-primary/5"
                                 : "hover:bg-muted/50"
                             }`}
                           >
-                            <button
-                              type="button"
-                              onClick={() => setSelectedResourceId(resource.id)}
-                              className="flex min-w-0 flex-1 items-start gap-3 p-3 text-left"
-                            >
-                              <FileIcon
-                                className={`mt-0.5 h-5 w-5 ${fileType.iconClassName}`}
-                              />
-                              <span className="min-w-0 flex-1">
-                                <span className="block truncate text-sm font-medium">
-                                  {resource.display_name}
-                                </span>
-                                <span className="block text-xs text-muted-foreground">
-                                  {fileType.label}
-                                </span>
-                              </span>
-                            </button>
-                            <div className="mr-3 flex shrink-0 items-center gap-1">
-                              {/*
-                                🚨 ONE ACTION PER FILE, AND IT IS THE RECORD.
-                                Before F-58 a picked Doc's only in-app surface was
-                                a read-only textarea and a raw append box on this
-                                bench; the Record it should have opened could
-                                never be born. This control IS that birth door.
-                              */}
-                              {hasGoogleDocumentRecord(
-                                resource.resource_type,
-                              ) && (
-                                <OpenGoogleDocumentRecordButton
-                                  resource={pickedGoogleRecordResource({
-                                    ...resource,
-                                    ...freshRecords[resource.id],
-                                  })}
-                                  variant="ghost"
-                                />
-                              )}
-                              <a
-                                href={link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
-                                aria-label={`Open ${resource.display_name} in Google`}
+                            <div className="flex items-center">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setSelectedResourceId(resource.id)
+                                }
+                                className="flex min-w-0 flex-1 items-start gap-3 p-3 text-left"
                               >
-                                Open in Google
-                                <ExternalLink className="h-3.5 w-3.5" />
-                              </a>
+                                <FileIcon
+                                  className={`mt-0.5 h-5 w-5 ${fileType.iconClassName}`}
+                                />
+                                <span className="min-w-0 flex-1">
+                                  <span className="block truncate text-sm font-medium">
+                                    {resource.display_name}
+                                  </span>
+                                  <span className="block text-xs text-muted-foreground">
+                                    {fileType.label}
+                                  </span>
+                                </span>
+                              </button>
+                              <div className="mr-3 flex shrink-0 items-center gap-1">
+                                {/*
+                                  🚨 ONE ACTION PER FILE, AND IT IS THE RECORD.
+                                  Before F-58 a picked Doc's only in-app surface was
+                                  a read-only textarea and a raw append box on this
+                                  bench; the Record it should have opened could
+                                  never be born. This control IS that birth door.
+                                */}
+                                {showRecordDoor && (
+                                  <OpenGoogleDocumentRecordButton
+                                    resource={pickedGoogleRecordResource({ ...resource, ...freshRecords[resource.id] })}
+                                    variant="ghost"
+                                  />
+                                )}
+                                <a
+                                  href={link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-primary hover:bg-primary/10"
+                                  aria-label={`Open ${resource.display_name} in Google`}
+                                >
+                                  Open in Google
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </a>
+                              </div>
                             </div>
+                            {recordAbsent && fresh?.record_absent_reason ? (
+                              <p className="flex items-start gap-1.5 px-3 pb-2 text-xs text-muted-foreground">
+                                <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                                <span className="min-w-0 flex-1">
+                                  {resource.display_name} is picked and
+                                  usable, but its record could not be
+                                  created: {fresh.record_absent_reason}
+                                </span>
+                              </p>
+                            ) : null}
+                            {syncReason ? (
+                              <p className="flex items-start gap-1.5 px-3 pb-2 text-xs text-muted-foreground">
+                                <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-600" />
+                                <span className="min-w-0 flex-1">
+                                  {syncReason}
+                                </span>
+                              </p>
+                            ) : null}
                           </div>
                         );
                       })}
