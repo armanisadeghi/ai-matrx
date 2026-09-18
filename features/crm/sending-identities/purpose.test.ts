@@ -51,14 +51,15 @@ const correspondenceRow: PurposeRow = {
 };
 
 /** A pre-B-26 row: the field is simply not there. */
-const preB26Row: PurposeRow = {
+// The view now declares both columns as required, so a row that predates them
+// can only be described as "the columns may be absent" — which is exactly what
+// the reader accepts.
+const preB26Row: Omit<PurposeRow, "purpose" | "purpose_note"> &
+  Partial<Pick<PurposeRow, "purpose" | "purpose_note">> = {
   id: "identity-old",
   from_address: "sales@acme.com",
   status: "draft",
   domain_verified: false,
-  // The view now always carries the columns; a pre-B-26 row carries them as null.
-  purpose: null,
-  purpose_note: null,
 };
 
 describe("purpose, read off the row", () => {
