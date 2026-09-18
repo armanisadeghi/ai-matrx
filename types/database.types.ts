@@ -52038,6 +52038,56 @@ export type Database = {
           },
         ]
       }
+      content_lane: {
+        Row: {
+          created_at: string
+          discoverable: boolean
+          entered_world_at: string | null
+          entered_world_by: string | null
+          lane: string
+          link_sharing: boolean
+          organization_id: string
+          resource_id: string
+          resource_type: string
+          unlisted: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          discoverable?: boolean
+          entered_world_at?: string | null
+          entered_world_by?: string | null
+          lane?: string
+          link_sharing?: boolean
+          organization_id: string
+          resource_id: string
+          resource_type: string
+          unlisted?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          discoverable?: boolean
+          entered_world_at?: string | null
+          entered_world_by?: string | null
+          lane?: string
+          link_sharing?: boolean
+          organization_id?: string
+          resource_id?: string
+          resource_type?: string
+          unlisted?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "content_lane_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dd171_containment_baseline: {
         Row: {
           axis: string
@@ -53374,6 +53424,14 @@ export type Database = {
           rows_readable_under_refused_parent: number
         }[]
       }
+      content_levels: {
+        Args: never
+        Returns: {
+          level: Database["public"]["Enums"]["permission_level"]
+          noun: string
+          ordinal: number
+        }[]
+      }
       converge_legacy_column: {
         Args: {
           p_column: string
@@ -53387,6 +53445,14 @@ export type Database = {
       derive_organization_abbreviation: {
         Args: { p_is_personal?: boolean; p_name: string }
         Returns: string
+      }
+      discoverable_card: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: {
+          resource_id: string
+          resource_type: string
+          title: string
+        }[]
       }
       discoverable_ids:
         | {
@@ -53416,9 +53482,20 @@ export type Database = {
           status: string
         }[]
       }
+      door_identity_args: { Args: { p_oid: unknown }; Returns: string }
       drop_governance_guard: {
         Args: { p_schema: string; p_table: string }
         Returns: undefined
+      }
+      effective_level: {
+        Args: {
+          p_organization_id?: string
+          p_resource_id: string
+          p_resource_type: string
+          p_table_id?: string
+          p_user_id: string
+        }
+        Returns: Database["public"]["Enums"]["permission_level"]
       }
       emergency_door_approve: {
         Args: { p_note?: string; p_request_id: string }
@@ -53497,6 +53574,14 @@ export type Database = {
           user_id: string
         }[]
       }
+      field_sensitivity_level: {
+        Args: {
+          p_action?: string
+          p_organization_id?: string
+          p_sensitivity: string
+        }
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
       fn_grant_resource_permission: {
         Args: {
           p_expires_at?: string
@@ -53523,6 +53608,14 @@ export type Database = {
       }
       generated_policy_names: { Args: never; Returns: string[] }
       governance_columns: { Args: { p_token: string }; Returns: string[] }
+      granted_level: {
+        Args: {
+          p_resource_id: string
+          p_resource_type: string
+          p_user_id: string
+        }
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
       has_access: {
         Args: {
           p_id: string
@@ -53634,6 +53727,10 @@ export type Database = {
         Returns: boolean
       }
       is_trusted_backend: { Args: never; Returns: boolean }
+      lane_of: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: string
+      }
       legacy_column_worklist: {
         Args: never
         Returns: {
@@ -53646,6 +53743,36 @@ export type Database = {
           token: string
           variant: string
         }[]
+      }
+      level_label: {
+        Args: {
+          p_level: Database["public"]["Enums"]["permission_level"]
+          p_scope_noun: string
+        }
+        Returns: string
+      }
+      may_touch_field: {
+        Args: {
+          p_action?: string
+          p_field_id: string
+          p_level_on_record: Database["public"]["Enums"]["permission_level"]
+          p_organization_id: string
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      member_default_level: {
+        Args: { p_organization_id: string; p_table_id?: string }
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
+      membership_change_refusal: {
+        Args: {
+          p_actor_id: string
+          p_new_role: string
+          p_organization_id: string
+          p_target_user_id: string
+        }
+        Returns: string
       }
       membership_row_visible: {
         Args: { p_membership_id: string }
@@ -53664,6 +53791,18 @@ export type Database = {
         Args: { p_org: string; p_token: string }
         Returns: boolean
       }
+      organization_roles: {
+        Args: never
+        Returns: {
+          rank: number
+          role: string
+          what_it_means: string
+        }[]
+      }
+      owner_of: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: string
+      }
       personal_org_id: { Args: { p_user_id: string }; Returns: string }
       platform_admin_read_prefix: { Args: { p_token: string }; Returns: string }
       privacy_wall_read_lane_parity: {
@@ -53681,7 +53820,51 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: string
       }
+      publish_to_world: {
+        Args: {
+          p_discoverable?: boolean
+          p_organization_id: string
+          p_resource_id: string
+          p_resource_type: string
+        }
+        Returns: {
+          created_at: string
+          discoverable: boolean
+          entered_world_at: string | null
+          entered_world_by: string | null
+          lane: string
+          link_sharing: boolean
+          organization_id: string
+          resource_id: string
+          resource_type: string
+          unlisted: boolean
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "content_lane"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      realtime_field_exposure: {
+        Args: never
+        Returns: {
+          schema_name: string
+          table_name: string
+          why: string
+        }[]
+      }
       record_transfer_refusal: { Args: { p_refusal: Json }; Returns: string }
+      role_label: { Args: { p_role: string }; Returns: string }
+      role_vocabulary_offenders: {
+        Args: never
+        Returns: {
+          detail: string
+          how_many: number
+          object: string
+        }[]
+      }
       rulebook_ids_curated_by: { Args: { p_uid: string }; Returns: string[] }
       runnable_agent_fields: {
         Args: { p_agent_id: string }
@@ -53735,6 +53918,15 @@ export type Database = {
         Args: { p_id: string; p_schema: string; p_table: string }
         Returns: boolean
       }
+      shareable_registry_repoint_plan: {
+        Args: never
+        Returns: {
+          already_done: boolean
+          from_target: string
+          resource_type: string
+          to_target: string
+        }[]
+      }
       starter_pack_ids_curated_by: {
         Args: { p_uid: string }
         Returns: string[]
@@ -53755,6 +53947,10 @@ export type Database = {
       token_is_parented_component: {
         Args: { p_token: string }
         Returns: boolean
+      }
+      top_content_level: {
+        Args: never
+        Returns: Database["public"]["Enums"]["permission_level"]
       }
       unnest_uuids: { Args: { p_ids: string[] }; Returns: string[] }
       verify_canonical: {
@@ -53778,6 +53974,19 @@ export type Database = {
           p_variant?: string
         }
         Returns: boolean
+      }
+      visible_field_ids: {
+        Args: {
+          p_action?: string
+          p_level_on_record: Database["public"]["Enums"]["permission_level"]
+          p_organization_id: string
+          p_table_id: string
+          p_user_id: string
+        }
+        Returns: {
+          field_id: string
+          field_key: string
+        }[]
       }
     }
     Enums: {
