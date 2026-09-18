@@ -4,6 +4,12 @@
 // shell header — `RouteHeader` (back chevron + the record's title on the
 // left, the presentation switcher on the right) and a single scroll area
 // that reserves the transparent header's height. Light: no `WindowPanel`.
+//
+// 🚨 NEW-22 — AND ESCAPE LEAVES THE PAGE FROM THE ROUTE HEADER TOO. The back
+// chevron renders in `RouteHeader`, outside every slot the primitive binds, so
+// Escape with focus on it did nothing. `useShellChromeEscape(onBack)` answers with
+// the page's ONE guarded exit (`core.leave` → `canGoBack` ? `back()` : the
+// record's home), never a raw `back()` — which is D1's whole point.
 
 "use client";
 
@@ -13,6 +19,7 @@ import { ChevronLeftTapButton } from "@ai-matrx/tap-target/buttons";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
 import { useClippedContentGuard } from "@/lib/layout/useClippedContentGuard";
 import type { DetailPageShellProps } from "@/lib/detail/host";
+import { useShellChromeEscape } from "./useShellChromeEscape";
 
 export function DetailPageShell({
   titleNode,
@@ -22,6 +29,7 @@ export function DetailPageShell({
 }: DetailPageShellProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   useClippedContentGuard(scrollRef, { label: "detail page body" });
+  useShellChromeEscape(onBack);
   return (
     <>
       <RouteHeader

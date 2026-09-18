@@ -6,6 +6,12 @@
 // `?panels=detail:<type>.<id>:as-window` deep link through `urlSync`. The lib
 // fills the slots; nothing about the record is decided here.
 //
+// 🚨 NEW-22 — ESCAPE CLOSES, INCLUDING FROM THE WINDOW'S OWN CHROME (the close,
+// minimize and pop-out buttons and the drag handle, which render in `WindowPanel`'s
+// portal outside every slot the primitive binds, and which `WindowPanel` itself
+// answers no keystroke on). `useShellChromeEscape` is what makes the keyboard model
+// the package specifies true there too (VERIFY-U-P1-R5, NEW-22).
+//
 // PARSES `WindowPanel` — lazy only. Reached through the `detailWindow`
 // overlay's `lazyOverlay` entry (`windows/detail/DetailWindow.tsx`), never
 // from a route or a boot module.
@@ -21,6 +27,7 @@ import {
   panelUrlReserveBytes,
 } from "@/lib/detail/presentation";
 import { resolvedListContextMax } from "../listContextCap";
+import { useShellChromeEscape } from "./useShellChromeEscape";
 
 /** What the address this window's token joins already costs (NEW-19). */
 function currentAddressCost(): number | undefined {
@@ -37,6 +44,7 @@ export function DetailWindowShell({
   onClose,
   children,
 }: DetailWindowShellProps) {
+  useShellChromeEscape(onClose);
   return (
     <WindowPanel
       id="detail-window"
