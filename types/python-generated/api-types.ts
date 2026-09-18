@@ -60570,6 +60570,11 @@ export interface components {
              * @description matrx_connect ORIGIN_CLASSES + 'unknown' (DB backfill for pre-provenance rows). Valid filter values for origin_class.
              */
             origin_classes?: string[];
+            /**
+             * Outside Source Apps
+             * @description source_apps holding outside (non-AI Matrx) data — today only 'code-plugin'. CX Explorer hides them unless the viewer turns them on.
+             */
+            outside_source_apps?: string[];
         };
         /** CxExplorerFacetEntry */
         CxExplorerFacetEntry: {
@@ -166848,6 +166853,8 @@ export interface operations {
                 user_id?: string | null;
                 /** @description Max entries per facet axis */
                 facet_limit?: number;
+                /** @description Hide conversations from these source_apps (repeatable; NULL-safe). The CX Explorer sends 'code-plugin' by default: outside coding-tool data. */
+                exclude_source_app?: string[] | null;
             };
             header?: never;
             path?: never;

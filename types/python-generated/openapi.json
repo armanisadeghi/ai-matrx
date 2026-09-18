@@ -55619,6 +55619,27 @@
               "title": "Facet Limit"
             },
             "description": "Max entries per facet axis"
+          },
+          {
+            "name": "exclude_source_app",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Hide conversations from these source_apps (repeatable; NULL-safe). The CX Explorer sends 'code-plugin' by default: outside coding-tool data.",
+              "title": "Exclude Source App"
+            },
+            "description": "Hide conversations from these source_apps (repeatable; NULL-safe). The CX Explorer sends 'code-plugin' by default: outside coding-tool data."
           }
         ],
         "responses": {
@@ -137581,6 +137602,14 @@
             "type": "array",
             "title": "Origin Classes",
             "description": "matrx_connect ORIGIN_CLASSES + 'unknown' (DB backfill for pre-provenance rows). Valid filter values for origin_class."
+          },
+          "outside_source_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Outside Source Apps",
+            "description": "source_apps holding outside (non-AI Matrx) data — today only 'code-plugin'. CX Explorer hides them unless the viewer turns them on."
           }
         },
         "additionalProperties": false,
