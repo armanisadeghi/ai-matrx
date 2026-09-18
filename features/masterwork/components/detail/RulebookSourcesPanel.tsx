@@ -48,7 +48,6 @@ import {
   firstBlockingReason,
   GatedActionButton,
 } from "@/components/official/GatedActionButton";
-import LoadingSpinner from "@/components/ui/loading-spinner";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { AssociationCaptureToolbar } from "@ai-matrx/associations/react";
 import {
@@ -78,6 +77,7 @@ import type { PastedSourceMetadata } from "../../record/pastedSource";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import { DurableRunInterruption } from "@/lib/durable-run/DurableRunInterruption";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { RunStages } from "../RunStages";
 
 /**
  * The registered source→rulebook pairs live in ONE place — `../../sourceLinks`
@@ -402,11 +402,21 @@ export function RulebookSourcesPanel({
 
   // ── The run: POST /masterworks/ingest-dump (durable, rejoinable) ─────────
 
+  // 🚨 THE PROMISE IS THIS PILE'S, NOT THE LANE'S.
+  //
+  // This is the exact screen the 2026-09-17 verification watched: one 558 KB
+  // EPUB and a pile of nineteen files were both told "this usually takes about
+  // 2 minutes" because the estimate was a per-lane constant. It is now the
+  // measured per-resource rate (`DUMP_INGEST_RATE`) applied to what is really
+  // attached, overlapped by the server's own `resource_fan_out` cap.
+  const dumpSize = useMemo(() => ({ items: totalSources }), [totalSources]);
+
   const run = useMasterworkRun<DumpSummary>({
     surface: "dump",
     rulebookId: rulebook.id,
     path: INGEST_DUMP_PATH,
     parseResult: parseDumpSummary,
+    size: dumpSize,
   });
 
   // Drafts that landed while the user was away still reach the page. Fired
@@ -807,25 +817,14 @@ export function RulebookSourcesPanel({
           {/* ── the run ──────────────────────────────────────────────── */}
           {canEdit ? (
             <div className="mt-3 space-y-2">
-              {run.stages.length > 0 || run.running ? (
-                <div className="max-h-52 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/40 p-3">
-                  {run.stages.map((line, i) => (
-                    <p key={i} className="text-xs text-muted-foreground">
-                      {line}
-                    </p>
-                  ))}
-                  {run.running ? (
-                    <div className="flex items-start gap-2 pt-1">
-                      <LoadingSpinner size="sm" />
-                      <p className="text-xs text-muted-foreground">
-                        {run.waitMessage}
-                      </p>
-                    </div>
-                  ) : null}
-                  {run.running ? (
-                    <DurableRunInterruption interruption={run.interruption} />
-                  ) : null}
-                </div>
+              {/* 🚨 THE LANE THE 2026-09-17 VERIFICATION WATCHED FREEZE. It
+                  now shows a row per attached source with its own state, the
+                  counts the server sent, a clock that moves every second, and
+                  the server's labouring sentence when its heartbeat cannot
+                  land — never a motionless spinner. */}
+              <RunStages run={run} />
+              {run.running ? (
+                <DurableRunInterruption interruption={run.interruption} />
               ) : null}
 
               {/* The dump lane was the only one that kept its failure on screen

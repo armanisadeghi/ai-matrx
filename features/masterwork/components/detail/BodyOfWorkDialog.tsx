@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ExternalLink, FileUp, Link2, X } from "lucide-react";
 import { toast } from "@/lib/toast";
@@ -21,7 +21,6 @@ import {
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
-import LoadingSpinner from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/utils/supabase/client";
 import type { paths } from "@/types/python-generated/api-types";
@@ -131,6 +130,7 @@ const BODY_OF_WORK_DESCRIPTION =
 import { createSittingStore, type SittingBase } from "../../sitting/sitting";
 import { useDialogSitting } from "../../sitting/useDialogSitting";
 import { SittingResumed } from "../../sitting/SittingResumed";
+import { RunStages } from "../RunStages";
 
 interface BodyOfWorkSitting extends SittingBase {
   urlsText: string;
@@ -180,14 +180,29 @@ export function BodyOfWorkDialog({
   });
 
   const [uploading, setUploading] = useState(false);
+  /** When the upload began — see `IngestSourceDialog`; the run row does not
+   *  exist yet, so only this lane can give the clock an origin. */
+  const [uploadStartedAt, setUploadStartedAt] = useState<number | null>(null);
   const [uploadProgress, setUploadProgress] = useState<string | null>(null);
   const [board, setBoard] = useState<CorpusPieceRow[]>([]);
+
+  // 🚨 THE PROMISE IS MEASURED FROM THIS PILE, NOT FROM THE LANE'S MEDIAN.
+  // Three links and forty are not the same wait, and a screen that says they
+  // are is the defect acquisition-frontier §7.3 recorded.
+  const corpusSize = useMemo(
+    () => ({
+      items: files.length + parseUrls(urlsText).length,
+      bytes: files.reduce((total, file) => total + file.size, 0),
+    }),
+    [files, urlsText],
+  );
 
   const run = useMasterworkRun<CorpusSummary>({
     surface: "corpus",
     rulebookId: rulebook.id,
     path: INGEST_CORPUS_PATH,
     parseResult: parseCorpusSummary,
+    size: corpusSize,
   });
   const running = run.running || uploading;
 
@@ -288,6 +303,7 @@ export function BodyOfWorkDialog({
     const fileIds: string[] = [];
     if (files.length > 0) {
       setUploading(true);
+    setUploadStartedAt(Date.now());
       try {
         for (const [index, file] of files.entries()) {
           setUploadProgress(
@@ -308,10 +324,12 @@ export function BodyOfWorkDialog({
           err instanceof Error ? err.message : "Could not upload a file";
         run.fail(message);
         setUploading(false);
+    setUploadStartedAt(null);
         setUploadProgress(null);
         return;
       }
       setUploading(false);
+    setUploadStartedAt(null);
       setUploadProgress(null);
     }
 
@@ -331,6 +349,7 @@ export function BodyOfWorkDialog({
   const reset = () => {
     run.reset();
     setUploading(false);
+    setUploadStartedAt(null);
     setUploadProgress(null);
   };
 
@@ -457,24 +476,17 @@ export function BodyOfWorkDialog({
           </div>
         ) : running || run.stages.length > 0 ? (
           <div className="space-y-2">
-            <div className="max-h-40 space-y-1 overflow-y-auto rounded-md border border-border bg-muted/40 p-3">
-              {(uploadProgress
-                ? [uploadProgress, ...run.stages]
-                : run.stages
-              ).map((line, i) => (
-                <p key={i} className="text-xs text-muted-foreground">
-                  {line}
-                </p>
-              ))}
-            </div>
-            {running ? (
-              <div className="flex items-start gap-2">
-                <LoadingSpinner size="sm" />
-                <p className="text-xs text-muted-foreground">
-                  {run.waitMessage ?? "Uploading your files…"}
-                </p>
-              </div>
-            ) : null}
+            <RunStages
+              run={{
+                ...run,
+                running,
+                stages: uploadProgress
+                  ? [uploadProgress, ...run.stages]
+                  : run.stages,
+                startedAt: run.startedAt ?? uploadStartedAt,
+              }}
+              waitingMessage="Uploading your files…"
+            />
             {run.running ? (
               <DurableRunInterruption interruption={run.interruption} />
             ) : null}

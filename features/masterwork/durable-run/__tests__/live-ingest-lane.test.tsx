@@ -32,6 +32,7 @@ import {
   useIngestDialogSession,
   useLiveIngestLane,
 } from "../liveIngestLane";
+import { EMPTY_INGEST_PROGRESS } from "../ingestProgress";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -145,6 +146,9 @@ function fakeRun(surface: string): MasterworkRunHandle<IngestSummary> {
   const settled = surface === settledSurface;
   const dismissed = dismissedSurfaces.has(surface);
   return {
+    // Every Masterwork run now carries the typed per-resource progress the
+    // shared surface renders (`ingestProgress.ts`); this lane's fake has none.
+    progress: EMPTY_INGEST_PROGRESS,
     // A surface pulls itself open only for a live run the person has not
     // already closed away from — never for `"rejoining"` alone.
     surfacing: running && !dismissed,
