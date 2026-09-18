@@ -26,7 +26,7 @@ import path from "node:path";
 const MIGRATIONS = path.join(process.cwd(), "migrations");
 
 /** The newest file that REPLACES cvx_list_scoped — the one the DB runs. */
-const LIVE_LIST_MIGRATION = "cvx_deep_hits_is_a_definer_probe.sql";
+const LIVE_LIST_MIGRATION = "cvx_deep_hits_once_per_request.sql";
 
 function readMigration(name: string): string {
   return readFileSync(path.join(MIGRATIONS, name), "utf8");
@@ -95,8 +95,18 @@ describe("cvx_list_scoped search admits every field cvx_search_score ranks", () 
   });
 
   it("treats a commit-sha query as deep without the toggle", () => {
-    expect(sql).toContain("v_deep boolean := coalesce(p_deep, false)");
-    expect(sql).toContain("v_search ~ '^[0-9a-fA-F]{7,40}$'");
+    // ONE rule for "is this search deep", read by the list function AND the
+    // scope-counts function, so the two can never disagree.
+    expect(sql).toContain("CREATE OR REPLACE FUNCTION public.cvx_search_is_deep(");
+    expect(sql).toContain("btrim(p_search) ~ '^[0-9a-fA-F]{7,40}$'");
+    expect(sql).toContain("v_deep boolean := public.cvx_search_is_deep(v_search, p_deep)");
+    // and the counts function runs the probe ONCE and hands the set down —
+    // fifteen probes per request was an 11 s statement timeout
+    const counts = sql.slice(sql.indexOf("CREATE OR REPLACE FUNCTION public.cvx_list_scope_counts("));
+    expect(counts).toContain("public.cvx_search_is_deep(v_search, p_deep)");
+    expect(counts).toContain("'__deep_hits'");
+    expect(counts).toContain("public.cvx_deep_hits(v_search)");
+    expect(sql).toContain("FROM jsonb_array_elements_text(v_f->'__deep_hits')");
     // and the deep pass is ONE hashed set through the definer probe, never a
     // correlated per-row EXISTS under the invoker's policy (ILIKE is not
     // leakproof, so that can never use the trigram index)
@@ -106,9 +116,11 @@ describe("cvx_list_scoped search admits every field cvx_search_score ranks", () 
   });
 
   it("the probe is a declared signed-in door that answers only listable conversations", () => {
-    const probe = sql.slice(
-      sql.indexOf("CREATE OR REPLACE FUNCTION public.cvx_deep_hits("),
-      sql.indexOf("CREATE OR REPLACE FUNCTION public.cvx_list_scoped("),
+    const probe = readMigration("cvx_deep_hits_is_a_definer_probe.sql").slice(
+      0,
+      readMigration("cvx_deep_hits_is_a_definer_probe.sql").indexOf(
+        "CREATE OR REPLACE FUNCTION public.cvx_list_scoped(",
+      ),
     );
     expect(probe).toContain("SECURITY DEFINER");
     expect(probe).toContain("c.created_by = auth.uid()");
@@ -126,7 +138,7 @@ describe("cvx_list_scoped search admits every field cvx_search_score ranks", () 
       "ON chat.message USING gin ((content::text) gin_trgm_ops)",
     );
     expect(idx).toContain("WHERE deleted_at IS NULL AND is_visible_to_user IS TRUE");
-    expect(sql).toContain(
+    expect(readMigration("cvx_deep_hits_is_a_definer_probe.sql")).toContain(
       "AND m.deleted_at IS NULL AND m.is_visible_to_user IS TRUE",
     );
   });
