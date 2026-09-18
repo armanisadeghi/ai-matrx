@@ -193,8 +193,31 @@ export function GoogleContactsImportPanel({
   }, [query, load]);
   useEffect(() => () => abortRef.current?.abort(), []);
 
+  // 🚨 A SELECTION CAN ONLY CONTAIN IDS THE CURRENT READ RETURNED (V-24). The
+  // window's address can name an `externalId` the read never answers with —
+  // a stale link, a contact removed from Google, or one outside this read's
+  // page — and `selected` started from that address before any read had
+  // happened. Without this, the phantom id rode in `selected` forever: "1
+  // selected" and an enabled "Review the field map" over a list the read
+  // says is EMPTY, and a dry run for an id the server has never seen. Every
+  // read settles the set down to ids it actually returned; it never adds one
+  // back on its own.
+  useEffect(() => {
+    if (!search) return;
+    const readable = new Set(search.contacts.map((contact) => contact.external_id));
+    setSelected((current) => current.filter((externalId) => readable.has(externalId)));
+  }, [search]);
+
   const contacts = search?.contacts ?? [];
   const selectedSet = useMemo(() => new Set(selected), [selected]);
+  // The address named a contact this read did not return — never conflated
+  // with "this account has no contacts we can read" or "no match for the
+  // typed search", which are both honest for a different reason.
+  const requestedContactMissing = Boolean(
+    initialExternalId &&
+      search &&
+      !search.contacts.some((contact) => contact.external_id === initialExternalId),
+  );
 
   const toggle = (externalId: string) => {
     setSelected((current) =>
@@ -650,6 +673,18 @@ export function GoogleContactsImportPanel({
           {warning}
         </p>
       ))}
+      {/* 🚨 THE ADDRESS NAMED A CONTACT THIS READ DID NOT RETURN — said by
+          name, not folded into "no contacts" (V-24). This is the honest
+          reason a link opened here to nothing: never confused with an empty
+          account or a search with no hits. */}
+      {requestedContactMissing ? (
+        <p className="flex items-start gap-2 border-b border-border bg-amber-500/10 px-4 py-2 text-xs text-amber-600 dark:text-amber-400">
+          <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+          The contact this link named is not in this account&apos;s readable
+          contacts. It may have been removed from Google, or the link is
+          stale — search for it below, or refresh.
+        </p>
+      ) : null}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {!loading && contacts.length === 0 ? (
           <p className="p-6 text-center text-sm text-muted-foreground">
