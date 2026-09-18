@@ -117,9 +117,25 @@ const WRITE_PATH = [
   /\.rpc\(\s*["'`](create|add|insert|upsert)_/,
   /CreatablePicker|creatable-picker/,
 ];
-const P11_PATH = [
-  // P11 path: the file explains a shared vocabulary and offers the local override
+/**
+ * P11 has TWO halves and the detector requires BOTH. Until 2026-09-18 the
+ * sentence alone was a free pass: any file whose text said "curated centrally"
+ * passed, so a two-line fixture — one `options.map(… <SelectItem>)` plus the
+ * comment `// curated centrally` — walked through (PNI-000 F4). That is the
+ * same free pass the door-only caption used to get. Under the law
+ * (`every-picker-takes-new-input.md` §3) an explanation is only acceptable
+ * BECAUSE it is paired with a live alternative — so the file must also carry
+ * one: the primitive's `lockedAction` slot, or a named local-override path.
+ */
+const P11_NOTE = [
   /your own dimension|platform-governed|shared dimension|curated centrally|lockedNote/i,
+];
+const P11_ALTERNATIVE = [
+  /lockedAction/,
+  /local override|localOverride|override path/i,
+  // A live in-place escape wired to a HANDLER, not prose: the keyword
+  // workbench's class cell hands over `onSelect={onMakeYourOwn}`.
+  /on(?:Select|Click)=\{[^}]*\b\w*(?:makeYourOwn|MakeYourOwn|createOwn|CreateOwn|override|Override)\w*/,
 ];
 /** A `+` that only opens a page somewhere else — the pattern this law forbids. */
 const DOOR_ONLY = /<Link\b[^>]*\btarget=["']_blank["'][\s\S]{0,400}?<Plus\b/;
@@ -142,9 +158,12 @@ interface Finding {
 
 function hasAddAffordance(source: string): boolean {
   const writes = WRITE_PATH.some((re) => re.test(source));
-  const p11 = P11_PATH.some((re) => re.test(source));
-  if (p11) return true;
   if (writes) return true;
+  // P11 counts only as an explanation PLUS a live alternative — never alone.
+  const p11 =
+    P11_NOTE.some((re) => re.test(source)) &&
+    P11_ALTERNATIVE.some((re) => re.test(source));
+  if (p11) return true;
   // A caption with no write path in the file is a door or a lie — never an add.
   void ADD_CAPTION;
   void DOOR_ONLY;

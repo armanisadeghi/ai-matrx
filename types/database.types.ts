@@ -71599,6 +71599,10 @@ export type Database = {
         Args: { p_metadata: Json }
         Returns: string
       }
+      cvx_search_is_deep: {
+        Args: { p_deep: boolean; p_search: string }
+        Returns: boolean
+      }
       cvx_search_score: {
         Args: {
           p_deep_hit?: boolean

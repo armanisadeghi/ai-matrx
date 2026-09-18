@@ -418,3 +418,349 @@ describe("a write nothing open can apply (W49)", () => {
     unregister();
   });
 });
+
+describe("surface approval comparison", () => {
+  const replacementTarget = {
+    ...target,
+    updatesValue: "review_value",
+    approvalComparison: "text-replacement" as const,
+  };
+  const contentReplacementTarget = {
+    ...target,
+    updatesValue: "content",
+    approvalComparison: "text-replacement" as const,
+  };
+  const stringReadTwin = {
+    name: "review_value",
+    label: "Review value",
+    description: "The live text being replaced.",
+    valueType: "string" as const,
+    alwaysAvailable: true,
+  };
+  const contentReadTwin = { ...stringReadTwin, name: "content" };
+  const manifestFor = (
+    writeTargets: readonly (typeof replacementTarget)[],
+    values: readonly (typeof stringReadTwin)[] = [stringReadTwin],
+  ) => ({ values, writeTargets });
+
+  it("carries the live original into approval and applies only after approval", async () => {
+    const { buildSurfaceWriteApprovalChange } =
+      await import("@/features/agents/redux/execution-system/thunks/surface-write-approval-change");
+    mockGetManifest.mockReturnValue(
+      manifestFor([contentReplacementTarget], [contentReadTwin]),
+    );
+    const handler = jest.fn();
+    const unregister = registerSurfaceRuntime(
+      {
+        surfaceName: "matrx-user/approval-test",
+        getScope: () => ({ content: "Keep the original rule." }),
+        getWriteHandlers: () => ({ review_field: handler }),
+      },
+      10,
+    );
+    try {
+      const result = await applySurfaceWrite(
+        "review_field",
+        "Keep the revised rule.",
+        {
+          origin: "agent",
+          quiet: true,
+          requestApproval: async (proposal) => {
+            expect(buildSurfaceWriteApprovalChange(proposal).fields).toEqual([
+              {
+                label: "Review field",
+                before: "Keep the original rule.",
+                after: "Keep the revised rule.",
+                block: true,
+              },
+            ]);
+            expect(handler).not.toHaveBeenCalled();
+            return { kind: "approved" };
+          },
+        },
+      );
+
+      expect(result.ok).toBe(true);
+      expect(handler).toHaveBeenCalledWith("Keep the revised rule.");
+    } finally {
+      unregister();
+    }
+  });
+
+  it("does not write when the user declines", async () => {
+    mockGetManifest.mockReturnValue(manifestFor([replacementTarget]));
+    const handler = jest.fn();
+    const unregister = registerSurfaceRuntime(
+      {
+        surfaceName: "matrx-user/approval-test",
+        getScope: () => ({ review_value: "Original" }),
+        getWriteHandlers: () => ({ review_field: handler }),
+      },
+      10,
+    );
+    try {
+      const result = await applySurfaceWrite("review_field", "Replacement", {
+        origin: "agent",
+        requestApproval: async () => ({ kind: "declined" }),
+      });
+
+      expect(result).toMatchObject({ ok: false, declined: true });
+      expect(handler).not.toHaveBeenCalled();
+    } finally {
+      unregister();
+    }
+  });
+
+  it.each(["", null] as const)(
+    "preserves a %p original in the approval proposal",
+    async (content) => {
+      mockGetManifest.mockReturnValue(manifestFor([replacementTarget]));
+      const unregister = registerSurfaceRuntime(
+        {
+          surfaceName: "matrx-user/approval-test",
+          getScope: () => ({ review_value: content }),
+          getWriteHandlers: () => ({ review_field: jest.fn() }),
+        },
+        10,
+      );
+      try {
+        await applySurfaceWrite("review_field", "Replacement", {
+          origin: "agent",
+          requestApproval: async (proposal) => {
+            expect(proposal.currentValue).toBe(content);
+            return { kind: "declined" };
+          },
+        });
+      } finally {
+        unregister();
+      }
+    },
+  );
+
+  it("compares document read twins as text", async () => {
+    const documentReadTwin = {
+      ...stringReadTwin,
+      valueType: "document" as const,
+    };
+    mockGetManifest.mockReturnValue(
+      manifestFor([replacementTarget], [documentReadTwin]),
+    );
+    const unregister = registerSurfaceRuntime(
+      {
+        surfaceName: "matrx-user/approval-test",
+        getScope: () => ({ review_value: "Document original" }),
+        getWriteHandlers: () => ({ review_field: jest.fn() }),
+      },
+      10,
+    );
+    try {
+      await applySurfaceWrite("review_field", "Replacement", {
+        origin: "agent",
+        requestApproval: async (proposal) => {
+          expect(proposal.currentValue).toBe("Document original");
+          return { kind: "declined" };
+        },
+      });
+    } finally {
+      unregister();
+    }
+  });
+
+  it("does not compare a string operation against a structured read twin", async () => {
+    const structuredReadTwin = {
+      ...stringReadTwin,
+      valueType: "object" as const,
+    };
+    mockGetManifest.mockReturnValue(
+      manifestFor([replacementTarget], [structuredReadTwin]),
+    );
+    const requestApproval = jest.fn(async (proposal) => {
+      expect(proposal.currentValue).toBeUndefined();
+      return { kind: "declined" as const };
+    });
+    const unregister = registerSurfaceRuntime(
+      {
+        surfaceName: "matrx-user/approval-test",
+        getScope: () => ({ review_value: { existing: "structure" } }),
+        getWriteHandlers: () => ({ review_field: jest.fn() }),
+      },
+      10,
+    );
+    try {
+      const result = await applySurfaceWrite("review_field", "Operation", {
+        origin: "agent",
+        requestApproval,
+      });
+
+      expect(result).toMatchObject({ ok: false, declined: true });
+      expect(requestApproval).toHaveBeenCalledTimes(1);
+    } finally {
+      unregister();
+    }
+  });
+
+  it("refuses an approval when the original changes during review", async () => {
+    mockGetManifest.mockReturnValue(manifestFor([replacementTarget]));
+    let content = "Original";
+    const handler = jest.fn();
+    const unregister = registerSurfaceRuntime(
+      {
+        surfaceName: "matrx-user/approval-test",
+        getScope: () => ({ review_value: content }),
+        getWriteHandlers: () => ({ review_field: handler }),
+      },
+      10,
+    );
+    try {
+      const result = await applySurfaceWrite("review_field", "Replacement", {
+        origin: "agent",
+        requestApproval: async () => {
+          content = "Changed elsewhere";
+          return { kind: "approved" };
+        },
+      });
+
+      expect(result).toMatchObject({ ok: false, refused: true });
+      expect(!result.ok && result.error).toContain(
+        "changed while you were reviewing",
+      );
+      expect(handler).not.toHaveBeenCalled();
+    } finally {
+      unregister();
+    }
+  });
+
+  it("refuses a missing declared original before opening approval", async () => {
+    mockGetManifest.mockReturnValue(manifestFor([replacementTarget]));
+    const requestApproval = jest.fn();
+    const handler = jest.fn();
+    const unregister = registerSurfaceRuntime(
+      {
+        surfaceName: "matrx-user/approval-test",
+        getScope: () => ({}),
+        getWriteHandlers: () => ({ review_field: handler }),
+      },
+      10,
+    );
+    try {
+      const result = await applySurfaceWrite("review_field", "Replacement", {
+        origin: "agent",
+        requestApproval,
+      });
+
+      expect(result.ok).toBe(false);
+      expect(!result.ok && result.error).toContain("current text");
+      expect(requestApproval).not.toHaveBeenCalled();
+      expect(handler).not.toHaveBeenCalled();
+    } finally {
+      unregister();
+    }
+  });
+
+  it("does not represent append fragments as replacements", async () => {
+    const appendTarget = {
+      ...target,
+      name: "append_content",
+      updatesValue: "review_value",
+    };
+    mockGetManifest.mockReturnValue(manifestFor([appendTarget]));
+    const handler = jest.fn();
+    const unregister = registerSurfaceRuntime(
+      {
+        surfaceName: "matrx-user/approval-test",
+        getScope: () => ({ review_value: "Original" }),
+        getWriteHandlers: () => ({ append_content: handler }),
+      },
+      10,
+    );
+    try {
+      await applySurfaceWrite("append_content", "Added paragraph", {
+        origin: "agent",
+        requestApproval: async (proposal) => {
+          expect(proposal.currentValue).toBeUndefined();
+          return { kind: "declined" };
+        },
+      });
+
+      expect(handler).not.toHaveBeenCalled();
+    } finally {
+      unregister();
+    }
+  });
+
+  it("does not treat an insert operation as a replacement without explicit opt-in", async () => {
+    const insertTarget = {
+      ...target,
+      name: "insert_at_cursor",
+      updatesValue: "review_value",
+    };
+    mockGetManifest.mockReturnValue(manifestFor([insertTarget]));
+    const handler = jest.fn();
+    const unregister = registerSurfaceRuntime(
+      {
+        surfaceName: "matrx-user/approval-test",
+        getScope: () => ({ review_value: "Original document" }),
+        getWriteHandlers: () => ({ insert_at_cursor: handler }),
+      },
+      10,
+    );
+    try {
+      const result = await applySurfaceWrite("insert_at_cursor", "Inserted", {
+        origin: "agent",
+        quiet: true,
+        requestApproval: async (proposal) => {
+          expect(proposal.currentValue).toBeUndefined();
+          return { kind: "approved" };
+        },
+      });
+
+      expect(result.ok).toBe(true);
+      expect(handler).toHaveBeenCalledWith("Inserted");
+    } finally {
+      unregister();
+    }
+  });
+
+  it("uses the deepest owning surface for the comparison and write", async () => {
+    const outerHandler = jest.fn();
+    const innerHandler = jest.fn();
+    mockGetManifest.mockReturnValue(manifestFor([replacementTarget]));
+    const unregisterOuter = registerSurfaceRuntime(
+      {
+        surfaceName: "matrx-user/outer-approval-test",
+        getScope: () => ({ review_value: "Outer original" }),
+        getWriteHandlers: () => ({ review_field: outerHandler }),
+      },
+      1,
+    );
+    const unregisterInner = registerSurfaceRuntime(
+      {
+        surfaceName: "matrx-user/inner-approval-test",
+        getScope: () => ({ review_value: "Inner original" }),
+        getWriteHandlers: () => ({ review_field: innerHandler }),
+      },
+      2,
+    );
+    try {
+      const result = await applySurfaceWrite("review_field", "Replacement", {
+        origin: "agent",
+        quiet: true,
+        requestApproval: async (proposal) => {
+          expect(proposal.surfaceName).toBe("matrx-user/inner-approval-test");
+          expect(proposal.currentValue).toBe("Inner original");
+          return { kind: "approved" };
+        },
+      });
+
+      expect(result).toMatchObject({
+        ok: true,
+        surfaceName: "matrx-user/inner-approval-test",
+      });
+      expect(innerHandler).toHaveBeenCalledWith("Replacement");
+      expect(outerHandler).not.toHaveBeenCalled();
+    } finally {
+      unregisterInner();
+      unregisterOuter();
+    }
+  });
+});

@@ -91,9 +91,9 @@ export function useAgentBuilderSurfaceScope(
       // ── Identity ───────────────────────────────────────────────────────
       agent_id: agentId,
       agent_name: selectAgentName(state, agentId) ?? undefined,
-      agent_description: selectAgentDescription(state, agentId) ?? undefined,
+      agent_description: selectAgentDescription(state, agentId) ?? "",
       agent_type: selectAgentType(state, agentId) ?? undefined,
-      agent_category: selectAgentCategory(state, agentId) ?? undefined,
+      agent_category: selectAgentCategory(state, agentId) ?? "",
       agent_tags: selectAgentTags(state, agentId) ?? undefined,
 
       // ── Definition ─────────────────────────────────────────────────────

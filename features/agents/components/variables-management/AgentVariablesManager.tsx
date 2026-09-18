@@ -174,8 +174,12 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
                 }`}
               >
                 {!isUsed && <AlertCircle className="w-3 h-3 shrink-0" />}
-                <span
-                  className={`cursor-pointer transition-colors ${
+                {/* A real button: the chip is the door to the variable editor,
+                    so it must be reachable and openable from the keyboard and
+                    announced as a control (PNI-000 F2). */}
+                <button
+                  type="button"
+                  className={`cursor-pointer rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                     isUsed
                       ? "hover:text-primary"
                       : "hover:text-amber-900 dark:hover:text-amber-100"
@@ -186,13 +190,20 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
                       ? "Click to edit"
                       : "Not used in messages — click to edit"
                   }
+                  aria-label={
+                    isUsed
+                      ? `Edit variable ${variable.name}`
+                      : `Edit variable ${variable.name} — not used in messages`
+                  }
                 >
                   {variable.name}
-                </span>
+                </button>
                 <button
+                  type="button"
                   onClick={() => handleRemove(variable.name)}
                   title="Remove variable"
-                  className="hover:text-destructive transition-colors"
+                  aria-label={`Remove variable ${variable.name}`}
+                  className="rounded-sm hover:text-destructive transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -203,6 +214,7 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
 
         <div className="flex items-center gap-1 shrink-0">
           <button
+            type="button"
             className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
             onClick={() => handleAddClick()}
           >
@@ -211,6 +223,7 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
           </button>
 
           <button
+            type="button"
             className="inline-flex items-center gap-1 px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
             onClick={() => openBatchImport({ agentId })}
             title="Batch add variables and context policies from a scope type"
@@ -235,6 +248,7 @@ export function AgentVariablesManager({ agentId }: AgentVariablesManagerProps) {
           >
             {undeclaredNames.map((name) => (
               <button
+                type="button"
                 key={name}
                 onClick={() => handleAddClick(name)}
                 className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-medium bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors shrink-0"
