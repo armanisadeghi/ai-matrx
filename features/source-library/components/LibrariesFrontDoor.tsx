@@ -86,6 +86,15 @@ export function LibrariesFrontDoor() {
                         A whole channel, catalogued
                     </span>
                 </div>
+                {/* THE DOOR to the Block Ledger. A Library that stopped mid-sync,
+                    an export we recognise but cannot read, a book we are not
+                    allowed to open — each is already a row over there. */}
+                <Link
+                    href="/acquisition/blocks"
+                    className="ml-auto shrink-0 text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                >
+                    Blocked
+                </Link>
             </PageHeader>
             <EntityListPage
                 config={config}

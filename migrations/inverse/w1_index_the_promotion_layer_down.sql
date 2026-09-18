@@ -18,14 +18,32 @@ set statement_timeout = '600s';
 
 -- 1. Every promoted index this lane's generator or promote_field could have built, parent and
 --    partition alike, found by the naming rule rather than by a remembered list.
+-- 🚨 TWO THINGS THIS SWEEP GOT WRONG THE FIRST TIME, BOTH MEASURED 2026-09-17 AND BOTH FATAL
+-- TO AN INVERSE THAT CLAIMS THE SCHEMA IS CLEAN AFTERWARDS:
+--   · A PARTITIONED index — the parent this lane creates on `custom.record` — has
+--     `relkind = 'I'`, not `'i'`. Filtering on `'i'` alone saw the sixteen children and NONE of
+--     the five parents, so the inverse left every promoted index standing while reporting
+--     nothing wrong.
+--   · An ATTACHED child cannot be dropped on its own: `cannot drop index
+--     custom.cpu_code_68ea4c4907_01 because index custom.cpu_code_68ea4c4907 requires it`.
+--     Parents go FIRST, and each one takes its children with it; the second pass then clears
+--     anything built by ROUTE B before its ATTACH ever ran.
 do $$
 declare r record;
 begin
   for r in select n.nspname, c.relname
              from pg_class c join pg_namespace n on n.oid = c.relnamespace
-            where n.nspname = 'custom' and c.relkind = 'i'
+            where n.nspname = 'custom' and c.relkind in ('i', 'I') and not c.relispartition
               and (c.relname like 'cpi\_%' or c.relname like 'cpu\_%')
-            order by c.relispartition, c.relname
+            order by c.relname
+  loop
+    execute format('drop index if exists %I.%I cascade', r.nspname, r.relname);
+  end loop;
+  for r in select n.nspname, c.relname
+             from pg_class c join pg_namespace n on n.oid = c.relnamespace
+            where n.nspname = 'custom' and c.relkind in ('i', 'I')
+              and (c.relname like 'cpi\_%' or c.relname like 'cpu\_%')
+            order by c.relname
   loop
     execute format('drop index if exists %I.%I cascade', r.nspname, r.relname);
   end loop;

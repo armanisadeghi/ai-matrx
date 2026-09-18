@@ -51,6 +51,7 @@
 // never a silent no-op, never a button that pretends to reach a Library that
 // does not exist.
 
+import Link from "next/link";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
@@ -458,6 +459,15 @@ export default function BatchScrapePage() {
           <div className="flex items-center gap-2 text-sm font-medium text-foreground">
             <ClipboardList className="h-4 w-4 text-muted-foreground" />
             Paste a list of pages to read
+            {/* THE DOOR to the Block Ledger. A page that will not open is a
+                finding, not a dead end: it is already recorded, and this is
+                where a person goes to see every one of them. */}
+            <Link
+              href="/acquisition/blocks"
+              className="ml-auto text-xs font-normal text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              See everything that was blocked
+            </Link>
           </div>
           <Textarea
             value={text}

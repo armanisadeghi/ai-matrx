@@ -20,11 +20,9 @@ import { OrganizationRequiredNotice } from "@/features/organizations/components/
 import {
   Coins,
   FlaskConical,
-  History,
   Pencil,
   Plus,
   PlayCircle,
-  RefreshCw,
   ShieldCheck,
   Trash2,
   Zap,
@@ -111,14 +109,42 @@ function verdictClass(verdict: string | null): string {
 }
 
 const proofRunColumns: MatrxColumnDef<ProofRunSummary>[] = [
-  { id: "started", header: "Started", accessorFn: (row) => row.started_at ?? "", cell: (row) => row.started_at ? <span className="whitespace-nowrap text-muted-foreground">{new Date(row.started_at).toLocaleString()}</span> : "—" },
-  { id: "check", header: "Check", accessorKey: "check_slug", cell: (row) => <span className="whitespace-nowrap">{row.check_slug}</span> },
+  {
+    id: "started",
+    header: "Started",
+    accessorFn: (row) => row.started_at ?? "",
+    width: 170,
+    className: "truncate",
+    cell: (row) =>
+      row.started_at ? (
+        <span className="truncate text-muted-foreground">
+          {new Date(row.started_at).toLocaleString()}
+        </span>
+      ) : (
+        "—"
+      ),
+  },
+  {
+    id: "check",
+    header: "Check",
+    accessorKey: "check_slug",
+    width: 180,
+    className: "truncate",
+    cell: (row) => <span className="truncate">{row.check_slug}</span>,
+  },
   { id: "mode", header: "Mode", accessorKey: "mode", cell: (row) => <span className="whitespace-nowrap uppercase text-muted-foreground">{row.mode}</span> },
   { id: "verdict", header: "Verdict", accessorFn: (row) => row.verdict ?? row.status, cell: (row) => <span className={cn("rounded-full border px-1.5 py-px text-[10px] font-medium", verdictClass(row.verdict ?? null))}>{row.verdict ?? row.status}</span> },
   { id: "cost", header: "Cost", accessorKey: "cost_usd", align: "right", cell: (row) => <span className="font-mono whitespace-nowrap">{formatUsd(row.cost_usd, { digits: 4 })}</span> },
   { id: "duration", header: "Took", accessorKey: "duration_ms", align: "right", cell: (row) => <span className="whitespace-nowrap text-muted-foreground">{formatDurationMs(row.duration_ms ?? 0, { style: "compact" })}</span> },
   { id: "trigger", header: "Trigger", accessorKey: "trigger_source", cell: (row) => <span className="whitespace-nowrap text-muted-foreground">{row.trigger_source}</span> },
-  { id: "summary", header: "Summary", accessorKey: "summary", cell: (row) => <span className="text-muted-foreground">{row.summary}</span> },
+  {
+    id: "summary",
+    header: "Summary",
+    accessorKey: "summary",
+    width: 320,
+    className: "truncate",
+    cell: (row) => <span className="truncate text-muted-foreground">{row.summary}</span>,
+  },
 ];
 
 export default function ProofRunsClient() {
@@ -315,10 +341,6 @@ export default function ProofRunsClient() {
               />
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => void refresh()}>
-            <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-            Refresh
-          </Button>
         </div>
       </div>
 
@@ -606,17 +628,10 @@ export default function ProofRunsClient() {
       </Card>
 
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <History className="h-4 w-4" />
-            Recent runs
-          </CardTitle>
-          <CardDescription>
-            Live and replay runs, newest first. Open one to see every proof it
-            rests on.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-2 pt-4">
+          <p className="text-xs text-muted-foreground">
+            Live and replay runs, newest first. Open one to see every proof it rests on.
+          </p>
           <MatrxDataTable
             tableId="admin/proof-runs"
             isLoading={loading && runs.length === 0}
@@ -632,7 +647,11 @@ export default function ProofRunsClient() {
             }}
             onRowOpen={(row) => void openRunDetail(row.id)}
             emptyState={{ title: "No runs yet." }}
-            toolbar={{ searchPlaceholder: "Search recent runs…", refresh: { onRefresh: refresh } }}
+            toolbar={{
+              title: "Recent runs",
+              searchPlaceholder: "Search recent runs…",
+              refresh: { onRefresh: refresh },
+            }}
           />
 
           {openRun ? (
