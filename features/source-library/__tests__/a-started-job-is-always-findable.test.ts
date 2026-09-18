@@ -73,6 +73,8 @@ describe("starting a job", () => {
     it("reads the job out of the envelope the server sent when this was found", async () => {
         callApi.mockReturnValue({ data: { job: JOB } });
         const row = await createJob(dispatch, LIBRARY_ID, {
+            action: "transcribe",
+            selection: {},
             estimate_token: "est_01J",
         });
         expect(row.id).toBe(JOB.id);
@@ -82,6 +84,8 @@ describe("starting a job", () => {
     it("reads the bare row the contract publishes, which the server now sends", async () => {
         callApi.mockReturnValue({ data: JOB });
         const row = await createJob(dispatch, LIBRARY_ID, {
+            action: "transcribe",
+            selection: {},
             estimate_token: "est_01J",
         });
         expect(row.id).toBe(JOB.id);
@@ -94,7 +98,7 @@ describe("starting a job", () => {
         // than saying plainly that we do not.
         callApi.mockReturnValue({ data: { job: { status: "running" } } });
         await expect(
-            createJob(dispatch, LIBRARY_ID, { estimate_token: "est_01J" }),
+            createJob(dispatch, LIBRARY_ID, { action: "transcribe", selection: {}, estimate_token: "est_01J" }),
         ).rejects.toThrow();
     });
 });

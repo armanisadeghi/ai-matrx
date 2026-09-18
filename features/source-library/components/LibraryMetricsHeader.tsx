@@ -600,6 +600,27 @@ function SyncStrip({
                     {`Up to date — ${formatCount(sync.listed)} Sources listed in ${formatElapsed(
                         sync.finishedElapsedMs,
                     )}.`}
+                    {/* 🚨 A CATALOGUE SAYS WHAT IT LEFT OUT. The blog crawl reaches
+                        taxonomy pages, pagination, nav widgets and assets, and
+                        discards them — waitbutwhy.com went from 346 "Posts" to its
+                        own sitemap's 202 that way. A number that quietly drops 23
+                        pages is the same kind of claim as one that quietly adds
+                        them, so the count that was NOT kept is said out loud, with
+                        the reasons a person can hover. Nothing skipped, nothing
+                        said. */}
+                    {sync.skippedTotal > 0 && (
+                        <span
+                            className="text-muted-foreground"
+                            title={Object.entries(sync.skippedByReason)
+                                .sort(([, a], [, b]) => b - a)
+                                .map(([reason, count]) => `${count} ${reason.replace(/_/g, " ")}`)
+                                .join(", ")}
+                        >
+                            {` ${formatCount(sync.skippedTotal)} other ${
+                                sync.skippedTotal === 1 ? "page" : "pages"
+                            } skipped.`}
+                        </span>
+                    )}
                 </p>
             </div>
         );
