@@ -91,7 +91,20 @@ async function existingRecordId(
     .order("created_at", { ascending: true })
     .limit(1)
     .maybeSingle();
-  if (error) throw new Error(error.message);
+  if (error) {
+    // 🚨 Cursor Bugbot (PR 228) — this threw the raw PostgREST `error.message`
+    // straight to `failureSentence`'s toast, which is not a sentence a person
+    // can act on (the global Supabase capture already holds the raw response
+    // for devtools). Same shape `readGoogleDocumentRow` gives this class of
+    // failure (`documents/service.ts`, F-60): one plain sentence with a
+    // remedy on `message`, the original on `cause` — never a second copy of
+    // that sibling's exact words, because this is a different read (checking
+    // whether a Record already exists, not reading one that does).
+    throw new Error(
+      "AI Matrx could not check whether this file already has a record here. Try again; if it keeps happening, tell us.",
+      { cause: error },
+    );
+  }
   return data ?? null;
 }
 

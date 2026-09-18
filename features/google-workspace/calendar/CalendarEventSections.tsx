@@ -315,14 +315,24 @@ function CalendarEventKeepAndArchiveActions({
  * deliberately NOT an anchor to a settings page — nothing inside the Detail
  * primitive navigates away.
  *
+ * 🚨 Cursor Bugbot (PR 228) — a person with more than one Google account was
+ * sent to WHICHEVER grant the connect window opened first, not the one that
+ * actually refreshes this meeting: this event names its own account
+ * (`synced_via_connection_id`), the same field the Doc sibling's
+ * `UnavailableActions` already reads (`documents/GoogleDocumentPanel.tsx`), and
+ * that id — never a guess — is the one passed on as `initialConnectionId`. An
+ * event whose row carries no connection id (never refreshed yet) opens the
+ * connect window with none, exactly as before; there is no other id to offer.
+ *
  * RE-PICKING is not real for a meeting and is not offered: an event is not a file
  * somebody chose in Google Picker (the whole calendar window is read through the
  * connected account), so there is nothing to choose again. A control that cannot
  * work is worse than none, so this is one honest line with the remedy that does
  * exist.
  */
-function CalendarEventReconnectAction() {
+function CalendarEventReconnectAction({ event }: { event: CalendarEventRow }) {
   const openGoogleConnect = useOpenGoogleConnectWindow();
+  const connectionId = event.synced_via_connection_id;
 
   return (
     <div className="space-y-1.5">
@@ -333,6 +343,7 @@ function CalendarEventReconnectAction() {
         onClick={() =>
           openGoogleConnect({
             reason: "to keep this meeting refreshing from your Google calendar",
+            initialConnectionId: connectionId ?? undefined,
           })
         }
         data-calendar-event-reconnect
@@ -371,7 +382,7 @@ function CalendarEventUnavailableNotice({
           Reconnect is a real door and belongs to this refusal: the grant is what
           Google withheld. Re-picking is the one that means nothing for a meeting,
           so it is a sentence, not a control (law 4). */}
-      <CalendarEventReconnectAction />
+      <CalendarEventReconnectAction event={event} />
       <CalendarEventKeepAndArchiveActions event={event} onDetached={onDetached} onArchived={onArchived} />
     </div>
   );

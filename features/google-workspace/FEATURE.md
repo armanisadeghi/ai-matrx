@@ -408,6 +408,35 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 ## Change log
 
+- `2026-09-18` — **F-67: Cursor Bugbot's three findings on F-60's commit (8093b77a, PR 228),
+  fixed.** (a) MED — `GoogleDocumentPanel` mounted the Append composer for every non-detached
+  row regardless of what it mirrors, but the composer only ever calls `appendGoogleDocument`
+  and is labelled as adding to a Doc — so a Sheet Record (`mime_kind: "spreadsheet"`) presented
+  a write the Docs API cannot honour. The composer now mounts only for `mime_kind === "document"`
+  (read from the row itself, never guessed from the title); a Sheet gets one honest line naming
+  where its range write already lives (Settings → Integrations → Google Workspace's bounded A1
+  range editor) instead of a fake control. (b) MED — `CalendarEventReconnectAction` opened the
+  Google connect window with only a reason and no `initialConnectionId`, so a person with more
+  than one Google account was not sent to the grant that refreshes THIS meeting — the Doc
+  sibling's `UnavailableActions` already reads the row's own connection id for this. It now
+  passes the event's `synced_via_connection_id`; an event that has never refreshed (no
+  connection id yet) opens with none, same as before. (c) LOW — `openRecord.tsx`'s birth-door
+  read (`existingRecordId`, checking whether a picked file already has a Record) threw the raw
+  PostgREST `error.message` straight to the toast; it now throws the same shape
+  `readGoogleDocumentRow` gives this class of failure (`documents/service.ts`, F-60) — one plain
+  sentence with a remedy on `message`, the raw response on `cause` for devtools — never a second
+  copy of that sibling's exact words, since this is a different read. 6 new/updated tests, each
+  proven red against the pre-fix code first: the Sheet-mime-kind composer swap and its Doc
+  positive control in `documents/__tests__/the-last-two-actions-are-real.test.tsx`; the
+  `initialConnectionId` pass-through and its no-connection-id case in
+  `calendar/__tests__/an-unavailable-event-offers-every-real-action.test.tsx`; the plain-sentence
+  toast (replacing the old test that pinned the raw PostgREST message as correct) in
+  `a-picked-doc-opens-as-its-record.test.tsx`. `pnpm check:parse` and `pnpm check:kind-marker-law`
+  clean; a scoped `tsc --noEmit` over the three touched files found nothing new (the full
+  project type-check is OOM-killed in this environment, unrelated to this change — 148
+  pre-existing errors elsewhere, none in these files). No screen was seen — the table still
+  holds zero live rows.
+
 - `2026-09-18` — **F-63: both item cards open; `readGoogleDocument` retired; `calendar_event`
   has a connector product.** Three findings, each fixed at the class:
   - `documents/itemType.tsx` and `calendar/itemType.tsx` now declare `open` (see

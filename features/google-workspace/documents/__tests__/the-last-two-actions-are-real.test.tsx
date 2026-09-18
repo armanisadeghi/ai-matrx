@@ -291,3 +291,34 @@ test("an available record still renders the Append composer (positive control)",
   expect(container.querySelector("[data-google-document-append]")).not.toBeNull();
   expect(container.querySelector("[data-google-document-append-disabled]")).toBeNull();
 });
+
+test(
+  "a Sheet Record renders no Append composer — the Docs API cannot honour it — " +
+    "and says where a range write lives instead (Cursor Bugbot, PR 228)",
+  async () => {
+    const sheet = googleDocumentRow({ sync_status: "available", mime_kind: "spreadsheet" });
+    await mount(sheet);
+
+    // Never a fake control: the composer that only ever calls
+    // `appendGoogleDocument` and is labelled as adding to a Doc is gone for a
+    // Sheet, never disabled-looking (Law 4).
+    expect(container.querySelector("[data-google-document-append]")).toBeNull();
+    const notice = container.querySelector("[data-google-document-append-unsupported]");
+    expect(notice).not.toBeNull();
+    expect(notice?.textContent).toContain("Google Docs action");
+    expect(notice?.textContent).toContain("Settings");
+    expect(notice?.textContent).toContain("Google Workspace");
+  },
+);
+
+test(
+  "a Doc Record still renders the real Append composer, never the Sheet notice " +
+    "(positive control, Cursor Bugbot, PR 228)",
+  async () => {
+    const doc = googleDocumentRow({ sync_status: "available", mime_kind: "document" });
+    await mount(doc);
+
+    expect(container.querySelector("[data-google-document-append]")).not.toBeNull();
+    expect(container.querySelector("[data-google-document-append-unsupported]")).toBeNull();
+  },
+);

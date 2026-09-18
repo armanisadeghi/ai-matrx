@@ -620,6 +620,20 @@ export function GoogleDocumentPanel({ initialRow }: { initialRow: GoogleDocument
             Appends go to the Google file, and this record no longer does. Pick the file in
             Google again to add to it there.
           </p>
+        ) : row.mime_kind !== "document" ? (
+          // 🚨 Cursor Bugbot (PR 228) — this composer only ever called
+          // `appendGoogleDocument` and was labelled "Add to the end of this doc",
+          // so a Sheet Record (`mime_kind: "spreadsheet"`) presented a write the
+          // Docs API cannot honour and would have failed at Google, not here.
+          // Never guessed from the title: `mime_kind` is the type the row itself
+          // carries. A range write on a Sheet already exists — the bounded A1
+          // range editor at Settings → Integrations → Google Workspace — so this
+          // is a pointer to a real control, not a fake one built here.
+          <p className="text-xs text-muted-foreground" data-google-document-append-unsupported>
+            Adding to the end of a document is a Google Docs action, and this record is a{" "}
+            {mimeKindLabel(row.mime_kind).toLowerCase()}. A range write on this Sheet lives in
+            Settings → Integrations → Google Workspace, not here.
+          </p>
         ) : (
           <AppendComposer row={row} heading={appendHeading} />
         )}

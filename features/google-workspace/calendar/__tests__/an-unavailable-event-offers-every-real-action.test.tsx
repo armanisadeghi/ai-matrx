@@ -19,9 +19,12 @@ import { createRoot } from "react-dom/client";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const connectOpens: { reason?: string }[] = [];
+const connectOpens: { reason?: string; initialConnectionId?: string }[] = [];
 jest.mock("@/features/overlays/openers/googleConnectWindow", () => ({
-  useOpenGoogleConnectWindow: () => (options?: { reason?: string }) => {
+  useOpenGoogleConnectWindow: () => (options?: {
+    reason?: string;
+    initialConnectionId?: string;
+  }) => {
     connectOpens.push(options ?? {});
     return { close: () => {} };
   },
@@ -44,7 +47,7 @@ jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({
 }));
 
 import { CalendarEventAvailabilitySection } from "../CalendarEventSections";
-import { calendarEventRow } from "./fixtures";
+import { calendarEventRow, CONNECTION_ID } from "./fixtures";
 
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
@@ -104,6 +107,45 @@ test("Reconnect opens the Google connect window in place, naming this record's r
   expect(connectOpens[0].reason).toContain("calendar");
   // Nothing navigated: no anchor is what carries this action.
   expect(container.querySelector("a[href='/user-settings/integrations']")).toBeNull();
+});
+
+test(
+  "Reconnect names THIS event's own connection, not whichever grant opens first " +
+    "(Cursor Bugbot, PR 228)",
+  async () => {
+    await mount(UNAVAILABLE);
+
+    await act(async () => {
+      container
+        .querySelector("[data-calendar-event-reconnect]")!
+        .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(connectOpens).toHaveLength(1);
+    // A person with more than one Google account is sent to the grant that
+    // refreshes THIS meeting, the same field the Doc sibling's
+    // `UnavailableActions` already reads (`synced_via_connection_id`).
+    expect(connectOpens[0].initialConnectionId).toBe(CONNECTION_ID);
+  },
+);
+
+test("an event with no connection id on it opens Reconnect with none — never a guess", async () => {
+  await mount(
+    calendarEventRow({
+      sync_status: "unavailable",
+      sync_status_reason: "Google Calendar says this event no longer exists.",
+      synced_via_connection_id: null,
+    }),
+  );
+
+  await act(async () => {
+    container
+      .querySelector("[data-calendar-event-reconnect]")!
+      .dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+
+  expect(connectOpens).toHaveLength(1);
+  expect(connectOpens[0].initialConnectionId).toBeUndefined();
 });
 
 test("a DETACHED event offers no Reconnect — the person chose this, and nothing repairs a choice", async () => {
