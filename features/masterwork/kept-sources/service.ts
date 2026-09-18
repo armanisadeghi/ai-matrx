@@ -87,6 +87,70 @@ export async function listKeptSourceKeys(
   return new Set((data ?? []).map((r) => r.source_key));
 }
 
+/**
+ * How many sources this Rulebook has actually KEPT.
+ *
+ * A head-only count with PostgREST's exact count — no rows cross the wire, so
+ * the sources panel and the ingest gate can ask this on every render without
+ * paying for a page of prose. `head: true` plus `count: "exact"` is the one
+ * honest way to get the server's number over the whole set.
+ *
+ * 🚨 THIS IS HALF OF "HOW MANY SOURCES DOES THIS RULEBOOK HAVE" (2026-09-18).
+ * See `../sourceLinks.ts` for the other half and for why counting only the
+ * other half was the defect that showed a Rulebook holding 50 of a person's
+ * own emails the sentence "Attach at least one source first".
+ */
+export async function countKeptSources(rulebookId: string): Promise<number> {
+  const { count, error } = await supabase
+    .schema("platform")
+    .from("masterwork_source")
+    .select("id", { count: "exact", head: true })
+    .eq("rulebook_id", rulebookId)
+    .is("deleted_at", null);
+  if (error) throw new Error(`${error.message} (${error.code})`);
+  return count ?? 0;
+}
+
+/** The most a single ingest request carries — `IngestDumpRequest.resources`. */
+export const KEPT_SOURCE_INGEST_CAP = 200;
+
+export interface KeptSourceBrief {
+  source_key: string;
+  label: string | null;
+  medium: string;
+  approach_key: string;
+  word_count: number | null;
+}
+
+/**
+ * The kept sources a Rulebook screen needs: the exact total, plus enough rows
+ * to list them and to hand them to an ingest run.
+ *
+ * ONE round trip. `count: "exact"` gives the server's number over the whole
+ * set while `range` bounds what crosses the wire, so a Rulebook holding ten
+ * thousand kept emails costs the same as one holding three — and the screen
+ * can say honestly that it is showing the first N of M.
+ *
+ * Bodies are never selected here; see `LIST_COLUMNS` for why.
+ */
+export async function listKeptSourcesBrief(
+  rulebookId: string,
+  limit: number = KEPT_SOURCE_INGEST_CAP,
+): Promise<{ rows: KeptSourceBrief[]; total: number }> {
+  const { data, count, error } = await supabase
+    .schema("platform")
+    .from("masterwork_source")
+    .select("source_key,label,medium,approach_key,word_count", {
+      count: "exact",
+    })
+    .eq("rulebook_id", rulebookId)
+    .is("deleted_at", null)
+    .order("captured_at", { ascending: false })
+    .range(0, Math.max(0, limit - 1));
+  if (error) throw new Error(`${error.message} (${error.code})`);
+  return { rows: (data ?? []) as KeptSourceBrief[], total: count ?? 0 };
+}
+
 /** One kept source, by its `source_key`, with its body. `null` = no such row. */
 export async function getKeptSource(
   rulebookId: string,

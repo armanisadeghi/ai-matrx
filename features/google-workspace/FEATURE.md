@@ -415,6 +415,56 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 ## Change log
 
+- `2026-09-18` — **F-85 (two Bugbot MEDIUMs on F-76's files, both "a screen that lies"): the
+  refusal copy no longer announces the act it is refusing, and the agenda no longer calls itself
+  empty while the organization question is still being answered.**
+  (1) `organizationRefusalMessage` built its sentence as `${subject} was ${act}`, which is honest
+  for the subject-less default ("Nothing was saved because no organization is selected.") and a
+  lie for every caller that named its subject — `openRecord.tsx` produced "This record **was
+  opened** because no organization is selected.", `GoogleDocumentPanel.tsx` "This document **was
+  refreshed** because …", and the same shape reached six more call sites outside this feature
+  (`useCanvasShare`, `codeEditHistoryFlush`, both `HtmlPreviewBridge` catches, both
+  `voiceTranscriptWriter` writers). Fixed in the HELPER, not the call sites: a named subject now
+  always renders "was **not** <act>", so no argument shape can construct the affirmative, and
+  `act` stays a bare past participle everywhere. Census + guard:
+  `lib/organizations/__tests__/the-refusal-never-announces-the-act-it-refused.test.ts`, which
+  lists every live call shape in the repo and was red on the old helper.
+  (2) `useOrganizationRequired` exposes THREE states and `useAgenda` forwarded two.
+  `organizationRequired` is true ONLY once boot has settled, and `isLoading` required an
+  `organizationId` that does not exist yet — so during organization bootstrap both read false and
+  `AgendaBody` fell straight through to "Your Google Calendar is connected and there is nothing on
+  it": the exact sentence F-76 closed, reopened for the seconds before anyone knows the answer.
+  `useAgenda` now also reads `resolving`, exposes it as `organizationResolving`, and folds it into
+  `isLoading` so the skeleton (not the notice, and not the empty sentence) covers the unknown;
+  deliberately NOT extended to a null `userId` alone, which would be an endless spinner for a
+  signed-out viewer — the same law-4 defect pointing the other way. Proven red-then-green in
+  `calendar/__tests__/the-agenda-is-honest-with-no-organization.test.tsx` (its connector mocks are
+  now state-driven, because with no connected account the `noAccount` branch suppresses the
+  empty-calendar sentence and the test could not see the lie it hunts). Census of the other seven
+  `useOrganizationRequired` consumers found ONE sibling with the same gap —
+  `features/agents/components/run-controls/panels/ModelContextPanel.tsx` fell back to "No context
+  measurements yet. Fire a turn to populate." during boot, the very lie its own comment claims to
+  have fixed — now "Reading this conversation's context…" while `resolving`. The rest are safe:
+  `system-jobs`, `useWaitingRuns` and `McpServersAdminPage` start `loading` true, `EduNoteNew`
+  shows a spinner, `scanner-health`'s clear-alarms line is gated on a succeeded read, and
+  `EncoreRunPage` already read `resolving`.
+  Also typed the `postGoogleBackend` stand-in in
+  `documents/__tests__/open-record-is-honest-with-no-organization.test.tsx` from the real
+  function's `Parameters<…>` with an explicit narrow reply (`Pick<Response, "status" | "json">`,
+  because jsdom has no `Response` constructor): `jest.fn(async () => { throw … })` infers
+  `Promise<never>`, which refused every `mockImplementation` the file needs (TS2345) — no cast, no
+  `ts-expect-error`.
+
+- `2026-09-18` — **F-83 (Bugbot LOW on `80c8027b`): the no-Record and unhealthy-sync-status toasts
+  in `chooseFile` (both `GoogleWorkspaceConnectBody.tsx` and `GoogleWorkspaceReviewWorkspace.tsx`)
+  now go through `recordToast.info` with the same picked-file identity the success toast already
+  carries, instead of a bare `toast.warning`/`toast.info`.** A Slides deck (or any file type with
+  no Record table) having no Record is an EXPECTED outcome of a pick, not a fault — `warning` fed
+  it into the Error Inspector alongside real errors, and a bare (non-record) toast could outlive
+  the file if it left the screen before the toast's timer ran. `info` never reaches the Error
+  Inspector (only `error`/`warning` do — see `lib/toast.ts`'s own doc comment), and `recordToast`
+  ties the toast's dismissal to the picked file leaving the route, same as every other toast this
+  row raises. Proven red-then-green in `a-record-write-failure-says-so.test.tsx`.
 - `2026-09-18` — **F-84: the two Google tool-result kinds render as themselves.** `google_workspace_result` and `google_marketing_result` had no `kind_component` row, so every Google answer in chat came out as a generic key/value dump that could not tell a `dry_run` preview from a receipt. Each now has ONE component under [`components/mardown-display/blocks/google-kinds/`](../../components/mardown-display/blocks/google-kinds/); details, states and the RED/GREEN proof: [`features/content-ir/FEATURE.md`](../content-ir/FEATURE.md) Change Log, same date.
 - `2026-09-18` — **F-76: an organization refusal with no organization selected is now honest
   everywhere `calendar/service.ts` / `documents/service.ts` resolve one.** CI's

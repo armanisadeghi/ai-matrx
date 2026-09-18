@@ -20,7 +20,8 @@ import type { ExportItem, ExportSummary } from "../types";
 import type { PendingSend } from "../components/SendToRulebookDialog";
 import { EXPORT_ITEM_COLUMNS } from "./columns";
 import { toItemFilterFromBulk } from "./itemQuery";
-import { createExportItemsService, type ExportPageFacts } from "./service";
+import type { ExportPageFacts } from "../counts";
+import { createExportItemsService } from "./service";
 import { useExportItemRowActions } from "./useExportItemRowActions";
 
 export interface ExportItemsListConfigDeps {

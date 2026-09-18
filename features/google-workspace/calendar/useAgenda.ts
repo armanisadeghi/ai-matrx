@@ -85,6 +85,22 @@ export interface AgendaValue {
    */
   organizationRequired: boolean;
   /**
+   * True while the organization question is still being ANSWERED — boot has not
+   * settled on a selection and has not settled on "none", so neither the
+   * agenda nor the notice is the truth yet.
+   *
+   * 🚨 Why this is separate from `organizationRequired` (2026-09-18). F-76
+   * forwarded only `organizationRequired`, which `useOrganizationRequired`
+   * documents as true ONLY once boot has settled. During boot both it and
+   * `isLoading` read false — `isLoading` required an `organizationId` that did
+   * not exist yet — so `AgendaBody` fell straight through to "Your Google
+   * Calendar is connected and there is nothing on it": the exact sentence F-76
+   * set out to close, now shown for the seconds before anyone knows. It is
+   * folded into `isLoading` below so the skeleton covers it, and exposed here
+   * because it is a different fact from "reading the rows".
+   */
+  organizationResolving: boolean;
+  /**
    * True when a knob row did not answer and a documented default is in use —
    * the surface SAYS so rather than pretending an administrator chose it.
    */
@@ -103,7 +119,14 @@ export function useAgenda(options?: {
   /** Skip the refresh-on-open call (a panel that is not the primary surface). */
   refreshOnOpen?: boolean;
 }): AgendaValue {
-  const { organizationId, organizationRequired } = useOrganizationRequired();
+  // All THREE states, from the one hook that reads them: loadable, settled with
+  // none (the honest terminal notice), and still resolving (the skeleton).
+  // Taking only two of the three is what made the agenda lie during boot.
+  const {
+    organizationId,
+    organizationRequired,
+    resolving: organizationResolving,
+  } = useOrganizationRequired();
   const userId = useAppSelector(selectUserId);
   const connector = useGoogleConnectorState();
 
@@ -256,7 +279,14 @@ export function useAgenda(options?: {
     groups: groupAgenda(filtered, days, now, timeZone),
     undated: undatedEvents(filtered),
     peopleByEvent,
-    isLoading: events === null && Boolean(organizationId && userId),
+    // Unresolved is LOADING, never empty: while the organization question is
+    // still being answered nothing has been read, so the skeleton is the only
+    // honest thing on screen. Deliberately NOT extended to a null `userId` on
+    // its own — that would be a spinner with no end for a signed-out viewer,
+    // which is the same law-4 defect pointing the other way. `resolving` ends
+    // either way: boot either lands on a selection or on "none".
+    isLoading:
+      organizationResolving || (events === null && Boolean(organizationId && userId)),
     isRefreshing,
     days,
     timeZone,
@@ -268,6 +298,7 @@ export function useAgenda(options?: {
     connectionId,
     noAccount,
     organizationRequired,
+    organizationResolving,
     usingDefaultKnobs,
     refresh,
     reload,

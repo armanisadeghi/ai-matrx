@@ -25,6 +25,12 @@ const state = {
   refreshCalls: 0,
   organizationRequired: false,
   organizationId: null as string | null,
+  /**
+   * A CONNECTED account, which the boot-resolving case needs: with no account
+   * the `noAccount` branch suppresses the empty-calendar sentence entirely, so a
+   * test run with `accounts: []` cannot see the lie it is hunting.
+   */
+  accounts: [] as Record<string, unknown>[],
 };
 
 jest.mock("@/features/google-workspace/calendar/service", () => ({
@@ -86,7 +92,7 @@ jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
 jest.mock("@/features/connectors/google-adapter", () => ({
   GOOGLE_PROVIDER: { key: "google", products: [{ key: "calendar", name: "Calendar" }] },
   useGoogleConnectorState: () => ({
-    accounts: [],
+    accounts: state.accounts,
     rollout: [],
     resourceCountByAccount: {},
     isLoading: false,
@@ -98,8 +104,19 @@ jest.mock("@/features/connectors/google-adapter", () => ({
 }));
 
 jest.mock("@/features/connectors/health", () => ({
-  accountHealth: () => [],
-  preferredAccountId: () => null,
+  accountHealth: () =>
+    state.accounts.length > 0
+      ? [
+          {
+            product: { key: "calendar", name: "Calendar" },
+            state: "connected",
+            label: "Connected",
+            reason: "",
+            remedy: null,
+          },
+        ]
+      : [],
+  preferredAccountId: () => (state.accounts[0]?.id as string | undefined) ?? null,
 }));
 
 jest.mock("@/features/connectors/ConnectorPromptHost", () => ({
@@ -154,6 +171,7 @@ beforeEach(() => {
   state.readCalls = 0;
   state.refreshCalls = 0;
   state.organizationId = null;
+  state.accounts = [];
 });
 
 describe("with no organization selected", () => {
@@ -171,6 +189,45 @@ describe("with no organization selected", () => {
 
   it("calls no network door — no read, no refresh — while boot is unresolved", async () => {
     state.organizationRequired = true;
+    const m = await mount(<AgendaPanel />);
+    try {
+      expect(state.readCalls).toBe(0);
+      expect(state.refreshCalls).toBe(0);
+    } finally {
+      m.unmount();
+    }
+  });
+});
+
+describe("while the organization question is still being answered", () => {
+  /**
+   * 🚨 F-85 / Bugbot MEDIUM — the gap F-76 left. `useOrganizationRequired`
+   * exposes THREE states and `useAgenda` forwarded two: `organizationRequired`
+   * is true ONLY once boot has settled, and `isLoading` required an
+   * `organizationId` that does not exist yet. So during boot both read false
+   * and `AgendaBody` fell through to the empty-calendar sentence — the exact
+   * lie F-76 closed, reopened for the seconds before anyone knows the answer.
+   */
+  it("shows the skeleton, never the empty-calendar sentence", async () => {
+    state.organizationRequired = false;
+    state.organizationId = null; // boot in flight: not loadable, not refused
+    state.accounts = [{ id: "acct-1" }];
+    const m = await mount(<AgendaPanel />);
+    try {
+      expect(m.text).not.toContain("there is nothing on it");
+      expect(m.text).not.toContain("Your Google Calendar is connected");
+      expect(m.container.querySelector('[aria-label="Reading your agenda"]')).not.toBeNull();
+      // Not the terminal notice either — nobody has been refused yet.
+      expect(m.container.querySelector("[data-organization-required-notice]")).toBeNull();
+    } finally {
+      m.unmount();
+    }
+  });
+
+  it("calls no network door while the answer is unknown", async () => {
+    state.organizationRequired = false;
+    state.organizationId = null;
+    state.accounts = [{ id: "acct-1" }];
     const m = await mount(<AgendaPanel />);
     try {
       expect(state.readCalls).toBe(0);

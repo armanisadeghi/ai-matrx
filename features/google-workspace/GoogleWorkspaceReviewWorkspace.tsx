@@ -320,12 +320,26 @@ export function GoogleWorkspaceReviewWorkspace({
       }));
       await inventory.refetch();
       setSelectedResourceId(registered.id);
+      const recordRef = {
+        type: "google_workspace_resource",
+        id: registered.id,
+        title: registered.name,
+      };
       // 🚨 F-77 (V-21 N1) — a Record that could not be written is never called
       // "ready": the file is still picked and usable (its Google link stays),
       // but the door to a Record that does not exist is not offered, and the
       // server's own sentence — never a paraphrase — says why.
+      //
+      // F-83 (Bugbot LOW on 80c8027b): a Slides deck (or any file type with no
+      // Record table) having no Record is an EXPECTED outcome of a pick, not
+      // a fault — this is `recordToast.info`, never `toast.warning`, so it
+      // (a) never feeds the Error Inspector (only `error`/`warning` do, per
+      // lib/toast.ts's own doc comment) and (b) carries the SAME picked-file
+      // identity the success toast below uses, so it is dismissed the instant
+      // this file leaves the screen instead of possibly outliving it.
       if (!registered.recordId) {
-        toast.warning(
+        recordToast.info(
+          recordRef,
           `${registered.name} is picked and usable, but its record could not be created.`,
           {
             description:
@@ -335,20 +349,15 @@ export function GoogleWorkspaceReviewWorkspace({
         );
         return;
       }
-      recordToast.success(
-        {
-          type: "google_workspace_resource",
-          id: registered.id,
-          title: registered.name,
-        },
-        `${registered.name} is ready.`,
-      );
+      recordToast.success(recordRef, `${registered.name} is ready.`);
       if (
         registered.recordSyncStatus &&
         registered.recordSyncStatus !== "available" &&
         registered.recordSyncStatusReason
       ) {
-        toast.info(registered.recordSyncStatusReason);
+        // Same identity, same reasoning as above: an unhealthy sync status is
+        // information about this file, not an error, and follows the file.
+        recordToast.info(recordRef, registered.recordSyncStatusReason);
       }
     });
   };
