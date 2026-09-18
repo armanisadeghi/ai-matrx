@@ -14,9 +14,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import {
   accountHealth,
   preferredAccountId,
@@ -74,6 +74,17 @@ export interface AgendaValue {
   /** True once the connector state is known and no account can serve Calendar. */
   noAccount: boolean;
   /**
+   * True ONLY once boot has settled with no organization selected — the honest,
+   * terminal "choose an organization" state (`useOrganizationRequired`).
+   * `readAgendaEvents` / `refreshCalendarWindow` fail closed
+   * (`requireOrganizationContext`) with no organization to send, so this panel
+   * never calls them while this is true — it shows the notice instead of a
+   * screen that would otherwise render "your calendar is connected and empty",
+   * which is a confident and wrong claim for a person who has not picked an
+   * organization at all.
+   */
+  organizationRequired: boolean;
+  /**
    * True when a knob row did not answer and a documented default is in use —
    * the surface SAYS so rather than pretending an administrator chose it.
    */
@@ -92,7 +103,7 @@ export function useAgenda(options?: {
   /** Skip the refresh-on-open call (a panel that is not the primary surface). */
   refreshOnOpen?: boolean;
 }): AgendaValue {
-  const organizationId = useAppSelector(selectOrganizationId);
+  const { organizationId, organizationRequired } = useOrganizationRequired();
   const userId = useAppSelector(selectUserId);
   const connector = useGoogleConnectorState();
 
@@ -256,6 +267,7 @@ export function useAgenda(options?: {
     productHealth,
     connectionId,
     noAccount,
+    organizationRequired,
     usingDefaultKnobs,
     refresh,
     reload,

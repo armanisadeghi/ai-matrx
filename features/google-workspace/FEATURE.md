@@ -408,6 +408,35 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 ## Change log
 
+- `2026-09-18` — **F-76: an organization refusal with no organization selected is now honest
+  everywhere `calendar/service.ts` / `documents/service.ts` resolve one.** CI's
+  `check-org-refusal-honesty` found both modules calling `requireOrganizationContext` and leaving
+  the person with nothing: `useAgenda`'s window-read effect never ran with no organization
+  selected (`if (!organizationId || !userId) return;`), but `isLoading` also read false (its own
+  guard needs an organization), so `AgendaPanel` fell through to "Your Google Calendar is
+  connected and there is nothing on it" — a confident, wrong claim for a person who has not
+  picked an organization at all. `useAgenda` now reads `useOrganizationRequired()` (the shared
+  boot-settled gate) instead of `selectOrganizationId` directly and exposes
+  `organizationRequired`; `AgendaPanel` checks it first and renders the ONE honest
+  `<OrganizationRequiredNotice compact what="Your agenda" />` before every other branch — covering
+  the home screen, the window panel, and `PersonUpcomingCard` (same component, composed). On the
+  Docs side, the birth door (`useOpenGoogleDocumentRecord` in `openRecord.tsx`) resolves the
+  ACTIVE organization itself with no explicit `organizationId`, and its button's catch used to
+  hand the raw wire sentence ("Select an organization before sending this request.") straight to
+  a toast via `failureSentence`; it now recognises the refusal with
+  `presentOrganizationRefusal` and shows the honest, actionable message instead. The action
+  catches in `GoogleDocumentPanel.tsx` (keep/archive/refresh) and `CalendarEventSections.tsx`
+  (keep/archive) get the same treatment for defence in depth, even though those calls pass the
+  record's own `organization_id` and so rarely hit the refusal in practice. 2 new red-then-green
+  test suites (`calendar/__tests__/the-agenda-is-honest-with-no-organization.test.tsx`,
+  `documents/__tests__/open-record-is-honest-with-no-organization.test.tsx`), each proven red
+  against the pre-fix files first (empty-calendar sentence / raw wire sentence shown; both fixed
+  files reverted via `git stash`, tests failed, changes restored) and green after; 5 existing
+  calendar suites needed `selectShouldPromptForOrganization` added to their `appContextSlice`
+  mock once `useAgenda` started reading it. `check:organization-context`'s full chain green;
+  `npx jest features/google-workspace` (36 suites / 248 tests) green; `check:parse` green. No
+  screen was seen.
+
 - `2026-09-18` — **F-72: the no-append line is chosen by the file's kind (Cursor Bugbot LOW,
   thread 4043568378 on PR 228, commit `2445ceae`, `GoogleDocumentPanel.tsx:622-636`).** F-67's
   append-unsupported branch runs for every non-`document` `mime_kind`, but its sentence always

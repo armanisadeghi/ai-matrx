@@ -20,6 +20,7 @@ import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOpenDetail } from "@/lib/detail/useOpenDetail";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
 import { extractErrorMessage } from "@/utils/errors";
+import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 // 🚨 REUSE, NEVER FORK: ONE generic server pair serves every synced record
 // table (B-29). This is not a second implementation — it is the SAME two
 // functions the Doc panel calls, with THIS table's own address.
@@ -237,6 +238,9 @@ function CalendarEventKeepAndArchiveActions({
         sync_status_reason: result.sync_status_reason,
       });
     } catch (error: unknown) {
+      // The honest, actionable refusal — never the raw wire sentence — when
+      // `detachSyncedRecord` fails closed for want of an organization.
+      if (presentOrganizationRefusal(error, { act: "kept" })) return;
       toast.error(extractErrorMessage(error));
     } finally {
       setRunning(null);
@@ -270,6 +274,7 @@ function CalendarEventKeepAndArchiveActions({
         "Archived. It is out of the way and recoverable from the archive; your event in Google Calendar is untouched.",
       );
     } catch (error: unknown) {
+      if (presentOrganizationRefusal(error, { act: "archived" })) return;
       toast.error(extractErrorMessage(error));
     } finally {
       setRunning(null);

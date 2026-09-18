@@ -81,6 +81,7 @@ jest.mock("@/lib/redux/hooks", () => ({
 }));
 jest.mock("@/lib/redux/slices/appContextSlice", () => ({
   selectOrganizationId: () => ORG_ID,
+  selectShouldPromptForOrganization: () => false,
 }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: () => "dddddddd-1111-2222-3333-444444444444",
