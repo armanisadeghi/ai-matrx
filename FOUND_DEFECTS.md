@@ -15,6 +15,47 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D336 — `content_ir.kind_component` advertises three renderers that exist only on the unmerged, CONFLICTING PR 228 branch (2026-09-18)
+
+`pnpm check:shapes:components` names three ACTIVE bundled `kind_component` rows —
+`google_marketing_result`, `google_workspace_result`, `platform_record` — whose component_key
+`resolveBlockDispatch` on `main` does not know. The renderers (`components/mardown-display/blocks/google-kinds/*`,
+`.../result-kinds/PlatformRecordBlock.tsx`) and the `block-dispatch.tsx` registration live on
+`claude/youthful-babbage-erl2x4` (PR 228, "docs: point the Google Workspace feature at the native-Google
+plan"), which is `mergeable: CONFLICTING` as of 2026-09-18 11:16Z. The rows were activated in the one
+shared database by that branch, so `main` serves a registry that names a renderer it does not ship: a
+stream of any of these three kinds on production falls to the generic floor. Closes when PR 228 lands;
+the rows are deliberately NOT deactivated here because that would break the branch the moment it merges.
+Owner: whoever resolves PR 228's conflict (the google-workspace lane).
+
+### D335 — `udt_document_snapshot` declares anonymous read through its public parent, but the parent grants anon nothing — `iam.apply_rls` refuses the table (2026-09-18)
+
+Found while regenerating the two UDT snapshot components for D-component-created-by. The registry row
+for `udt_document_snapshot` carries `component_anon_read_via_public_parent = true`, so the generator
+emits a `pub_read` policy that subqueries `workbench.udt_documents` — and refuses to run because
+`anon` holds no SELECT on that parent: "the policy subquery would 42501 for every anon query. Apply
+the parent's canonical RLS (its pub_read lane grants anon) first." The LIVE `pub_read` on the snapshots
+table has the same shape today, so an anonymous reader of a public UDT document's snapshots already
+gets 42501, not rows. Fix: `iam.apply_rls('workbench','udt_documents','udt_document','entity')` (which
+grants the parent's anon lane), then regenerate `udt_document_snapshots`. Not done in the 2026-09-18
+guard session because regenerating the parent changes a live entity's policy set outside that
+session's scope. The sibling `udt_workbook_snapshots` regenerated cleanly. Owner: the workbench lane.
+
+### D334 — `integration_connection` is classified `private` (derived, never ruled) while its live read policy is owner-OR-ORGANIZATION (2026-09-18)
+
+`users.integration_connections` (and its component `integration_connection_resources`) carry
+`data_class = 'private'` with the reason "Born unclassified and derived by platform.derive_data_class
+… Reclassify deliberately if this table is not what that implies." Their bespoke read policies
+(`*_read_owner_or_org`) admit every member of the row's organization — the `organization` class's
+lane, not `private`'s (§3.1: private has no org-member lane). The 2026-09-18 staff-door migration
+closed the STAFF lane on both (that is what the class demands and what the guard measures) and left
+the owner/org arms verbatim, because whether colleagues may see each other's connected Google /
+Microsoft / GitHub accounts is a product ruling, not a guard's. Two consistent end states: classify
+`organization` (the policy is already that; the staff lane would then be lawful again and could be
+regenerated back), or keep `private` and narrow the policy to the owner. Needs the owner lane's
+ruling; until then the table is in-between. Owner: integrations (users.*).
+
+
 ### D333 — Four Media Source Catalog endpoints are published in the contract but were never built, and the frontend called all four (2026-09-18)
 
 **Status:** open (frontend half fixed; the server half is aidream's) · **Priority:** P2 — one of them was a visible, user-reachable control · **Repo:** aidream (`aidream/api/routers/media_catalog.py`) + `common-docs/projects/media-source-catalog/API-CONTRACT.md`
@@ -289,6 +330,16 @@ Fix per the D18 remedy (definer trigger, auth.uid()-bound door, or a declared do
 the baseline entry in the same commit — the gate fails on a stale entry.
 
 ### D320 — `workbench.note_folders` unique indexes count removed rows: delete a folder, you can never reuse its name (2026-09-13)
+
+**Update 2026-09-18 — PARTLY RESOLVED, one chair step away.** The `(id, organization_id)` index is not
+a defect and never was: an index that carries the row's own `id` cannot be held by a removed row, and
+`scripts/check-soft-delete-unique.ts` now says so (identity exclusion, `--self-test`). The org-scoped
+NAME index becomes partial on `deleted_at is null` in
+`migrations/chair_step_2026_09_18_db_guard_findings_non_additive.sql`, which needs the owner at a
+terminal (JUDGMENT §5) because a DROP INDEX is non-additive. The pre-existing `(created_by, name)`
+index stays exact and frozen in the baseline: the client still HARD-deletes folder rows
+(scripts/client-hard-delete-allowlist.json, DD-119) and its one upsert infers that index, so the
+workbench lane owns the switch to soft delete + a partial key together.
 
 **Latent, not yet biting — say so honestly.** `workbench.note_folders` carries
 `deleted_at`, and THREE of its unique indexes have no `WHERE deleted_at IS NULL`:

@@ -37,6 +37,7 @@
  *   pnpm check:soft-delete-unique              # loud, exit 0
  *   pnpm check:soft-delete-unique:strict       # exit 1 on any NEW index (CI)
  *   pnpm check:soft-delete-unique -- --update-baseline   # remove fixed entries
+ *   pnpm check:soft-delete-unique -- --self-test         # the identity exclusion, RED then GREEN
  *
  * 🚨 UNMEASURED IS NOT PASSED — a run that could not reach the database says so
  * and, under --strict, exits 1.
@@ -91,7 +92,10 @@ const QUERY = `
   )
   select s.nspname || '.' || s.relname || ':' || i.relname as key,
          et.token,
-         pg_catalog.pg_get_indexdef(ix.indexrelid) as def
+         pg_catalog.pg_get_indexdef(ix.indexrelid) as def,
+         (select coalesce(array_agg(a2.attname::text order by k.ord), '{}')
+            from unnest(ix.indkey) with ordinality as k(attnum, ord)
+            join pg_catalog.pg_attribute a2 on a2.attrelid = s.oid and a2.attnum = k.attnum) as key_columns
   from soft s
   join pg_catalog.pg_index ix
     on ix.indrelid = s.oid and ix.indisunique and not ix.indisprimary
@@ -107,6 +111,22 @@ interface LiveRow {
   readonly key: string;
   readonly token: string;
   readonly def: string;
+  /** The index's key columns, in order — `{}` for an expression-only index. */
+  readonly key_columns: readonly string[];
+}
+
+/**
+ * THE IDENTITY EXCLUSION (2026-09-18). The defect this guard exists for needs a NATURAL key — a
+ * value a person re-types ("Region", a slug, an email). A unique index whose key carries the
+ * row's own base-contract `id` (db-rules §2) can never be held by a removed row, because an id is
+ * minted once and never re-typed: `(id)` beside a text primary key (platform.retrofit_entity's
+ * uuid identity, e.g. extend.wbx_demo) and `(id, organization_id)` (a composite FK target, e.g.
+ * workbench.note_folders) are the two live shapes. This is the same reason the query already
+ * excludes primary keys; it was narrower than that reason, and two identity indexes were reported
+ * as the name-collision defect they cannot cause. Proven failing-then-passing by `--self-test`.
+ */
+export function isIdentityImpliedIndex(keyColumns: readonly string[]): boolean {
+  return keyColumns.includes("id");
 }
 
 interface Baseline {
@@ -161,7 +181,43 @@ function unmeasured(reason: string): never {
   exitAfterDrain(STRICT ? 1 : 0);
 }
 
+const SELF_TEST = process.argv.includes("--self-test");
+
+/**
+ * The identity exclusion must find the two live shapes and must NOT excuse a natural key.
+ * RED first: the pre-2026-09-18 classifier (every non-primary unique index is a suspect) is run
+ * over the same fixtures and must disagree, or this test proves nothing.
+ */
+function selfTest(): number {
+  const fixtures: ReadonlyArray<readonly [string, readonly string[], boolean]> = [
+    ["extend_wbx_demo_id_key (id) — retrofit_entity's uuid identity beside a text PK", ["id"], true],
+    ["note_folders_id_organization_unique (id, organization_id) — a composite FK target", ["id", "organization_id"], true],
+    ["note_folders_organization_created_by_name_unique — a NAME a person re-types", ["organization_id", "created_by", "name"], false],
+    ["unique_type_per_org (organization_id, key) — the 2026-09-11 proven defect", ["organization_id", "key"], false],
+    ["an expression-only index (no key columns)", [], false],
+  ];
+  const legacy = (_cols: readonly string[]): boolean => false; // the old classifier excused nothing
+  let bad = 0;
+  console.log(`${C.bold}SELF-TEST${C.reset} ${C.dim}(identity-implied indexes leave the census; natural keys stay)${C.reset}`);
+  for (const [name, cols, expected] of fixtures) {
+    const got = isIdentityImpliedIndex(cols);
+    const ok = got === expected;
+    if (!ok) bad++;
+    console.log(`  ${ok ? TAG.ok : TAG.fail}${name} → identity-implied=${got}`);
+  }
+  const redThenGreen = fixtures.filter(([, cols, exp]) => exp && legacy(cols) !== isIdentityImpliedIndex(cols)).length;
+  if (redThenGreen !== 2) {
+    bad++;
+    console.log(`  ${TAG.fail}the old classifier must disagree on exactly the two identity shapes (RED before, GREEN after); it disagreed on ${redThenGreen}`);
+  } else {
+    console.log(`  ${TAG.ok}the old classifier flagged both identity shapes; the new one excuses exactly those two`);
+  }
+  console.log(bad === 0 ? `${TAG.ok}${C.bold}the classifier fails when it should and passes when it should${C.reset}` : `${TAG.fail}${C.bold}the classifier is not trustworthy${C.reset}`);
+  return bad === 0 ? 0 : 1;
+}
+
 async function main(): Promise<number> {
+  if (SELF_TEST) return selfTest();
   const env = loadEnv();
   if (!env) unmeasured("no Supabase URL/secret key in env or .env* files");
 
@@ -173,7 +229,9 @@ async function main(): Promise<number> {
   try {
     const { data, error } = await supabase.rpc("execute_admin_query", { query: QUERY });
     if (error) throw new Error(error.message);
-    live = unwrapRows(data) as unknown as LiveRow[];
+    live = (unwrapRows(data) as unknown as LiveRow[]).filter(
+      (r) => !isIdentityImpliedIndex(r.key_columns ?? []),
+    );
   } catch (err) {
     unmeasured(`execute_admin_query failed — ${String(err)}`);
   }
