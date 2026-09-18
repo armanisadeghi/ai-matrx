@@ -13,6 +13,10 @@
 import { useState } from "react";
 import { Loader2, Sheet } from "lucide-react";
 import { toast } from "@/lib/toast";
+import {
+  announceProposedGoogleWrite,
+  isProposedGoogleWrite,
+} from "@/features/google-workspace/export/proposedWrite";
 
 import { Button } from "@/components/ui/button";
 
@@ -67,17 +71,12 @@ export function SendToGoogleSheetButton({
       }
       // NOTHING WAS WRITTEN, and it is not a failure: the organization reviews
       // this kind of change first, so the server filed it in the approval queue
-      // instead. Saying "Created" here would claim a file that does not exist
-      // (round-2 verification of the approval queue, § A-vii).
-      if (!result.ok && result.reason === "proposed") {
-        toast.info(result.message, {
-          description: "Nothing in Google has changed yet.",
-          action: {
-            label: "Open the approval",
-            onClick: () =>
-              window.open(result.queueHref, "_blank", "noopener"),
-          },
-        });
+      // instead. Saying "Created" here would claim a file that does not exist,
+      // and saying it failed would tell the user their work was lost when it is
+      // sitting in a queue with their name on it. ONE module owns those words
+      // and that door for all four call sites (F-99).
+      if (isProposedGoogleWrite(result)) {
+        announceProposedGoogleWrite(result);
         return;
       }
       if (!result.ok) {

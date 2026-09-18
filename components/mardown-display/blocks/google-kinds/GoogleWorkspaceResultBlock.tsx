@@ -78,6 +78,7 @@ import {
   RecordDoor,
   RecordSyncState,
   ServerSentence,
+  statesCompleteness,
   TruncationChip,
   UnmodelledPreviews,
   WRITE_CLAIM_KEYS,
@@ -738,7 +739,11 @@ const GoogleWorkspaceResultBlock: React.FC<ResultKindBlockProps> = ({
 
       {/* The honesty fields, last and never dropped. */}
       <Bounds bounds={value.bounds} />
-      {value.truncated !== undefined ? (
+      {/* The frame and the chip agree through the ONE predicate: a key that
+          never arrived states nothing, so neither the row nor the chip exists
+          (F-99). An explicit `null` still speaks — the provider declaring it
+          cannot tell. */}
+      {statesCompleteness(value.truncated) ? (
         <ChipRow>
           <TruncationChip truncated={value.truncated} />
         </ChipRow>

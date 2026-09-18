@@ -1222,6 +1222,119 @@ describe("the two Google tool-result kinds route to their own component", () => 
   });
 
   /**
+   * 🚨 F-99 (BUGBOT MEDIUM) — AN EXPLICIT `null` IS A VERDICT; AN ABSENT KEY IS
+   * NOT. `TruncationChip` was mounted unconditionally on every marketing card
+   * and, with `truncated` ABSENT, `readBool` returned `null` and the card
+   * printed "completeness unknown — the provider does not say". That is an
+   * invented verdict: the declared kind says `truncated: bool | None` —
+   * "True/False when the provider or our own cap says so; null when
+   * unknowable" — so only a key that ARRIVED says anything. The wrong chip fired
+   * on every read with no window to cap at all (the tracking-health verdict, a
+   * Tag Manager container list, a YouTube channel) and on any payload that
+   * simply omitted the key. The distinction now lives in ONE place —
+   * `statesCompleteness` beside the chip — so the marketing card and the
+   * workspace card cannot drift apart again.
+   */
+  describe("completeness: absent is not a verdict, null is (F-99)", () => {
+    const COMPLETENESS_CHIPS = [
+      "completeness unknown",
+      "complete within the window asked for",
+      "capped — more exists than is shown",
+    ];
+    const marketing = (extra: Record<string, unknown>) =>
+      mount(
+        <GoogleMarketingResultBlock
+          content={JSON.stringify({
+            __kind: MARKETING_KIND,
+            // The tracking-health read: a verdict about a site's tags. There is
+            // no window here to cap, so there is nothing for a completeness
+            // chip to be about.
+            action: "tracking_health",
+            source: "live_google",
+            verdict: "GA4 is installed and firing.",
+            has_ga4: true,
+            ...extra,
+          })}
+          metadata={undefined}
+        />,
+      );
+
+    it("an absent truncated key renders NO completeness chip", () => {
+      const markup = marketing({});
+      // The card itself still rendered — this is not a vacuous pass.
+      expect(markup).toContain("GA4 is installed and firing.");
+      for (const chip of COMPLETENESS_CHIPS) expect(markup).not.toContain(chip);
+    });
+
+    it("an explicit null renders the provider-does-not-say chip", () => {
+      const markup = marketing({ truncated: null });
+      expect(markup).toContain("completeness unknown — the provider does not say");
+      expect(markup).not.toContain("complete within the window asked for");
+    });
+
+    it("an explicit false renders complete within the window", () => {
+      const markup = marketing({ truncated: false });
+      expect(markup).toContain("complete within the window asked for");
+      expect(markup).not.toContain("completeness unknown");
+    });
+
+    it("an explicit completeness verdict speaks even with truncated absent", () => {
+      const markup = marketing({ completeness: "bounded_preview" });
+      expect(markup).toContain("a bounded preview, not the whole set");
+    });
+
+    it("the workspace card frames the chip through the same ONE predicate", () => {
+      const workspace = (extra: Record<string, unknown>) =>
+        mount(
+          <GoogleWorkspaceResultBlock
+            content={JSON.stringify({
+              __kind: WORKSPACE_KIND,
+              action: "list_files",
+              count: 3,
+              ...extra,
+            })}
+            metadata={undefined}
+          />,
+        );
+      for (const chip of COMPLETENESS_CHIPS)
+        expect(workspace({})).not.toContain(chip);
+      expect(workspace({ truncated: null })).toContain(
+        "completeness unknown — the provider does not say",
+      );
+      expect(workspace({ truncated: true })).toContain(
+        "capped — more exists than is shown",
+      );
+    });
+
+    /**
+     * `bounds` is deliberately NOT the same class, and this holds that line: it
+     * is the WINDOW ITSELF, not a verdict about the read, so a number whose
+     * window nobody stated must say so whether the key was omitted or arrived
+     * null (V-22, NEW-10). Symmetry with `truncated` here would delete the
+     * guard for the commonest payload of all.
+     */
+    it("a count with bounds absent — or null — still announces the unstated window", () => {
+      for (const bounds of [undefined, null]) {
+        const markup = mount(
+          <GoogleMarketingResultBlock
+            content={JSON.stringify({
+              __kind: MARKETING_KIND,
+              action: "read_search_console",
+              source: "persisted",
+              returned_count: 412,
+              count_unit: "rows",
+              ...(bounds === undefined ? {} : { bounds }),
+            })}
+            metadata={undefined}
+          />,
+        );
+        expect(markup).toContain("412");
+        expect(markup).toContain("window not stated by the provider");
+      }
+    });
+  });
+
+  /**
    * 🚨 THE WRITE-CLAIM CENSUS (F-95, BUGBOT MEDIUM). `NothingWasWritten`
    * consumes `approval` plus the whole `WRITE_CLAIM_KEYS` family through
    * `readWriteClaim` — but until this fix neither block's `PROMOTED` list

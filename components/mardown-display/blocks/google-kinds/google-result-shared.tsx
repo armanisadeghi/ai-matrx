@@ -551,6 +551,19 @@ export function hasStatedBounds(bounds: unknown): boolean {
   return boundsEntries(bounds).length > 0;
 }
 
+/**
+ * 🚨 WHY `bounds` IS NOT THE SAME CLASS AS `truncated` (F-99). It is deliberate
+ * that this collapses an ABSENT `bounds` and an explicit `bounds: null` into the
+ * same answer, and it must stay that way. `truncated` is a VERDICT field — a
+ * claim ABOUT the read — so with no key there is no claim to report, and
+ * reporting one invents it. `bounds` is the WINDOW ITSELF: the annotation
+ * {@link CountedFact} prints from it ("window not stated by the provider") is a
+ * statement about THIS payload, and it is equally true whether the key was
+ * omitted or arrived null. Silencing it for the absent case would delete the
+ * V-22 / NEW-10 guard for the commonest payload of all — a bare number with no
+ * window, read as a total.
+ */
+
 export const Bounds: React.FC<{ bounds: unknown }> = ({ bounds }) => {
   const entries = boundsEntries(bounds);
   if (entries.length === 0) return null;
@@ -567,13 +580,37 @@ export const Bounds: React.FC<{ bounds: unknown }> = ({ bounds }) => {
   );
 };
 
-/** `truncated` / `completeness` as a verdict, never a silent omission. */
+/**
+ * Whether this payload STATES anything about completeness at all — the ONE
+ * predicate {@link TruncationChip} and every card that frames it share.
+ *
+ * 🚨 AN EXPLICIT `null` IS A VERDICT; AN ABSENT KEY IS NOT (F-99, BUGBOT
+ * MEDIUM). The declared kind says `truncated: bool | None` — "True/False when
+ * the provider or our own cap says so; null when unknowable" — so an explicit
+ * `null` is the provider declaring it cannot tell, which a reader MUST see. A
+ * key that never arrived is not a declaration of anything: printing
+ * "completeness unknown — the provider does not say" for it invents a verdict,
+ * and it fired on every read that has no window to cap at all (the
+ * tracking-health verdict, a Tag Manager container list, a YouTube channel) as
+ * well as on any payload that simply omitted the key. An explicit
+ * `completeness` verdict stands on its own and still renders.
+ */
+export function statesCompleteness(truncated: unknown, completeness?: unknown): boolean {
+  return truncated !== undefined || readText(completeness) !== null;
+}
+
+/**
+ * `truncated` / `completeness` as a verdict, never a silent omission — and
+ * never an invented one either: with nothing stated, this renders NOTHING (see
+ * {@link statesCompleteness}), so a card may mount it unconditionally.
+ */
 export const TruncationChip: React.FC<{
   truncated: unknown;
   completeness?: unknown;
 }> = ({ truncated, completeness }) => {
   const flag = readBool(truncated);
   const verdict = readText(completeness);
+  if (!statesCompleteness(truncated, completeness)) return null;
   if (flag === true) {
     return <StateChip label="capped — more exists than is shown" tone="warn" />;
   }
@@ -584,7 +621,7 @@ export const TruncationChip: React.FC<{
     return <StateChip label="complete within the window asked for" tone="good" />;
   }
   // `null` is a real, declared state: the provider cannot say. Never read as
-  // "complete".
+  // "complete". (An ABSENT key never reaches here — it stated nothing.)
   return <StateChip label="completeness unknown — the provider does not say" tone="warn" />;
 };
 
