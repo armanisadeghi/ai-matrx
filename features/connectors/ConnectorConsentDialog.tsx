@@ -63,7 +63,10 @@ import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectEffectiveOrganizationId,
+  selectOrganizationId,
+} from "@/lib/redux/slices/appContextSlice";
 import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { isGoogleAuthorizationCancelled } from "@/providers/google-provider/GoogleApiProvider";
@@ -71,6 +74,7 @@ import { ConnectorMark } from "./ConnectorMark";
 import { getConnector } from "./registry";
 import {
   productsInGroup,
+  type ConnectorFirstActionContextKey,
   type ConnectorProduct,
   type ConnectorProviderConfig,
 } from "./provider-config";
@@ -380,6 +384,42 @@ export interface ConnectorConsentBodyProps {
 }
 
 /**
+ * The values a `ConnectorFirstActionContextKey` resolves to from the dialog's
+ * own scope — the SAME data the typed opener for that overlay would pass
+ * (e.g. `TasksHeaderControls`' `useOpenGoogleTasksImport({ organizationId })`).
+ * Extend this alongside the key union in `provider-config.ts`.
+ */
+interface ConnectorFirstActionContext {
+  organizationId: string | null;
+}
+
+/**
+ * Builds the overlay `data` an action's `needs` declares, and names every key
+ * whose value is unavailable right now. `undefined`/`null` both count as
+ * missing — never write a `null` into the overlay data and let the window
+ * decide what that means (Cursor Bugbot thread 4043109495, PR 228).
+ */
+function resolveFirstActionData(
+  needs: readonly ConnectorFirstActionContextKey[] | undefined,
+  context: ConnectorFirstActionContext,
+): {
+  data: Record<string, unknown>;
+  missing: readonly ConnectorFirstActionContextKey[];
+} {
+  const data: Record<string, unknown> = {};
+  const missing: ConnectorFirstActionContextKey[] = [];
+  for (const key of needs ?? []) {
+    const value = context[key];
+    if (value == null) {
+      missing.push(key);
+    } else {
+      data[key] = value;
+    }
+  }
+  return { data, missing };
+}
+
+/**
  * THE FIRST USEFUL ACTION, whatever shape the product declared it in. A route is
  * a link; a catalogued overlay is a press that opens the window IN PLACE and
  * then steps the dialog aside, because a window opened behind a modal is a
@@ -388,12 +428,22 @@ export interface ConnectorConsentBodyProps {
  *
  * The provider is still not named here: the row carries an overlay id from the
  * platform catalogue, so the next provider's first action is a config row.
+ *
+ * 🚨 An overlay action's `needs` is checked against `context` BEFORE rendering
+ * the button. F-51 gave the Tasks row an overlay id and nothing else, so the
+ * button dispatched `openOverlay({ overlayId })` with no data, the window's
+ * `organizationId` prop came back `null`, and the body it opened could not
+ * load (lane F-55). A button whose needs cannot be met right now is absent,
+ * not present-and-dead (Law 4) — the row still shows the "Connected" state and
+ * its permissions disclosure; only the dead-end control disappears.
  */
 function FirstAction({
   product,
+  context,
   onOpened,
 }: {
   product: ConnectorProduct;
+  context: ConnectorFirstActionContext;
   onOpened?: () => void;
 }) {
   const dispatch = useAppDispatch();
@@ -410,12 +460,20 @@ function FirstAction({
       </Link>
     );
   }
+  const { data, missing } = resolveFirstActionData(action.needs, context);
+  if (missing.length > 0) return null;
   return (
     <button
       type="button"
       data-connector-first-action={product.key}
       onClick={() => {
-        dispatch(openOverlay({ overlayId: action.overlayId }));
+        dispatch(
+          openOverlay(
+            Object.keys(data).length > 0
+              ? { overlayId: action.overlayId, data }
+              : { overlayId: action.overlayId },
+          ),
+        );
         onOpened?.();
       }}
       className="inline-flex shrink-0 items-center gap-0.5 font-medium text-primary hover:underline"
@@ -444,6 +502,14 @@ export function ConnectorConsentBody({
 }: ConnectorConsentBodyProps) {
   const organizations = useAppSelector(selectOrganizationsList);
   const activeOrganizationId = useAppSelector(selectOrganizationId);
+  // The organization a first action's window writes into — the same value
+  // the typed openers pass (`TasksHeaderControls`' `selectEffectiveOrganizationId`),
+  // which falls back to the personal org so this is available whenever the
+  // account bootstrap has resolved, not only when the person picked an org.
+  const firstActionOrganizationId = useAppSelector(selectEffectiveOrganizationId);
+  const firstActionContext: ConnectorFirstActionContext = {
+    organizationId: firstActionOrganizationId,
+  };
   const runner = useGoogleConsentRunner();
 
   // D7: never "the first row the inventory returned" — the account this
@@ -808,7 +874,11 @@ export function ConnectorConsentBody({
                     <span className="truncate text-muted-foreground">
                       {row.product.name}
                     </span>
-                    <FirstAction product={row.product} onOpened={onDone} />
+                    <FirstAction
+                      product={row.product}
+                      context={firstActionContext}
+                      onOpened={onDone}
+                    />
                   </li>
                 ))}
             </ul>

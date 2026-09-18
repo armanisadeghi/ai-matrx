@@ -60,14 +60,41 @@ import type { ConnectorId } from "./types";
  * `__tests__/every-connected-product-offers-its-first-action.test.ts` censuses
  * over the whole config.
  */
+/**
+ * Context keys a `kind: "overlay"` action's window reads out of the overlay's
+ * `data` as an IDENTITY it cannot function without — never a preference the
+ * window can do without. Extend this union only alongside a resolver for the
+ * new key in `ConnectorConsentDialog`'s `resolveFirstActionData` (lane F-55,
+ * Cursor Bugbot thread 4043109495, PR 228, commit 9e31d18a).
+ */
+export type ConnectorFirstActionContextKey = "organizationId";
+
 export type ConnectorFirstAction =
   /** A page the person goes to. */
   | { kind: "route"; label: string; href: string }
   /**
    * A catalogued overlay the surface opens IN PLACE — the one door to a window
    * that has no route of its own (`features/overlays/catalogue.ts`).
+   *
+   * 🚨 `needs` names every context key the window's BODY reads off overlay
+   * data as an identity (e.g. Tasks import needs the organization it writes
+   * into) — never assume the dialog's ambient context happens to match what
+   * the window needs. F-51 gave this action only `overlayId`, so the Tasks
+   * row dispatched `openOverlay({ overlayId })` with no data at all: the
+   * window's `organizationId` prop came back `null` and its body refused to
+   * load. `needs` is how the dialog knows to build that data and refuses to
+   * render the button at all when a needed value is unavailable (Law 4:
+   * never open a window that can do nothing), instead of only guessing it
+   * will be there. Omit when the window carries no data at all — e.g. the
+   * agenda, whose subject is the signed-in person, not anything the caller
+   * supplies.
    */
-  | { kind: "overlay"; label: string; overlayId: OverlayId }
+  | {
+      kind: "overlay";
+      label: string;
+      overlayId: OverlayId;
+      needs?: readonly ConnectorFirstActionContextKey[];
+    }
   /** Nothing to offer YET, and the row says why in writing. Never a bare null. */
   | { kind: "none"; because: string };
 
@@ -280,7 +307,12 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       attachableResourceTypes: [],
       stopsOnRevoke: "your agenda from showing here",
       // The agenda is a catalogued window with no route of its own, and it is the
-      // whole point of connecting Calendar (PLAN §4.6).
+      // whole point of connecting Calendar (PLAN §4.6). No `needs`: the agenda's
+      // subject is the signed-in person and their window knob, so its opener
+      // (`useOpenGoogleAgenda`) dispatches `openOverlay` with no data at all —
+      // confirmed against its window body, which takes no organization/project
+      // prop (`GoogleAgendaWindow`, `features/window-panels/windows/
+      // google-calendar/`).
       firstAction: {
         kind: "overlay",
         label: "Open your agenda",
@@ -313,10 +345,15 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       stopsOnRevoke: "importing tasks from this Google account",
       // The Google Tasks import window (`features/overlays/openers/
       // googleImportWindows.tsx`) was already built and the row offered no way in.
+      // Its body reads `organizationId` off overlay data and refuses to load
+      // without it (`GoogleTasksImportPanel`) — `needs` is how this button
+      // carries the same organization the typed opener
+      // (`useOpenGoogleTasksImport`, see `TasksHeaderControls`) always passes.
       firstAction: {
         kind: "overlay",
         label: "Import your tasks",
         overlayId: "googleTasksImportWindow",
+        needs: ["organizationId"],
       },
     },
     {

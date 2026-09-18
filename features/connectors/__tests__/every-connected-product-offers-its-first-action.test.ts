@@ -16,15 +16,55 @@
  * neighbour cannot reach a person with nothing at the end of it.
  */
 
-import { OVERLAY_CATALOGUE, isOverlayId } from "@/features/overlays/catalogue";
+import { OVERLAY_CATALOGUE, isOverlayId, type OverlayId } from "@/features/overlays/catalogue";
 
 import {
   GOOGLE_CONNECTOR_PROVIDER,
+  type ConnectorFirstActionContextKey,
   type ConnectorProviderConfig,
 } from "../provider-config";
 
 /** Every provider config the app ships. The census walks all of them. */
 const PROVIDERS: ConnectorProviderConfig[] = [GOOGLE_CONNECTOR_PROVIDER];
+
+/**
+ * 🚨 THE DEFECT LANE F-55 FIXES (Cursor Bugbot, Medium, thread 4043109495, PR
+ * 228, commit 9e31d18a). F-51 turned `firstAction` into a closed union that
+ * let an overlay action carry an id and nothing else, and Tasks' row used
+ * exactly that shape — `{ kind: "overlay", overlayId: "googleTasksImportWindow" }`
+ * — so the button dispatched `openOverlay({ overlayId })` with NO data. The
+ * window (`GoogleTasksImportWindow` → `GoogleTasksImportPanel`) reads
+ * `organizationId` off that data and refuses to load without it
+ * (`GoogleTasksImportPanel.tsx`: `if (!organizationId) return … could not
+ * load`), so the new "Import your tasks" button opened a window that could
+ * list and import nothing — a screen that looked alive but was dead.
+ *
+ * This census is the independently-confirmed ground truth for every window a
+ * `kind: "overlay"` first action can name, read directly off each window
+ * body's own prop contract (see the comment on each entry) — never off the
+ * `needs` the config declares, or this test would only ever agree with
+ * itself. An overlay action whose window is in this map, or added to it
+ * later, must declare EVERY one of these keys in its `needs`, or the button
+ * it renders would open the same kind of dead window Tasks' did.
+ */
+const WINDOW_REQUIRED_CONTEXT_KEYS: Readonly<
+  Partial<Record<OverlayId, readonly ConnectorFirstActionContextKey[]>>
+> = {
+  // GoogleTasksImportPanel.tsx: `if (!organizationId) { … return "could not
+  // load" }` — the organization the imported tasks are written into, and the
+  // window's body cannot function at all without it.
+  googleTasksImportWindow: ["organizationId"],
+  // GoogleContactsImportWindow → GoogleContactsImportPanel takes the same
+  // `organizationId` prop for the same reason. No provider config currently
+  // routes a first action to this overlay, but the census covers it anyway
+  // so a future row copied from Tasks' neighbour cannot skip `needs` either.
+  googleContactsImportWindow: ["organizationId"],
+  // GoogleAgendaWindow → AgendaPanel takes no organization/project prop at
+  // all — its subject is the signed-in person, not anything a caller
+  // supplies — so it is deliberately ABSENT here, never `[]`: absence means
+  // "this window needs nothing", `[]` on a `needs` field would mean the same
+  // thing by accident.
+};
 
 /**
  * The rows that have NOTHING to offer yet, each with a reason in the config.
@@ -66,6 +106,22 @@ describe("every product a person can switch on offers its first useful action", 
           expect(OVERLAY_CATALOGUE[entry.action.overlayId].isWindow).toBe(true);
           expect(entry.action.label.trim().length).toBeGreaterThan(0);
         }
+      });
+
+      it("carries every context key the overlay it opens reads off overlay data", () => {
+        const overlays = provider.products.flatMap((product) =>
+          product.firstAction.kind === "overlay"
+            ? [{ key: product.key, action: product.firstAction }]
+            : [],
+        );
+        const dead = overlays.flatMap(({ key, action }) => {
+          const required = WINDOW_REQUIRED_CONTEXT_KEYS[action.overlayId];
+          if (!required) return [];
+          const declared = new Set(action.needs ?? []);
+          const missing = required.filter((needed) => !declared.has(needed));
+          return missing.length > 0 ? [{ key, overlayId: action.overlayId, missing }] : [];
+        });
+        expect(dead).toEqual([]);
       });
 
       it("points a route action at a real in-app path", () => {
