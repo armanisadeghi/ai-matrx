@@ -674,6 +674,27 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
   `the-strip-and-the-composer-tell-the-truth.test.tsx`. No screen was seen — the table still holds
   zero live rows.
 
+- `2026-09-18` — **F-77 (hostile verifier V-21, finding N1, HIGH): a Record that was never written is
+  never called "ready", and its door is never offered.** `registerSelectedGoogleFile`'s response
+  carries `record_id` plus, when the server could NOT write the `workbench.google_document` Record,
+  a plain `record_absent_reason` sentence saying why (no Record table for a Slides deck, no
+  organization named, or the write itself failed, naming the exception class); when it could, an
+  optional `record_sync_status_reason` beside a status that is not the healthy one. F-74 parsed all
+  four onto `SelectedGoogleFile` and F-77 closes the gap it left open: both `chooseFile`s
+  (`GoogleWorkspaceConnectBody.tsx`, `GoogleWorkspaceReviewWorkspace.tsx`) now carry both reasons
+  through `freshRecords`, keyed the same way. A row whose fresh pick answered no `record_id` says
+  the file is picked and usable, states the server's own sentence verbatim (never a paraphrase),
+  and drops the "Open the record" door — the file's own Google link stays; a row whose Record was
+  written but is not in the healthy sync state shows that reason beside it. The pick-time toast
+  matches: a missing Record gets `toast.warning` with the server's sentence as its description
+  instead of "is ready to use"/"is ready", never `recordToast.success`. Red-then-green: new
+  `a-record-write-failure-says-so.test.tsx` (6 cases across both surfaces) fails 4 of 6 against
+  `HEAD` (468e1bd8) — the door is offered and the sentence is absent — and all 6 pass restored. All
+  248 `features/google-workspace` tests pass (35 suites); `pnpm check:parse`, `check:kind-marker-law`
+  and `check:dead-ends` are clean on both files; a scoped `tsc` over just these two files reports no
+  errors of their own (the repo's ~40 pre-existing errors elsewhere are untouched). No screen was
+  seen.
+
 - `2026-09-18` — **F-51: the projections are gone and Calendar's account is chosen by the product.** `googleDocumentDetailRow` / `calendarEventDetailRow` no longer rename `synced_via_connection_id` to `connection_id` — the shared producer (`features/item-presentation/sourceHealth.ts`) reads the live column, so a registration projects only what its row genuinely does not say. `useAgenda` now names its product when it asks for an account (`forProductKey`), so the agenda stops reading Calendar's health on whichever account holds the most other products. Red-then-green: `calendar/__tests__/the-refresh-runs-through-the-account-that-holds-calendar.test.tsx` (3 cases, real health derivation, bigger account listed first) and `features/item-presentation/__tests__/the-strip-reads-the-connection-the-row-names.test.ts`. Calendar and Tasks also got their first useful action in the consent dialog (`features/connectors/provider-config.ts`). No screen was seen.
 
 - 2026-09-18 — **B-29: the last two of the four unavailable actions are real.** "Keep as AI Matrx
