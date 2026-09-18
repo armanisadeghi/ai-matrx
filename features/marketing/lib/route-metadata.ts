@@ -320,7 +320,9 @@ export function getMarketingRouteMetadata(pathname: string): Metadata {
           titlePrefix: "Topical Map",
           description:
             "The tree of subjects this brand should cover, and the plan for getting its site there.",
-          letter: "Mo",
+          // "Mo" belongs to Monitoring (brand-sections.ts); every Marketing
+          // leaf carries a badge nothing else in the fleet wears.
+          letter: "Mv",
         },
       );
     }
