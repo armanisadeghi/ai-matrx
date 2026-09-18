@@ -179,7 +179,12 @@ export function useActionRunner(
                 setEstimateRemedy(null);
                 setSubmitError(null);
                 setParams(nextParams);
-                loadEstimate(action, selection, nextParams);
+                // An Action the server declared as not-yet has nothing to price, and
+                // asking for an estimate would answer 501 and put a failure sentence
+                // on a dialog whose real message is the declaration's own.
+                if (action.available !== false) {
+                    loadEstimate(action, selection, nextParams);
+                }
             }),
         [loadEstimate],
     );

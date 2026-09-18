@@ -82,6 +82,59 @@ export function sampleInputText(
   );
 }
 
+/**
+ * THE LIBRARY PROVENANCE. A sample written by the media catalog's
+ * "Use as test cases for an agent…" action carries `source = 'library'` and,
+ * under `metadata.media_catalog`, the Library it came from plus the catalogued
+ * items behind it (server twin: the `use_as_agent_test_cases` action in
+ * aidream). This reads that block defensively: a row whose source says
+ * `library` ALWAYS answers with an origin, even when the block is missing or
+ * malformed, because "this came from a Library and we cannot say which" is the
+ * honest screen and a blank line is not.
+ */
+export const SAMPLE_MEDIA_CATALOG_KEY = "media_catalog";
+
+export interface SampleLibraryItem {
+  title: string | null;
+  url: string | null;
+}
+
+export interface SampleLibraryOrigin {
+  libraryId: string | null;
+  libraryName: string | null;
+  adapter: string | null;
+  jobId: string | null;
+  itemCount: number;
+  /** Only when the sample was written from exactly ONE catalogued item. */
+  item: SampleLibraryItem | null;
+}
+
+function textOrNull(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value : null;
+}
+
+export function sampleLibraryOrigin(
+  sample: Pick<AgentSampleRow, "source" | "metadata">,
+): SampleLibraryOrigin | null {
+  if (sample.source !== "library") return null;
+  const block = isJsonObject(sample.metadata)
+    ? sample.metadata[SAMPLE_MEDIA_CATALOG_KEY]
+    : null;
+  const media: JsonObject = isJsonObject(block) ? block : {};
+  const items = Array.isArray(media.items) ? media.items.filter(isJsonObject) : [];
+  const only = items.length === 1 ? items[0] : null;
+  return {
+    libraryId: textOrNull(media.library_id),
+    libraryName: textOrNull(media.library_name),
+    adapter: textOrNull(media.adapter),
+    jobId: textOrNull(media.job_id),
+    itemCount: items.length,
+    item: only
+      ? { title: textOrNull(only.title), url: textOrNull(only.url) }
+      : null,
+  };
+}
+
 /** Derived at read time from the head hashes — never persisted. */
 export function sampleFreshness(
   sample: Pick<AgentSampleRow, "input_contract_hash" | "output_contract_hash">,

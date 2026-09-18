@@ -62,8 +62,40 @@ agent builder. Do not re-add chips, bars, or strips to any run surface.
   (RLS-scoped) showing raw inputs + expandable final response, click-through
   to the run (no-dead-ends), one-click save as `source='borrowed'` candidate
   with `source_conversation_id` provenance.
+- **Load sample data from a Library** —
+  `components/samples/LoadFromLibraryDialog.tsx`, opened from the Candidates
+  header. Pick one of your media Libraries, pick the catalogued items that
+  already have a transcript, and the MEDIA CATALOG writes the test cases: the
+  dialog POSTs the server-declared per-item action `use_as_agent_test_cases`
+  through `createJob` (`features/source-library/api.ts`) with
+  `params.agent_id`, and NEVER writes an `agent.exemplar` row itself. It is the
+  exact reverse of the Library-side door (`AgentParamPicker` in the Library's
+  action confirm) — one action, one server path, two entrances. The job is
+  asynchronous, so the confirmation says only what happened ("N items were
+  sent"), watches `fetchAgentSamples` a bounded six times at 4 s, and says
+  plainly when nothing has landed instead of claiming success. A Library whose
+  items have no transcript gets a sentence naming the remedy (transcribe them
+  in the Library) and no start button — `libraryReadiness` in that file is the
+  pure decision, guarded by
+  `components/samples/__tests__/library-origin.test.tsx`. Every failure prints
+  the server's own `MediaApiError.message` (+ `remedy`).
 - **Mandate bench** — `features/mandates/admin/` reads the same table filtered
   by `mandate_id`; its saves stamp `agent_id` too.
+
+## Where a sample came from (`source`)
+
+`source` is `captured` (auto-capture), `borrowed` (from a real run),
+`bench` (mandate test bench) or — since 2026-09-17 — **`library`**: written by
+the media catalog's `use_as_agent_test_cases` action, whose provenance lands
+under `metadata.media_catalog` as
+`{key, action, library_id, library_name, adapter, job_id, items: [{source_row_id,
+external_id, title, url, published_at, transcript_id, segment_count}],
+bindings}`. `sampleLibraryOrigin` (in `service.ts`) is the ONE reader of that
+block and `components/samples/SampleOriginLine.tsx` the one renderer: the
+Library's name links to `/libraries/<id>`, and a sample made from exactly one
+item links that item's `url`. A row whose `source` is `library` ALWAYS renders
+an origin — a missing or malformed block says "From a Library" rather than
+nothing, because a blank line is the silent failure this guards.
 
 ## Server side (aidream)
 
@@ -93,6 +125,11 @@ agent builder. Do not re-add chips, bars, or strips to any run surface.
   lives at `../../../../common-docs/systems/agents/agent-samples/HANDOFF.md`.
 
 ## Change Log
+
+- 2026-09-17 — The reverse door: test cases can now be loaded FROM a media
+  Library without leaving the agent build page, through the same
+  `use_as_agent_test_cases` job the Library side runs; `source = 'library'`
+  samples render the Library they came from and the item behind them.
 
 - 2026-09-09 — Mandate Run once reuses AgentSamplesManager and the agent sample store; form fill preserves input provenance and reports unused values.
 
