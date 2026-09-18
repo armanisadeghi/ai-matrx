@@ -947,3 +947,76 @@ export interface MapHistoryListOptions {
   /** Clamped to >= 0; 0 when omitted. */
   offset?: number;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// The page-mapping ledger (CONTRACTS §8 readers)
+//
+// These four read the SITE's mapping ledger, `seo.page_mapping_queue` — what
+// the "map the pages" run enrolled, what it settled, and what it could not
+// place. They are site-scoped, never map-scoped: a ledger row belongs to a
+// site, and the map is only what the site currently uses.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * One row of `seo.page_mapping_status` — the ledger for one site, rolled up.
+ * The function is `RETURNS TABLE`, so PostgREST answers with an ARRAY of
+ * exactly one row; the wrapper hands back that row (see `pageMappingStatus`).
+ *
+ * Every `*_mapped` figure is the DONE slice of the figure beside it, so
+ * "43% of this site's clicks are on the map" is a division a screen can do
+ * without a second call. `next_url` is the pending page with the most clicks —
+ * what the next press will start on — and `last_error` is the newest failure
+ * still standing, not a count.
+ */
+export type PageMappingStatus =
+  Database["seo"]["Functions"]["page_mapping_status"]["Returns"][number];
+
+/**
+ * One topic the mapper says this map is MISSING: pages it could not place that
+ * all named the same subject. THE BAR is two pages asking, or one page we have
+ * actually crawled — a suggestion resting on a single uncrawled URL is held
+ * back instead (see {@link PageMappingWantedTopicHeldBack}), never dropped.
+ */
+export type PageMappingWantedTopic =
+  Database["seo"]["Functions"]["page_mapping_wanted_topics"]["Returns"][number];
+
+/**
+ * A wanted topic that did NOT clear the bar, with `held_back_because` — the
+ * sentence saying what would promote it. Listed, never hidden: a suggestion
+ * the system is sitting on is a decision a person is entitled to see.
+ */
+export type PageMappingWantedTopicHeldBack =
+  Database["seo"]["Functions"]["page_mapping_wanted_topics_held_back"]["Returns"][number];
+
+/**
+ * One active page of a site that sits on NO live topic of the map.
+ *
+ * The function `jsonb_strip_nulls` each item, so every field below except
+ * `page_id`, `url` and `clicks` can be ABSENT rather than null — a page that
+ * was never enrolled has no `queue_status` at all. `rendition_of` names the
+ * canonical page this one is a second address of (amp / paginated / parameter
+ * variant); a rendition is not a gap, it is a duplicate address.
+ */
+export interface PageWithoutTopic {
+  page_id: string;
+  url: string;
+  clicks: number;
+  queue_status?: string;
+  mapping_source?: string;
+  last_error?: string;
+  rendition_of?: string;
+}
+
+/**
+ * Result of `seo.list_pages_without_topic`. Paged: `total` counts every bare
+ * page, `items` carries one page of them (the function clamps `limit` to
+ * 1..1000, defaulting to 200, and `offset` to >= 0).
+ */
+export interface PagesWithoutTopicResult {
+  site_id: string;
+  map_id: string;
+  total: number;
+  limit: number;
+  offset: number;
+  items: PageWithoutTopic[];
+}

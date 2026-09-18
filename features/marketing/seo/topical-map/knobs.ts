@@ -1,6 +1,6 @@
 // features/marketing/seo/topical-map/knobs.ts
 //
-// The 27 organization-configurable opinions behind every topical-map screen
+// The 53 organization-configurable opinions behind every topical-map screen
 // (requirements §0.1 and §5, law 6: opinions become knobs). Feature key
 // `seo.topical_map` in `platform.feature_knob`; every row is overridable by
 // organization, brand, site and user.
@@ -10,10 +10,19 @@
 // on a missing row precisely so a frozen fallback can never silently replace an
 // admin's choice. A screen that cannot read its knobs says so and offers the
 // remedy — it does not quietly render the shape this file happens to describe.
+//
+// 🚨 THE COUNT IS THE ROW SET, NOT A NUMBER SOMEBODY TYPED. `TOPICAL_MAP_KNOB_KEYS`
+// is every `seo.topical_map` key the database holds (measured live 2026-09-18,
+// 53 rows). This file used to read 27 of them, and the 26 it skipped — every
+// mapper, intent and region ceiling, the geography policy, the table's default
+// column set — were read nowhere in this repo at all, so an admin turning them
+// changed nothing a person could see. A lane that needs a knob this file lacks
+// escalates to the coordinator (one migration, one edit here); it never reads
+// `platform.feature_knob` itself (CONTRACTS §7).
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import { captureError } from "@/lib/diagnostics/errorCaptureStore";
 import {
@@ -22,8 +31,15 @@ import {
   type KnobEnumAddress,
   type KnobEnumValue,
 } from "@/features/settings/universal/knobEnumVocabularies.generated";
-import { knobBool, knobInt, knobString } from "@/lib/knobs/featureKnobs";
+import {
+  knobBool,
+  knobInts,
+  knobString,
+  knobStringList,
+} from "@/lib/knobs/featureKnobs";
 import { createClient } from "@/utils/supabase/client";
+
+import { topicalMapKeys } from "./hooks";
 
 export const TOPICAL_MAP_KNOB_FEATURE = "seo.topical_map";
 
@@ -60,6 +76,10 @@ export type MapProposalReviewMode = MapKnobEnum<"proposal_review_mode">;
 export type MapIntentReviewMode = MapKnobEnum<"intent_review_mode">;
 export type MapBulkActionConfirm = MapKnobEnum<"bulk_action_confirm">;
 export type MapDescriptionRegenerationMode = MapKnobEnum<"description_regeneration_mode">;
+/** `geography_branch_policy` — what happens when an author proposes a PLACE as a topic. */
+export type MapGeographyBranchPolicy = MapKnobEnum<"geography_branch_policy">;
+/** `region_value_evidence` — how sure the region pass must be before it writes a place. */
+export type MapRegionValueEvidence = MapKnobEnum<"region_value_evidence">;
 
 /** `graph_encoding` — what shape and color mean in the graph view (§2.2). */
 export interface MapGraphEncoding {
@@ -85,6 +105,7 @@ export interface TopicalMapKnobs {
   default_view: MapDefaultView;
   outline_detail: MapOutlineDetail;
   outline_hover_popover: boolean;
+  outline_intent_dots: boolean;
   outline_description_max_chars: number;
   outline_max_chars: number;
   // The graph's bands (§2.2)
@@ -92,22 +113,52 @@ export interface TopicalMapKnobs {
   graph_band_compact_max: number;
   graph_band_line_max: number;
   graph_encoding: MapGraphEncoding;
+  graph_auto_layout: boolean;
+  // The table (§2.6)
+  table_default_columns: string[];
   // The detail panel (§2.3)
   detail_panel: MapDetailPanel;
   // Agents (§2.4)
   topic_agent_change_mode: MapAgentChangeMode;
   map_agent_change_mode: MapAgentChangeMode;
   description_regeneration_mode: MapDescriptionRegenerationMode;
-  mapping_batch_size: number;
   // Proposals (§2.5)
   proposal_mode: MapProposalMode;
   proposal_review_mode: MapProposalReviewMode;
+  // Home (§1)
+  home_single_map_opens_workspace: boolean;
   // Convergence (§2.7, U5)
   intent_review_mode: MapIntentReviewMode;
   bulk_action_confirm: MapBulkActionConfirm;
   bulk_action_confirm_threshold: number;
   intent_colors: MapIntentColors;
   performance_window_days: number;
+  pages_low_traffic_clicks_max: number;
+  // The page mapper's own ceilings (`POST /seo/sites/{site_id}/map/pages`)
+  mapping_batch_size: number;
+  mapping_concurrent_batches: number;
+  mapping_confidence_floor: number;
+  mapping_consecutive_failure_stop: number;
+  mapping_daily_page_ceiling: number;
+  mapping_max_attempts: number;
+  mapping_max_topics_per_page: number;
+  mapping_stale_claim_minutes: number;
+  // The intent proposer's own ceilings (`POST /seo/sites/{site_id}/map/intents`)
+  intent_batch_size: number;
+  intent_concurrent_batches: number;
+  intent_confidence_floor: number;
+  intent_consecutive_failure_stop: number;
+  intent_daily_page_ceiling: number;
+  intent_max_attempts: number;
+  intent_sibling_roster_max: number;
+  intent_stale_claim_minutes: number;
+  intent_summary_max_words: number;
+  // The region pass (`POST /seo/sites/{site_id}/map/regions`)
+  region_binding_batch_size: number;
+  region_daily_page_ceiling: number;
+  region_min_pages_per_value: number;
+  region_value_evidence: MapRegionValueEvidence;
+  geography_branch_policy: MapGeographyBranchPolicy;
   // Builder shape ceilings (the map builder's own knobs, read by screens that
   // explain what a generation run will produce)
   overview_min_nodes: number;
@@ -118,36 +169,90 @@ export interface TopicalMapKnobs {
   page_summary_max_words: number;
 }
 
-/** Every key this feature declares. The length of this list IS the count. */
-export const TOPICAL_MAP_KNOB_KEYS = [
-  "bulk_action_confirm",
+/**
+ * The integer knobs. `knobInts` reads them out of the ONE cached
+ * `platform.feature_knob` window, so this list costs no extra round trips.
+ */
+const INT_KNOB_KEYS = [
   "bulk_action_confirm_threshold",
-  "default_view",
-  "description_regeneration_mode",
-  "detail_panel",
   "graph_band_card_max",
   "graph_band_compact_max",
   "graph_band_line_max",
-  "graph_encoding",
-  "intent_colors",
-  "intent_review_mode",
-  "map_agent_change_mode",
+  "intent_batch_size",
+  "intent_concurrent_batches",
+  "intent_confidence_floor",
+  "intent_consecutive_failure_stop",
+  "intent_daily_page_ceiling",
+  "intent_max_attempts",
+  "intent_sibling_roster_max",
+  "intent_stale_claim_minutes",
+  "intent_summary_max_words",
   "mapping_batch_size",
+  "mapping_concurrent_batches",
+  "mapping_confidence_floor",
+  "mapping_consecutive_failure_stop",
+  "mapping_daily_page_ceiling",
+  "mapping_max_attempts",
+  "mapping_max_topics_per_page",
+  "mapping_stale_claim_minutes",
   "neighborhood_max_nodes",
   "neighborhood_min_nodes",
   "outline_description_max_chars",
-  "outline_detail",
-  "outline_hover_popover",
   "outline_max_chars",
   "overview_max_nodes",
   "overview_min_nodes",
   "page_summary_max_words",
+  "pages_low_traffic_clicks_max",
   "performance_window_days",
-  "proposal_mode",
-  "proposal_review_mode",
-  "topic_agent_change_mode",
+  "region_binding_batch_size",
+  "region_daily_page_ceiling",
+  "region_min_pages_per_value",
   "topic_description_max_chars",
 ] as const satisfies readonly (keyof TopicalMapKnobs)[];
+
+/** The boolean knobs. */
+const BOOL_KNOB_KEYS = [
+  "graph_auto_layout",
+  "home_single_map_opens_workspace",
+  "outline_hover_popover",
+  "outline_intent_dots",
+] as const satisfies readonly (keyof TopicalMapKnobs)[];
+
+/** The enum knobs, every one narrowed onto its OWN row's `allowed_values`. */
+const ENUM_KNOB_KEYS = [
+  "bulk_action_confirm",
+  "default_view",
+  "description_regeneration_mode",
+  "detail_panel",
+  "geography_branch_policy",
+  "intent_review_mode",
+  "map_agent_change_mode",
+  "outline_detail",
+  "proposal_mode",
+  "proposal_review_mode",
+  "region_value_evidence",
+  "topic_agent_change_mode",
+] as const satisfies readonly (keyof TopicalMapKnobs)[];
+
+/**
+ * The `value_type = 'json'` knobs: two objects and one ordered list of column
+ * ids. They are NOT readable through the int/bool/string helpers.
+ */
+const JSON_KNOB_KEYS = [
+  "graph_encoding",
+  "intent_colors",
+  "table_default_columns",
+] as const satisfies readonly (keyof TopicalMapKnobs)[];
+
+/** Every key this feature declares. The length of this list IS the count. */
+export const TOPICAL_MAP_KNOB_KEYS = [
+  ...INT_KNOB_KEYS,
+  ...BOOL_KNOB_KEYS,
+  ...ENUM_KNOB_KEYS,
+  ...JSON_KNOB_KEYS,
+]
+  .slice()
+  .sort() as readonly (keyof TopicalMapKnobs)[];
 
 /**
  * `featureKnobs` has readers for numbers, booleans, strings and string LISTS,
@@ -158,7 +263,7 @@ export const TOPICAL_MAP_KNOB_KEYS = [
  * a half-read legend silently drawn in the wrong colors is the failure mode the
  * knob system exists to prevent.
  */
-async function readJsonObjectKnobs(): Promise<{
+export async function readJsonObjectKnobs(): Promise<{
   graph_encoding: MapGraphEncoding;
   intent_colors: MapIntentColors;
 }> {
@@ -238,15 +343,21 @@ async function readJsonObjectKnobs(): Promise<{
  * and the reader falls back to the row's own `default_value` — the value the
  * database itself calls correct, never a constant frozen in this file.
  */
-function enumKnob<K extends string>(
-  key: K,
-  value: string,
-): MapKnobEnum<K> {
+function enumKnob<K extends string>(key: K, value: string): MapKnobEnum<K> {
   const address = `${TOPICAL_MAP_KNOB_FEATURE}.${key}` as KnobEnumAddress;
   const narrowed = asKnobEnumValue(address, value);
   if (narrowed !== null) return narrowed as MapKnobEnum<K>;
 
   const vocabulary = KNOB_ENUM_VOCABULARIES[address];
+  // A key this build does not know as an enum at all is NOT a degradation
+  // case: there is no row-declared default to fall back to, so it raises like
+  // any other malformed knob rather than handing the screen `undefined`.
+  if (!vocabulary) {
+    throw new Error(
+      `feature knob "${address}" is read as an enum, but no vocabulary for it exists in ` +
+        "knobEnumVocabularies.generated.ts. Run `pnpm generate:knob-enum-vocabularies`.",
+    );
+  }
   try {
     captureError({
       source: "feature-knob-vocabulary",
@@ -278,96 +389,48 @@ function enumKnob<K extends string>(
   return vocabulary.default as MapKnobEnum<K>;
 }
 
-/** Reads all 27. One cached fetch backs every call (see `featureKnobs`). */
+async function readBoolKnobs<K extends string>(
+  keys: readonly K[],
+): Promise<{ [P in K]: boolean }> {
+  const out = {} as { [P in K]: boolean };
+  for (const key of keys) {
+    out[key] = await knobBool(TOPICAL_MAP_KNOB_FEATURE, key);
+  }
+  return out;
+}
+
+async function readEnumKnobs<K extends string>(
+  keys: readonly K[],
+): Promise<{ [P in K]: MapKnobEnum<P> }> {
+  const out = {} as { [P in K]: MapKnobEnum<P> };
+  for (const key of keys) {
+    const raw = await knobString(TOPICAL_MAP_KNOB_FEATURE, key);
+    out[key] = enumKnob(key, raw) as { [P in K]: MapKnobEnum<P> }[K];
+  }
+  return out;
+}
+
+/** Reads all 53. One cached fetch backs every call (see `featureKnobs`). */
 export async function readTopicalMapKnobs(): Promise<TopicalMapKnobs> {
   const f = TOPICAL_MAP_KNOB_FEATURE;
-  const [
-    json,
-    defaultView,
-    outlineDetail,
-    outlineHoverPopover,
-    outlineDescriptionMaxChars,
-    outlineMaxChars,
-    graphBandCardMax,
-    graphBandCompactMax,
-    graphBandLineMax,
-    detailPanel,
-    topicAgentChangeMode,
-    mapAgentChangeMode,
-    descriptionRegenerationMode,
-    mappingBatchSize,
-    proposalMode,
-    proposalReviewMode,
-    intentReviewMode,
-    bulkActionConfirm,
-    bulkActionConfirmThreshold,
-    performanceWindowDays,
-    overviewMinNodes,
-    overviewMaxNodes,
-    neighborhoodMinNodes,
-    neighborhoodMaxNodes,
-    topicDescriptionMaxChars,
-    pageSummaryMaxWords,
-  ] = await Promise.all([
+  const [ints, bools, enums, json, tableDefaultColumns] = await Promise.all([
+    knobInts(f, INT_KNOB_KEYS),
+    readBoolKnobs(BOOL_KNOB_KEYS),
+    readEnumKnobs(ENUM_KNOB_KEYS),
     readJsonObjectKnobs(),
-    knobString(f, "default_view"),
-    knobString(f, "outline_detail"),
-    knobBool(f, "outline_hover_popover"),
-    knobInt(f, "outline_description_max_chars"),
-    knobInt(f, "outline_max_chars"),
-    knobInt(f, "graph_band_card_max"),
-    knobInt(f, "graph_band_compact_max"),
-    knobInt(f, "graph_band_line_max"),
-    knobString(f, "detail_panel"),
-    knobString(f, "topic_agent_change_mode"),
-    knobString(f, "map_agent_change_mode"),
-    knobString(f, "description_regeneration_mode"),
-    knobInt(f, "mapping_batch_size"),
-    knobString(f, "proposal_mode"),
-    knobString(f, "proposal_review_mode"),
-    knobString(f, "intent_review_mode"),
-    knobString(f, "bulk_action_confirm"),
-    knobInt(f, "bulk_action_confirm_threshold"),
-    knobInt(f, "performance_window_days"),
-    knobInt(f, "overview_min_nodes"),
-    knobInt(f, "overview_max_nodes"),
-    knobInt(f, "neighborhood_min_nodes"),
-    knobInt(f, "neighborhood_max_nodes"),
-    knobInt(f, "topic_description_max_chars"),
-    knobInt(f, "page_summary_max_words"),
+    // `table_default_columns` is an ORDERED LIST of column ids, so it goes
+    // through the list reader: a non-array row, or a member that is not a
+    // string, raises instead of becoming a column set that matches nothing.
+    knobStringList(f, "table_default_columns"),
   ]);
 
   return {
-    default_view: enumKnob("default_view", defaultView),
-    outline_detail: enumKnob("outline_detail", outlineDetail),
-    outline_hover_popover: outlineHoverPopover,
-    outline_description_max_chars: outlineDescriptionMaxChars,
-    outline_max_chars: outlineMaxChars,
-    graph_band_card_max: graphBandCardMax,
-    graph_band_compact_max: graphBandCompactMax,
-    graph_band_line_max: graphBandLineMax,
+    ...ints,
+    ...bools,
+    ...enums,
     graph_encoding: json.graph_encoding,
-    detail_panel: enumKnob("detail_panel", detailPanel),
-    topic_agent_change_mode: enumKnob("topic_agent_change_mode", topicAgentChangeMode),
-    map_agent_change_mode: enumKnob("map_agent_change_mode", mapAgentChangeMode),
-    description_regeneration_mode: enumKnob(
-      "description_regeneration_mode",
-      descriptionRegenerationMode,
-    ),
-    mapping_batch_size: mappingBatchSize,
-    proposal_mode: enumKnob("proposal_mode", proposalMode),
-    proposal_review_mode: enumKnob("proposal_review_mode", proposalReviewMode),
-    intent_review_mode: enumKnob("intent_review_mode", intentReviewMode),
-    bulk_action_confirm: enumKnob("bulk_action_confirm", bulkActionConfirm),
-    bulk_action_confirm_threshold: bulkActionConfirmThreshold,
     intent_colors: json.intent_colors,
-    performance_window_days: performanceWindowDays,
-    overview_min_nodes: overviewMinNodes,
-    overview_max_nodes: overviewMaxNodes,
-    neighborhood_min_nodes: neighborhoodMinNodes,
-    neighborhood_max_nodes: neighborhoodMaxNodes,
-    topic_description_max_chars: topicDescriptionMaxChars,
-    page_summary_max_words: pageSummaryMaxWords,
+    table_default_columns: tableDefaultColumns,
   };
 }
 
@@ -379,40 +442,32 @@ export interface TopicalMapKnobsState {
 }
 
 /**
- * The 27 knobs, for a client screen. `knobs` is null until they load and stays
+ * The 53 knobs, for a client screen. `knobs` is null until they load and stays
  * null on failure — a caller renders the failure, never a guessed default.
+ *
+ * It is a TanStack query (`topicalMapKeys.knobs`, 60s fresh) rather than the
+ * `useEffect` + `useState` pair it used to be, so that every map surface
+ * mounted at once — the body, the topic panel, a peek, a window — shares ONE
+ * in-flight read and ONE cache entry instead of each running its own effect.
+ * The returned SHAPE is unchanged on purpose: no consumer has to know.
  */
 export function useTopicalMapKnobs(): TopicalMapKnobsState {
-  const [state, setState] = useState<TopicalMapKnobsState>({
-    knobs: null,
-    loading: true,
-    error: null,
+  const query = useQuery({
+    queryKey: topicalMapKeys.knobs,
+    queryFn: readTopicalMapKnobs,
+    staleTime: 60_000,
   });
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const knobs = await readTopicalMapKnobs();
-        if (!cancelled) setState({ knobs, loading: false, error: null });
-      } catch (cause) {
-        if (cancelled) return;
-        setState({
-          knobs: null,
-          loading: false,
-          error:
-            cause instanceof Error
-              ? cause
-              : new Error("Could not read the topical map settings."),
-        });
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  return state;
+  return {
+    knobs: query.data ?? null,
+    loading: query.isPending,
+    error:
+      query.error === null
+        ? null
+        : query.error instanceof Error
+          ? query.error
+          : new Error("Could not read the topical map settings."),
+  };
 }
 
 /**
