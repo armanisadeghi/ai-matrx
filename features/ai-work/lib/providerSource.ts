@@ -75,3 +75,18 @@ export function resolveCodingTool(
   }
   return null;
 }
+
+/**
+ * The name a person reads for a `source_feature` under `code-plugin`: the tool
+ * ("Claude Code", "Codex", "Cursor", "VS Code"), or "Replies from AI Matrx"
+ * for `coding_session_reply`. An unknown value is shown as-is, never guessed.
+ */
+export function codePluginFeatureLabel(sourceFeature: string): string {
+  if (sourceFeature === CODING_SESSION_REPLY_SOURCE_FEATURE) {
+    return "Replies from AI Matrx";
+  }
+  return (
+    codingToolFromSource(CODE_PLUGIN_SOURCE_APP, sourceFeature)?.label ??
+    sourceFeature
+  );
+}

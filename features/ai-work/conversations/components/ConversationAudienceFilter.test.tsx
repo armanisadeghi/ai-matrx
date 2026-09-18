@@ -20,9 +20,13 @@ const FACETS: EntityFacets = {
       { value: "external", count: 7 },
       { value: "internal", count: 2 },
     ],
-    audience_source_app: [
-      { value: "chat:matrx", count: 4 },
-      { value: "external:codex", count: 7 },
+    // The live shape since 2026-09-18 (cvx_list_facets_external_breaks_down_by_tool.sql):
+    // every outside coding tool is source_app 'code-plugin', so external rows
+    // are NOT in audience_source_app — their tool is counted by source_feature.
+    audience_source_app: [{ value: "chat:matrx", count: 4 }],
+    audience_source_feature: [
+      { value: "external:codex", count: 5 },
+      { value: "external:claude-code", count: 2 },
     ],
   },
 };
@@ -93,6 +97,7 @@ describe("ConversationAudienceFilter facet readiness", () => {
 
     expect(container.textContent).toContain("Loading…");
     expect(container.textContent).not.toContain("7");
+    expect(container.textContent).not.toContain("Claude Code");
     expect(container.textContent).not.toContain("Codex");
   });
 
@@ -113,5 +118,26 @@ describe("ConversationAudienceFilter facet readiness", () => {
     if (!retry) throw new Error("the failed facet read did not offer Retry");
     act(() => retry.click());
     expect(list.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it("breaks External down by TOOL and the chip filters on source_feature", () => {
+    const list = makeList({ facetsLoading: false, facetsError: null });
+    act(() => {
+      root.render(<ConversationAudienceFilter list={list} />);
+    });
+
+    const group = container.querySelector('[aria-label="Which tool"]');
+    if (!group) throw new Error("External showed no per-tool chips");
+    const chips = Array.from(group.querySelectorAll("button")).map(
+      (button) => button.textContent,
+    );
+    expect(chips).toEqual(["Codex5", "Claude Code2"]);
+
+    const codex = group.querySelector("button");
+    act(() => codex!.click());
+    expect(list.setFilters).toHaveBeenCalledWith({
+      audience: { kind: "select", values: ["external"] },
+      source_feature: { kind: "select", values: ["codex"] },
+    });
   });
 });

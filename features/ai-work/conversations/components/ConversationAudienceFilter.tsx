@@ -6,13 +6,14 @@
 // cut inside the chosen bucket.
 //
 //   AI chats · External app runs · Internal Matrx runs         (+ All)
-//   └ inside External: Claude Code · Codex · Cursor · VS Code
+//   └ inside External: Claude Code · Codex · Cursor · VS Code (the TOOL —
+//                      source_feature under source_app 'code-plugin')
 //   └ inside AI chats: Matrx · Chrome extension · Desktop · …
 //   └ inside Internal: Subagent run · Workflow run · Scheduled run · …
 //
 // Every chip carries a TRUE count from the facets query — the same query that
 // feeds the Filters panel — and clicking it writes the ordinary filter bag
-// (`audience`, then `source_app` / `conversation_type`), so nothing here is a
+// (`audience`, then `source_app` / `source_feature` / `conversation_type`), so nothing here is a
 // private second filtering path that could disagree with a column header.
 //
 // The bucket itself is derived on the server (`public.cvx_audience`); this
@@ -27,6 +28,7 @@ import {
 } from "@/lib/entity-list/types";
 import type { EntityListController } from "@/lib/entity-list/config";
 import { appLabel } from "@/features/agents/redux/conversation-history/source-registry";
+import { codePluginFeatureLabel } from "@/features/ai-work/lib/providerSource";
 import { audienceLabel, conversationTypeLabel } from "../presentation";
 import {
   applyAudience,
@@ -50,32 +52,56 @@ const BUCKET_HINTS: Record<ConversationAudienceId, string> = {
     "Runs the platform started for itself while the app works — subagents, workflow steps, scheduled jobs, podcast builds, research sweeps, page-automatic runs.",
 };
 
-/**
- * The second cut for one bucket: which facet family, which filter it writes,
- * and how a raw value is named. Counts come from the bucket-scoped facet
- * families (`audience_source_app`, `audience_conversation_type`) so the number
- * on a chip is the number of rows in THIS bucket, not corpus-wide.
- */
-function secondCut(bucket: ConversationAudienceId): {
+type CutFilterId = "source_app" | "source_feature" | "conversation_type";
+
+interface CutFamily {
   facet: string;
-  filterId: "source_app" | "conversation_type";
+  filterId: CutFilterId;
   format: (value: string) => string;
   noneLabel: string;
-} {
+}
+
+/**
+ * The second cut for one bucket: which facet families, which filter each
+ * writes, and how a raw value is named. Counts come from the bucket-scoped
+ * facet families (`audience_source_app`, `audience_source_feature`,
+ * `audience_conversation_type`) so the number on a chip is the number of rows
+ * in THIS bucket, not corpus-wide.
+ *
+ * External is cut by TOOL: every outside coding tool is source_app
+ * 'code-plugin' (Arman, 2026-09-18), so its tool lives in source_feature and
+ * the chip writes the `source_feature` filter. An external row some other app
+ * stamped (bound to a coding session) still cuts by its app.
+ */
+function secondCut(bucket: ConversationAudienceId): CutFamily[] {
   if (bucket === "internal") {
-    return {
-      facet: "audience_conversation_type",
-      filterId: "conversation_type",
-      format: conversationTypeLabel,
-      noneLabel: "Untyped",
-    };
+    return [
+      {
+        facet: "audience_conversation_type",
+        filterId: "conversation_type",
+        format: conversationTypeLabel,
+        noneLabel: "Untyped",
+      },
+    ];
   }
-  return {
+  const byApp: CutFamily = {
     facet: "audience_source_app",
     filterId: "source_app",
     format: appLabel,
     noneLabel: "No app recorded",
   };
+  if (bucket === "external") {
+    return [
+      {
+        facet: "audience_source_feature",
+        filterId: "source_feature",
+        format: codePluginFeatureLabel,
+        noneLabel: "No tool recorded",
+      },
+      byApp,
+    ];
+  }
+  return [byApp];
 }
 
 function chipClass(selected: boolean): string {
@@ -109,23 +135,26 @@ export function ConversationAudienceFilter({
     active === "all" || active === "custom"
       ? null
       : (active as ConversationAudienceId);
-  const cut = bucket ? secondCut(bucket) : null;
+  const cut = bucket ? secondCut(bucket) : [];
   // A facet response belongs to its exact query. Do not leave second-cut chips
   // visible with cached counts while the bucket/search/scope changes.
-  const cutOptions =
-    cut && facetsReady
-      ? facetValues(list.facets, cut.facet)
+  const cutOptions = facetsReady
+    ? cut.flatMap((family) =>
+        facetValues(list.facets, family.facet)
           .filter((option) => option.value.startsWith(`${bucket}:`))
           .map((option) => ({
+            family,
             value: option.value.slice(bucket!.length + 1),
             count: option.count,
-          }))
-      : [];
-  const cutFilter = cut ? list.query.filters[cut.filterId] : undefined;
-  const cutSelected =
-    cutFilter && cutFilter.kind === "select"
-      ? new Set(cutFilter.values)
+          })),
+      )
+    : [];
+  const selectedIn = (filterId: CutFilterId): Set<string> => {
+    const filter = list.query.filters[filterId];
+    return filter && filter.kind === "select"
+      ? new Set(filter.values)
       : new Set<string>();
+  };
 
   return (
     <div className="flex flex-col gap-2">
@@ -207,31 +236,40 @@ export function ConversationAudienceFilter({
         )}
       </div>
 
-      {cut && cutOptions.length > 1 && (
+      {cutOptions.length > 1 && (
         <div
           className="flex flex-wrap items-center gap-1"
           role="group"
-          aria-label={bucket === "internal" ? "Which kind of run" : "Which app"}
+          aria-label={
+            bucket === "internal"
+              ? "Which kind of run"
+              : bucket === "external"
+                ? "Which tool"
+                : "Which app"
+          }
         >
           {cutOptions.map((option) => {
-            const selected = cutSelected.has(option.value);
+            const { family } = option;
+            const familySelected = selectedIn(family.filterId);
+            const selected = familySelected.has(option.value);
             const label =
               option.value === "__none__"
-                ? cut.noneLabel
-                : cut.format(option.value);
+                ? family.noneLabel
+                : family.format(option.value);
             return (
               <button
-                key={option.value}
+                key={`${family.filterId}:${option.value}`}
                 type="button"
                 aria-pressed={selected}
                 onClick={() => {
                   // One chip = one value. Clicking the selected chip clears the
                   // cut (back to the whole bucket); clicking another replaces it.
+                  // A chip from one family replaces a chip from the other
+                  // (tool vs app), so every family's filter is cleared first.
                   const next = { ...list.query.filters };
-                  if (selected && cutSelected.size === 1) {
-                    delete next[cut.filterId];
-                  } else {
-                    next[cut.filterId] = {
+                  for (const other of cut) delete next[other.filterId];
+                  if (!(selected && familySelected.size === 1)) {
+                    next[family.filterId] = {
                       kind: "select",
                       values: [option.value],
                     };

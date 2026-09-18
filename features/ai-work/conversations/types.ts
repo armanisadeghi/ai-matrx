@@ -105,7 +105,7 @@ export function readAudience(filters: EntityFilters): ConversationAudience {
 /**
  * The filter bag for one audience. "all" removes the axis entirely. Switching
  * buckets also drops the second-cut filters (app, run type) that only make
- * sense inside the bucket being left — otherwise "External" could arrive
+ * sense inside the bucket being left (app, tool, run type) — otherwise "External" could arrive
  * pre-narrowed to "Workflow run" and show nothing, which reads as a broken
  * page rather than a filter.
  */
@@ -115,6 +115,7 @@ export function applyAudience(
 ): EntityFilters {
   const next = { ...filters };
   delete next.source_app;
+  delete next.source_feature;
   delete next.conversation_type;
   if (audience === "all") {
     delete next.audience;
