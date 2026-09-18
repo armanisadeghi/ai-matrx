@@ -16354,7 +16354,7 @@
           "GitHub Integrations (internal)"
         ],
         "summary": "Internal Access Token",
-        "description": "The sandbox git credential helper's one source of a live GitHub token.\n\nA refusal here is read by a MACHINE and then printed to a person standing at\na `git push` that just failed, so it names the FACT — which user id was\nlooked up, and what exists for it — before any remedy. The old body was the\nremedy alone (\"Connect GitHub in AI Matrx…\"), which sent a connected user\n(2026-09-18) to reconnect an account that was already connected and hid the\nonly datum that could have identified the real cause.",
+        "description": "The sandbox git credential helper's one source of a live GitHub token.\n\nA refusal here is read by a MACHINE and then printed to a person standing at\na `git push` that just failed, so it names the FACT — which user id was\nlooked up, and what exists for it — before any remedy. The old body was the\nremedy alone (\"Connect GitHub in AI Matrx…\"), which sent a connected user\n(2026-09-18) to reconnect an account that was already connected and hid the\nonly datum that could have identified the real cause.\n\nHand a sandbox the user's short-lived GitHub token.\n\nWHAT THE ORGANIZATION DOES AND DOES NOT DO HERE. The bridge handshake\n(``_bridge_user_id``) admits the call only with BOTH halves of the request\ncontext and installs them, and it PROVES the forwarded user is a member of\nthe forwarded organization before admitting anything — that membership\nproof is what bounds the shared bridge secret to a tenant the actor already\nbelongs to. The token itself is NOT org-scoped, and saying so would be a\nlie: ``resolve_github_access_token(user_id)`` resolves the person's own\nGitHub connection, by user. A personal integration connection carries NO\norganization at all — ``users.integration_connections`` is constrained to\n``owner_type='user' AND owner_user_id IS NOT NULL AND organization_id IS\nNULL`` (CHECK ``integration_connections_owner_shape``; see\n``aidream/services/microsoft_integrations/FEATURE.md``), where that column\nis the owner discriminator, not a tenancy stamp.\n\nSo: membership is proven at the bridge; the credential handed back is the\nperson's own, the same one they would get anywhere else in the product.\nThis route resolves no organization of its own.",
         "operationId": "internal_access_token_github_integrations_internal_access_token_get",
         "responses": {
           "200": {
@@ -64281,7 +64281,7 @@
           "RAG"
         ],
         "summary": "Rag Ingest Conversation",
-        "description": "Streaming conversation ingest (stream-everything mandate, 2026-07-06).\n\nThin wrapper around ``POST /rag/ingest`` so callers can ingest a whole\nconversation without knowing the ``source_kind='cx_message'`` plumbing.\nThe resolver is fail-closed on ownership: a conversation the caller\ndoes not own resolves to nothing and streams a clean \"source_not_found\"\nresult rather than an error or a cross-tenant leak.\n\nThe effective org is resolved (personal-org fallback) before the ingest\ncall so the written kg_chunks are always org-scoped (non-NULL invariant).",
+        "description": "Streaming conversation ingest (stream-everything mandate, 2026-07-06).\n\nThin wrapper around ``POST /rag/ingest`` so callers can ingest a whole\nconversation without knowing the ``source_kind='cx_message'`` plumbing.\nThe resolver is fail-closed on ownership: a conversation the caller\ndoes not own resolves to nothing and streams a clean \"source_not_found\"\nresult rather than an error or a cross-tenant leak.\n\nThe organization is READ off the request context before the ingest call,\nso the written kg_chunks are always org-scoped (non-NULL invariant) and\nalways in the tenant the caller was admitted for.",
         "operationId": "rag_ingest_conversation_rag_conversations__conversation_id__ingest_post",
         "parameters": [
           {
@@ -83259,7 +83259,7 @@
           "Sandbox Bridge"
         ],
         "summary": "List Changes",
-        "description": "Polling fallback for the in-sandbox watcher's down-direction.\n\nThe recommended live path is Supabase Realtime on ``cld_files`` (see\n``db/migrations/0002_cld_files_realtime.sql``). When Realtime isn't\navailable — sandbox missing the realtime client lib, missing Supabase\ncreds, or a transient WebSocket drop — the watcher polls this endpoint\nevery ~30s with the ISO timestamp of the most recent change it has\nalready processed.\n\nReturns only **modifications** (rows with ``updated_at > since``,\n``deleted_at IS NULL``), filtered and bounded server-side via\n``list_changed_files_async``. Soft-deletes are not surfaced through this\nendpoint — they only show up via Realtime, or are picked up by the next\nsession's bulk down-sync.\n\nResponse shape:\n    {\n        \"files\":       [{ id, file_path, file_size, mime_type,\n                          current_version, checksum, updated_at }, ...],\n        \"next_cursor\": \"<iso of most recent updated_at>\",\n        \"deletions_supported\": false\n    }",
+        "description": "THE downstream path for the in-sandbox replica — the whole of it.\n\nA sandbox never talks to the platform database; the bridge is the one hop,\nand it is what carries the organization. The Supabase-Realtime subscriber\nthat used to sit beside the poller was deleted on 2026-09-17, so everything\na replica must learn has to be in this answer. The box polls with the ISO\ntimestamp of the newest change it has already applied and follows the\ncadence this response instructs (``poll_after_seconds`` / ``Retry-After``).\n\nReturns every change with ``updated_at > since`` in this tenant, oldest\nfirst, bounded server-side — **modifications and deletions alike**. A\nsoft-deleted row is sent marked ``deleted: true`` (with its ``deleted_at``)\nand ``deletions_supported`` is ``true``: until 2026-09-17 it was ``false``\nand tombstones were filtered out, so a file the person deleted in the UI\nstayed on the sandbox's disk and the shutdown up-sync PUT IT BACK — the\ndelete undid itself. Deletions ride the same cursor because\n``platform._touch_row`` stamps ``updated_at`` on a soft-delete.\n\nContract both halves meet on: matrx-sandbox\n``sandbox-image/sdk/matrx_agent/cloud_sync/FEATURE.md`` § The ``/changes``\ncontract.\n\nResponse shape:\n    {\n        \"files\":       [{ id, file_path, file_size, size_bytes, mime_type,\n                          current_version, checksum, updated_at,\n                          deleted, deleted_at }, ...],\n        \"next_cursor\": \"<iso of most recent updated_at>\",\n        \"deletions_supported\": true,\n        \"poll_after_seconds\": 30\n    }",
         "operationId": "list_changes_cloud_files_changes_get",
         "parameters": [
           {
@@ -95937,7 +95937,7 @@
               }
             ],
             "title": "Organization Id",
-            "description": "Admin-only org override — should match the org used for the search."
+            "description": "The organization the search ran in; must match the organization this request was admitted for (a disagreeing value is a 409)."
           }
         },
         "type": "object",
@@ -109049,6 +109049,7 @@
           "append_native",
           "capabilities",
           "delete",
+          "delete_native_stream",
           "diagnose",
           "handoff",
           "health",
@@ -109184,11 +109185,114 @@
         "title": "BridgeCapabilityReport",
         "description": "The `capabilities` action's answer: provider × origin, with reasons.\n\nGeneralizes the Claude-only ``GET /api/coding-sessions/claude/capabilities``\nprobe to every provider and every origin, and is the ONLY place a client\nmay learn what it can do — see ``supported_actions``. A client that\nhardcodes an action list breaks on the first server that predates or\npostdates it, which is why there is no version number to negotiate."
       },
+      "BridgeChangeEntry": {
+        "properties": {
+          "id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id"
+          },
+          "file_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Path"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
+          "current_version": {
+            "type": "integer",
+            "title": "Current Version",
+            "default": 1
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "checksum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Checksum"
+          },
+          "deleted": {
+            "type": "boolean",
+            "title": "Deleted",
+            "default": false
+          },
+          "deleted_at": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "file_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Size"
+          }
+        },
+        "type": "object",
+        "title": "BridgeChangeEntry",
+        "description": "A change-feed row: a modification, or a DELETION that says so.\n\nTwo fields the plain listing has no use for, both named by the contract the\nsandbox implements (matrx-sandbox\n``sandbox-image/sdk/matrx_agent/cloud_sync/FEATURE.md`` § The ``/changes``\ncontract):\n\n* ``deleted`` — the marker. ``true`` means this path is gone for this\n  person; the replica unlinks it. Stated, never inferred from absence,\n  because absence is also what a page limit looks like.\n* ``file_size`` — the contract's name for ``size_bytes``. Both are sent so\n  the poller finds the name it reads and nothing loses the one it had."
+      },
       "BridgeChangesResponse": {
         "properties": {
           "files": {
             "items": {
-              "$ref": "#/components/schemas/BridgeFileEntry"
+              "$ref": "#/components/schemas/BridgeChangeEntry"
             },
             "type": "array",
             "title": "Files"
@@ -110597,6 +110701,31 @@
             "type": "boolean",
             "title": "Deleted",
             "default": false
+          },
+          "stream_keys": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stream Keys"
+          },
+          "deleted_entries": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deleted Entries"
           },
           "hookSpecificOutput": {
             "anyOf": [
@@ -122266,6 +122395,32 @@
               }
             ],
             "title": "Session Id"
+          },
+          "hosted_runtime_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hosted Runtime Id"
+          },
+          "hosted_project_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hosted Project Key"
           },
           "fork_up_to_message_id": {
             "anyOf": [
@@ -134889,7 +135044,7 @@
               }
             ],
             "title": "Owner Organization Id",
-            "description": "Optional org placement for an owned agent. Ignored unless owner_user_id is set; when omitted it resolves to the owner's personal org via resolve_effective_organization_id. Never NULL on the written row."
+            "description": "Org placement for an owned agent. Ignored unless owner_user_id is set; REQUIRED when it is — the organization the caller was admitted for (context_organization_id(ctx)) or the one on the record being processed. Never NULL on the written row, never defaulted."
           }
         },
         "type": "object",
@@ -146713,6 +146868,28 @@
               }
             ],
             "title": "Schema Source"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "organization_source": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Source"
           }
         },
         "type": "object",
