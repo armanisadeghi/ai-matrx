@@ -52437,6 +52437,7 @@ export type Database = {
         Row: {
           auto_index_non_pdf: boolean | null
           auto_rag_enabled: boolean
+          coding_session_provider_pin_wins: boolean | null
           created_at: string
           daily_auto_rag_budget_usd: number
           daily_auto_rag_cost_used_usd: number
@@ -52448,6 +52449,7 @@ export type Database = {
         Insert: {
           auto_index_non_pdf?: boolean | null
           auto_rag_enabled?: boolean
+          coding_session_provider_pin_wins?: boolean | null
           created_at?: string
           daily_auto_rag_budget_usd?: number
           daily_auto_rag_cost_used_usd?: number
@@ -52459,6 +52461,7 @@ export type Database = {
         Update: {
           auto_index_non_pdf?: boolean | null
           auto_rag_enabled?: boolean
+          coding_session_provider_pin_wins?: boolean | null
           created_at?: string
           daily_auto_rag_budget_usd?: number
           daily_auto_rag_cost_used_usd?: number
@@ -63478,6 +63481,42 @@ export type Database = {
           },
         ]
       }
+      org_context_ledger: {
+        Row: {
+          actor: string | null
+          detail: string | null
+          id: number
+          kind: string
+          occurred_at: string
+          organization_id: string | null
+          previous_organization_id: string | null
+          relation: string
+          row_ref: string | null
+        }
+        Insert: {
+          actor?: string | null
+          detail?: string | null
+          id?: never
+          kind: string
+          occurred_at?: string
+          organization_id?: string | null
+          previous_organization_id?: string | null
+          relation: string
+          row_ref?: string | null
+        }
+        Update: {
+          actor?: string | null
+          detail?: string | null
+          id?: never
+          kind?: string
+          occurred_at?: string
+          organization_id?: string | null
+          previous_organization_id?: string | null
+          relation?: string
+          row_ref?: string | null
+        }
+        Relationships: []
+      }
       org_module_config: {
         Row: {
           auto_ingest: boolean | null
@@ -67127,6 +67166,15 @@ export type Database = {
         }[]
       }
       normalize_identity_args: { Args: { p_args: string }; Returns: string }
+      org_context_bleed_report: {
+        Args: never
+        Returns: {
+          crossed: number
+          newest: string
+          parent: string
+          relation: string
+        }[]
+      }
       orgs_tightening: { Args: { p_token: string }; Returns: string[] }
       promote_custom_field_index: {
         Args: { p_concurrently?: boolean; p_definition_id: string }
