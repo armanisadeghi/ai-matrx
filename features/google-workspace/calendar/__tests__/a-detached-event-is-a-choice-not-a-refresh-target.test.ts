@@ -74,10 +74,13 @@ describe("calendarEventHealthOverride", () => {
     expect(health.grantDetail).toContain("no longer exists");
   });
 
-  it("passes an available event's health straight through, unmodified", () => {
+  it("passes an available event's health through, adding only the open-control label (F-66)", () => {
     const row = calendarEventRow({ sync_status: "available" });
     const produced: DetailSourceHealth = { source: "Google Calendar", grant: "ok" };
-    expect(calendarEventHealthOverride(row, produced)).toBe(produced);
+    expect(calendarEventHealthOverride(row, produced)).toEqual({
+      ...produced,
+      openAtSourceLabel: "Open in Google Calendar",
+    });
   });
 });
 

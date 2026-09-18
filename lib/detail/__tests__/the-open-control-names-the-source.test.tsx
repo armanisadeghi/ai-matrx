@@ -34,7 +34,7 @@ function Body() {
   return <DetailBody core={core} />;
 }
 
-async function labelFor(source: string): Promise<string> {
+async function labelFor(source: string, openAtSourceLabel?: string): Promise<string> {
   const ports = makePorts({
     resolveType: () =>
       synced({
@@ -43,6 +43,7 @@ async function labelFor(source: string): Promise<string> {
         grantDetail: null,
         lastRefreshedAt: null,
         openAtSourceHref: "https://docs.google.com/document/d/abc/edit",
+        ...(openAtSourceLabel !== undefined ? { openAtSourceLabel } : {}),
       }),
   });
   const m = mount(<Body />, ports);
@@ -68,5 +69,16 @@ describe("the open-at-source control", () => {
 
   it("keeps the generic phrase when the source says nothing", async () => {
     expect(await labelFor("  ")).toBe("Open at source");
+  });
+
+  // 🚨 F-66 — a per-kind label wins. `source` for the Docs family answers for
+  // three products at once ("Google Docs, Sheets & Drive files"), so the
+  // derivation above can only ever say "Open in Google" — a registration that
+  // knows the ROW's own kind (a Doc, not a Sheet, not a plain Drive file) sets
+  // `openAtSourceLabel` and it must win over the family-wide guess.
+  it("prefers the producer's own openAtSourceLabel over the derived family guess", async () => {
+    expect(
+      await labelFor("Google Docs, Sheets & Drive files", "Open in Google Sheets"),
+    ).toBe("Open in Google Sheets");
   });
 });

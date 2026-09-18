@@ -37,6 +37,7 @@ import {
   asGoogleDocumentRow,
   googleDocumentDetailRow,
   googleDocumentFields,
+  googleDocumentOpenAtSourceLabel,
   GOOGLE_DOCUMENT_TYPE,
   mimeKindLabel,
   syncStatusOf,
@@ -98,6 +99,10 @@ function refineHealth(base: DetailRecordType): DetailRecordType["health"] {
     // no `external_url` (the column is nullable and the generic producer reads
     // only the column). Null only when the row itself is unreadable here.
     const openHref = typed ? googleFileHref(typed) : null;
+    // 🚨 F-66 — the row's own kind names the control ("Open in Google Docs" /
+    // "Sheets" / "Drive"), never the generic family-wide derivation the
+    // primitive falls back to for a producer with no opinion.
+    const openLabel = typed ? googleDocumentOpenAtSourceLabel(typed.mime_kind) : undefined;
     if (typed && status === "detached") {
       // 🚨 THE TERMINAL STATE IS NOT A FAILURE, AND IT OFFERS NO CONTROL THAT
       // CANNOT WORK. The person kept this record as AI Matrx data: the grant
@@ -114,6 +119,7 @@ function refineHealth(base: DetailRecordType): DetailRecordType["health"] {
           typed.sync_status_reason?.trim() ||
           "Kept as AI Matrx data: this record no longer refreshes from Google and keeps what it had.",
         openAtSourceHref: openHref,
+        openAtSourceLabel: openLabel,
         onRefresh: null,
         onReconnect: null,
       };
@@ -144,6 +150,7 @@ function refineHealth(base: DetailRecordType): DetailRecordType["health"] {
             "Google would not give us this file the last time we asked. " + FILE_REFUSAL_REMEDY,
         }),
         openAtSourceHref: openHref,
+        openAtSourceLabel: openLabel,
         onRefresh: refresh,
       };
     }
@@ -152,11 +159,13 @@ function refineHealth(base: DetailRecordType): DetailRecordType["health"] {
         ...produced,
         onRefresh: refresh,
         openAtSourceHref: openHref ?? produced.openAtSourceHref,
+        openAtSourceLabel: openLabel ?? produced.openAtSourceLabel,
       };
     }
     return {
       ...produced,
       openAtSourceHref: openHref ?? produced.openAtSourceHref,
+      openAtSourceLabel: openLabel ?? produced.openAtSourceLabel,
       // `unknown` is the vocabulary's honest word for "the grant is not the
       // problem, this file is" — `revoked` would send the person to reconnect
       // something a reconnect cannot repair.

@@ -115,8 +115,12 @@ const GRANT_WORD: Record<DetailSourceHealth["grant"], string> = {
  * source that lists several things is cut back to the provider word, a short
  * source is used whole, and no source at all keeps the generic phrase rather than
  * letting the screen guess.
+ *
+ * A registration that knows the row's exact kind sets `health.openAtSourceLabel`
+ * instead (a Doc vs. a Sheet vs. a plain Drive file; "Open in Google Calendar"
+ * for an event) — that field wins over this derivation below, in `HealthStrip`.
  */
-function openAtSourceLabel(source: string): string {
+function deriveOpenAtSourceLabel(source: string): string {
   const named = source.trim().replace(/\s+/g, " ");
   if (!named) return "Open at source";
   const listsSeveral = /[,&]/.test(named) || named.split(" ").length > 3;
@@ -199,7 +203,7 @@ function HealthStrip({ health }: { health: DetailSourceHealth }) {
             className="inline-flex h-6 items-center gap-1 rounded px-1.5 hover:bg-accent hover:text-foreground pointer-coarse:h-10"
           >
             <ExternalLinkIcon className="h-3 w-3" />
-            {openAtSourceLabel(health.source)}
+            {health.openAtSourceLabel ?? deriveOpenAtSourceLabel(health.source)}
           </a>
         ) : null}
       </span>

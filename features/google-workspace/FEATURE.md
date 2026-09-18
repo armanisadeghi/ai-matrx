@@ -408,6 +408,32 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 ## Change log
 
+- `2026-09-18` — **F-66, F-60's escalation: the open control names the kind, not just the
+  family.** `DetailBody`'s open-at-source control (F-60, same day) derives a label from
+  `health.source` alone, which is right for a producer with no opinion but can only ever say
+  "Open in Google" for a source that answers for a whole product family — Docs, Sheets and
+  Drive files share one health producer, so the derivation cannot tell them apart. The Doc
+  registration (`documents/itemType.tsx` + `record.ts`'s new `googleDocumentOpenAtSourceLabel`)
+  now sets the primitive's new per-record `health.openAtSourceLabel` field
+  (`lib/detail/types.ts`) from the row's own `mime_kind` — the same field `googleFileHref`
+  branches on for the URL shape — so a Doc says "Open in Google Docs", a Sheet says "Open in
+  Google Sheets", and every other kind (a Slides deck arrives as `other`) says "Open in Google
+  Drive". The Calendar registration (`calendar/record.ts`'s `calendarEventHealthOverride`) sets
+  it to "Open in Google Calendar" in every branch, rather than leaving it to the same-words
+  coincidence of the generic derivation on a short source. Tests: new
+  `documents/__tests__/the-open-control-names-the-file-kind.test.ts` (4 cases, one per kind
+  plus an unrecognised fallback) and `calendar/__tests__/the-open-control-names-google-
+  calendar.test.ts` (4 cases across the health override's branches), both reproduced red
+  against the code with the label stripped, then green; the shared
+  `lib/detail/__tests__/the-open-control-names-the-source.test.tsx` gained a case proving the
+  per-record label wins over the family-wide guess. One existing calendar assertion
+  (`a-detached-event-is-a-choice-not-a-refresh-target.test.ts`, "passes an available event's
+  health straight through, unmodified") was revised: the registration now deliberately
+  annotates every branch with the label, so the old byte-identity check no longer holds and was
+  never the point of that test (the point — no control survives that a reconnect cannot
+  repair — still holds). The primitive's field was mirrored into the package
+  (`aidream apps/shared/detail/src`) in the same session; see `lib/detail/FEATURE.md`'s own
+  entry for the full detail on that half.
 - `2026-09-18` — **F-67: Cursor Bugbot's three findings on F-60's commit (8093b77a, PR 228),
   fixed.** (a) MED — `GoogleDocumentPanel` mounted the Append composer for every non-detached
   row regardless of what it mirrors, but the composer only ever calls `appendGoogleDocument`

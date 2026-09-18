@@ -56,6 +56,27 @@ export function mimeKindLabel(mimeKind: string): string {
     : "Google Drive file";
 }
 
+const OPEN_AT_SOURCE_LABEL: Readonly<Record<GoogleDocumentMimeKind, string>> = {
+  document: "Open in Google Docs",
+  spreadsheet: "Open in Google Sheets",
+  other: "Open in Google Drive",
+};
+
+/**
+ * 🚨 F-66 — the open control's label reads the ROW'S OWN KIND, never the title
+ * or a guess. `health.source` for this record answers for a whole family
+ * ("Google Docs, Sheets & Drive files"), so `DetailBody`'s own derivation can
+ * only ever say "Open in Google" — true, but not what the person can tell from
+ * looking at the row: `mime_kind` (the same field `googleFileHref` branches on
+ * to pick the URL shape) says whether this file IS a Doc, a Sheet, or plain
+ * Drive, and this label says that back to them.
+ */
+export function googleDocumentOpenAtSourceLabel(mimeKind: string): string {
+  return mimeKind in OPEN_AT_SOURCE_LABEL
+    ? OPEN_AT_SOURCE_LABEL[mimeKind as GoogleDocumentMimeKind]
+    : "Open in Google Drive";
+}
+
 /**
  * 🚨 THE HEALTH STRIP READS THE ROW, AND THIS ROW DOES NOT NAME ITS PROVIDER.
  *

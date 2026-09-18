@@ -667,6 +667,7 @@ export function calendarEventHealthOverride(
       grantDetail:
         row.sync_status_reason?.trim() ||
         "Kept as AI Matrx data: this event no longer refreshes from Google Calendar and keeps what it had.",
+      openAtSourceLabel: "Open in Google Calendar",
       onRefresh: null,
       onReconnect: null,
     };
@@ -684,9 +685,12 @@ export function calendarEventHealthOverride(
       grantDetail:
         eventSentence ??
         "This event is kept in step with Google Calendar; we could not check the connection behind it just now.",
+      // 🚨 F-66 — a Calendar event is never a family of products the way a
+      // Drive file is; there is exactly one place it opens.
+      openAtSourceLabel: "Open in Google Calendar",
     };
   }
-  if (!unavailable) return produced;
+  if (!unavailable) return { ...produced, openAtSourceLabel: "Open in Google Calendar" };
   return {
     ...produced,
     // `unknown` is the vocabulary's honest word for "the grant is not the
@@ -694,6 +698,7 @@ export function calendarEventHealthOverride(
     // something a reconnect cannot repair.
     grant: produced.grant === "ok" ? "unknown" : produced.grant,
     grantDetail: [eventSentence, produced.grantDetail].filter(Boolean).join(" "),
+    openAtSourceLabel: "Open in Google Calendar",
   };
 }
 

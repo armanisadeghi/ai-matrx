@@ -243,6 +243,16 @@ export interface DetailSourceHealth {
   grantDetail?: string | null;
   openAtSourceHref?: string | null;
   /**
+   * The per-record label for the "open at source" control, when the
+   * registration knows it precisely (chair, 2026-09-18). `DetailBody` derives
+   * a label from `source` on its own (see `deriveOpenAtSourceLabel`) for a
+   * producer that has no opinion, but that derivation guesses from a family
+   * name ("Google Docs, Sheets & Drive files" → "Open in Google") — a
+   * registration that knows the row's exact kind (a Doc vs. a Sheet vs. a
+   * plain Drive file; a Calendar event) sets this instead and it wins.
+   */
+  openAtSourceLabel?: string;
+  /**
    * The repair offered when the grant is not `ok`. 🚨 THREE-VALUED, AND THE
    * THREE MEAN DIFFERENT THINGS (Bugbot round 18 on frontend PR 228):
    *
