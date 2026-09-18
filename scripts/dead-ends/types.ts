@@ -13,6 +13,7 @@ export type DeadEndRuleId =
   | "bare-id-text"
   | "unlinked-entity-name"
   | "unlinked-count"
+  | "toast-names-record"
   | "no-doors-in-file";
 
 export type DeadEndSeverity = "high" | "medium" | "low";
@@ -108,6 +109,7 @@ export const RULE_TITLES: Record<DeadEndRuleId, string> = {
   "bare-id-text": "Bare id rendered as text",
   "unlinked-entity-name": "Entity name rendered with no door",
   "unlinked-count": "Count of records with no way to reach them",
+  "toast-names-record": "Toast announces a record with no door",
   "no-doors-in-file": "Surface names records and imports no door primitive",
 };
 
@@ -118,6 +120,8 @@ export const RULE_DOCTRINE: Record<DeadEndRuleId, string> = {
     "If you render it by name, you must let them open it. Every reference is a door.",
   "unlinked-count":
     "A count is a door too — every number that describes records must reach those records.",
+  "toast-names-record":
+    "A toast that announces a record must open it. The toast expires; the record does not.",
   "no-doors-in-file":
     "The Inventory Law: don't build a poorer surface than the platform already gives you.",
 };

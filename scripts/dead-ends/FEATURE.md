@@ -15,7 +15,7 @@ the campaign has a checker AND a standing scoreboard, not a paragraph.
 
 | Part | Where | What it does |
 |---|---|---|
-| **Checker** | `scripts/dead-ends/` (`pnpm check:dead-ends`) | AST rules over every `.tsx` in `features/`, `components/`, `app/`, `lib/`. Ranked report, exit 0. |
+| **Checker** | `scripts/dead-ends/` (`pnpm check:dead-ends`) | AST rules over every `.tsx` in `features/`, `components/`, `app/`, `lib/` — rendered JSX **and** the toasts a surface raises. Ranked report, exit 0. Proves it can fail: `pnpm check:dead-ends --self-test`. |
 | **Scoreboard** | `/administration/reporting/dead-ends` (`features/admin/dead-ends/`) | Renders the committed snapshot: totals, trend, worst features/files, every finding openable, one-click repair briefs. |
 | **ESLint rule** | `matrx/no-bare-id-text` (`eslint.config.mjs`, `warn`) | The narrow slice: a **named** id (`agentId`, `task_id`) rendered as JSX text with no door above it. |
 
@@ -24,6 +24,15 @@ no cross-file context, so it only claims the shape it can be certain about. The
 checker carries the fuzzy cases (a name whose id is in scope, a count with no
 list behind it, a surface that imports no door primitive at all) because those
 need whole-file reasoning and a read of the live entity registry.
+
+**`pnpm check:record-toasts` is a DIFFERENT rule on the same call sites, and
+neither check is the other's substitute.** That one asks whether a record-naming
+toast CARRIES the record (`recordToast` + `{ type, id, title }`) so it can be
+withdrawn when the sentence stops being true; `toast-names-record` asks whether
+the person can OPEN the record the sentence names. A call can pass either and
+fail the other, and the two fixes are different lines of code — so the rules
+live apart on purpose, one detector each. Never add a door check there or an
+identity check here.
 
 **The one thing ESLint structurally cannot do is name the entity.** The registry
 (`features/scopes/registry/entityRegistry.ts`) is a TS module the rule cannot
@@ -144,6 +153,7 @@ cannot see the bars.
 | `bare-id-text` | high when the token has a route | An id-shaped expression (`x.id`, `r.agent_id`, `fileId`) is rendered as JSX text with no door ancestor. |
 | `unlinked-entity-name` | high when the token has a route | A name-shaped expression (`x.name`, `agentName`, `noteTitle`) is rendered as text **and the same object's id is in scope in that file** — the surface provably knows the identity and withheld the door. |
 | `unlinked-count` | medium | `{n} agents` / `{x.length} members` with no navigation — a count is a door. |
+| `toast-names-record` | high when the token has a route | A `toast.*` / `recordToast.*` call from `@/lib/toast` whose **static** message says this entity was created (or names it as the destination a record was saved, moved or linked to) and whose call carries **no door** — no `action` in the options bag. A toast is the worst place for a dead end: the sentence removes itself after four seconds, so a door the user did not take in that window is gone. The remedy is both halves — `{ action: { label, onClick } }` in the call *and* a door on the surface, because the toast expires and the record does not. |
 | `no-doors-in-file` | high | A file reads records (imports a service/slice/selector), **presents** them — by name, or by an id whose entity resolves — and imports **no** door mechanism at all. "Owns a door" is read from the **import graph**, never raw file text: a `next/link` or `hrefFor` mentioned in a comment, a string or dead code used to excuse a genuinely door-less surface. Debug panels, diagnostics and test clients are excluded from **both** triggers: they display raw records by design, and their individual `bare-id-text` / `unlinked-entity-name` findings still report. |
 
 `high` means "the entity already has an `hrefFor`, so the fix is one
@@ -245,6 +255,49 @@ Additional gates, each traceable to a real false positive:
 - **`restore` is a door** — a soft-deleted record's row has no "open" by design.
 - **Reference verbs beat prose** — "Saved to {noteTitle}" is doctrine's own
   class and must survive the prose gate.
+- **Toast gates (`toast-names-record`), every one of them measured against the
+  full census rather than guessed.** The first cut reported 79 call sites; ten
+  were read against their source and six were noise, so each gate below removed
+  a class and the rule ended at **6 findings, all six read** (4 plain violations,
+  2 judgment calls, 0 known false):
+  1. **A message this rule cannot read statically is not a finding** — a
+     `toast.success(msg)` built elsewhere is a stated blind spot, never a pass.
+  2. **A FAILED operation is not a dead end** — nothing was created, so there is
+     nothing to open; naming the failure is the surface being honest.
+  3. **An instruction or prerequisite is not an announcement** — "Choose an
+     organization before creating a note." names the thing the user has *not*
+     done (9 of the first 79).
+  4. **Trashed, deleted, unpublished, clipboard — gone, or never a record.**
+  5. **The verb must name THIS entity, within two words** — "Created *folder* and
+     moved the note" was reported against `note`, and "Imported 42 segments from
+     *file*" against `file`.
+  6. **The reference family needs the noun AFTER the phrase** — the record is the
+     destination, so "Note added to the knowledge base" (the note is the surface's
+     own subject; the knowledge base is not a record) drops out, while "Saved to
+     {scopeName}" stays. `sent to` / `exported to` are excluded outright: those
+     name a recipient.
+  7. **"this agent" / "your files" is the surface's own subject**, unless the noun
+     is also spoken plainly somewhere in the sentence.
+  8. **An options argument this rule cannot read counts as a door.** It reports a
+     door it can prove ABSENT, never one it cannot see — `toast.success(msg, door)`
+     must pass, and the shipped fix has exactly that shape.
+  9. **The handler already opened it** — `router.replace(…)` / `open…(…)` after the
+     toast is the Door Law honoured in the strongest way: the user is standing on
+     the record.
+  10. **The mutation's own result landed on this screen** — `const res = await …`
+      then `setResults(res.files)` (one alias hop followed, and `add…`/`push…`
+      count as setters). A bare `onChanged()` / `refresh()` does NOT: it says
+      nothing about which collection came back, and the shipped offender called
+      exactly that.
+  11. **The handler reloads THIS entity's collection by name**
+      (`fetchAppsInitial()` after "App duplicated.") — name-matched to the token,
+      never any refresh.
+  12. **THE COHERENCE GATE, the load-bearing one: the handler must CALL something
+      that names this entity** (`createNoteAboutEvent(…)` before "Note created"),
+      reading invoked function names only — an identifier merely *passed*
+      (`confirmCandidate(partyId)`) is the surface's own subject.
+  13. **The file iterates this entity's collection** (`files.map(…)`) — the record
+      lands in a list the surface already shows, with that list's doors on it.
 - **`NON_RECORD_ID_RE` is deliberately narrow.** An earlier, longer list
   suppressed `brokerId`, `call_id`, `nodeId`, `blockId` — every one a real
   record here. Suppressing a real entity is worse than ranking it low.
@@ -290,6 +343,22 @@ files out of 6,809 scanned, in ~9s.**
   the trigger from emission would fire on all 31 — the false-positive class the
   first audit scored 0/9 on. Left as-is deliberately; re-measure before changing
   it.
+- **`toast-names-record` reads STATIC message text only**, in `.tsx` files only.
+  A message assembled elsewhere (`toast.success(buildMessage(row))`), a
+  `toast.custom(<JSX/>)`, and every toast raised from a `.ts` hook, service or
+  thunk are all invisible to it. A green run means "no offender this rule can
+  see", never "no toast leaves a record unreachable".
+- **`toast-names-record` deliberately ignores plain `saved` / `updated` /
+  `renamed`.** "Note saved" is almost always the record's own editor, where the
+  user is already standing; requiring a *creation* (or an explicit "saved to /
+  moved to / linked to") is what keeps the rule off the enormous
+  every-mutation-toast population. The cost is real: a genuine "Renamed X with no
+  door" is out of reach.
+- **Whether a toast's record is reachable ELSEWHERE on that surface is not
+  statically knowable**, and it is the whole question. Gates 10–13 above are the
+  honest approximations; the two remaining judgment-call findings
+  (`PipelineGraph`, `NewScopeInline`) both hang on an unnamed `refresh()` /
+  `onCreated?.()` — read the call site before believing or dismissing one.
 - **Only `features/`, `components/`, `app/` and `lib/` are scanned.** `hooks/`,
   `utils/`, `providers/` and `packages/` are invisible to the scoreboard — a
   surface rendered from there is not covered at all.
@@ -330,6 +399,11 @@ A missing door is almost always a missing `hrefFor`, not a false positive.
 4. Add the counter to the `byRule` literal in `check-dead-ends.ts`.
 5. Run against a feature you know well and read **every** finding before
    shipping. If more than ~1 in 10 is noise, the rule is not ready.
+6. Give it a RED-then-GREEN proof in `--self-test` (`selfTest()` in
+   `check-dead-ends.ts`, fixtures in `self-test/`): the real pre-fix bytes of a
+   surface that broke the law must report, and the fixed surface must not. Then
+   blunt the rule locally and watch the self-test fail — a guard nobody has seen
+   fail is not a guard.
 
 The dashboard needs no change — it iterates `byRule` and renders titles from
 the same maps.
@@ -344,6 +418,7 @@ the same maps.
 | `describe.ts` | ONE message builder, shared by the CLI and the dashboard |
 | `types.ts` | The published report contract (the dashboard depends on it) |
 | `allowlist.ts` | Deliberate exemptions, `reason` required by type |
+| `self-test/` | The RED fixture (`AgendaPanel.tsx` verbatim at `66f75b7a`) + what the GREEN half is — `self-test/README.md` |
 | `report.json` | Committed snapshot the dashboard renders |
 | `history.json` | Append-only totals per `--write`, capped at 120 points — the trend, with no new DB table |
 
@@ -357,6 +432,36 @@ new one.
 
 ## Change Log
 
+- **2026-09-18 (`toast-names-record`)** — the detector could not reach a record
+  named in a TOAST. `pnpm check:dead-ends` read JSX text only, so
+  `features/google-workspace/calendar/AgendaPanel.tsx` created a note, said
+  "Note created and linked to this event." and left that note reachable from
+  nothing, while every rule stayed green (V-20 N10; the instance was fixed in
+  `be673b90`, this is the class). New rule over `toast.*` / `recordToast.*` calls
+  from `@/lib/toast`: a static message that says this entity was created — or
+  names it as the destination something was saved/moved/linked to — with no
+  `action` door in the same call. The entity vocabulary is the same live
+  registry read every other rule uses (`nounsForToken`), never a hand list.
+  **Tuned against the full census, not a sample:** 79 → 55 → 37 → 31 → 13 → **6**
+  as thirteen gates went in, each one traceable to findings read against their
+  source (the ten audited first: "Agent created!" followed by
+  `router.replace(/agents/<id>/build)`, "Generated 3 images" with the results
+  rendered right there, "App duplicated." + `fetchAppsInitial()`, "Feedback sent
+  to agent" naming a recipient, "Note added to the knowledge base" naming the
+  note's own panel). Final 6 all read: 4 plain violations
+  (`SeoOperationsClient`, `noteMenuRegistry`, `NoteTabItem`,
+  `ProjectImportJsonPanel`), 2 judgment calls (`PipelineGraph`,
+  `NewScopeInline`), 0 known false. Nothing was baselined or allowlisted — this
+  check is loud and never blocking, so the six report on the scoreboard instead
+  of being silenced. The committed snapshot moves **36 → 59 findings (24 high, 35
+  medium) across 44 files, 8,520 scanned** — 6 of the 23 are this rule; the other
+  17 are the existing rules over code other lanes added since the last snapshot
+  was taken (8,121 → 8,520 files scanned), not a change in their behaviour. Also added `--self-test` (there was none): the pre-fix
+  `AgendaPanel` bytes must report at line 247 and the live file must stay clean,
+  proven failing-then-passing by blunting the rule. `pnpm check:record-toasts`
+  keeps its own, different rule (does the toast CARRY the record so it can be
+  withdrawn) — one detector per rule, stated in both this file and the rule's
+  header.
 - **2026-08-09** — Built. Checker (4 rules), scoreboard at
   `/administration/reporting/dead-ends`, `matrx/no-bare-id-text` ESLint rule,
   advisory wiring in `run-release-gates.sh`. Retuned after each of four

@@ -20,13 +20,23 @@
  *   pnpm check:dead-ends --path=<prefix> only files under a prefix
  *   pnpm check:dead-ends --limit=<n>     findings to print (default 40; 0 = all)
  *   pnpm check:dead-ends --strict        exit 1 when findings exist
+ *   pnpm check:dead-ends --self-test     prove the detector can still FAIL
  *
  * Admin dashboard: /administration/reporting/dead-ends
  * Contract + how to add a rule: scripts/dead-ends/FEATURE.md
  */
 
 import { execFileSync } from "node:child_process";
-import { existsSync, lstatSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  lstatSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { join, relative, sep } from "node:path";
 import { DEAD_END_ALLOWLIST } from "./allowlist";
 import { describeFinding } from "./describe";
@@ -78,6 +88,8 @@ pnpm check:dead-ends — the No Dead Ends Door Law detector.
                                        Quote route groups: --path='app/(admin)'
   pnpm check:dead-ends --limit=<n>     findings to print (default 40; 0 = all)
   pnpm check:dead-ends --strict        exit 1 when findings exist
+  pnpm check:dead-ends:self-test       prove the detector can still FAIL
+                                       (scripts/dead-ends/self-test/README.md)
 
 Always exits 0 unless --strict, a bad filter (exit 2), or a checker crash.
 Doctrine:  common-docs/policies/no-dead-ends.md
@@ -271,7 +283,99 @@ export function matchesPathFilter(relPath: string, prefix: string | null): boole
   return relPath === clean || relPath.startsWith(`${clean}/`);
 }
 
+/**
+ * `--self-test` — prove the detector can still FAIL, and prove it on the case
+ * that created the rule rather than on a toy.
+ *
+ * RED: `features/google-workspace/calendar/AgendaPanel.tsx` verbatim at
+ * `66f75b7a` (in `self-test/`), which created a note, named it in a toast and
+ * offered no door — `pnpm check:dead-ends` was green over it (V-20 N10).
+ * GREEN: the same file as it stands in the tree, fixed in `be673b90`.
+ *
+ * The green half reads the LIVE file on purpose: a frozen copy would keep
+ * passing after a regression to the real surface.
+ */
+const SELF_TEST_RED = join(ROOT, "scripts/dead-ends/self-test/agenda-panel-pre-fix.tsx.fixture");
+const SELF_TEST_GREEN = join(ROOT, "features/google-workspace/calendar/AgendaPanel.tsx");
+const SELF_TEST_RULE: DeadEndRuleId = "toast-names-record";
+
+function selfTest(): number {
+  const tokens = loadEntityTokens(ROOT);
+  const scan = (abs: string): DeadEndFinding[] => {
+    // A fixture is scanned through a temp `.tsx` twin: `shouldScanFile` refuses
+    // the `.fixture` extension by design, and the scanner must be entered the
+    // same way the real run enters it.
+    const dir = mkdtempSync(join(tmpdir(), "dead-ends-self-test-"));
+    try {
+      const twin = join(dir, "SelfTestSubject.tsx");
+      writeFileSync(twin, readFileSync(abs, "utf8"));
+      return scanFile(twin, { repoRoot: dir, tokens });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  };
+
+  let failed = false;
+
+  if (!existsSync(SELF_TEST_GREEN)) {
+    console.error(
+      `${RED}[dead-ends] SELF-TEST BROKEN${NC} — the green half points at ` +
+        `${relative(ROOT, SELF_TEST_GREEN)}, which is not in the tree. It moved or was ` +
+        `renamed: re-point SELF_TEST_GREEN in scripts/dead-ends/check-dead-ends.ts at the ` +
+        `same surface. This is not a pass.`,
+    );
+    return 1;
+  }
+
+  const red = scan(SELF_TEST_RED).filter((f) => f.rule === SELF_TEST_RULE);
+  if (red.length === 0) {
+    console.error(
+      `${RED}[dead-ends] SELF-TEST FAILED${NC} — ${relative(ROOT, SELF_TEST_RED)} is the ` +
+        `pre-fix AgendaPanel (commit 66f75b7a): it creates a note, names it in a toast and ` +
+        `gives no door, and \`${SELF_TEST_RULE}\` did not report it. The rule can no longer ` +
+        `fail, so a green run proves nothing. See scripts/dead-ends/self-test/README.md.`,
+    );
+    failed = true;
+  } else {
+    console.log(
+      `${GREEN}  ✓ red${NC}  ${relative(ROOT, SELF_TEST_RED)} → ${red.length} ` +
+        `${SELF_TEST_RULE} finding(s) at line ${red.map((f) => f.line).join(", ")} ` +
+        `${DIM}(entity: ${red.map((f) => f.entity).join(", ")})${NC}`,
+    );
+  }
+
+  const green = scan(SELF_TEST_GREEN).filter((f) => f.rule === SELF_TEST_RULE);
+  if (green.length > 0) {
+    console.error(
+      `${RED}[dead-ends] SELF-TEST FAILED${NC} — the LIVE ` +
+        `${relative(ROOT, SELF_TEST_GREEN)} carries a door in the toast (\`action\`) and on ` +
+        `the row, yet \`${SELF_TEST_RULE}\` reports it at line ` +
+        `${green.map((f) => f.line).join(", ")}. Either the rule now flags its own fix — a ` +
+        `false accusation that teaches agents to delete a correct door — or that surface ` +
+        `regressed. Read the call site before touching the rule.`,
+    );
+    failed = true;
+  } else {
+    console.log(
+      `${GREEN}  ✓ green${NC} ${relative(ROOT, SELF_TEST_GREEN)} → 0 ${SELF_TEST_RULE} findings ` +
+        `${DIM}(the toast carries "Open the note")${NC}`,
+    );
+  }
+
+  console.log(
+    failed
+      ? `\n${RED}[dead-ends] self-test FAILED.${NC}\n`
+      : `\n${GREEN}[dead-ends] self-test OK${NC} ${DIM}— the detector still reaches a record ` +
+        `named in a toast, and still clears the fixed surface.${NC}\n`,
+  );
+  return failed ? 1 : 0;
+}
+
 function main(): void {
+  if (process.argv.slice(2).includes("--self-test")) {
+    process.exitCode = selfTest();
+    return;
+  }
   const args = parseArgs();
   const tokens = loadEntityTokens(ROOT);
 
@@ -311,6 +415,7 @@ function main(): void {
     "bare-id-text": 0,
     "unlinked-entity-name": 0,
     "unlinked-count": 0,
+    "toast-names-record": 0,
     "no-doors-in-file": 0,
   } satisfies Record<DeadEndRuleId, number>;
   for (const f of findings) byRule[f.rule] += 1;

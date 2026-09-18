@@ -61,6 +61,16 @@ export function describeFinding(f: DescribableFinding): string {
         `"${f.expression}" counts records the user cannot reach. A count is a door — ` +
         `link it to the filtered list, open the peek, or drop the number.`
       );
+    case "toast-names-record":
+      return (
+        `The toast "${f.expression}" announces a \`${f.entity}\` record and gives the user no way to open it — ` +
+        `the toast expires (or is dismissed) and the record is then unreachable from this surface. ` +
+        `Pass a door in the same call: toast.success(msg, { action: { label: "Open the note", onClick: () => open… } }) ` +
+        `— and keep a door on the surface itself, because the toast goes away and the record does not.` +
+        (isRegistryToken(f.entity) && !f.entityHasRoute
+          ? ` \`${f.entity}\` has no hrefFor yet — add one in ${REGISTRY} so the door has somewhere to go.`
+          : "")
+      );
     case "no-doors-in-file":
       return (
         `This surface reads records and names them, but imports no door primitive ` +
