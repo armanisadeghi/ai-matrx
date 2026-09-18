@@ -54,9 +54,11 @@ import {
   UNAVAILABLE_EVENT_SENTENCE,
 } from "@/features/google-workspace/calendar/record";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
+import { EntityDoorControls } from "@/components/official/entity-ref/EntityDoorControls";
 import {
+  entityTokenForItemType,
   getItemConfig,
-  itemTypeForRecordTable,
+  recordTableTarget,
 } from "@/features/item-presentation/registry";
 import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
 import type { ItemType } from "@/features/item-presentation/types";
@@ -103,12 +105,26 @@ export function readBlock(value: unknown): Record<string, unknown> | null {
  * `record_table: "media.source_library"` to `type="calendar_event"` and got an
  * Open control for a calendar event with a foreign id — the V-21
  * `document → udt_document` defect in a new place. So when a row carries the
- * stamp, the stamp decides, through the ONE resolution
- * (`itemTypeForRecordTable`, derived from the item-presentation type map). A
- * stamp naming a table no item type reads resolves to nothing and this renders
- * NO door — which is the correct answer, because a door to the wrong record
- * reads as a fact and is a lie. `type` remains the answer for a row with no
- * stamp (an imported Person carries `person_id`, not `record_table`).
+ * stamp, the stamp decides, through the ONE resolution (`recordTableTarget`,
+ * derived from the entity registry and the item-presentation type map). A
+ * stamp naming a table NO REGISTERED ENTITY claims resolves to nothing and this
+ * renders NO door — which is the correct answer, because a door to the wrong
+ * record reads as a fact and is a lie. `type` remains the answer for a row with
+ * no stamp (an imported Person carries `person_id`, not `record_table`).
+ *
+ * 🚨 NO IN-PLACE OPENER IS NOT NO DOOR (F-104, V-23 NEW-6; ruling R35). The
+ * first version stopped at the opener: a row stamped
+ * `record_table: "media.source_library"` got no control at all, although
+ * `media_source_library` is a registered entity whose `hrefFor` —
+ * `/libraries/<id>` — is a working screen the person can use. R35 says
+ * `hrefFor` is the durable ADDRESS and `useOpenItemPresentation` is the DOOR,
+ * and both are required; so the refusal has a second leg. The opener runs when
+ * an item type reads the table; otherwise the token's own durable address is
+ * rendered through the platform's ONE address-door primitive
+ * (`EntityDoorControls` — open + new tab, and it renders nothing itself when
+ * the token has neither route nor peek); only when NEITHER answers is nothing
+ * rendered. The same ladder applies to an unstamped row, whose `type` may also
+ * be a registered entity with an address and no opener.
  */
 export const RecordDoor: React.FC<{
   type: ItemType;
@@ -121,14 +137,29 @@ export const RecordDoor: React.FC<{
 }> = ({ type, id, name, fallbackLabel = "record", recordTable }) => {
   const open = useOpenItemPresentation();
   const recordId = readText(id);
-  const stamped = itemTypeForRecordTable(recordTable);
-  // A stamp that arrived and named a table we cannot open is a REFUSAL, not a
+  const stamp = readText(recordTable);
+  const stamped = stamp ? recordTableTarget(recordTable) : null;
+  // A stamp that arrived and named a table NO entity claims is a REFUSAL, not a
   // reason to fall back to the caller's guess.
-  if (readText(recordTable) && !stamped) return null;
-  const resolvedType = stamped ?? type;
+  if (stamp && !stamped) return null;
+  const resolvedType = stamped?.itemType ?? (stamped ? null : type);
   const { config, recognized } = getItemConfig(resolvedType);
-  if (!recordId || !recognized || !config.open) return null;
   const label = name?.trim() || fallbackLabel;
+  if (!recordId) return null;
+  if (!recognized || !config.open) {
+    // LEG TWO (R35): no in-place opener — the durable address IS the door.
+    const token = stamped?.token ?? entityTokenForItemType(resolvedType);
+    if (!token) return null;
+    return (
+      <EntityDoorControls
+        token={token}
+        id={recordId}
+        name={name ?? label}
+        showOpen
+        alwaysShowActions
+      />
+    );
+  }
   return (
     <button
       type="button"
@@ -205,23 +236,40 @@ export const ServerSentence: React.FC<{
  *
  * THE FIX IS THE TABLE BELOW, encoded ONCE here and read by both Google blocks.
  * `P` = any `would_*` key arrived (non-null); `HOLD` = `dry_run` or
- * `awaiting_approval` read as a real `true`; `HOLD?` = one of those keys arrived
- * in a shape that is not a boolean, so we cannot read it; `C` = any
- * completed-write marker (`appended`, `written`, `created`, `imported`, `sent`)
- * read as a real `true`.
+ * `awaiting_approval` read as a real `true`; `X` = ANY claim key — hold OR
+ * completion — arrived in a shape that is not a boolean, so we cannot read it;
+ * `C` = any completed-write marker (`appended`, `written`, `created`,
+ * `imported`, `sent`) read as a real `true`.
  *
- * | P | HOLD | HOLD? | C | state              | leads with                                               | receipt chips |
- * |---|------|-------|---|--------------------|----------------------------------------------------------|---------------|
- * | y | any  | any   | y | `contradictory`    | nothing was written + names BOTH words it said           | suppressed    |
- * | n | y    | any   | y | `contradictory`    | same                                                     | suppressed    |
- * | y | n/a  | y     | n | `unreadable_hold`  | nothing is shown as written + names the unreadable value | suppressed    |
- * | n | n    | y     | n | `unreadable_hold`  | same                                                     | suppressed    |
- * | y | awaiting     | n     | n | `awaiting_approval` | waiting for a person to approve it              | suppressed    |
- * | n | awaiting     | n     | n | `awaiting_approval` | same                                            | suppressed    |
- * | y | dry-run or NONE | n  | n | `preview`          | nothing was written — this is a preview                 | suppressed    |
- * | n | dry-run      | n     | n | `preview`          | nothing was written, AND no preview arrived             | suppressed    |
- * | n | n            | n     | y | `receipt`          | nothing — the chips are the truth                       | allowed       |
- * | n | n            | n     | n | `none`             | nothing                                                  | allowed       |
+ * 🚨 `X` COVERS EVERY CLAIM KEY, NOT ONLY THE HOLD FLAGS (F-104, V-23 NEW-4).
+ * The shipped table gave an unreadable HOLD flag its own honest state and left
+ * an unreadable COMPLETION flag falling through to `none`: V-23's
+ * `{action: "append_document", title: "Q3 Plan", appended: "yes"}` rendered, in
+ * full, "Q3 Plan Append document" — nothing about whether the append happened.
+ * Worse, `appended` is in {@link WRITE_CLAIM_KEYS}, which both blocks omit from
+ * the meta strip and the leftovers, so the key vanished from the screen
+ * entirely: the one shape that most needs a reader is the one that got silence.
+ * Both flag families are declared `bool | None` and both are read the same way,
+ * so there is ONE unreadable rule for all of them, it names the key AND the
+ * value the tool actually sent, and no claim key can leave the screen without a
+ * word. (A `would_*` PREVIEW key has no unreadable reading: its value IS the
+ * change, of whatever shape, and `UnmodelledPreviews` prints every one that
+ * arrived — the schema's `| None` makes a null one an absent preview, which is
+ * why null stays `none` rather than screaming on every serializer that emits
+ * its nulls.)
+ *
+ * | P | HOLD | X | C | state               | leads with                                               | receipt chips |
+ * |---|------|---|---|---------------------|----------------------------------------------------------|---------------|
+ * | y | any  | any | y | `contradictory`   | nothing was written + names BOTH words it said           | suppressed    |
+ * | n | y    | any | y | `contradictory`   | same                                                     | suppressed    |
+ * | y | n/a  | y | n | `unreadable_claim` | nothing is shown as written + names the key AND value    | suppressed    |
+ * | n | n    | y | any | `unreadable_claim`| same — an unreadable `appended` is not an absent one     | suppressed    |
+ * | y | awaiting     | n | n | `awaiting_approval` | waiting for a person to approve it              | suppressed    |
+ * | n | awaiting     | n | n | `awaiting_approval` | same                                            | suppressed    |
+ * | y | dry-run or NONE | n | n | `preview`          | nothing was written — this is a preview          | suppressed    |
+ * | n | dry-run      | n | n | `preview`          | nothing was written, AND no preview arrived             | suppressed    |
+ * | n | n            | n | y | `receipt`          | nothing — the chips are the truth                       | allowed       |
+ * | n | n            | n | n | `none`             | nothing                                                  | allowed       |
  *
  * The two properties that matter, and the reason the table is a pure function
  * with its own table-driven test: **a `would_*` shape ALWAYS leads with
@@ -235,7 +283,7 @@ export type WriteClaimState =
   | "preview"
   | "awaiting_approval"
   | "contradictory"
-  | "unreadable_hold"
+  | "unreadable_claim"
   | "none";
 
 export interface WriteClaim {
@@ -254,8 +302,8 @@ export interface WriteClaim {
   previewKeys: string[];
   /** Which completed-write markers read as a real `true`. */
   completedKeys: string[];
-  /** Hold keys that arrived in a shape that is not a boolean. */
-  unreadableHoldKeys: string[];
+  /** Claim keys — hold OR completion — that arrived in a non-boolean shape. */
+  unreadableClaimKeys: string[];
 }
 
 export const HOLD_KEYS = ["dry_run", "awaiting_approval"] as const;
@@ -297,7 +345,8 @@ function previewKeysOf(value: Record<string, unknown>): string[] {
 export function readWriteClaim(value: Record<string, unknown>): WriteClaim {
   const previewKeys = previewKeysOf(value);
   const completedKeys = COMPLETED_KEYS.filter((key) => readBool(value[key]) === true);
-  const unreadableHoldKeys = HOLD_KEYS.filter(
+  // ONE unreadable rule for the whole boolean claim family (F-104, V-23 NEW-4).
+  const unreadableClaimKeys = [...HOLD_KEYS, ...COMPLETED_KEYS].filter(
     (key) =>
       value[key] !== undefined && value[key] !== null && readBool(value[key]) === null,
   );
@@ -312,7 +361,7 @@ export function readWriteClaim(value: Record<string, unknown>): WriteClaim {
   const common = {
     previewKeys,
     completedKeys: [...completedKeys],
-    unreadableHoldKeys: [...unreadableHoldKeys],
+    unreadableClaimKeys: [...unreadableClaimKeys],
     awaiting,
   };
 
@@ -333,12 +382,13 @@ export function readWriteClaim(value: Record<string, unknown>): WriteClaim {
     };
   }
 
-  // 2. A HOLD FLAG WE CANNOT READ is not an absent hold flag.
-  if (unreadableHoldKeys.length > 0) {
-    const key = unreadableHoldKeys[0];
+  // 2. A CLAIM FLAG WE CANNOT READ is not an absent claim flag — and that is as
+  //    true of `appended` as it is of `dry_run`.
+  if (unreadableClaimKeys.length > 0) {
+    const key = unreadableClaimKeys[0];
     return {
       ...common,
-      state: "unreadable_hold",
+      state: "unreadable_claim",
       nothingWasWritten: true,
       showsReceiptChips: false,
       headline: "Nothing is shown as written.",
@@ -423,8 +473,77 @@ export function readWriteClaim(value: Record<string, unknown>): WriteClaim {
 export function hasSubstantiveContent(
   claim: WriteClaim,
   otherwiseSubstantive: boolean,
+  /**
+   * What the card's OWN residual pass will print — pass
+   * `printsResidualFacts(value, omitKeys)` with the very same `omit` list the
+   * `MetaStrip`/`LeftoverFields` below it are given.
+   */
+  printsResidual = false,
 ): boolean {
-  return otherwiseSubstantive || claim.state !== "none";
+  return otherwiseSubstantive || claim.state !== "none" || printsResidual;
+}
+
+/**
+ * 🚨 THE EMPTY-READ SENTENCE, AND THE WINDOW IT MAY NOT INVENT (F-104, V-23
+ * NEW-5).
+ *
+ * V-23 sent `{action: "traffic_summary", site: "example.com", sessions: 1234,
+ * users: 900}` and the marketing card printed "This read returned no rows for
+ * the window above… widen the window" directly ABOVE "Site: example.com
+ * Sessions: 1,234 Users: 900". Two lies in one sentence: it had just shown
+ * 1,234 sessions, and there was no window above — none was stated. F-95/F-98
+ * taught the predicate to respect a verdict and the `has_*` flags, but the
+ * PROMOTED-SCALAR residue — the very facts the card prints last — was not in
+ * that reading, so a payload whose whole answer arrives as unpromoted keys read
+ * as empty.
+ *
+ * The fix is that both halves come from what the card ACTUALLY PRINTED:
+ * emptiness is `hasSubstantiveContent(..., printsResidualFacts(value, omit))`
+ * over the same omit list the strip is rendered with, and the sentence names a
+ * window only when {@link hasStatedBounds} says one was stated.
+ */
+export function emptyReadSentence(windowStated: boolean): string {
+  return windowStated
+    ? "This read returned no rows for the window above. That is an answer, not a " +
+        "failure — widen the window or check the site this question is about."
+    : "This read returned no rows, and no window was stated for it. That is an " +
+        "answer, not a failure — ask again with a window, or check the site this " +
+        "question is about.";
+}
+
+/**
+ * 🚨 THE LEAD STATES THE CLAIM; THE SERVER'S NOTE CARRIES ONLY THE REMEDY
+ * (F-104, V-23 addendum; the F-98 "no fact prints twice" class).
+ *
+ * The canonical `google_workspace_result` example carries
+ * `note: "NOTHING WAS WRITTEN. Show the user this exact block."` — a sentence
+ * written for an AGENT, printed verbatim to a person under a lead that already
+ * says "Nothing was written. This is a preview of the exact change." On
+ * `/shapes/google_workspace_result` the reader therefore met the same claim
+ * twice, which reads as two findings rather than one.
+ *
+ * Verbatim stays verbatim in every other respect: nothing is reworded, nothing
+ * is re-ordered. Only a sentence that is PURELY the claim the lead already made
+ * is dropped, and only while the lead is actually making it
+ * (`claim.nothingWasWritten`) — so a `needs_client` answer's "NOTHING WAS
+ * IMPORTED, and this is not a failure you can retry." keeps every word, and a
+ * note that is only the claim disappears entirely rather than echoing.
+ */
+const BARE_WRITE_CLAIM =
+  /^(?:and\s+)?(?:so\s+)?nothing\s+(?:at\s+all\s+)?(?:was|is|has\s+been|will\s+be|would\s+be)\s+(?:actually\s+|yet\s+)?(?:written|created|appended|imported|sent|changed|saved|modified|deleted)(?:\s+yet)?$/i;
+
+export function noteWithoutRepeatedClaim(
+  note: unknown,
+  claim: WriteClaim,
+): string | null {
+  const text = readText(note);
+  if (!text || !claim.nothingWasWritten) return text;
+  const kept = text
+    .split(/(?<=[.!?])\s+/)
+    .filter((sentence) => !BARE_WRITE_CLAIM.test(sentence.trim().replace(/[.!?]+$/, "")))
+    .join(" ")
+    .trim();
+  return kept === "" ? null : kept;
 }
 
 /**
@@ -449,7 +568,7 @@ export const NothingWasWritten: React.FC<{
   const approvalId = readText(approval?.approval_id);
   const attended = readBool(approval?.attended);
   const contradiction =
-    claim.state === "contradictory" || claim.state === "unreadable_hold";
+    claim.state === "contradictory" || claim.state === "unreadable_claim";
   return (
     <div className="min-w-0 rounded-md border border-warning/30 bg-warning/5 p-2.5 space-y-1.5">
       <div className="flex items-center gap-1.5 text-xs font-semibold text-warning">

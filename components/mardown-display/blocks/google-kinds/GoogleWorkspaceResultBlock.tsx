@@ -78,6 +78,7 @@ import {
   RecordDoor,
   RecordSyncState,
   ServerSentence,
+  noteWithoutRepeatedClaim,
   statesCompleteness,
   TruncationChip,
   UnmodelledPreviews,
@@ -748,7 +749,13 @@ const GoogleWorkspaceResultBlock: React.FC<ResultKindBlockProps> = ({
           <TruncationChip truncated={value.truncated} />
         </ChipRow>
       ) : null}
-      <ServerSentence text={value.note} />
+      {/* 🚨 THE LEAD STATES THE CLAIM, THE NOTE CARRIES ONLY THE REMEDY
+          (F-104, V-23 addendum). The canonical example's note is
+          "NOTHING WAS WRITTEN. Show the user this exact block." — printed whole
+          under a lead that already says it, the reader met the same claim
+          twice. `noteWithoutRepeatedClaim` drops ONLY a sentence that is purely
+          the claim, and only while the lead is making it. */}
+      <ServerSentence text={noteWithoutRepeatedClaim(value.note, claim)} />
       <ServerSentence text={value.limit_note} />
 
       <MetaStrip value={value} omit={omitKeys} />

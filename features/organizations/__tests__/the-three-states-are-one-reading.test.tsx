@@ -20,11 +20,20 @@ import { createRoot } from "react-dom/client";
 const store = {
   organization_id: null as string | null,
   orgBootstrapResolved: false,
+  // The FOURTH state's field (R37). Null throughout this file: these cases are
+  // about the three states a successful read produces. The failed read has its
+  // own proof — `the-fourth-state-is-not-the-refusal.test.tsx`.
+  orgBootstrapFailure: null as string | null,
 };
 
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (s: unknown) => unknown) =>
     selector({ appContext: store }),
+  useAppDispatch: () => () => {},
+}));
+
+jest.mock("@/lib/redux/thunks/activeOrgBootstrap", () => ({
+  retryActiveOrgBootstrap: () => ({ type: "test/retry" }),
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -130,6 +139,19 @@ describe("the three organization states are one reading", () => {
     const ready = readHook(() => useOrganizationGatedControl("importing Google Tasks"));
     expect(ready.disabled).toBe(false);
     expect(ready.title).toBeUndefined();
+  });
+
+  it("a FAILED read is unavailable, and the control never spells the refusal", () => {
+    store.organization_id = null;
+    store.orgBootstrapResolved = true;
+    store.orgBootstrapFailure = "the organization read failed: Failed to fetch";
+    const gate = readHook(() => useOrganizationRequired());
+    expect(gate.organizationState).toBe("unavailable");
+    expect(gate.organizationRequired).toBe(false);
+    const control = readHook(() => useOrganizationGatedControl("importing Google Tasks"));
+    expect(control.disabled).toBe(true);
+    expect(control.title).not.toMatch(/Select an organization/);
+    store.orgBootstrapFailure = null;
   });
 
   it("the notice shows a checking state while resolving and the refusal only after", () => {

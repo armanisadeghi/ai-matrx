@@ -644,6 +644,49 @@ Instance id auto-falls-back to `overlayId` for singletons — URL reads like `?p
 
 Every enabled registry `urlSync.key` must have a hydrator in [`url-sync/initUrlHydration.ts`](./url-sync/initUrlHydration.ts). A dev-only assertion logs missing mappings when `UrlPanelManager` mounts.
 
+### 🚨 A WINDOW WITH NO ADDRESS CANNOT BE REACHED — the address census (R35)
+
+Ruling R35: **every identity the platform names has a durable address AND an
+in-place door.** A window with no `urlSync.key` has only the door. It cannot be
+deep-linked, it cannot be opened by anyone verifying it from the seat, and no
+other client can reach it — the Google-native plan (§5.7) promises the
+extension and the desktop app reach "the same panels through the existing
+window-panel deep links; no client-specific Google code", and a panel with no
+link makes that promise unkeepable. V-23 ended three items UNMEASURED for
+exactly this: the agenda and the two Google import panels could not be reached
+from a real screen, and the site Quick view's one-panel identity could not be
+checked because the overlay-bound window had no address either.
+
+`ephemeral: true` governs RESTORE-AFTER-RELOAD. It never means "unreachable" —
+the two Google import panels are ephemeral AND addressed.
+
+The census is [`__tests__/everyWindowHasAnAddress.test.ts`](./__tests__/everyWindowHasAnAddress.test.ts)
+over the live catalogue and the live registry, with
+[`registry/window-address-baseline.json`](./registry/window-address-baseline.json).
+It fails when:
+
+1. an `isWindow: true` overlay has **no registry row at all** (it then cannot
+   declare an address, a mobile presentation, or a preservation contract — the
+   agenda and the approval queue both shipped that way);
+2. a window whose `defaultData` names a **durable subject** (a key ending
+   `Id` / `Ids` / `Token` / `Slug`) declares no `urlSync.key`;
+3. two windows claim **one address** (unless the key is listed in
+   `sharedAddresses` — `detail` is one record in two presentations, picked by
+   the `as-` arg).
+
+A window whose payload carries `callbackGroupId` hands a value back to whoever
+opened it, so a deep link would open a picker with nothing to answer; those are
+listed in `addressless` **with the reason written out**. Everything else that is
+still unaddressed sits in `unaddressedBaseline`, which **only shrinks**: new debt
+fails, and an entry that has since been addressed must be deleted from the file.
+
+**Giving a window its address takes three edits, not one.** The registry key, the
+hydrator, and `urlSyncId={<the subject id>}` on the `WindowPanel` — without the
+third, every instance writes the same token and the link reopens an empty frame
+(that is what `topicalMapTopicPanel` did: it declared `urlSync: { key: "topic" }`
+when it shipped, had no hydrator at all, and every open topic wrote
+`topic:topicalMapTopicPanel`).
+
 ---
 
 ## Tools grid
@@ -908,6 +951,8 @@ A re-entry into the viewport resets the dwell timer — a glance outside doesn't
 ---
 
 ## Change log
+
+- **2026-09-18** — **Every window V-23 could not reach now has an address, and a census guards the class (F-105).** Six windows got a `urlSync` key, a hydrator and — where the window has a subject — a `urlSyncId`: `googleAgendaWindow` → `?panels=agenda`, `approvalsWindow` → `?panels=approvals` (both of which had **no registry row at all**, so they could not have declared one), `googleContactsImportWindow` → `?panels=google_contacts_import:<externalId>:o-<orgId>`, `googleTasksImportWindow` → `?panels=google_tasks_import:<projectId>:o-<orgId>`, `googleConnectWindow` → `?panels=google_connect`, `siteQuickViewWindow` → `?panels=site_quick_view:<siteId>`. Also fixed `topicalMapTopicPanel`: it declared `urlSync: { key: "topic" }` when it shipped with **no hydrator** (the link opened nothing) and with no `urlSyncId`, so every open topic wrote one colliding token; the address is now `?panels=topic:<mapId>|<slug>:s-<siteId>`. New guard `__tests__/everyWindowHasAnAddress.test.ts` + `registry/window-address-baseline.json` — see [`## URL sync`](#url-sync); the baseline stands at 8 windows with no registry row and 65 with a durable subject and no address, and it only shrinks.
 
 - **2026-09-11** — **Registry URL keys are authoritative.** `WindowPanel` now prefers metadata `urlSync.key` whenever an `overlayId` resolves to a registered window, so a stale caller prop cannot publish an unhydratable token or break a valid deep link. Removed the two mismatched overrides found by the census (`SettingsShell` and `AgentContentWindow`) and added a red/green resolver guard; page-local windows without registry metadata retain explicit keys.
 

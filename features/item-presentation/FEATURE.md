@@ -164,6 +164,35 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
 
 ## Change log
 
+- `2026-09-18` — **F-104 (V-23, NEW-6): a record whose token has a door gets a
+  door — `hrefFor` is the second leg of the refusal (ruling R35).** A Google
+  result row stamped `record_table: "media.source_library"` rendered NO control
+  at all: `itemTypeForRecordTable` correctly returned null (no item type opens
+  that table in place) and `RecordDoor` correctly refused the wrong door — but
+  `media_source_library` is a registered entity whose `hrefFor` is
+  `/libraries/<id>`, a working screen. R35 says `hrefFor` is the durable ADDRESS
+  and `useOpenItemPresentation` is the DOOR and BOTH are required, so the
+  refusal needed a second leg. New `recordTableTarget(record_table)` is the ONE
+  two-legged resolution: leg one is the entity TOKEN, derived from
+  `ENTITY_TYPE_METADATA` (generated from `platform.entity_types`, the same row
+  the server stamps `record_table` from — so all 827 live tokens already declare
+  their `(schema, table)` and no per-entity edit was needed); leg two is the
+  item type, when one reads that same table. `itemTypeForRecordTable` is
+  unchanged and still answers only the opener question. `RecordDoor`
+  (`components/mardown-display/blocks/google-kinds/google-result-shared.tsx`)
+  now renders the opener when leg two answers, the token's durable address
+  through the platform's ONE address-door primitive `EntityDoorControls`
+  (open + new tab — no second link implementation) when only leg one does, and
+  nothing at all when neither does. The same ladder applies to an UNSTAMPED row
+  whose `type` is a registered entity with an address and no opener. Tests:
+  `__tests__/a-door-reads-the-servers-record-table.test.ts` (the two-leg
+  resolution + every table a Google card can stamp resolves) and the door's
+  render in `features/content-ir/__tests__/kind-google-result-families.test.tsx`
+  (`media.source_library` → the address, `web.youtube_video` → the opener,
+  `totally.not_a_table` → empty markup). RED on `82d6127e`: the
+  `media.source_library` case rendered `""`, and `recordTableTarget` did not
+  exist.
+
 - `2026-09-18` — **F-89 (V-22, NEW-2): the organization question is asked before
   the record read, and it EXPLAINS an empty answer instead of the provider
   taking the blame.** Seat-proven, cold load of `/detail/google_document/<id>`

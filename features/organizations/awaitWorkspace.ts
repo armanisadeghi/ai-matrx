@@ -50,7 +50,10 @@ import {
 } from "@/lib/api/organization-admission";
 import { knobInt } from "@/lib/knobs/featureKnobs";
 import { getStoreSingleton } from "@/lib/redux/store-singleton";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectOrganizationId,
+  selectOrgBootstrapFailure,
+} from "@/lib/redux/slices/appContextSlice";
 
 export type WorkspaceResolution =
   | { status: "ready"; organizationId: string }
@@ -58,8 +61,20 @@ export type WorkspaceResolution =
    * Boot finished and there is no workspace to act in. `reason` is the plain
    * sentence to put ON the surface — it names the remedy and never says
    * "try again in a moment", because trying again changes nothing.
+   *
+   * 🚨 `cause` SEPARATES THE TWO WAYS THAT HAPPENS (R37, 2026-09-18).
+   * `"no-selection"` is an answer: the memberships were read and none is
+   * selected, so the remedy is the picker and trying again is pointless.
+   * `"unreadable"` is the absence of one: the read failed, so the remedy IS to
+   * try again and the sentence must not tell anybody to choose an organization
+   * — nobody looked at what they have. A write path that collapses the two
+   * says "pick one" to a person in thirteen organizations (V-23 NEW-2).
    */
-  | { status: "unavailable"; reason: string };
+  | {
+      status: "unavailable";
+      reason: string;
+      cause: "no-selection" | "unreadable";
+    };
 
 /**
  * How long an ACTION waits — the `organizations.workspace action_wait_ms` knob.
@@ -75,12 +90,28 @@ const NO_WORKSPACE =
   "We could not tell which workspace to file this in. Pick one from the menu under your avatar, then press the button again — nothing was created.";
 
 /**
+ * The same refusal when the organization could not be READ. It never tells the
+ * person to pick one, because we do not know that they need to.
+ */
+const WORKSPACE_UNREADABLE =
+  "We could not check which organization to file this in, so nothing was created. Try the button again in a moment; if it keeps failing, reload the page.";
+
+/**
  * The SELECTED organization right now, without waiting. Null when the user has
  * not chosen one — never the personal workspace standing in for it.
  */
 export function peekEffectiveOrganizationId(): string | null {
   const state = getStoreSingleton()?.getState();
   return state ? (selectOrganizationId(state as never) ?? null) : null;
+}
+
+/**
+ * The recorded reason the organization could not be READ, or null. Non-null is
+ * the fourth state — see `useOrganizationRequired`.
+ */
+function peekOrganizationUnreadableReason(): string | null {
+  const state = getStoreSingleton()?.getState();
+  return state ? (selectOrgBootstrapFailure(state as never) ?? null) : null;
 }
 
 /**
@@ -106,7 +137,14 @@ export async function awaitEffectiveOrganizationId(): Promise<WorkspaceResolutio
 
   const settled = peekEffectiveOrganizationId();
   if (settled) return { status: "ready", organizationId: settled };
-  return { status: "unavailable", reason: NO_WORKSPACE };
+  if (peekOrganizationUnreadableReason()) {
+    return {
+      status: "unavailable",
+      reason: WORKSPACE_UNREADABLE,
+      cause: "unreadable",
+    };
+  }
+  return { status: "unavailable", reason: NO_WORKSPACE, cause: "no-selection" };
 }
 
 /**
@@ -141,5 +179,12 @@ const NO_WORKSPACE_FOR_READ =
 export async function awaitOrganizationForRecordRead(): Promise<WorkspaceResolution> {
   const resolved = await awaitEffectiveOrganizationId();
   if (resolved.status === "ready") return resolved;
-  return { status: "unavailable", reason: NO_WORKSPACE_FOR_READ };
+  // An unreadable organization keeps its own sentence here too: the record is
+  // not the subject, and neither is the picker.
+  if (resolved.cause === "unreadable") return resolved;
+  return {
+    status: "unavailable",
+    reason: NO_WORKSPACE_FOR_READ,
+    cause: "no-selection",
+  };
 }

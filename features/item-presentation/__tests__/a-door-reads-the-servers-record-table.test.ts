@@ -82,3 +82,80 @@ describe("it never guesses", () => {
     );
   });
 });
+
+/**
+ * 🚨 NO IN-PLACE OPENER IS NOT NO DOOR — lane F-104, hostile verifier V-23,
+ * finding NEW-6, ruling R35.
+ *
+ * `itemTypeForRecordTable` above is honest and stays honest: `null` means "no
+ * item type opens this table in place". V-23's attack is what a READER did with
+ * that null — a result row stamped `record_table: "media.source_library"` got
+ * no control at all, although `media_source_library` is a registered entity
+ * whose `hrefFor` (`/libraries/<id>`) is a working screen. R35: `hrefFor` is
+ * the durable address, `useOpenItemPresentation` is the door, and BOTH are
+ * required.
+ *
+ * `recordTableTarget` is the two-legged resolution. Leg one is the entity
+ * TOKEN, derived from `ENTITY_TYPE_METADATA` — generated from
+ * `platform.entity_types`, the same row the server stamps `record_table` from,
+ * so every live token declares its `(schema, table)` with no per-entity edit.
+ * Leg two is the item type, when one reads that table. Only a table NO
+ * registered entity claims resolves to nothing.
+ */
+import { recordTableTarget } from "../registry";
+
+describe("a stamp resolves in two legs (R35)", () => {
+  it("media.source_library: no opener, but the entity token that owns the address", () => {
+    expect(recordTableTarget("media.source_library")).toEqual({
+      token: "media_source_library",
+      itemType: null,
+    });
+  });
+
+  it("web.youtube_video: an opener, because an item type reads that table", () => {
+    expect(recordTableTarget("web.youtube_video")).toEqual({
+      token: "web_youtube_video",
+      itemType: "web_youtube_video",
+    });
+  });
+
+  it("a table no registered entity claims resolves to NOTHING — the honest refusal", () => {
+    expect(recordTableTarget("totally.not_a_table")).toBeNull();
+  });
+
+  it.each([
+    ["communication.calendar_event", "calendar_event"],
+    ["workbench.google_document", "google_document"],
+    ["crm.party", "party"],
+    ["web.site", "web_site"],
+  ] as const)("%s still resolves to its opener (%s)", (recordTable, itemType) => {
+    expect(recordTableTarget(recordTable)?.itemType).toBe(itemType);
+  });
+
+  it("is case- and whitespace-tolerant, and never guesses from a bare table name", () => {
+    expect(recordTableTarget("  Media.Source_Library ")?.token).toBe(
+      "media_source_library",
+    );
+    expect(recordTableTarget("source_library")).toBeNull();
+    expect(recordTableTarget(42)).toBeNull();
+    expect(recordTableTarget(null)).toBeNull();
+  });
+
+  /**
+   * THE CLASS, not the instance: every table a Google card can stamp must
+   * resolve to something a reader can act on. These are the tables
+   * `aidream/services/google_workspace/tools.py` and the marketing tools stamp.
+   */
+  it.each([
+    "communication.calendar_event",
+    "workbench.google_document",
+    "web.youtube_video",
+    "web.site",
+    "crm.party",
+    "media.source_library",
+  ])("%s resolves to a token a door can be built from", (recordTable) => {
+    const target = recordTableTarget(recordTable);
+    expect(target).not.toBeNull();
+    expect(typeof target?.token).toBe("string");
+  });
+});
