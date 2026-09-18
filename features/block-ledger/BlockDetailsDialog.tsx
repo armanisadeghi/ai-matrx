@@ -10,6 +10,7 @@
 // law at the last step. Every entry the server wrote is rendered, in order, with its
 // own reason and note.
 
+import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -133,6 +134,41 @@ export function BlockDetailsDialog({
                     Retried {block.retry_count.toLocaleString()}
                     {block.retry_count === 1 ? " time" : " times"}
                   </span>
+                )}
+              </Row>
+              <Row label="What we did">
+                {block.retry_count === 0 && !block.handoff_id ? (
+                  <span className="text-muted-foreground">
+                    Nothing yet — nobody has run this one again or sent it to their
+                    own browser.
+                  </span>
+                ) : (
+                  <div className="flex flex-col gap-1">
+                    {block.retry_count > 0 && (
+                      <span>
+                        Tried again{" "}
+                        {block.retry_count === 1
+                          ? "once"
+                          : `${block.retry_count.toLocaleString()} times`}
+                        {block.last_retry_at && (
+                          <span className="text-muted-foreground">
+                            {" "}
+                            — last {new Date(block.last_retry_at).toLocaleString()}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                    {block.handoff_id && (
+                      // THE DOOR LAW: the handoff this block produced is a thing the
+                      // UI names, so it opens.
+                      <Link
+                        href="/capture/needs-you"
+                        className="text-primary underline-offset-2 hover:underline"
+                      >
+                        Waiting in your own browser — open the list
+                      </Link>
+                    )}
+                  </div>
                 )}
               </Row>
               <Row label="First seen">
