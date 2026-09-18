@@ -161,7 +161,7 @@ export function createCatalogService(
 
         async fetchFacets(query): Promise<EntityFacets> {
             try {
-                const metrics = await getLibraryMetrics(dispatch, libraryId, {
+                const { value: metrics } = await getLibraryMetrics(dispatch, libraryId, {
                     ...toVideoQuery(query),
                 });
                 return {

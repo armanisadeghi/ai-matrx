@@ -179,6 +179,7 @@ const IDLE_SYNC: SyncState = {
     retryable: false,
     partialTotal: null,
     quotaUnitsSpent: null,
+    problems: [],
 };
 
 function makeStore() {

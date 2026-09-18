@@ -82,6 +82,21 @@ is that this server build does not carry these endpoints yet. Only 401/403 is
 classified as a refusal; a 404 with no sentence of its own gets its own sentence
 and a working Retry.
 
+**NOTHING RENDERS A VALUE A PARSER DID NOT BUILD.** `api.ts` used to end every
+call in `unwrap<T>()` — `return result.data as T`, a cast with no check — while
+`JobPanel` renders `item.title`, `item.external_id` and `item.attempt` straight
+into JSX. That is the shape of the 2026-09-17 `/exports` outage, where one
+server key that changed from a count to a list took a whole route to the global
+error boundary on every load. `contract.ts` now narrows every response and every
+stream event, field by field, with the platform readers in
+`lib/contract/narrow.ts`. A field the screen needs and cannot read raises a
+`MediaContractError` — which IS a `MediaApiError`, so it lands in the banner and
+beside the retry every surface here already has — a redundant number is derived
+and the stand-in announces itself on screen (`LibraryPage` prints the metrics
+ones), and a malformed STREAM event is dropped from the typed stream with its
+sentence sent to `onProblem`, because a run this client cannot read is still
+running on the server. Guard: `__tests__/unreadable-shapes.test.tsx`.
+
 ## Layout
 
 | Path | What it is |
@@ -112,6 +127,15 @@ at 1440 and 390 in both themes live in
 `../../../common-docs/projects/media-source-catalog/screen/`.
 
 ## Change log
+
+- `2026-09-17` — **Every response narrowed; the `unwrap<T>()` cast is gone.**
+  Added `contract.ts` (the parsers + `MediaApiError`/`MediaContractError`) on
+  the extracted platform kit `lib/contract/narrow.ts`, wired every exported
+  function in `api.ts` through a parser, gave `asSyncEvent`/`asJobEvent` real
+  event bodies and an `onProblem` channel (surfaced by the sync strip and the
+  job panel), and made `getLibraryMetrics` return `Parsed` so a recovered number
+  says so on screen. Guard `__tests__/unreadable-shapes.test.tsx`, proven
+  failing on the pre-fix `api.ts`.
 
 - `2026-09-17` — **Built, against the contract published before its server
   half.** Front door, Library page, Sources list with bulk selection, the
