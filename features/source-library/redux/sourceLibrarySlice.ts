@@ -45,6 +45,13 @@ export interface SyncState {
     /** What the client still holds when a sync stopped early. */
     partialTotal: number | null;
     quotaUnitsSpent: number | null;
+    /**
+     * Updates that arrived during this run and could not be read, each already
+     * a sentence. 🚨 NOT A FAILURE AND NOT A SILENCE: the run continues on the
+     * server, so the strip keeps counting AND says what it could not read,
+     * rather than dying on a malformed event or dropping it without a word.
+     */
+    problems: string[];
 }
 
 const EMPTY_SYNC: SyncState = {
@@ -60,6 +67,7 @@ const EMPTY_SYNC: SyncState = {
     retryable: false,
     partialTotal: null,
     quotaUnitsSpent: null,
+    problems: [],
 };
 
 export interface LibraryLiveState {
@@ -97,7 +105,7 @@ const initialState: SourceLibraryState = { byLibraryId: {}, jobsById: {} };
 function emptyLibrary(): LibraryLiveState {
     return {
         library: null,
-        sync: { ...EMPTY_SYNC },
+        sync: { ...EMPTY_SYNC, problems: [] },
         metrics: null,
         streamedVideos: [],
         jobIds: [],
@@ -188,6 +196,7 @@ const sourceLibrarySlice = createSlice({
             const entry = ensureLibrary(state, action.payload.libraryId);
             entry.sync = {
                 ...EMPTY_SYNC,
+                problems: [],
                 phase: "starting",
                 startedAt: action.payload.startedAt,
             };
@@ -291,8 +300,19 @@ const sourceLibrarySlice = createSlice({
             }
         },
 
+        /** One update this client could not read, during a run that continues. */
+        syncProblem(
+            state,
+            action: PayloadAction<{ libraryId: string; message: string }>,
+        ) {
+            const sync = ensureLibrary(state, action.payload.libraryId).sync;
+            if (!sync.problems.includes(action.payload.message)) {
+                sync.problems.push(action.payload.message);
+            }
+        },
+
         syncDismissed(state, action: PayloadAction<string>) {
-            ensureLibrary(state, action.payload).sync = { ...EMPTY_SYNC };
+            ensureLibrary(state, action.payload).sync = { ...EMPTY_SYNC, problems: [] };
         },
 
         /** The mount read landed — the truth every stream event is reconciled to. */
@@ -370,6 +390,7 @@ export const {
     metricsLoaded,
     syncRequested,
     syncEvent,
+    syncProblem,
     syncTransportLost,
     syncDismissed,
     jobLoaded,

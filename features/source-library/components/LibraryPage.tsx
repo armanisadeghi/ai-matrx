@@ -79,6 +79,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
 
     const [loadError, setLoadError] = useState<string | null>(null);
     const [metricsError, setMetricsError] = useState<string | null>(null);
+    const [metricsProblems, setMetricsProblems] = useState<string[]>([]);
     const [openVideo, setOpenVideo] = useState<VideoRow | null>(null);
     const [jobIds, setJobIds] = useState<string[]>([]);
     const [listGeneration, setListGeneration] = useState(0);
@@ -97,10 +98,19 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
     // header only switches to the failure copy while it holds nothing.
     const refreshMetrics = useCallback(async () => {
         try {
-            const metrics = await getLibraryMetrics(dispatch, libraryId);
+            const { value: metrics, problems } = await getLibraryMetrics(
+                dispatch,
+                libraryId,
+            );
             dispatch(metricsLoaded({ libraryId, metrics }));
             setMetricsError(null);
+            // 🚨 A STAND-IN ANNOUNCES ITSELF. A number the server mislabelled
+            // that this screen could work out from the ones beside it is USED —
+            // the header is not blanked over a redundant field — and said out
+            // loud, here, rather than passed off as the server's own figure.
+            setMetricsProblems(problems);
         } catch (error) {
+            console.log(`[DIAG] refreshMetrics#${seq} FAIL ${String((error as Error)?.message).slice(0,60)}`);
             setMetricsError(
                 error instanceof MediaApiError
                     ? error.status === 404 && !error.hasServerSentence
@@ -218,6 +228,19 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                                 {loadError}
                             </p>
                         )}
+
+                        {metricsProblems.map((problem) => (
+                            <p
+                                key={problem}
+                                className="flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-sm text-muted-foreground"
+                            >
+                                <CircleAlert
+                                    className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400"
+                                    aria-hidden
+                                />
+                                {problem}
+                            </p>
+                        ))}
 
                         <LibraryMetricsHeader
                             library={library}

@@ -16,6 +16,7 @@ import {
     selectLibrarySync,
     syncDismissed,
     syncEvent,
+    syncProblem,
     syncRequested,
     syncTransportLost,
 } from "../redux/sourceLibrarySlice";
@@ -66,6 +67,12 @@ export function useLibrarySync(libraryId: string, onSettled?: () => void): UseLi
                     classify: true,
                     signal: controller.signal,
                     onEvent: (event) => dispatch(syncEvent({ libraryId, event })),
+                    // 🚨 AN UNREADABLE UPDATE NEVER STOPS A RUN. The server
+                    // keeps listing whatever this client makes of its events,
+                    // so a malformed one is dropped from the typed stream and
+                    // SAID — the strip keeps counting with the sentence beside
+                    // it, instead of the run dying or quietly losing a page.
+                    onProblem: (message) => dispatch(syncProblem({ libraryId, message })),
                 });
             } catch (error) {
                 if (controller.signal.aborted) return;
