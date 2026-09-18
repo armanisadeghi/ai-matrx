@@ -76,7 +76,28 @@ function refineHealth(base: DetailRecordType): DetailRecordType["health"] {
           announceDocumentRefreshed(typed.id);
         }
       : null;
-    const unavailable = typed ? syncStatusOf(typed) !== "available" : false;
+    const status = typed ? syncStatusOf(typed) : null;
+    if (typed && status === "detached") {
+      // 🚨 THE TERMINAL STATE IS NOT A FAILURE, AND IT OFFERS NO CONTROL THAT
+      // CANNOT WORK. The person kept this record as AI Matrx data: the grant
+      // behind it is fine (so not `blocked`, not `revoked`), a Refresh would be
+      // refused by the server with a 409, and a Reconnect repairs nothing. So the
+      // strip states the choice and offers neither — a button that cannot work is
+      // a control that does nothing (law 4).
+      return {
+        ...(produced ?? { source: "Google" }),
+        source: produced?.source ?? "Google",
+        lastRefreshedAt: typed.synced_at,
+        grant: "ok",
+        grantDetail:
+          typed.sync_status_reason?.trim() ||
+          "Kept as AI Matrx data: this record no longer refreshes from Google and keeps what it had.",
+        openAtSourceHref: typed.external_url,
+        onRefresh: null,
+        onReconnect: null,
+      };
+    }
+    const unavailable = status !== null ? status !== "available" : false;
     const fileSentence =
       typed && unavailable
         ? typed.sync_status_reason?.trim() ||

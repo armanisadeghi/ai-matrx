@@ -26,8 +26,14 @@ import type { Database } from "@/types/database.types";
 export type GoogleDocumentRow =
   Database["workbench"]["Tables"]["google_document"]["Row"];
 
-/** `available` | `unavailable` — the CHECK constraint's two words (migration 0766). */
-export type GoogleDocumentSyncStatus = "available" | "unavailable";
+/**
+ * The CHECK constraint's words — two from migration 0766, the third from 0881.
+ *
+ * `detached` is TERMINAL and is never a provider answer: it is what the person
+ * chose when they pressed "Keep as AI Matrx data". A detached record keeps
+ * everything it had and never refreshes from Google again.
+ */
+export type GoogleDocumentSyncStatus = "available" | "unavailable" | "detached";
 
 /** Google's three file kinds behind one record (`mime_kind`). */
 export type GoogleDocumentMimeKind = "document" | "spreadsheet" | "other";
@@ -36,6 +42,27 @@ export type GoogleDocumentMimeKind = "document" | "spreadsheet" | "other";
  * Mirrors aidream `DocumentRecordResponse` (source named in the header above).
  * Every field is required there, so every field is required here.
  */
+/**
+ * Mirrors aidream `SyncedRecordResponse` — what
+ * `POST /google-sync/records/{table}/{id}/detach` and `.../archive` answer.
+ * Hand-typed from the same source and for the same reason as the interface
+ * below; deleted the day `pnpm sync-types` covers these routes.
+ */
+export interface GoogleSyncedRecordResponse {
+  id: string;
+  /** The schema-qualified table, echoed from the server's DECLARED set. */
+  table: string;
+  entity_token: string;
+  organization_id: string;
+  label: string | null;
+  /** null on a table that carries no sync vocabulary (a Tag Manager snapshot). */
+  sync_status: GoogleDocumentSyncStatus | null;
+  sync_status_reason: string | null;
+  archived: boolean;
+  /** False when the server found the record already in that state. */
+  changed: boolean;
+}
+
 export interface GoogleDocumentRecordResponse {
   id: string;
   organization_id: string;

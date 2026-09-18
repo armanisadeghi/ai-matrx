@@ -28,8 +28,15 @@ export const DEFAULT_REFRESH_ON_OPEN_MIN_AGE_SECONDS = 300;
 export function isGoogleDocumentSyncStatus(
   value: unknown,
 ): value is GoogleDocumentSyncStatus {
-  return value === "available" || value === "unavailable";
+  return value === "available" || value === "unavailable" || value === "detached";
 }
+
+/**
+ * The schema-qualified table the server's two generic doors address this record
+ * by (`SYNCED_RECORD_TABLES` in aidream's `google_sync/records.py`). Sent as a
+ * path segment and resolved there against the declared set — never interpolated.
+ */
+export const GOOGLE_DOCUMENT_TABLE = "workbench.google_document";
 
 /** The status word, or `unavailable` when the column says something we do not know. */
 export function syncStatusOf(row: GoogleDocumentRow): GoogleDocumentSyncStatus | "unknown" {

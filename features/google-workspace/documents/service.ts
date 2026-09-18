@@ -21,6 +21,7 @@ import type {
   GoogleDocumentRecordResponse,
   GoogleDocumentRow,
   GoogleDocumentSyncStatus,
+  GoogleSyncedRecordResponse,
 } from "./types";
 import { isGoogleDocumentSyncStatus } from "./record";
 
@@ -63,6 +64,75 @@ function status(body: Record<string, unknown>): GoogleDocumentSyncStatus {
     );
   }
   return value;
+}
+
+/**
+ * The two generic doors for the last two of PLAN §4.1's four unavailable actions.
+ * ONE server pair serves every synced record table, so this pair of functions
+ * takes the table rather than hard-coding the document's — the calendar panel
+ * calls the SAME two functions with `communication.calendar_event`.
+ */
+const RECORD_ACTION_PATH = (table: string, id: string, action: "detach" | "archive") =>
+  `/google-sync/records/${encodeURIComponent(table)}/${encodeURIComponent(id)}/${action}`;
+
+function syncedRecord(payload: unknown): GoogleSyncedRecordResponse {
+  if (!isRecord(payload)) {
+    throw new Error("The server answered with something this screen cannot read.");
+  }
+  const status = payload.sync_status;
+  if (status !== null && status !== undefined && !isGoogleDocumentSyncStatus(status)) {
+    // NOTHING FAILS SILENTLY: an unrecognised word is refused by name rather
+    // than rendered as good news about someone's record.
+    throw new Error(
+      `The server answered with a status this screen does not know (${String(status)}). Nothing on screen has been changed.`,
+    );
+  }
+  return {
+    id: requiredString(payload, "id"),
+    table: requiredString(payload, "table"),
+    entity_token: requiredString(payload, "entity_token"),
+    organization_id: requiredString(payload, "organization_id"),
+    label: nullableString(payload, "label"),
+    sync_status: (status ?? null) as GoogleDocumentSyncStatus | null,
+    sync_status_reason: nullableString(payload, "sync_status_reason"),
+    archived: payload.archived === true,
+    changed: payload.changed === true,
+  };
+}
+
+/**
+ * "Keep as AI Matrx data" — stop this record refreshing from Google and keep the
+ * copy we hold. Terminal: nothing here ever refreshes it again.
+ */
+export async function detachSyncedRecord(args: {
+  table: string;
+  recordId: string;
+  organizationId: string;
+}): Promise<GoogleSyncedRecordResponse> {
+  const organizationId = requireOrganizationContext(args.organizationId);
+  const response = await postGoogleBackend(
+    RECORD_ACTION_PATH(args.table, args.recordId, "detach"),
+    { organization_id: organizationId },
+    "Unable to keep this record as AI Matrx data.",
+    organizationId,
+  );
+  return syncedRecord(await response.json());
+}
+
+/** Archive this record — soft, recoverable, and never a delete in Google. */
+export async function archiveSyncedRecord(args: {
+  table: string;
+  recordId: string;
+  organizationId: string;
+}): Promise<GoogleSyncedRecordResponse> {
+  const organizationId = requireOrganizationContext(args.organizationId);
+  const response = await postGoogleBackend(
+    RECORD_ACTION_PATH(args.table, args.recordId, "archive"),
+    { organization_id: organizationId },
+    "Unable to archive this record.",
+    organizationId,
+  );
+  return syncedRecord(await response.json());
 }
 
 /** Refresh one picked Doc into its Record and return the server's receipt. */

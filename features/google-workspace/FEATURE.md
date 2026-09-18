@@ -344,6 +344,28 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 ## Change log
 
+- 2026-09-18 — **B-29: the last two of the four unavailable actions are real.** "Keep as AI Matrx
+  data" and "Archive this record" were honest words ("not wired up yet") because the server had no
+  door. Both are calls now, to ONE generic server pair that serves every synced record table
+  (`POST /google-sync/records/{table}/{id}/detach` and `.../archive` — aidream
+  `services/google_sync/FEATURE.md`), so the calendar panel adopts them by passing
+  `communication.calendar_event` to the same two functions. Client: `documents/service.ts` gains
+  `detachSyncedRecord` / `archiveSyncedRecord` (the record's own `organization_id`, the one
+  authenticated transport, the status word refused by name when the server says something this
+  screen does not know); `documents/types.ts` gains the terminal word `detached` and the response
+  shape, hand-typed from the named source; `GoogleDocumentPanel` asks first through
+  `<ConfirmDialog />` (`confirm()`), and each question NAMES the consequence — what stops, what is
+  kept, that nothing changes in Google, and for Keep that it cannot be undone from there; a
+  detached record gets its own notice (no Keep, no re-pick links, Archive still offered) and no
+  longer refreshes on open; `documents/itemType.tsx` makes the health strip state the choice with
+  `grant: "ok"` and offers NEITHER Refresh nor Reconnect on a detached record, because a Refresh
+  would be refused with a 409 and a Reconnect repairs nothing. 5 new tests (45 in
+  `documents/__tests__`), each proven red first: a generic "Are you sure?", the wrong record id,
+  and a detached record refreshing on open each turn a named test red. U-W1's assertion that two
+  actions are words was updated in the same commit — it is now "none of the four says `not wired up
+  yet`". Owed: `pnpm sync-types` (the response is still hand-typed with its generator named), and
+  no screen has been seen — the table holds zero rows, so a person must pick a Doc first.
+
 - 2026-09-18 — **U-W2: Calendar Planes A/C — the agenda, and an event that opens in place.** New
   `calendar/` (above). `communication.calendar_event` joins THE item-presentation type map, so an
   event opens as a window, a docked panel or `/detail/calendar_event/<id>` from one registration,

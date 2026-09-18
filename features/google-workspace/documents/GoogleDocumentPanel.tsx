@@ -11,9 +11,10 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { TriangleAlert } from "lucide-react";
+import { Archive, Lock, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/lib/toast";
 import { extractErrorMessage } from "@/utils/errors";
@@ -29,13 +30,22 @@ import {
   type AppendHeadingMode,
 } from "./appendBlock";
 import { useGoogleDocsKnobs } from "./knobs";
-import { isStaleForOpen, syncStatusOf } from "./record";
-import { refreshGoogleDocument, readGoogleDocumentRow } from "./service";
+import { GOOGLE_DOCUMENT_TABLE, isStaleForOpen, mimeKindLabel, syncStatusOf } from "./record";
+import {
+  archiveSyncedRecord,
+  detachSyncedRecord,
+  refreshGoogleDocument,
+  readGoogleDocumentRow,
+} from "./service";
 import { announceDocumentRefreshed, subscribeToDocumentRefresh } from "./refreshBus";
 import type { GoogleDocumentRow } from "./types";
 
-/** The four things a person can do about a document Google will not give us. */
-const UNAVAILABLE_ACTIONS = [
+/**
+ * The two actions that are DOORS somewhere else. The other two — "Keep as AI
+ * Matrx data" and "Archive" — are real calls now (B-29) and are rendered as
+ * buttons below, each naming what it costs before it runs.
+ */
+const UNAVAILABLE_LINKS = [
   {
     id: "reconnect",
     label: "Reconnect Google",
@@ -50,23 +60,128 @@ const UNAVAILABLE_ACTIONS = [
       "Pick the file in Google Picker again, which is what restores our access when it was moved or re-shared.",
     href: "/user-settings/integrations",
   },
-  {
-    id: "keep",
-    label: "Keep as AI Matrx data",
-    does:
-      "Stop refreshing and keep the copy below as ours. This is not wired up yet — nothing here deletes or changes it in the meantime.",
-    href: null,
-  },
-  {
-    id: "archive",
-    label: "Archive this record",
-    does:
-      "Put the record out of the way without destroying it. This is not wired up yet — the record stays exactly as it is.",
-    href: null,
-  },
 ] as const;
 
-function UnavailableNotice({ row }: { row: GoogleDocumentRow }) {
+/**
+ * 🚨 A DESTRUCTIVE OR IRREVERSIBLE CLICK NAMES ITS CONSEQUENCE FIRST
+ * (`common-docs/policies/destructive-and-expensive-actions.md`). Neither of these
+ * is a generic "Are you sure?": each one says what is lost, what is kept, and
+ * what happens in Google — which is nothing, ever.
+ */
+function KeepAndArchiveActions({
+  row,
+  onDetached,
+  onArchived,
+}: {
+  row: GoogleDocumentRow;
+  onDetached: () => void;
+  onArchived: (sentence: string) => void;
+}) {
+  const [running, setRunning] = useState<"keep" | "archive" | null>(null);
+  const noun = mimeKindLabel(row.mime_kind);
+  const detached = syncStatusOf(row) === "detached";
+
+  const keep = async () => {
+    const ok = await confirm({
+      title: "Keep as AI Matrx data",
+      description:
+        `This ${noun} stops refreshing from Google and keeps exactly what it has today — the text below, ` +
+        `its owner and the date it was last edited. Nothing changes in your Google account, and nothing here ` +
+        `is deleted. It cannot be undone from this screen: to sync from Google again you pick the file in ` +
+        `Google once more.`,
+      confirmLabel: "Keep as AI Matrx data",
+    });
+    if (!ok) return;
+    setRunning("keep");
+    try {
+      const result = await detachSyncedRecord({
+        // THE RECORD'S OWN ORGANIZATION, like every other call in this panel.
+        table: GOOGLE_DOCUMENT_TABLE,
+        recordId: row.id,
+        organizationId: row.organization_id,
+      });
+      toast.success(
+        result.changed
+          ? `Kept as AI Matrx data. This ${noun} no longer refreshes from Google.`
+          : `This ${noun} was already kept as AI Matrx data.`,
+      );
+      onDetached();
+    } catch (error: unknown) {
+      toast.error(extractErrorMessage(error));
+    } finally {
+      setRunning(null);
+    }
+  };
+
+  const archive = async () => {
+    const ok = await confirm({
+      title: "Archive this record",
+      description:
+        `The record goes out of the way and stays recoverable from the archive — nothing here is destroyed, and ` +
+        `your file in Google is untouched. It will stop appearing in lists and in this panel until it is restored.`,
+      confirmLabel: "Archive",
+      variant: "destructive",
+    });
+    if (!ok) return;
+    setRunning("archive");
+    try {
+      const result = await archiveSyncedRecord({
+        table: GOOGLE_DOCUMENT_TABLE,
+        recordId: row.id,
+        organizationId: row.organization_id,
+      });
+      toast.success(
+        result.changed ? "Archived. It is recoverable from the archive." : "This record was already archived.",
+      );
+      onArchived(
+        "Archived. It is out of the way and recoverable from the archive; your file in Google is untouched.",
+      );
+    } catch (error: unknown) {
+      toast.error(extractErrorMessage(error));
+    } finally {
+      setRunning(null);
+    }
+  };
+
+  return (
+    <div className="flex flex-wrap items-center gap-2" data-google-document-record-actions>
+      {detached ? null : (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          disabled={running !== null}
+          onClick={() => void keep()}
+          data-google-document-keep
+        >
+          <Lock className="mr-1.5 h-3.5 w-3.5" />
+          {running === "keep" ? "Keeping…" : "Keep as AI Matrx data"}
+        </Button>
+      )}
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        disabled={running !== null}
+        onClick={() => void archive()}
+        data-google-document-archive
+      >
+        <Archive className="mr-1.5 h-3.5 w-3.5" />
+        {running === "archive" ? "Archiving…" : "Archive this record"}
+      </Button>
+    </div>
+  );
+}
+
+function UnavailableNotice({
+  row,
+  onDetached,
+  onArchived,
+}: {
+  row: GoogleDocumentRow;
+  onDetached: () => void;
+  onArchived: (sentence: string) => void;
+}) {
   return (
     <div
       className="space-y-3 rounded-md border border-destructive/40 bg-destructive/5 p-3"
@@ -81,26 +196,51 @@ function UnavailableNotice({ row }: { row: GoogleDocumentRow }) {
         </span>
       </p>
       <ul className="space-y-2">
-        {UNAVAILABLE_ACTIONS.map((action) => (
+        {UNAVAILABLE_LINKS.map((action) => (
           <li key={action.id} className="text-xs text-muted-foreground">
-            {action.href ? (
-              <a
-                href={action.href}
-                className="font-medium text-foreground underline underline-offset-2 hover:text-primary"
-              >
-                {action.label}
-              </a>
-            ) : (
-              // NOT A DISABLED BUTTON. An action we have not built says so in
-              // words instead of offering a control that does nothing (law 4).
-              <span className="font-medium text-foreground">
-                {action.label} — not wired up yet
-              </span>
-            )}
+            <a
+              href={action.href}
+              className="font-medium text-foreground underline underline-offset-2 hover:text-primary"
+            >
+              {action.label}
+            </a>
             <span> · {action.does}</span>
           </li>
         ))}
       </ul>
+      <KeepAndArchiveActions row={row} onDetached={onDetached} onArchived={onArchived} />
+    </div>
+  );
+}
+
+/**
+ * The TERMINAL state, and it is not a failure: the person chose it. Reconnecting
+ * and re-picking are gone from here because neither would change this record —
+ * the row's own sentence says what happened and what to do instead.
+ */
+function DetachedNotice({
+  row,
+  onDetached,
+  onArchived,
+}: {
+  row: GoogleDocumentRow;
+  onDetached: () => void;
+  onArchived: (sentence: string) => void;
+}) {
+  return (
+    <div
+      className="space-y-3 rounded-md border border-border bg-muted/40 p-3"
+      data-google-document-detached
+    >
+      <p className="flex items-start gap-2 text-sm text-foreground">
+        <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+        <span>
+          {row.sync_status_reason?.trim() ||
+            "This record is AI Matrx data now and no longer refreshes from Google."}{" "}
+          To sync from Google again, pick the file in Google once more.
+        </span>
+      </p>
+      <KeepAndArchiveActions row={row} onDetached={onDetached} onArchived={onArchived} />
     </div>
   );
 }
@@ -247,6 +387,7 @@ export function GoogleDocumentPanel({ initialRow }: { initialRow: GoogleDocument
   const [row, setRow] = useState<GoogleDocumentRow>(initialRow);
   const { refreshOnOpenMinAgeSeconds, appendHeading, isResolving } = useGoogleDocsKnobs();
   const [refreshError, setRefreshError] = useState<string | null>(null);
+  const [archivedSentence, setArchivedSentence] = useState<string | null>(null);
   const openRefreshTried = useRef(false);
 
   const reload = useCallback(async () => {
@@ -280,10 +421,36 @@ export function GoogleDocumentPanel({ initialRow }: { initialRow: GoogleDocument
     if (isResolving || openRefreshTried.current) return;
     openRefreshTried.current = true;
     if (!isStaleForOpen(row.synced_at, refreshOnOpenMinAgeSeconds, new Date())) return;
+    // A record kept as AI Matrx data never refreshes again — spending a Google
+    // call here would be the screen undoing the person's choice.
+    if (syncStatusOf(row) === "detached") return;
     void refresh();
-  }, [isResolving, refresh, refreshOnOpenMinAgeSeconds, row.synced_at]);
+  }, [isResolving, refresh, refreshOnOpenMinAgeSeconds, row.synced_at, row.sync_status]);
+
+  const onDetached = useCallback(() => {
+    void reload();
+    announceDocumentRefreshed(row.id);
+  }, [reload, row.id]);
+
+  const onArchived = useCallback(
+    (sentence: string) => {
+      setArchivedSentence(sentence);
+      // The rest of the primitive re-reads and finds the row gone, which is its
+      // own honest absent state — this panel does not pretend the record is live.
+      announceDocumentRefreshed(row.id);
+    },
+    [row.id],
+  );
 
   const status = syncStatusOf(row);
+
+  if (archivedSentence) {
+    return (
+      <p className="text-sm text-muted-foreground" data-google-document-archived>
+        {archivedSentence}
+      </p>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -292,7 +459,11 @@ export function GoogleDocumentPanel({ initialRow }: { initialRow: GoogleDocument
           {refreshError}
         </p>
       ) : null}
-      {status !== "available" ? <UnavailableNotice row={row} /> : null}
+      {status === "detached" ? (
+        <DetachedNotice row={row} onDetached={onDetached} onArchived={onArchived} />
+      ) : status !== "available" ? (
+        <UnavailableNotice row={row} onDetached={onDetached} onArchived={onArchived} />
+      ) : null}
       <BodyView row={row} />
       <div className="space-y-2">
         <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

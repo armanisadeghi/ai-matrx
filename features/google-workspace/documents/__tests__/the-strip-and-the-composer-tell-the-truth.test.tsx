@@ -262,10 +262,14 @@ describe("a file Google will not hand over, on a perfectly healthy account", () 
     expect(text).toContain("Choose the file again");
     expect(text).toContain("Keep as AI Matrx data");
     expect(text).toContain("Archive this record");
-    // The two that exist are doors; the two that do not say so in words.
+    // ALL FOUR ARE REAL NOW (B-29): two are doors elsewhere, two are calls to this
+    // server's own generic record doors. Nothing here says "not wired up yet" any
+    // more, and nothing here is a disabled-looking control.
     expect(notice.querySelectorAll("a").length).toBe(2);
-    expect(text).toContain("not wired up yet");
+    expect(text).not.toContain("not wired up yet");
     expect(notice.querySelectorAll("button[disabled]").length).toBe(0);
+    expect(notice.querySelector("[data-google-document-keep]")).not.toBeNull();
+    expect(notice.querySelector("[data-google-document-archive]")).not.toBeNull();
     m.unmount();
   });
 
