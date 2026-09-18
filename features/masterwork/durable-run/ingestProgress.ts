@@ -229,7 +229,25 @@ export function progressHeadline(progress: IngestProgress): string | null {
   if (progress.resources.length > 1) {
     parts.push(`${done} of ${progress.resources.length} sources read`);
   }
-  if (progress.chunksTotal !== null && progress.chunksTotal > 0) {
+  // 🚨 A DENOMINATOR NOBODY CAN COUNT TOWARD IS WORSE THAN NO LINE.
+  //
+  // The lane announces `chunked` (how many parts a source was split into) at
+  // the start, but `ingest.py` emits `chunk_distilled` only AFTER the whole
+  // `asyncio.gather` over those parts has returned — so for a single-file run
+  // the count goes 0 … 0 … 0 and then straight to the outcome. Verified live
+  // 2026-09-17: a finished run that had just added 20 rules still read
+  // "0 of 3 parts distilled". That is the motionless screen this file exists
+  // to remove, wearing a number. So the clause appears only once the server
+  // has actually reported a part finished; until then it says nothing.
+  //
+  // The real repair is in aidream — per-chunk progress during the gather —
+  // and is recorded on board row B4d. This is the honest rendering of the
+  // events the server sends TODAY, not a workaround pretending otherwise.
+  if (
+    progress.chunksTotal !== null &&
+    progress.chunksTotal > 0 &&
+    progress.chunksDone > 0
+  ) {
     parts.push(
       `${Math.min(progress.chunksDone, progress.chunksTotal)} of ${progress.chunksTotal} parts distilled`,
     );
