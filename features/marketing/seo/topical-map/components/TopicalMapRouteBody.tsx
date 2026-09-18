@@ -36,8 +36,8 @@ export function TopicalMapRouteBody({ mapId }: { mapId: string }) {
   const revealSlug = useSearchParams().get("topic");
 
   return (
-    <div className="h-full overflow-y-auto overflow-x-hidden bg-textured">
-      <div className="mx-auto h-full min-h-0 w-full max-w-5xl p-4 pt-[calc(var(--shell-header-h)+1rem)] sm:p-6 sm:pt-[calc(var(--shell-header-h)+1.5rem)]">
+    <div className={screen === "graph" ? "flex h-full min-h-0 flex-col overflow-hidden bg-textured" : "h-full overflow-y-auto overflow-x-hidden bg-textured"}>
+      <div className={screen === "graph" ? "flex min-h-0 w-full flex-1 flex-col pt-[var(--shell-header-h)]" : "mx-auto h-full min-h-0 w-full max-w-5xl p-4 pt-[calc(var(--shell-header-h)+1rem)] sm:p-6 sm:pt-[calc(var(--shell-header-h)+1.5rem)]"}>
         <MapLinkProvider brand={brand}>
           <TopicalMapWorkspaceBody
             mapId={mapId}
