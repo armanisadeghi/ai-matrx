@@ -111,6 +111,7 @@ export const PROMOTED = [
   "limit_note",
   "bounds",
   "truncated",
+  "completeness",
   "would_append",
   "would_write",
   "would_create",
@@ -307,6 +308,9 @@ const GenericWritePreview: React.FC<{ preview: Record<string, unknown> }> = ({
     "contact_points",
     "person_name",
     "matched_by",
+    // The `RecordDoor` above already opens this id — never repeat it as a
+    // raw, unlabeled leftover under its own door (Bugbot finding 2, 5d6bd755).
+    "person_id",
   ]);
   const rest = Object.fromEntries(
     Object.entries(preview).filter(([key]) => !shown.has(key)),
@@ -436,6 +440,10 @@ const GoogleWorkspaceResultBlock: React.FC<ResultKindBlockProps> = ({
         {claim.showsReceiptChips && imported ? (
           <StateChip label="imported" tone="good" />
         ) : null}
+        {claim.showsReceiptChips && sent === true ? (
+          <StateChip label="sent" tone="good" />
+        ) : null}
+        {/* A negation is always honest, so it is never gated on the claim. */}
         {sent === false ? <StateChip label="not sent" tone="warn" /> : null}
         {account ? <StateChip label={account} /> : null}
         {tab ? <StateChip label={`tab ${tab}`} /> : null}
@@ -744,9 +752,9 @@ const GoogleWorkspaceResultBlock: React.FC<ResultKindBlockProps> = ({
           never arrived states nothing, so neither the row nor the chip exists
           (F-99). An explicit `null` still speaks — the provider declaring it
           cannot tell. */}
-      {statesCompleteness(value.truncated) ? (
+      {statesCompleteness(value.truncated, value.completeness) ? (
         <ChipRow>
-          <TruncationChip truncated={value.truncated} />
+          <TruncationChip truncated={value.truncated} completeness={value.completeness} />
         </ChipRow>
       ) : null}
       {/* 🚨 THE LEAD STATES THE CLAIM, THE NOTE CARRIES ONLY THE REMEDY
