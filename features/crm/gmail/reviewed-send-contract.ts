@@ -143,6 +143,20 @@ export const REVIEWED_SEND_RESPONSE_FIELDS = [
   "compliance",
   "warnings",
   "audit_columns_written",
+  /**
+   * 🚨 LANE B-26's DISCLOSURE FIELDS, asserted like every other: the rules the
+   * authority raised that this class is not judged by (W3), whether a bounce can
+   * ever be correlated (W5), and the class plus the exact footer the spine
+   * appended after approval (W4 / chair ruling R24). They landed while this lane
+   * was building against them, which is what the UNMEASURED-until-present leg in
+   * `./reviewed-send-contract-is-the-servers.test.ts` was there to catch — it
+   * fired, so they are measured from here on.
+   */
+  "exempted_blocks",
+  "bounce_correlation",
+  "bounce_correlation_note",
+  "compliance_class",
+  "footer_text",
 ] as const;
 
 /** One Cc attribution entry as the server's `GmailCcAttribution` spells it. */
@@ -234,7 +248,45 @@ export interface ReviewedGmailCompliance {
   footerAppended: boolean;
   /** Always a sentence — the absence of a footer is stated, never silent. */
   reason: string;
+  /**
+   * WHICH CLASS THE SPINE JUDGED THIS MESSAGE (`correspondence` /
+   * `commercial_outreach`), or null from a server that did not say. Never
+   * defaulted to a class: claiming "sent exactly as approved" on a message that
+   * in fact carried a footer is the defect, not the absence of a word.
+   */
+  complianceClass: string | null;
+  /**
+   * 🚨 THE EXACT TEXT APPENDED TO THE BODY AFTER APPROVAL, when any was. §4.4
+   * says the reviewer sees what is sent; a footer the server added and nobody
+   * rendered is the same silence as a hidden refusal (W4). Null when nothing was
+   * appended, and null from a server that appended something and did not say
+   * what — in which case `footerAppended` alone is still shown, loudly.
+   */
+  footerText: string | null;
 }
+
+/**
+ * One rule the send authority raised that this message class is NOT judged by —
+ * the server's `ExemptedSendBlock`.
+ *
+ * 🚨 AN EXEMPTION IS NEVER A SILENCE (W3). The gate sets these aside on purpose,
+ * but the approver of a reviewed 1:1 is the legal actor, so what the authority
+ * said and why the spine did not act on it travels to the screen.
+ */
+export interface ReviewedGmailExemptedBlock {
+  code: string;
+  /** The authority's own sentence about the rule, verbatim. */
+  message: string;
+  /** Why this message class is not judged by it — the spine's declared reason. */
+  exemptReason: string;
+  /** Which recipient it was raised about: "recipient" or "Cc". */
+  field: string;
+  address: string;
+}
+
+/** Whether a bounce from this send can be matched back to it automatically. */
+export const BOUNCE_WATCHED = "watched";
+export const BOUNCE_NOT_WATCHED = "not_watched";
 
 /**
  * WHAT THE SERVER DID: the message, the row, the edges, the sending event.
@@ -268,6 +320,24 @@ export interface ReviewedGmailSendOutcome {
   warnings: string[];
   /** Which of the six audit columns the row carries. */
   auditColumnsWritten: string[];
+  /**
+   * Every rule the authority raised that this class is not judged by, with the
+   * reason. Empty from a server that does not report them yet — which is an
+   * absence of DISCLOSURE, not a claim that nothing was set aside, so a surface
+   * that shows this list says nothing when it is empty rather than "no rules
+   * applied".
+   */
+  exemptedBlocks: ReviewedGmailExemptedBlock[];
+  /**
+   * 🚨 `not_watched` MEANS A BOUNCE WILL NEVER COME BACK (W5). The
+   * `crm.sending_event` row now exists for every reviewed send, which makes the
+   * machinery LOOK correlated — but `outreach_inbound` reads a mailbox only
+   * through a Gmail watch, and a mailbox recorded for audit is deliberately never
+   * watched. Null from a server that has not said, never assumed `watched`.
+   */
+  bounceCorrelation: string | null;
+  /** The server's own sentence about that, shown as a warning. */
+  bounceCorrelationNote: string | null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -286,7 +356,18 @@ function textList(source: Record<string, unknown>, key: string): string[] {
     : [];
 }
 
-function narrowCompliance(value: unknown): ReviewedGmailCompliance | null {
+/**
+ * The compliance report, reading the TOP-LEVEL class and footer first.
+ *
+ * The server sends both: typed fields on the response (`compliance_class`,
+ * `footer_text`) and the same values inside the free-form `compliance` dict its
+ * one builder writes. The typed field wins; the dict is the fallback for a
+ * server that only fills the dict.
+ */
+function narrowCompliance(
+  value: unknown,
+  payload: Record<string, unknown>,
+): ReviewedGmailCompliance | null {
   if (!isRecord(value)) return null;
   const reason = text(value, "reason");
   if (reason === null) return null;
@@ -294,7 +375,37 @@ function narrowCompliance(value: unknown): ReviewedGmailCompliance | null {
     envelope: value.envelope === true,
     footerAppended: value.footer_appended === true,
     reason,
+    complianceClass:
+      text(payload, "compliance_class") ?? text(value, "compliance_class"),
+    footerText: text(payload, "footer_text") ?? text(value, "footer_text"),
   };
+}
+
+/** The exempted blocks, or an empty list — never an invented one. */
+export function narrowExemptedBlocks(
+  value: unknown,
+): ReviewedGmailExemptedBlock[] {
+  if (!Array.isArray(value)) return [];
+  const blocks: ReviewedGmailExemptedBlock[] = [];
+  for (const entry of value) {
+    if (!isRecord(entry)) continue;
+    const code = text(entry, "code");
+    if (code === null) continue;
+    blocks.push({
+      code,
+      message:
+        text(entry, "message") ??
+        "The send authority raised a rule this message class is not judged by.",
+      // A block with no stated reason is shown WITH that fact, because the whole
+      // point of W3 is that a set-aside rule never travels silently.
+      exemptReason:
+        text(entry, "exempt_reason") ??
+        "The server did not say why this rule does not apply here. Tell an admin.",
+      field: text(entry, "field") ?? "recipient",
+      address: text(entry, "address") ?? "",
+    });
+  }
+  return blocks;
 }
 
 /**
@@ -333,9 +444,12 @@ export function narrowReviewedSendOutcome(
     associationFailures: textList(payload, "association_failures"),
     sendingEventId: text(payload, "sending_event_id"),
     sendingEventGap: text(payload, "sending_event_gap"),
-    compliance: narrowCompliance(payload.compliance),
+    compliance: narrowCompliance(payload.compliance, payload),
     warnings: textList(payload, "warnings"),
     auditColumnsWritten: textList(payload, "audit_columns_written"),
+    exemptedBlocks: narrowExemptedBlocks(payload.exempted_blocks),
+    bounceCorrelation: text(payload, "bounce_correlation"),
+    bounceCorrelationNote: text(payload, "bounce_correlation_note"),
   };
 }
 
@@ -365,10 +479,30 @@ export function reviewedSendOutcomeAsRecord(
           envelope: outcome.compliance.envelope,
           footer_appended: outcome.compliance.footerAppended,
           reason: outcome.compliance.reason,
+          compliance_class: outcome.compliance.complianceClass,
+          // 🚨 THE FOOTER BYTES ARE PART OF THE RECEIPT. The approval row's
+          // receipt is the only durable account of what the approver agreed to
+          // versus what left; dropping the appended text here would make the
+          // receipt claim the body was sent as approved.
+          footer_text: outcome.compliance.footerText,
         }
       : null,
+    // The server sends the class and the footer BOTH as typed fields and inside
+    // the report its one builder writes, so the receipt carries them the same way
+    // — one spelling, the server's, in both of the server's places.
+    compliance_class: outcome.compliance?.complianceClass ?? null,
+    footer_text: outcome.compliance?.footerText ?? null,
     warnings: outcome.warnings,
     audit_columns_written: outcome.auditColumnsWritten,
+    exempted_blocks: outcome.exemptedBlocks.map((block) => ({
+      code: block.code,
+      message: block.message,
+      exempt_reason: block.exemptReason,
+      field: block.field,
+      address: block.address,
+    })),
+    bounce_correlation: outcome.bounceCorrelation,
+    bounce_correlation_note: outcome.bounceCorrelationNote,
   };
 }
 
@@ -497,6 +631,40 @@ export function reviewedSendNotices(
   }
   if (outcome.sendingEventGap) {
     notices.push({ level: "warning", sentence: outcome.sendingEventGap });
+  }
+  /**
+   * 🚨 A BOUNCE THAT WILL NEVER COME BACK IS SAID OUT LOUD (W5).
+   *
+   * The event row exists for every reviewed send now, so `sendingEventGap` — the
+   * one sentence that used to carry this — is silent exactly when the mailbox is
+   * unwatched. Only the correlation field says it, and only if a surface reads it.
+   */
+  if (outcome.bounceCorrelation === BOUNCE_NOT_WATCHED) {
+    notices.push({
+      level: "warning",
+      sentence:
+        outcome.bounceCorrelationNote ??
+        "We do not read this mailbox, so a bounce will not be matched back to " +
+          "this message automatically — watch the mailbox itself for a delivery " +
+          "failure.",
+    });
+  }
+  /**
+   * 🚨 AND THE FOOTER THE SERVER APPENDED AFTER APPROVAL (W4, chair ruling R24).
+   * The reviewer approved the body on the card; if the spine added an unsubscribe
+   * footer and a postal block to it, the person who pressed Send is told what
+   * arrived, with the exact text when the server named it.
+   */
+  if (outcome.compliance?.footerAppended) {
+    notices.push({
+      level: "warning",
+      sentence: outcome.compliance.footerText
+        ? `${outcome.compliance.reason} This was added to the end of the body ` +
+          `after you approved it: ${outcome.compliance.footerText}`
+        : `${outcome.compliance.reason} The exact text it added was not ` +
+          "reported, so compare the message in your Sent folder with what you " +
+          "approved.",
+    });
   }
   for (const failure of outcome.associationFailures) {
     notices.push({ level: "warning", sentence: failure });

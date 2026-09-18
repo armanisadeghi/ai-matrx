@@ -22,6 +22,11 @@ import {
   buildPath,
 } from "@/lib/api/typed-client";
 import { getJson } from "@/lib/python-client";
+import {
+  DEFAULT_PURPOSE_FILTER,
+  PROMOTE_NEEDS_CONNECTION,
+  type SendingPurposeFilter,
+} from "./purpose";
 import type {
   BringUpReadiness,
   CheckReport,
@@ -34,11 +39,29 @@ import type {
 
 const IDENTITY_PATH = "/sending-identities/{identity_id}";
 
+/**
+ * The organization's sending mailboxes of ONE purpose.
+ *
+ * 🚨 `purpose` IS ALWAYS SENT (default `outreach`). The route defaults to
+ * outreach too, but the page's whole meaning depends on it: a `correspondence`
+ * row — the mailbox a reviewed 1:1 send registers for audit — listed here reads
+ * as an outreach mailbox stuck in setup behind a DNS record nobody can publish
+ * (VERIFY-B1-B2-R5 W1). The audit rows are reachable by asking for them BY NAME,
+ * so nothing is hidden.
+ *
+ * The answer is complete for that purpose in one response — this is aidream's
+ * route, not a PostgREST `.select()`, so there is no 1000-row cap to guard with
+ * `readAllRows`.
+ */
 export async function listSendingIdentities(
   organizationId?: string,
+  purpose: SendingPurposeFilter = DEFAULT_PURPOSE_FILTER,
 ): Promise<SendingIdentityView[]> {
   const { data } = await apiGet("/sending-identities", {
-    query: organizationId ? { organization_id: organizationId } : undefined,
+    query: {
+      purpose,
+      ...(organizationId ? { organization_id: organizationId } : {}),
+    },
   });
   return data;
 }
@@ -75,6 +98,37 @@ export async function createSendingIdentity(body: {
     ...body,
   });
   return data;
+}
+
+/**
+ * PROMOTE A CORRESPONDENCE MAILBOX TO A CAMPAIGN MAILBOX — the promotion the
+ * server already allows, given a door.
+ *
+ * `register_identity` is that door: its correspondence branch flips `purpose` to
+ * `outreach` IN PLACE, keeping every `crm.sending_event` the mailbox already
+ * wrote for its reviewed 1:1 sends, and refuses nothing (aidream
+ * `sending_identity/service.py`, the promotion branch). There is no separate
+ * promote endpoint, and inventing a second path to the same state is how two
+ * surfaces come to disagree.
+ *
+ * The connection is read off the DETAIL because the list view does not carry it,
+ * and a row whose Google account is gone gets a sentence, never a dead button
+ * (`PROMOTE_NEEDS_CONNECTION` in `./purpose.ts`).
+ */
+export async function promoteToOutreachMailbox(
+  identityId: string,
+): Promise<SendingIdentityDetail> {
+  const detail = await getSendingIdentity(identityId);
+  if (!detail.connection_id) {
+    throw new Error(PROMOTE_NEEDS_CONNECTION);
+  }
+  return createSendingIdentity({
+    connection_id: detail.connection_id,
+    from_address: detail.from_address,
+    from_name: detail.from_name,
+    display_name: detail.display_name,
+    organization_id: detail.organization_id,
+  });
 }
 
 export async function updateSendingIdentity(

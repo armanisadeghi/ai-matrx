@@ -4,8 +4,16 @@
  * ConnectMailboxDialog — pick one of YOUR connected mailboxes, or connect a
  * NEW Google account without leaving the dialog.
  *
- * Three no-dead-ends rules are load-bearing here:
+ * Four no-dead-ends rules are load-bearing here:
  *
+ *   0. A mailbox a reviewed one-to-one send RECORDED FOR AUDIT is its own state.
+ *      It is connectable — picking it makes it a campaign mailbox as well, keeping
+ *      everything it has already sent — and it is offered with the consequence
+ *      stated first, because domain proof, warm-up and reading that mailbox's
+ *      incoming mail all begin there. It used to arrive as `already_used` with the
+ *      sentence "This mailbox is already set up as a sending identity": false, and
+ *      a dead end our own bookkeeping created, while the server's own
+ *      `create_identity` would have promoted it (VERIFY-B1-B2-R5 W1).
  *   1. Mailboxes that CANNOT be used are still listed, with the reason and the
  *      way out. An account that silently disappears from a picker leaves the
  *      user certain they connected it and unable to find it.
@@ -24,7 +32,14 @@
  */
 
 import { useState } from "react";
-import { AlertCircle, ArrowRight, Loader2, Mail, Plus } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowRight,
+  FileClock,
+  Loader2,
+  Mail,
+  Plus,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -40,9 +55,19 @@ import { GOOGLE_WORKSPACE_SEND_SCOPES } from "@/lib/googleScopes";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
 import { connectGoogle } from "@/features/marketing/google/service";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { useConnectableMailboxes } from "@/features/crm/sending-identities/hooks";
 import { createSendingIdentity } from "@/features/crm/sending-identities/service";
-import type { SendingIdentityDetail } from "@/features/crm/sending-identities/types";
+import type {
+  ConnectableMailbox,
+  SendingIdentityDetail,
+} from "@/features/crm/sending-identities/types";
+import {
+  PROMOTE_TO_CAMPAIGNS_CONFIRM_LABEL,
+  PROMOTE_TO_CAMPAIGNS_CONSEQUENCE,
+  PROMOTE_TO_CAMPAIGNS_TITLE,
+  connectableStateOf,
+} from "@/features/crm/sending-identities/purpose";
 
 interface ConnectMailboxDialogProps {
   open: boolean;
@@ -78,6 +103,25 @@ function ConnectMailboxDialogBody({
   const [connecting, setConnecting] = useState<string | null>(null);
   const [addingAccount, setAddingAccount] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
+
+  /**
+   * A CORRESPONDENCE MAILBOX IS PROMOTED, NOT REFUSED (VERIFY-B1-B2-R5 W1).
+   *
+   * The same `createSendingIdentity` call does it — the server's
+   * `register_identity` flips `purpose` to `outreach` in place and keeps every
+   * event the mailbox already wrote. What is different is that a person is told
+   * what turns on FIRST, because domain proof, warm-up and reading that
+   * mailbox's incoming mail all begin here.
+   */
+  async function promote(connectionId: string, address: string) {
+    const ok = await confirm({
+      title: PROMOTE_TO_CAMPAIGNS_TITLE,
+      description: PROMOTE_TO_CAMPAIGNS_CONSEQUENCE,
+      confirmLabel: PROMOTE_TO_CAMPAIGNS_CONFIRM_LABEL,
+    });
+    if (!ok) return;
+    await connect(connectionId, address);
+  }
 
   async function connect(connectionId: string, address: string) {
     setConnecting(connectionId);
@@ -123,9 +167,69 @@ function ConnectMailboxDialogBody({
     }
   }
 
-  const usable = mailboxes?.filter((mailbox) => mailbox.can_send) ?? [];
-  const blocked = mailboxes?.filter((mailbox) => !mailbox.can_send) ?? [];
-  const empty = usable.length === 0 && blocked.length === 0;
+  /**
+   * 🚨 THE THREE STATES, decided by the server's own words
+   * (`features/crm/sending-identities/purpose.ts`): usable, a correspondence
+   * mailbox that may be promoted, and genuinely blocked. `can_send` alone put a
+   * correspondence mailbox in the blocked list under the sentence "This mailbox
+   * is already set up as a sending identity" — false, and a dead end our own
+   * bookkeeping created, while the server would have promoted it (W1).
+   */
+  const rows = (mailboxes ?? []).map((mailbox) => ({
+    mailbox,
+    state: connectableStateOf(mailbox),
+  }));
+  const usable = rows.filter((row) => row.state.kind === "connectable");
+  const promotable = rows.filter(
+    (row) => row.state.kind === "recorded_for_audit",
+  );
+  const blocked = rows.filter((row) => row.state.kind === "blocked");
+  const empty = rows.length === 0;
+
+  function pickable(
+    mailbox: ConnectableMailbox,
+    promoting: boolean,
+    sentence?: string,
+  ) {
+    return (
+      <button
+        key={mailbox.connection_id}
+        type="button"
+        disabled={connecting !== null || addingAccount}
+        onClick={() =>
+          void (promoting
+            ? promote(mailbox.connection_id, mailbox.account_email)
+            : connect(mailbox.connection_id, mailbox.account_email))
+        }
+        className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:border-foreground/20 hover:bg-accent/40 disabled:opacity-60"
+      >
+        {promoting ? (
+          <FileClock className="h-4 w-4 shrink-0 text-muted-foreground" />
+        ) : (
+          <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium text-foreground">
+            {mailbox.account_email}
+          </p>
+          {promoting ? (
+            /* The SERVER's own sentence about what this mailbox is and what
+               picking it does — never re-worded here. */
+            <p className="text-xs text-muted-foreground">{sentence}</p>
+          ) : mailbox.account_name ? (
+            <p className="truncate text-xs text-muted-foreground">
+              {mailbox.account_name}
+            </p>
+          ) : null}
+        </div>
+        {connecting === mailbox.connection_id ? (
+          <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
+        ) : (
+          <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+        )}
+      </button>
+    );
+  }
 
   const addAccountButton = (
     <Button
@@ -163,36 +267,19 @@ function ConnectMailboxDialogBody({
           <p className="text-sm text-destructive">{error}</p>
         ) : (
           <div className="space-y-2">
-            {usable.map((mailbox) => (
-              <button
-                key={mailbox.connection_id}
-                type="button"
-                disabled={connecting !== null || addingAccount}
-                onClick={() =>
-                  void connect(mailbox.connection_id, mailbox.account_email)
-                }
-                className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:border-foreground/20 hover:bg-accent/40 disabled:opacity-60"
-              >
-                <Mail className="h-4 w-4 shrink-0 text-muted-foreground" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {mailbox.account_email}
-                  </p>
-                  {mailbox.account_name ? (
-                    <p className="truncate text-xs text-muted-foreground">
-                      {mailbox.account_name}
-                    </p>
-                  ) : null}
-                </div>
-                {connecting === mailbox.connection_id ? (
-                  <Loader2 className="h-4 w-4 shrink-0 animate-spin text-muted-foreground" />
-                ) : (
-                  <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                )}
-              </button>
-            ))}
+            {usable.map((row) => pickable(row.mailbox, false))}
 
-            {blocked.map((mailbox) => (
+            {promotable.map((row) =>
+              pickable(
+                row.mailbox,
+                true,
+                row.state.kind === "recorded_for_audit"
+                  ? row.state.sentence
+                  : undefined,
+              ),
+            )}
+
+            {blocked.map(({ mailbox, state }) => (
               <div
                 key={mailbox.connection_id}
                 className={cn(
@@ -207,7 +294,9 @@ function ConnectMailboxDialogBody({
                       {mailbox.account_email}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {mailbox.blocked_reason}
+                      {/* Never silence: `connectableStateOf` supplies a sentence
+                          even when the server sent no reason at all. */}
+                      {state.kind === "blocked" ? state.sentence : null}
                     </p>
                   </div>
                 </div>

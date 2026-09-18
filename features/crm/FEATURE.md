@@ -1047,6 +1047,55 @@ module in the folder + the two deleted filenames).
 
 ## Change log
 
+- 2026-09-18 — **F-41: the READ surfaces learned about `purpose`, and the approver
+  is told what was set aside and what gets added.** Round-5 verification
+  (`common-docs/projects/google-native/VERIFY-B1-B2-R5.md` W1, W3, W4, W5) found
+  four silences around the reviewed Gmail send, all of them on the client side of
+  lane B-20/B-26. **W1:** the first real reviewed 1:1 registers the sender's own
+  connected mailbox as `crm.sending_identity` with `purpose='correspondence'` so
+  the send has a `crm.sending_event`; every sweep excluded those rows and no READ
+  did, so `/crm/sending-identities` listed a person's personal Gmail as a `draft`
+  outreach mailbox whose next step was "prove you own this domain" — on
+  `gmail.com`, forever — and the Connect-mailbox dialog put the same account in
+  its BLOCKED list under "This mailbox is already set up as a sending identity",
+  which is false, while the server would have promoted it. Now: the list asks for
+  `purpose=outreach` explicitly (`listSendingIdentities(org, purpose)`, aidream's
+  own filter and default), the audit rows are ONE click away through a second
+  read by name (`useCorrespondenceIdentities`) and render as what they are — the
+  server's own `purpose_note`, no status badge, no setup step, no issues list —
+  with "Use for campaigns" stating the consequence FIRST (domain proof, warm-up,
+  and that campaign replies mean we start reading that mailbox), and the dialog
+  renders the server's third state (`recorded_for_audit` + `promotion_note`) as a
+  pickable row behind the same confirmation instead of a false refusal.
+  `features/crm/sending-identities/purpose.ts` holds the client half and
+  `purpose-is-the-servers.test.ts` measures every field, sentence, the route's
+  default and the server's own "an audit row is not already-used" rule against the
+  sibling aidream checkout. **W3:** `crm.check_send_eligibility` answers for a
+  cold CAMPAIGN when no list is named, so `jurisdiction_prohibited` ("Germany
+  requires permission BEFORE you write, even for business email") fires on an
+  ordinary reply; the spine exempts it — correctly — and kept nothing, and the
+  verdict's `warnings` array never carried it, so nobody was told. The approvals
+  queue now renders those set-aside rules above the review card with the spine's
+  declared reason for each (`features/crm/gmail/reviewed-send-exemptions.ts`,
+  whose table is diffed BOTH WAYS against `GATE_EXEMPT_BLOCKS` and
+  `CORRESPONDENCE_EXEMPT_BLOCKS` by
+  `reviewed-send-exemptions-are-the-servers.test.ts`), the send's answer carries
+  `exempted_blocks` into the approval receipt, and the timeline reads them back
+  off `crm.interaction.metadata`. **W4/R24:** when a send names an outreach
+  mailbox and the recipient's medium, the spine appends an unsubscribe footer and
+  a postal block AFTER approval — so the card now says so before the click and the
+  sent record shows the exact `footer_text`; `compliance_class` and the footer
+  ride the receipt too, so "sent exactly as approved" can never be claimed by a
+  message that carried a footer. **W5:** the `crm.sending_event` row now exists
+  for every reviewed send, which makes the machinery LOOK correlated while a
+  mailbox recorded for audit is deliberately never watched — so
+  `bounce_correlation: "not_watched"` is said out loud on the post-send answer and
+  on the sent record, in the server's own sentence, and never guessed either way.
+  No screen was seen (this container has no browser and the hosts are not on its
+  allowlist); `bounce_correlation` is not yet on `gmail_interaction_metadata`, so
+  the timeline's leg for it is UNMEASURED-until-present and prints nothing
+  meanwhile.
+
 - 2026-09-17 — **F-40: an existing Person opens IN PLACE.** `crm.party` had no
   in-place presentation at all: `hasPeek("party")` was false and the only party
   window (`CrmCreatePartyWindow`) creates a NEW record, so every surface that

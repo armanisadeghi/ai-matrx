@@ -131,6 +131,41 @@ const measurable = Boolean(requestFile && responseFile && ccFile);
       }
     });
 
+    it("reads the compliance keys the spine's own report writes", () => {
+      // `compliance` is a free-form dict on the wire, so the sub-keys are measured
+      // against `compliance_report`, which is the ONE builder of that dict. A
+      // renamed key there would otherwise silently stop the footer disclosure (W4).
+      const reviewedSend = join(
+        AIDREAM_ROOT,
+        "aidream",
+        "services",
+        "outreach_single_send",
+        "reviewed_send.py",
+      );
+      if (!existsSync(reviewedSend)) {
+        console.warn(
+          `UNMEASURED: ${reviewedSend} not found, so the compliance sub-keys were ` +
+            "not compared against `compliance_report`.",
+        );
+        return;
+      }
+      const source = readFileSync(reviewedSend, "utf8");
+      const start = source.indexOf("def compliance_report(");
+      expect(start).toBeGreaterThan(0);
+      const report = source.slice(start, start + 2000);
+      for (const key of [
+        "compliance_class",
+        "envelope",
+        "footer_appended",
+        "footer_text",
+        "reason",
+      ]) {
+        expect(report).toContain(`"${key}"`);
+      }
+      // FALSIFIABILITY: a key the builder does not write is detected.
+      expect(report).not.toContain('"footer_html"');
+    });
+
     it("spells a Cc attribution entry the way the server stores it", () => {
       const server = fieldsOf("GmailCcAttribution", ccFile!);
       const body = reviewedSendRequestBody({

@@ -56,6 +56,50 @@ export function useSendingIdentities() {
   return { identities, policy, loading, error, organizationRequired, reload };
 }
 
+/**
+ * THE MAILBOXES RECORDED FOR AUDIT — a SECOND read, issued only when a person
+ * asks for them (VERIFY-B1-B2-R5 W1).
+ *
+ * The list route filters by purpose and defaults to outreach, so the page never
+ * shows a person's personal Gmail as an outreach mailbox stuck in setup. These
+ * rows are not hidden: they are one click away, fetched by name, and a failure to
+ * fetch them is SHOWN rather than read as "there are none".
+ */
+export function useCorrespondenceIdentities(enabled: boolean) {
+  const [identities, setIdentities] = useState<SendingIdentityView[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [reloadToken, setReloadToken] = useState(0);
+
+  useEffect(() => {
+    if (!enabled) return undefined;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    Api.listSendingIdentities(undefined, "correspondence")
+      .then((rows) => {
+        if (cancelled) return;
+        setIdentities(rows);
+        setLoading(false);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        setError(extractErrorMessage(err));
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [enabled, reloadToken]);
+
+  return {
+    identities,
+    loading,
+    error,
+    reload: useCallback(() => setReloadToken((n) => n + 1), []),
+  };
+}
+
 export function useConnectableMailboxes(enabled: boolean) {
   const [mailboxes, setMailboxes] = useState<ConnectableMailbox[] | null>(null);
   const [loading, setLoading] = useState(false);

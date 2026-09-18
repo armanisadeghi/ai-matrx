@@ -17,7 +17,7 @@
 // against the server's own source; without that leg this would be a test feeding
 // its author's own guess to its author's own reader.
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { InteractionRow } from "@/features/crm/types";
 import { gmailSentRecordFacts, isGmailSentRecord } from "./sent-record-facts";
@@ -188,5 +188,163 @@ describe("THE GUARD: the timeline renders the sent record's facts", () => {
       expect(source).not.toMatch(/row\.drafted_by_/);
       expect(source).not.toMatch(/row\.approved_by/);
     }
+  });
+});
+
+/**
+ * VERIFY-B1-B2-R5 W3 / W4 / W5 — WHAT THE ROW KEEPS ABOUT WHAT THE AUTHORITY
+ * SAID AND WHAT THE SPINE ADDED.
+ *
+ * The exemptions and the compliance report are on `crm.interaction.metadata`
+ * (`gmail_interaction_metadata`, aidream lane B-26), so the timeline can show
+ * them long after the toast is gone. `bounce_correlation` is NOT on the row yet —
+ * the spine writes it on the `crm.sending_event` detail and on the send's own
+ * answer — so the reader takes it when it is there and the surface says nothing
+ * when it is not. The metadata keys are measured against the server's own source
+ * by the leg below.
+ */
+describe("the disclosures the row keeps", () => {
+  const disclosed = row({
+    metadata: {
+      __kind: "crm_gmail_send_record",
+      to: "ada@example.de",
+      cc: [],
+      audit_trail: { ...AUDIT },
+      exempted_blocks: [
+        {
+          code: "jurisdiction_prohibited",
+          message:
+            "Germany requires permission BEFORE you write, even for business email.",
+          exempt_reason:
+            "Cold-outreach jurisdiction rules judge a campaign, not a reply.",
+          field: "recipient",
+          address: "ada@example.de",
+        },
+      ],
+      compliance: {
+        compliance_class: "commercial_outreach",
+        envelope: true,
+        footer_appended: true,
+        footer_text: "\n\nThis is a commercial message. 1 Main St.",
+        reason: "This message went out through a registered outreach mailbox.",
+      },
+    },
+  } as unknown as Partial<InteractionRow>);
+
+  it("keeps the rule the authority raised and the reason it was set aside", () => {
+    const facts = gmailSentRecordFacts(disclosed);
+    expect(facts.exemptedBlocks).toEqual([
+      {
+        code: "jurisdiction_prohibited",
+        message:
+          "Germany requires permission BEFORE you write, even for business email.",
+        exemptReason:
+          "Cold-outreach jurisdiction rules judge a campaign, not a reply.",
+        field: "recipient",
+        address: "ada@example.de",
+      },
+    ]);
+  });
+
+  it("keeps the class and the exact footer appended after approval", () => {
+    const facts = gmailSentRecordFacts(disclosed);
+    expect(facts.compliance).toEqual({
+      complianceClass: "commercial_outreach",
+      footerAppended: true,
+      footerText: "\n\nThis is a commercial message. 1 Main St.",
+      reason: "This message went out through a registered outreach mailbox.",
+    });
+  });
+
+  it("reads an ordinary row as having nothing to disclose, not as a denial", () => {
+    const facts = gmailSentRecordFacts(row());
+    expect(facts.exemptedBlocks).toEqual([]);
+    // An absent report is null — NOT a report saying no footer was added.
+    expect(facts.compliance).toBeNull();
+    expect(facts.bounceCorrelation).toBeNull();
+    expect(facts.bounceCorrelationNote).toBeNull();
+  });
+
+  it("never drops a stored block for missing prose", () => {
+    const facts = gmailSentRecordFacts(
+      row({
+        metadata: {
+          __kind: "crm_gmail_send_record",
+          exempted_blocks: [{ code: "aup_not_accepted" }, {}, "nope"],
+        },
+      } as unknown as Partial<InteractionRow>),
+    );
+    expect(facts.exemptedBlocks).toHaveLength(1);
+    expect(facts.exemptedBlocks[0]!.exemptReason).toMatch(/was not recorded/i);
+  });
+
+  it("takes the bounce correlation when the row carries it", () => {
+    const facts = gmailSentRecordFacts(
+      row({
+        metadata: {
+          __kind: "crm_gmail_send_record",
+          bounce_correlation: "not_watched",
+          bounce_correlation_note: "We do not read this mailbox.",
+        },
+      } as unknown as Partial<InteractionRow>),
+    );
+    expect(facts.bounceCorrelation).toBe("not_watched");
+    expect(facts.bounceCorrelationNote).toBe("We do not read this mailbox.");
+  });
+});
+
+describe("THE GUARD: the timeline says what was set aside and what was added", () => {
+  const surface = readFileSync(
+    join(__dirname, "GmailSentRecordDetails.tsx"),
+    "utf8",
+  );
+
+  it("renders the exempted blocks, the footer text and the bounce warning", () => {
+    expect(surface).toContain("facts.exemptedBlocks");
+    expect(surface).toContain("facts.compliance?.footerAppended");
+    expect(surface).toContain("facts.compliance.footerText");
+    expect(surface).toContain('facts.bounceCorrelation === "not_watched"');
+  });
+});
+
+describe("CENSUS: the metadata keys are the server's", () => {
+  const reviewedSend = join(
+    process.env.AIDREAM_DIR ?? join(REPO_ROOT, "..", "aidream"),
+    "aidream/services/outreach_single_send/reviewed_send.py",
+  );
+  const measurable = existsSync(reviewedSend);
+
+  (measurable ? it : it.skip)(
+    "writes exempted_blocks and compliance onto the interaction metadata",
+    () => {
+      const source = readFileSync(reviewedSend, "utf8");
+      const start = source.indexOf("def gmail_interaction_metadata(");
+      expect(start).toBeGreaterThan(0);
+      const builder = source.slice(start, start + 3000);
+      expect(builder).toContain('"exempted_blocks"');
+      expect(builder).toContain('"compliance"');
+      // FALSIFIABILITY: a key the builder does not write is detected.
+      expect(builder).not.toContain('"exempted_codes"');
+      // UNMEASURED-until-present: the bounce correlation is on the sending EVENT's
+      // detail, not on the row. The reader above takes it the day it lands here;
+      // until then the timeline says nothing about it and the send's own answer is
+      // the only place a person is told (W5).
+      if (!builder.includes('"bounce_correlation"')) {
+        console.warn(
+          "UNMEASURED-until-present: gmail_interaction_metadata does not write " +
+            "`bounce_correlation`, so a reviewed send's timeline cannot say that a " +
+            "bounce will never be matched back — only the post-send answer can. " +
+            "features/crm/gmail/sent-record-facts.ts reads it already.",
+        );
+      }
+    },
+  );
+
+  (measurable ? it.skip : it)("is UNMEASURED without the aidream checkout", () => {
+    console.warn(
+      `UNMEASURED: ${reviewedSend} not found, so the metadata keys this fixture ` +
+        "asserts were NOT compared against the server.",
+    );
+    expect(true).toBe(true);
   });
 });

@@ -43,11 +43,24 @@ function serverAnswer(overrides: Record<string, unknown> = {}) {
     association_failures: [],
     sending_event_id: "event-1",
     sending_event_gap: null,
+    // 🚨 THE DEFAULT ANSWER IS AN ORDINARY REVIEWED 1:1 — the class where the
+    // spine appends NOTHING, which is what `compliance_report(envelope=None)`
+    // returns. This fixture used to say `footer_appended: true` while the notices
+    // test asserted an EMPTY notice list, so the one shape W4 is about — a footer
+    // added after approval — was asserted to be silent.
     compliance: {
-      envelope: true,
-      footer_appended: true,
-      reason: "Registered outreach mailbox.",
+      envelope: false,
+      footer_appended: false,
+      reason: "This went out exactly as the reviewer approved it.",
+      compliance_class: "correspondence",
+      footer_text: null,
     },
+    compliance_class: "correspondence",
+    footer_text: null,
+    exempted_blocks: [],
+    bounce_correlation: "watched",
+    bounce_correlation_note:
+      "This mailbox's replies are read, so a bounce will be matched back to it.",
     warnings: [],
     audit_columns_written: ["approved_by", "approved_at"],
     ...overrides,
@@ -124,12 +137,18 @@ describe("narrowReviewedSendOutcome", () => {
       sendingEventId: "event-1",
       sendingEventGap: null,
       compliance: {
-        envelope: true,
-        footerAppended: true,
-        reason: "Registered outreach mailbox.",
+        envelope: false,
+        footerAppended: false,
+        reason: "This went out exactly as the reviewer approved it.",
+        complianceClass: "correspondence",
+        footerText: null,
       },
       warnings: [],
       auditColumnsWritten: ["approved_by", "approved_at"],
+      exemptedBlocks: [],
+      bounceCorrelation: "watched",
+      bounceCorrelationNote:
+        "This mailbox's replies are read, so a bounce will be matched back to it.",
     });
   });
 
@@ -205,6 +224,160 @@ describe("reviewedSendNotices", () => {
     expect(reviewedSendNotices(narrowReviewedSendOutcome(serverAnswer()))).toEqual(
       [],
     );
+  });
+
+  /**
+   * 🚨 W5 — A BOUNCE THAT WILL NEVER COME BACK. The `crm.sending_event` row now
+   * exists for every reviewed send, so `sending_event_gap` is null exactly when
+   * the mailbox is unwatched: the machinery LOOKS correlated and only
+   * `bounce_correlation` says otherwise.
+   */
+  it("says a bounce from an unwatched mailbox will never be matched back", () => {
+    const outcome = narrowReviewedSendOutcome(
+      serverAnswer({
+        bounce_correlation: "not_watched",
+        bounce_correlation_note:
+          "We do not read this mailbox, so a bounce will not be matched back to " +
+          "this message automatically — watch the mailbox itself for a delivery " +
+          "failure.",
+      }),
+    );
+    expect(reviewedSendNotices(outcome)).toEqual([
+      {
+        level: "warning",
+        sentence:
+          "We do not read this mailbox, so a bounce will not be matched back to " +
+          "this message automatically — watch the mailbox itself for a delivery " +
+          "failure.",
+      },
+    ]);
+  });
+
+  it("still says it when the server sent the state with no sentence", () => {
+    const outcome = narrowReviewedSendOutcome(
+      serverAnswer({ bounce_correlation: "not_watched", bounce_correlation_note: "" }),
+    );
+    expect(reviewedSendNotices(outcome)[0]?.sentence).toMatch(
+      /do not read this mailbox/i,
+    );
+  });
+
+  it("says nothing about bounces when the mailbox IS watched or unstated", () => {
+    expect(reviewedSendNotices(narrowReviewedSendOutcome(serverAnswer()))).toEqual(
+      [],
+    );
+    // An older answer: no field at all is not a claim either way.
+    const older = narrowReviewedSendOutcome({
+      message_id: "g",
+      compliance: null,
+    });
+    expect(older.bounceCorrelation).toBeNull();
+    expect(reviewedSendNotices(older)).toEqual([]);
+  });
+
+  /**
+   * 🚨 W4 / R24 — THE BODY SENT IS THE BODY APPROVED, or the person is told what
+   * was added to it. `footer_appended` with the exact text is the whole point.
+   */
+  it("names the footer the spine appended after approval, with its text", () => {
+    const outcome = narrowReviewedSendOutcome(
+      serverAnswer({
+        compliance: {
+          envelope: true,
+          footer_appended: true,
+          reason: "This message went out through a registered outreach mailbox.",
+          compliance_class: "commercial_outreach",
+          footer_text: "\n\nThis is a commercial message. 1 Main St, Springfield.",
+        },
+        compliance_class: "commercial_outreach",
+        footer_text: "\n\nThis is a commercial message. 1 Main St, Springfield.",
+      }),
+    );
+    expect(outcome.compliance?.complianceClass).toBe("commercial_outreach");
+    const notices = reviewedSendNotices(outcome);
+    expect(notices).toHaveLength(1);
+    expect(notices[0]!.sentence).toContain("registered outreach mailbox");
+    expect(notices[0]!.sentence).toContain("after you approved it");
+    expect(notices[0]!.sentence).toContain("This is a commercial message.");
+  });
+
+  it("says a footer was added even when the server did not send its text", () => {
+    const outcome = narrowReviewedSendOutcome(
+      serverAnswer({
+        compliance: {
+          envelope: true,
+          footer_appended: true,
+          reason: "Registered outreach mailbox.",
+        },
+      }),
+    );
+    expect(reviewedSendNotices(outcome)[0]!.sentence).toMatch(
+      /exact text it added was not reported/i,
+    );
+  });
+});
+
+describe("the exempted blocks the authority raised (W3)", () => {
+  it("reads each one with the authority's sentence and the declared reason", () => {
+    const outcome = narrowReviewedSendOutcome(
+      serverAnswer({
+        exempted_blocks: [
+          {
+            code: "jurisdiction_prohibited",
+            message:
+              "Germany requires permission BEFORE you write, even for business email.",
+            exempt_reason:
+              "Cold-outreach jurisdiction rules judge a campaign, not a reply.",
+            field: "recipient",
+            address: "ada@example.de",
+          },
+        ],
+      }),
+    );
+    expect(outcome.exemptedBlocks).toEqual([
+      {
+        code: "jurisdiction_prohibited",
+        message:
+          "Germany requires permission BEFORE you write, even for business email.",
+        exemptReason:
+          "Cold-outreach jurisdiction rules judge a campaign, not a reply.",
+        field: "recipient",
+        address: "ada@example.de",
+      },
+    ]);
+    // And it survives into the receipt, in the server's own spelling.
+    const record = reviewedSendOutcomeAsRecord(outcome);
+    expect(record.exempted_blocks).toEqual([
+      {
+        code: "jurisdiction_prohibited",
+        message:
+          "Germany requires permission BEFORE you write, even for business email.",
+        exempt_reason:
+          "Cold-outreach jurisdiction rules judge a campaign, not a reply.",
+        field: "recipient",
+        address: "ada@example.de",
+      },
+    ]);
+  });
+
+  it("never drops a block for missing prose — it says the reason is missing", () => {
+    const outcome = narrowReviewedSendOutcome(
+      serverAnswer({ exempted_blocks: [{ code: "aup_not_accepted" }] }),
+    );
+    expect(outcome.exemptedBlocks).toHaveLength(1);
+    expect(outcome.exemptedBlocks[0]!.exemptReason).toMatch(/did not say why/i);
+    expect(outcome.exemptedBlocks[0]!.field).toBe("recipient");
+  });
+
+  it("is an empty list, never an invented one, on a shape it cannot read", () => {
+    expect(
+      narrowReviewedSendOutcome(serverAnswer({ exempted_blocks: "none" }))
+        .exemptedBlocks,
+    ).toEqual([]);
+    expect(
+      narrowReviewedSendOutcome(serverAnswer({ exempted_blocks: [{}, 3, null] }))
+        .exemptedBlocks,
+    ).toEqual([]);
   });
 });
 

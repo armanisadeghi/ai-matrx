@@ -33,6 +33,12 @@ import { useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { checkSendEligibility } from "@/features/crm/compliance/service";
 import type { ReviewedGmailSendPlan } from "@/features/crm/gmail/reviewed-send-contract";
+import {
+  COMPLIANCE_CLASS_SENTENCE,
+  EXEMPTED_BLOCKS_HEADING,
+  complianceClassOf,
+  exemptedBlocksOfVerdict,
+} from "@/features/crm/gmail/reviewed-send-exemptions";
 import { preflightGmailRecipients } from "@/features/crm/gmail/preflight";
 import { assessGmailRecipientIntegrity } from "@/features/crm/gmail/recipient-integrity";
 import type { EligibilityVerdict } from "@/features/crm/compliance/types";
@@ -484,6 +490,74 @@ function GmailApprovalBody({
   );
 }
 
+/**
+ * 🚨 WHAT THE APPROVER IS TOLD BEFORE THE CLICK (VERIFY-B1-B2-R5 W3 + W4).
+ *
+ * Two silences closed, both above the card and both computed from what this
+ * queue already holds:
+ *
+ *   W3 — the rules the send authority RAISED that the reviewed-1:1 path sets
+ *   aside. "Germany requires permission BEFORE you write, even for business
+ *   email" was dropped on the floor: the spine `continue`s over an exempt code
+ *   and keeps nothing, and the verdict's `warnings` array never carried it. The
+ *   exemption is right (a campaign rule does not judge a reply) and the approver
+ *   is the legal actor on a 1:1, so it is SHOWN, with the declared reason.
+ *
+ *   W4 — the class of the message, and therefore whether the body that leaves is
+ *   the body below. When the send names an outreach mailbox and the recipient's
+ *   medium, the spine appends an unsubscribe footer and a postal block AFTER
+ *   approval; §4.4 is that the reviewer sees what is sent.
+ *
+ * Renders nothing when there is nothing to say — never an empty reassurance box.
+ */
+function SendDisclosure({
+  verdict,
+  identityId,
+  mediumId,
+}: {
+  verdict: EligibilityVerdict | undefined;
+  identityId: string | null;
+  mediumId: string | null;
+}) {
+  const exempted = verdict ? exemptedBlocksOfVerdict(verdict) : [];
+  // The purpose of a named mailbox is not something the browser holds; unknown
+  // counts as outreach, the same direction the spine errs in, so a footer is
+  // announced rather than quietly appended.
+  const complianceClass = complianceClassOf({ identityId, mediumId });
+  const footerIsAdded = complianceClass !== "correspondence";
+  if (exempted.length === 0 && !footerIsAdded) return null;
+  return (
+    <div className="space-y-1.5 rounded-md border border-border bg-muted/40 p-2">
+      {footerIsAdded ? (
+        <p className="break-words text-[11px] text-warning">
+          {COMPLIANCE_CLASS_SENTENCE[complianceClass]}
+        </p>
+      ) : null}
+      {exempted.length > 0 ? (
+        <div className="space-y-1">
+          <p className="text-[11px] font-medium text-foreground">
+            {EXEMPTED_BLOCKS_HEADING}
+          </p>
+          {exempted.map((block) => (
+            <p key={block.code} className="break-words text-[11px]">
+              <span
+                className={
+                  block.legallyMaterial
+                    ? "text-warning"
+                    : "text-muted-foreground"
+                }
+              >
+                {block.message}
+              </span>{" "}
+              <span className="text-muted-foreground">{block.whyExempt}</span>
+            </p>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 /** The spine's verdict, rendered as its own sentences and fixes. */
 function BlockedBySpine({ verdict }: { verdict: EligibilityVerdict }) {
   return (
@@ -729,6 +803,13 @@ function useSource(scope: ApprovalScope): ApprovalSource {
                 your own judgement.
               </p>
             )}
+            {/* What the authority raised and the path sets aside, and whether a
+                footer will be added to this body after you approve it. */}
+            <SendDisclosure
+              verdict={verdict}
+              identityId={payload.identityId ?? null}
+              mediumId={payload.recipientMediumId ?? null}
+            />
             <GmailApprovalBody
               proposal={proposal}
               payload={payload}

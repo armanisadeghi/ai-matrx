@@ -29,7 +29,16 @@
  */
 
 import { useState } from "react";
-import { BrainCircuit, Link2Off, Loader2, Mail, ShieldCheck } from "lucide-react";
+import {
+  BrainCircuit,
+  FileText,
+  Link2Off,
+  Loader2,
+  Mail,
+  MailWarning,
+  ScrollText,
+  ShieldCheck,
+} from "lucide-react";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table";
 import { useAssociations } from "@ai-matrx/associations/react";
 import { Button } from "@/components/ui/button";
@@ -260,6 +269,84 @@ export function GmailSentRecordDetails({
           {facts.approvedAt ? (
             <span>{formatRelativeTime(facts.approvedAt)}</span>
           ) : null}
+        </p>
+      ) : null}
+
+      {/*
+        🚨 WHAT WAS ADDED TO THE BODY AFTER IT WAS APPROVED (VERIFY-B1-B2-R5 W4,
+        chair ruling R24). A footer the spine appended and nobody rendered is the
+        same silence as a hidden refusal — and the exact text is shown, because
+        "a footer was added" does not tell the person what the recipient read.
+        Nothing is printed for a message that carried none: the honest default is
+        that the body is the body, and the reason sentence lives on the receipt.
+      */}
+      {facts.compliance?.footerAppended ? (
+        <div className="space-y-0.5 text-[11px] text-warning">
+          <p className="flex items-start gap-1.5">
+            <FileText className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+            <span className="min-w-0">
+              {facts.compliance.reason ??
+                "An unsubscribe footer was added to this message after it was approved."}
+            </span>
+          </p>
+          {facts.compliance.footerText ? (
+            <p className="whitespace-pre-wrap break-words pl-4 text-muted-foreground">
+              {facts.compliance.footerText}
+            </p>
+          ) : (
+            <p className="pl-4 text-muted-foreground">
+              The exact text that was added was not recorded, so compare this with
+              the copy in the sent folder.
+            </p>
+          )}
+        </div>
+      ) : null}
+
+      {/*
+        🚨 THE RULES THE AUTHORITY RAISED AND THIS MESSAGE WAS NOT JUDGED BY (W3).
+        The exemption is correct — a cold-campaign rule does not judge a reply —
+        and the approver was the legal actor, so the row keeps what was said and
+        why it was set aside instead of dropping it on the floor.
+      */}
+      {facts.exemptedBlocks.length > 0 ? (
+        <div className="space-y-0.5 text-[11px]">
+          <p className="flex items-start gap-1.5 text-muted-foreground">
+            <ScrollText className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+            <span>
+              Checked and not applied to this message, because it was a reviewed
+              one-to-one reply and not a campaign:
+            </span>
+          </p>
+          {facts.exemptedBlocks.map((block) => (
+            <p
+              key={`${block.code}:${block.address}`}
+              className="break-words pl-4 text-muted-foreground"
+            >
+              <span className="text-foreground">{block.message}</span>{" "}
+              {block.exemptReason}
+              {block.address ? ` (${block.field}: ${block.address})` : null}
+            </p>
+          ))}
+        </div>
+      ) : null}
+
+      {/*
+        🚨 A BOUNCE THAT WILL NEVER COME BACK (W5). The `crm.sending_event` row
+        exists for every reviewed send now, which makes the machinery LOOK
+        correlated; `outreach_inbound` reads a mailbox only through a Gmail watch,
+        and a mailbox recorded for audit is deliberately never watched. Shown only
+        when the row SAYS so — a timeline that guessed "not watched" would be
+        inventing a state, and one that guessed "watched" would be the defect.
+      */}
+      {facts.bounceCorrelation === "not_watched" ? (
+        <p className="flex items-start gap-1.5 text-[11px] text-warning">
+          <MailWarning className="mt-0.5 h-3 w-3 shrink-0" aria-hidden />
+          <span className="min-w-0">
+            {facts.bounceCorrelationNote ??
+              "We do not read this mailbox, so a bounce will not be matched back " +
+                "to this message automatically — watch the mailbox itself for a " +
+                "delivery failure."}
+          </span>
         </p>
       ) : null}
     </div>
