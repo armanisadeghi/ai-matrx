@@ -37,9 +37,9 @@ import {
   AGENDA_DAYS_KNOB,
   CALENDAR_PRODUCT_KEY,
   agendaDays,
+  agendaIsStaleForOpen,
   attendeesOf,
   groupAgenda,
-  isStaleForOpen,
   newestSyncedAt,
   refreshedPhrase,
   undatedEvents,
@@ -215,7 +215,11 @@ export function useAgenda(options?: {
     if (productHealth && productHealth.state !== "connected") return;
     const key = `${connectionId}:${days}`;
     if (refreshedFor.current === key) return;
-    if (!isStaleForOpen(newestSyncedAt(events), minAgeSeconds, new Date())) {
+    // 🚨 A DETACHED EVENT NEVER COUNTS AS EVIDENCE THE WINDOW IS STALE — its
+    // `synced_at` is frozen the day someone kept it as AI Matrx data, and no
+    // refresh will ever move it, so treating its age as staleness would spend
+    // a Google call on every open for a fact no call could change.
+    if (!agendaIsStaleForOpen(events, minAgeSeconds, new Date())) {
       refreshedFor.current = key;
       return;
     }

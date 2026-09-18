@@ -17,6 +17,18 @@ export type CalendarEventRow =
   Database["communication"]["Tables"]["calendar_event"]["Row"];
 
 /**
+ * The CHECK constraint's words on `sync_status` (migration 0766 gave two;
+ * 0881 added the third the same way it did for `workbench.google_document`).
+ * The DB type carries the column as plain `string`, so this is the vetted
+ * subset the client actually knows how to render.
+ *
+ * `detached` is TERMINAL and is never a provider answer: it is what the person
+ * chose when they pressed "Keep as AI Matrx data". A detached event keeps
+ * everything it had and never refreshes from Google Calendar again.
+ */
+export type CalendarEventSyncStatus = "available" | "unavailable" | "detached";
+
+/**
  * Google's own RSVP vocabulary (`attendee.responseStatus`), carried through the
  * server verbatim. `needsAction` is what Google sends for "not answered yet".
  */

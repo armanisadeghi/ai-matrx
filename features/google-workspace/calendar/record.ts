@@ -12,7 +12,7 @@
  * the shared health strip's producer, since lane F-51.
  */
 
-import type { DetailField, DetailRow } from "@/lib/detail/types";
+import type { DetailField, DetailRow, DetailSourceHealth } from "@/lib/detail/types";
 
 import {
   CALENDAR_EVENT_ATTENDEES_KIND,
@@ -20,6 +20,7 @@ import {
   type AgendaGroup,
   type CalendarAttendee,
   type CalendarEventRow,
+  type CalendarEventSyncStatus,
   type CalendarRsvp,
 } from "./types";
 
@@ -28,6 +29,25 @@ export const CALENDAR_EVENT_TYPE = "calendar_event";
 
 /** The connector product whose grant refreshes these records. */
 export const CALENDAR_PRODUCT_KEY = "calendar";
+
+/**
+ * The schema-qualified table the server's two generic doors address this
+ * record by (`SYNCED_RECORD_TABLES` in aidream's `google_sync/records.py`,
+ * same declared set `documents/record.ts`'s `GOOGLE_DOCUMENT_TABLE` names).
+ * Sent as a path segment and resolved there — never interpolated.
+ */
+export const CALENDAR_EVENT_TABLE = "communication.calendar_event";
+
+export function isCalendarEventSyncStatus(
+  value: unknown,
+): value is CalendarEventSyncStatus {
+  return value === "available" || value === "unavailable" || value === "detached";
+}
+
+/** The status word, or `unknown` when the column says something we do not know. */
+export function syncStatusOf(row: CalendarEventRow): CalendarEventSyncStatus | "unknown" {
+  return isCalendarEventSyncStatus(row.sync_status) ? row.sync_status : "unknown";
+}
 
 /**
  * PLAN §4.6 / §7 — `google.calendar.agenda_days`, default 7, max 31. The max is
@@ -367,6 +387,31 @@ export function isStaleForOpen(
   return age >= minAgeSeconds;
 }
 
+/**
+ * Whether OPENING THE AGENDA should spend a Google call, given the rows it
+ * already holds.
+ *
+ * 🚨 A DETACHED ROW IS NEVER EVIDENCE THE WINDOW IS STALE. It is a terminal
+ * choice, frozen at whatever `synced_at` it carried the day someone pressed
+ * "Keep as AI Matrx data" — `refresh_calendar` reports it `detached_left_alone`
+ * and never touches it again, so its age can never become fresh no matter how
+ * many times the window refreshes. Counting it would make a window whose only
+ * event is detached look permanently stale and spend a call on every open for a
+ * fact no call can change; excluding it and finding NOTHING left to judge is
+ * therefore read as "nothing here needs a call", not as "never refreshed" —
+ * the opposite of what an empty pool means for `isStaleForOpen` itself, which is
+ * why this is its own function rather than a filter at the call site.
+ */
+export function agendaIsStaleForOpen(
+  events: readonly CalendarEventRow[],
+  minAgeSeconds: number,
+  now: Date,
+): boolean {
+  const refreshable = events.filter((event) => syncStatusOf(event) !== "detached");
+  if (events.length > 0 && refreshable.length === 0) return false;
+  return isStaleForOpen(newestSyncedAt(refreshable), minAgeSeconds, now);
+}
+
 /** The newest `synced_at` across the rows on screen, or null when there are none. */
 export function newestSyncedAt(events: readonly CalendarEventRow[]): string | null {
   let best: { iso: string; at: number } | null = null;
@@ -445,6 +490,67 @@ export function calendarEventDetailRow(row: CalendarEventRow): DetailRow {
 export function asCalendarEventRow(row: DetailRow | null): CalendarEventRow | null {
   if (!row || typeof row.id !== "string" || typeof row.external_id !== "string") return null;
   return row as unknown as CalendarEventRow;
+}
+
+/**
+ * 🚨 THE STRIP TELLS THE TRUTH ABOUT **THIS EVENT**, NOT ONLY ABOUT THE
+ * ACCOUNT — the same law `documents/itemType.tsx`'s sibling enforces for a
+ * Google file, kept as a pure function here (no React, no network) so it is
+ * testable without mounting anything: a perfectly healthy Google Calendar
+ * connection can still be refusing (or, for a detached event, deliberately no
+ * longer touching) this one row.
+ *
+ * `produced` is whatever the generic connector-grant producer answered (or
+ * `null` when it could not run at all). This never invents a `source` the
+ * generic producer already named.
+ */
+export function calendarEventHealthOverride(
+  row: CalendarEventRow,
+  produced: DetailSourceHealth | null,
+): DetailSourceHealth {
+  const status = syncStatusOf(row);
+  if (status === "detached") {
+    // THE TERMINAL STATE IS NOT A FAILURE, AND IT OFFERS NO CONTROL THAT
+    // CANNOT WORK. The person kept this event as AI Matrx data: a Refresh
+    // would be refused by the server with a 409 and a Reconnect repairs
+    // nothing, so neither is offered (law 4) — regardless of what the generic
+    // producer supplied.
+    return {
+      ...(produced ?? { source: "Google Calendar" }),
+      source: produced?.source ?? "Google Calendar",
+      lastRefreshedAt: row.synced_at,
+      grant: "ok",
+      grantDetail:
+        row.sync_status_reason?.trim() ||
+        "Kept as AI Matrx data: this event no longer refreshes from Google Calendar and keeps what it had.",
+      onRefresh: null,
+      onReconnect: null,
+    };
+  }
+  const unavailable = status !== "available";
+  const eventSentence = unavailable
+    ? row.sync_status_reason?.trim() ||
+      "Google Calendar would not give us this event the last time we asked, and did not say why."
+    : null;
+  if (!produced) {
+    return {
+      source: "Google Calendar",
+      lastRefreshedAt: row.synced_at,
+      grant: unavailable ? "unknown" : "ok",
+      grantDetail:
+        eventSentence ??
+        "This event is kept in step with Google Calendar; we could not check the connection behind it just now.",
+    };
+  }
+  if (!unavailable) return produced;
+  return {
+    ...produced,
+    // `unknown` is the vocabulary's honest word for "the grant is not the
+    // problem, this event is" — `revoked` would send the person to reconnect
+    // something a reconnect cannot repair.
+    grant: produced.grant === "ok" ? "unknown" : produced.grant,
+    grantDetail: [eventSentence, produced.grantDetail].filter(Boolean).join(" "),
+  };
 }
 
 function whenText(value: string | null): string {

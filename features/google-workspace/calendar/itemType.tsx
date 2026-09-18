@@ -28,10 +28,11 @@ import { CalendarDays } from "lucide-react";
 
 import type { ItemTypeConfig } from "@/features/item-presentation/registry";
 import type { EnrichedItem } from "@/features/item-presentation/types";
-import type { DetailRecordType } from "@/lib/detail/types";
+import type { DetailRecordType, DetailSection } from "@/lib/detail/types";
 
 import {
   CalendarEventAttendeesSection,
+  CalendarEventAvailabilitySection,
   CalendarEventUnavailableSection,
 } from "./CalendarEventSections";
 import {
@@ -39,10 +40,30 @@ import {
   asCalendarEventRow,
   calendarEventDetailRow,
   calendarEventFields,
+  calendarEventHealthOverride,
   calendarEventWhenText,
+  syncStatusOf,
   viewerTimeZone,
 } from "./record";
 import { readCalendarEvent } from "./service";
+
+/**
+ * 🚨 THE STRIP TELLS THE TRUTH ABOUT **THIS EVENT**, NOT ONLY ABOUT THE
+ * ACCOUNT — same law as the Doc record's sibling (`documents/itemType.tsx`).
+ * The merge itself is pure (`calendarEventHealthOverride`, no React, no
+ * network) so it is unit-tested without mounting anything; this wrapper only
+ * runs the generic producer and hands the row to it.
+ */
+function refineHealth(base: DetailRecordType): DetailRecordType["health"] {
+  const inner = base.health ?? null;
+  return async (row, ctx) => {
+    const typed = asCalendarEventRow(row);
+    if (!typed) return inner ? inner(row, ctx) : null;
+    const produced = inner ? await inner(row, ctx) : null;
+    if (ctx.signal.aborted) return null;
+    return calendarEventHealthOverride(typed, produced);
+  };
+}
 
 /** The refinement the registry hands to `resolveItemDetailType`. */
 export function refineCalendarEventDetail(base: DetailRecordType): DetailRecordType {
@@ -63,10 +84,22 @@ export function refineCalendarEventDetail(base: DetailRecordType): DetailRecordT
       // primitive's own absent state is honest about having nothing to show.
       return typed ? calendarEventFields(typed, new Date(), viewerTimeZone()) : [];
     },
+    health: refineHealth(base),
     extraSections: (row) => {
       const typed = asCalendarEventRow(row);
       if (!typed) return [];
-      return [
+      const sections: DetailSection[] = [];
+      // Absent entirely for an `available` event (law 4: never an empty box);
+      // the notice IS the content, so there is nothing to show when there is
+      // nothing to say.
+      if (syncStatusOf(typed) !== "available") {
+        sections.push({
+          id: "google-availability",
+          label: "Google Calendar",
+          content: <CalendarEventAvailabilitySection event={typed} />,
+        });
+      }
+      sections.push(
         {
           id: "attendees",
           label: "Attendees",
@@ -77,7 +110,8 @@ export function refineCalendarEventDetail(base: DetailRecordType): DetailRecordT
           label: "What you cannot change from here",
           content: <CalendarEventUnavailableSection />,
         },
-      ];
+      );
+      return sections;
     },
   };
 }

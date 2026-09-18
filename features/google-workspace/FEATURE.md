@@ -230,7 +230,12 @@ ONE component with three mounts.
   (`features/dashboard/components/DashboardClient.tsx`), on the Person record through
   `PersonUpcomingCard.tsx` (`features/crm/components/record/PartyRecordPage.tsx`), and as the
   `googleAgendaWindow` panel, which wraps it `variant="bare"` and holds no calendar logic.
-- `CalendarEventSections.tsx` — the detail's attendees section and the read-only section.
+- `CalendarEventSections.tsx` — the detail's attendees section, the read-only section, and (F-52)
+  the availability section: "Keep as AI Matrx data" / "Archive" for an event Google is not
+  answering for, ONE generic server pair reused from `documents/service.ts`
+  (`detachSyncedRecord` / `archiveSyncedRecord`) with `CALENDAR_EVENT_TABLE`
+  (`communication.calendar_event`) — never a second endpoint. Absent entirely for an `available`
+  event (law 4).
 
 🚨 **THE DAY IS COMPUTED IN A NAMED ZONE, NEVER THE PROCESS'S.** `toISOString()` is UTC and the
 host's "local" parts are whatever the machine is set to — a server render and the jest runner are
@@ -351,6 +356,28 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 - The frontend and backend canonical scope registries must remain aligned with `common-docs/projects/google-oauth-verification/PLAN.md`.
 
 ## Change log
+
+- `2026-09-18` — **F-52: the calendar event record gets B-29's own pair — "Keep as AI Matrx
+  data" and "Archive" — never a second endpoint.** `types.ts` gains the terminal word
+  `detached` (`CalendarEventSyncStatus`); `record.ts` gains `CALENDAR_EVENT_TABLE`,
+  `syncStatusOf`, `calendarEventHealthOverride` (a pure merge of the generic connector-grant
+  health with what THIS event's own row says — mirrors `documents/itemType.tsx`'s sibling) and
+  `agendaIsStaleForOpen` (a detached event's frozen `synced_at` never counts as evidence the
+  agenda window needs a Google call — before this, a window whose only event was detached would
+  have looked permanently stale and spent a call on every open for a fact no call could ever
+  change). `CalendarEventSections.tsx` gains `CalendarEventAvailabilitySection`
+  (`KeepAndArchiveActions` / unavailable / detached notices, same shape as the Doc panel's, each
+  question naming its consequence in calendar words — what stops refreshing, what stays, that
+  Google Calendar is untouched either way) built on the SAME two client functions the Doc panel
+  calls (`detachSyncedRecord` / `archiveSyncedRecord` from `documents/service.ts`), never a
+  fork. `itemType.tsx`'s health strip states a detached event's choice with `grant: "ok"` and
+  offers neither Refresh nor Reconnect; the availability section is absent entirely for an
+  `available` event (law 4). `useAgenda.ts`'s refresh-on-open now calls `agendaIsStaleForOpen`
+  instead of gating on every row's `synced_at` regardless of status. 17 new tests across 3 new
+  suites (83 in `calendar/__tests__`), each proven red first by reverting the five touched files
+  to `HEAD` and re-running: 16 of 17 failed (`calendarEventHealthOverride is not a function`,
+  `agendaIsStaleForOpen is not a function`, the availability controls not existing yet). No
+  screen was seen — the table still holds zero live rows.
 
 - `2026-09-18` — **F-53: Cursor Bugbot's two findings on B-29's detach/archive commit, fixed.**
   (1) `GoogleDocumentPanel` still mounted the Append composer on a detached record — a Matrx-owned
