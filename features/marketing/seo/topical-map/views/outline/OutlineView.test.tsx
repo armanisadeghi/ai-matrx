@@ -14,15 +14,13 @@
  *   · hover knob: `renderHover` passed regardless of the knob → a HoverCard
  *     trigger exists with the knob off.
  *
- * 🚨 THE RENAME CASE IS RED UNTIL THE COORDINATOR-OWNED SLICE IS FIXED, and
- * that is the point. `redux/slice.ts`'s `snapshot()` calls `structuredClone`
- * on an Immer DRAFT (a Proxy) inside `optimisticPatch` / `optimisticMove`;
- * every browser's `structuredClone` throws `DataCloneError` on a Proxy, so
- * every rename and every drag in every view fails at the optimistic step
- * before `seo.patch_map_topics` is ever called — the banner then shows the
- * clone error, not a database sentence. No P0 test dispatched either action.
- * Fix (one line, coordinator's file): `structuredClone(current(topic))` with
- * `current` from `immer`. When that lands this case goes green unchanged.
+ * THE RENAME CASE IS THE WITNESS for a slice defect found 2026-09-18: `redux/slice.ts`'s
+ * `snapshot()` called `structuredClone` on an Immer DRAFT (a Proxy) inside
+ * `optimisticPatch` / `optimisticMove`; every browser's `structuredClone` throws
+ * `DataCloneError` on a Proxy, so every rename and every drag in every view failed
+ * at the optimistic step before `seo.patch_map_topics` was ever called. The slice
+ * now snapshots `current(topic)`; this case was red before that fix and is green
+ * after it — keep it, it is the guard.
  *
  * Mocked (with the reason): `AssistStrip` (reads the auth + assists slices),
  * `NonEditableContextMenu` (the v3 menu reads a dozen slices; the section it

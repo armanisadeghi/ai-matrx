@@ -13,7 +13,7 @@
 // and feed this slice; the slice owns what the user has chosen and what an
 // optimistic write has provisionally changed.
 
-import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, current, isDraft, type PayloadAction } from "@reduxjs/toolkit";
 
 import {
   isRootedMapTree,
@@ -155,7 +155,11 @@ function snapshot(
   const before: Record<string, NormalizedMapTopic> = {};
   for (const slug of slugs) {
     const topic = ws.topicsBySlug[slug];
-    if (topic) before[slug] = structuredClone(topic);
+    // Inside a reducer `topic` is an Immer draft (a Proxy), and structuredClone
+    // throws DataCloneError on a Proxy — which made every optimistic rename and
+    // move fail before the RPC was called (Lane A, 2026-09-18). `current` gives
+    // the plain object the draft stands for.
+    if (topic) before[slug] = structuredClone(isDraft(topic) ? current(topic) : topic);
   }
   return before;
 }
