@@ -37,7 +37,7 @@ export function TopicalMapRouteBody({ mapId }: { mapId: string }) {
 
   return (
     <div className="h-full overflow-y-auto overflow-x-hidden bg-textured">
-      <div className="mx-auto w-full max-w-5xl p-4 pt-[calc(var(--shell-header-h)+1rem)] sm:p-6 sm:pt-[calc(var(--shell-header-h)+1.5rem)]">
+      <div className="mx-auto h-full min-h-0 w-full max-w-5xl p-4 pt-[calc(var(--shell-header-h)+1rem)] sm:p-6 sm:pt-[calc(var(--shell-header-h)+1.5rem)]">
         <MapLinkProvider brand={brand}>
           <TopicalMapWorkspaceBody
             mapId={mapId}
