@@ -22,10 +22,11 @@
  */
 
 import React from "react";
-import { Building2, User } from "lucide-react";
+import { Building2, Contact, User } from "lucide-react";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { fetchPartyDetail } from "@/features/crm/service";
 import { describeBlocks, mediumBlocks } from "@/features/crm/reachability";
+import { partyKindWord } from "@/features/crm/party-words";
 import type { PartyDetail } from "@/features/crm/types";
 import { PeekDialog, PeekField } from "../PeekDialog";
 import type { PeekProps } from "../types";
@@ -81,6 +82,14 @@ export default function PartyPeek({ id, open, onClose }: PeekProps) {
 
   const party = detail?.party ?? null;
   const isPerson = party?.party_kind === "person";
+  const isCompany = party?.party_kind === "organization";
+  // 🚨 N6 (VERIFY-U-P1-R5) — the word for THIS record, from the ONE resolver.
+  // The title used to fall back to "Person" whenever the name was missing, so a
+  // company with no display name — and EVERY record for the length of the load
+  // — was titled "Person" in the peek. An unknown or not-yet-loaded kind reads
+  // the honest generic word.
+  const kindWord = partyKindWord(party?.party_kind);
+  const KindIcon = isPerson ? User : isCompany ? Building2 : Contact;
   const employer = detail ? employerLine(detail) : null;
   const points = detail?.contactPoints ?? [];
   const lastInteraction = detail?.interactions[0] ?? null;
@@ -89,21 +98,15 @@ export default function PartyPeek({ id, open, onClose }: PeekProps) {
     <PeekDialog
       open={open}
       onClose={onClose}
-      title={party?.display_name || "Person"}
-      icon={
-        isPerson ? (
-          <User className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-        ) : (
-          <Building2 className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-        )
-      }
+      title={party?.display_name || kindWord}
+      icon={<KindIcon className="h-4 w-4 text-teal-600 dark:text-teal-400" />}
       token="party"
       id={id}
       loading={loading}
     >
       {party ? (
         <>
-          <PeekField label={isPerson ? "Person" : "Company"}>
+          <PeekField label={kindWord}>
             <span className="text-muted-foreground">
               {employer ??
                 party.job_title?.trim() ??

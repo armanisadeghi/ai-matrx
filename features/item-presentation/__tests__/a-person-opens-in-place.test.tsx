@@ -70,6 +70,12 @@ jest.mock("@/utils/supabase/client", () => {
     select: self,
     eq: self,
     abortSignal: self,
+    is: self,
+    order: self,
+    // The contact-points query is awaited directly (a PostgREST builder is a
+    // thenable); this Person has none recorded.
+    then: (resolve: (value: unknown) => unknown) =>
+      Promise.resolve({ data: [], error: null }).then(resolve),
     maybeSingle: async () => ({
       data: {
         id: "7c9e6679-7425-40de-944b-e07fc1f90ae7",
@@ -103,8 +109,13 @@ describe("the Person registration (the door the queue needed)", () => {
     // nothing about a record that is fully stored.
     expect(recordType?.load).not.toBeNull();
     expect(recordType?.entityToken).toBe("party");
-    // Not the neutral fallback label a misspelled type gets.
-    expect(recordType?.label).toBe("Person");
+    // Not the neutral fallback label a misspelled type gets. 🚨 N6
+    // (VERIFY-U-P1-R5) changed this word: the label is per TYPE and
+    // `crm.party` holds 1,432 companies to 460 people, so "Person" was a lie
+    // about three rows in four. The type reads the honest generic; the
+    // specific word comes from the record's own kind (see
+    // `a-company-is-never-called-a-person.test.tsx`).
+    expect(recordType?.label).toBe("Contact");
   });
 
   it("titles the detail from the record's own name, never a stand-in", () => {

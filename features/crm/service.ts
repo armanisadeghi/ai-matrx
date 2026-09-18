@@ -915,6 +915,27 @@ export async function unsuppressMedium(args: {
 
 // ── Record detail ───────────────────────────────────────────────────────────
 
+/**
+ * THE ONE READ of a party's contact points, primary first.
+ *
+ * RULE 1 of this feature — a contact point is ALWAYS read joined to its shared
+ * `crm.contact_medium`, because deliverability lives on the VALUE, not on the
+ * link. Returned as a builder, not a promise, so a caller may add its own
+ * `.abortSignal()` and so `fetchPartyDetail` can keep firing it in parallel
+ * with the rest of the bundle. `fetchPartyDetail` and the Detail primitive's
+ * party dossier (`features/crm/party-detail.ts`) are both this one query.
+ */
+export function partyContactPointsQuery(partyId: string) {
+  return supabase
+    .schema("crm")
+    .from("party_contact_point")
+    .select("*, medium:contact_medium(*)")
+    .eq("party_id", partyId)
+    .is("deleted_at", null)
+    .order("is_primary", { ascending: false })
+    .order("created_at", { ascending: true });
+}
+
 export async function fetchPartyDetail(partyId: string): Promise<PartyDetail> {
   // `party.id` is a uuid PK, so a non-UUID id can never match — without this
   // guard it fires SIX parallel 22P02 PostgREST errors (one per query below).
@@ -948,14 +969,10 @@ export async function fetchPartyDetail(partyId: string): Promise<PartyDetail> {
         .eq("id", partyId)
         .maybeSingle()
         .returns<PartyListRow | null>(),
-      // RULE 1: contact points are ALWAYS read joined to their medium.
-      crm
-        .from("party_contact_point")
-        .select("*, medium:contact_medium(*)")
-        .eq("party_id", partyId)
-        .is("deleted_at", null)
-        .order("is_primary", { ascending: false })
-        .order("created_at", { ascending: true }),
+      // RULE 1: contact points are ALWAYS read joined to their medium — and
+      // through the ONE builder below, so the record page, the peek and the
+      // Detail primitive's dossier can never read them three different ways.
+      partyContactPointsQuery(partyId),
       crm
         .from("address")
         .select("*")

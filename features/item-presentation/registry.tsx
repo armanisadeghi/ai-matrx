@@ -41,7 +41,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { EnrichedItem, ItemType, KnownItemType } from "./types";
 import type { DetailRecordType } from "@/lib/detail/types";
 import { GOOGLE_DOCUMENT_ITEM_TYPE } from "@/features/google-workspace/documents/itemType";
+import { CALENDAR_EVENT_ITEM_TYPE } from "@/features/google-workspace/calendar/itemType";
 import { formatFileSize } from "@ai-matrx/kit/format";
+import { refinePartyDetail } from "@/features/crm/party-detail";
+import { partyKindWord } from "@/features/crm/party-words";
 
 export interface ItemTypeConfig {
   /** Stable key — the enum value. */
@@ -722,14 +725,27 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
   // anywhere. The full 360° workspace stays at `/crm/<id>` and the detail's own
   // doors reach it.
   //
-  // LABEL CAVEAT: `crm.party` holds companies too, and a registration's label is
-  // per TYPE, not per row, so a company record's type chip also reads "Person".
-  // Its `Kind` field says otherwise on the card and the detail's own `Party Kind`
-  // field says it in the dossier. A per-row label would need `label(row)` in
-  // `lib/detail`'s `DetailRecordType`, which is the package's contract, not ours.
+  // 🚨 N6 (VERIFY-U-P1-R5) — THE TYPE'S LABEL IS THE HONEST GENERIC WORD.
+  // `crm.party` holds 1,892 rows: 460 `person` and 1,432 `organization` (read
+  // live 2026-09-18). The label was "Person", and a registration's label is per
+  // TYPE, not per row, so three records in four were labelled "Person" — twice
+  // on screen, above a field reading `organization`. A label resolved at type
+  // time cannot know the kind, so it says what IS true of every row: this is a
+  // contact record. "Contact" is the CRM's own existing generic ("Open contact
+  // record", `record_class = 'contact'`); nothing is coined here, and the
+  // specific word — Person or Company — is the ONE resolver in
+  // `features/crm/party-words.ts`, which says it on the card (`enrich` below),
+  // in the dossier's own Type field, in the peek title and in the stand-in title
+  // of a record that has not loaded (`refineDetail`, below).
+  // WHAT IS STILL OWED: the TYPE CHIP in the detail header. `DetailRecordType`
+  // carries `label: string` with no per-row form, so the chip reads "Contact"
+  // for a Person too. The package change that fixes it is recorded in this
+  // feature's FEATURE.md (escalation C) — `labelForRow?: (row) => string | null`,
+  // used for the chip and the stand-in titles while `label` keeps answering the
+  // type-level settings sentences ("every contact record opens as a window").
   party: {
     type: "party",
-    label: "Person",
+    label: "Contact",
     icon: Contact,
     accent: {
       text: "text-teal-600 dark:text-teal-400",
@@ -738,6 +754,12 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
     },
     open: { kind: "party" },
     detailSource: { table: "party", schemaName: "crm", titleField: "display_name" },
+    // 🚨 N5/N6 — the Person/Company DOSSIER, as ONE refinement of the composed
+    // registration: the curated, ordered, human-labelled field list instead of
+    // `select *` in PostgREST key order; the reads it needs beyond one table
+    // (contact points, the employer's name); and a nameless record named by its
+    // OWN kind. Nothing here is a second type map or a second renderer.
+    refineDetail: refinePartyDetail,
     enrich: (s, id) =>
       fetchRow(
         s,
@@ -749,10 +771,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
           about: clip(r.job_title, 120) ?? clip(r.headline),
           details: [
             r.party_kind
-              ? {
-                  label: "Kind",
-                  value: r.party_kind === "person" ? "Person" : "Company",
-                }
+              ? { label: "Type", value: partyKindWord(r.party_kind) }
               : null,
             r.primary_domain
               ? { label: "Domain", value: String(r.primary_domain) }
@@ -766,6 +785,7 @@ const REGISTRY: Record<KnownItemType, ItemTypeConfig> = {
   // lives beside its own feature (`features/google-workspace/documents/`); this
   // map is where the platform learns about it.
   google_document: GOOGLE_DOCUMENT_ITEM_TYPE,
+  calendar_event: CALENDAR_EVENT_ITEM_TYPE,
 };
 
 async function enrichFile(
