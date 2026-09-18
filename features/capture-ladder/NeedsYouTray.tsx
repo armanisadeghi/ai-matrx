@@ -29,11 +29,15 @@ import Link from "next/link";
 import {
   AlertTriangle,
   ChevronRight,
+  GripVertical,
   Hand,
   MonitorSmartphone,
   X,
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { useDockDrag } from "@/features/assists/components/useDockDrag";
+import type { DockOffset } from "@/features/assists/dock-position";
 import { NeedsYouList } from "@/features/capture-ladder/NeedsYouList";
 import { useNeedsYou } from "@/features/capture-ladder/useNeedsYou";
 
@@ -61,6 +65,16 @@ export function NeedsYouTray() {
     droppedSentence,
   } = useNeedsYou();
   const [open, setOpen] = useState(false);
+  const [dockPosition, setDockPosition] = useState<DockOffset | null>({
+    right: 16,
+    bottom: 16,
+  });
+  const isMobile = useIsMobile();
+  const { offset, dragging, onPointerDown, suppressClickRef } = useDockDrag(
+    dockPosition,
+    setDockPosition,
+    !isMobile,
+  );
 
   const broken = state.kind === "failed";
 
@@ -70,7 +84,17 @@ export function NeedsYouTray() {
   if (!broken && count === 0) return null;
 
   return (
-    <div className="fixed bottom-40 right-3 z-[55] flex max-w-[min(26rem,calc(100vw-1.5rem))] flex-col items-end gap-2 md:bottom-4 md:right-4">
+    <div
+      className={cn(
+        "fixed bottom-40 right-3 z-[55] flex max-w-[min(26rem,calc(100vw-1.5rem))] flex-col items-end gap-2 md:bottom-auto md:right-auto",
+        dragging && "select-none",
+      )}
+      style={
+        isMobile
+          ? undefined
+          : { right: `${offset.right}px`, bottom: `${offset.bottom}px` }
+      }
+    >
       {open ? (
         <div className="max-h-[min(60vh,32rem)] w-[min(26rem,calc(100vw-1.5rem))] overflow-y-auto rounded-xl border border-border bg-card/95 p-3 shadow-lg backdrop-blur">
           <div className="mb-2 flex items-center justify-between gap-2">
@@ -105,10 +129,15 @@ export function NeedsYouTray() {
 
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onPointerDown={onPointerDown}
+        onClick={() => {
+          if (suppressClickRef.current) return;
+          setOpen((v) => !v);
+        }}
         aria-expanded={open}
         className={cn(
-          "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-lg backdrop-blur transition-colors",
+          "group flex touch-none cursor-grab items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-lg backdrop-blur transition-colors active:cursor-grabbing",
+          dragging && "ring-1 ring-primary/40",
           broken
             ? "border-destructive/40 bg-destructive/10 text-destructive"
             : needsDriveCount > 0
@@ -116,6 +145,10 @@ export function NeedsYouTray() {
               : "border-border bg-card/95 text-foreground hover:bg-accent",
         )}
       >
+        <GripVertical
+          className="hidden h-3.5 w-3.5 flex-shrink-0 text-muted-foreground/50 sm:block"
+          aria-hidden="true"
+        />
         {broken ? (
           <>
             <AlertTriangle
