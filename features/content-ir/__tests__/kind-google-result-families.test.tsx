@@ -1870,3 +1870,117 @@ describe("a calendar event's door obeys the server's record_table (NEW-9)", () =
     });
   });
 });
+
+/**
+ * 🚨 CURSOR BUGBOT (`5d6bd755`), THREE FINDINGS — the chair confirmed each by
+ * reading the code. All three are receipts/leftovers reading dishonestly:
+ * a completed write with nothing saying so happened, a Record id the reader
+ * can already open still printed a second time as a raw leftover, and a
+ * stated verdict about completeness with no chip to carry it.
+ */
+describe("Bugbot findings on 5d6bd755: a sent receipt, a repeated door id, and a dropped completeness verdict", () => {
+  /**
+   * FINDING 1 — `sent` is in `WRITE_CLAIM_KEYS` (so `PROMOTED`/`omitKeys`
+   * already withhold it from the leftover strip) but the chip row only ever
+   * printed a chip for `sent === false` ("not sent"). A `sent: true` receipt
+   * therefore left the screen with NO word that the send happened — not in
+   * the chips, not in the leftovers (omitted), nowhere. Fixed under the same
+   * `claim.showsReceiptChips` gate as `created`/`appended`/`written`/`imported`.
+   */
+  it("a sent receipt says sent", () => {
+    const markup = mount(
+      <GoogleWorkspaceResultBlock
+        content={JSON.stringify({
+          __kind: WORKSPACE_KIND,
+          action: "send_email",
+          sent: true,
+        })}
+        metadata={undefined}
+      />,
+    );
+    expect(markup).toContain("sent");
+    // Never silently dropped: `sent` sits in WRITE_CLAIM_KEYS, so a reader who
+    // gets no chip also gets no raw leftover — the fact must exist SOMEWHERE.
+    expect(markup).not.toContain("not sent");
+  });
+
+  it("sent === false stays ungated — a negation is always honest", () => {
+    const markup = mount(
+      <GoogleWorkspaceResultBlock
+        content={JSON.stringify({
+          __kind: WORKSPACE_KIND,
+          action: "send_email",
+          sent: false,
+        })}
+        metadata={undefined}
+      />,
+    );
+    expect(markup).toContain("not sent");
+  });
+
+  /**
+   * FINDING 2 — `GenericWritePreview` opens the Person through
+   * `RecordDoor type="party" id={preview.person_id}`, but `person_id` was
+   * missing from the `shown` set that keeps the raw leftover dump
+   * (`ResultValue value={rest}`) from repeating what the door already opened.
+   * A reader saw the same uuid twice: once as the door's target, once again
+   * as an unlabeled value under it.
+   */
+  it("the write preview's door does not repeat the person id as a raw leftover", () => {
+    const personId = "55555555-5555-4555-8555-555555555555";
+    const markup = mount(
+      <GoogleWorkspaceResultBlock
+        content={JSON.stringify({
+          __kind: WORKSPACE_KIND,
+          action: "import_contact",
+          would_write: {
+            promise: "This Person would be updated from Google Contacts.",
+            person_name: "Jordan Lee",
+            person_id: personId,
+            writes: 2,
+          },
+        })}
+        metadata={undefined}
+      />,
+    );
+    // The door itself still opens the Person — its own markup never prints
+    // the raw id (only the name, via aria-label/title), so the id has no
+    // legitimate reason to appear anywhere in this markup at all.
+    expect(markup).toContain("Open Jordan Lee in AI Matrx");
+    // RED before the fix: `person_id` was missing from `shown`, so the same
+    // id the door just opened printed a SECOND time, unlabeled, via the raw
+    // `rest` dump. GREEN: it never appears.
+    expect(markup).not.toContain(personId);
+  });
+
+  /**
+   * FINDING 3 — the workspace card's completeness chip predicate and mount
+   * call only ever read `value.truncated`, while the marketing card passes
+   * BOTH `truncated` and `completeness` to `statesCompleteness`/`TruncationChip`
+   * — the ONE shared implementation both cards are meant to share. A workspace
+   * payload stating `completeness: "bounded_preview"` with no `truncated` key
+   * got no chip at all, and `completeness` itself leaked into the leftover
+   * strip because it was never in `PROMOTED`.
+   */
+  it("the workspace card renders the bounded-preview chip from completeness alone, with no truncated key", () => {
+    const markup = mount(
+      <GoogleWorkspaceResultBlock
+        content={JSON.stringify({
+          __kind: WORKSPACE_KIND,
+          action: "list_resources",
+          count: 5,
+          completeness: "bounded_preview",
+        })}
+        metadata={undefined}
+      />,
+    );
+    expect(markup).toContain("a bounded preview, not the whole set");
+    // `completeness` must never leak into the leftover strip as a raw
+    // "Completeness: bounded_preview" pair now that PROMOTED carries it.
+    expect(markup).not.toContain("Completeness");
+  });
+
+  it("the workspace card's PROMOTED list withholds completeness from the leftover strip, like the marketing card", () => {
+    expect(WORKSPACE_PROMOTED).toContain("completeness");
+  });
+});
