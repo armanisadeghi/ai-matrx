@@ -19,13 +19,13 @@
  *
  * There is no Next.js middle tier on either path.
  *
- * 🚨 TODO(residential-egress owner): switch to typed-client once
- * `pnpm sync-types` carries /egress. Every Python call below goes through
- * `lib/python-client.ts`'s raw helpers with hand-typed shapes from
- * `./types.ts`, because `types/python-generated/api-types.ts` has no `/egress`
- * paths yet (the aidream routes are being built in parallel with this file).
- * When it does: delete the hand types, import the generated ones, and move
- * these four calls to `lib/api/typed-client.ts`.
+ * Every Python call below goes through `lib/api/typed-client.ts`, so the
+ * PATH and REQUEST BODY are contract-checked against
+ * `types/python-generated/api-types.ts`. The 200 response for each of these
+ * operations is generated as an untyped `{ [key: string]: unknown }` dict
+ * (the backend hands back a plain dict, not a Pydantic response model), so
+ * the response is still asserted against the hand types in `./types.ts` —
+ * see that file's header.
  */
 
 "use client";
@@ -33,11 +33,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { supabase } from "@/utils/supabase/client";
-import { del, getJson, postJson } from "@/lib/python-client";
+import { apiDelete, apiGet, apiPost, buildPath } from "@/lib/api/typed-client";
+import type { Database } from "@/types/database.types";
 
 import {
   EGRESS_DEVICE_COLUMNS,
-  type EgressDatabase,
   type EgressDeviceRow,
   type EgressPairingApproveResult,
   type EgressPairingByCode,
@@ -45,18 +45,11 @@ import {
 } from "./types";
 
 /**
- * The ONE place the hand-typed schema meets the shared client.
- *
- * 🚨 TODO(residential-egress owner): after `pnpm db-types` carries
- * `platform.egress_device`, delete this helper and its `EgressDatabase`
- * shape — every call below then type-checks against the generated file with
- * no change to its body. The cast is confined here on purpose: one line to
- * remove, and nothing downstream is loosely typed in the meantime.
+ * A supabase client scoped to the `platform` schema — same pattern as
+ * `features/files/filesDb.ts`'s `filesDb()`.
  */
-function egressDb() {
-  return (
-    supabase as unknown as SupabaseClient<EgressDatabase, "platform">
-  ).schema("platform");
+function egressDb<C extends SupabaseClient<Database>>(client: C) {
+  return client.schema("platform");
 }
 
 // ---------------------------------------------------------------------------
@@ -66,16 +59,17 @@ function egressDb() {
 /**
  * Every home connection this person owns.
  *
- * `.returns<EgressDeviceRow[]>()` because `platform.egress_device` is not in
- * `types/database.types.ts` yet (see the TODO in ./types.ts). The row count is
- * a handful per person, so there is no `readAllRows` question here — but this
- * is deliberately NOT an existence check or a set subtraction, which is the
- * shape that would need one.
+ * `.returns<EgressDeviceRow[]>()` because `EGRESS_DEVICE_COLUMNS` is a
+ * PROJECTED subset of `platform.egress_device` (see ./types.ts) — the
+ * generated row type includes `token_hash`/`token_prefix`, which this select
+ * never asks for. The row count is a handful per person, so there is no
+ * `readAllRows` question here — but this is deliberately NOT an existence
+ * check or a set subtraction, which is the shape that would need one.
  */
 export async function fetchHomeConnections(
   userId: string,
 ): Promise<EgressDeviceRow[]> {
-  const { data, error } = await egressDb()
+  const { data, error } = await egressDb(supabase)
     .from("egress_device")
     .select(EGRESS_DEVICE_COLUMNS)
     .eq("created_by", userId)
@@ -96,7 +90,7 @@ export async function setHomeConnectionEnabled(
   deviceId: string,
   enabled: boolean,
 ): Promise<void> {
-  const { error } = await egressDb()
+  const { error } = await egressDb(supabase)
     .from("egress_device")
     .update({ enabled })
     .eq("id", deviceId);
@@ -108,7 +102,7 @@ export async function renameHomeConnection(
   deviceId: string,
   displayName: string,
 ): Promise<void> {
-  const { error } = await egressDb()
+  const { error } = await egressDb(supabase)
     .from("egress_device")
     .update({ display_name: displayName })
     .eq("id", deviceId);
@@ -126,39 +120,51 @@ export async function renameHomeConnection(
  * with a live token, which is why this is a server call.
  */
 export async function removeHomeConnection(deviceId: string): Promise<void> {
-  await del(`/egress/devices/${encodeURIComponent(deviceId)}`);
+  await apiDelete(buildPath("/egress/devices/{device_id}", { device_id: deviceId }));
 }
 
 /**
  * What a pairing code describes, for the approval card. An expired or unknown
  * code is a 404 carrying a sentence — the caller renders that sentence rather
  * than a blank card.
+ *
+ * The contract's `describe_pairing_GET` 200 is an untyped dict (see this
+ * file's header), so the response is asserted against the hand-typed
+ * `EgressPairingByCode` from ./types.ts.
  */
 export async function fetchPairingByCode(
   userCode: string,
 ): Promise<EgressPairingByCode> {
-  const { data } = await getJson<EgressPairingByCode>(
-    `/egress/pairings/by-code/${encodeURIComponent(userCode)}`,
+  const { data } = await apiGet(
+    buildPath("/egress/pairings/by-code/{user_code}", { user_code: userCode }),
   );
-  return data;
+  return data as unknown as EgressPairingByCode;
 }
 
-/** Approve: creates the device under the caller and mints its one-time token. */
+/**
+ * Approve: creates the device under the caller and mints its one-time token.
+ * Asserted against `EgressPairingApproveResult` for the same reason as
+ * {@link fetchPairingByCode}.
+ */
 export async function approvePairing(
   userCode: string,
 ): Promise<EgressPairingApproveResult> {
-  const { data } = await postJson<EgressPairingApproveResult>(
-    `/egress/pairings/by-code/${encodeURIComponent(userCode)}/approve`,
-    {},
+  const { data } = await apiPost(
+    buildPath("/egress/pairings/by-code/{user_code}/approve", {
+      user_code: userCode,
+    }),
+    undefined,
   );
-  return data;
+  return data as unknown as EgressPairingApproveResult;
 }
 
 /** Deny: the code is spent and the helper is told no. */
 export async function denyPairing(userCode: string): Promise<void> {
-  await postJson<unknown>(
-    `/egress/pairings/by-code/${encodeURIComponent(userCode)}/deny`,
-    {},
+  await apiPost(
+    buildPath("/egress/pairings/by-code/{user_code}/deny", {
+      user_code: userCode,
+    }),
+    undefined,
   );
 }
 
@@ -166,8 +172,10 @@ export async function denyPairing(userCode: string): Promise<void> {
  * The one-call summary — whether the capability is on at all, and the caller's
  * computers with live status. Used where a direct table read would not answer
  * the first half (the cloud-browser panel needs `feature_enabled`).
+ * Asserted against `EgressStatus` for the same reason as
+ * {@link fetchPairingByCode}.
  */
 export async function fetchEgressStatus(): Promise<EgressStatus> {
-  const { data } = await getJson<EgressStatus>("/egress/status");
-  return data;
+  const { data } = await apiGet("/egress/status");
+  return data as unknown as EgressStatus;
 }

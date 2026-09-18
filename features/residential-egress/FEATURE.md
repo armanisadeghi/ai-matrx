@@ -59,17 +59,19 @@ Hosts outside this folder:
 - **The cloud-browser renders are guarded on presence**, so a run started before
   the server half deploys looks exactly as it does today.
 
-## 🚨 Two TODOs the owner closes after this lands
+## Both landing TODOs are closed
 
-1. **`pnpm db-types`** — `platform.egress_device` landed live mid-build (the
-   aidream migration applied 2026-09-18, and the table is already in the
-   `supabase_realtime` publication, so the live channel works today). It is not
-   yet in `types/database.types.ts`. After regenerating, delete `EgressDatabase`
-   and the `egressDb()` helper in `service.ts`; nothing else changes.
-2. **`pnpm sync-types` + typed-client** — the `/egress/*` routes are not in
-   `types/python-generated/api-types.ts` yet, so `service.ts` calls them through
-   `lib/python-client.ts`'s raw helpers with hand-typed shapes. After
-   regenerating, move those four calls to `lib/api/typed-client.ts`.
+`platform.egress_device` is in `types/database.types.ts` and the `/egress/*`
+routes are in `types/python-generated/api-types.ts`. `service.ts` now reads
+`platform.egress_device` through the generated `Database` type
+(`egressDb()`, same pattern as `features/files/filesDb.ts`) and calls every
+`/egress/*` endpoint through `lib/api/typed-client.ts` (`apiGet`/`apiPost`/
+`apiDelete` + `buildPath`), so the path and request body are contract-checked.
+The four Python calls' 200 responses are still asserted against the
+hand-typed shapes in `./types.ts` — the contract generates each of those
+responses as an untyped `{ [key: string]: unknown }` dict (a plain-dict
+return, not a Pydantic response model), so there is no real response shape to
+derive from yet.
 
 ## Verified (2026-09-18, `http://<session>.localhost:3001`, admin@admin.com)
 
@@ -87,3 +89,7 @@ Hosts outside this folder:
 ## Change log
 
 - 2026-09-18 — Created. Frontend half of the residential-egress contract v1.
+- 2026-09-18 — Switched `service.ts` off hand-typed `EgressDatabase`/raw
+  `lib/python-client.ts` calls onto the generated `Database` type and
+  `lib/api/typed-client.ts`, now that `platform.egress_device` and `/egress/*`
+  are both in the generated contract; `type-check` clean for this feature.

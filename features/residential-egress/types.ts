@@ -1,21 +1,25 @@
 /**
  * features/residential-egress/types.ts
  *
- * The shapes this feature reads and writes, typed BY HAND from the ONE
- * cross-repo contract:
+ * The shapes this feature reads and writes, from the ONE cross-repo contract:
  *   /Users/armanisadeghi/code/common-docs/systems/platform/residential-egress/FEATURE.md
  *
- * 🚨 TODO(residential-egress owner): switch to the GENERATED types.
- *   - `platform.egress_device` did not exist in the live database when this
- *     was written (checked 2026-09-18, `information_schema.tables` returned
- *     nothing for `platform.egress%`), so `EgressDeviceRow` below is hand-typed
- *     and every read uses `.returns<EgressDeviceRow[]>()`. Once aidream's
- *     migration lands, run `pnpm db-types` and delete this shape in favour of
- *     `Database["platform"]["Tables"]["egress_device"]["Row"]`.
- *   - The `/egress/*` request/response shapes below are hand-typed for the same
- *     reason: `types/python-generated/api-types.ts` does not carry `/egress`
- *     yet. Once `pnpm sync-types` does, delete these and move `service.ts` off
- *     `lib/python-client.ts`'s raw helpers onto `lib/api/typed-client.ts`.
+ * `platform.egress_device` is now in `types/database.types.ts` — `service.ts`
+ * reaches it through the generated `Database` type (see `egressDb()`, same
+ * pattern as `features/files/filesDb.ts`). `EgressDeviceRow` below stays
+ * hand-typed on purpose: it is the PROJECTED column list
+ * (`EGRESS_DEVICE_COLUMNS`), not the full generated row — `token_hash` /
+ * `token_prefix` are excluded, so `.returns<EgressDeviceRow[]>()` still
+ * narrows the select to what this surface is allowed to read.
+ *
+ * The `/egress/*` request/response shapes below stay hand-typed too:
+ * `types/python-generated/api-types.ts` now carries the `/egress` paths, but
+ * every one of these operations' 200 responses is generated as an untyped
+ * `{ [key: string]: unknown }` dict (the backend returns a plain dict, not a
+ * Pydantic response model) — there is no real contract shape to derive from
+ * yet. `service.ts` still calls through `lib/api/typed-client.ts` so the
+ * PATH and REQUEST BODY are contract-checked; only the response is asserted
+ * against these hand types, same as before `/egress` existed in the contract.
  *
  * User-facing words are fixed by the contract § Names: this is a
  * "Home connection"; never "proxy", "egress", "residential" or "IP" in copy.
@@ -45,38 +49,6 @@ export interface EgressDeviceRow {
   /** A plain sentence with a remedy, written by the gateway. */
   last_error: string | null;
   created_at: string | null;
-}
-
-/**
- * THE HAND-TYPED SCHEMA the client reads `platform.egress_device` through,
- * until `pnpm db-types` carries it. This is a REAL type, not `any` and not a
- * cast at the call site: the two writable columns are the two RLS lets the
- * owner write, so a fourth column added to an `.update()` by mistake is a type
- * error here exactly as it would be against the generated file.
- *
- * 🚨 TODO(residential-egress owner): delete this whole block after
- * `pnpm db-types`, and let `service.ts` use the shared client directly.
- */
-export interface EgressDatabase {
-  platform: {
-    Tables: {
-      egress_device: {
-        Row: EgressDeviceRow & {
-          created_by: string | null;
-          organization_id: string;
-          deleted_at: string | null;
-        };
-        Insert: never;
-        /** Owner-writable columns ONLY (contract § Data / RLS). */
-        Update: { enabled?: boolean; display_name?: string };
-        Relationships: [];
-      };
-    };
-    Views: Record<never, never>;
-    Functions: Record<never, never>;
-    Enums: Record<never, never>;
-    CompositeTypes: Record<never, never>;
-  };
 }
 
 /** The exact column list the client is allowed to ask for. */
