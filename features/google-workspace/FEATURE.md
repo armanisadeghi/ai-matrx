@@ -184,12 +184,18 @@ item-presentation type map (`itemType.tsx` → `features/item-presentation/regis
   appends exactly that (only the AGENT path has a `dry_run`).
 - `service.ts` — `POST /google-sync/documents/refresh` through `postGoogleBackend` (never a
   hand-rolled fetch), sending the RECORD's own `organization_id`; plus the one Supabase read
-  of the row, used by the loader and after every refresh.
+  of the row, used by the loader and after every refresh. 🚨 **Every wire-contract assertion
+  in it throws ONE type, `GoogleWireContractError`**: the message is the plain sentence a
+  person reads (`GOOGLE_WIRE_CONTRACT_SENTENCE`, with its remedy) and `developerDetail` names
+  the key that broke, mirrored to the Error Inspector — never a developer sentence on a screen.
 - `knobs.ts` — `google.refresh.on_open_min_age_seconds` (shared with the Agenda, seeded by
   lane U-W2) and `google.docs.append_heading` (seeded by
   `migrations/google_docs_append_heading_knob.sql`), both through `useEffectiveKnob`.
-- `GoogleDocumentPanel.tsx` — the body read view, the four unavailable actions, the Append
-  composer, and refresh-on-open.
+- `GoogleDocumentPanel.tsx` — the body read view, the four unavailable actions (all four act
+  IN PLACE — nothing inside the Detail primitive navigates away), the Append composer, and
+  refresh-on-open. It also owns `googleFileHref(row)`, the door to Google derived from
+  `external_id` when `external_url` is null, used by the strip and by the body copy so the
+  sentence and the door cannot disagree.
 - `refreshBus.ts` — the strip's Refresh and the panel are two components of one panel; a
   refresh announces itself so the body re-reads instead of the button appearing to do nothing.
 - `openRecord.tsx` — 🚨 **THE BIRTH DOOR AND THE ONLY WAY IN.** `hasGoogleDocumentRecord`
@@ -401,6 +407,67 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 - The frontend and backend canonical scope registries must remain aligned with `common-docs/projects/google-oauth-verification/PLAN.md`.
 
 ## Change log
+
+- `2026-09-18` — **F-60: the Doc panel and its strip — plain failures with remedies, actions
+  that act in place, and a Google link derived from the file id.** Five findings of
+  `common-docs/projects/google-native/VERIFY-U-W1-U-W2.md` (N7, N8, N9, N12, N14), each fixed
+  at the class and each proven red first: the new suite
+  `documents/__tests__/a-refusal-says-what-to-do.test.tsx` failed **12 of 12** against HEAD,
+  printing the exact defects — "The Google refresh answered without a usable id.", the strip
+  reading "…did not say why. Open, create and edit only the files you pick. We never see the
+  rest of your Drive.", two anchors inside the primitive, "Open at source", and no link at all
+  on an `external_url`-null row — and all 12 pass now.
+  - **N7 — a wire-contract failure is one sentence with a remedy.** Census of every throw in
+    `documents/service.ts`: seven were developer sentences (`requiredString`, `nullableString`,
+    `status`, the two in `syncedRecord`, the refresh payload guard) and one was a raw PostgREST
+    `error.message` from `readGoogleDocumentRow`. The seven now throw the new
+    `GoogleWireContractError`, whose message is *"AI Matrx could not read Google's answer. Try
+    Refresh; if it keeps happening, reconnect the account."* while `developerDetail` keeps
+    "…without a usable id" for the log (mirrored through `console.error`, which
+    `lib/diagnostics/globalErrorCapture.ts` captures). The Supabase read answers one plain
+    sentence with its own remedy and carries the response as `cause`. The panel needed no
+    change: it renders `extractErrorMessage(error)`, so the class is fixed under it.
+  - **N8 — a refusal is followed by its remedy, never by reassurance.** The promise was glued
+    on in TWO places, and the fix is one primitive: `features/item-presentation/sourceHealth.ts`
+    now owns the promise census (derived from the provider config — every product, not Docs')
+    and `grantDetailSentence`, which drops a promise from any strip reporting a refusal and puts
+    `health.remedy` last. `documents/itemType.tsx` composes through it and adds
+    `FILE_REFUSAL_REMEDY` ("Try Refresh; if it keeps failing, reconnect the account or choose
+    the file in Google again.").
+  - **N9 — nothing inside the Detail primitive navigates away (PLAN §5.1).** `UNAVAILABLE_LINKS`
+    (two `<a href="/user-settings/integrations">`, the second promising the Picker and landing on
+    settings) is deleted. `UnavailableActions` renders two buttons: Reconnect calls
+    `useOpenGoogleConnectWindow` — the same opener the strip's own Reconnect port calls — with
+    this record's connection preselected; "Choose the file again" opens THE Google Picker
+    (`lib/googlePicker`, no second picker), re-registers through the connectors' own
+    `registerSelectedGoogleFile` and refreshes the record. Picking a DIFFERENT file says so by
+    name and registers nothing; a row naming no connection says why it cannot be re-picked
+    instead of offering a control that cannot work. `the-strip-and-the-composer-tell-the-truth`
+    now pins **zero** links out of the record where it used to pin two.
+  - **N12 — the door to Google is derived from the id.** `googleFileHref` builds
+    `docs.google.com/document/d/<id>/edit`, `…/spreadsheets/d/<id>/edit` or
+    `drive.google.com/file/d/<id>/view` from `external_id` when `external_url` is null (the same
+    move `calendar/record.ts` makes for an event), and every branch of the Doc's health
+    refinement uses it. The empty-body copy prints "open it in Google" only as a real link, and
+    drops the clause entirely when no link can be derived.
+  - **N14 (LOW) — the open control names the source.** `lib/detail/core/DetailBody.tsx` labels it
+    from `health.source`: "Open in Google" for a source that lists a family ("Google Docs, Sheets
+    & Drive files" — "Open in Google Docs" would mislabel a Sheet), the source whole when it is
+    short ("Open in Search Console"), and the generic phrase when there is no source. Made
+    byte-identically in `@ai-matrx/detail` (`aidream/apps/shared/detail/src/react/DetailBody.tsx`)
+    in the same session; `lib/detail/__tests__/the-in-repo-copy-matches-the-package.test.ts` is
+    green, so the two copies are even. **Left for the package, not done here:** a per-kind label
+    ("Open in Google Sheets" on a spreadsheet) needs a new `openAtSourceLabel` on
+    `DetailSourceHealth`, which is `lib/detail/types.ts` + the package — outside this lane's files.
+  - Gates: `npx jest features/google-workspace/documents features/item-presentation lib/detail` →
+    32 suites / 277 tests pass, 1 pre-existing failure NOT from this lane
+    (`every-attachable-type-has-a-product`, because a sibling lane's uncommitted aidream edit adds
+    `calendar_event` to `attachable_resource_kinds.json` while this repo's
+    `features/marketing/google/types.ts` does not list it yet). `pnpm check:parse` OK (16,671
+    files), `pnpm check:kind-marker-law` holds, `pnpm check:dead-ends
+    --path=features/google-workspace/documents` clean, scoped `tsc` over this lane's files clean.
+    **No screen was seen** — no dev server and no Matrx host is reachable from this container, so
+    nothing visual, no Picker hand-off and no real Google refresh is verified.
 
 - `2026-09-18` — **F-59: the agenda and the event record stop dropping People, stop reading
   frozen rows as fresh, and give the note they create a door.** Seven findings of

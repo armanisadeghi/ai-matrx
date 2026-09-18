@@ -125,6 +125,19 @@ jest.mock("@/features/marketing/google/service", () => ({
     postGoogleBackend(...args),
 }));
 
+/**
+ * F-60 (N9): the unavailable notice's Reconnect and "Choose the file again" are
+ * callbacks that act in place — the connector window and THE Google Picker.
+ * `a-refusal-says-what-to-do.test.tsx` drives both; here they are stubbed.
+ */
+jest.mock("@/features/overlays/openers/googleConnectWindow", () => ({
+  useOpenGoogleConnectWindow: () => jest.fn(),
+}));
+jest.mock("@/lib/googlePicker", () => ({ pickGoogleWorkspaceFile: jest.fn() }));
+jest.mock("@/features/google-workspace/drivePickerToken", () => ({
+  getGoogleDrivePickerToken: jest.fn(),
+}));
+
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
 }));
@@ -263,10 +276,13 @@ describe("a file Google will not hand over, on a perfectly healthy account", () 
     expect(text).toContain("Choose the file again");
     expect(text).toContain("Keep as AI Matrx data");
     expect(text).toContain("Archive this record");
-    // ALL FOUR ARE REAL NOW (B-29): two are doors elsewhere, two are calls to this
-    // server's own generic record doors. Nothing here says "not wired up yet" any
-    // more, and nothing here is a disabled-looking control.
-    expect(notice.querySelectorAll("a").length).toBe(2);
+    // ALL FOUR ARE REAL NOW (B-29) AND ALL FOUR ACT HERE (F-60, N9): the first two
+    // were full-page anchors to a settings screen, which left the record the
+    // person was reading and, for "Choose the file again", never reached the
+    // Picker it promised. Nothing inside the primitive navigates away, so the
+    // count of links out of the record is ZERO. Nothing here says "not wired up
+    // yet" any more, and nothing here is a disabled-looking control.
+    expect(notice.querySelectorAll("a").length).toBe(0);
     expect(text).not.toContain("not wired up yet");
     expect(notice.querySelectorAll("button[disabled]").length).toBe(0);
     expect(notice.querySelector("[data-google-document-keep]")).not.toBeNull();

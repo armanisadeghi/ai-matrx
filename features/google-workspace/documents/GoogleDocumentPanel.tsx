@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Archive, Lock, TriangleAlert } from "lucide-react";
+import { Archive, ExternalLink, FolderOpen, Lock, Plug, TriangleAlert } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
@@ -21,8 +21,12 @@ import { extractErrorMessage } from "@/utils/errors";
 import {
   appendGoogleDocument,
   approvalQueueHref,
+  registerSelectedGoogleFile,
   SENT_FOR_APPROVAL_MESSAGE,
 } from "@/features/google-workspace/service";
+import { getGoogleDrivePickerToken } from "@/features/google-workspace/drivePickerToken";
+import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
+import { pickGoogleWorkspaceFile } from "@/lib/googlePicker";
 
 import {
   appendPromiseSentence,
@@ -41,26 +45,147 @@ import { announceDocumentRefreshed, subscribeToDocumentRefresh } from "./refresh
 import type { GoogleDocumentRow } from "./types";
 
 /**
- * The two actions that are DOORS somewhere else. The other two — "Keep as AI
- * Matrx data" and "Archive" — are real calls now (B-29) and are rendered as
- * buttons below, each naming what it costs before it runs.
+ * 🚨 N12 — THE DOOR TO GOOGLE IS DERIVED FROM THE FILE ID WHEN THE ROW HAS NO URL.
+ *
+ * `external_url` is whatever Google's `webViewLink` answered at refresh time and
+ * the column is nullable, so a record could hold the id of the very file it
+ * mirrors, print "open it in Google" in its own body copy, and offer no way to do
+ * it (VERIFY-U-W1-U-W2). The three shapes are Google's own and take the file id
+ * directly — the same move the calendar sibling makes for an event
+ * (`features/google-workspace/calendar/record.ts` → `googleCalendarHref`).
+ *
+ * Used by the strip's `openAtSourceHref` (`itemType.tsx`) and by the body copy
+ * below, so the sentence and the door can never disagree.
  */
-const UNAVAILABLE_LINKS = [
-  {
-    id: "reconnect",
-    label: "Reconnect Google",
-    does: "Sign in to Google again and try this document once more.",
-    /** A real door — the connectors screen owns reconnecting. */
-    href: "/user-settings/integrations",
-  },
-  {
-    id: "choose-again",
-    label: "Choose the file again",
-    does:
-      "Pick the file in Google Picker again, which is what restores our access when it was moved or re-shared.",
-    href: "/user-settings/integrations",
-  },
-] as const;
+export function googleFileHref(
+  row: Pick<GoogleDocumentRow, "external_id" | "external_url" | "mime_kind">,
+): string | null {
+  const stored = row.external_url?.trim();
+  if (stored) return stored;
+  const id = row.external_id?.trim();
+  if (!id) return null;
+  if (row.mime_kind === "document") return `https://docs.google.com/document/d/${id}/edit`;
+  if (row.mime_kind === "spreadsheet") {
+    return `https://docs.google.com/spreadsheets/d/${id}/edit`;
+  }
+  // Every other kind is a Drive file whose own editor we cannot name from
+  // `mime_kind` (a Slides deck arrives as `other`). Drive's file view opens all
+  // of them, and it is the file's real home — never a guessed editor URL.
+  return `https://drive.google.com/file/d/${id}/view`;
+}
+
+/**
+ * 🚨 N9 — NOTHING INSIDE THE DETAIL PRIMITIVE NAVIGATES AWAY (PLAN §5.1).
+ *
+ * These two were full-page anchors to `/user-settings/integrations`: clicking
+ * either LEFT the record the person was reading, and "Choose the file again"
+ * promised the Google Picker and landed on a settings page instead. Both are
+ * callbacks now, and both act here:
+ *
+ *   * Reconnect opens the SAME connector window the health strip's own Reconnect
+ *     opens (`useOpenGoogleConnectWindow`, which runs incremental consent), with
+ *     this record's own connection selected;
+ *   * "Choose the file again" opens THE Google Picker (`lib/googlePicker`, the one
+ *     picker this repo has) and re-registers the picked file through the same
+ *     `registerSelectedGoogleFile` the connectors screen uses, then refreshes this
+ *     record — which is exactly what restores our per-file access after a move or
+ *     a re-share.
+ */
+function UnavailableActions({
+  row,
+  onRepicked,
+}: {
+  row: GoogleDocumentRow;
+  onRepicked: () => Promise<void> | void;
+}) {
+  const openGoogleConnect = useOpenGoogleConnectWindow();
+  const [picking, setPicking] = useState(false);
+  const [pickNote, setPickNote] = useState<string | null>(null);
+  const connectionId = row.synced_via_connection_id;
+  const noun = mimeKindLabel(row.mime_kind);
+
+  const reconnect = () => {
+    openGoogleConnect({
+      reason: `to keep this ${noun} refreshing from Google`,
+      initialConnectionId: connectionId ?? undefined,
+    });
+  };
+
+  const repick = async () => {
+    if (!connectionId) return;
+    setPicking(true);
+    setPickNote(null);
+    try {
+      const token = await getGoogleDrivePickerToken({ id: connectionId });
+      const picked = await pickGoogleWorkspaceFile(token, { initialQuery: row.title });
+      // The person closed the Picker: nothing happened, so nothing is said.
+      if (!picked) return;
+      if (picked.id !== row.external_id) {
+        // NOTHING FAILS SILENTLY: this record mirrors ONE Google file, so
+        // registering a different one would leave the person looking at an
+        // unchanged record after a click that appeared to work.
+        setPickNote(
+          `That is a different file (“${picked.name}”). This record follows one Google file, so ` +
+            `pick “${row.title}” to bring it back — or pick that other file where you connect ` +
+            "Google, and it becomes a record of its own.",
+        );
+        return;
+      }
+      await registerSelectedGoogleFile(connectionId, picked.id);
+      toast.success(`Google gave us access to “${row.title}” again.`);
+      await onRepicked();
+    } catch (error: unknown) {
+      setPickNote(extractErrorMessage(error));
+    } finally {
+      setPicking(false);
+    }
+  };
+
+  return (
+    <div className="space-y-2" data-google-document-unavailable-actions>
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={reconnect}
+          data-google-document-reconnect
+        >
+          <Plug className="mr-1.5 h-3.5 w-3.5" />
+          Reconnect Google
+        </Button>
+        {connectionId ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={picking}
+            onClick={() => void repick()}
+            data-google-document-repick
+          >
+            <FolderOpen className="mr-1.5 h-3.5 w-3.5" />
+            {picking ? "Opening Google…" : "Choose the file again"}
+          </Button>
+        ) : null}
+      </div>
+      <ul className="space-y-1 text-xs text-muted-foreground">
+        <li>
+          Reconnect Google · Sign in to Google again here and try this {noun} once more.
+        </li>
+        <li>
+          {connectionId
+            ? "Choose the file again · Pick it in Google Picker, which is what restores our access when it was moved or re-shared."
+            : `This record does not say which Google account it came from, so it cannot be picked again from here. Reconnect Google above, then Refresh at the top of this record.`}
+        </li>
+      </ul>
+      {pickNote ? (
+        <p className="text-xs text-destructive" data-google-document-repick-note>
+          {pickNote}
+        </p>
+      ) : null}
+    </div>
+  );
+}
 
 /**
  * 🚨 A DESTRUCTIVE OR IRREVERSIBLE CLICK NAMES ITS CONSEQUENCE FIRST
@@ -177,10 +302,12 @@ function UnavailableNotice({
   row,
   onDetached,
   onArchived,
+  onRepicked,
 }: {
   row: GoogleDocumentRow;
   onDetached: () => void;
   onArchived: (sentence: string) => void;
+  onRepicked: () => Promise<void> | void;
 }) {
   return (
     <div
@@ -195,19 +322,7 @@ function UnavailableNotice({
           The copy below is what we held when it last worked.
         </span>
       </p>
-      <ul className="space-y-2">
-        {UNAVAILABLE_LINKS.map((action) => (
-          <li key={action.id} className="text-xs text-muted-foreground">
-            <a
-              href={action.href}
-              className="font-medium text-foreground underline underline-offset-2 hover:text-primary"
-            >
-              {action.label}
-            </a>
-            <span> · {action.does}</span>
-          </li>
-        ))}
-      </ul>
+      <UnavailableActions row={row} onRepicked={onRepicked} />
       <KeepAndArchiveActions row={row} onDetached={onDetached} onArchived={onArchived} />
     </div>
   );
@@ -247,11 +362,30 @@ function DetachedNotice({
 
 function BodyView({ row }: { row: GoogleDocumentRow }) {
   const body = row.body_text?.trim() ?? "";
+  const href = googleFileHref(row);
   if (!body) {
+    // 🚨 N12 — NEVER AN INSTRUCTION THE SCREEN CANNOT HONOUR. This copy told the
+    // person to open the file in Google on a record that offered no way to; the
+    // door is derived from the file id now, and the sentence appears only with it.
     return (
       <p className="text-sm text-muted-foreground" data-google-document-body-empty>
-        We have no copy of this document&apos;s text yet. Refresh it from Google above, or open it
-        in Google.
+        We have no copy of this document&apos;s text yet. Refresh it from Google above
+        {href ? (
+          <>
+            , or{" "}
+            <a
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 font-medium text-foreground underline underline-offset-2 hover:text-primary"
+              data-google-document-open-in-google
+            >
+              <ExternalLink className="h-3 w-3" />
+              open it in Google
+            </a>
+          </>
+        ) : null}
+        .
       </p>
     );
   }
@@ -462,7 +596,12 @@ export function GoogleDocumentPanel({ initialRow }: { initialRow: GoogleDocument
       {status === "detached" ? (
         <DetachedNotice row={row} onDetached={onDetached} onArchived={onArchived} />
       ) : status !== "available" ? (
-        <UnavailableNotice row={row} onDetached={onDetached} onArchived={onArchived} />
+        <UnavailableNotice
+          row={row}
+          onDetached={onDetached}
+          onArchived={onArchived}
+          onRepicked={refresh}
+        />
       ) : null}
       <BodyView row={row} />
       <div className="space-y-2">

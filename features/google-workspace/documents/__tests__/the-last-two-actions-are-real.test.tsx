@@ -57,6 +57,20 @@ jest.mock("@/features/google-workspace/service", () => ({
   appendGoogleDocument: jest.fn(),
   approvalQueueHref: () => "/administration/approvals",
   SENT_FOR_APPROVAL_MESSAGE: "Sent for approval.",
+  registerSelectedGoogleFile: jest.fn(),
+}));
+
+/**
+ * The unavailable notice's first two actions are CALLBACKS now (F-60, N9), not
+ * anchors out of the record: the connector window and the Google Picker, both
+ * opened in place. This suite is about the other two, so both openers are stubbed.
+ */
+jest.mock("@/features/overlays/openers/googleConnectWindow", () => ({
+  useOpenGoogleConnectWindow: () => jest.fn(),
+}));
+jest.mock("@/lib/googlePicker", () => ({ pickGoogleWorkspaceFile: jest.fn() }));
+jest.mock("@/features/google-workspace/drivePickerToken", () => ({
+  getGoogleDrivePickerToken: jest.fn(),
 }));
 
 jest.mock("@/lib/api/organization-context", () => ({

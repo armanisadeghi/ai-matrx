@@ -28,7 +28,11 @@ import type { ItemTypeConfig } from "@/features/item-presentation/registry";
 import type { EnrichedItem } from "@/features/item-presentation/types";
 import type { DetailRecordType, DetailRow, DetailSeed } from "@/lib/detail/types";
 
-import { GoogleDocumentPanel } from "./GoogleDocumentPanel";
+import {
+  grantDetailSentence,
+} from "@/features/item-presentation/sourceHealth";
+
+import { GoogleDocumentPanel, googleFileHref } from "./GoogleDocumentPanel";
 import {
   asGoogleDocumentRow,
   googleDocumentDetailRow,
@@ -61,6 +65,19 @@ function titleOf(row: DetailRow | null, seed: DetailSeed | null): string {
  * one refresh path for this record, announced on the bus so the body below
  * re-reads instead of the button appearing to do nothing.
  */
+/**
+ * 🚨 N8 — WHAT FOLLOWS A REFUSAL IS THE REMEDY, NEVER THE PROMISE. The strip used
+ * to read "Google would not give us this file the last time we asked, and did not
+ * say why. Open, create and edit only the files you pick. We never see the rest of
+ * your Drive." — the connector product's marketing promise glued onto the file's
+ * refusal. The promise is stripped by `grantDetailSentence` (which owns the
+ * census, derived from the provider config, for EVERY product) and this is what
+ * takes its place: the three things that actually move this record forward, in the
+ * order the panel below offers them.
+ */
+const FILE_REFUSAL_REMEDY =
+  "Try Refresh; if it keeps failing, reconnect the account or choose the file in Google again.";
+
 function refineHealth(base: DetailRecordType): DetailRecordType["health"] {
   const inner = base.health ?? null;
   return async (row, ctx) => {
@@ -77,6 +94,10 @@ function refineHealth(base: DetailRecordType): DetailRecordType["health"] {
         }
       : null;
     const status = typed ? syncStatusOf(typed) : null;
+    // 🚨 N12 — the door to Google, derived from the file id when the row carries
+    // no `external_url` (the column is nullable and the generic producer reads
+    // only the column). Null only when the row itself is unreadable here.
+    const openHref = typed ? googleFileHref(typed) : null;
     if (typed && status === "detached") {
       // 🚨 THE TERMINAL STATE IS NOT A FAILURE, AND IT OFFERS NO CONTROL THAT
       // CANNOT WORK. The person kept this record as AI Matrx data: the grant
@@ -92,7 +113,7 @@ function refineHealth(base: DetailRecordType): DetailRecordType["health"] {
         grantDetail:
           typed.sync_status_reason?.trim() ||
           "Kept as AI Matrx data: this record no longer refreshes from Google and keeps what it had.",
-        openAtSourceHref: typed.external_url,
+        openAtSourceHref: openHref,
         onRefresh: null,
         onReconnect: null,
       };
@@ -112,21 +133,43 @@ function refineHealth(base: DetailRecordType): DetailRecordType["health"] {
         source: "Google",
         lastRefreshedAt: typed.synced_at,
         grant: unavailable ? "unknown" : "ok",
-        grantDetail:
-          fileSentence ??
-          "This file is kept in step with Google; we could not check the connection behind it just now.",
-        openAtSourceHref: typed.external_url,
+        grantDetail: grantDetailSentence({
+          refused: unavailable,
+          says: [
+            fileSentence ??
+              "This file is kept in step with Google; we could not check the connection behind it just now.",
+          ],
+          remedy: unavailable ? FILE_REFUSAL_REMEDY : null,
+          fallback:
+            "Google would not give us this file the last time we asked. " + FILE_REFUSAL_REMEDY,
+        }),
+        openAtSourceHref: openHref,
         onRefresh: refresh,
       };
     }
-    if (!unavailable) return { ...produced, onRefresh: refresh };
+    if (!unavailable) {
+      return {
+        ...produced,
+        onRefresh: refresh,
+        openAtSourceHref: openHref ?? produced.openAtSourceHref,
+      };
+    }
     return {
       ...produced,
+      openAtSourceHref: openHref ?? produced.openAtSourceHref,
       // `unknown` is the vocabulary's honest word for "the grant is not the
       // problem, this file is" — `revoked` would send the person to reconnect
       // something a reconnect cannot repair.
       grant: produced.grant === "ok" ? "unknown" : produced.grant,
-      grantDetail: [fileSentence, produced.grantDetail].filter(Boolean).join(" "),
+      // The file's refusal first, then whatever the connector knows (with the
+      // product's promise taken out of it), then what to do — never reassurance.
+      grantDetail: grantDetailSentence({
+        refused: true,
+        says: [fileSentence, produced.grantDetail],
+        remedy: FILE_REFUSAL_REMEDY,
+        fallback:
+          "Google would not give us this file the last time we asked. " + FILE_REFUSAL_REMEDY,
+      }),
       onRefresh: refresh,
     };
   };

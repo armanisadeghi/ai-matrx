@@ -112,6 +112,72 @@ const PRODUCT_BY_ITEM_TYPE: Readonly<Record<string, string>> = Object.freeze({
   ...PRODUCT_BY_ITEM_TYPE_ALIAS,
 });
 
+/**
+ * 🚨 A REFUSAL IS FOLLOWED BY ITS REMEDY, NEVER BY REASSURANCE (N8,
+ * VERIFY-U-W1-U-W2).
+ *
+ * `productHealth` answers with the product's PROMISE as its `reason` in the two
+ * states where nothing is refusing anything (`connected`, `not_connected`) — the
+ * marketing sentence the connector row shows: "Open, create and edit only the
+ * files you pick. We never see the rest of your Drive." The strip printed that
+ * reason whatever the state and never printed `health.remedy` at all, so a Doc
+ * Google had refused read: "Google would not give us this file the last time we
+ * asked, and did not say why. Open, create and edit only the files you pick. We
+ * never see the rest of your Drive." — the question answered with a promise.
+ *
+ * The census is DERIVED from the provider config, so it is every product's
+ * promise, not Docs'. A promise is honest ONLY where nothing is refused; once
+ * anything is, what follows the refusal is the remedy.
+ */
+const PRODUCT_PROMISES: readonly string[] = Object.freeze(
+  GOOGLE_PROVIDER.products
+    .map((product) => product.promise.trim())
+    .filter((promise) => promise.length > 0),
+);
+
+/** The sentence with every product promise taken out of it, or null if nothing is left. */
+export function withoutProductPromises(text: string | null | undefined): string | null {
+  if (!text) return null;
+  let left = text;
+  for (const promise of PRODUCT_PROMISES) {
+    if (!left.includes(promise)) continue;
+    left = left.split(promise).join(" ");
+  }
+  const cleaned = left.replace(/\s+/g, " ").trim();
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+/**
+ * The strip's ONE sentence, composed in the only order that helps a person: what
+ * happened, then anything more we know, then what to do. Every caller that
+ * prepends a refusal of its own (a record whose own row was refused while the
+ * grant is fine — `features/google-workspace/documents/itemType.tsx`) composes it
+ * HERE, so the rule cannot be re-broken one registration at a time.
+ */
+export function grantDetailSentence(parts: {
+  /** True when this strip is reporting a refusal: promises are dropped. */
+  refused: boolean;
+  /** Sentences in reading order. */
+  says: readonly (string | null | undefined)[];
+  /** What the person can do about it. Always last. */
+  remedy?: string | null;
+  /** Used only when the rule above leaves nothing to say — never an empty strip. */
+  fallback: string;
+}): string {
+  const said = parts.says
+    .map((sentence) =>
+      parts.refused
+        ? withoutProductPromises(sentence)
+        : sentence?.trim()
+          ? sentence.trim()
+          : null,
+    )
+    .filter((sentence): sentence is string => Boolean(sentence));
+  const remedy = parts.remedy?.trim() ? parts.remedy.trim() : null;
+  const joined = [...said, remedy].filter(Boolean).join(" ").trim();
+  return joined.length > 0 ? joined : parts.fallback;
+}
+
 function stringColumn(row: DetailRow, columns: readonly string[]): string | null {
   for (const column of columns) {
     const value = row[column];
@@ -164,7 +230,8 @@ export function sourceHealthProducerFor(
         grantDetail:
           "This record is kept in step with " +
           `${GOOGLE_PROVIDER.name}, but we cannot tell which connection refreshes it, so we cannot ` +
-          "say whether that connection is still working.",
+          "say whether that connection is still working. This one is ours to fix: tell us, and " +
+          "check your Google connections in the meantime.",
         lastRefreshedAt: stringColumn(row, REFRESHED_COLUMNS),
         openAtSourceHref: stringColumn(row, SOURCE_URL_COLUMNS),
       };
@@ -205,11 +272,24 @@ export function sourceHealthProducerFor(
       rollout,
     });
 
+    const grant = grantStateFor(health);
     return {
       source: `${GOOGLE_PROVIDER.name} ${product.name}`,
       lastRefreshedAt: stringColumn(row, REFRESHED_COLUMNS) ?? health.lastSuccessAt,
-      grant: grantStateFor(health),
-      grantDetail: [health.reason, health.activityNote].filter(Boolean).join(" "),
+      grant,
+      // The refusal, then the provider's last word, then the repair — and the
+      // product's promise only while nothing is refused (N8). `health.remedy` is
+      // the connectors' own sentence for what one press would ask for; it used
+      // to be dropped here, which is how a refusal reached a person with no
+      // remedy at all.
+      grantDetail: grantDetailSentence({
+        refused: grant !== "ok",
+        says: [health.reason, health.activityNote],
+        remedy: health.remedy,
+        fallback:
+          `We cannot use ${GOOGLE_PROVIDER.name} ${product.name} for this record right now. ` +
+          `Connect ${GOOGLE_PROVIDER.name} again from your integrations, and tell us if it keeps failing.`,
+      }),
       openAtSourceHref: stringColumn(row, SOURCE_URL_COLUMNS),
       // 🚨 §5.3 — the SAME Reconnect the connector rows show, and ONLY when a
       // reconnect is really the repair: a quota or a provider outage clears

@@ -32,6 +32,40 @@ import { isGoogleDocumentSyncStatus } from "./record";
  */
 const REFRESH_PATH = "/google-sync/documents/refresh";
 
+/**
+ * 🚨 A WIRE-CONTRACT FAILURE IS ONE PLAIN SENTENCE TO THE PERSON AND THE WHOLE
+ * DETAIL TO US (N7, VERIFY-U-W1-U-W2).
+ *
+ * Every assertion below is the same fault with a different subject: the server
+ * answered 200 and the body is not the contract. A person cannot act on "The
+ * Google refresh answered without a usable id" — that sentence was printed on the
+ * Doc panel verbatim, with no remedy — and we cannot debug "something went
+ * wrong". So the CLASS gets one error type: the message is the sentence the
+ * person reads, `developerDetail` is what names the broken key, and the detail is
+ * mirrored into the Error Inspector through `console.error` (captured by
+ * `lib/diagnostics/globalErrorCapture.ts`) so the feedback path still carries it.
+ *
+ * It is a class, not a per-call string: `extractErrorMessage` renders `message`
+ * wherever one of these surfaces, so a new assertion in this module cannot leak a
+ * developer sentence onto a screen by being written the old way.
+ */
+export const GOOGLE_WIRE_CONTRACT_SENTENCE =
+  "AI Matrx could not read Google's answer. Try Refresh; if it keeps happening, reconnect the account.";
+
+export class GoogleWireContractError extends Error {
+  /** What broke, for the log and the feedback path — never for a screen. */
+  readonly developerDetail: string;
+
+  constructor(developerDetail: string) {
+    super(GOOGLE_WIRE_CONTRACT_SENTENCE);
+    this.name = "GoogleWireContractError";
+    this.developerDetail = developerDetail;
+    // NOTHING FAILS SILENTLY, and nothing is lost either: the Error Inspector
+    // keeps the detail even though the screen never shows it.
+    console.error(`[google-document] ${developerDetail}`);
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -39,7 +73,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function requiredString(body: Record<string, unknown>, key: string): string {
   const value = body[key];
   if (typeof value !== "string" || !value) {
-    throw new Error(`The Google refresh answered without a usable ${key}.`);
+    throw new GoogleWireContractError(
+      `A Google record answer arrived without a usable ${key}.`,
+    );
   }
   return value;
 }
@@ -48,7 +84,9 @@ function nullableString(body: Record<string, unknown>, key: string): string | nu
   const value = body[key];
   if (value === null || value === undefined) return null;
   if (typeof value !== "string") {
-    throw new Error(`The Google refresh answered with an invalid ${key}.`);
+    throw new GoogleWireContractError(
+      `A Google record answer arrived with an invalid ${key}.`,
+    );
   }
   return value;
 }
@@ -56,10 +94,11 @@ function nullableString(body: Record<string, unknown>, key: string): string | nu
 function status(body: Record<string, unknown>): GoogleDocumentSyncStatus {
   const value = body.sync_status;
   if (!isGoogleDocumentSyncStatus(value)) {
-    // NOTHING FAILS SILENTLY: an unrecognised status word is refused by name
-    // rather than rendered as "available", which would be the screen inventing
-    // good news about someone's document.
-    throw new Error(
+    // NOTHING FAILS SILENTLY: an unrecognised status word is refused rather than
+    // rendered as "available", which would be the screen inventing good news
+    // about someone's document — and the word itself travels to the log, because
+    // "which status did the server send?" is the only question worth asking.
+    throw new GoogleWireContractError(
       `The Google refresh answered with a status this screen does not know (${String(value)}). Nothing about the document has changed here.`,
     );
   }
@@ -77,14 +116,16 @@ const RECORD_ACTION_PATH = (table: string, id: string, action: "detach" | "archi
 
 function syncedRecord(payload: unknown): GoogleSyncedRecordResponse {
   if (!isRecord(payload)) {
-    throw new Error("The server answered with something this screen cannot read.");
+    throw new GoogleWireContractError(
+      "The record door answered with something this screen cannot read (not a JSON object).",
+    );
   }
   const status = payload.sync_status;
   if (status !== null && status !== undefined && !isGoogleDocumentSyncStatus(status)) {
-    // NOTHING FAILS SILENTLY: an unrecognised word is refused by name rather
-    // than rendered as good news about someone's record.
-    throw new Error(
-      `The server answered with a status this screen does not know (${String(status)}). Nothing on screen has been changed.`,
+    // NOTHING FAILS SILENTLY: an unrecognised word is refused rather than
+    // rendered as good news about someone's record.
+    throw new GoogleWireContractError(
+      `The record door answered with a status this screen does not know (${String(status)}). Nothing on screen has been changed.`,
     );
   }
   return {
@@ -152,7 +193,9 @@ export async function refreshGoogleDocument(args: {
   );
   const payload: unknown = await response.json();
   if (!isRecord(payload)) {
-    throw new Error("The Google refresh answered with something this screen cannot read.");
+    throw new GoogleWireContractError(
+      "The Google refresh answered with something this screen cannot read (not a JSON object).",
+    );
   }
   const bodyChars = payload.body_chars;
   return {
@@ -197,6 +240,15 @@ export async function readGoogleDocumentRow(
     .eq("id", id)
     .is("deleted_at", null);
   const { data, error } = await (signal ? query.abortSignal(signal) : query).maybeSingle();
-  if (error) throw new Error(error.message);
+  if (error) {
+    // A PostgREST sentence is not a sentence a person can act on (utils/errors.ts
+    // § the two halves of an error's audience), and the global Supabase capture
+    // already holds the raw response. One plain sentence with a remedy, and the
+    // original travels as `cause` for devtools.
+    throw new Error(
+      "AI Matrx could not read this Google file's record. Try again; if it keeps happening, tell us.",
+      { cause: error },
+    );
+  }
   return data ?? null;
 }

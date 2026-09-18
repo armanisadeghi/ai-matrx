@@ -106,6 +106,25 @@ const GRANT_WORD: Record<DetailSourceHealth["grant"], string> = {
   blocked: "Blocked",
 };
 
+/**
+ * 🚨 N14 (VERIFY-U-W1-U-W2) — THE CONTROL THAT LEAVES FOR THE SOURCE NAMES IT.
+ * The strip already prints `health.source` beside it, so "Open at source" threw
+ * away the only word the person recognises. One producer often answers for a
+ * whole FAMILY, though ("Google Docs, Sheets & Drive files" covers Docs, Sheets
+ * and Slides), and "Open in Google Docs" on a spreadsheet would be a lie — so a
+ * source that lists several things is cut back to the provider word, a short
+ * source is used whole, and no source at all keeps the generic phrase rather than
+ * letting the screen guess.
+ */
+function openAtSourceLabel(source: string): string {
+  const named = source.trim().replace(/\s+/g, " ");
+  if (!named) return "Open at source";
+  const listsSeveral = /[,&]/.test(named) || named.split(" ").length > 3;
+  const [firstWord = ""] = named.split(" ");
+  const place = listsSeveral ? firstWord.replace(/[,&]+$/, "") : named;
+  return place ? `Open in ${place}` : "Open at source";
+}
+
 function HealthStrip({ health }: { health: DetailSourceHealth }) {
   const ok = health.grant === "ok";
   const [refreshing, setRefreshing] = useState(false);
@@ -180,7 +199,7 @@ function HealthStrip({ health }: { health: DetailSourceHealth }) {
             className="inline-flex h-6 items-center gap-1 rounded px-1.5 hover:bg-accent hover:text-foreground pointer-coarse:h-10"
           >
             <ExternalLinkIcon className="h-3 w-3" />
-            Open at source
+            {openAtSourceLabel(health.source)}
           </a>
         ) : null}
       </span>
