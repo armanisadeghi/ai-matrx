@@ -3,11 +3,18 @@
 /**
  * "Map these pages" on Search Console insights (placement §7 #2): opens the
  * site's topical-map PAGES workspace, the convergence screen where a set of
- * pages gets a destination. The insight's own filter (threshold, dimension)
- * does not ride the URL yet — the pages workspace reads its filters from the
- * map store (CONTRACTS §3), and a URL contract for them is filed with the
- * coordinator (VERIFY-E.md § owed). Until then the link is honest about what
- * it opens: the site's pages on the map, unfiltered.
+ * pages gets a destination.
+ *
+ * 🚨 IT DELIBERATELY CARRIES NO FILTER, AND THAT IS THE HONEST ANSWER, NOT AN
+ * OMISSION. The workspace now reads `?topic=`, `?disposition=`, `?state=` and
+ * `?onNoTopic=` from the URL (`views/pages/pageFilterParams.ts`), so a link-in
+ * that knows which pages the person came for says so. This one does not know:
+ * every insight it sits beside — traffic quality, shifts, SEO juice, CTR gaps,
+ * cannibalization, declining, rising, by location — is a reading of SEARCH
+ * traffic, and none of them corresponds to a destination, a disposition, a
+ * decision state or "on no topic". Pre-filtering on one anyway would hide rows
+ * on a decision the person never made, and they would hunt for a page the
+ * filter removed. So the link opens the site's pages, unfiltered, and says so.
  */
 
 import Link from "next/link";

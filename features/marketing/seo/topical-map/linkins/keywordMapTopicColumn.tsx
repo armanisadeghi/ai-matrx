@@ -5,7 +5,9 @@
  *
  * 🚨 `topic` means OFFERING in that table (`OFFERING_COLUMN_ID`, kept for
  * saved views); the MAP topic is this column, id `map_topic`. The cell is a
- * door into the map at that topic (`?topic=<slug>`); an unhomed keyword says
+ * door into the map at that topic (`?topic=<slug>` — the map's outline reveals
+ * it, and its pages workspace now opens filtered to it,
+ * `views/pages/pageFilterParams.ts`); an unhomed keyword says
  * so honestly — the daily assigner homes a keyword from its primary Offering,
  * and the map-home writer is server-only by design (register lesson 30), so
  * the human path to a map home today IS the Offering cell beside it. The

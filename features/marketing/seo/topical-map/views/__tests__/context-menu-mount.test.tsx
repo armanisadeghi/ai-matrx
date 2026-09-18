@@ -108,7 +108,7 @@ describe("the mechanism — a function-component child hears no right-click", ()
           sourceFeature="marketing"
           resolveContextOnOpen={resolveContextOnOpen}
         >
-          <div className="contents">
+          <div className="flex min-h-0 flex-1 flex-col">
             <TopicTree rows={ROWS} ariaLabel="Wrapped" onToggleExpand={() => {}} onSelect={() => {}} />
           </div>
         </NonEditableContextMenu>,
@@ -128,19 +128,25 @@ describe("the mechanism — a function-component child hears no right-click", ()
 describe("the binding — both map views mount the menu over a DOM element", () => {
   const source = (rel: string) => readFileSync(join(process.cwd(), rel), "utf8");
 
+  // WHICH div is not the invariant — `display: contents` and a real flex column
+  // both take the handlers, and the coordinator moved these to flex columns so
+  // the scroll-chain guard can read them. What must never come back is a
+  // function component sitting directly inside the menu.
+  const WRAPPED_TREE = /<NonEditableContextMenu[\s\S]*?<div className="[^"]*">[\s\S]*?<TopicTree/;
+  const WRAPPED_TABLE = /<NonEditableContextMenu[\s\S]*?<div className="[^"]*">[\s\S]*?<MatrxDataTable/;
+  const NAKED = /<NonEditableContextMenu[^>]*>\s*\{?\s*<[A-Z]/;
+
   it("the outline wraps its TopicTree", () => {
     const outline = source("features/marketing/seo/topical-map/views/OutlineView.tsx");
     expect(outline.match(/<NonEditableContextMenu/g)).toHaveLength(1);
-    expect(outline).toMatch(
-      /<NonEditableContextMenu[\s\S]*?<div className="contents">[\s\S]*?<TopicTree/,
-    );
+    expect(outline).toMatch(WRAPPED_TREE);
+    expect(outline).not.toMatch(NAKED);
   });
 
   it("the table wraps its MatrxDataTable", () => {
     const table = source("features/marketing/seo/topical-map/views/table/TopicTable.tsx");
     expect(table.match(/<NonEditableContextMenu/g)).toHaveLength(1);
-    expect(table).toMatch(
-      /<NonEditableContextMenu[\s\S]*?<div className="contents">[\s\S]*?<MatrxDataTable/,
-    );
+    expect(table).toMatch(WRAPPED_TABLE);
+    expect(table).not.toMatch(NAKED);
   });
 });

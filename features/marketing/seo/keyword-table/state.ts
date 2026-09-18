@@ -128,6 +128,19 @@ export interface KeywordTableState {
   compare: GscCompareMode;
   /** The saved view this arrangement came from, when it came from one. */
   viewId: string | null;
+  /**
+   * `?topic=<slug>` — the MAP topic a link-in arrived from (the topical map's
+   * own doors emit it; see `marketing/seo/topical-map/links.tsx`).
+   *
+   * 🚨 IT NARROWS THE LOADED PAGE ONLY, AND THE TABLE SAYS SO. A keyword's map
+   * home is `seo.site_keyword_value.topic_id`, read per page of keyword ids
+   * (`useKeywordMapHomes`), and `gsc_perf_breakdown` — which decides WHICH
+   * keywords come back — takes no topic argument. So this can only answer "of
+   * the 50 on screen, these live on that topic", and the banner above the table
+   * says exactly that. Silently presenting it as a filter of the whole corpus
+   * would be the confident lie the rest of this surface refuses.
+   */
+  mapTopicSlug: string | null;
 }
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -145,6 +158,7 @@ export function defaultKeywordTableState(): KeywordTableState {
     page: 1,
     pageSize: KEYWORD_TABLE_DEFAULT_PAGE_SIZE,
     search: "",
+    mapTopicSlug: null,
     range: GSC_DEFAULT_RANGE,
     customFrom: null,
     customTo: null,
@@ -296,6 +310,7 @@ export function parseKeywordTableState(
     compare:
       compareParam === "prev" || compareParam === "yoy" ? compareParam : "none",
     viewId: own.get("sv"),
+    mapTopicSlug: own.get("topic")?.trim() || null,
   };
 }
 
@@ -323,6 +338,9 @@ export function keywordTableSearchParams(
   }
   if (state.compare !== "none") own.set("compare", state.compare);
   if (state.viewId) own.set("sv", state.viewId);
+  // Kept in the URL so the narrowing survives a reload, a sort and a Back —
+  // the banner that explains it would otherwise vanish under the person.
+  if (state.mapTopicSlug) own.set("topic", state.mapTopicSlug);
 
   const prefix = codec.prefix ?? "";
   if (!prefix) return own;
