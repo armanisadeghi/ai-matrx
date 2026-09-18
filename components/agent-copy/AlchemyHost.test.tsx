@@ -88,6 +88,13 @@ jest.mock("@/lib/api/matrx-transport", () => ({
     fetch: transportFetch,
   }),
 }));
+// The host's destination ports navigate (`navigate: (href) => router.push(href)`).
+// The router is transport; these cases assert identity and stream lifecycle.
+jest.mock("next/navigation", () =>
+  require("@/test-utils/next-navigation").nextNavigationMock({
+    pathname: "/chat",
+  }),
+);
 jest.mock("@/utils/supabase/client", () => ({ supabase: {} }));
 jest.mock(
   "@/features/agents/redux/execution-system/thunks/adopt-foreign-stream",

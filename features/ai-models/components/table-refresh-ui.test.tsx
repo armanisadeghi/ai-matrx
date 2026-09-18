@@ -6,6 +6,17 @@
 
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+
+// `SettingTable` reads the URL: `?tablePreview=defaults` swaps the curated
+// table for the package-defaults comparison Arman is reviewing. These cases are
+// the ORDINARY surface, so the scenario carries no query at all — the preview
+// branch must not be what answers them.
+jest.mock("next/navigation", () =>
+  require("@/test-utils/next-navigation").nextNavigationMock({
+    pathname: "/administration/ai-models",
+  }),
+);
+
 import ProviderTable, {
   type ProviderTableProps,
 } from "./providers/ProviderTable";
