@@ -278,37 +278,66 @@ slot_occupied() {
 }
 
 # A private worktree (`git worktree add`) has no node_modules of its own —
-# `pnpm install` was run in the PRIMARY checkout, so a worktree's node_modules
-# is either absent or a symlink pointing at the primary checkout's copy
-# (outside this worktree's own project root). Turbopack refuses to serve a
-# symlinked node_modules that points outside the project root ("Symlink
-# [project]/node_modules is invalid") — this cost V-22 an hour (NEW-15) and
-# will cost every future verifier the same until the class is fixed here
-# instead of rediscovered per-agent.
+# `pnpm install` was run in the PRIMARY checkout. `git worktree add` never
+# creates node_modules at all (it is gitignored, so there is nothing to check
+# out), which shows up here as ABSENT, not a symlink; a symlink only appears
+# if something (a stale link left from a manual `pnpm install --frozen`, or a
+# tool that mirrors the primary tree) put one there by hand. Both cases need
+# the same fix, and this function used to handle only the symlink one
+# (`[[ -L "$nm" ]] || return 0` returned immediately for the far more common
+# absent case) — so a fresh worktree's `pnpm preview:start` printed
+# "dependencies are missing; run pnpm install first", and following that
+# remedy is worse than the defect: every `@ai-matrx/*` package and
+# `next`/`react`/`typescript` is declared `latest`, so an install run in the
+# worktree resolves a DIFFERENT dependency tree than the one under test
+# (V-23 NEW-1). Turbopack also refuses to serve a symlinked node_modules that
+# points outside the project root ("Symlink [project]/node_modules is
+# invalid") — this cost V-22 an hour (NEW-15) — and will cost every future
+# verifier the same until the class is fixed here instead of rediscovered
+# per-agent.
 #
-# Fix: a same-device hard-link copy (`cp -al`) — full speed, no extra disk (the
-# link count goes up, the bytes do not), and it survives `pnpm install` in
-# either checkout re-linking a package because copy-on-write never applies to
-# a hard link: a write to one path never touches the other inode's data, it
-# only replaces which inode that ONE path points to. It is never silent: every
-# path through this function announces what it found and what it did.
+# Fix, for both the absent and the symlink case: a same-device hard-link copy
+# (`cp -al`) from the PRIMARY checkout's node_modules — full speed, no extra
+# disk (the link count goes up, the bytes do not), and it survives `pnpm
+# install` in either checkout re-linking a package because copy-on-write never
+# applies to a hard link: a write to one path never touches the other inode's
+# data, it only replaces which inode that ONE path points to. A REAL directory
+# already present (an ordinary checkout, or a worktree someone already fixed)
+# is left alone. It is never silent: every path through this function
+# announces what it found and what it did.
 ensure_worktree_node_modules() {
   local nm="$REPO_ROOT/node_modules" primary
 
-  # Ordinary checkout with a real node_modules: nothing to do.
-  [[ -L "$nm" ]] || return 0
+  # A real directory is already there — ordinary checkout, or a worktree this
+  # function (or a human) already fixed. Nothing to do.
+  [[ -e "$nm" && ! -L "$nm" ]] && return 0
 
-  primary="$(readlink -f "$nm" 2>/dev/null)"
-  log "this is a git worktree: node_modules is a symlink -> ${primary:-<unresolved>}"
-  log "Turbopack refuses a node_modules symlink that points outside the project root, so a plain 'pnpm preview:start' would fail here with \"Symlink [project]/node_modules is invalid\" — replacing it with a hard-link copy now (same device, no extra disk, seconds not minutes)."
-
-  [[ -n "$primary" && -d "$primary" ]] || fail "node_modules is a symlink but its target ('$primary') does not resolve to a directory; run pnpm install in the primary checkout first, then retry."
+  if [[ -L "$nm" ]]; then
+    primary="$(readlink -f "$nm" 2>/dev/null)"
+    log "this is a git worktree: node_modules is a symlink -> ${primary:-<unresolved>}"
+    log "Turbopack refuses a node_modules symlink that points outside the project root, so a plain 'pnpm preview:start' would fail here with \"Symlink [project]/node_modules is invalid\" — replacing it with a hard-link copy now (same device, no extra disk, seconds not minutes)."
+    [[ -n "$primary" && -d "$primary" ]] || fail "node_modules is a symlink but its target ('$primary') does not resolve to a directory; run pnpm install in the primary checkout first, then retry."
+  else
+    # node_modules is absent. Only a worktree gets fixed here — an ordinary
+    # checkout with no node_modules genuinely needs `pnpm install`, and this
+    # function must never mask that with a worktree remedy it does not need.
+    local common_dir
+    common_dir="$(cd "$REPO_ROOT" && git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)"
+    [[ -n "$common_dir" ]] || return 0
+    primary="$(dirname "$common_dir")"
+    [[ -n "$primary" && "$primary" != "$REPO_ROOT" && -d "$primary/.git" ]] || return 0
+    log "this is a git worktree: node_modules is absent (git worktree add never creates it — it is gitignored, so there is nothing to check out)"
+    log "primary checkout: $primary"
+    log "an install here would resolve a DIFFERENT dependency tree than the one under test (every @ai-matrx/* package and next/react/typescript is declared 'latest') — hard-linking the primary checkout's node_modules instead (same device, no extra disk, seconds not minutes)."
+    [[ -d "$primary/node_modules" ]] || fail "the primary checkout ('$primary') itself has no node_modules; run pnpm install there — NEVER in this worktree, or you will be testing a dependency tree that does not match the primary checkout's lockfile resolution."
+    primary="$primary/node_modules"
+  fi
 
   local primary_dev worktree_dev
   primary_dev="$(stat_fmt %d %d "$primary")"
   worktree_dev="$(stat_fmt %d %d "$REPO_ROOT")"
   if [[ -n "$primary_dev" && -n "$worktree_dev" && "$primary_dev" != "$worktree_dev" ]]; then
-    fail "node_modules symlink target ('$primary') is on a different filesystem device than this worktree ('$REPO_ROOT'); a hard-link copy cannot cross devices. Remedy: cp -aL '$primary' '$nm.real' && rm '$nm' && mv '$nm.real' '$nm' (a real recursive copy, slower), or run pnpm install directly in this worktree."
+    fail "primary checkout's node_modules ('$primary') is on a different filesystem device than this worktree ('$REPO_ROOT'); a hard-link copy cannot cross devices. Remedy: cp -aL '$primary' '$nm.real' && rm -f '$nm' && mv '$nm.real' '$nm' (a real recursive copy, slower), or run pnpm install directly in this worktree."
   fi
 
   rm -f "$nm"
