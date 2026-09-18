@@ -267,6 +267,45 @@ function gscUrlRefNote(ref: string, url: URL, normalized: string): string {
   return ` ${changes.join(", and ")}, so this binds as ${normalized} — “${ref}” exactly as typed is not a ref Google accepts.`;
 }
 
+/**
+ * THE UNHOLDABLE-REF LAW (V18 verdict V14-10, fixed 2026-09-18). A Search
+ * Console URL-prefix property is exactly a scheme (http or https), a
+ * lowercase host and a path — nothing else, ever. A ref carrying sign-in
+ * credentials, a query string, a #fragment, or any other scheme is not a
+ * shape Google will ever hold, no matter which site it is compared against —
+ * so this is judged BEFORE any host/path/domain comparison, and it refuses
+ * even when the host matches the site exactly.
+ *
+ * Why that "even when it matches" mattered: `preflightGscProperty` used to
+ * fall through to the normal host/path checks, which answered `ok` for a
+ * matching host and offered a clean `suggestedRef` — but `judgeGscBindingWrite`
+ * and every write path store the RAW `resourceRef`, never the suggestion, so
+ * `preflightGscProperty("http://user:pw@bhrcenter.com/", {domain:
+ * "bhrcenter.com", root_url: "http://bhrcenter.com/"})` answered `ok` and the
+ * credential-bearing ref — a stored PASSWORD — went into `web.site.integrations`
+ * jsonb verbatim, an org-readable column, with the failure moving to the first
+ * live Google call instead of the save.
+ *
+ * Returns the CLASS of what was found, never the ref itself — a headline that
+ * echoed `ref` here would echo the password back into a refusal sentence a
+ * whole org can read.
+ */
+function unholdableGscUrlReason(url: URL): string | null {
+  if (url.username || url.password) {
+    return "a username and password inside the address";
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    return `a “${url.protocol.replace(":", "")}” scheme, and Search Console only holds http and https properties`;
+  }
+  if (url.search) {
+    return "a query string in the address";
+  }
+  if (url.hash) {
+    return "a #fragment in the address";
+  }
+  return null;
+}
+
 /** The site's canonical origin, from `root_url` when it parses, else `domain`. */
 export function siteCanonicalUrl(site: {
   root_url?: string | null;
@@ -418,6 +457,22 @@ export function preflightGscProperty(
       headline: `“${ref}” is not a Search Console property.`,
       detail: `A property is either a domain property (${domainRef}) or a full URL prefix (${canonical.display}). Pick one of those.`,
       suggestedRef: domainRef,
+    };
+  }
+
+  // THE UNHOLDABLE-REF LAW runs first, and unconditionally on the parsed
+  // address — never gated on whether the host matches this site. See
+  // `unholdableGscUrlReason` above for why: a matching host used to make this
+  // shape read `ok`, which is what let a credential-bearing ref reach storage.
+  const unholdableReason = unholdableGscUrlReason(picked);
+  if (unholdableReason) {
+    const isHttpScheme = picked.protocol === "http:" || picked.protocol === "https:";
+    const suggestedRef = isHttpScheme ? gscUrlPropertyRef(picked) : domainRef;
+    return {
+      verdict: "mismatch",
+      headline: `This address is not one Search Console can hold: it has ${unholdableReason}.`,
+      detail: `A Search Console property is only ever a scheme, a host and a path — it never carries sign-in credentials, a query string, or a #fragment. Use ${suggestedRef} instead${isHttpScheme ? "" : ", or the domain property if you own the whole domain"}.`,
+      suggestedRef,
     };
   }
 

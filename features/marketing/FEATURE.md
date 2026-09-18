@@ -777,6 +777,46 @@ The site/page/crawl foundation, direct live-crawl controls, dedicated technical-
 
 ## Change log
 
+- 2026-09-18 — Claude Fable 5.1 (lane F-45, google-native VERIFY-U-P4-U-M1-R5
+  V14-10 / V18-1 and V18-3): **THE UNHOLDABLE-REF LAW.**
+  `preflightGscProperty` (`features/marketing/google/gsc-property.ts`) used to
+  fall through to the ordinary host/path checks for a URL-prefix ref, so a ref
+  Google can never hold at all — one carrying a username and password, a query
+  string, a #fragment, or a non-http(s) scheme — answered `ok` whenever the
+  host matched the site, and `judgeGscBindingWrite` (the ONE choke point every
+  write path asks, per its own docstring) wrote the RAW ref, never the
+  normalized `suggestedRef`, into `web.site.integrations` jsonb — an
+  org-readable column. Verifier's exact repro:
+  `preflightGscProperty("http://user:pw@bhrcenter.com/", {domain:
+  "bhrcenter.com", root_url: "http://bhrcenter.com/"})` answered `ok`/`allowed:
+  true`. Fixed with a new `unholdableGscUrlReason` predicate, run
+  unconditionally on the parsed URL BEFORE any host/path comparison: it
+  refuses by name ("a username and password inside the address", "a query
+  string in the address", "a #fragment in the address", "a “ftp” scheme, and
+  Search Console only holds http and https properties"), never echoes the ref
+  (so a password never reaches the refusal sentence), and offers the
+  normalized `suggestedRef`. `judgeGscBindingWrite` needed no separate change —
+  it composes `preflightGscProperty`, so the ceiling and the view are the same
+  one function. Census (`grep -rn "resource_ref\|gsc_property\|sc-domain"
+  features/marketing`): every write path (per-provider Enable, the
+  page-level Save, `persistBuiltInProvider`, `kickGscFirstImport`) already
+  routes through `integrationsWriteIssues`/`integrationsWriteRefusal`
+  (`components/integrations/integration-issues.ts`), which composes this same
+  judge — nothing else accepts or writes a GSC property ref. Separately,
+  `validateSiteIntegrations`'s own shape check (`data/integrations-schema.ts`
+  `isHttpUrl`) is a weaker, independent sanity check that does not itself
+  reject credentials — it is not the mismatch judge and was left as-is; the
+  judge is what blocks Save. Also fixed V18-3 (LOW): the GA4/GSC zero-baseline
+  caveat in `features/marketing/analytics/gsc-delta.ts`
+  (`judgeGscWindowDelta`, `no_baseline` branch) spliced "and nothing in this
+  one either." after a full stop when `current = 0, previous = 0`, reading as
+  two sentences with a lower-case "and" starting the second. Now one sentence:
+  "There were no sessions in this window either, so there is nothing in
+  either period to compare." Both fixes proven red-then-green against HEAD
+  (`git show HEAD:<path>` swapped in, RED reproduced verbatim, restored) —
+  `npx jest features/marketing/google features/marketing/analytics
+  features/marketing/search-console` → 295 passed.
+
 - 2026-09-17 — Claude Fable 5.1 (lane F-39, adopting aidream B-19 `bf037695fd`):
   **the GA4 honesty caveats now read the true false/absent distinction and name
   the report window instead of a per-day-row count.** `Ga4CollectionMetadata`

@@ -152,7 +152,8 @@ function deltaCaveat(
         (input.current && input.current > 0
           ? `This window recorded ${count(input.current)} — growth from zero, ` +
             "which no percentage can express."
-          : "and nothing in this one either.") +
+          : "There were no sessions in this window either, so there is nothing " +
+            "in either period to compare.") +
         ` Both windows were collected the same way (${comparison.currentDaysWithData} ` +
         `and ${comparison.previousDaysWithData} days), so this is the site, not our collection.`
       );

@@ -371,23 +371,82 @@ describe("B-N3 — one judge, one answer, when a site row carries no domain", ()
 });
 
 describe("B-N4 — the URL-prefix branch normalizes on EVERY branch", () => {
-  it("never recommends a ref carrying credentials", () => {
-    const result = preflightGscProperty("https://user:pw@example.com/", bareSite);
-    expect(result.suggestedRef).toBe("https://example.com/");
-    expect(result.suggestedRef).not.toContain("pw@");
-    expect(result.detail).toContain("sign-in");
-  });
-
   it("lowercases the host it recommends", () => {
     const result = preflightGscProperty("https://EXAMPLE.com/", bareSite);
     expect(result.verdict).toBe("ok");
     expect(result.suggestedRef).toBe("https://example.com/");
   });
+});
 
-  it("drops a query string and a fragment, and says it did", () => {
-    const result = preflightGscProperty("https://example.com/?x=1#top", bareSite);
+/*
+  V18-1 / V14-10 (google-native VERIFY-U-P4-U-M1-R5, fixed 2026-09-18). A ref
+  Google cannot hold used to fall through to the ordinary host/path checks and
+  answer `ok` whenever the host matched — so a credential-bearing ref, one
+  carrying a query string or a #fragment, or a non-http(s) scheme was accepted
+  and STORED VERBATIM (`judgeGscBindingWrite`/every write path saves the raw
+  `resourceRef`, never `suggestedRef`), moving the failure to the first live
+  Google call. THE UNHOLDABLE-REF LAW now refuses each of these by name,
+  before any host comparison, and never echoes the credential back into the
+  sentence.
+*/
+describe("THE UNHOLDABLE-REF LAW — a ref Google cannot hold is refused, even on a matching host", () => {
+  it("refuses a ref carrying a username and password — the exact V18-1 input — and never echoes it", () => {
+    const result = preflightGscProperty("http://user:pw@bhrcenter.com/", {
+      domain: "bhrcenter.com",
+      root_url: "http://bhrcenter.com/",
+    });
+    expect(result.verdict).toBe("mismatch");
+    expect(result.headline).toContain("username and password");
+    expect(result.headline).not.toContain("user:pw");
+    expect(result.headline).not.toContain("pw@");
+    expect(result.detail).not.toContain("pw@");
+    expect(result.suggestedRef).toBe("http://bhrcenter.com/");
+
+    const judgement = judgeGscBindingWrite(
+      { resourceRef: "http://user:pw@bhrcenter.com/" },
+      { domain: "bhrcenter.com", root_url: "http://bhrcenter.com/" },
+    );
+    expect(judgement.allowed).toBe(false);
+    expect(judgement.sentence).not.toContain("pw@");
+  });
+
+  it("refuses credentials even when the host matches exactly", () => {
+    const result = preflightGscProperty("https://user:pw@example.com/", bareSite);
+    expect(result.verdict).toBe("mismatch");
+    expect(result.headline).toContain("username and password");
     expect(result.suggestedRef).toBe("https://example.com/");
-    expect(result.detail).toContain("query");
+    expect(result.suggestedRef).not.toContain("pw@");
+  });
+
+  it("refuses a query string and a #fragment, naming the class", () => {
+    const result = preflightGscProperty("https://example.com/?x=1#top", bareSite);
+    expect(result.verdict).toBe("mismatch");
+    expect(result.headline).toContain("query string");
+    expect(result.suggestedRef).toBe("https://example.com/");
+  });
+
+  it("refuses a #fragment alone", () => {
+    const result = preflightGscProperty("https://example.com/#top", bareSite);
+    expect(result.verdict).toBe("mismatch");
+    expect(result.headline).toContain("#fragment");
+  });
+
+  it("refuses a non-http(s) scheme, naming it", () => {
+    const result = preflightGscProperty("ftp://example.com/", bareSite);
+    expect(result.verdict).toBe("mismatch");
+    expect(result.headline).toContain("ftp");
+    expect(result.suggestedRef).toBe("sc-domain:example.com");
+  });
+
+  it("positive control: a clean https URL still passes", () => {
+    expect(preflightGscProperty("https://example.com/", bareSite).verdict).toBe("ok");
+  });
+
+  it("positive control: a clean sc-domain: ref still passes", () => {
+    expect(preflightGscProperty("sc-domain:example.com", bareSite).verdict).toBe("ok");
+    expect(judgeGscBindingWrite({ resourceRef: "sc-domain:example.com" }, bareSite).allowed).toBe(
+      true,
+    );
   });
 });
 

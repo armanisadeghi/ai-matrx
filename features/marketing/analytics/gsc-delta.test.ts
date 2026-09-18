@@ -284,7 +284,7 @@ describe("a zero previous total", () => {
     }
   });
 
-  it("two zero windows say nothing has been recorded either side", () => {
+  it("two zero windows say nothing has been recorded either side, as one honest sentence", () => {
     const both = judgeGscWindowDelta({
       current: 0,
       previous: 0,
@@ -293,6 +293,11 @@ describe("a zero previous total", () => {
     });
     expect(both.verdict).toBe("no_baseline");
     expect(both.caveat).toContain("no previous period to compare");
-    expect(both.caveat).toContain("nothing in this one either");
+    expect(both.caveat).toContain("nothing in either period to compare");
+    // V18-3 (google-native VERIFY-U-P4-U-M1-R5): this used to splice in
+    // "and nothing in this one either." after a full stop, reading as a
+    // lower-case "and" starting a fresh sentence — never a real sentence
+    // fragment glued onto the end of another one.
+    expect(both.caveat).not.toMatch(/\.\s+and\s/);
   });
 });
