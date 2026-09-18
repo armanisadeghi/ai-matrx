@@ -87,6 +87,7 @@ const SOURCE_LABELS: Record<CapturedErrorSource, string> = {
   "data-shape": "Data-shape contract violation",
   "org-resolution": "Org resolution fallback",
   "topical-map-rpc": "Topical map RPC refusal",
+  "feature-knob-vocabulary": "Feature knob value this build does not implement",
   "user-toast": "User-facing error toast",
   "marketing-crawler": "Marketing crawler",
   scraper: "Web scraper failure",
