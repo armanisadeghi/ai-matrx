@@ -18,6 +18,7 @@
 // attached invented a transcript and graded the learner `correct`.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { fileHandler } from "@/features/files/handler/handler";
 import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import {
@@ -220,7 +221,7 @@ export async function uploadResponseClip(
 
 export interface RunSpokenGraderArgs {
   /** The grading MANDATE to run — resolved live to the DB-bound grader agent. */
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   front: string;
   back: string;
   secondsAllowed: number;

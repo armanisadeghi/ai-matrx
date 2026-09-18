@@ -1,4 +1,5 @@
 "use client";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 import { usePreparedResourceSeed } from "./usePreparedResourceSeed";
 import { Suspense, useEffect, useRef, useState } from "react";
@@ -144,7 +145,7 @@ interface ChatRoomClientProps {
    * Omit it on rooms that are genuinely agent-addressed (`/chat/a/[agentId]`,
    * where the user picked THAT agent).
    */
-  mandateKey?: string;
+  mandateKey?: AnyMandateKey;
   /** Surface-owned presentation for variables bound outside the composer. */
   variablesPanelStyle?: VariablesPanelStyle;
   /**

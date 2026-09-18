@@ -18,6 +18,7 @@
  */
 
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import type { components } from "@/types/python-generated/api-types";
 
 // ---------------------------------------------------------------------------
@@ -172,7 +173,7 @@ export interface SurfaceAgentRole {
    * unfilled role with a loud console error — never a silent fallback —
    * and binds automatically once the `agent.mandate` row lands.
    */
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
   /** kind="multi" only — max concurrent positions. Defaults to 1. */
   maxAgents?: number;
   /** User may slot ANY agent (true, default) vs roster/system agents only. */

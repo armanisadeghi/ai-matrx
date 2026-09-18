@@ -21,6 +21,7 @@
 
 import { useEffect, useState } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
+import type { AnyMandateKey } from "./mandate-key";
 import {
   fetchMandateCatalogue,
   type MandateCatalogueEntry,
@@ -53,8 +54,12 @@ interface GoalEntry {
   error: string | null;
 }
 
+/**
+ * 🚨 THE KEY IS TYPED, NEVER `string` (V-L6a, 2026-09-17) — `null` is the one
+ * accepted non-key, for a surface whose mandate is not chosen yet.
+ */
 export function useMandateGoal(
-  mandateKey: string | null,
+  mandateKey: AnyMandateKey | null,
   /** The stored `agent.mandate.goal` when the surface holds the row. */
   storedGoal?: string | null,
 ): MandateGoalState {

@@ -1,4 +1,4 @@
-import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * System agent registry — builtin KEY → MANDATE KEY.
@@ -25,7 +25,7 @@ export const SYSTEM_AGENT_MANDATES = {
   "code-editor-dynamic-context": MANDATE_KEYS.code_editor__dynamic_context_edit,
   "matrix-custom-chat": MANDATE_KEYS.chat__cx_default,
   "tool-ui-component-generator": MANDATE_KEYS.tool_viz__component_generator,
-} as const satisfies Record<string, string>;
+} as const satisfies Record<string, MandateKey>;
 
 export type SystemAgentKey = keyof typeof SYSTEM_AGENT_MANDATES;
 
@@ -34,7 +34,7 @@ export function isSystemAgentKey(key: string): key is SystemAgentKey {
 }
 
 /** The mandate key for a builtin key. Throws loudly on an unknown key. */
-export function mandateKeyForBuiltin(key: string): string {
+export function mandateKeyForBuiltin(key: string): MandateKey {
   if (!isSystemAgentKey(key)) {
     throw new Error(
       `Unknown system agent key: "${key}". Valid keys: ${Object.keys(SYSTEM_AGENT_MANDATES).join(", ")}`,

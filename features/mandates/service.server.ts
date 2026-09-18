@@ -1,4 +1,5 @@
 import "server-only";
+import type { AnyMandateKey } from "./mandate-key";
 
 /**
  * Server-side agent-mandate resolution — the SSR half of the Mandates system,
@@ -65,7 +66,7 @@ import {
 } from "@/features/bindings/treatment-shape";
 
 export async function resolveMandateServer(
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
 ): Promise<ResolvedMandate> {
   const supabase = await createClient();
   // `select("*")` on purpose: the wave-1 columns (provision_key, pins,

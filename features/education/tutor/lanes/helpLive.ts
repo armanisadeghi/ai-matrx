@@ -15,6 +15,7 @@
 // lands, so advancing the card can no longer destroy a paid tutor answer.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import {
   livePosture,
   runHeadlessAgentJson,
@@ -46,7 +47,7 @@ export interface HelpLiveContext {
   /** This learner's past attempts on THIS card (newest first). */
   cardHistory?: unknown[];
   /** Override the help mandate (rare — testing only). */
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
   /** Live handle — the tutor's answer streams where the caller mounts it. */
   onConversationCreated?: (conversationId: string) => void;
   /** The card being asked about — the key the answer is journalled under. */

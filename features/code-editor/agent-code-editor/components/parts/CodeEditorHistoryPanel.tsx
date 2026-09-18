@@ -1,4 +1,5 @@
 "use client";
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * CodeEditorHistoryPanel — the leftmost column.
@@ -44,11 +45,11 @@ interface CodeEditorHistoryPanelProps {
   mandateErrors: Record<string, string>;
   mandatesLoading: boolean;
   /** Which job (mandate key) the [+] button will create a draft for. */
-  pickerMandateKey: string;
-  onPickerMandateKeyChange: (mandateKey: string) => void;
+  pickerMandateKey: MandateKey | "";
+  onPickerMandateKeyChange: (mandateKey: MandateKey) => void;
   activeConversationId: string | null;
   onSelectConversation: (conversationId: string, agentId: string) => void;
-  onCreateDraft: (mandateKey: string) => void;
+  onCreateDraft: (mandateKey: MandateKey) => void;
 }
 
 export function CodeEditorHistoryPanel({
@@ -75,7 +76,15 @@ export function CodeEditorHistoryPanel({
       <div className="shrink-0 p-2 border-b border-border space-y-2">
         <Select
           value={pickerMandateKey}
-          onValueChange={onPickerMandateKeyChange}
+          onValueChange={(value) => {
+            // The options ARE this surface's own typed jobs, so the picked
+            // value is one of them by construction — proving it against the
+            // list keeps the key typed all the way to the carrier instead of a
+            // cast, and a value that is somehow not a job simply does nothing
+            // rather than launching a mandate nobody declared.
+            const picked = agents.find((a) => a.mandateKey === value);
+            if (picked) onPickerMandateKeyChange(picked.mandateKey);
+          }}
         >
           <SelectTrigger className="w-full h-8 text-xs">
             <SelectValue />
@@ -94,7 +103,9 @@ export function CodeEditorHistoryPanel({
         </Select>
         <Button
           size="sm"
-          onClick={() => onCreateDraft(pickerMandateKey)}
+          onClick={() => {
+            if (pickerMandateKey) onCreateDraft(pickerMandateKey);
+          }}
           disabled={createDisabled}
           className="w-full h-8 gap-1.5"
         >

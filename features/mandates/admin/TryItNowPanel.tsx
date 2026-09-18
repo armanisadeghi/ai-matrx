@@ -1,4 +1,5 @@
 "use client";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -263,7 +264,9 @@ export function TryItNowPanel({
         testMode === "display" ||
         (allowPrincipalSelection && testContext === "viewer")
       ) {
-        const resolved = await resolveMandate(mandate.mandate_key);
+        const resolved = await resolveMandate(
+          storedMandateKey(mandate.mandate_key),
+        );
         if (request !== sampleRequest.current) return;
         setSampleSource({
           agentId: resolved.agentId,
@@ -331,7 +334,7 @@ export function TryItNowPanel({
     setFailure(null);
     try {
       if (testMode === "display") {
-        await launchMandate(mandate.mandate_key, {
+        await launchMandate(storedMandateKey(mandate.mandate_key), {
           surfaceKey: `mandate-test:${mandate.mandate_key}`,
           sourceFeature: "agent-runner",
           apiEndpointMode: "agent",

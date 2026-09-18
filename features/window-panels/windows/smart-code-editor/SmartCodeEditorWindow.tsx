@@ -1,4 +1,5 @@
 "use client";
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * SmartCodeEditorWindow
@@ -31,8 +32,11 @@ export interface SmartCodeEditorWindowProps {
 
   /** The agents available in the history-panel picker. Required. */
   agents: CodeEditorAgentConfig[];
-  /** Picker-default job (mandate key). Defaults to `agents[0]`. */
-  defaultPickerMandateKey?: string;
+  /** Picker-default job (mandate key). Defaults to `agents[0]`. Typed, never
+   *  `string` (V-L6a): the picker only ever offers the code-declared editing
+   *  jobs in `agents`, so a DB-authored key has no meaning here — the overlay
+   *  boundary PROVES this one declared with `isMandateKey` before it arrives. */
+  defaultPickerMandateKey?: MandateKey;
 
   /** Single-file mode: starting editor content. */
   initialCode?: string;

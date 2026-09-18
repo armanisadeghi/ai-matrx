@@ -1,4 +1,5 @@
 "use client";
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 
 import React, { useRef, useState } from "react";
 import {
@@ -50,7 +51,7 @@ import { useAdvancedMenu } from "@/hooks/use-advanced-menu";
 
 type AIModalConfig = {
   /** The editing job (mandate key) — the DB decides which agent runs it. */
-  mandateKey: string;
+  mandateKey: MandateKey;
   title: string;
 };
 
