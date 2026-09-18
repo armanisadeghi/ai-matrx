@@ -460,6 +460,27 @@ export interface ActionDeclaration {
     requires_transcripts: boolean;
     params_schema: Record<string, unknown> | null;
     produces: string[];
+    /**
+     * 🚨 THE HONESTY RULE, and the client half of it. The server declares an
+     * Action whose runner is not wired with `available: false` and a SENTENCE —
+     * it is never hidden, because a person planning work should see what the
+     * platform intends to do, and it is never offered as though it worked.
+     *
+     * This interface omitted all three fields, so every declaration became a
+     * live button: `summarize` and `organize` were offered on the bar, opened
+     * the confirm, and answered 501 on Start. That is law 4 breaking — a
+     * control that is neither absent nor honest.
+     *
+     * Optional because a client and a server deploy minutes apart and the shape
+     * that arrives during that window is whichever build answered; an absent
+     * `available` is read as available, which is what every Action was before
+     * the field existed.
+     */
+    available?: boolean;
+    /** A sentence when `available` is false. Never a code, never blank. */
+    unavailable_reason?: string | null;
+    /** Set when the Action is NOT run through POST …/jobs (today: `export`). */
+    endpoint?: string | null;
 }
 
 export interface CreateJobRequest {

@@ -14,9 +14,10 @@
  * is entitled to see what it is free over.
  *
  * The form under the numbers is generated from the Action's `params_schema`
- * (§8). Nothing about any specific Action is written here; the one place with
- * real knowledge is the Rulebook picker, which exists because "pick or create a
- * Rulebook" is a door into another feature, not a text box for a uuid.
+ * (§8). Nothing about any specific Action is written here; the only places with
+ * real knowledge are the two record pickers — Rulebook and agent — which exist
+ * because "pick the thing this runs against" is a door into another feature,
+ * not a text box for a uuid.
  */
 
 import { useCallback, useEffect, useState } from "react";
@@ -49,6 +50,7 @@ import {
 import { formatCost, formatCount, formatSecondsEstimate } from "../format";
 import type { ActionDeclaration, EstimateResult } from "../types";
 import { RulebookParamPicker } from "./RulebookParamPicker";
+import { AgentParamPicker } from "./AgentParamPicker";
 
 export interface ActionRunDialogProps {
     open: boolean;
@@ -148,6 +150,16 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
 
     if (!action) return null;
 
+    // 🚨 `available: false` IS A DECLARATION, NOT A HIDDEN ROW. The server names
+    // an Action whose runner is not wired and says in a sentence what is missing,
+    // so a person planning work can see what the platform intends to do. What it
+    // must never do is pretend: before this, the declaration's `available` was not
+    // even in the TypeScript interface, so `summarize` and `organize` were live
+    // buttons that opened this dialog and answered 501 on Start. Not-yet is stated
+    // here, in the server's own words, and the Start button is ABSENT — never
+    // present-and-dead, and never wearing a sentence the server did not write.
+    const notYet = action.available === false;
+
     const missing = required.filter(
         (key) => params[key] === undefined || params[key] === "" || params[key] === null,
     );
@@ -174,7 +186,20 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                     </p>
                 )}
 
-                {needsEstimate && (
+                {notYet && (
+                    <p className="flex items-start gap-2 rounded-md border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
+                        <TriangleAlert
+                            className="mt-0.5 size-4 shrink-0 text-amber-500"
+                            aria-hidden
+                        />
+                        <span>
+                            {action.unavailable_reason ??
+                                `${action.label} is declared but is not wired up yet, so nothing would happen.`}
+                        </span>
+                    </p>
+                )}
+
+                {!notYet && needsEstimate && (
                     <section className="rounded-lg border border-border">
                         <h3 className="border-b border-border px-3 py-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                             What this will cost
@@ -266,11 +291,22 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                     </section>
                 )}
 
-                {Object.keys(properties).length > 0 && (
+                {!notYet && Object.keys(properties).length > 0 && (
                     <div className="space-y-3">
                         {Object.entries(properties).map(([key, property]) => {
                             const label = property.title ?? humanize(key);
                             const value = params[key];
+
+                            if (key === "agent_id") {
+                                return (
+                                    <AgentParamPicker
+                                        key={key}
+                                        label={label}
+                                        value={typeof value === "string" ? value : null}
+                                        onChange={(next) => setParam(key, next)}
+                                    />
+                                );
+                            }
 
                             if (key === "rulebook_id") {
                                 return (
@@ -349,7 +385,7 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                     </div>
                 )}
 
-                {missing.length > 0 && (
+                {!notYet && missing.length > 0 && (
                     <p className="text-sm text-muted-foreground">
                         {action.label} needs {missing.map(humanize).join(", ").toLowerCase()}{" "}
                         before it can start.
@@ -370,8 +406,9 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                         onClick={onCancel}
                         disabled={submitting}
                     >
-                        Cancel
+                        {notYet ? "Close" : "Cancel"}
                     </Button>
+                    {notYet ? null : (
                     <Button
                         className="h-11 gap-2"
                         onClick={onConfirm}
@@ -384,6 +421,7 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                             ? `Spend up to ${formatCost(estimate?.cost.paid_cost_high ?? 0, estimate?.cost.currency)} and start`
                             : `Start ${action.label.toLowerCase()}`}
                     </Button>
+                    )}
                 </DialogFooter>
             </DialogContent>
         </Dialog>
