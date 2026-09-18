@@ -42,7 +42,7 @@ import {
   type ApproveAndRaiseResult,
 } from "@/features/admin/agent-review/approve-and-raise";
 import { getFeedbackRaisedFromReviewRow } from "@/actions/feedback.actions";
-import { feedbackHref } from "@/app/(admin)/administration/users/feedback/doors";
+import { feedbackHref } from "@/features/admin/feedback/doors";
 import type { UserFeedback } from "@/types/feedback.types";
 import {
   EMPTY_REVIEW_REGISTRY,
