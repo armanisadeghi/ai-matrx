@@ -64,6 +64,7 @@ import {
   RecordDoor,
   ServerSentence,
   TruncationChip,
+  WRITE_CLAIM_KEYS,
   hasStatedBounds,
   readBlock,
   readRows,
@@ -74,8 +75,18 @@ import {
  * Exported so the render-leg test suite can census it directly — a promoted
  * key with no matching print statement is the exact defect this list guards
  * against (a `site_id` sat here, unprinted, until F-86).
+ *
+ * 🚨 `WRITE_CLAIM_KEYS` is spread in because `NothingWasWritten` (below)
+ * already consumes that whole family — `dry_run`, `awaiting_approval`,
+ * `appended`, `written`, `created`, `imported`, `sent`, `approval` — through
+ * `readWriteClaim`/`readBlock(value.approval)`. Left off this list, those keys
+ * fell through to `MetaStrip`/`LeftoverFields` as raw leftovers: the same fact
+ * shown twice, once summarized and once unlabeled (F-95). The dynamically-named
+ * `would_*` keys are NOT here (they cannot be enumerated statically); the
+ * render call sites below merge `claim.previewKeys` into `omit` instead.
  */
 export const PROMOTED = [
+  ...WRITE_CLAIM_KEYS,
   "action",
   "source",
   "google_account",
@@ -191,6 +202,19 @@ const GoogleMarketingResultBlock: React.FC<ResultKindBlockProps> = ({
     { key: "has_conversion_tag", label: "conversion tag" },
     { key: "has_consent", label: "consent mode" },
   ];
+  const hasHealthFlag = booleans.some(({ key }) => readBool(value[key]) !== null);
+  /**
+   * 🚨 THE FOOTER'S "NO ROWS" SENTENCE IS FOR A TRULY EMPTY READ ONLY (F-95).
+   * The tracking-health read (`tracking_health`) never carries `data`, so
+   * `checks: []`/absent plus a real `verdict` and/or `has_*` flags used to
+   * still fall through this predicate and print "no rows" under a real
+   * answer. A read counts as substantive when it carries a verdict, a
+   * health flag, `checks`, `containers`, or `data` — never "no rows" then.
+   */
+  const substantiveRead = Boolean(verdict) || hasHealthFlag || Boolean(checks) || Boolean(containers) ||
+    (value.data !== undefined && value.data !== null);
+  /** Merged into `omit` at every render site below: see {@link WRITE_CLAIM_KEYS}. */
+  const omitKeys = [...PROMOTED, ...claim.previewKeys];
 
   return (
     <div className={cn("my-2 min-w-0 space-y-2.5", className)}>
@@ -259,7 +283,7 @@ const GoogleMarketingResultBlock: React.FC<ResultKindBlockProps> = ({
         </Section>
       ) : null}
 
-      {booleans.some(({ key }) => readBool(value[key]) !== null) ? (
+      {hasHealthFlag ? (
         <ChipRow>
           {booleans.map(({ key, label }) => {
             const flag = readBool(value[key]);
@@ -306,15 +330,15 @@ const GoogleMarketingResultBlock: React.FC<ResultKindBlockProps> = ({
       <ServerSentence text={value.note} />
       <ServerSentence text={value.limit_note} />
 
-      {!checks && !containers && (value.data === undefined || value.data === null) ? (
+      {!substantiveRead ? (
         <p className="text-xs text-muted-foreground">
           This read returned no rows for the window above. That is an answer, not a
           failure — widen the window or check the site this question is about.
         </p>
       ) : null}
 
-      <MetaStrip value={value} omit={PROMOTED} />
-      <LeftoverFields value={value} omit={PROMOTED} />
+      <MetaStrip value={value} omit={omitKeys} />
+      <LeftoverFields value={value} omit={omitKeys} />
     </div>
   );
 };

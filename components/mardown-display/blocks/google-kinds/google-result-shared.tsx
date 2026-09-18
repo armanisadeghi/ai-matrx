@@ -232,9 +232,28 @@ export interface WriteClaim {
   unreadableHoldKeys: string[];
 }
 
-const HOLD_KEYS = ["dry_run", "awaiting_approval"] as const;
+export const HOLD_KEYS = ["dry_run", "awaiting_approval"] as const;
 /** Every marker either Google tool sets to claim a write actually happened. */
-const COMPLETED_KEYS = ["appended", "written", "created", "imported", "sent"] as const;
+export const COMPLETED_KEYS = ["appended", "written", "created", "imported", "sent"] as const;
+
+/**
+ * 🚨 THE WRITE-CLAIM KEY FAMILY — ONE SOURCE, READ BY {@link readWriteClaim}
+ * ITSELF AND BY BOTH BLOCKS' `PROMOTED` LISTS (F-95).
+ *
+ * `readWriteClaim` CONSUMES these keys (plus every dynamically-named `would_*`
+ * key, which cannot be enumerated statically — see `previewKeysOf`) to produce
+ * the summarized claim `NothingWasWritten` renders. A block that also prints
+ * the SAME raw key through `MetaStrip`/`LeftoverFields` tells the reader the
+ * same fact twice, once summarized and once as an unlabeled leftover — the
+ * exact "shown twice reads as two different facts" case the omit list exists
+ * to prevent. `approval` is included because `NothingWasWritten` reads it
+ * directly (`readBlock(value.approval)`) for the same reason.
+ *
+ * A block must ALSO omit whatever `would_*` keys actually arrived
+ * (`claim.previewKeys`, from the `WriteClaim` this same call returns) since
+ * those names are open-ended and cannot live in a static array.
+ */
+export const WRITE_CLAIM_KEYS = [...HOLD_KEYS, ...COMPLETED_KEYS, "approval"] as const;
 
 /** `would_append` → `would append`; `dry_run` → `dry run`. */
 function saidAs(key: string): string {
