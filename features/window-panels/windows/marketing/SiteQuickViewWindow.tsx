@@ -81,6 +81,10 @@ export default function SiteQuickViewWindow({
       // The row's own name once it is known — the panel identity above is what
       // persistence and the tray key on, so the title is free to sharpen.
       title={site.data?.name ?? siteLabel?.trim() ?? "Site"}
+      // V-23 / R35 — the site id IS the address. Without this the URL would
+      // carry `site_quick_view:siteQuickViewWindow` and the link would reopen
+      // an empty frame instead of this site.
+      urlSyncId={siteId}
       onClose={onClose}
       // The peek's own geometry from the first paint: a panel that resized
       // itself when the read landed would move under the person's cursor and
