@@ -359,9 +359,10 @@ or an explicit user choice persists until scope changes; it is not a per-run
 prompt. A binding is transport metadata, never approval for a data handoff. Do
 not claim runtime enforcement from this record alone: the
 current header sends full scope and the mapper can deliver unmapped fields, so
-prove the effective request and persisted variables. Native subject agents and
-permanent residents, including window panels, normally use `none` and require
-isolation proof.
+prove the effective request and persisted variables. Native subject agents use
+only engineered inputs and require isolation proof. Permanent residents,
+including window panels, have no automatic inheritance and use their deliberate
+`none`, `named_inputs`, or `approved_surface_context` contract.
 
 Verify like the owner does:
 

@@ -58,8 +58,8 @@ changes; it does not require a new prompt for every run. Placement or a saved
 binding does not approve a mode or any value. Record the agent/job,
 surface, purpose, mode, allowed value names, approval provenance, and evidence
 before treating a helper context handoff as complete. This documentation sets
-the required contract and evidence; it does not claim runtime enforcement
-exists until a run proves it or a unified tracker exists.
+the required contract and evidence; it claims neither runtime enforcement nor a
+unified tracker implementation.
 
 - A native subject launch receives only its explicit engineered inputs. It never
   receives ambient or ad-hoc surface context; helper approval cannot create an
@@ -154,7 +154,7 @@ The existing menu row is the door. A link from a working surface to
 
 | Situation | Verdict |
 | --- | --- |
-| Any surface, including Chat or Agent Builder, has an existing outside helper | It may bind under its recorded approved integration contract; binding availability and data handoff are separate. |
+| Any surface, including Chat or Agent Builder, has an existing outside helper | It may bind there; its data delivery follows its recorded approved integration contract. |
 | The launch is the page's native subject agent | Give it only its engineered inputs; never an ambient or ad-hoc page snapshot. |
 | The launch is a permanent resident helper | Use `none`, named inputs, or approved surface context only under its deliberate documented contract. |
 | An existing fixed job runs on a surface | Register it in the top menu only; this is separate from context approval. |
