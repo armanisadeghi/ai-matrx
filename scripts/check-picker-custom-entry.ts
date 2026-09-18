@@ -131,12 +131,62 @@ const P11_NOTE = [
   /your own dimension|platform-governed|shared dimension|curated centrally|lockedNote/i,
 ];
 const P11_ALTERNATIVE = [
-  /lockedAction/,
+  /lockedAction\s*[:=]/,
   /local override|localOverride|override path/i,
   // A live in-place escape wired to a HANDLER, not prose: the keyword
   // workbench's class cell hands over `onSelect={onMakeYourOwn}`.
   /on(?:Select|Click)=\{[^}]*\b\w*(?:makeYourOwn|MakeYourOwn|createOwn|CreateOwn|override|Override)\w*/,
 ];
+
+/**
+ * A COMMENT IS NOT AN AFFORDANCE. Every pattern above is a text match, so
+ * until 2026-09-18 a file whose only answer was
+ * `// TODO: one day wire a lockedAction here` passed (PNI-000 re-verify 1).
+ * Source is read with its comments removed before any affordance test, so only
+ * code can satisfy one. Quotes and template literals are respected, or every
+ * `https://…` would read as a line comment.
+ */
+function stripComments(source: string): string {
+  let out = "";
+  let i = 0;
+  let quote: string | null = null;
+  while (i < source.length) {
+    const ch = source[i];
+    const next = source[i + 1];
+    if (quote) {
+      if (ch === "\\") {
+        out += "  ";
+        i += 2;
+        continue;
+      }
+      if (ch === quote) quote = null;
+      out += ch;
+      i += 1;
+      continue;
+    }
+    if (ch === '"' || ch === "'" || ch === "`") {
+      quote = ch;
+      out += ch;
+      i += 1;
+      continue;
+    }
+    if (ch === "/" && next === "/") {
+      while (i < source.length && source[i] !== "\n") i += 1;
+      continue;
+    }
+    if (ch === "/" && next === "*") {
+      i += 2;
+      while (i < source.length && !(source[i] === "*" && source[i + 1] === "/"))
+        i += 1;
+      i += 2;
+      continue;
+    }
+    out += ch;
+    i += 1;
+  }
+  return out;
+}
+
 /** A `+` that only opens a page somewhere else — the pattern this law forbids. */
 const DOOR_ONLY = /<Link\b[^>]*\btarget=["']_blank["'][\s\S]{0,400}?<Plus\b/;
 
@@ -156,12 +206,14 @@ interface Finding {
   items: number;
 }
 
-function hasAddAffordance(source: string): boolean {
+function hasAddAffordance(raw: string): boolean {
+  const source = stripComments(raw);
   const writes = WRITE_PATH.some((re) => re.test(source));
   if (writes) return true;
-  // P11 counts only as an explanation PLUS a live alternative — never alone.
+  // P11 counts only as an explanation PLUS a live alternative — never alone,
+  // and the alternative must be code: a prop, a key or a handler.
   const p11 =
-    P11_NOTE.some((re) => re.test(source)) &&
+    P11_NOTE.some((re) => re.test(raw)) &&
     P11_ALTERNATIVE.some((re) => re.test(source));
   if (p11) return true;
   // A caption with no write path in the file is a door or a lie — never an add.
