@@ -45,6 +45,7 @@
 import {
     ContractError,
     createReaders,
+    mapListRows,
     recovered,
     type Parsed,
 } from "@/lib/contract/narrow";
@@ -254,15 +255,25 @@ export function parseLibraryRow(payload: unknown, field = "this Library"): Libra
     };
 }
 
-/** `GET /media/libraries` — the list behind every lane tab. */
+/**
+ * `GET /media/libraries` — the list behind every lane tab.
+ *
+ * 🚨 PER-ROW, NEVER ALL-OR-NOTHING. One Library whose shape this build cannot
+ * read must not blank the lane for every OTHER Library that reads fine — see
+ * `mapListRows` in `lib/contract/narrow.ts`. The bad row is dropped and its
+ * sentence collected in `row_problems` for the shell to show; the Libraries
+ * that parsed are the ones a person needs to keep working.
+ */
 export function parseLibraryListResponse(payload: unknown): LibraryListResponse {
     const root = obj(payload, "the list of Libraries");
-    const libraries = arr(root.libraries ?? [], "libraries").map((entry, index) =>
-        parseLibraryRow(entry, `libraries[${index}]`),
+    const { rows: libraries, problems: row_problems } = mapListRows(
+        arr(root.libraries ?? [], "libraries"),
+        (entry, index) => parseLibraryRow(entry, `libraries[${index}]`),
     );
     const lanes = optObj(root.lane_counts, "lane_counts");
     return {
         libraries,
+        row_problems,
         total: number(root.total, "total", libraries.length),
         limit: number(root.limit, "limit", libraries.length),
         offset: number(root.offset, "offset"),
@@ -508,15 +519,23 @@ export function parseVideoRow(payload: unknown, field: string): VideoRow {
     };
 }
 
-/** `GET /media/libraries/{id}/videos` — the mount read behind the table. */
+/**
+ * `GET /media/libraries/{id}/videos` — the mount read behind the table.
+ *
+ * 🚨 PER-ROW, NEVER ALL-OR-NOTHING — same rule as `parseLibraryListResponse`
+ * above: one unreadable Source is dropped and named in `row_problems`, never
+ * allowed to take the whole page of Sources with it.
+ */
 export function parseVideoListResponse(payload: unknown): VideoListResponse {
     const root = obj(payload, "the Sources");
-    const videos = arr(root.videos ?? [], "videos").map((entry, index) =>
-        parseVideoRow(entry, `videos[${index}]`),
+    const { rows: videos, problems: row_problems } = mapListRows(
+        arr(root.videos ?? [], "videos"),
+        (entry, index) => parseVideoRow(entry, `videos[${index}]`),
     );
     const total = number(root.total, "total", videos.length);
     return {
         videos,
+        row_problems,
         total,
         limit: number(root.limit, "limit", videos.length),
         offset: number(root.offset, "offset"),
@@ -546,8 +565,15 @@ export function parseEstimateResult(payload: unknown, field = "the estimate"): E
     // only its absence is compatible.
     const quota = row.quota === undefined ? null : obj(row.quota, `${field}.quota`);
     return {
-        estimate_token: str(row.estimate_token, `${field}.estimate_token`),
-        expires_at: str(row.expires_at, `${field}.expires_at`),
+        // 🚨 NULLABLE (contract v0.5.5, §7.3) — see `types.ts`'s
+        // `EstimateResult.estimate_token` doc. A required `str()` here is what
+        // shipped as MediaContractError on every free Action's Job on
+        // 2026-09-18: the Job read back fine, its `estimate` object read back
+        // fine, and only this one field, correctly absent, took the entire
+        // Job down (and every sibling Job in the same list read — see
+        // `mapListRows` in `lib/contract/narrow.ts`).
+        estimate_token: optStr(row.estimate_token, `${field}.estimate_token`),
+        expires_at: optStr(row.expires_at, `${field}.expires_at`),
         action: str(row.action, `${field}.action`),
         selected_count: num(row.selected_count, `${field}.selected_count`),
         already_done: num(row.already_done, `${field}.already_done`),
@@ -701,14 +727,27 @@ export function parseJobDetailResponse(payload: unknown): JobDetailResponse {
  * the page kept job ids in `localStorage` instead, which meant a job whose id never
  * reached the browser — exactly what the `POST …/jobs` envelope defect caused — was
  * invisible forever even though its rows were sitting in the database.
+ *
+ * 🚨 PER-ROW, NEVER ALL-OR-NOTHING. Verified live 2026-09-18 (verify-4): a
+ * single Job in this list whose `estimate.estimate_token` had gone missing
+ * threw out of a plain `.map()`, and the exception took every OTHER Job on
+ * the Library down with it — the entire running-jobs panel went dark, hiding
+ * jobs that were reading correctly and making Cancel unreachable for all of
+ * them, on a door whose whole purpose is "find a job you cannot afford to
+ * lose". `mapListRows` (`lib/contract/narrow.ts`) keeps every Job that reads
+ * and names the ones that do not in `row_problems`, so a caller can show
+ * "N job(s) could not be read" beside the jobs it CAN show, instead of
+ * showing nothing.
  */
 export function parseJobListResponse(payload: unknown): JobListResponse {
     const root = obj(payload, "the jobs for this Library");
-    const jobs = arr(root.jobs ?? [], "jobs").map((entry, index) =>
-        parseJobRow(entry, `jobs[${index}]`),
+    const { rows: jobs, problems: row_problems } = mapListRows(
+        arr(root.jobs ?? [], "jobs"),
+        (entry, index) => parseJobRow(entry, `jobs[${index}]`),
     );
     return {
         jobs,
+        row_problems,
         total: number(root.total, "total", jobs.length),
         limit: number(root.limit, "limit", jobs.length),
         offset: number(root.offset, "offset", 0),
@@ -752,11 +791,22 @@ export function parseActionDeclaration(payload: unknown, field: string): ActionD
 }
 
 /** `GET /media/actions`. */
+/**
+ * 🚨 PER-ROW, NEVER ALL-OR-NOTHING — same rule as the list parsers above. One
+ * Action declaration this build cannot read must not take the whole action
+ * bar down; it is dropped (that Action's button simply does not appear,
+ * which is the safe side — a missing button, never a broken screen) while
+ * every Action that DOES read renders normally. `listActions` keeps its
+ * existing bare-array signature, so the dropped count is not surfaced yet;
+ * see the call site (`api.ts#listActions`) before adding a caller that needs it.
+ */
 export function parseActionList(payload: unknown): ActionDeclaration[] {
     const root = obj(payload, "the list of Actions");
-    return arr(root.actions ?? [], "actions").map((entry, index) =>
-        parseActionDeclaration(entry, `actions[${index}]`),
+    const { rows } = mapListRows(
+        arr(root.actions ?? [], "actions"),
+        (entry, index) => parseActionDeclaration(entry, `actions[${index}]`),
     );
+    return rows;
 }
 
 /* ───────────────────────────────────────────────── §9 settings ────────── */
