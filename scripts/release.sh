@@ -533,7 +533,7 @@ Fix the failures above (or re-run from aidream:
 # Two runners execute migrations for this platform, and this train runs the OTHER
 # one (apply_frontend_migrations resolves the applier out of the sibling aidream
 # checkout). Until 2026-09-16 they did not enforce the same rules: `-- chair-step:`
-# was an owner-awake step in one and a print statement in the other, a header naming
+# was a confirmed step in one and a print statement in the other, a header naming
 # production was allow-listed in one and waived in the other, and `--source campaign`
 # demanded its target in one and defaulted to PRODUCTION in the other. So before a
 # single migration is applied, the conformance corpus is run through BOTH runners and

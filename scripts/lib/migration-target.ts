@@ -1234,7 +1234,7 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
         `  first line if this file really is part of the rehearsal — or, if it is a chair`,
         `  step (an inverse, a GRANT, anything non-additive by construction), keep it`,
         `  header-less and give it \`-- chair-step: <why>\`, which rehearses HERE and runs on`,
-        `  production only at a terminal, from the SAME bytes.`,
+        `  production only when the command NAMES it (--confirm-chair-step), from the SAME bytes.`,
       ], "branch-needs-target-header");
     }
     if (named !== null && !named.includes("branch")) {
@@ -1299,7 +1299,7 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
         `       no release path scans that directory.`,
         `    2. \`-- target: branch,production\` + \`-- additive: yes\` + \`-- guard: <feature>/<key>\``,
         `       — the campaign contract, which proves the old path is untouched while OFF.`,
-        `    3. \`-- chair-step: <why it must be non-additive>\` — an owner-awake step. The`,
+        `    3. \`-- chair-step: <why it must be non-additive>\` — a NAMED step (--confirm-chair-step). The`,
         `       runner then prints that reason AND this file's entire body before executing`,
         `       a single byte of it.`,
         `  (An already-ledgered file is never judged here: applied SQL is frozen history.)`,
@@ -1339,7 +1339,7 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
   // 🚨 ATTACK-7 finding 2 — THE WAIVER IS GONE, AND THE TWO RUNNERS NOW AGREE.
   // This used to return here: on a header that NAMED production, `-- chair-step:`
   // stood in for `-- additive: yes`, for `-- guard:` AND for the whole allow-list,
-  // with the TTY prompt as the only surviving control. `db/migration_target.py` never
+  // with the confirmation as the only surviving control. `db/migration_target.py` never
   // did that — it set its chair-step verdict only on the header-LESS path — so ONE
   // FILE, `migrations/inverse/custom_entity_types_detail_variant_down.sql`, was
   // ACCEPTED by `pnpm db:apply --target production` and REFUSED by
@@ -1360,7 +1360,7 @@ export function assertHeaderAgreesWithFlag(input: AgreementInput): AgreementVerd
       `  runners, with no exception. Carrying both means one of the two lines does nothing,`,
       `  and which one it is used to depend on which runner you typed.`,
       `  Remedy: DELETE the \`-- target:\` line. A header-less \`-- chair-step:\` file rehearses`,
-      `  on the branch with --target branch and reaches production only at a terminal, from`,
+      `  on the branch with --target branch and reaches production only when NAMED, from`,
       `  the same bytes — or, if the file really is additive and guarded, delete the`,
       `  \`-- chair-step:\` line instead and let the allow-list judge it.`,
     ], "chair-step-names-production");

@@ -24,8 +24,9 @@ ATTACK-5 finding 1's "the abort checklist cannot undo it", literally.
   `-- chair-step:` stands in for `-- additive: yes` and `-- guard:` on a header-less file
   and excuses its deny-list scan, and in exchange the runner prints the reason **and the
   file's entire body** before a single byte executes — and at `--target production`, in
-  BOTH runners, refuses a non-TTY stdin, demands the filename typed back, and writes the
-  reason into `public._schema_migrations.chair_step`.
+  BOTH runners, runs ONLY when the command names the file (`--confirm-chair-step <file.sql>`),
+  and writes the reason into `public._schema_migrations.chair_step`. No terminal, no human: the
+  senior session that owns the work runs it; a smaller lane hands it up; never Arman.
 - **The SAME bytes rehearse on the branch.** A header-less `-- chair-step:` file is
   accepted at `--target branch` precisely so rule 27's "the inverse was RUN on the branch"
   has a route that does not change a byte between the rehearsal and production.
@@ -34,7 +35,7 @@ ATTACK-5 finding 1's "the abort checklist cannot undo it", literally.
 
 ```
 pnpm db:apply migrations/inverse/<file>.sql --target branch
-pnpm db:apply migrations/inverse/<file>.sql --target production
+pnpm db:apply migrations/inverse/<file>.sql --target production --confirm-chair-step <file>.sql
 ```
 
 Files here are ledgered by **basename**.

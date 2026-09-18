@@ -496,7 +496,7 @@ async function ledgerRow(
  * with no prior rehearsal ledger row and no matching rehearsal checksum.
  *
  * Nothing about the STATEMENTS moved. The additive allow-list, the guard-read rule,
- * the terminal-confirmed (chair-step) class and the `-- based-on:` hash check —
+ * the named-by-the-command (chair-step) class and the `-- based-on:` hash check —
  * which is recomputed against THE DATABASE BEING APPLIED TO, immediately before the
  * file executes — all still judge every campaign file exactly as before.
  *
@@ -583,7 +583,7 @@ async function assertCampaignProductionIsAuthorised(
 
 function usage(): void {
   console.log(
-    `${C.bold}pnpm db:apply <migrations/file.sql> [--target branch|production] [--dry-run] [--reapply] [--statement-timeout=10min]${C.reset}\n` +
+    `${C.bold}pnpm db:apply <migrations/file.sql> [--target branch|production] [--dry-run] [--reapply] [--statement-timeout=10min] [--confirm-chair-step <file.sql>]${C.reset}\n` +
       `  pnpm db:apply migrations/${CAMPAIGN_DIRNAME}/<file>.sql --source ${CAMPAIGN_SOURCE} --target branch|production --lane <lane>\n` +
       `                                     the ONLY route into migrations/${CAMPAIGN_DIRNAME}/, which no\n` +
       `                                     release path, sweep, CI job or scheduled job scans\n` +
@@ -609,6 +609,9 @@ interface ApplyOpts {
   lane: string | null;
   /** `--branch-ref=<path>` / MATRX_BRANCH_REF — the override a throwaway worktree needs. */
   branchRefPath?: string;
+  /** `--confirm-chair-step <file>` — the basenames this command NAMED. A chair step at
+   *  `--target production` runs only when its own basename is here (scripts/lib/chair-step.ts). */
+  confirmedChairSteps?: readonly string[];
 }
 
 /** Apply ONE file. The whole of db:apply lives here so --self-test exercises
@@ -859,7 +862,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   // Both happen BEFORE any production credential is loaded: a refusal here never
   // opened a connection.
   if (chairStep && target === "production" && !dryRun) {
-    const refused = await confirmChairStep(filename, chairStep.why);
+    const refused = await confirmChairStep(filename, chairStep.why, opts.confirmedChairSteps ?? []);
     if (refused) {
       console.error(`${TAG.fail}${refused}`);
       return 1;
@@ -1066,7 +1069,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
           );
           for (const line of sql.split("\n")) console.log(`       ${C.dim}${line}${C.reset}`);
           if (!dryRun) {
-            const refused = await confirmChairStep(filename, late.chairStep.why);
+            const refused = await confirmChairStep(filename, late.chairStep.why, opts.confirmedChairSteps ?? []);
             if (refused) {
               console.error(`${TAG.fail}${refused}`);
               await client.query("rollback").catch(() => {});
@@ -1142,7 +1145,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       `select set_config('matrx.db_apply_t0', clock_timestamp()::text, true);`;
     // A CONFIRMED CHAIR STEP IS LOGGED TO THE LEDGER (ATTACK-6 finding 4). The
     // column is added idempotently on the one path that writes it, so the record of
-    // who waived the additive rule and why outlives the terminal it was typed into.
+    // who waived the additive rule and why outlives the command that named it.
     // Nullable, no default, no live reader — every other insert names its columns.
     const chairStepLog = chairStepConfirmed
       ? `alter table public._schema_migrations add column if not exists chair_step text;\n`
@@ -1156,7 +1159,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       `        greatest(1, (extract(epoch from clock_timestamp()\n` +
       `                     - current_setting('matrx.db_apply_t0')::timestamptz) * 1000)::int)` +
       (chairStepConfirmed
-        ? `,\n        ${lit(`${chairStepConfirmed} — confirmed at a terminal by ${process.env.USER ?? "unknown"}`)}`
+        ? `,\n        ${lit(`${chairStepConfirmed} — named with --confirm-chair-step by ${process.env.USER ?? "unknown"}`)}`
         : ``) +
       `)\n` +
       `on conflict (source, filename) do update set\n` +
@@ -2009,6 +2012,17 @@ async function main(): Promise<number> {
     const i = argv.indexOf(flag);
     if (i >= 0 && argv[i + 1] && !argv[i + 1]!.startsWith("--")) valueIdxs.add(i + 1);
   }
+  // `--confirm-chair-step <file.sql>` (repeatable, or `=` form): the basenames this command
+  // NAMES. A chair step runs only when its own basename is among them — scripts/lib/chair-step.ts.
+  const confirmedChairSteps: string[] = [];
+  argv.forEach((tok, i) => {
+    if (tok === "--confirm-chair-step" && argv[i + 1] && !argv[i + 1]!.startsWith("--")) {
+      valueIdxs.add(i + 1);
+      confirmedChairSteps.push(basename(argv[i + 1]!.trim()));
+    } else if (tok.startsWith("--confirm-chair-step=")) {
+      confirmedChairSteps.push(basename(tok.slice("--confirm-chair-step=".length).trim()));
+    }
+  });
   const positional = argv.filter((a, i) => !a.startsWith("--") && !valueIdxs.has(i));
 
   if (positional.length !== 1) {
@@ -2031,6 +2045,7 @@ async function main(): Promise<number> {
     campaignSource,
     lane,
     branchRefPath: branchRefOverride(argv),
+    confirmedChairSteps,
   });
 }
 

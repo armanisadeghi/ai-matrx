@@ -7,7 +7,7 @@
  * `uv run python db/apply_migrations.py` in aidream — and on 2026-09-16 ATTACK-7 proved
  * they did not enforce the same rules:
  *
- *   · `-- chair-step:` was an owner-awake step in the TypeScript runner and a `print`
+ *   · `-- chair-step:` was a confirmed step in the TypeScript runner and a `print`
  *     statement in the Python one, which is the runner BOTH release trains execute;
  *   · a header that NAMED production was judged by an allow-list here and waived by one
  *     comment line, so `migrations/inverse/custom_entity_types_detail_variant_down.sql`

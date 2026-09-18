@@ -1,63 +1,50 @@
 /**
- * THE CHAIR-STEP CONFIRMATION — extracted from `scripts/apply-migration.ts` so it can be
- * DRIVEN, not just read (ATTACK-8 §8.1).
+ * THE CHAIR-STEP CONFIRMATION — a chair step runs only when the command NAMES it.
  *
- * ATTACK-7's most dangerous finding was that `-- chair-step:` was an owner-awake step in
- * one runner and a `print` in the other — the one both release trains execute. The fix is
- * correct in both languages and had NO test in either: `grep isatty|isTTY` over
- * `db/tests/` and `scripts/__tests__/` returned nothing, and `--judge-only`, which is what
- * the conformance corpus drives, stops at the verdict and never reaches this function. The
- * instance was fixed; the class was not, and the next edit to either function would have
- * reddened nothing.
+ * A `-- chair-step:` file is non-additive (DROP / REVOKE / DELETE …). It stands in for
+ * `-- additive: yes` and `-- guard:` and excuses every non-additive reason, so the one thing it
+ * may never be is run BY ACCIDENT — by a sweep, a cron, or a lane that did not mean to.
  *
- * `scripts/__tests__/chair-step-confirmation.test.ts` now drives this through a REAL pty
- * (`script(1)`), and `aidream/db/tests/test_chair_step_confirmation.py` drives its Python
- * twin through `pty.openpty()`. It lives in its own module because
- * `scripts/apply-migration.ts` calls `main()` at import time, so nothing can import a
- * function out of it without running the CLI.
+ * 🚨 OWNER RULING (Arman, 2026-09-18): *"The block is not so that my top agent doesn't do it...
+ * the block is to ensure that the little agents (sonnet 5 or gpt luna) don't do it and they go to
+ * the bigger models... Opus, Fable / Sol, Astra -- never going to me! I don't do terminals."*
  *
- * Byte-for-byte the same contract as `_confirm_chair_step` in
- * `aidream/db/apply_migrations.py`.
+ * Until that day this function refused a non-TTY stdin and made a HUMAN type the filename at a
+ * terminal (ATTACK-6 finding 4, 2026-09-15). Agents have no terminal, so every drop on the
+ * platform was handed to Arman as a command to run — and an unapplied chair step left in the swept
+ * directory halted every unattended release. The accident it guarded against is real; the remedy
+ * was aimed at the wrong person. The confirmation is now an ARGUMENT, not a keyboard:
+ *
+ *   pnpm db:apply migrations/inverse/<file>.sql --confirm-chair-step <file>.sql
+ *
+ * A sweep never passes that flag, so a sweep can never run one. Nothing here is interactive.
+ *
+ * It lives in its own module because `scripts/apply-migration.ts` calls `main()` at import time,
+ * so nothing can import a function out of it without running the CLI. Same contract,
+ * byte-for-byte, as `_confirm_chair_step` in `aidream/db/apply_migrations.py`.
  */
-import { createInterface } from "node:readline";
 
-const C = process.stdout.isTTY
-  ? { bold: "\u001b[1m", reset: "\u001b[0m" }
-  : { bold: "", reset: "" };
+/** The refusal an unnamed chair step gets. Exported so the test asserts the words, not a regex. */
+export function chairStepRefusal(filename: string, why: string): string {
+  return (
+    `\`-- chair-step: ${why}\` was reached without being NAMED.\n` +
+    `  A chair step is non-additive (DROP / REVOKE / DELETE …), so no sweep may run it by accident:\n` +
+    `  it runs only when the command names it —  --confirm-chair-step ${filename}\n` +
+    `  WHO RUNS IT: the senior session that owns the work (Opus, Fable, Sol, Astra). A smaller lane\n` +
+    `  (Sonnet, Luna) hands it UP to the session that dispatched it. It is NEVER handed to Arman — he\n` +
+    `  does not run commands. An unapplied chair step belongs in a directory no release sweeps\n` +
+    `  (matrx-frontend: migrations/inverse/), not in the swept migrations directory.`
+  );
+}
 
 /**
- * `-- chair-step:` IS A CHAIR STEP (ATTACK-6 finding 4).
- *
- * 🚨 It stands in for `-- additive: yes` AND `-- guard:` and excuses every non-additive
- * reason, and what it did in exchange was `console.log`. Rule 9 ("nothing irreversible
- * on production, in any lane, ever") and §4.9 ("refused by both, in every lane, with no
- * exception") were therefore false of one comment line — on a path two unattended
- * 30-minute crons run. "With the owner awake" now means what it says: a non-TTY stdin
- * is refused outright, and a TTY must TYPE the filename back.
+ * Returns the refusal, or `null` when `filename` is among the names the command passed to
+ * `--confirm-chair-step`. Exact basename match. Never reads stdin.
  */
-export async function confirmChairStep(filename: string, why: string): Promise<string | null> {
-  if (!process.stdin.isTTY) {
-    return (
-      `\`-- chair-step: ${why}\` reached --target production from a process with NO TERMINAL.\n` +
-      `  A chair step is an owner-awake step: it stands in for \`-- additive: yes\` and\n` +
-      `  \`-- guard:\` and excuses every non-additive reason, so the one thing it may never be\n` +
-      `  is unattended. Both release trains run exactly like this, on a 30-minute cron.\n` +
-      `  Run it by hand, from a terminal, and type the filename when it asks.`
-    );
-  }
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  try {
-    const answer = await new Promise<string>((res) =>
-      rl.question(
-        `${C.bold}Type the filename to run this chair step against PRODUCTION${C.reset} ` +
-          `(${filename}), or anything else to abort: `,
-        (a) => res(a.trim()),
-      ),
-    );
-    if (answer !== filename)
-      return `chair step NOT confirmed — you typed ${JSON.stringify(answer)}, not ${filename}. Nothing ran.`;
-    return null;
-  } finally {
-    rl.close();
-  }
+export async function confirmChairStep(
+  filename: string,
+  why: string,
+  confirmedNames: readonly string[],
+): Promise<string | null> {
+  return confirmedNames.includes(filename) ? null : chairStepRefusal(filename, why);
 }
