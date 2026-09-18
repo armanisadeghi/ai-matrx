@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils";
 import { useMandate } from "@/features/mandates/useMandate";
 import { useLiveAgentRun } from "@/features/agents/hooks/useLiveAgentRun";
 import { useOpenLiveRunWindow } from "@/features/overlays/openers/liveRunWindow";
+import { resolveEntityDoors } from "@/components/official/entity-ref/doors";
 import { CRM_SAVE_CONTACT_AGENT_MANDATE } from "../constants";
 import {
   parseContactSelection,
@@ -158,7 +159,7 @@ export function SaveContactFromSelectionDialog({
         toast.info(result.summary || "Nothing there to save as a contact.");
         return;
       }
-      const href = `/crm/${result.party_id}`;
+      const href = resolveEntityDoors("party", result.party_id).href ?? "";
       toast.success(
         result.summary ||
           (result.created

@@ -25,7 +25,6 @@ import {
 } from "@/lib/redux/selectors/userSelectors";
 import { GOOGLE_CONTACTS_IMPORT_SCOPES } from "@/lib/googleScopes";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
-import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
 import { connectGoogle } from "@/features/marketing/google/service";
 import type { PartyKind } from "../../types";
 import type { ParsedImportData } from "../../import/types";
@@ -38,6 +37,7 @@ import {
   listImportConnectors,
   type ImportConnector,
 } from "../../import/connectors/service";
+import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
 
 interface ConnectorSourcesProps {
   orgId: string | null;
@@ -256,13 +256,15 @@ function GoogleAuthorizeContactsButtonBody({
   label: string;
   onAuthorized: () => Promise<void> | void;
 }) {
-  const google = useGoogleAPI();
+  // 🚨 ONE Google authorization window per PERSON — never a per-component
+  // lock, never the raw provider primitive (V-23 NEW-3, lane F-103).
+  const googleAuth = useGoogleAuthorizationWindow();
   const [busy, setBusy] = useState(false);
 
   const authorize = async () => {
     setBusy(true);
     try {
-      const code = await google.requestAuthorizationCode([
+      const code = await googleAuth.openAuthorizationWindow([
         ...GOOGLE_CONTACTS_IMPORT_SCOPES,
       ]);
       await connectGoogle(code, { type: "user" }, "contacts_import");

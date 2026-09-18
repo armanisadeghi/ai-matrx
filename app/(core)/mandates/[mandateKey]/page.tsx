@@ -16,12 +16,14 @@ export default async function MandateWorkspaceRoute({
 }) {
   const { isAuthenticated } = await getServerAuth();
   if (!isAuthenticated) redirect("/agents");
+  // The App Router already decodes dynamic segment params — decoding again
+  // double-decodes a literal `%` in the mandate key/id.
   const { mandateKey } = await params;
 
   return (
     <>
       <MandateWorkspace
-        mandateKeyOrId={decodeURIComponent(mandateKey)}
+        mandateKeyOrId={mandateKey}
         host="route"
       />
     </>

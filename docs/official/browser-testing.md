@@ -22,6 +22,27 @@ Every rule here was verified live on 2026-08-09 against production and localhost
 - The install gate's forcing proof runs real pnpm in a throwaway checkout: `pnpm check:install-gate:self-test` (it also proves the retired `preinstall` wiring failing).
 - `pnpm setup:agent-harness` installs Claude/Codex guards. Codex requires one trust review for a new or changed hook via `/hooks`; this trusts the guard, not each server launch.
 
+### From a private worktree
+
+Verifying a diff you did not check out into `/home/user/ai-matrx` itself (a `git worktree add` in `/tmp` or your scratchpad) needs three things beyond the ordinary flow above — all three cost V-22 an hour (NEW-15) before they were fixed into the launcher and documented here:
+
+1. **`git worktree add` never creates `node_modules` at all** — it is gitignored, so there is nothing to check out; a fresh worktree's `node_modules` is ABSENT, not a symlink (a symlink only shows up if something put one there by hand). Running `pnpm install` in the worktree to fix that is worse than the missing-deps error: every `@ai-matrx/*` package and `next`/`react`/`typescript` is declared `latest`, so an install there resolves a DIFFERENT dependency tree than the one under test. `pnpm preview:start` now detects both the absent case and the (rarer) symlink-to-the-primary-checkout case — the symlink one Turbopack also refuses to serve directly, with "Symlink `[project]/node_modules` is invalid" — and in either case replaces it with a same-device hard-link copy (`cp -al`, seconds, no extra disk) of the PRIMARY checkout's `node_modules` before starting Next. A worktree that already has a real `node_modules` directory (yours, or one this same step already fixed) is left untouched. It announces what it found and what it did in every case; you do not need to do this by hand.
+2. **`pnpm dev-login`'s OTP fallback needs `HTTPS_PROXY` to actually route through the proxy.** On a sandboxed host that only reaches the internet through `HTTPS_PROXY`, Node's own `fetch` (undici) ignores that variable unless `NODE_USE_ENV_PROXY=1` is set — without it the dev server's `/api/dev-login` OTP fallback fails with `OTP fallback failed: ... "Host not i[n allowlist]"`. `pnpm preview:start` now sets `NODE_USE_ENV_PROXY=1` on the Next process itself whenever `HTTPS_PROXY`/`https_proxy` is present in your shell, and says so in its start banner — nothing to do by hand.
+3. **A headless browser needs the egress proxy's CA trusted, never a blanket TLS disable.** Derive the known interception CAs' SPKI hashes from the sandbox's CA bundle and pass them to Chromium's allowlist flag — never `--ignore-certificate-errors` or an equivalent blanket disable:
+   ```
+   openssl crl2pkcs7 -nocrl -certfile /root/.ccr/ca-bundle.crt \
+     | openssl pkcs7 -print_certs \
+     | awk 'BEGIN{c=""} /BEGIN CERTIFICATE/{c=""} {c=c $0 "\n"} /END CERTIFICATE/{print c > ("/tmp/ca-" NR ".pem")}'
+   for f in /tmp/ca-*.pem; do
+     openssl x509 -in "$f" -pubkey -noout \
+       | openssl pkey -pubin -outform der \
+       | openssl dgst -sha256 -binary | openssl base64
+   done
+   ```
+   Join the resulting hashes with `,` and launch Chromium with `--ignore-certificate-errors-spki-list=<hash1>,<hash2>,...` (`playwright install chromium` first if it is not already downloaded).
+
+Then open **only the printed `http://<your-session>.localhost:3001` hostname** (see the cookie-jar rule above) — never bare `localhost`, and never Arman's own browser.
+
 ## THE ONE BROWSER LAW
 
 **Use your own isolated browser for ordinary browsing and every application test**, preferably the provider's separate in-app Browser. Use the available tool's documented API; Computer Use is allowed when it controls the isolated browser. A missing older skill or API is not a reason to stop when another agent-owned browser harness is available.

@@ -8,7 +8,10 @@ import {
   type GoogleConnectionPurpose,
 } from "@/features/marketing/google/service";
 import { BackendApiError } from "@/lib/api/errors";
-import { GOOGLE_CONNECTION_SCOPES } from "@/features/marketing/google/types";
+import {
+  GOOGLE_CONNECTION_SCOPES,
+  GOOGLE_CONNECTION_RESOURCE_TYPES,
+} from "@/features/marketing/google/types";
 import {
   GOOGLE_ADS_REPORTING_SCOPES,
   GOOGLE_ANALYTICS_SCOPES,
@@ -70,6 +73,7 @@ describe("Google OAuth connection resources", () => {
       metadata: {},
       credential_present: true,
       credential_stable: true,
+      capability_health: null,
       health: "connected" as const,
     };
 
@@ -100,6 +104,7 @@ describe("Google OAuth connection resources", () => {
       metadata: {},
       credential_present: true,
       credential_stable: true,
+      capability_health: null,
       health: "connected" as const,
     };
 
@@ -139,6 +144,7 @@ describe("Google OAuth connection resources", () => {
       metadata: {},
       credential_present: true,
       credential_stable: true,
+      capability_health: null,
       health: "connected" as const,
     };
     const foreign = {
@@ -197,6 +203,7 @@ describe("Google OAuth connection resources", () => {
       metadata: {},
       credential_present: true,
       credential_stable: true,
+      capability_health: null,
       health: "connected" as const,
     };
 
@@ -262,6 +269,23 @@ describe("Google OAuth connection resources", () => {
       metadata: { uploads_playlist_id: "UU-channel-1" },
     });
   });
+
+  // The list is DERIVED, not hand-typed: a `google_presentation` row — a type
+  // the server has shipped, registers, and had already made a live `slides.read`
+  // call against — used to throw HERE, and this reader maps EVERY resource row,
+  // so one connected deck emptied every Google surface in the app (V13-3).
+  it.each(GOOGLE_CONNECTION_RESOURCE_TYPES)(
+    "accepts a %s row the server can register",
+    (resourceType) => {
+      expect(
+        connectionResource({
+          ...baseResource,
+          resource_type: resourceType,
+          resource_ref: "resource-1",
+        }),
+      ).toMatchObject({ resource_type: resourceType });
+    },
+  );
 
   it.each(["google_document", "google_spreadsheet"] as const)(
     "accepts Picker-selected %s resources",

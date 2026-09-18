@@ -98,8 +98,32 @@ The rule, and why it is not a style preference:
   When the panel should be a canonical surface instead, set `window={{ enabled: false }}` and
   open the canonical window from a `rowActions` button.
 
+## The Detail primitive — ONE core, three presentations (window · docked · page)
+
+**Arman, 2026-09-17:** *"a core component that then shows up as a Page, a flexible drawer, and a
+window panel. The default is the window."* The primitive is `lib/detail` (package-shaped; read
+[`lib/detail/README.md`](../../lib/detail/README.md) and [`lib/detail/FEATURE.md`](../../lib/detail/FEATURE.md)).
+A record type registers ONE `DetailRecordType`; the wrapper yields the `detailWindow` overlay
+(a `WindowPanel`, the default), the `detailDocked` overlay (`SidePanelSurface`, a resizable
+side panel) and the `/detail/[type]/[id]` route. Presentation is the person's
+`ui.detail.default_presentation` knob; `useOpenDetail()` from `lib/detail` is the one opener.
+
+- **Do not build another `*DetailPanel.tsx` / `*DetailWindow.tsx`.** Register the type (today:
+  an entry in `features/item-presentation/registry.tsx`, THE type map) and every presentation
+  exists. The seven bespoke panels still in the tree are the follow-up census in the README.
+- **Host binding lives here:** `detail/DetailHost.tsx` (boot-light ports, mounted in
+  `app/Providers.tsx`), `detail/shells/` (window / docked / page chrome), `detail/detailTypeBinding.ts`,
+  `windows/detail/DetailWindow.tsx` + `DetailDocked.tsx` (overlay entries), openers
+  `features/overlays/openers/detailWindow.tsx` / `detailDocked.tsx`, hydrator `detail` in
+  `url-sync/initUrlHydration.ts` (`?panels=detail:<type>.<id>:as-window|docked`).
+- **`docked` is not `drawer`.** `drawer` here is the vaul bottom sheet (`mobilePresentation`).
+
 ## Change Log
 
+- 2026-09-18 — **F-100: the three organization states, not a bare nullable id.** `windows/marketing/TopicalMapWindow.tsx`'s `MapPicker` read `selectOrganizationId` directly and rendered its "No organization is active" refusal whenever the id was null — which is also true for several seconds on every cold load while boot is still resolving the selection, so a person who belongs to an organization saw a false refusal (R36 / the F-89 class; the module arrived from main after the guard existed, so `check-org-three-states` caught it on first run). Fixed to read `useOrganizationRequired()`'s `organizationState` and render `OrganizationContextNotice` — `"resolving"` shows the shared checking beat, `"required"` shows the same wording as the honest terminal refusal, `"ready"` runs the maps query. Not added to `scripts/org-three-states-census.json` (that census only shrinks) or to the allowlist.
+- 2026-09-18 — **F-88: ONE PANEL FOR THE WINDOW'S WHOLE LIFE — the body swaps, the panel never does.** `windows/marketing/SiteQuickViewWindow.tsx` (F-87) rendered an `overlayId="siteQuickViewWindow"` panel while its site read was in flight and then returned the canonical `SitePeekWindow`, which renders its OWN standalone panel with no `overlayId`. So at the instant the read resolved the overlay-bound panel unmounted: the overlay stopped owning the window on screen — `onCollectData` (workspace persistence), the tray row, restore and close-from-the-`OverlayController` all pointed at a panel that no longer existed — and the chrome blinked out while the lazy peek module loaded. The fix is the SLOTS contract read literally, and it is the shape a panel that wraps a canonical component must take: the canonical surface's CONTENT becomes a component (`features/marketing/components/sites/SitePeekBody.tsx`, no `WindowPanel` import), and each panel host mounts it as `children` — the inline host for callers that already hold the row, the overlay-bound host for an id-only caller, whose `id`, `overlayId` and `onCollectData` are constant from the first paint while `children` swaps loading → error → content. Same shape as the Detail primitive (`detail/shells/DetailWindowShell.tsx` owns one panel; the presentation fills it, loading state included). Never pass a panel identity down into a canonical window as props — hosts own chrome, bodies own content. Guard: `__tests__/siteQuickViewWindowOnePanel.test.tsx` asserts the SAME panel DOM node survives loading → loaded, still bound to the same overlay and still answering `onCollectData` (red on 306edaf2: the node was gone). **And the same pass gave `siteQuickViewWindow` its `registry/windowRegistryMetadata.ts` entry** — `preservationEnabled` is false without one, so its `onCollectData` was never called and "Save window state" wrote nothing: a prop that looked like persistence and was inert (`defaultData` + `preservation.dataKeys: ["siteId", "siteLabel"]`, `requiredDataKeys: ["siteId"]` so a restored Quick view always has its subject, `mobilePresentation: "drawer"`). No screen was seen.
+
+- 2026-09-17 — **The Detail primitive (`lib/detail`) replaces `itemDetailWindow`.** `windows/item-detail/ItemDetailWindow.tsx` and its opener are deleted; the same body (loader, fields, surface scope, right-click menu) now comes from `features/item-presentation/detail.tsx` + `ItemDetailFrame.tsx` through one `DetailRecordType`, and shows as `detailWindow` (default), `detailDocked` (side panel on `SidePanelSurface`) and the `/detail/[type]/[id]` page. Metadata: both overlays carry `urlSync.key: "detail"`; the hydrator reads `detail:<type>.<id>:as-<presentation>`. Host binding in `detail/`; presentation knob `ui.detail.default_presentation` (`migrations/detail_presentation_knob.sql`, applied by the google-native chair). Surface: `/detail` in `(core)` (`features/window-panels/detail/DetailShowcase.tsx`), with `/demos/detail-primitive` rendering the same body for the demos deployment — the demo-only path 307s under the `core` profile, so it was never the proof screen (F-5, 2026-09-17).
 - **2026-09-17** — **A feedback report is filed in the organization the person is
   acting in.** `submitFeedback` resolved the submitter's PERSONAL organization
   server-side; a Server Action carries no `X-Organization-Id` header, so
@@ -620,6 +644,49 @@ Instance id auto-falls-back to `overlayId` for singletons — URL reads like `?p
 
 Every enabled registry `urlSync.key` must have a hydrator in [`url-sync/initUrlHydration.ts`](./url-sync/initUrlHydration.ts). A dev-only assertion logs missing mappings when `UrlPanelManager` mounts.
 
+### 🚨 A WINDOW WITH NO ADDRESS CANNOT BE REACHED — the address census (R35)
+
+Ruling R35: **every identity the platform names has a durable address AND an
+in-place door.** A window with no `urlSync.key` has only the door. It cannot be
+deep-linked, it cannot be opened by anyone verifying it from the seat, and no
+other client can reach it — the Google-native plan (§5.7) promises the
+extension and the desktop app reach "the same panels through the existing
+window-panel deep links; no client-specific Google code", and a panel with no
+link makes that promise unkeepable. V-23 ended three items UNMEASURED for
+exactly this: the agenda and the two Google import panels could not be reached
+from a real screen, and the site Quick view's one-panel identity could not be
+checked because the overlay-bound window had no address either.
+
+`ephemeral: true` governs RESTORE-AFTER-RELOAD. It never means "unreachable" —
+the two Google import panels are ephemeral AND addressed.
+
+The census is [`__tests__/everyWindowHasAnAddress.test.ts`](./__tests__/everyWindowHasAnAddress.test.ts)
+over the live catalogue and the live registry, with
+[`registry/window-address-baseline.json`](./registry/window-address-baseline.json).
+It fails when:
+
+1. an `isWindow: true` overlay has **no registry row at all** (it then cannot
+   declare an address, a mobile presentation, or a preservation contract — the
+   agenda and the approval queue both shipped that way);
+2. a window whose `defaultData` names a **durable subject** (a key ending
+   `Id` / `Ids` / `Token` / `Slug`) declares no `urlSync.key`;
+3. two windows claim **one address** (unless the key is listed in
+   `sharedAddresses` — `detail` is one record in two presentations, picked by
+   the `as-` arg).
+
+A window whose payload carries `callbackGroupId` hands a value back to whoever
+opened it, so a deep link would open a picker with nothing to answer; those are
+listed in `addressless` **with the reason written out**. Everything else that is
+still unaddressed sits in `unaddressedBaseline`, which **only shrinks**: new debt
+fails, and an entry that has since been addressed must be deleted from the file.
+
+**Giving a window its address takes three edits, not one.** The registry key, the
+hydrator, and `urlSyncId={<the subject id>}` on the `WindowPanel` — without the
+third, every instance writes the same token and the link reopens an empty frame
+(that is what `topicalMapTopicPanel` did: it declared `urlSync: { key: "topic" }`
+when it shipped, had no hydrator at all, and every open topic wrote
+`topic:topicalMapTopicPanel`).
+
 ---
 
 ## Tools grid
@@ -884,6 +951,8 @@ A re-entry into the viewport resets the dwell timer — a glance outside doesn't
 ---
 
 ## Change log
+
+- **2026-09-18** — **Every window V-23 could not reach now has an address, and a census guards the class (F-105).** Six windows got a `urlSync` key, a hydrator and — where the window has a subject — a `urlSyncId`: `googleAgendaWindow` → `?panels=agenda`, `approvalsWindow` → `?panels=approvals` (both of which had **no registry row at all**, so they could not have declared one), `googleContactsImportWindow` → `?panels=google_contacts_import:<externalId>:o-<orgId>`, `googleTasksImportWindow` → `?panels=google_tasks_import:<projectId>:o-<orgId>`, `googleConnectWindow` → `?panels=google_connect`, `siteQuickViewWindow` → `?panels=site_quick_view:<siteId>`. Also fixed `topicalMapTopicPanel`: it declared `urlSync: { key: "topic" }` when it shipped with **no hydrator** (the link opened nothing) and with no `urlSyncId`, so every open topic wrote one colliding token; the address is now `?panels=topic:<mapId>|<slug>:s-<siteId>`. New guard `__tests__/everyWindowHasAnAddress.test.ts` + `registry/window-address-baseline.json` — see [`## URL sync`](#url-sync); the baseline stands at 8 windows with no registry row and 65 with a durable subject and no address, and it only shrinks.
 
 - **2026-09-11** — **Registry URL keys are authoritative.** `WindowPanel` now prefers metadata `urlSync.key` whenever an `overlayId` resolves to a registered window, so a stale caller prop cannot publish an unhydratable token or break a valid deep link. Removed the two mismatched overrides found by the census (`SettingsShell` and `AgentContentWindow`) and added a red/green resolver guard; page-local windows without registry metadata retain explicit keys.
 

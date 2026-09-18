@@ -57,7 +57,19 @@ const KNOWN_SOURCES: readonly string[] = [
  * OpenAPI contract, carrying `resource_type`, `source`, `label` and the
  * provider's own `add_more` wording. Never re-declare it here.
  */
-export type AttachableResource = components["schemas"]["AttachableKindInfo"];
+export type AttachableResource = components["schemas"]["AttachableKindInfo"] & {
+  /**
+   * The Record table this kind is backed by (`communication.calendar_event`),
+   * when the server has one — F-62's `AttachableKind.record_table`, declared on
+   * the KIND row itself (aidream 3eb799d51d, the contract pin's floor). The
+   * generated `AttachableKindInfo` does not carry it until `pnpm sync-types`
+   * is regenerated against that server, so it is the ONE client-side narrowing
+   * of the generated type: delete this member the day the generated row has
+   * it, never re-derive "is this kind Record-backed" from a visible candidate
+   * (F-73) — a search filter or an empty list must never hide it.
+   */
+  record_table?: string | null;
+};
 
 /**
  * The availability row as the server sends it. `attachable` is optional and
@@ -69,7 +81,12 @@ export type AttachableResource = components["schemas"]["AttachableKindInfo"];
  * alias is the whole type (2026-09-18). Keep the name — every consumer reads
  * it — but never re-add a member to it.
  */
-export type AttachableAvailability = McpAvailability;
+export type AttachableAvailability = Omit<McpAvailability, "attachable"> & {
+  // The generated row, with `attachable` carrying the ONE narrowed member above.
+  // Absent means empty, and it is never `null` here (TS2322 in `useMcpTools`
+  // the day it was allowed to be).
+  attachable?: AttachableResource[];
+};
 
 /**
  * What a chip IS. `plain` means the connection is the whole story; every

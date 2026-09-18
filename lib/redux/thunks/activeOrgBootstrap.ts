@@ -26,6 +26,7 @@ import {
   setOrganization,
   setPersonalOrganization,
   setOrgBootstrapResolved,
+  setOrgBootstrapFailure,
 } from "@/lib/redux/slices/appContextSlice";
 import { resolveActiveOrgContext } from "@/lib/organizations/resolveActiveOrgContext";
 import { getUserId } from "@/utils/auth/getUserId";
@@ -54,7 +55,19 @@ export const bootstrapActiveOrganization =
       const userId = explicitUserId ?? getUserId();
       if (!userId) return;
       const resolved = await resolveActiveOrgContext(userId);
-      if (!resolved) return;
+      if (!resolved) {
+        dispatch(setOrgBootstrapFailure(null));
+        return;
+      }
+      // 🚨 THE FOURTH STATE (R37). This `finally` used to mark the bootstrap
+      // resolved whatever happened, so a thrown membership read and a degraded
+      // resolve both ended as "you have no organization — pick one". A read
+      // that failed is recorded as unreadable instead, and the surfaces say so.
+      if (resolved.unreadableReason && resolved.organization_id == null) {
+        dispatch(setOrgBootstrapFailure(resolved.unreadableReason));
+      } else {
+        dispatch(setOrgBootstrapFailure(null));
+      }
 
       if (resolved.personal_organization_id) {
         dispatch(setPersonalOrganization(resolved.personal_organization_id));
@@ -70,6 +83,15 @@ export const bootstrapActiveOrganization =
       }
     } catch (err) {
       console.error("[activeOrgBootstrap] failed to hydrate active org", err);
+      if (!getState().appContext.organization_id) {
+        dispatch(
+          setOrgBootstrapFailure(
+            err instanceof Error && err.message
+              ? `the organization read failed: ${err.message}`
+              : "the organization read failed",
+          ),
+        );
+      }
     } finally {
       dispatch(setOrgBootstrapResolved(true));
       // The same answer, for the non-React waiters (`ensureOrgId`). One
@@ -87,4 +109,20 @@ export const chooseActiveOrganization =
   (org: { id: string | null; name?: string | null }) =>
   (dispatch: AppDispatch) => {
     dispatch(setOrganization({ id: org.id, name: org.name ?? null }));
+  };
+
+/**
+ * RETRY the organization read after it failed — the one action behind every
+ * "Try again" the fourth state offers (`useOrganizationRequired().retry`).
+ *
+ * It puts the surfaces back into the honest checking posture (failure cleared,
+ * bootstrap un-resolved, so `organizationState` reads `resolving`) and re-runs
+ * the same resolver the boot path runs. There is no second code path: a retry
+ * that behaved differently from boot would be a second answer to one question.
+ */
+export const retryActiveOrgBootstrap =
+  () => async (dispatch: AppDispatch) => {
+    dispatch(setOrgBootstrapFailure(null));
+    dispatch(setOrgBootstrapResolved(false));
+    await dispatch(bootstrapActiveOrganization());
   };

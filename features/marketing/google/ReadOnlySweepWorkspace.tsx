@@ -48,7 +48,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectOrganizationIds } from "@/features/scopes/redux/selectors/tree";
 import { cn } from "@/lib/utils";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
-import { useGoogleAPI } from "@/providers/google-provider/GoogleApiProvider";
+import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
 
 type SweepCapability =
   "contacts" | "calendar" | "tasks" | "youtube" | "tag_manager";
@@ -119,7 +119,9 @@ export function ReadOnlySweepWorkspace({
 }
 
 function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
-  const google = useGoogleAPI();
+  // 🚨 ONE Google authorization window per PERSON — never a per-component
+  // lock, never the raw provider primitive (V-23 NEW-3, lane F-103).
+  const googleAuth = useGoogleAuthorizationWindow();
   const userId = useAppSelector(selectUserId);
   const activeOrganizationId = useAppSelector(selectOrganizationId);
   const organizationIds = useAppSelector(selectOrganizationIds);
@@ -182,7 +184,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
         if (!activeOrganizationId) {
           throw new Error("Choose an organization before connecting Google.");
         }
-        await google.startAuthorizationCodeRedirect(
+        await googleAuth.openAuthorizationRedirect(
           [...GOOGLE_READ_ONLY_SWEEP_SCOPES],
           {
             returnTo: `${window.location.pathname}${window.location.search}${window.location.hash}`,
@@ -194,7 +196,7 @@ function ReadOnlySweepWorkspaceInner({ reviewMode }: { reviewMode: boolean }) {
         );
         return;
       }
-      const code = await google.requestAuthorizationCode(
+      const code = await googleAuth.openAuthorizationWindow(
         [...GOOGLE_READ_ONLY_SWEEP_SCOPES],
         undefined,
       );

@@ -10,6 +10,20 @@
  * failure. Health is therefore DERIVED (see `connectionSummary`) and explained
  * here, so both the connections hub and every per-site binding surface state
  * the same truth in the same words.
+ *
+ * 🚨 THE SERVER'S OWN WORDS NEVER BECOME A PERSON'S SENTENCE (VERIFY-U-P2-R3,
+ * N9). `last_error` is written by aidream for an OPERATOR — "the vault item
+ * google_oauth_…_refresh for Google connection 7f3e2b41-… could not be resolved
+ * (KeyError: 'secret')". Until 2026-09-17 the `needs_attention` branch returned
+ * that column VERBATIM as its `reason`, so the vault item's name, the connection
+ * UUID and a Python exception class rendered eleven times on one connector card
+ * in front of a non-technical person. Now the column is CLASSIFIED into a typed
+ * fault (`classifyGoogleAccountFault`) whose sentence and remedy are written
+ * here, and anything unclassifiable gets one honest generic sentence. The raw
+ * column survives in `googleConnectionDiagnostics` only — the admin-grade
+ * label/value list on the super-admin connections workspace, where an operator
+ * is the reader. This holds whatever the server writes tomorrow: a reason we do
+ * not recognise never reaches a screen.
  */
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import type {
@@ -116,6 +130,313 @@ export function diagnoseGoogleResourceBinding({
   };
 }
 
+/**
+ * THE ACCOUNT FAULT VOCABULARY — every way a Google connection can stop
+ * authorizing, as a typed code with words we wrote. The set is derived from what
+ * `aidream/aidream/services/google_integrations/service.py` actually records
+ * through `_record_credential_failure` (read 2026-09-17), plus `unknown`, which
+ * is the honest answer for anything else — including whatever the server starts
+ * writing next.
+ */
+export const GOOGLE_ACCOUNT_FAULT_CODES = [
+  /** No saved permission on file at all. */
+  "credential_missing",
+  /** A saved permission exists and could not be read back. */
+  "credential_unreadable",
+  /** Our own app configuration was rejected; a reconnect cannot help. */
+  "platform_configuration",
+  /** Google will not renew the approval — expired, withdrawn or revoked. */
+  "grant_expired_or_revoked",
+  /** The approval is missing something the work needs. */
+  "scope_missing",
+  /** Connected, but the products asked for did not answer when checked. */
+  "discovery_incomplete",
+  /** Connected before we recorded which app it was approved for. */
+  "client_configuration_missing",
+  /** Google itself misbehaved while renewing; nothing is broken here. */
+  "provider_unavailable",
+  /** Connected, and some of what Google found could not be saved. */
+  "resources_not_saved",
+  /**
+   * The approval itself is gone at Google's end — withdrawn there, or revoked
+   * here. Declared as a fault like any other so the account line speaks from
+   * this one vocabulary instead of writing its own sentence (VERIFY-U-P2-R4,
+   * V13-1 / V13-5).
+   */
+  "access_revoked",
+  /**
+   * Nothing is wrong: the account works, and the permission is still held the
+   * older way. It reaches a person only as "you will be asked once more some
+   * time" — which product stops, and when, is never this sentence's business.
+   */
+  "credential_storage_outdated",
+  /**
+   * The row's own status word is one this build has never heard of, so nothing
+   * here can say what state the account is in. Declared as a fault so the
+   * account line speaks from this one vocabulary, and carries NO remedy: the two
+   * repos deploy independently and pressing something we cannot reason about is
+   * the dead control law 4 forbids (VERIFY-U-P2-R5, V17-1).
+   */
+  "status_unrecognized",
+  /** Something we cannot classify. One honest sentence, never the raw text. */
+  "unknown",
+] as const;
+
+export type GoogleAccountFault = (typeof GOOGLE_ACCOUNT_FAULT_CODES)[number];
+
+export interface GoogleAccountFaultLanguage {
+  /** Short badge word. */
+  label: string;
+  /** What is wrong, in one sentence a non-technical person can act on. */
+  reason: string;
+  /** The single action that fixes it, or null when pressing anything is futile. */
+  remedy: string | null;
+}
+
+/**
+ * THE SERVER'S OWN TYPED CODE, WHEN IT WRITES ONE. aidream stamps
+ * `metadata.credential_failure.code` beside the row (its own declared
+ * vocabulary), which is a fact rather than prose — so it is read FIRST, and a
+ * code we do not know falls back to the text, and then to `unknown`. Nothing
+ * here depends on the server having done it: today many rows carry only prose.
+ */
+const SERVER_FAULT_CODES: Record<string, GoogleAccountFault> = {
+  credential_missing: "credential_missing",
+  credential_unreadable: "credential_unreadable",
+  client_configuration_missing: "client_configuration_missing",
+  platform_configuration: "platform_configuration",
+  grant_expired_or_revoked: "grant_expired_or_revoked",
+  provider_unavailable: "provider_unavailable",
+  resources_not_saved: "resources_not_saved",
+  scope_missing: "scope_missing",
+  discovery_incomplete: "discovery_incomplete",
+};
+
+export function serverRecordedAccountFault(
+  metadata: Record<string, unknown> | null | undefined,
+): GoogleAccountFault | null {
+  const recorded = metadata?.credential_failure;
+  if (!recorded || typeof recorded !== "object" || Array.isArray(recorded)) {
+    return null;
+  }
+  const code = (recorded as Record<string, unknown>).code;
+  return typeof code === "string" ? (SERVER_FAULT_CODES[code] ?? null) : null;
+}
+
+/**
+ * Read the server's operator text and say WHICH fault it is. Matching on the
+ * recorded phrasing is deliberate and its failure mode is safe: an unrecognised
+ * reason is `unknown`, which speaks one generic sentence rather than the text.
+ * Order matters — the platform-configuration and credential shapes both mention
+ * a connection id, so the narrower phrase is tested first.
+ */
+export function classifyGoogleAccountFault(
+  rawError: string | null | undefined,
+): GoogleAccountFault {
+  const text = (rawError ?? "").trim();
+  if (!text) return "unknown";
+  if (/missing required scope/i.test(text)) return "scope_missing";
+  if (/\bno vault credential\b|\bno credential item\b|has no credential/i.test(text)) {
+    return "credential_missing";
+  }
+  if (
+    /oauth_client_id|oauth client configuration|platform repair|invalid_client/i.test(
+      text,
+    )
+  ) {
+    return "platform_configuration";
+  }
+  if (/could not be resolved|could not be read/i.test(text)) {
+    return "credential_unreadable";
+  }
+  if (
+    /refresh (?:failed|for connection|returned)|invalid_grant|no access token|token refresh/i.test(
+      text,
+    )
+  ) {
+    return "grant_expired_or_revoked";
+  }
+  if (/could not be discovered|none of the requested product apis/i.test(text)) {
+    return "discovery_incomplete";
+  }
+  return "unknown";
+}
+
+/**
+ * THE ONE PLACE A FAULT BECOMES WORDS. Every sentence here is a constant plus
+ * the account's own label, so no identifier, code or exception class can travel
+ * through it however the server phrased itself.
+ */
+export function googleAccountFaultLanguage(
+  fault: GoogleAccountFault,
+  account: string,
+): GoogleAccountFaultLanguage {
+  switch (fault) {
+    case "credential_missing":
+      return {
+        label: "Needs reconnecting",
+        reason: `AI Matrx no longer holds a saved permission for ${account}, so it cannot make any Google request with it.`,
+        remedy: `Reconnect ${account} to restore access.`,
+      };
+    case "credential_unreadable":
+      return {
+        label: "Needs reconnecting",
+        reason: `The saved permission for ${account} could not be read, so nothing can authorize a Google request with it.`,
+        remedy: `Reconnect ${account} to restore access.`,
+      };
+    case "platform_configuration":
+      return {
+        label: "Ours to repair",
+        reason: `Google rejected AI Matrx's own app configuration for ${account}. This one is ours to repair, and approving it again would not help.`,
+        remedy: null,
+      };
+    case "grant_expired_or_revoked":
+      return {
+        label: "Needs reconnecting",
+        reason: `Google would not renew AI Matrx's permission for ${account} — the approval has expired or been withdrawn.`,
+        remedy: `Reconnect ${account} and approve what the Google window asks for.`,
+      };
+    case "scope_missing":
+      return {
+        label: "Needs reconnecting",
+        reason: `${account} has not approved everything AI Matrx needs to do this work.`,
+        remedy: `Reconnect ${account} and approve what the Google window asks for.`,
+      };
+    case "discovery_incomplete":
+      return {
+        label: "Needs attention",
+        reason: `Google connected ${account}, but nothing we asked it about answered when we checked, so we cannot say what works yet.`,
+        remedy: `Reconnect ${account}, or try again in a few minutes.`,
+      };
+    case "client_configuration_missing":
+      return {
+        label: "Needs reconnecting",
+        reason: `${account} was connected before AI Matrx recorded which app it was approved for, so it cannot be used as it is.`,
+        remedy: `Reconnect ${account} to restore access.`,
+      };
+    case "provider_unavailable":
+      return {
+        label: "Needs attention",
+        reason: `Google did not answer properly when AI Matrx renewed ${account}'s access. Nothing about the connection is broken.`,
+        remedy: `Try again in a few minutes; if it keeps happening, reconnect ${account}.`,
+      };
+    case "resources_not_saved":
+      return {
+        label: "Needs attention",
+        reason: `Google connected ${account}, and some of what it found could not be saved, so part of this account may be missing here.`,
+        remedy: `Reconnect ${account} to try again.`,
+      };
+    case "access_revoked":
+      return {
+        label: "Revoked",
+        reason: `The permission AI Matrx had for ${account} was withdrawn, so it cannot do anything with that account until you connect it again.`,
+        remedy: `Connect ${account} again to restore access.`,
+      };
+    case "credential_storage_outdated":
+      return {
+        label: "Connected",
+        reason: `${account} is connected and working. AI Matrx will ask you to approve it once more at some point, to move it onto how it keeps permissions now.`,
+        remedy: `Reconnect ${account} whenever it suits you — nothing stops working until then.`,
+      };
+    case "status_unrecognized":
+      return {
+        label: "Blocked",
+        reason: `AI Matrx cannot tell what state ${account} is in, so it will not claim the account is working. Nothing can be pressed here to change that.`,
+        remedy: null,
+      };
+    case "unknown":
+      return {
+        label: "Needs attention",
+        reason: `Google refused ${account} for a reason we cannot put in plain words yet — something on our side needs repair, and we have the details.`,
+        remedy: `Try reconnecting ${account}; if it does not clear, tell us and we will repair it.`,
+      };
+  }
+}
+
+/**
+ * 🚨 THE FAULTS THAT BLOCK EVERYTHING WITH NOTHING TO PRESS — the client half of
+ * the third terminal status (chair ruling R22, 2026-09-18; VERIFY-U-P2-R5 V17-1).
+ *
+ * `platform_configuration` is Google rejecting AI MATRX'S OWN app configuration:
+ * no account can mint a token, and a fresh approval lands in the same refusal.
+ * The server deliberately leaves such a row `connected` today because it is not a
+ * credential failure — which is how the card came to print "Connected" ten times
+ * and "9 of 9 products in use" directly above its own sentence saying no Google
+ * account could be used. So the derived health says `unavailable` on the strength
+ * of the fault the row already carries, exactly as it already says `needs_reauth`
+ * on the strength of a missing credential rather than the stored word. Lane B-23
+ * makes the server write the status too; this reading does not wait for it, and
+ * does not conflict with it.
+ *
+ * The rule, not a list: a fault whose remedy is null is a fault nothing the person
+ * can do repairs, which is precisely `unavailable`. `__tests__/…` asserts the set
+ * and the vocabulary agree in BOTH directions, so a new remedy-less fault cannot
+ * be added without deciding this.
+ */
+export const GOOGLE_UNAVAILABLE_FAULT_CODES: readonly GoogleAccountFault[] = [
+  "platform_configuration",
+  "status_unrecognized",
+];
+
+/** Does this fault mean blocked-with-nothing-to-press? */
+export function googleFaultBlocksEverything(fault: GoogleAccountFault): boolean {
+  return GOOGLE_UNAVAILABLE_FAULT_CODES.includes(fault);
+}
+
+/**
+ * The account-level refusal as a SENTENCE, for the connector surfaces. Null when
+ * the server recorded no refusal on this account. Never the stored text.
+ */
+export function googleAccountRefusalSentence(
+  connection: GoogleConnectionSummary,
+): string | null {
+  if (!connection.last_error?.trim()) return null;
+  const account =
+    connection.account_email ||
+    connection.account_name ||
+    "this Google account";
+  return googleAccountFaultLanguage(
+    googleAccountFault(connection),
+    account,
+  ).reason;
+}
+
+/**
+ * THE DISCOVERY-OUTAGE SENTENCE, VERBATIM (aidream verifier N15). A discovery
+ * outage is NOT a dead credential: the exchange succeeded, the vault item is
+ * written, and Gmail send would work perfectly — Google simply did not answer
+ * when asked what this account can reach for some products. The server keeps
+ * `status = 'connected'` for it (only `_record_credential_failure` may write
+ * `needs_attention`) and records the fact in `metadata.discovery_outage`
+ * instead: `{products, sentence, at}`. Before this existed, the client read
+ * `needs_attention` for the same condition and every product on the account
+ * said "Needs reconnecting" beside a repair press that changed nothing — a
+ * five-minute Search Console blip presented as nine broken products.
+ *
+ * Returns null whenever nothing of the shape is recorded, and null on any
+ * value this reader does not recognise — never a guess at the server's words.
+ */
+export function googleDiscoveryOutageSentence(
+  connection: GoogleConnectionSummary,
+): string | null {
+  const outage = connection.metadata?.discovery_outage;
+  if (!outage || typeof outage !== "object" || Array.isArray(outage)) {
+    return null;
+  }
+  const sentence = (outage as Record<string, unknown>).sentence;
+  return typeof sentence === "string" && sentence.trim() ? sentence : null;
+}
+
+/** The fault on this connection: the server's typed code first, then its text. */
+export function googleAccountFault(
+  connection: GoogleConnectionSummary,
+): GoogleAccountFault {
+  return (
+    serverRecordedAccountFault(connection.metadata) ??
+    classifyGoogleAccountFault(connection.last_error)
+  );
+}
+
 export function diagnoseGoogleConnection(
   connection: GoogleConnectionSummary,
 ): GoogleConnectionDiagnosis {
@@ -124,51 +445,85 @@ export function diagnoseGoogleConnection(
     connection.account_name ||
     "this Google account";
 
-  if (connection.health === "revoked") {
+  // 🚨 EVERY BRANCH SPEAKS FROM THE VOCABULARY ABOVE (VERIFY-U-P2-R4, V13-1).
+  // Until 2026-09-17 the three branches below wrote their own sentences, in the
+  // register the vocabulary exists to keep off a screen: a revoked account said
+  // "Nothing can read Search Console or Analytics with it" (false on seven of
+  // the nine products it was printed on — V13-5), a missing credential said
+  // "no vault credential on file (no credential item and no legacy vault key),
+  // so the server cannot mint a Google access token", and the older storage path
+  // said "resolves through the legacy vault key … a deprecated path scheduled
+  // for removal". `last_error` was not involved in any of them, which is why
+  // N9's fix — and N9's test — went straight past all three.
+  // 🚨 THE THIRD TERMINAL ANSWER, BEFORE EVERY OTHER BRANCH (V17-1, R22). A
+  // status word we cannot vouch for, or one the row carries as `unavailable`,
+  // means the account is BLOCKED: no product works and nothing here can be
+  // pressed to change it. It is judged first because the branches below would
+  // otherwise read `status === "connected"` and print "connected and working"
+  // over it — the ten "Connected"s the verifier found on one card.
+  if (connection.health === "unrecognized") {
     return {
-      label: "Revoked",
-      reason: `Access for ${account} was revoked. Nothing can read Search Console or Analytics with it.`,
-      remedy: "Connect Google again to restore access.",
+      ...googleAccountFaultLanguage("status_unrecognized", account),
       blocking: true,
     };
   }
 
+  if (connection.health === "unavailable") {
+    const fault = googleAccountFault(connection);
+    if (fault === "unknown") {
+      // Marked blocked with nothing recorded to explain it: say exactly that
+      // rather than guessing at a fault or offering a press that cannot help.
+      return {
+        label: "Blocked",
+        reason: `${account} cannot be used right now. There is nothing you can do here; we are fixing our Google configuration.`,
+        remedy: null,
+        blocking: true,
+      };
+    }
+    // The fault's own declared sentence, and its own remedy when it has one
+    // (a provider outage says to try again later; our own misconfiguration says
+    // nothing can be pressed). Never a remedy this branch invents.
+    return { ...googleAccountFaultLanguage(fault, account), blocking: true };
+  }
+
+  if (connection.health === "revoked") {
+    return { ...googleAccountFaultLanguage("access_revoked", account), blocking: true };
+  }
+
   if (!connection.credential_present) {
     return {
-      label: "Needs re-authentication",
-      reason:
-        `${account} has no vault credential on file (no credential item and no legacy vault key), ` +
-        "so the server cannot mint a Google access token. Every sync and collection using it fails.",
-      remedy: `Reconnect ${account} to mint a new refresh-token credential.`,
+      ...googleAccountFaultLanguage("credential_missing", account),
       blocking: true,
     };
   }
 
   if (connection.status === "needs_attention") {
-    return {
-      label: "Needs attention",
-      reason:
-        connection.last_error?.trim() ||
-        `The server flagged ${account} after a failed request but recorded no reason.`,
-      remedy: `Reconnect ${account}, then retry the sync.`,
-      blocking: true,
-    };
+    // The stored reason is operator text. It picks the fault; it never speaks.
+    if (!connection.last_error?.trim()) {
+      return {
+        label: "Needs attention",
+        reason: `Google refused ${account} and recorded no reason, so we cannot say yet what needs repairing.`,
+        remedy: `Reconnect ${account}, then retry the sync.`,
+        blocking: true,
+      };
+    }
+    const language = googleAccountFaultLanguage(
+      googleAccountFault(connection),
+      account,
+    );
+    return { ...language, blocking: true };
   }
 
   if (!connection.credential_stable) {
     return {
-      label: "Legacy credential",
-      reason:
-        `${account} still resolves through the legacy vault key rather than a stable ` +
-        "credential item, which is a deprecated path scheduled for removal.",
-      remedy: `Reconnect ${account} to mint a stable credential reference.`,
+      ...googleAccountFaultLanguage("credential_storage_outdated", account),
       blocking: false,
     };
   }
 
   return {
     label: "Connected",
-    reason: `${account} has a stable vault credential and can authorize Google requests.`,
+    reason: `${account} is connected and working.`,
     remedy: null,
     blocking: false,
   };
@@ -185,7 +540,10 @@ export function googleConnectionDiagnostics(
       "Owner",
       connection.owner_type === "organization" ? "Organization" : "Personal",
     ],
-    ["Stored status", connection.status],
+    // The word the row actually carried, not the one this build narrowed it to:
+    // an operator looking at an unrecognised status needs to see it (V17-8's rule
+    // applied to this column too).
+    ["Stored status", connection.status_as_read || connection.status],
     ["Derived health", connection.health],
     [
       "Vault credential",

@@ -1677,12 +1677,30 @@ button.shell-nav-flyout-item {
 /* Admin tree compatibility — the `/administration/*` pages predate this shell
    and were authored for the old ResponsiveLayout: a 2.5rem (`h-10`) header with
    content BELOW it (`<main className="pt-10">`), and ~30 pages hardcode
-   `h-[calc(100dvh-2.5rem)]`. Two scoped rules reproduce that exactly so the
-   whole admin tree drops in with zero per-page edits:
-     1. Pin the header to 2.5rem (its legacy height) so those calc() heights fit.
+   `h-[calc(100dvh-2.5rem)]`. Two rules reproduce that exactly so the whole admin
+   tree drops in with zero per-page edits:
+     1. Pin the header to 2.5rem (its legacy height) so those calc() heights fit
+        — on <body>, for the reason the next comment gives.
      2. Cancel `.shell-main`'s negative pull so content sits under the header
         instead of scrolling behind it. */
-.shell-root[data-pathname^="/administration"] {
+/* 🚨 THE ADMIN HEADER'S HEIGHT IS DECLARED ONCE, ON <body>, AND NOT ON
+   `.shell-root`. `--shell-header-h` is the ONE token for the app shell header's
+   height (2.75rem at :root above; `--header-height` in globals.css is the
+   pre-shell ResponsiveLayout token and is NOT this). Chrome that clears the
+   header is not always inside `.shell-root`: `MatrxDynamicPanelHost` portals
+   every docked panel into `#glass-layer`, a direct child of <body>
+   (app/layout.tsx), so a value declared on `.shell-root` cannot reach it by
+   inheritance and the panel would keep :root's 2.75rem under a 2.5rem admin
+   header. Declaring it on <body> instead reaches BOTH the shell subtree and the
+   portal layer from ONE place, so the two can never drift apart — a second rule
+   repeating `2.5rem` for the portal is exactly the drift this avoids.
+   `body:has()` is already load-bearing in this sheet (section 11's mobile-dock
+   runway). Consumer: `SidePanelSurface`, which reserves
+   `var(--shell-header-h, 0px)` on the fixed panel container — it reserved the
+   legacy 2.5rem token there and drew 4px over the (core) shell header's org
+   switcher, search and avatar (D3, then again at 4px: Bugbot, frontend PR 228,
+   commit 4cbd9e45). */
+body:has(.shell-root[data-pathname^="/administration"]) {
   --shell-header-h: 2.5rem;
 }
 .shell-root[data-pathname^="/administration"] .shell-main {

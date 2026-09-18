@@ -1,9 +1,10 @@
 /**
  * Surface manifest — Item Detail (`matrx-user/item-detail`).
  *
- * The floating generic record dossier (`itemDetailWindow` overlay,
- * `features/window-panels/windows/item-detail/ItemDetailWindow.tsx`) — THE
- * DOOR LAW's peek target for every entity that has no bespoke window yet.
+ * The generic record dossier — the Detail primitive (`lib/detail`) showing an
+ * item-presentation record in its window (`detailWindow` overlay, the
+ * default), docked panel (`detailDocked`) or page (`/detail/[type]/[id]`) —
+ * THE DOOR LAW's peek target for every entity that has no bespoke window yet.
  * Given a `{ type, id }` it seeds from the agent-provided name/about, fetches
  * the row via the item registry's `detailSource`, and renders every populated
  * scalar column.
@@ -15,7 +16,8 @@
  * value here — a type that earns its own vocabulary earns its own window and
  * its own surface.
  *
- * Emitter: nested `<SurfaceRuntimeProvider>` inside `ItemDetailWindow`.
+ * Emitter: `features/item-presentation/ItemDetailFrame.tsx`, the frame every
+ * presentation wraps the item body in.
  */
 
 import type {
@@ -141,7 +143,7 @@ export const itemDetailManifest: SurfaceManifest = {
   readiness: "partial",
   readinessNote:
     "Declared and emitted 2026-08-24 when the window got its own right-click menu (before that, a right-click inside the floating dossier was answered by the page underneath). `partial` because the surface is generic over every item type: the value set is complete for the dossier itself, but nobody has yet walked a spread of item types through it live to confirm the emitted scope reads well for each.",
-  overlayId: "itemDetailWindow",
+  overlayId: "detailWindow",
   label: "Item Detail",
   intro: `<surface_intro>
 You are in the floating Item Detail window — the platform's generic record dossier. It is the peek target for any entity that has no richer window of its own, so the record on screen can be almost anything: an agent, a project, a note, a file, a keyword. item_type and item_label say which; item_id and item_title identify the row.

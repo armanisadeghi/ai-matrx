@@ -21,10 +21,7 @@ jest.mock("@/features/files/utils/folder-conventions", () => ({
  */
 const ORG_ID = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
 const mockAwaitWorkspace = jest.fn(
-  async (): Promise<WorkspaceResolution> => ({
-    status: "ready",
-    organizationId: ORG_ID,
-  }),
+  async (): Promise<WorkspaceResolution> => workspaceReady(ORG_ID),
 );
 jest.mock("@/features/organizations/awaitWorkspace", () => ({
   awaitEffectiveOrganizationId: () => mockAwaitWorkspace(),
@@ -32,6 +29,10 @@ jest.mock("@/features/organizations/awaitWorkspace", () => ({
 
 import { fileHandler } from "@/features/files/handler/handler";
 import type { WorkspaceResolution } from "@/features/organizations/awaitWorkspace";
+import {
+  workspaceReady,
+  workspaceUnavailable,
+} from "@/features/organizations/workspaceResolution";
 import { captureFolderFor, uploadCapture } from "../capture-uploader";
 import {
   buildPhotoCaptureMetadata,
@@ -172,11 +173,12 @@ describe("uploadCapture", () => {
   });
 
   it("refuses with the workspace's own sentence when no organization is selected — nothing uploads", async () => {
-    mockAwaitWorkspace.mockResolvedValue({
-      status: "unavailable",
-      reason:
+    mockAwaitWorkspace.mockResolvedValue(
+      workspaceUnavailable(
+        "no-selection",
         "We could not tell which workspace to file this in. Pick one from the menu under your avatar.",
-    });
+      ),
+    );
     await expect(
       uploadCapture({ file, capture: validPhotoMetadata() }),
     ).rejects.toThrow(/which workspace to file this in/);

@@ -11,12 +11,24 @@
  * `source_url` / `source_label` columns every projector already writes. A
  * producer never needs its own chip and a list never needs its own query:
  * project the task with a source and the badge + door appear everywhere.
+ *
+ * 🚨 A LINK ONLY WHERE THERE IS A PAGE. This chip used to turn ANY `source_url`
+ * that did not start with `/` into `<a target="_blank">` titled "Open source",
+ * and the Google Tasks import writes an API resource URL there — measured
+ * unauthenticated: HTTP 401 with a JSON error body. Every imported Google task
+ * therefore shipped a clickable chip that landed a non-technical expert on an API
+ * error, while the only "do not render this as a page" warning lived as a comment
+ * in the import panel that never renders it (VERIFY-B1-B2-R2 N5). The decision is
+ * now `../provenance-door.ts`, in the shared layer, so every surface inherits it:
+ * a source that is not a page renders as PROVENANCE WITHOUT A DOOR and says why
+ * on hover — never hidden (it is true), never linked (it would not open).
  */
 
 import React from "react";
 import Link from "next/link";
 import { BrainCircuit, ClipboardCheck, Cog, Link as LinkIcon } from "lucide-react";
 import { cn } from "@/utils/cn";
+import { provenanceDoorFor } from "../provenance-door";
 import type { TaskOrigin } from "../constants/status";
 
 const ORIGIN_META: Record<
@@ -86,19 +98,24 @@ export function TaskProvenanceChip({
   const chipClass = cn(
     "inline-flex items-center gap-1 h-5 px-1.5 rounded-md border text-[10px] font-medium max-w-full align-middle",
     "bg-violet-500/10 text-violet-700 dark:text-violet-300 border-violet-500/30",
-    sourceUrl && "hover:bg-violet-500/20 transition-colors",
+    // The hover affordance follows the DOOR, not the mere presence of a url: a
+    // chip that lights up on hover and does nothing is the same lie in miniature.
+    sourceUrl &&
+      provenanceDoorFor(sourceUrl).kind !== "not-a-page" &&
+      "hover:bg-violet-500/20 transition-colors",
     className,
   );
 
   if (sourceUrl) {
+    const door = provenanceDoorFor(sourceUrl);
     const title = `Open source: ${sourceLabel ?? sourceUrl}`;
     // A row is a click target of its own — the door must never double as a
     // row selection.
     const stopRowClick = (e: React.MouseEvent) => e.stopPropagation();
-    if (sourceUrl.startsWith("/")) {
+    if (door.kind === "internal") {
       return (
         <Link
-          href={sourceUrl}
+          href={door.href}
           className={chipClass}
           title={title}
           onClick={stopRowClick}
@@ -107,17 +124,29 @@ export function TaskProvenanceChip({
         </Link>
       );
     }
+    if (door.kind === "external") {
+      return (
+        <a
+          href={door.href}
+          target="_blank"
+          rel="noreferrer"
+          className={chipClass}
+          title={title}
+          onClick={stopRowClick}
+        >
+          {body}
+        </a>
+      );
+    }
+    // not-a-page: the provenance is true, so it is shown; it is not a door, so
+    // it does not pretend to be one, and the reason is on hover.
     return (
-      <a
-        href={sourceUrl}
-        target="_blank"
-        rel="noreferrer"
-        className={chipClass}
-        title={title}
-        onClick={stopRowClick}
+      <span
+        className={cn(chipClass, "cursor-default")}
+        title={`${sourceLabel ?? "Task provenance"} — ${door.reason}`}
       >
         {body}
-      </a>
+      </span>
     );
   }
   return (

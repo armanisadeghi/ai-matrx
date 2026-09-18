@@ -1,20 +1,21 @@
 {
-  "generatedAt": "2026-09-08T07:41:54.106Z",
-  "commit": "3723fc0b5780580979dbac6c47865f0163098bb3",
+  "generatedAt": "2026-09-18T03:24:44.419Z",
+  "commit": "75c93eacb7ce3e94e5f5d7f153c5c446e766c404",
   "totals": {
-    "findings": 36,
-    "high": 10,
-    "medium": 26,
+    "findings": 59,
+    "high": 24,
+    "medium": 35,
     "low": 0,
-    "filesWithFindings": 29,
-    "filesScanned": 8121,
-    "allowlisted": 4
+    "filesWithFindings": 44,
+    "filesScanned": 8520,
+    "allowlisted": 3
   },
   "byRule": {
-    "bare-id-text": 21,
-    "unlinked-entity-name": 10,
+    "bare-id-text": 31,
+    "unlinked-entity-name": 14,
     "unlinked-count": 2,
-    "no-doors-in-file": 3
+    "toast-names-record": 6,
+    "no-doors-in-file": 6
   },
   "worstFiles": [
     {
@@ -23,9 +24,34 @@
       "high": 3
     },
     {
+      "key": "features/ai-work/conversations/components/ConversationProvenancePanel.tsx",
+      "count": 4,
+      "high": 2
+    },
+    {
+      "key": "features/admin/limits/components/AccountAddonsPanel.tsx",
+      "count": 2,
+      "high": 2
+    },
+    {
       "key": "features/agents/ui-first-tools/ui/lists/TaskPanel.tsx",
       "count": 2,
       "high": 2
+    },
+    {
+      "key": "features/mandates/admin/impact-settings-fix.tsx",
+      "count": 2,
+      "high": 2
+    },
+    {
+      "key": "features/podcasts/studio/components/RunTruthInspector.tsx",
+      "count": 2,
+      "high": 2
+    },
+    {
+      "key": "features/notes/components/FolderQuickPick.tsx",
+      "count": 2,
+      "high": 1
     },
     {
       "key": "features/scopes/components/entity-context/EntityScopeTagger.tsx",
@@ -33,7 +59,17 @@
       "high": 1
     },
     {
+      "key": "features/admin/seo-operations/SeoOperationsClient.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
       "key": "features/agent-connections/components/sections/ResourcesSection.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
+      "key": "features/ai-work/conversations/components/CloudSyncTruthPanel.tsx",
       "count": 1,
       "high": 1
     },
@@ -44,6 +80,21 @@
     },
     {
       "key": "features/media-capture/components/CaptureLibrary.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
+      "key": "features/notes/components/note-actions/noteMenuRegistry.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
+      "key": "features/notes/components/NoteTabItem.tsx",
+      "count": 1,
+      "high": 1
+    },
+    {
+      "key": "features/projects/components/ProjectImportJsonPanel.tsx",
       "count": 1,
       "high": 1
     },
@@ -59,6 +110,11 @@
     },
     {
       "key": "app/(dev)/demos/scopes/context-lab/page.dev.tsx",
+      "count": 2,
+      "high": 0
+    },
+    {
+      "key": "features/code/views/sandboxes/SandboxVersionHealthCard.tsx",
       "count": 2,
       "high": 0
     },
@@ -108,11 +164,6 @@
       "high": 0
     },
     {
-      "key": "features/ai-work/conversations/components/ConversationProvenancePanel.tsx",
-      "count": 1,
-      "high": 0
-    },
-    {
       "key": "features/cms/components/admin/ApprovalsQueuePanel.tsx",
       "count": 1,
       "high": 0
@@ -138,6 +189,16 @@
       "high": 0
     },
     {
+      "key": "features/mandates/admin/impact-cells.tsx",
+      "count": 1,
+      "high": 0
+    },
+    {
+      "key": "features/masterwork/components/masterworks/CompareTwoDialog.tsx",
+      "count": 1,
+      "high": 0
+    },
+    {
       "key": "features/rag/components/data-stores/DataStoresPage.tsx",
       "count": 1,
       "high": 0
@@ -153,6 +214,16 @@
       "high": 0
     },
     {
+      "key": "features/research/components/overview/pipeline-graph/PipelineGraph.tsx",
+      "count": 1,
+      "high": 0
+    },
+    {
+      "key": "features/scopes/components/management/NewScopeInline.tsx",
+      "count": 1,
+      "high": 0
+    },
+    {
       "key": "features/tool-call-visualization/renderers/knowledge-browse/KnowledgeEntityInline.tsx",
       "count": 1,
       "high": 0
@@ -161,9 +232,29 @@
       "key": "features/workflow-runtime/discovery/components/WaitingInbox.tsx",
       "count": 1,
       "high": 0
+    },
+    {
+      "key": "lib/detail/core/DetailBody.tsx",
+      "count": 1,
+      "high": 0
     }
   ],
   "worstFeatures": [
+    {
+      "key": "features/ai-work",
+      "count": 5,
+      "high": 3
+    },
+    {
+      "key": "features/notes",
+      "count": 4,
+      "high": 3
+    },
+    {
+      "key": "features/admin",
+      "count": 3,
+      "high": 3
+    },
     {
       "key": "features/window-panels",
       "count": 3,
@@ -175,8 +266,18 @@
       "high": 2
     },
     {
-      "key": "features/scopes",
+      "key": "features/mandates",
+      "count": 3,
+      "high": 2
+    },
+    {
+      "key": "features/podcasts",
       "count": 2,
+      "high": 2
+    },
+    {
+      "key": "features/scopes",
+      "count": 3,
       "high": 1
     },
     {
@@ -191,6 +292,11 @@
     },
     {
       "key": "features/media-capture",
+      "count": 1,
+      "high": 1
+    },
+    {
+      "key": "features/projects",
       "count": 1,
       "high": 1
     },
@@ -215,13 +321,18 @@
       "high": 0
     },
     {
+      "key": "features/code",
+      "count": 2,
+      "high": 0
+    },
+    {
       "key": "features/rag",
       "count": 2,
       "high": 0
     },
     {
-      "key": "features/ai-work",
-      "count": 1,
+      "key": "features/research",
+      "count": 2,
       "high": 0
     },
     {
@@ -250,7 +361,7 @@
       "high": 0
     },
     {
-      "key": "features/research",
+      "key": "features/masterwork",
       "count": 1,
       "high": 0
     },
@@ -263,9 +374,50 @@
       "key": "features/workflow-runtime",
       "count": 1,
       "high": 0
+    },
+    {
+      "key": "lib/detail",
+      "count": 1,
+      "high": 0
     }
   ],
   "findings": [
+    {
+      "file": "features/admin/limits/components/AccountAddonsPanel.tsx",
+      "line": 624,
+      "column": 24,
+      "rule": "unlinked-entity-name",
+      "severity": "high",
+      "entity": "organization",
+      "entityHasRoute": true,
+      "expression": "org.name",
+      "feature": "features/admin",
+      "route": null
+    },
+    {
+      "file": "features/admin/limits/components/AccountAddonsPanel.tsx",
+      "line": 626,
+      "column": 26,
+      "rule": "unlinked-entity-name",
+      "severity": "high",
+      "entity": "organization",
+      "entityHasRoute": true,
+      "expression": "org.slug",
+      "feature": "features/admin",
+      "route": null
+    },
+    {
+      "file": "features/admin/seo-operations/SeoOperationsClient.tsx",
+      "line": 75,
+      "column": 7,
+      "rule": "toast-names-record",
+      "severity": "high",
+      "entity": "task",
+      "entityHasRoute": true,
+      "expression": "\" … \" queued — run … . Watch it under Scheduling › Runs.",
+      "feature": "features/admin",
+      "route": null
+    },
     {
       "file": "features/agent-connections/components/sections/ResourcesSection.tsx",
       "line": 101,
@@ -303,8 +455,68 @@
       "route": null
     },
     {
+      "file": "features/ai-work/conversations/components/CloudSyncTruthPanel.tsx",
+      "line": 336,
+      "column": 18,
+      "rule": "bare-id-text",
+      "severity": "high",
+      "entity": "conversation",
+      "entityHasRoute": true,
+      "expression": "diagnosis.conversation_id",
+      "feature": "features/ai-work",
+      "route": null
+    },
+    {
+      "file": "features/ai-work/conversations/components/ConversationProvenancePanel.tsx",
+      "line": 305,
+      "column": 24,
+      "rule": "bare-id-text",
+      "severity": "high",
+      "entity": "conversation",
+      "entityHasRoute": true,
+      "expression": "handoff.priorContextConversationId",
+      "feature": "features/ai-work",
+      "route": null
+    },
+    {
+      "file": "features/ai-work/conversations/components/ConversationProvenancePanel.tsx",
+      "line": 314,
+      "column": 24,
+      "rule": "bare-id-text",
+      "severity": "high",
+      "entity": "conversation",
+      "entityHasRoute": true,
+      "expression": "handoff.reboundFromConversationId",
+      "feature": "features/ai-work",
+      "route": null
+    },
+    {
+      "file": "features/mandates/admin/impact-settings-fix.tsx",
+      "line": 1,
+      "column": 1,
+      "rule": "no-doors-in-file",
+      "severity": "high",
+      "entity": "(file)",
+      "entityHasRoute": false,
+      "expression": "features/mandates/admin/impact-settings-fix.tsx",
+      "feature": "features/mandates",
+      "route": null
+    },
+    {
+      "file": "features/mandates/admin/impact-settings-fix.tsx",
+      "line": 268,
+      "column": 14,
+      "rule": "unlinked-entity-name",
+      "severity": "high",
+      "entity": "agent",
+      "entityHasRoute": true,
+      "expression": "plan.agentName",
+      "feature": "features/mandates",
+      "route": null
+    },
+    {
       "file": "features/matrx-envelope/directives/createProjectWithTasks/CreateProjectWithTasksRenderer.tsx",
-      "line": 77,
+      "line": 76,
       "column": 56,
       "rule": "unlinked-entity-name",
       "severity": "high",
@@ -324,6 +536,78 @@
       "entityHasRoute": true,
       "expression": "file.fileName",
       "feature": "features/media-capture",
+      "route": null
+    },
+    {
+      "file": "features/notes/components/FolderQuickPick.tsx",
+      "line": 1,
+      "column": 1,
+      "rule": "no-doors-in-file",
+      "severity": "high",
+      "entity": "(file)",
+      "entityHasRoute": false,
+      "expression": "features/notes/components/FolderQuickPick.tsx",
+      "feature": "features/notes",
+      "route": null
+    },
+    {
+      "file": "features/notes/components/note-actions/noteMenuRegistry.tsx",
+      "line": 105,
+      "column": 5,
+      "rule": "toast-names-record",
+      "severity": "high",
+      "entity": "note",
+      "entityHasRoute": true,
+      "expression": "Note duplicated",
+      "feature": "features/notes",
+      "route": null
+    },
+    {
+      "file": "features/notes/components/NoteTabItem.tsx",
+      "line": 305,
+      "column": 5,
+      "rule": "toast-names-record",
+      "severity": "high",
+      "entity": "note",
+      "entityHasRoute": true,
+      "expression": "Note duplicated",
+      "feature": "features/notes",
+      "route": null
+    },
+    {
+      "file": "features/podcasts/studio/components/RunTruthInspector.tsx",
+      "line": 1,
+      "column": 1,
+      "rule": "no-doors-in-file",
+      "severity": "high",
+      "entity": "(file)",
+      "entityHasRoute": false,
+      "expression": "features/podcasts/studio/components/RunTruthInspector.tsx",
+      "feature": "features/podcasts",
+      "route": null
+    },
+    {
+      "file": "features/podcasts/studio/components/RunTruthInspector.tsx",
+      "line": 421,
+      "column": 25,
+      "rule": "bare-id-text",
+      "severity": "high",
+      "entity": "agent",
+      "entityHasRoute": true,
+      "expression": "truth.resolvedAgentRunId ?? \"not assigned yet\"",
+      "feature": "features/podcasts",
+      "route": null
+    },
+    {
+      "file": "features/projects/components/ProjectImportJsonPanel.tsx",
+      "line": 152,
+      "column": 9,
+      "rule": "toast-names-record",
+      "severity": "high",
+      "entity": "project",
+      "entityHasRoute": true,
+      "expression": "Project created from JSON",
+      "feature": "features/projects",
       "route": null
     },
     {
@@ -436,7 +720,7 @@
     },
     {
       "file": "app/(dev)/demos/scopes/context-lab/page.dev.tsx",
-      "line": 373,
+      "line": 374,
       "column": 20,
       "rule": "unlinked-entity-name",
       "severity": "medium",
@@ -448,7 +732,7 @@
     },
     {
       "file": "app/(dev)/demos/scopes/context-lab/page.dev.tsx",
-      "line": 1057,
+      "line": 1058,
       "column": 27,
       "rule": "unlinked-entity-name",
       "severity": "medium",
@@ -496,7 +780,7 @@
     },
     {
       "file": "components/official/processor-extractor/path-management/BookmarkManager.tsx",
-      "line": 184,
+      "line": 187,
       "column": 134,
       "rule": "bare-id-text",
       "severity": "medium",
@@ -508,7 +792,7 @@
     },
     {
       "file": "components/official/processor-extractor/path-management/UnifiedBookmarkManager.tsx",
-      "line": 445,
+      "line": 448,
       "column": 68,
       "rule": "bare-id-text",
       "severity": "medium",
@@ -556,13 +840,25 @@
     },
     {
       "file": "features/ai-work/conversations/components/ConversationProvenancePanel.tsx",
-      "line": 256,
+      "line": 267,
+      "column": 24,
+      "rule": "bare-id-text",
+      "severity": "medium",
+      "entity": "?handoff",
+      "entityHasRoute": false,
+      "expression": "handoff.fromProviderSessionId",
+      "feature": "features/ai-work",
+      "route": null
+    },
+    {
+      "file": "features/ai-work/conversations/components/ConversationProvenancePanel.tsx",
+      "line": 333,
       "column": 16,
       "rule": "bare-id-text",
       "severity": "medium",
-      "entity": "?primary",
+      "entity": "?binding",
       "entityHasRoute": false,
-      "expression": "primary.provider_session_id",
+      "expression": "binding.provider_session_id",
       "feature": "features/ai-work",
       "route": null
     },
@@ -579,6 +875,30 @@
       "route": null
     },
     {
+      "file": "features/code/views/sandboxes/SandboxVersionHealthCard.tsx",
+      "line": 767,
+      "column": 41,
+      "rule": "bare-id-text",
+      "severity": "medium",
+      "entity": "?health",
+      "entityHasRoute": false,
+      "expression": "health.running_image_id",
+      "feature": "features/code",
+      "route": null
+    },
+    {
+      "file": "features/code/views/sandboxes/SandboxVersionHealthCard.tsx",
+      "line": 773,
+      "column": 41,
+      "rule": "bare-id-text",
+      "severity": "medium",
+      "entity": "?health",
+      "entityHasRoute": false,
+      "expression": "health.current_image_id",
+      "feature": "features/code",
+      "route": null
+    },
+    {
       "file": "features/files/components/core/PermissionsDialog/PermissionsDialog.tsx",
       "line": 250,
       "column": 26,
@@ -592,7 +912,7 @@
     },
     {
       "file": "features/flashcards/fast-fire/debug/AudioCaptureDebugPanel.tsx",
-      "line": 107,
+      "line": 108,
       "column": 48,
       "rule": "bare-id-text",
       "severity": "medium",
@@ -616,7 +936,7 @@
     },
     {
       "file": "features/hr/tasks/components/HrTaskInbox.tsx",
-      "line": 306,
+      "line": 323,
       "column": 50,
       "rule": "bare-id-text",
       "severity": "medium",
@@ -627,8 +947,44 @@
       "route": null
     },
     {
+      "file": "features/mandates/admin/impact-cells.tsx",
+      "line": 657,
+      "column": 58,
+      "rule": "bare-id-text",
+      "severity": "medium",
+      "entity": "?batch",
+      "entityHasRoute": false,
+      "expression": "batch.batch_id",
+      "feature": "features/mandates",
+      "route": null
+    },
+    {
+      "file": "features/masterwork/components/masterworks/CompareTwoDialog.tsx",
+      "line": 420,
+      "column": 38,
+      "rule": "bare-id-text",
+      "severity": "medium",
+      "entity": "?dep",
+      "entityHasRoute": false,
+      "expression": "dep.rule_id",
+      "feature": "features/masterwork",
+      "route": null
+    },
+    {
+      "file": "features/notes/components/FolderQuickPick.tsx",
+      "line": 220,
+      "column": 22,
+      "rule": "unlinked-entity-name",
+      "severity": "medium",
+      "entity": "folder",
+      "entityHasRoute": false,
+      "expression": "folder.name",
+      "feature": "features/notes",
+      "route": null
+    },
+    {
       "file": "features/rag/components/data-stores/DataStoresPage.tsx",
-      "line": 1061,
+      "line": 1070,
       "column": 20,
       "rule": "bare-id-text",
       "severity": "medium",
@@ -652,13 +1008,25 @@
     },
     {
       "file": "features/research/components/overview/live-pipeline/stages/AnalyzeStageView.tsx",
-      "line": 128,
+      "line": 131,
       "column": 14,
       "rule": "unlinked-count",
       "severity": "medium",
       "entity": "agent",
       "entityHasRoute": true,
       "expression": "derived.uniqueAgents.length agent type",
+      "feature": "features/research",
+      "route": null
+    },
+    {
+      "file": "features/research/components/overview/pipeline-graph/PipelineGraph.tsx",
+      "line": 497,
+      "column": 9,
+      "rule": "toast-names-record",
+      "severity": "medium",
+      "entity": "seo_keyword",
+      "entityHasRoute": false,
+      "expression": "Keyword added",
       "feature": "features/research",
       "route": null
     },
@@ -671,6 +1039,18 @@
       "entity": "scope",
       "entityHasRoute": false,
       "expression": "scope.name",
+      "feature": "features/scopes",
+      "route": null
+    },
+    {
+      "file": "features/scopes/components/management/NewScopeInline.tsx",
+      "line": 215,
+      "column": 7,
+      "rule": "toast-names-record",
+      "severity": "medium",
+      "entity": "scope",
+      "entityHasRoute": false,
+      "expression": "Added \" … \" + … new context item … … Added \" … \"",
       "feature": "features/scopes",
       "route": null
     },
@@ -688,7 +1068,7 @@
     },
     {
       "file": "features/workflow-runtime/discovery/components/WaitingInbox.tsx",
-      "line": 80,
+      "line": 91,
       "column": 12,
       "rule": "bare-id-text",
       "severity": "medium",
@@ -696,6 +1076,18 @@
       "entityHasRoute": false,
       "expression": "row.parentRunId && <span>· part of a larger run</span>",
       "feature": "features/workflow-runtime",
+      "route": null
+    },
+    {
+      "file": "lib/detail/core/DetailBody.tsx",
+      "line": 479,
+      "column": 24,
+      "rule": "bare-id-text",
+      "severity": "medium",
+      "entity": "?entry",
+      "entityHasRoute": false,
+      "expression": "entry.actorId",
+      "feature": "lib/detail",
       "route": null
     }
   ],

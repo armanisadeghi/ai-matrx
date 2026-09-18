@@ -17,7 +17,7 @@ import type { DeadEndFinding, DeadEndRuleId } from "./types";
  *  pass a full finding or a row projection. */
 export type DescribableFinding = Pick<
   DeadEndFinding,
-  "rule" | "entity" | "entityHasRoute" | "expression" | "file"
+  "rule" | "entity" | "entityHasRoute" | "expression" | "file" | "entityLabel"
 >;
 
 const REGISTRY = "features/scopes/registry/entityRegistry.ts";
@@ -31,6 +31,24 @@ const REGISTRY = "features/scopes/registry/entityRegistry.ts";
  */
 export function isRegistryToken(entity: string): boolean {
   return entity !== "(file)" && !entity.startsWith("?");
+}
+
+/**
+ * The entity's own noun, as the remedy must speak it: the registry's label
+ * ("Calendar event" → "calendar event", "SEO Keyword" → "SEO keyword" — an
+ * acronym keeps its case), or the token's words when no label reached the
+ * finding. Never another entity's noun: a remedy reading "Open the note" for a
+ * `project` teaches the wrong door and reads as a fact (V-21).
+ */
+export function entityNoun(f: DescribableFinding): string {
+  const source = f.entityLabel?.trim() || (isRegistryToken(f.entity) ? f.entity : "");
+  if (!source) return "record";
+  return source
+    .replace(/_/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((word) => (word === word.toUpperCase() ? word : word.toLowerCase()))
+    .join(" ");
 }
 
 export function describeFinding(f: DescribableFinding): string {
@@ -60,6 +78,16 @@ export function describeFinding(f: DescribableFinding): string {
       return (
         `"${f.expression}" counts records the user cannot reach. A count is a door — ` +
         `link it to the filtered list, open the peek, or drop the number.`
+      );
+    case "toast-names-record":
+      return (
+        `The toast "${f.expression}" announces a \`${f.entity}\` record and gives the user no way to open it — ` +
+        `the toast expires (or is dismissed) and the record is then unreachable from this surface. ` +
+        `Pass a door in the same call: toast.success(msg, { action: { label: "Open the ${entityNoun(f)}", onClick: () => open… } }) ` +
+        `— and keep a door on the surface itself, because the toast goes away and the record does not.` +
+        (isRegistryToken(f.entity) && !f.entityHasRoute
+          ? ` \`${f.entity}\` has no hrefFor yet — add one in ${REGISTRY} so the door has somewhere to go.`
+          : "")
       );
     case "no-doors-in-file":
       return (

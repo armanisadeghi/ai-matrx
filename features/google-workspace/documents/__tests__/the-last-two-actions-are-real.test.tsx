@@ -1,0 +1,404 @@
+/**
+ * 🚨 PLAN §4.1 — THE LAST TWO OF THE FOUR UNAVAILABLE ACTIONS ARE REAL CALLS.
+ *
+ * Until B-29 built the server half, "Keep as AI Matrx data" and "Archive this
+ * record" were honest words ("not wired up yet"). They are buttons now, and these
+ * tests are about the three ways a button like that lies to a person: by running
+ * without saying what it costs, by sending the wrong record or the wrong
+ * workspace, and by claiming it worked when the server refused.
+ *
+ * Every test here was run against the code with the behaviour it names removed,
+ * and every one of them failed first (see features/google-workspace/FEATURE.md).
+ */
+
+import * as React from "react";
+import { act } from "react";
+import { createRoot } from "react-dom/client";
+
+import { GoogleDocumentPanel } from "../GoogleDocumentPanel";
+import { DOC_ID, ORG_ID, googleDocumentRow } from "./fixtures";
+import type { GoogleDocumentMimeKind, GoogleDocumentRow } from "../types";
+
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
+let currentRow: GoogleDocumentRow = googleDocumentRow({
+  sync_status: "unavailable",
+  sync_status_reason: "Google says you no longer have access to this file.",
+});
+
+jest.mock("@/utils/supabase/client", () => {
+  const chain: Record<string, unknown> = {};
+  const self = () => chain;
+  Object.assign(chain, {
+    schema: self,
+    from: self,
+    select: self,
+    eq: self,
+    is: self,
+    abortSignal: self,
+    maybeSingle: async () => ({ data: currentRow, error: null }),
+  });
+  return { supabase: chain, createClient: () => chain };
+});
+
+const calls: Array<{ path: string; body: Record<string, unknown> }> = [];
+let nextResponse: (path: string) => unknown = () => ({});
+let failWith: string | null = null;
+
+jest.mock("@/features/marketing/google/service", () => ({
+  postGoogleBackend: async (path: string, body: Record<string, unknown>) => {
+    calls.push({ path, body });
+    if (failWith) throw new Error(failWith);
+    return { status: 200, json: async () => nextResponse(path) };
+  },
+}));
+
+jest.mock("@/features/google-workspace/service", () => ({
+  appendGoogleDocument: jest.fn(),
+  approvalQueueHref: () => "/administration/approvals",
+  SENT_FOR_APPROVAL_MESSAGE: "Sent for approval.",
+  registerSelectedGoogleFile: jest.fn(),
+}));
+
+/**
+ * The unavailable notice's first two actions are CALLBACKS now (F-60, N9), not
+ * anchors out of the record: the connector window and the Google Picker, both
+ * opened in place. This suite is about the other two, so both openers are stubbed.
+ */
+jest.mock("@/features/overlays/openers/googleConnectWindow", () => ({
+  useOpenGoogleConnectWindow: () => jest.fn(),
+}));
+jest.mock("@/lib/googlePicker", () => ({ pickGoogleWorkspaceFile: jest.fn() }));
+jest.mock("@/features/google-workspace/drivePickerToken", () => ({
+  getGoogleDrivePickerToken: jest.fn(),
+}));
+
+jest.mock("@/lib/api/organization-context", () => ({
+  requireOrganizationContext: (id: string | null) => {
+    if (!id) throw new Error("no organization");
+    return id;
+  },
+}));
+jest.mock("@/lib/redux/store-singleton", () => ({ getStoreSingleton: () => null }));
+jest.mock("@/lib/redux/slices/appContextSlice", () => ({ selectOrganizationId: () => ORG_ID }));
+jest.mock("@/lib/redux/hooks", () => ({
+  useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
+}));
+jest.mock("@/features/scopes/redux/selectors/active-context", () => ({
+  selectActiveOrganizationId: () => ORG_ID,
+}));
+jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => "u1" }));
+jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
+  useEffectiveKnob: (_o: unknown, _u: unknown, ref: { key: string }) =>
+    ref.key === "on_open_min_age_seconds" ? 300 : "dated",
+}));
+
+const toasts = { success: jest.fn(), error: jest.fn(), info: jest.fn() };
+jest.mock("@/lib/toast", () => ({
+  toast: {
+    success: (...a: unknown[]) => toasts.success(...a),
+    error: (...a: unknown[]) => toasts.error(...a),
+    info: (...a: unknown[]) => toasts.info(...a),
+  },
+}));
+
+/** What the confirm dialog was asked, and what it answers. */
+const confirmations: Array<{ title?: string; description?: string; confirmLabel?: string }> = [];
+let confirmAnswer = true;
+jest.mock("@/components/dialogs/confirm/ConfirmDialogHost", () => ({
+  confirm: async (options: { title?: string; description?: string; confirmLabel?: string }) => {
+    confirmations.push(options);
+    return confirmAnswer;
+  },
+}));
+
+let container: HTMLDivElement;
+let root: ReturnType<typeof createRoot>;
+
+async function mount(row: GoogleDocumentRow): Promise<void> {
+  currentRow = row;
+  container = document.createElement("div");
+  document.body.appendChild(container);
+  root = createRoot(container);
+  await act(async () => {
+    root.render(<GoogleDocumentPanel initialRow={row} />);
+  });
+}
+
+async function click(selector: string): Promise<void> {
+  const button = container.querySelector<HTMLButtonElement>(selector);
+  if (!button) throw new Error(`no control matched ${selector}`);
+  await act(async () => {
+    button.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  });
+  await act(async () => {});
+}
+
+beforeEach(() => {
+  calls.length = 0;
+  confirmations.length = 0;
+  confirmAnswer = true;
+  failWith = null;
+  toasts.success.mockClear();
+  toasts.error.mockClear();
+  nextResponse = () => ({});
+});
+
+afterEach(() => {
+  act(() => root.unmount());
+  container.remove();
+});
+
+const UNAVAILABLE = googleDocumentRow({
+  sync_status: "unavailable",
+  sync_status_reason: "Google says you no longer have access to this file.",
+});
+
+test("Keep as AI Matrx data names what it costs, then detaches this record in its own organization", async () => {
+  nextResponse = () => ({
+    id: DOC_ID,
+    table: "workbench.google_document",
+    entity_token: "google_document",
+    organization_id: ORG_ID,
+    label: "Q3 Plan",
+    sync_status: "detached",
+    sync_status_reason: "Kept as Matrx data on 2026-09-18: this Google document no longer refreshes from Google.",
+    archived: false,
+    changed: true,
+  });
+  await mount(UNAVAILABLE);
+
+  await click("[data-google-document-keep]");
+
+  // THE CONSEQUENCE IS NAMED FIRST, and not as a generic "Are you sure?".
+  expect(confirmations).toHaveLength(1);
+  const asked = confirmations[0];
+  expect(asked.title).toBe("Keep as AI Matrx data");
+  expect(asked.description).toContain("stops refreshing from Google");
+  expect(asked.description).toContain("keeps exactly what it has today");
+  expect(asked.description).toContain("Nothing changes in your Google account");
+  expect(asked.description).toContain("cannot be undone");
+  expect(asked.confirmLabel).toBe("Keep as AI Matrx data");
+
+  expect(calls).toHaveLength(1);
+  expect(calls[0].path).toBe(
+    `/google-sync/records/workbench.google_document/${DOC_ID}/detach`,
+  );
+  // THE RECORD'S OWN ORGANIZATION, carried on the request — never resolved server-side.
+  expect(calls[0].body).toEqual({ organization_id: ORG_ID });
+  expect(toasts.success).toHaveBeenCalled();
+  expect(toasts.error).not.toHaveBeenCalled();
+});
+
+test("Archive names that it is recoverable, then archives this record", async () => {
+  nextResponse = () => ({
+    id: DOC_ID,
+    table: "workbench.google_document",
+    entity_token: "google_document",
+    organization_id: ORG_ID,
+    label: "Q3 Plan",
+    sync_status: "unavailable",
+    sync_status_reason: "Google says you no longer have access to this file.",
+    archived: true,
+    changed: true,
+  });
+  await mount(UNAVAILABLE);
+
+  await click("[data-google-document-archive]");
+
+  const asked = confirmations[0];
+  expect(asked.title).toBe("Archive this record");
+  expect(asked.description).toContain("recoverable from the archive");
+  expect(asked.description).toContain("nothing here is destroyed");
+  expect(asked.description).toContain("Google is untouched");
+  expect(calls[0].path).toBe(
+    `/google-sync/records/workbench.google_document/${DOC_ID}/archive`,
+  );
+  expect(calls[0].body).toEqual({ organization_id: ORG_ID });
+  // The panel does not pretend the record is still live underneath it.
+  expect(container.querySelector("[data-google-document-archived]")?.textContent).toContain(
+    "recoverable from the archive",
+  );
+});
+
+test("declining the dialog calls nothing at all", async () => {
+  confirmAnswer = false;
+  await mount(UNAVAILABLE);
+
+  await click("[data-google-document-keep]");
+  await click("[data-google-document-archive]");
+
+  expect(confirmations).toHaveLength(2);
+  expect(calls).toEqual([]);
+  expect(toasts.success).not.toHaveBeenCalled();
+});
+
+test("a server refusal is shown and nothing on screen pretends it worked", async () => {
+  failWith = "You do not have editor access to this Google document, so it cannot be kept as Matrx data.";
+  await mount(UNAVAILABLE);
+
+  await click("[data-google-document-keep]");
+
+  expect(toasts.error).toHaveBeenCalledWith(
+    expect.stringContaining("do not have editor access"),
+  );
+  expect(toasts.success).not.toHaveBeenCalled();
+  expect(container.querySelector("[data-google-document-archived]")).toBeNull();
+  expect(container.querySelector("[data-google-document-unavailable]")).not.toBeNull();
+});
+
+test("a record already kept as AI Matrx data says so, offers no Keep, and never refreshes on open", async () => {
+  const detached = googleDocumentRow({
+    sync_status: "detached",
+    sync_status_reason:
+      "Kept as Matrx data on 2026-09-18: this Google document no longer refreshes from Google and keeps what it had that day.",
+    // Stale enough that an `available` record would have spent a refresh on open.
+    synced_at: "2020-01-01T00:00:00Z",
+  });
+  await mount(detached);
+
+  const notice = container.querySelector("[data-google-document-detached]");
+  expect(notice?.textContent).toContain("no longer refreshes from Google");
+  expect(notice?.textContent).toContain("pick the file in Google once more");
+  expect(container.querySelector("[data-google-document-keep]")).toBeNull();
+  expect(container.querySelector("[data-google-document-archive]")).not.toBeNull();
+  // A refresh-on-open here would be the screen undoing the person's choice.
+  expect(calls).toEqual([]);
+});
+
+test("a record kept as AI Matrx data renders no Append composer, and says why (Cursor Bugbot, B-29 review)", async () => {
+  const detached = googleDocumentRow({
+    sync_status: "detached",
+    sync_status_reason:
+      "Kept as Matrx data on 2026-09-18: this Google document no longer refreshes from Google and keeps what it had that day.",
+  });
+  await mount(detached);
+
+  // Appending would either call a Google file this record no longer reaches, or
+  // toast success while the detached body silently never updates — so the
+  // composer is gone, not disabled-looking (Law 4).
+  expect(container.querySelector("[data-google-document-append]")).toBeNull();
+  const disabledNotice = container.querySelector("[data-google-document-append-disabled]");
+  expect(disabledNotice).not.toBeNull();
+  expect(disabledNotice?.textContent).toContain("Appends go to the Google file");
+  expect(disabledNotice?.textContent).toContain("this record no longer does");
+});
+
+test("an available record still renders the Append composer (positive control)", async () => {
+  const available = googleDocumentRow({ sync_status: "available" });
+  await mount(available);
+
+  expect(container.querySelector("[data-google-document-append]")).not.toBeNull();
+  expect(container.querySelector("[data-google-document-append-disabled]")).toBeNull();
+});
+
+test(
+  "a Sheet Record renders no Append composer — the Docs API cannot honour it — " +
+    "and says where a range write lives instead (Cursor Bugbot, PR 228)",
+  async () => {
+    const sheet = googleDocumentRow({ sync_status: "available", mime_kind: "spreadsheet" });
+    await mount(sheet);
+
+    // Never a fake control: the composer that only ever calls
+    // `appendGoogleDocument` and is labelled as adding to a Doc is gone for a
+    // Sheet, never disabled-looking (Law 4).
+    expect(container.querySelector("[data-google-document-append]")).toBeNull();
+    const notice = container.querySelector("[data-google-document-append-unsupported]");
+    expect(notice).not.toBeNull();
+    expect(notice?.textContent).toContain("Google Docs action");
+    expect(notice?.textContent).toContain("Settings");
+    expect(notice?.textContent).toContain("Google Workspace");
+  },
+);
+
+test(
+  "a Doc Record still renders the real Append composer, never the Sheet notice " +
+    "(positive control, Cursor Bugbot, PR 228)",
+  async () => {
+    const doc = googleDocumentRow({ sync_status: "available", mime_kind: "document" });
+    await mount(doc);
+
+    expect(container.querySelector("[data-google-document-append]")).not.toBeNull();
+    expect(container.querySelector("[data-google-document-append-unsupported]")).toBeNull();
+  },
+);
+
+test(
+  "an 'other' Record (a Slides deck, or any non-Docs/Sheets Drive file) renders no " +
+    "Append composer, never the Sheet line, and offers its own derived Google link " +
+    "(Cursor Bugbot, PR 228, thread 4043568378 — F-72)",
+  async () => {
+    // No stored external_url: forces googleFileHref to derive the Drive
+    // file-view link from external_id, exactly as N12 documents.
+    const other = googleDocumentRow({
+      sync_status: "available",
+      mime_kind: "other",
+      external_url: null,
+    });
+    await mount(other);
+
+    expect(container.querySelector("[data-google-document-append]")).toBeNull();
+    const notice = container.querySelector("[data-google-document-append-unsupported]");
+    expect(notice).not.toBeNull();
+    // The class-level defect: the Sheets range-editor line named for
+    // `spreadsheet` must never render for a row whose kind is `other`.
+    expect(notice?.textContent).not.toContain("range write on this Sheet");
+    expect(notice?.textContent).not.toContain("Settings → Integrations → Google Workspace");
+    expect(notice?.textContent).toContain("AI Matrx has no write for this file type");
+    const link = notice?.querySelector("a");
+    expect(link).not.toBeNull();
+    expect(link?.getAttribute("href")).toBe(
+      `https://drive.google.com/file/d/${other.external_id}/view`,
+    );
+    expect(link?.textContent).toContain("open it in Google");
+  },
+);
+
+/**
+ * 🚨 THE KIND CENSUS — every value `mime_kind` can carry, read from the type
+ * the row declares (`GoogleDocumentMimeKind`), never a hand list guessed from
+ * memory. `Record<GoogleDocumentMimeKind, true>` fails to compile the moment
+ * the union gains or loses a member, so this census cannot silently go stale.
+ *
+ * The panel must render EXACTLY ONE of three things for any row: the real
+ * composer (document), the Sheets range-editor pointer (spreadsheet), or the
+ * honest no-write line (everything else) — and the Sheets line must never
+ * appear for a non-spreadsheet kind. This is red on the pre-fix HEAD for
+ * `mime_kind: "other"` (it rendered the Sheets sentence) and green after.
+ */
+const MIME_KIND_CENSUS: Record<GoogleDocumentMimeKind, true> = {
+  document: true,
+  spreadsheet: true,
+  other: true,
+};
+const ALL_MIME_KINDS = Object.keys(MIME_KIND_CENSUS) as GoogleDocumentMimeKind[];
+
+describe.each(ALL_MIME_KINDS)("mime_kind census — %s", (mimeKind) => {
+  test("renders exactly the control for this kind, and never the wrong one", async () => {
+    const row = googleDocumentRow({ sync_status: "available", mime_kind: mimeKind });
+    await mount(row);
+
+    const composer = container.querySelector("[data-google-document-append]");
+    const unsupported = container.querySelector("[data-google-document-append-unsupported]");
+
+    if (mimeKind === "document") {
+      expect(composer).not.toBeNull();
+      expect(unsupported).toBeNull();
+      return;
+    }
+
+    expect(composer).toBeNull();
+    expect(unsupported).not.toBeNull();
+    const text = unsupported?.textContent ?? "";
+
+    if (mimeKind === "spreadsheet") {
+      expect(text).toContain("range write on this Sheet");
+      expect(text).toContain("Settings → Integrations → Google Workspace");
+    } else {
+      // Every other kind: never the Sheets sentence, only the honest line.
+      expect(text).not.toContain("range write on this Sheet");
+      expect(text).not.toContain("Settings → Integrations → Google Workspace");
+      expect(text).toContain("AI Matrx has no write for this file type");
+    }
+  });
+});

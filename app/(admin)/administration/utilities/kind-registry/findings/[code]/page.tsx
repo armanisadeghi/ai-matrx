@@ -35,8 +35,10 @@ export async function generateMetadata({
 }: {
   params: Promise<{ code: string }>;
 }): Promise<Metadata> {
+  // The App Router already decodes dynamic segment params — decoding again
+  // double-decodes a literal `%` in the finding code.
   const { code } = await params;
-  const spec = findingSpec(decodeURIComponent(code));
+  const spec = findingSpec(code);
   return {
     title: spec ? `${spec.label} — Shape Doctor` : "Shape Doctor finding",
     description: spec?.what,
@@ -113,8 +115,10 @@ export default async function ShapeFindingCodePage({
 }: {
   params: Promise<{ code: string }>;
 }) {
+  // The App Router already decodes dynamic segment params — decoding again
+  // double-decodes a literal `%` in the finding code.
   const { code: raw } = await params;
-  const spec = findingSpec(decodeURIComponent(raw));
+  const spec = findingSpec(raw);
   // An unknown code is a genuinely absent page, not an empty one.
   if (!spec) notFound();
 

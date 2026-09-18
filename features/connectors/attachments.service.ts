@@ -64,6 +64,8 @@ function fillRoute(
  * chooser turns a candidate into a pick without reshaping it.
  */
 export interface AttachableCandidate {
+  /** The row's own id — a picked-file id, or the Record's row id (F-71). */
+  resource_id: string;
   provider: string;
   resource_type: string;
   resource_ref: string;
@@ -75,6 +77,21 @@ export interface AttachableCandidate {
    * because only it knows what matters about that provider's resources.
    */
   detail: string | null;
+  /**
+   * `null` for a Record-backed candidate (F-71: a synced calendar event) —
+   * the server's access chokepoint already passed before this row could ever
+   * be listed, so an empty value here is NOT "no access" and must never be
+   * rendered as one. Only a picked file (a repository, a Drive file) carries
+   * a real GitHub/Drive permission word.
+   */
+  permission_level: string | null;
+  /**
+   * Set when this candidate IS a platform Record rather than a picked file —
+   * its schema-qualified table (`communication.calendar_event`), so the
+   * client can open the SAME row its own screen and the archive door
+   * address, through `resource_id`. `null` for a picked file.
+   */
+  record_table: string | null;
   metadata: Record<string, unknown> | null;
 }
 

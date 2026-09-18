@@ -88,3 +88,17 @@ rerun after every pull. `pnpm check:agent-harness` is read-only.
 
 Codex skips a new or changed non-managed hook until a human reviews its hash.
 Open `/hooks` once after installation and trust the Matrx dev-server guard.
+
+## Change Log
+
+- 2026-09-18 (F-101, V-23 NEW-1): `ensure_worktree_node_modules` in
+  `scripts/agent-dev-server.sh` handled only the symlink case
+  (`[[ -L "$nm" ]] || return 0` returned immediately otherwise), but
+  `git worktree add` never creates `node_modules` at all — a fresh worktree's
+  `node_modules` is ABSENT, not a symlink — so `pnpm preview:start` there
+  printed "dependencies are missing; run pnpm install first", a remedy worse
+  than the defect (an install in the worktree resolves a different `latest`
+  dependency tree than the primary checkout's). Fixed to hard-link-copy from
+  the primary checkout in both the absent and symlink cases, and to leave an
+  already-real `node_modules` directory untouched. Forcing test:
+  `pnpm test:worktree-node-modules` (`scripts/test-worktree-node-modules.sh`).

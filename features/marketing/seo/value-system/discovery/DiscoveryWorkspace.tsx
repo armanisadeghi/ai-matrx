@@ -13,7 +13,7 @@
  * those kinds — never a second list.
  */
 
-import { ApprovalQueue } from "../approvals/ApprovalQueue";
+import { ApprovalQueue } from "@/features/approvals/ApprovalQueue";
 import { ValueDoors } from "../ValueDoors";
 import { DiscoveryLadder } from "./DiscoveryLadder";
 
@@ -50,7 +50,7 @@ export function DiscoveryWorkspace({
         <ValueDoors brandId={brandId} siteId={siteId} showDiscovery={false} />
       </div>
       <ApprovalQueue
-        scope={{ siteId, brandId, organizationId, siteLabel }}
+        scope={{ key: siteId, siteId, brandId, organizationId, siteLabel }}
         kinds={DISCOVERY_PROPOSAL_KINDS}
         title="Discovery proposals waiting on you"
         defaultExpanded

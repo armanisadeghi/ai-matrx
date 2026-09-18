@@ -14,8 +14,13 @@ import { useMemo, useRef, useState } from "react";
 import { GscClassBar } from "@/features/marketing/search-console/components/ambassador/GscClassBar";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
-import { ArrowDownRight, ArrowUpRight, FileSearch, Loader2 } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, FileSearch, Info, Loader2 } from "lucide-react";
 import { InlineQueryError } from "@/features/marketing/components/shared/MarketingUi";
+import {
+  gscDeltaRefusalLabel,
+  siteKpiDelta,
+  type GscWindowDelta,
+} from "@/features/marketing/analytics/gsc-delta";
 import {
   useSiteGscDaily,
   useSiteGscTopPages,
@@ -48,30 +53,47 @@ export function formatPosition(value: number | null | undefined): string {
   return value.toFixed(1);
 }
 
-/** Percent change vs the prior 28-day window; null = not comparable. */
-export function trendPercent(
-  current: number | null,
-  previous: number | null,
-  prevDays: number,
-): number | null {
-  // A partial prior window (e.g. GSC history younger than 8 weeks) would
-  // fabricate a huge "growth" number — suppress until coverage is near-full.
-  if (current === null || previous === null || prevDays < 21) return null;
-  if (previous <= 0) return null;
-  return ((current - previous) / previous) * 100;
-}
-
+/**
+ * THE DELTA PILL — the percentage when the two windows are comparable, and the
+ * REFUSAL, out loud, when they are not.
+ *
+ * `trendPercent(current, previous, prevDays)` used to live here and judged the
+ * PREVIOUS window only (`prevDays < 21`, hand-typed). Live on 2026-09-17 five
+ * managed sites had 8 of 28 CURRENT days collected against 23 of 28 previous
+ * ones, so that rule held and this pill printed −54.3% … −72.6% over sites whose
+ * traffic per collected day was flat or UP (round-3 verdict B-N1). The judge now
+ * lives once, in `analytics/gsc-delta.ts`, and a refused pair prints the reason
+ * with both day counts instead of nothing at all — a suppressed percentage that
+ * renders empty is the same silent omission.
+ */
 export function TrendDelta({
-  percent,
+  delta,
   invert = false,
   className,
 }: {
-  percent: number | null;
+  delta: GscWindowDelta | null;
   /** For metrics where lower is better (position). */
   invert?: boolean;
   className?: string;
 }) {
-  if (percent === null) return null;
+  if (!delta) return null;
+  if (delta.percent === null) {
+    // Nothing to compare, said in the pill itself. `title` carries the whole
+    // sentence the judge wrote, including what each window is missing.
+    return (
+      <span
+        className={cn(
+          "inline-flex items-center gap-0.5 rounded bg-muted px-1 py-px text-[10px] font-medium tabular-nums text-muted-foreground",
+          className,
+        )}
+        title={delta.caveat ?? "The two windows were not collected alike."}
+      >
+        <Info className="h-2.5 w-2.5 shrink-0" aria-hidden />
+        {gscDeltaRefusalLabel(delta)}
+      </span>
+    );
+  }
+  const percent = delta.percent;
   const up = percent >= 0;
   const good = invert ? !up : up;
   const Icon = up ? ArrowUpRight : ArrowDownRight;
@@ -84,7 +106,7 @@ export function TrendDelta({
           : "bg-red-500/10 text-red-600 dark:text-red-400",
         className,
       )}
-      title="vs previous 28 days"
+      title={delta.caveat ?? "vs previous 28 days"}
     >
       <Icon className="h-2.5 w-2.5" />
       {Math.abs(percent) >= 100
@@ -288,15 +310,7 @@ export function GscPeekBody({
   }, [daily.data, metric]);
 
   const delta =
-    metric === "clicks"
-      ? trendPercent(site.gsc_clicks_28d, site.gsc_clicks_prev_28d, site.gsc_prev_days)
-      : metric === "impressions"
-        ? trendPercent(
-            site.gsc_impressions_28d,
-            site.gsc_impressions_prev_28d,
-            site.gsc_prev_days,
-          )
-        : null;
+    metric === "position" ? null : siteKpiDelta(site, metric);
 
   return (
     <div className="space-y-2.5">
@@ -309,7 +323,7 @@ export function GscPeekBody({
             {metric === "position"
               ? formatPosition(windowTotal)
               : formatMetric(windowTotal)}
-            {metric !== "position" ? <TrendDelta percent={delta} /> : null}
+            {metric !== "position" ? <TrendDelta delta={delta} /> : null}
           </p>
         </div>
         <div className="flex shrink-0 overflow-hidden rounded-md border border-border">

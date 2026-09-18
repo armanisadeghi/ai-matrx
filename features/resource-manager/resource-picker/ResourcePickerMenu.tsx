@@ -25,6 +25,7 @@ import {
 } from "./ConversationReferencePicker";
 import { ResourcePickerSubViewHeader } from "./ResourcePickerSubViewHeader";
 import { toast } from "@/lib/toast";
+import type { GoogleWorkspaceResourceType } from "@/features/google-workspace/resource-types";
 import { GoogleResourcePicker } from "./GoogleResourcePicker";
 import { useOpenCloudBrowserCanvas } from "@/features/cloud-browser/hooks/useOpenCloudBrowserCanvas";
 import {
@@ -135,7 +136,7 @@ export function ResourcePickerMenu({
   const attachGoogleFile = (file: {
     fileId: string;
     name: string;
-    isSheet: boolean;
+    resourceType: GoogleWorkspaceResourceType;
   }) => {
     if (!conversationId) {
       // Never a dead click. Every host that shows this row has a conversation

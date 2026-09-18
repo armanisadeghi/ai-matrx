@@ -150,3 +150,20 @@ DB.
   `test@test.com` against a seeded draft probe (deleted after).
 - 2026-08-16 — ConnectMailboxDialog dead end fixed: "Connect a different Google account" is now ALWAYS offered (inline GIS popup via LazyGoogleAPIProvider + gmail.send scopes, exchange, list reload) — previously the door existed only in the empty state, so a user with existing connections could never add a third account.
 - 2026-09-01 — Expected cross-organization mailbox `403` responses remain visible on the detail screen but no longer create duplicate repair-queue incidents from its parallel detail and event reads.
+- 2026-09-18 — **A mailbox recorded for audit is not a broken outreach mailbox
+  (F-41 / VERIFY-B1-B2-R5 W1).** The list asks aidream for `purpose=outreach`
+  explicitly, so the `purpose='correspondence'` row a reviewed one-to-one send
+  registers is no longer shown here as a `draft` mailbox demanding a TXT record on
+  `gmail.com`. Those rows are ONE click below (`useCorrespondenceIdentities`, a
+  second read by name — nothing is hidden, and a failed read says so rather than
+  reading as "there are none"), rendered with the server's own `purpose_note`, no
+  status badge and no issues list, and offering "Use for campaigns" behind a
+  confirmation that states what turns on first: domain proof, four weeks of
+  warm-up, and reading that mailbox's incoming mail. `ConnectMailboxDialog` reads
+  the server's third state (`recorded_for_audit` + `promotion_note`) as a pickable
+  row behind the same confirmation, instead of the blocked-list sentence "This
+  mailbox is already set up as a sending identity" — which was false and offered
+  no way forward while `create_identity` would have promoted the row in place.
+  Client half: `features/crm/sending-identities/purpose.ts`, measured against the
+  server's models, route default and promotion rule by
+  `purpose-is-the-servers.test.ts`. No screen was seen.

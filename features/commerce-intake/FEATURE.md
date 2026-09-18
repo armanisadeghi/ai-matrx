@@ -323,6 +323,7 @@ On a phone, logged into an org:
 
 ## Change log
 
+- 2026-09-17 — **Removed a double `decodeURIComponent` on `code`** in `app/(public)/l/[code]/page.tsx` (the label resolver) — the App Router already decodes the value, so a code carrying a literal `%` threw `URIError` on the second decode. Part of the repo-wide `pnpm check:route-param-decode` census/guard; see `lib/detail/FEATURE.md` Change Log.
 - 2026-09-11 — **The failed-printer gate is a knob, not a refusal in code** (Arman's ruling the
   same day: stop putting live gates in the code, make them settings that show what is happening).
   Both label print flows mount `useFailedPrinterGate` + `PrinterCertificationNotice`: this org's

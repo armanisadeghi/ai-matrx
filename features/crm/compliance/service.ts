@@ -13,6 +13,7 @@
 
 import { isJsonObject } from "@/types/json";
 import { createClient } from "@/utils/supabase/client";
+import { normalizeMediumValue } from "../normalize";
 import { parseEligibilityVerdict } from "./parse";
 import {
   OUTREACH_POLICY_VERSION,
@@ -47,6 +48,61 @@ export async function checkSendEligibility(params: {
   // Narrowed at runtime, not cast: a verdict whose shape we merely asserted
   // would fail open the day the DB function changes.
   return parseEligibilityVerdict(data);
+}
+
+/**
+ * 🚨 EVERY MEDIUM ROW THIS ORGANIZATION HOLDS FOR AN ADDRESS — ALL OF THEM.
+ *
+ * Unsubscribes, complaints and blocklist entries are recorded against a
+ * `crm.contact_medium` row — the ORGANIZATION's row for that value, not a
+ * per-record one. So an address typed into a review card is not "unknown": the
+ * organization very often already holds it, on another Person, with a legal
+ * opt-out on it. Until 2026-09-17 the Gmail preflight skipped any address the
+ * open record did not hold, which meant the one send authority was never asked
+ * about exactly the addresses nobody had vetted (VERIFY-B1-B2 D2).
+ *
+ * TWO THINGS THIS FUNCTION MUST NEVER DO AGAIN (VERIFY-B1-B2-R2 N2 / N10):
+ *
+ * 1. **Answer "nothing here" for a value it could not read.** It used to
+ *    swallow `normalizeMediumValue`'s throw and return null, and the preflight
+ *    read null as "no suppression can exist" and sent — so an unsubscribed
+ *    person was emailed by writing her address `Ada Lovelace <ada@...>`. The
+ *    address arrives PARSED now (`features/crm/gmail/mailbox.ts`), and a value
+ *    that still cannot be normalized THROWS, because the caller's fail-closed
+ *    is the only correct answer to "I could not confirm eligibility".
+ * 2. **Take `.limit(1)`.** The live unique index is `(organization_id, channel,
+ *    coalesce(platform_slug,''), value_key)`, so one address can hold SEVERAL
+ *    rows — and the suppression may be on the one that did not come back. Every
+ *    row is returned and the caller asks about every one of them.
+ *
+ * Read-only by design: it never creates the medium row (`findOrCreateMedium`
+ * does that, on a path a person asked for). An EMPTY array means this
+ * organization holds no row for the value — and since a suppression cannot
+ * exist without one, there is genuinely nothing recorded to ask about.
+ */
+export async function findMediumIdsForAddress(params: {
+  organizationId: string;
+  address: string;
+}): Promise<string[]> {
+  // Throws on a value that cannot be normalized — see (1) above.
+  const { valueKey } = normalizeMediumValue("email", params.address);
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("crm")
+    .from("contact_medium")
+    .select("id")
+    .eq("organization_id", params.organizationId)
+    .eq("channel", "email")
+    .eq("value_key", valueKey)
+    .is("deleted_at", null);
+  if (error) {
+    // 🚨 The caller FAILS CLOSED on a throw — a lookup that cannot be read is
+    // not a lookup that said "nothing here".
+    throw new Error(`Recipient lookup failed: ${error.message}`);
+  }
+  // Bounded by the unique index above (one row per platform_slug), so this is
+  // not an unbounded read pretending to be complete.
+  return (data ?? []).map((row) => row.id);
 }
 
 /**

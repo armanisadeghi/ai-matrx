@@ -35,8 +35,10 @@ export default async function CloudFilesAllLayout({
   }
 
   const supabase = await createClient();
+  // The App Router already decodes each catch-all segment — decoding again
+  // double-decodes a literal `%` in a folder name.
   const { path } = await params;
-  const folderPath = (path ?? []).map(decodeURIComponent).join("/");
+  const folderPath = (path ?? []).join("/");
 
   let initialFolderId: string | null = null;
   if (folderPath) {

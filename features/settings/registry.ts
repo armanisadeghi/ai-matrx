@@ -708,16 +708,24 @@ export const settingsRegistry: SettingsTabDef[] = [
     persistence: "server",
   },
 
-  // ── Integrations ──────────────────────────────────────────────────────────
+  // ── Connectors ────────────────────────────────────────────────────────────
+  // "Connector" is the word (Arman, 2026-09-17): Anthropic, Microsoft Copilot
+  // and the whole data-tooling world say Connectors, and "integration" is
+  // banned as a generic in the lexicon. The `id` stays `integrations` because it
+  // addresses deep links and the live route; only the visible label changes.
   {
     id: "integrations",
-    label: "Integrations",
+    label: "Connectors",
     icon: Plug,
-    description: "Connect MCP servers and external tools to your agents.",
+    description:
+      "Connect Google, MCP servers and other services, and see exactly what each one may do.",
     searchKeywords: [
+      "connector",
+      "connectors",
       "mcp",
       "integration",
       "connect",
+      "google",
       "tools",
       "github",
       "slack",

@@ -76,6 +76,12 @@ jest.mock("@/features/google-workspace/GoogleAccountSelect", () => ({
 jest.mock("@/features/google-workspace/GoogleAgentToolsSection", () => ({
   GoogleAgentToolsSection: () => <div data-testid="google-agent-tools" />,
 }));
+// A picked Doc or Sheet in the resource roster offers its Record (F-58). THE ONE
+// opener's host binding lives in app/Providers.tsx; this suite mounts the body
+// alone, so the opener is observed rather than bound.
+jest.mock("@/lib/detail/useOpenDetail", () => ({
+  useOpenDetail: () => () => Promise.resolve("window"),
+}));
 
 const keys = [
   "drive_files",
@@ -139,6 +145,7 @@ const first = {
   metadata: {},
   credential_present: true,
   credential_stable: true,
+  capability_health: null,
   health: "connected" as const,
 };
 const second = {
@@ -457,6 +464,10 @@ describe("GoogleWorkspaceOverviewBody", () => {
         targetConnectionId: "connection-one",
         capabilityKey: "contacts",
       }),
+      // 🚨 The one-window gate, taken BEFORE the organization wait and carried
+      // into the redirect (V-23 NEW-3): a second press during that wait is
+      // refused instead of opening a second Google window.
+      expect.objectContaining({ release: expect.any(Function) }),
     );
   });
 

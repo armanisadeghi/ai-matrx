@@ -24,6 +24,12 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  // THE approval queue as a floating window (the same surface as /approvals).
+  approvalsWindow: {
+    label: "Waiting on you",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   adminIndicator: {
     label: "Admin Indicator",
     instanceMode: "singleton",
@@ -41,6 +47,35 @@ export const OVERLAY_CATALOGUE = {
   },
   audioControlWindow: {
     label: "Media",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  detailDocked: {
+    label: "Record detail (docked)",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
+  detailWindow: {
+    label: "Record detail",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  // The two Google import panels (Google-native PLAN §4.5, §4.7). Singletons:
+  // opening again retargets the one window rather than stacking a copy.
+  googleContactsImportWindow: {
+    label: "Import from Google Contacts",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  googleTasksImportWindow: {
+    label: "Import from Google Tasks",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  // The agenda over synced Google Calendar events (PLAN §4.6). Singleton: the
+  // agenda is one surface, and opening it again reveals the one window.
+  googleAgendaWindow: {
+    label: "Agenda",
     instanceMode: "singleton",
     isWindow: true,
   },
@@ -254,6 +289,14 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  // The connector primitive's "Choose what to connect" dialog. One provider
+  // today (Google); the provider is resolved inside the component, so a second
+  // provider does not add a second overlay.
+  connectorConsentDialog: {
+    label: "Choose what to connect",
+    instanceMode: "singleton",
+    isWindow: false,
+  },
   liveIntegrationsWindow: {
     label: "Live Integrations",
     instanceMode: "singleton",
@@ -406,6 +449,11 @@ export const OVERLAY_CATALOGUE = {
   },
   crmCreatePartyWindow: {
     label: "Create CRM Record",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  gmailComposeWindow: {
+    label: "Email a CRM record",
     instanceMode: "singleton",
     isWindow: true,
   },
@@ -596,11 +644,6 @@ export const OVERLAY_CATALOGUE = {
   },
   instanceUIStateWindow: {
     label: "Instance U I State Window",
-    instanceMode: "singleton",
-    isWindow: true,
-  },
-  itemDetailWindow: {
-    label: "Item Details",
     instanceMode: "singleton",
     isWindow: true,
   },
@@ -841,6 +884,18 @@ export const OVERLAY_CATALOGUE = {
   },
   siteDiscoveryWindow: {
     label: "Business discovery",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  siteAnalyticsWindow: {
+    label: "Google Analytics",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  // F-87 — one site's Quick view, opened from nothing but its id (the ONE
+  // in-place door for the `web_site` record).
+  siteQuickViewWindow: {
+    label: "Site Quick view",
     instanceMode: "singleton",
     isWindow: true,
   },

@@ -30,9 +30,17 @@ export function SiteConnectionChips({
   site,
   className,
 }: {
+  // `domain` / `root_url` are part of the status derivation now: a Search
+  // Console property is judged against the site it is bound to, so the chip
+  // can say "does not match this site" instead of "Connected".
   site: Pick<
     MarketingSite,
-    "initialized_at" | "initialization" | "integrations" | "gsc_synced_at"
+    | "initialized_at"
+    | "initialization"
+    | "integrations"
+    | "gsc_synced_at"
+    | "domain"
+    | "root_url"
   >;
   className?: string;
 }) {

@@ -16,7 +16,9 @@ import { MandateWorkspace } from "@/features/mandates/workspace/MandateWorkspace
 export default function OrgMandateWorkspacePage() {
   const params = useParams();
   const orgId = params.orgId as string;
-  const mandateKey = decodeURIComponent(params.mandateKey as string);
+  // Next.js already decodes dynamic segment params — decoding again
+  // double-decodes a literal `%` in the mandate key/id.
+  const mandateKey = params.mandateKey as string;
   const { organization, organizationId, loading, error, refresh } =
     useResolvedOrganization(orgId);
   const {

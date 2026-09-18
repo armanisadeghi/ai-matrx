@@ -243,4 +243,8 @@ export const defaultUserPreferences: UserPreferences = {
     quietUntil: null,
     presentationCycle: null,
   },
+  connectors: {
+    // Keyed by provider id; absent = never dismissed.
+    promptDismissedAt: {},
+  },
 };

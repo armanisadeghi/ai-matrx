@@ -21,6 +21,7 @@ import {
   MessageSquare,
   NotebookPen,
   Phone,
+  Send,
   Trash2,
 } from "lucide-react";
 import { InboundLabelBadge } from "../outreach-lists/badges";
@@ -37,6 +38,12 @@ import { cn } from "@/lib/utils";
 import { formatRelativeTime } from "@/utils/datetime";
 import type { ApplicationScope } from "@/features/agents/types/scope.types";
 import { useSurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
+import { useOpenGmailComposeWindow } from "@/features/overlays/openers/gmailComposeWindow";
+import { selectActiveProjectId } from "@/features/scopes/redux/selectors/active-context";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { useOrgMembers } from "../../deals/useOrgMembers";
+import { GmailSentRecordDetails } from "../../gmail/GmailSentRecordDetails";
+import { isGmailSentRecord } from "../../gmail/sent-record-facts";
 import { logInteraction, removeInteraction } from "../../service";
 import { parseInteraction } from "../../agent-context/crmRecordSurfaceWrite";
 import type {
@@ -85,6 +92,27 @@ interface Props {
   writeSurfaceName?: string;
   /** Enables party-record copy context; deal reuse deliberately omits it. */
   copyParent?: CrmRecordCopyParent;
+  /**
+   * The person or company this timeline belongs to. Required for the Gmail
+   * compose window's title and for the sentence it shows before Send; without
+   * it the control is not offered rather than opening a window that cannot say
+   * who it is writing to.
+   */
+  partyLabel?: string | null;
+  /** The deal this timeline belongs to, when it is a deal's timeline. */
+  dealLabel?: string | null;
+  /**
+   * 🚨 THE PARTY'S OWN ORGANIZATION, when the host's `orgId` is somebody
+   * else's.
+   *
+   * A Gmail-sent row belongs to the PERSON's timeline, and two live triggers on
+   * `crm.interaction` agree: one fills a NULL org from the party, the other
+   * RAISES when an explicit org differs from the party's. The deal record page
+   * passes `orgId = deal.organization_id`, so on a deal whose org has diverged
+   * from its party's the insert failed AFTER the message had left
+   * (VERIFY-B1-B2 D8). Compose writes use this when it is set.
+   */
+  partyOrganizationId?: string | null;
 }
 
 export function InteractionTimeline({
@@ -96,6 +124,9 @@ export function InteractionTimeline({
   getApplicationScope,
   writeSurfaceName,
   copyParent,
+  partyLabel,
+  dealLabel,
+  partyOrganizationId,
 }: Props) {
   const [channel, setChannel] = useState<InteractionChannel>("call");
   const [direction, setDirection] = useState<InteractionDirection>("outbound");
@@ -104,6 +135,34 @@ export function InteractionTimeline({
   const [minutes, setMinutes] = useState("");
   const [saving, setSaving] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const openGmailCompose = useOpenGmailComposeWindow();
+  // The project the send belongs to (R2 A5/D7 — nothing passed one before F-20).
+  const activeProjectId = useAppSelector(selectActiveProjectId);
+
+  /**
+   * The ONE place compose is opened from this surface, so the Person header's
+   * action and this card's action cannot pass different ids.
+   */
+  const composeOrgId = partyOrganizationId ?? orgId;
+  const openCompose = () => {
+    if (!partyLabel) return;
+    openGmailCompose({
+      partyId,
+      organizationId: composeOrgId,
+      partyLabel,
+      dealId: dealId ?? null,
+      dealLabel: dealLabel ?? null,
+      projectId: activeProjectId ?? null,
+      onSent: () => {
+        void onChanged();
+      },
+    });
+  };
+
+  // Approvers on a sent record are auth user ids; a UUID on a timeline is a
+  // dead end with extra steps, so they resolve through the org-members reader
+  // the deal surfaces already use.
+  const { memberById } = useOrgMembers([composeOrgId]);
 
   const expandableRowIds = interactions
     .filter((row) => Boolean(row.body))
@@ -197,6 +256,24 @@ export function InteractionTimeline({
       compactAction
       action={
         <div className="flex items-center gap-0.5">
+          {/* 🚨 SENDING AN EMAIL IS A FIRST-CLASS ACTION, not a mode of the
+              log-a-past-activity strip. Until 2026-09-17 it appeared only after
+              a person clicked the "Email" chip in that strip, so the one door to
+              the Gmail compose window was invisible on arrival
+              (VERIFY-B1-B2 A1). Composing is not the same act as LOGGING
+              something that already happened, so it stays its own control — it
+              opens the compose window OVER the record, which stays readable
+              while the message is written about it. */}
+          {partyLabel && (
+            <button
+              type="button"
+              onClick={() => openCompose()}
+              className="mr-1 inline-flex h-11 items-center gap-1 rounded border border-border px-2 text-[11px] font-medium text-foreground hover:bg-accent sm:h-6"
+            >
+              <Send className="h-3 w-3" />
+              Send email
+            </button>
+          )}
           {copyParent && interactions.length > 0 && (
             <CrmRecordCopyButtons
               label={`${copyParent.label} activity`}
@@ -383,6 +460,17 @@ export function InteractionTimeline({
                     >
                       {row.body}
                     </CollapsibleText>
+                  )}
+                  {/* A sent Gmail message renders ITS OWN facts — provider,
+                      recipient, associations, drafted-by, approved-by. */}
+                  {isGmailSentRecord(row) && (
+                    <GmailSentRecordDetails
+                      row={row}
+                      partyId={partyId}
+                      partyLabel={partyLabel}
+                      dealLabel={dealLabel}
+                      memberById={memberById}
+                    />
                   )}
                   {classification?.evidence && (
                     <p className="mt-0.5 text-[11px] italic text-muted-foreground/80">

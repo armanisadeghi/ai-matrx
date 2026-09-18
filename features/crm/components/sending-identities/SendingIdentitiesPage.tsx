@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 import {
   ArrowRight,
   CircleCheck,
+  FileClock,
   Loader2,
   MailPlus,
   Power,
@@ -33,10 +34,28 @@ import { CapabilityGate } from "@/features/entitlements/components/CapabilityGat
 import { cn } from "@/lib/utils";
 import { toast } from "@/lib/toast";
 import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
-import { useSendingIdentities } from "@/features/crm/sending-identities/hooks";
-import { setSendingPolicy } from "@/features/crm/sending-identities/service";
+import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import {
+  useCorrespondenceIdentities,
+  useSendingIdentities,
+} from "@/features/crm/sending-identities/hooks";
+import {
+  promoteToOutreachMailbox,
+  setSendingPolicy,
+} from "@/features/crm/sending-identities/service";
 import { STATUS_COPY } from "@/features/crm/sending-identities/types";
 import type { SendingIdentityView } from "@/features/crm/sending-identities/types";
+import {
+  CORRESPONDENCE_BADGE_LABEL,
+  CORRESPONDENCE_SECTION_EMPTY,
+  CORRESPONDENCE_SECTION_TITLE,
+  PROMOTE_TO_CAMPAIGNS_CONFIRM_LABEL,
+  PROMOTE_TO_CAMPAIGNS_CONSEQUENCE,
+  PROMOTE_TO_CAMPAIGNS_TITLE,
+  correspondenceRevealLabel,
+  correspondenceRowSentence,
+} from "@/features/crm/sending-identities/purpose";
+import { formatRelativeTime } from "@/utils/datetime";
 import { ConnectMailboxDialog } from "./ConnectMailboxDialog";
 import { OutreachBringUpSection } from "./OutreachBringUpSection";
 
@@ -158,6 +177,94 @@ function IdentityRow({ identity }: { identity: SendingIdentityView }) {
   );
 }
 
+/**
+ * A CORRESPONDENCE MAILBOX, RENDERED AS WHAT IT IS (VERIFY-B1-B2-R5 W1).
+ *
+ * The outbound spine records a connected mailbox as `purpose='correspondence'`
+ * on its first reviewed 1:1 send so that send has an audit trail. Rendered as an
+ * ordinary row it read `Not set up` with the next step "prove you own this
+ * domain" — on `gmail.com`, forever. So: no status badge, no setup step, no
+ * issues list (every one of them is a campaign gate); what it says instead is
+ * why the row exists and when it last sent, plus the promotion the server allows
+ * with its consequence stated first.
+ */
+function CorrespondenceRow({
+  identity,
+  onPromoted,
+}: {
+  identity: SendingIdentityView;
+  onPromoted: () => void;
+}) {
+  const [promoting, setPromoting] = useState(false);
+  const [failure, setFailure] = useState<string | null>(null);
+
+  async function promote() {
+    const ok = await confirm({
+      title: PROMOTE_TO_CAMPAIGNS_TITLE,
+      description: PROMOTE_TO_CAMPAIGNS_CONSEQUENCE,
+      confirmLabel: PROMOTE_TO_CAMPAIGNS_CONFIRM_LABEL,
+    });
+    if (!ok) return;
+    setPromoting(true);
+    setFailure(null);
+    try {
+      await promoteToOutreachMailbox(identity.id);
+      toast.success(
+        `${identity.from_address} is now a campaign mailbox — finish its setup.`,
+      );
+      onPromoted();
+    } catch (error) {
+      setFailure(error instanceof Error ? error.message : String(error));
+    } finally {
+      setPromoting(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-border bg-card p-3">
+      <div className="flex items-start justify-between gap-3">
+        <Link
+          href={`/crm/sending-identities/${identity.id}`}
+          className="min-w-0 flex-1 rounded-sm hover:underline"
+        >
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="truncate text-sm font-medium text-foreground">
+              {identity.from_address}
+            </p>
+            <Badge variant="outline" className="shrink-0">
+              {CORRESPONDENCE_BADGE_LABEL}
+            </Badge>
+          </div>
+          <p className="mt-0.5 flex items-start gap-1.5 text-xs text-muted-foreground">
+            <FileClock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span className="min-w-0">
+              {correspondenceRowSentence(identity)}{" "}
+              {identity.last_send_at
+                ? `Last sent ${formatRelativeTime(identity.last_send_at)}.`
+                : "No send recorded on it yet."}
+            </span>
+          </p>
+        </Link>
+        <Button
+          size="sm"
+          variant="outline"
+          className="shrink-0"
+          disabled={promoting}
+          onClick={() => void promote()}
+        >
+          {promoting ? (
+            <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+          ) : null}
+          Use for campaigns
+        </Button>
+      </div>
+      {failure ? (
+        <p className="mt-2 text-xs text-destructive">{failure}</p>
+      ) : null}
+    </div>
+  );
+}
+
 export function SendingIdentitiesPage() {
   const router = useRouter();
   const { identities, policy, loading, error, organizationRequired, reload } =
@@ -165,6 +272,20 @@ export function SendingIdentitiesPage() {
   const [connectOpen, setConnectOpen] = useState(false);
   const [togglingPolicy, setTogglingPolicy] = useState(false);
   const [policyError, setPolicyError] = useState<string | null>(null);
+  /**
+   * THE DEFAULT LISTING IS OUTREACH MAILBOXES, and the rest is one click away
+   * with its count named (the archived-items law's shape, applied to purpose).
+   * The rows behind it are not hidden problems — they are audit records nobody
+   * asked to manage.
+   */
+  const [showCorrespondence, setShowCorrespondence] = useState(false);
+  /**
+   * The audit rows come from a SECOND read, by name, only once asked for — the
+   * list route filters by purpose and defaults to outreach (W1). Nothing is
+   * hidden; it is one click, and a failed read says so instead of reading as
+   * "there are none".
+   */
+  const correspondence = useCorrespondenceIdentities(showCorrespondence);
 
   async function togglePolicy(enabled: boolean) {
     setTogglingPolicy(true);
@@ -284,6 +405,15 @@ export function SendingIdentitiesPage() {
             </CardContent>
           </Card>
         ) : identities && identities.length > 0 ? (
+          /*
+            🚨 THIS LIST IS THE CAMPAIGN MAILBOXES, AND THAT IS THE SERVER'S
+            FILTER. `listSendingIdentities` sends `purpose=outreach`, so a mailbox
+            a reviewed 1:1 send recorded for audit is not here reading as an
+            outreach mailbox stuck behind a DNS record nobody can publish
+            (VERIFY-B1-B2-R5 W1). The audit rows are one click below, fetched by
+            name. Complete in one answer, and not a PostgREST `.select()`, so there
+            is no 1000-row cap for `readAllRows` to guard.
+          */
           <div className="space-y-2">
             {identities.map((identity) => (
               <IdentityRow key={identity.id} identity={identity} />
@@ -309,6 +439,73 @@ export function SendingIdentitiesPage() {
               </Button>
             </CardContent>
           </Card>
+        )}
+
+        {/*
+          🚨 THE MAILBOXES RECORDED FOR AUDIT — filtered out of the list above by
+          the server, and ONE CLICK away here, never hidden (the archived-items
+          law's shape applied to purpose). They are fetched only when asked for,
+          because until a reviewed one-to-one send happens there are none, and a
+          page that read them on every load would be asking for nothing.
+        */}
+        {loading || organizationRequired ? null : showCorrespondence ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <p className="text-xs font-medium text-muted-foreground">
+                {CORRESPONDENCE_SECTION_TITLE}
+              </p>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setShowCorrespondence(false)}
+              >
+                Hide
+              </Button>
+            </div>
+            {correspondence.loading ? (
+              <Skeleton className="h-16 w-full rounded-lg" />
+            ) : correspondence.error ? (
+              /* A read that failed says so — never an empty section reading as
+                 "there are none". */
+              <Card className="border-destructive/40">
+                <CardContent className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-xs text-destructive">
+                    {correspondence.error}
+                  </p>
+                  <Button size="sm" variant="outline" onClick={correspondence.reload}>
+                    Try again
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : correspondence.identities && correspondence.identities.length > 0 ? (
+              correspondence.identities.map((identity) => (
+                <CorrespondenceRow
+                  key={identity.id}
+                  identity={identity}
+                  onPromoted={() => {
+                    reload();
+                    correspondence.reload();
+                  }}
+                />
+              ))
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                {CORRESPONDENCE_SECTION_EMPTY}
+              </p>
+            )}
+          </div>
+        ) : (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="self-start text-muted-foreground"
+            onClick={() => setShowCorrespondence(true)}
+          >
+            <FileClock className="mr-1.5 h-3.5 w-3.5" />
+            {correspondenceRevealLabel(
+              correspondence.identities?.length ?? null,
+            )}
+          </Button>
         )}
 
         {policy?.outreach_enabled && identities && identities.length > 0 ? (

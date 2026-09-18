@@ -177,6 +177,53 @@ export const ChipRow: React.FC<{ children: React.ReactNode; className?: string }
 );
 
 /**
+ * 🚨 THE ONE PASS THAT DECIDES WHAT THE STRIP PRINTS — exported so a caller can
+ * ask what it WILL print without re-deriving the rule (F-104, V-23 NEW-5).
+ *
+ * A card that says "this read returned no rows" under the rows it just printed
+ * is lying, and the only way that cannot drift is for the emptiness question and
+ * the printing to run the SAME filter. {@link MetaStrip} renders exactly these
+ * entries; {@link printsResidualFacts} asks whether there are any.
+ */
+export function metaStripEntries(
+  value: Record<string, unknown>,
+  omit: readonly string[],
+): [string, string | number | boolean][] {
+  const skip = new Set<string>([...omit, KIND_KEY]);
+  return Object.entries(value).filter(
+    ([key, item]) =>
+      !skip.has(key) &&
+      item !== null &&
+      item !== undefined &&
+      (typeof item === "string" || typeof item === "number" || typeof item === "boolean"),
+  ) as [string, string | number | boolean][];
+}
+
+/** The same pass for {@link LeftoverFields} — the non-scalar residue. */
+export function leftoverEntries(
+  value: Record<string, unknown>,
+  omit: readonly string[],
+): [string, unknown][] {
+  const skip = new Set<string>([...omit, KIND_KEY]);
+  return Object.entries(value).filter(
+    ([key, item]) =>
+      !skip.has(key) && item !== null && item !== undefined && typeof item === "object",
+  );
+}
+
+/**
+ * True when this card will print at least one residual fact of ANY shape —
+ * a promoted-scalar strip entry or a leftover object. Derived from what the
+ * card actually prints, never from a hand list of keys.
+ */
+export function printsResidualFacts(
+  value: Record<string, unknown>,
+  omit: readonly string[],
+): boolean {
+  return metaStripEntries(value, omit).length > 0 || leftoverEntries(value, omit).length > 0;
+}
+
+/**
  * The secondary facts a family did not promote — rendered small, in one line
  * per fact, so they stay readable without competing with the headline. Fields
  * the family already showed are passed in `omit` and never repeated (a fact
@@ -187,14 +234,7 @@ export const MetaStrip: React.FC<{
   omit: readonly string[];
   className?: string;
 }> = ({ value, omit, className }) => {
-  const skip = new Set<string>([...omit, KIND_KEY]);
-  const entries = Object.entries(value).filter(
-    ([key, item]) =>
-      !skip.has(key) &&
-      item !== null &&
-      item !== undefined &&
-      (typeof item === "string" || typeof item === "number" || typeof item === "boolean"),
-  );
+  const entries = metaStripEntries(value, omit);
   if (entries.length === 0) return null;
   return (
     <div className={cn("flex flex-wrap gap-x-4 gap-y-1 text-xs", className)}>
@@ -237,14 +277,7 @@ export const LeftoverFields: React.FC<{
   omit: readonly string[];
   label?: string;
 }> = ({ value, omit, label = "Also returned" }) => {
-  const skip = new Set<string>([...omit, KIND_KEY]);
-  const rest = Object.entries(value).filter(
-    ([key, item]) =>
-      !skip.has(key) &&
-      item !== null &&
-      item !== undefined &&
-      typeof item === "object",
-  );
+  const rest = leftoverEntries(value, omit);
   if (rest.length === 0) return null;
   return (
     <Section label={label}>

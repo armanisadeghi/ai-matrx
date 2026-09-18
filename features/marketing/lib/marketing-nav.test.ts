@@ -59,6 +59,9 @@ describe("marketing declarations ↔ coming-soon registry", () => {
     // unbuilt REMAINDER inside each live page, printed where it belongs.
     "marketing.email.opt-in-campaigns",
     "marketing.monitoring.alerts",
+    // Analytics shipped its Google half (the brand Analytics route renders real
+    // GA4 evidence); the cross-channel join is printed under that live panel.
+    "marketing.analytics.cross-channel",
   ]);
 
   it("every route-backed marketing registry row is declared somewhere", () => {

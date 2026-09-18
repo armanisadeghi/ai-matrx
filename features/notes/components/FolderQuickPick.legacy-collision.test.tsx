@@ -27,7 +27,7 @@ import { Provider } from "react-redux";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import notesReducer from "../redux/slice";
-import appContextReducer from "@/lib/redux/slices/appContextSlice";
+import appContextReducer, { makeAppContextState } from "@/lib/redux/slices/appContextSlice";
 import { FolderQuickPick } from "./FolderQuickPick";
 import type { UserAuthState } from "@/lib/redux/slices/userAuthSlice";
 
@@ -50,7 +50,7 @@ function store() {
   const userAuth = (state: Pick<UserAuthState, "id"> = { id: USER }) => state;
   return configureStore({
     reducer: { notes: notesReducer, appContext: appContextReducer, userAuth },
-    preloadedState: { appContext: { organization_id: ORG_A, organization_name: null, personal_organization_id: null, scope_selections: {}, active_scope_type_ids: [], project_id: null, project_name: null, task_id: null, task_name: null, conversation_id: null, orgBootstrapResolved: true } },
+    preloadedState: { appContext: makeAppContextState({ organization_id: ORG_A, orgBootstrapResolved: true }) },
     middleware: (defaults) => defaults({ serializableCheck: false }),
   });
 }

@@ -31,6 +31,7 @@
 import { useEffect, useState } from "react";
 import {
   AlertTriangle,
+  ArrowUpRight,
   Check,
   ExternalLink,
   Loader2,
@@ -48,6 +49,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
+import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
 import {
   fetchAttachableResources,
   type AttachableCandidate,
@@ -110,6 +112,7 @@ function ResourceAttachPickerBody({
   const live = kinds.some((kind) => kind.source === "live");
   const nouns = kinds.map((kind) => kind.label.trim()).filter(Boolean);
   const noun = nouns[0] ?? "items";
+  const openItem = useOpenItemPresentation();
 
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -237,8 +240,23 @@ function ResourceAttachPickerBody({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-lg">
+    // 🚨 F-73: modal={false} is the platform contract for a dialog that can
+    // launch a WindowPanel (the same contract `CmsPageAiActionDialog` and
+    // others already carry) — the record-backed row's "Open" control opens
+    // the calendar event's own window/detail primitive while THIS picker
+    // stays mounted and unfocused-trapped, so the just-opened record is
+    // reachable and focusable instead of sitting behind a modal focus trap.
+    // Non-modal means nothing here closes the picker to open a record, so the
+    // person's in-progress selection is never silently lost.
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => !open && onClose()}
+      modal={false}
+    >
+      <DialogContent
+        className="max-w-lg"
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle>
             Choose {joinWithOr(nouns.length ? nouns : [noun])} from{" "}
@@ -265,7 +283,7 @@ function ResourceAttachPickerBody({
             placeholder={
               live ? `Search your ${providerName} ${noun}…` : `Search ${noun}…`
             }
-            className="h-9 pl-8 text-base sm:text-sm"
+            className="h-9 pl-8 text-base sm:text-sm max-sm:min-h-11"
           />
         </div>
 
@@ -324,7 +342,7 @@ function ResourceAttachPickerBody({
                           ? `${candidate.display_name} is already attached to this chat`
                           : `Attach ${candidate.display_name}`
                       }
-                      className="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-default"
+                      className="flex min-w-0 flex-1 items-center gap-2 text-left disabled:cursor-default max-sm:min-h-11"
                     >
                       <span
                         className={cn(
@@ -351,15 +369,59 @@ function ResourceAttachPickerBody({
                         </span>
                       )}
                     </button>
+                    {/* 🚨 A RECORD-BACKED CANDIDATE OPENS AS ITS RECORD, IN
+                        PLACE (F-71). `candidate.link` for one of these (a
+                        calendar event's `meeting_url`) is where the meeting is
+                        HELD, not the record's own screen — the two are
+                        different doors and neither one substitutes for the
+                        other, so both render when both exist. */}
+                    {candidate.record_table && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openItem(candidate.resource_type, candidate.resource_id, {
+                            name: candidate.display_name,
+                          })
+                        }
+                        className="inline-flex shrink-0 flex-col items-center justify-center gap-0.5 rounded text-muted-foreground hover:text-foreground max-sm:min-h-11 max-sm:min-w-11 sm:flex-row sm:gap-1"
+                        aria-label={`Open ${candidate.display_name}`}
+                        title={`Open ${candidate.display_name}`}
+                      >
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                        {/* Always visible — icon-only doors are told apart
+                            only by hover/tint, which fails on a phone with no
+                            hover (F-80's standard: distinct without hover at
+                            every width). Stacks under the icon below `sm`. */}
+                        <span className="text-[10px] leading-none sm:text-xs">
+                          Open
+                        </span>
+                      </button>
+                    )}
                     {candidate.link && (
                       <a
-                        className="shrink-0 text-muted-foreground hover:text-foreground"
+                        className={cn(
+                          "inline-flex shrink-0 flex-col items-center justify-center gap-0.5 rounded max-sm:min-h-11 max-sm:min-w-11 sm:flex-row sm:gap-1",
+                          candidate.record_table
+                            ? "text-primary hover:underline"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
                         href={candidate.link}
                         target="_blank"
                         rel="noreferrer"
-                        aria-label={`Open ${candidate.display_name} at ${providerName}`}
+                        aria-label={
+                          candidate.record_table
+                            ? `Join ${candidate.display_name}`
+                            : `Open ${candidate.display_name} at ${providerName}`
+                        }
+                        title={candidate.record_table ? "Join the meeting" : undefined}
                       >
-                        <ExternalLink className="h-3 w-3" />
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        {/* Always visible, same reasoning as the "Open" door
+                            above — the two doors must stay distinguishable
+                            without hover at phone width. */}
+                        <span className="text-[10px] leading-none sm:text-xs">
+                          {candidate.record_table ? "Join" : "Open"}
+                        </span>
                       </a>
                     )}
                   </div>
@@ -374,6 +436,21 @@ function ResourceAttachPickerBody({
             owns the repository — a gap only the user can close, and the same
             door the GitHub card already owns. Reused, never re-implemented. */}
         {provider === "github" && <GitHubConnectionCard compact />}
+
+        {/* 🚨 A RECORD CANNOT BE HAND-PICKED — NEVER A PICKER BUTTON FOR ONE
+            (F-71). A synced calendar event is not something the Google Picker
+            can put in this list; the kind's own `add_more` sentence (the same
+            door `attachable_resource_kinds.json` declares for it — refresh
+            your agenda) is the whole remedy, said as a sentence, never as a
+            clickable "Choose…" affordance a meeting cannot answer to. */}
+        {recordKindAddMoreSentences(kinds).map((sentence) => (
+          <p
+            key={sentence}
+            className="text-[11px] leading-tight text-muted-foreground"
+          >
+            {sentence}
+          </p>
+        ))}
 
         {saveError && (
           <p className="flex items-start gap-1.5 text-xs text-destructive">
@@ -394,6 +471,7 @@ function ResourceAttachPickerBody({
               size="sm"
               onClick={onClose}
               disabled={saving}
+              className="max-sm:min-h-11"
             >
               Cancel
             </Button>
@@ -406,6 +484,7 @@ function ResourceAttachPickerBody({
                   ? `Pick at least one of your ${noun} to attach`
                   : undefined
               }
+              className="max-sm:min-h-11"
             >
               {saving && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
               Attach
@@ -441,4 +520,26 @@ function joinWithOr(words: string[]): string {
   if (words.length <= 1) return words[0] ?? "items";
   if (words.length === 2) return `${words[0]} or ${words[1]}`;
   return `${words.slice(0, -1).join(", ")}, or ${words[words.length - 1]}`;
+}
+
+/**
+ * The `add_more` sentence for every Record-backed KIND the picker is offering,
+ * de-duplicated. A kind is Record-backed when the KIND ROW ITSELF carries
+ * `record_table` (F-62's server declaration, `AttachableKind.record_table`) —
+ * never derived from a VISIBLE candidate carrying it (F-73): an empty list, or
+ * a search filter that hides every calendar event, must never hide the
+ * remedy sentence the person needs most right then. Never a hand list of
+ * resource types here, so a future Record-backed kind is picked up for free
+ * the day the server starts declaring it.
+ */
+function recordKindAddMoreSentences(
+  kinds: readonly AttachableResource[],
+): string[] {
+  const sentences: string[] = [];
+  for (const kind of kinds) {
+    if (!kind.record_table) continue;
+    const sentence = kind.add_more?.trim();
+    if (sentence && !sentences.includes(sentence)) sentences.push(sentence);
+  }
+  return sentences;
 }

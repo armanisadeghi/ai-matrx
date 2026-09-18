@@ -68,6 +68,7 @@ import { RecoveryNudge } from "@/features/request-recovery/components/RecoveryNu
 // association cache had. Heavy port bindings (WindowPanel, FilePickerWindow)
 // are behind their own lazy edges inside the host — this import stays light.
 import { AssociationsHost } from "@/features/scopes/host/AssociationsHost";
+import { DetailHost } from "@/features/window-panels/detail/DetailHost";
 
 // THE ONE `@ai-matrx/agents/catalog` mount — the agent picker and every piece
 // of its state (rows, tabs, sort, search, filters, favourites, counts,
@@ -173,7 +174,8 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
     <ReactQueryProvider>
       <StoreProvider initialState={initialReduxState}>
         <AssociationsHost>
-          <AgentCatalogHost>
+          <DetailHost>
+            <AgentCatalogHost>
             <MatrxDataTableHost>
               <WindowPersistenceManager>
                 <PersistentComponentProvider>
@@ -291,7 +293,8 @@ export function Providers({ children, initialReduxState }: ProvidersProps) {
                 </PersistentComponentProvider>
               </WindowPersistenceManager>
             </MatrxDataTableHost>
-          </AgentCatalogHost>
+            </AgentCatalogHost>
+          </DetailHost>
         </AssociationsHost>
       </StoreProvider>
     </ReactQueryProvider>

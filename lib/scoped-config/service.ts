@@ -91,6 +91,152 @@ export async function setKnobOverride(options: {
   return data as KnobOverrideSetResult;
 }
 
+/** A server refusal as ONE sentence a screen can show. */
+export function knobRefusalSentence(result: {
+  reason?: string | null;
+  detail?: string | null;
+}): string {
+  return (
+    [result.reason, result.detail].filter(Boolean).join(" — ") ||
+    "The setting was refused and the door gave no reason."
+  );
+}
+
+function asEntryMap(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+export type KnobMapEntrySetResult =
+  | {
+      ok: true;
+      map: Record<string, unknown>;
+      /**
+       * Whether this write actually changed the person's own map. `false` means
+       * the entry was already exactly this (or, on a removal, was never theirs
+       * to remove — it belongs to an organization rung), and NOTHING was sent.
+       * A surface that reports "saved" on a `false` is a screen that lies.
+       */
+      changed: boolean;
+    }
+  | { ok: false; reason: string };
+
+/**
+ * 🚨 CHANGE (OR REMOVE) ONE ENTRY OF A MAP-VALUED KNOB AT THE PERSON'S OWN RUNG.
+ *
+ * Some knobs hold a map of per-thing exceptions rather than one value
+ * (`ui.detail.presentation_by_type` = `{"file":"docked"}`). The write door
+ * REPLACES the whole value — `platform.knob_override_set(p_value jsonb)` offers
+ * no merge and no precondition (read live from `pg_proc`, 2026-09-17) — so a
+ * per-entry change has to carry every other entry with it, and the three ways
+ * that goes wrong are all closed here:
+ *
+ *  1. **A FAILED READ IS NOT AN EMPTY MAP.** A caller that read the current map
+ *     with `.catch(() => undefined)` and merged into `{}` turned one transient
+ *     miss into silent data loss: the one entry it was saving became the
+ *     person's WHOLE override and every other exception was gone. A read that
+ *     fails REFUSES the write and returns the sentence to show
+ *     (`features/window-panels/detail/savePresentation.ts` was the instance;
+ *     Bugbot, frontend PR 228, commit 4cbd9e45).
+ *  2. **THE READ IS THE PERSON'S OWN RUNG, NOT THE EFFECTIVE LADDER** (NEW-3,
+ *     VERIFY-U-P1-R2). This used to merge into the EFFECTIVE map
+ *     (organization → user) and write the result at the USER rung, which COPIED
+ *     the organization's exceptions into the person's own row. Measured: an org
+ *     holding `{contract: page, invoice: page}`, a person saving `file: docked`,
+ *     and `{contract: page, invoice: page, file: docked}` left the browser at
+ *     the user rung — so when the organization later changed `contract`, that
+ *     person kept the old value for ever, on every type, with nothing on any
+ *     screen saying why. "Organizations decide" (law 6) is what breaks. The
+ *     base is now the user rung's OWN map, read through
+ *     `platform.knob_override` (`knob_override_read` grants the person their own
+ *     rows), and every organization exception keeps flowing through the ladder
+ *     for every key this person has not personally set.
+ *  3. **THE READ IS FRESH.** A per-rung table read is not the 60s-cached
+ *     effective answer, so merging cannot re-write a minute-old map and drop
+ *     what another tab or device saved in between.
+ *
+ * **A REMOVAL IS THIS SAME WRITE WITH THE KEY ABSENT.** Omit `entryValue` and
+ * the entry is deleted from the person's map; when it was the last one the
+ * override ROW is cleared (`value: null` at the door), so the person inherits
+ * again rather than holding an empty map that outranks nothing. A surface that
+ * can set an exception and not take it back leaves raw JSON editing as the only
+ * escape, which for the person this platform is built for is no escape at all
+ * (NEW-2) — so the removal is part of this primitive, never a second writer.
+ *
+ * WHAT IS STILL OPEN, SAID PLAINLY: two writers inside the same round trip. The
+ * last write wins for the entries it carries, and nothing can see it from here —
+ * `guardedUpdate` cannot ride this write, because the write is an RPC through
+ * the key's declared door and never a table update, and the door exposes no
+ * `updated_at` to guard on. Closing it needs a per-entry merge (or a
+ * precondition) AT THE DOOR; logged in FOUND_DEFECTS.md. A verify-after-write
+ * here would be a check that cannot fail — our own write is what it would read
+ * back — so there is none.
+ */
+export async function setUserKnobMapEntry(options: {
+  feature: string;
+  key: string;
+  /** The map key being changed (a record type, a table token, an id…). */
+  entryKey: string;
+  /** Omit to REMOVE `entryKey` from the person's map. */
+  entryValue?: unknown;
+  userId: string;
+  organizationId: string;
+  note?: string;
+}): Promise<KnobMapEntrySetResult> {
+  const removing = options.entryValue === undefined;
+  let own: KnobRungOverrideRow | undefined;
+  try {
+    const rows = await fetchKnobRungOverrides({
+      feature: options.feature,
+      key: options.key,
+      organizationId: options.organizationId,
+      kinds: ["user"],
+    });
+    own = rows.find((row) => row.scope_id === options.userId);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      ok: false,
+      reason:
+        `Nothing was saved: your other choices for this setting could not be read (${message}), ` +
+        "and saving now would have replaced all of them with this one. Try again in a moment.",
+    };
+  }
+  const current = own?.value ?? null;
+  const base = current === null ? {} : asEntryMap(current);
+  if (!base) {
+    return {
+      ok: false,
+      reason:
+        `Nothing was saved: your own value for this setting is ${JSON.stringify(current)}, which is not a ` +
+        "list of per-item choices, so one item cannot be changed without replacing the whole value.",
+    };
+  }
+  const map = { ...base };
+  if (removing) {
+    if (!(options.entryKey in map)) return { ok: true, map, changed: false };
+    delete map[options.entryKey];
+  } else {
+    map[options.entryKey] = options.entryValue;
+  }
+  // An empty map is not "no exceptions": it is a standing row at this rung that
+  // answers for the key. Clearing the row is what "use the default" means.
+  const value = removing && Object.keys(map).length === 0 ? null : map;
+  const result = await setKnobOverride({
+    feature: options.feature,
+    key: options.key,
+    scopeKind: "user",
+    scopeId: options.userId,
+    organizationId: options.organizationId,
+    value,
+    note: options.note,
+  });
+  return result.ok
+    ? { ok: true, map, changed: true }
+    : { ok: false, reason: knobRefusalSentence(result) };
+}
+
 /**
  * 🚨 DD-221 — WHICH DOOR WRITES THIS KEY, AND MAY I USE IT.
  *

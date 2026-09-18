@@ -87,6 +87,35 @@ endpoint heading, where a client lane reads — as not built, and extend the wir
 reconciliation to fail when a documented endpoint heading carries no "not built" marker while its
 table entry says `implemented: False`. Job progress in particular is a real capability gap: until a
 stream exists, the frontend re-read is the honest ceiling.
+### D333 — `EntityRef` and `EntityDoorControls` disagree about the peek door, and two peek keys point at nothing (2026-09-17)
+
+**Status:** open · **Priority:** P2 · **Repo:** matrx-frontend
+
+`EntityRef.tsx`'s own header says both door components call `resolveEntityDoors`, "so a registry
+edit lights up both at once and neither can drift". For the PEEK they do not:
+`EntityDoorControls` asks `resolveEntityDoors(...).canPeek`, which is
+`hasPeek(peekKind) || hasRegistryPeek(info)`; `EntityRef` asks only
+`hasPeek(canonicalToken)`. So every token that has NO bespoke peek but does have a
+`titleColumn` — `seo_keyword`, `crm_deal`, `folder`, `working_document`, ~40 of them — gets the
+generic `RegistryPeek` door from one component and nothing from the other, which is the
+component almost every surface actually renders. (Measured with
+`ENTITY_TYPE_METADATA`: `seo_keyword` → `seo.keyword`, `titleColumn: "phrase"`.)
+
+Second half, in the same file: `doors.ts`'s `PEEK_KEY_BY_TOKEN` still maps `app` → `agent_app`
+and `structured_list` → `picklist`, but `PEEK_REGISTRY` was re-keyed to the canonical tokens
+(`app`, `structured_list`) and `agent_app` is not a registered entity token at all. So
+`EntityDoorControls` for an `app` offers "Quick look" (via `hasRegistryPeek`), hands
+`ResourcePeekHost` the kind `agent_app`, finds no component and no entity info, and renders
+NOTHING — a door that opens on nothing, which the doctrine ranks worse than no door.
+
+**Fix:** delete both `PEEK_KEY_BY_TOKEN` entries (the map's own comment says the real fix is
+aligning the keys, and they are aligned now), then make `EntityRef` read `canPeek`/`peekKind`
+from `resolveEntityDoors` like its sibling. **Why not done here (F-40):** flipping `EntityRef`
+turns the peek control on for ~40 tokens on every surface in the app at once — a change whose
+value is per-kind (is `RegistryPeek` a useful answer for a keyword?) and which no test in this
+tree can see; `entity-ref-doors.test.tsx` currently ASSERTS the opposite for `seo_keyword`
+("no route and no peek"). It wants one owner, a browser, and a pass over what the generic peek
+shows per kind.
 
 ### D332 — Six files under `coding-sessions/` carry no `kind` and no session id, so no session has ever listed them (2026-09-17)
 
@@ -186,6 +215,47 @@ not by assumption (the test imports nothing that round touched). **Fix:** add `u
 test's navigation mock, returning the rulebook id the card expects.
 
 
+### D331 — the surface-manifest registry imports a module that does not exist (2026-09-17)
+
+**Status:** open · **Priority:** P2
+
+`features/surfaces/manifests/registry.ts:141` does
+`import { barcodePreviewManifest } from "./barcode-preview.manifest";` and that
+file exists in no commit on any branch (`git log --all -- …barcode-preview.manifest*`
+is empty; the import is already committed, so it is not another lane's dirty
+tree). Every module that transitively reaches the manifest registry therefore
+fails to resolve — under Jest it is a hard suite failure, and it reaches far:
+`components/agent-copy/CopyButtons` and `features/surfaces/runtime/surface-writeback`
+both pull it, so the Gmail review card and `AssistCard` do, so
+`features/approvals/registry.ts` did, twice over. Found by lane F-6 while testing
+the approval kinds (worked around there with one virtual Jest mock, named in the
+test's header — the break itself is untouched).
+
+Fix: whoever owns the barcode-preview surface either lands the manifest file or
+removes the import and its registry entry. It is NOT safe to delete on sight —
+an unreferenced-looking manifest is unfinished work, not dead work
+(`../common-docs/policies/unfinished-work-alarm.md`), and the import's presence
+says someone meant to write it.
+
+### D330 — `AttachableAvailability` no longer extends the generated MCP availability shape (2026-09-17)
+
+**Status:** open · **Priority:** P3
+
+`features/connectors/attachable-resources.ts:68` fails the type-check:
+`Interface 'AttachableAvailability' incorrectly extends` the generated
+availability shape it widens (`McpAvailability` in
+`features/connectors/connection-state.ts`, aliased from
+`types/python-generated/api-types.ts`). Found while type-checking lane F-7's own
+files — this one is UNRELATED to that work and the file is untouched by it. It
+did not report on a run earlier in the same session, so the most likely cause is
+the generated-contract sync in `00d99946` moving the server shape underneath the
+hand-widened interface.
+
+**Fix:** re-read the generated `attachable` member and make
+`AttachableAvailability` conform to it (the generated type is the truth — never
+widen it back). Repro: `npx tsc -p` a config including
+`features/connectors/**/*` , or `pnpm type-check` when it can be run without
+OOM.
 
 ### D327 — Canonical agent picker can offer a stale identity and create an invisible surface binding (2026-09-17)
 
@@ -4383,6 +4453,28 @@ now kept as well.
 
 ---
 
+## A map-valued knob cannot be written safely from a client — the DOOR has no merge and no precondition (2026-09-17, F-9)
+
+Found while fixing the Detail primitive's per-record-type setting (Bugbot, frontend PR 228).
+`platform.knob_override_set(p_value jsonb)` REPLACES the whole value, offers no per-entry merge and
+exposes no `updated_at` to guard on, so a knob that holds a map of per-thing exceptions
+(`ui.detail.presentation_by_type` = `{"file":"docked"}`) can only be changed by a client-side
+read-modify-write. `setUserKnobMapEntry` (`lib/scoped-config/service.ts`) closes the two failure
+modes a client CAN close — a failed read refuses the write instead of merging into `{}`, and the
+base is re-read past the 60s cache — and its header says the rest plainly: **two writers inside one
+round trip still lose the loser's entries, and nothing on the client can see it.** `guardedUpdate`
+cannot ride this because the write is an RPC through the key's declared door, not a table update.
+Closing it needs a per-entry merge (or an optimistic precondition) AT THE DOOR: a
+`platform.knob_override_merge(p_feature, p_key, p_entry_key, p_entry_value, …)`, or an
+`p_if_unchanged_at` argument on the existing door. Not mine to add — it is a migration against a
+client-callable `SECURITY DEFINER` function, and no map-valued knob today has enough writers for
+the race to be likely.
+
+Sibling not fixed: `components/matrx/resizable/MatrxDynamicPanel.tsx` still reserves
+`var(--header-height)` (the pre-shell 2.5rem token) on its MOBILE header padding and mobile content
+height, where the app shell's header is `--shell-header-h`. `SidePanelSurface` never reaches that
+path (it uses a Drawer on mobile), so it is not the same instance — but every other direct
+`MatrxDynamicPanel` consumer that renders under the shell on a touch device is off by 4px there.
 ## ~~A typed-but-unsent chat message does not survive a reload~~ **FIXED 2026-09-17**
 
 Found while closing the Masterwork reload-survival class (cold walk 6). Every capture LANE now

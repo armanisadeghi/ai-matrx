@@ -357,6 +357,57 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
   has context items but no scopes, the illustrated “Your first …” and “Another …” rows now launch
   the same inline Add flow as the explicit button. The rows are keyboard reachable, and the legacy
   organization workspace counterpart carries the same repair so either live surface behaves alike.
+- 2026-09-18 — **F-93: F-82's census was never run, and 82 of 99 listed entities had no door (V-22
+  NEW-6, NEW-7).** F-82 registered the two tokens its verifier named and stopped. Live
+  `platform.entity_types` marks **99** tokens `is_active` AND `is_listed` (read 2026-09-18) and
+  **82** of them had no door in any of the three forms the platform ships — no `hrefFor` here, no
+  registered peek (`features/organizations/peek/kinds-list.ts`), no `open`/`detailSource` in
+  `features/item-presentation/registry.tsx`. Two were live SYNCED entities:
+  `media_source_library` (`media.source_library`, rows live today) and `web_youtube_video`
+  (`web.youtube_video`, the THIRD Google mirror table). Both now carry `hrefFor`, and
+  deliberately not the same kind: a Source Library opens **its own existing screen**,
+  `/libraries/<id>` — `app/(core)/libraries/[id]/page.tsx` → `LibraryPage` → `GET
+  /media/libraries/{id}`, which loads exactly that row (`media_catalog.py:197`) — because a
+  registry door never invents a second presentation when the canonical one exists; a synced
+  YouTube video has no screen keyed on its id anywhere (`/marketing/tools/youtube/videos/<id>`
+  is YouTube's own external id, a different identity), so it gets `detailRecordHref`, backed by a
+  new item-presentation registration. **The class is closed by a guard, not by these two lines:**
+  `registry/listed-entity-doors.ts` holds the census of the remaining 80 with a reason each, keyed
+  by `EntityTypeToken` so a misspelled token is a compile error (`satisfies` on the fresh literal —
+  annotating the export instead type-checks a bad token happily, proven both ways), and
+  `registry/every-listed-entity-has-a-door.test.ts` derives the listed set from
+  `ENTITY_TYPE_METADATA` (generated from `platform.entity_types`, so no list here can go stale),
+  fails on any listed token with no door and no entry, fails on a STALE entry whose token has since
+  gained a door, and ratchets on `DOORLESS_BASELINE = 80` so the number can only fall. An entry is
+  a MEASUREMENT, never an exoneration — 79 read `UNMEASURED` (a door is presumed owed) and `mandate`
+  reads `KEYED_ON_A_KEY_NOT_AN_ID` (`/mandates/[mandateKey]` addresses it by key, so no id-only
+  `hrefFor` can be right). Red→green proven by restoring HEAD's two files: 4 failed / 103 passed,
+  the message naming `media_source_library` and `web_youtube_video`; green at 107/107. Also NEW-7:
+  `app/(core)/detail/[type]/[id]/page.tsx` said it was "never linked to from a working surface",
+  which read as a ban on the door F-82 had just registered; under ruling R35 it now says what it is
+  — the durable ADDRESS every `hrefFor` resolves to (deep link, new tab, `check:dead-ends`) — and
+  what is actually forbidden: a surface holding the record NAVIGATING here instead of opening it in
+  place. Census of the Google surfaces found no primary door navigating to `/detail/...` (the
+  `hrefFor`s in `features/google-workspace/resource-types.ts` go to Google, not to a record page).
+  119 green across `features/scopes/registry`; `check:dead-ends` exit 0; `check:parse` OK over
+  16,724 files. No screen was seen.
+
+- 2026-09-18 — **Two registries, and this one was not told (V-21, F-82).** `calendar_event`
+  (`communication.calendar_event`) and `google_document` (`workbench.google_document`) were
+  registered as openable kinds in the item-presentation registry (F-63) but absent from
+  `registry/entityRegistry.ts` — the registry `<EntityRef token=…>`, `resolveEntityDoors` and the
+  dead-ends rules read. So `<EntityRef token="calendar_event">` rendered no controls at all (neither
+  table carries a `title_column`, so `RegistryPeek` could not stand in either), and the
+  `toast-names-record` rule, whose vocabulary comes from this file, could not see a doorless
+  "Calendar event created" while reporting "Google document imported" against `udt_document` — the
+  wrong record. Both tokens now carry `hrefFor` built by the new `detailRecordHref` helper: the
+  Detail primitive's PAGE presentation (`/detail/<token>/<id>`), which is the addressable form of the
+  SAME open path the item-presentation registration already uses in place, and the only route that
+  keys on exactly this token and id. `DetailHost` is a `"use client"` module with the whole
+  window-manager graph behind it and this registry feeds the deliberately component-free door
+  resolver, so the path is spelled here and held in step by a test that reads `DetailHost`'s own
+  template (`registry/entityRegistry.test.ts`).
+
 
 - 2026-09-17 — **The associations `ensureOrgId` port speaks its refusal.** The port resolved the active organization with a loud personal-org fallback; that fallback was deleted platform-wide on 2026-09-17 and the port now THROWS. The package's `errorSink` reaches the admin Error Inspector, not the person, so a category created with no organization selected would simply never have appeared. The port is wrapped in `withOrganizationRefusalShown`: the person is told, and the package still fails.
 

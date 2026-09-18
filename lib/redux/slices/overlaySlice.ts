@@ -248,7 +248,9 @@ const overlaySlice = createSlice({
 // SELECTORS
 // ============================================================================
 
-type StateWithOverlays = { overlays: OverlayState };
+/** The slice of any store this module's selectors need. Exported so a thunk can
+ *  type its `getState` against the overlays alone, not the whole RootState. */
+export type StateWithOverlays = { overlays: OverlayState };
 
 /** Stable fallback when an overlay instance has never been opened. */
 const CLOSED_OVERLAY_INSTANCE: OverlayInstance = {

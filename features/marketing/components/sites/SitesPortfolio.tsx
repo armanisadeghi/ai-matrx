@@ -20,7 +20,6 @@ import {
 } from "@/features/marketing/components/sites/site-list-presentation";
 import { SiteEditorDialog } from "@/features/marketing/components/sites/SiteEditorDialog";
 import type { SiteEditorHandleRef } from "@/features/marketing/components/sites/SiteEditorDialog";
-import SitePeekWindow from "@/features/marketing/components/sites/SitePeekWindow";
 import { useDeleteSite, useSiteCount } from "@/features/marketing/data/hooks";
 import {
   siteListService,
@@ -38,6 +37,7 @@ import {
 import type { MarketingSite, SiteListRow } from "@/features/marketing/types";
 import { MarketingWorkspaceNav } from "@/features/marketing/components/shared/MarketingWorkspaceNav";
 import { GscPortfolioClassBar } from "@/features/marketing/search-console/components/ambassador/GscPortfolioClassBar";
+import { useOpenSiteQuickViewWindow } from "@/features/overlays/openers/siteQuickViewWindow";
 import { createMarketingScope } from "@/features/surfaces/manifests/marketing.manifest";
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import RouteHeader from "@/features/shell/components/header/RouteHeader";
@@ -88,7 +88,7 @@ export function SitesPortfolio({
   const [editing, setEditing] = useState<MarketingSite | null>(null);
   const [deleting, setDeleting] = useState<MarketingSite | null>(null);
   const [deniedDelete, setDeniedDelete] = useState<MarketingSite | null>(null);
-  const [peeking, setPeeking] = useState<SiteListRow | null>(null);
+  const openSiteQuickView = useOpenSiteQuickViewWindow();
   const listRef = useRef<EntityListController<SiteListRow> | null>(null);
 
   // The open site editor's live handle plus a patch waiting for an editor this
@@ -205,7 +205,8 @@ export function SitesPortfolio({
             buildSiteMenu({
               site,
               onOpenWorkspace: (href) => router.push(href),
-              onQuickView: setPeeking,
+              onQuickView: (site) =>
+                openSiteQuickView({ siteId: site.id, siteLabel: site.name }),
               onEditSite: setEditing,
               onDeleteSite: setDeleting,
             }),
@@ -374,9 +375,6 @@ export function SitesPortfolio({
         />
       </main>
 
-      {peeking ? (
-        <SitePeekWindow site={peeking} onClose={() => setPeeking(null)} />
-      ) : null}
       <SiteEditorDialog
         open={Boolean(editing)}
         onOpenChange={(open) => {
