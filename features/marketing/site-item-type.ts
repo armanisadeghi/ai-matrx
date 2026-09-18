@@ -26,11 +26,12 @@
  * type map.
  *
  * WHERE A CLICK GOES, AND WHY. The platform already owns a site Quick view —
- * `SitePeekWindow`, the floating panel the Sites portfolio and the Content Plan
- * list open on a row — so the click opens THAT, through
- * `features/window-panels/windows/marketing/SiteQuickViewWindow.tsx`, which adds
- * only the canonical single-site read (`getSiteListRow`) a door needs and no
- * body of its own (THE PANEL WRAPS THE CANONICAL COMPONENT). The `detailSource`
+ * `SitePeekBody`, the content the Sites portfolio and the Content Plan list
+ * show on a row — so the click opens THAT, through the one addressed
+ * `siteQuickViewWindow` overlay
+ * (`features/window-panels/windows/marketing/SiteQuickViewWindow.tsx`), which
+ * adds only the canonical single-site read (`getSiteListRow`) a door needs and
+ * no body of its own (THE PANEL WRAPS THE CANONICAL COMPONENT). The `detailSource`
  * below is still declared and still used: `/detail/web_site/<id>` is a URL
  * anyone can build, and the Detail primitive reads the row through THE type map
  * — the same split a file has (bespoke preview window for the click,

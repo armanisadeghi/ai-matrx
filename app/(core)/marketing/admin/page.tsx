@@ -1331,10 +1331,10 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       tier: "official",
     },
     {
-      name: "SitePeekWindow (site quick view)",
-      filePath: "features/marketing/components/sites/SitePeekWindow.tsx",
+      name: "SiteQuickViewWindow (site quick view)",
+      filePath: "features/window-panels/windows/marketing/SiteQuickViewWindow.tsx",
       description:
-        "Non-blocking draggable WindowPanel quick view for one site (KPI tiles, metric-switchable 90d chart, top pages). Opened from the sites-list row menu behind a dynamic() edge — AgentPeekWindow pattern.",
+        "The ONE addressed site quick view — the `siteQuickViewWindow` overlay (opener `features/overlays/openers/siteQuickViewWindow.tsx`, `useOpenSiteQuickViewWindow`), reached from the sites-list row menu, the Content Plan list's row menu, and any id-only caller via `useOpenItemPresentation`. Renders the canonical `SitePeekBody` (KPI tiles, metric-switchable 90d chart, top pages) inside one overlay-owned, URL-addressed WindowPanel. F-106 removed the two page-local panels (Sites portfolio, Content Plan list) that used to duplicate this same body.",
       tier: "official",
     },
     {

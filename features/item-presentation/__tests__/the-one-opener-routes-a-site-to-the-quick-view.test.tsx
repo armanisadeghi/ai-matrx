@@ -4,9 +4,10 @@
  * `useOpenItemPresentation` is THE ONE opener every door goes through. A
  * registered type either reaches a bespoke window (agent, note, file, structured
  * list) or the Detail primitive. A site HAS a bespoke window already — the
- * floating Quick view the Sites portfolio and the Content Plan list open on a
- * row (`SitePeekWindow`) — so the door must reach THAT, wrapped for an id-only
- * caller, rather than composing a second site screen from the record's columns.
+ * `siteQuickViewWindow` overlay the Sites portfolio and the Content Plan list
+ * open on a row (rendering the canonical `SitePeekBody`) — so the door must
+ * reach THAT, wrapped for an id-only caller, rather than composing a second
+ * site screen from the record's columns.
  *
  * RED before this change: `web_site` was not a known item type at all, so the
  * hook returned `false` and nothing opened. RED if someone later routes it to

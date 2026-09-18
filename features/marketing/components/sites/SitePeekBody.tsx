@@ -5,22 +5,22 @@
  *
  * 🚨 A PANEL WRAPS THE CANONICAL COMPONENT, and the panel that wraps it is ONE
  * panel for the window's whole life (`features/window-panels/FEATURE.md`).
- * Content-only, exactly as the SLOTS contract requires: no `WindowPanel` import
- * lives here, so both panel hosts mount the identical body —
+ * Content-only, exactly as the SLOTS contract requires: no `WindowPanel`
+ * import lives here.
  *
- *   - `SitePeekWindowImpl` — the inline panel the Sites portfolio and the
- *     Content Plan list open on a row they already hold, and
- *   - `SiteQuickViewWindow` — the overlay-bound panel an id-only caller opens
- *     (a chat answer, a reference chip, a table cell), which mounts its panel
- *     once and swaps THIS body in when its read resolves.
- *
- * The second host is why the body is a component at all: F-87 shipped the
- * Quick view window returning `SitePeekWindow` — a whole second `WindowPanel`
- * with no `overlayId` — the moment its read resolved, so the loading panel
- * unmounted, the chrome blinked, and the `siteQuickViewWindow` overlay no
- * longer owned the window on screen (its `onCollectData`, its tray row and its
- * close from the controller all applied to a panel that was gone). One body,
- * two thin panel hosts — never two renderers of the same data.
+ * `SiteQuickViewWindow` (`features/window-panels/windows/marketing/`) is now
+ * the ONLY panel host — the `siteQuickViewWindow` overlay, opened by every
+ * caller (the Sites portfolio's row menu, the Content Plan list's row menu,
+ * `useOpenItemPresentation` for an id-only caller such as a chat answer, a
+ * reference chip, or a table cell) via `useOpenSiteQuickViewWindow`. F-106
+ * deleted the page-local `SitePeekWindow`/`SitePeekWindowImpl` pair that used
+ * to give the two list callers their own inline, unaddressed panel wrapping
+ * this same body — F-87 had already shipped that page-local panel's
+ * `SiteQuickViewWindow`-returning twin as a second, standalone `WindowPanel`
+ * with no `overlayId`, which unmounted the loading panel and dropped the
+ * `siteQuickViewWindow` overlay's ownership of the window on screen the
+ * moment its read resolved (fixed by F-88). One body, one panel host now —
+ * never two renderers of the same data.
  */
 
 import { useState } from "react";

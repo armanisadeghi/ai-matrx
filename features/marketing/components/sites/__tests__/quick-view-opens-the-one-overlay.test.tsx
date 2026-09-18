@@ -74,14 +74,6 @@ jest.mock("@/features/window-panels/WindowPanel", () => ({
   },
 }));
 
-jest.mock("@/features/marketing/components/sites/SitePeekWindow", () => ({
-  __esModule: true,
-  default: (props: { onClose: () => void }) => {
-    windowPanelMounts();
-    return <div data-testid="site-peek-window" />;
-  },
-}));
-
 jest.mock("@/features/marketing/components/sites/SiteEditorDialog", () => ({
   SiteEditorDialog: () => null,
 }));
@@ -203,12 +195,10 @@ describe("Sites portfolio Quick view", () => {
       siteLabel: SITE_ROW.name,
     });
 
-    // No page-local WindowPanel (nor its SitePeekWindow front door) ever
-    // mounted inside the portfolio.
+    // No page-local WindowPanel ever mounted inside the portfolio. (F-106
+    // also deleted the `SitePeekWindow`/`SitePeekWindowImpl` front door that
+    // used to provide one — see the census test beside this one.)
     expect(windowPanelMounts).not.toHaveBeenCalled();
     expect(container.querySelector('[data-testid="window-panel"]')).toBeNull();
-    expect(
-      container.querySelector('[data-testid="site-peek-window"]'),
-    ).toBeNull();
   });
 });

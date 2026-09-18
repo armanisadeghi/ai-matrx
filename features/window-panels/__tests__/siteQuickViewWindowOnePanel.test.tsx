@@ -69,14 +69,11 @@ jest.mock("@/features/marketing/components/sites/SitePeekBody", () => ({
   ),
 }));
 
-// The two-list panel host. If the window ever returns THIS again (the F-87
-// shape), the overlay-bound panel above disappears and this test goes red.
-jest.mock("@/features/marketing/components/sites/SitePeekWindow", () => ({
-  __esModule: true,
-  default: ({ site }: { site: { id: string } }) => (
-    <div data-testid="standalone-peek-window" data-site-id={site.id} />
-  ),
-}));
+// F-106 deleted the two-list page-local panel host (`SitePeekWindow.tsx`)
+// entirely — no shipped caller imported it once both list callers were
+// switched to this same overlay. A regression that tries to reintroduce it
+// here now fails at the module-resolution / type-check level, which is a
+// stronger guard than a jest.mock of a module that no longer exists.
 
 jest.mock("@/features/marketing/data/service", () => ({
   getSiteListRow: jest.fn(),
@@ -153,7 +150,6 @@ describe("the site Quick view window, from loading to loaded", () => {
     expect(loadedPanel).not.toBeNull();
     expect(loadedPanel).toBe(loadingPanel);
     expect(loadedPanel?.getAttribute("data-overlay-id")).toBe("siteQuickViewWindow");
-    expect(container.querySelector('[data-testid="standalone-peek-window"]')).toBeNull();
 
     // The canonical content is what swapped in — inside that same panel.
     const body = container.querySelector('[data-testid="peek-body"]');
