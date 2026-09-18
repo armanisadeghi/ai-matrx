@@ -51,11 +51,14 @@ const correspondenceRow: PurposeRow = {
 };
 
 /** A pre-B-26 row: the field is simply not there. */
-const preB26Row: Omit<PurposeRow, "purpose" | "purpose_note"> = {
+const preB26Row: PurposeRow = {
   id: "identity-old",
   from_address: "sales@acme.com",
   status: "draft",
   domain_verified: false,
+  // The view now always carries the columns; a pre-B-26 row carries them as null.
+  purpose: null,
+  purpose_note: null,
 };
 
 describe("purpose, read off the row", () => {
