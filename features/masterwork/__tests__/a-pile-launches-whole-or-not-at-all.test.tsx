@@ -491,7 +491,10 @@ describe("leg 3 — every outcome the server sent gets its own honest row", () =
       root.render(<DumpOutcomes summary={parsed} onDone={() => undefined} />);
     });
     const text = (container.textContent ?? "").replace(/\s+/g, " ");
-    expect(text).toContain("refused");
+    // The state word never claims a REFUSAL the wire cannot prove: `failed` is
+    // all the server sends, and a save collision is not a refusal.
+    expect(text).toContain("couldn’t be used");
+    expect(text).not.toMatch(/\brefused\b/);
     expect(text).toContain("is copy-protected (Adobe ADEPT)");
     expect(text).toContain("we will never strip a publisher’s protection");
     expect(text).toContain("a DRM-free copy of the same book");

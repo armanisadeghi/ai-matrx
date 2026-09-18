@@ -1446,7 +1446,15 @@ function outcomeState(res: DumpResourceOutcome): string {
     case "empty":
       return "read — no rules in it";
     case "refused":
-      return "refused";
+      // 🚨 NOT "refused". The wire says `failed` and nothing more, so this
+      // screen cannot know whether we DECLINED to read the source (a
+      // copy-protected book, a site whose terms forbid it) or simply could not
+      // (a save collision, a provider timeout). "Refused" claims the first,
+      // and a live 17-file run on 2026-09-18 wore it over "The Rulebook kept
+      // changing while saving the drafts" — a sentence that is plainly not a
+      // refusal. The neutral word is true either way, and the server's own
+      // sentence directly beneath says which it was.
+      return "couldn’t be used";
     default:
       return res.status === "already_distilled"
         ? "already read"
@@ -1532,7 +1540,10 @@ export function DumpOutcomes({
                 ) : (
                   <span className="text-foreground">{name}</span>
                 )}
-                <span className="ml-1.5 text-muted-foreground">
+                {/* The state is two or four words; it belongs on one line.
+                    At 390 px "read — no rules in it" broke after "no" and read
+                    as two different things. */}
+                <span className="ml-1.5 whitespace-nowrap text-muted-foreground">
                   {outcomeState(res)}
                 </span>
                 {/* THE SERVER'S SENTENCE, WHOLE AND ON ITS OWN LINE. The
