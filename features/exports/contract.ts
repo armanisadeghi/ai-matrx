@@ -212,10 +212,36 @@ export function parseExportLibrary(payload: unknown, field = "the export"): Expo
     organization_id: optStr(row.organization_id, `${field}.organization_id`),
     created_at: optStr(row.created_at, `${field}.created_at`),
     updated_at: optStr(row.updated_at, `${field}.updated_at`),
-    summary:
-      row.summary === undefined || row.summary === null
-        ? null
-        : parseExportSummary(row.summary, `${field}.summary`),
+    /**
+     * 🚨 THE SERVER CALLS IT `metrics`, AND THAT IS NOT COSMETIC.
+     * `read_export` publishes the finished summary under `metrics`, never
+     * `summary`. Reading only `summary` meant a completed export always looked
+     * un-indexed to the page, so `ExportLibraryPage`'s "index only what has not
+     * been indexed" guard never fired and EVERY mount re-ran the index. Before
+     * the server was made idempotent, the second pass hit
+     * `library_item_library_external_uniq` and a person re-opening their own
+     * export was shown a database constraint over 10,000 perfectly indexed
+     * messages (2026-09-17). An empty `metrics` object means "not indexed yet"
+     * and stays null — it is the server's own "nothing measured", not a summary
+     * of zero.
+     */
+    summary: (() => {
+      const direct = row.summary;
+      if (direct !== undefined && direct !== null) {
+        return parseExportSummary(direct, `${field}.summary`);
+      }
+      const metrics = row.metrics;
+      if (
+        metrics !== undefined &&
+        metrics !== null &&
+        typeof metrics === "object" &&
+        !Array.isArray(metrics) &&
+        Object.keys(metrics as object).length > 0
+      ) {
+        return parseExportSummary(metrics, `${field}.metrics`);
+      }
+      return null;
+    })(),
   };
 }
 
