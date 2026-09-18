@@ -203,6 +203,62 @@ cannot repair a moved file. Of the four actions PLAN §4.1 names, Reconnect and 
 real doors; Keep as Matrx data and Archive say "not wired up yet" in words, never as a disabled
 button.
 
+## Calendar Planes A/C — the agenda, and an event as a record (`calendar/`)
+
+An owned Google Calendar event inside the agenda window is ALSO a record:
+`communication.calendar_event` (aidream migration 0766, live 2026-09-17, certified). `calendar/`
+is its client half and it adds no route of its own — the record opens in THE Detail primitive
+(registered once, `itemType.tsx` → `features/item-presentation/registry.tsx`) and the agenda is
+ONE component with three mounts.
+
+- `types.ts` — the row (from the generated database types), Google's RSVP vocabulary, and the
+  refresh response. 🚨 The response interface is HAND-TYPED (`*Pending`) from aidream's
+  `CalendarRefreshResponse` because the `google_sync` routes are not in
+  `types/python-generated/api-types.ts` yet; when `pnpm sync-types` regenerates the contract it
+  is DELETED and the generated one imported.
+- `record.ts` — pure, no clock of its own: the day grouping, the attendee reader, the freshness
+  sentence, the staleness rule, the curated field list, the `google.calendar.agenda_days`
+  parser, the Google Calendar door, and the four unavailable actions as sentences.
+- `service.ts` — the FOUR doors, each the canonical one: the window read (React → Supabase,
+  `mine` scope, through `readAllRows`), `POST /google-sync/calendar/refresh` through
+  `postGoogleBackend`, the attendee → Person join over the SERVER's own edges, and create-note
+  through `createNote` + `associationsService`.
+- `useAgenda.ts` — the agenda as state: the knobs, the read, refresh-on-open-when-stale (once
+  per account and window), refresh on demand, and the problems list. One clock read per pass.
+- `AgendaPanel.tsx` — THE agenda. Mounted on the home screen
+  (`features/dashboard/components/DashboardClient.tsx`), on the Person record through
+  `PersonUpcomingCard.tsx` (`features/crm/components/record/PartyRecordPage.tsx`), and as the
+  `googleAgendaWindow` panel, which wraps it `variant="bare"` and holds no calendar logic.
+- `CalendarEventSections.tsx` — the detail's attendees section and the read-only section.
+
+🚨 **THE DAY IS COMPUTED IN A NAMED ZONE, NEVER THE PROCESS'S.** `toISOString()` is UTC and the
+host's "local" parts are whatever the machine is set to — a server render and the jest runner are
+both UTC, so an 8pm New York event lands on tomorrow and no test catches it. Every day key goes
+through `Intl` in an explicit IANA zone the caller passes (`dayKeyInZone`, `addDaysToKey`), and
+an ALL-DAY row — a DATE Google stored as midnight UTC — is read in UTC, because reading it as an
+instant files a Sep 25 holiday on Sep 24 in every negative-offset zone.
+
+🚨 **THE LIVE COLUMNS ARE NOT THE PLAN'S WORDS.** PLAN §4.6 names `source_state`,
+`last_refreshed_at` and `refreshed_via_account`; the table that was built spells them
+`sync_status`, `synced_at` and `synced_via_connection_id`. Read the live column, and note that
+the shared health strip looks for the connection in `refreshed_via_account` / `connection_id` /
+`account_id` — so `calendarEventDetailRow` projects it under `connection_id`, or the strip
+answers null for every event and the fixed section is simply absent.
+
+🚨 **THE SERVER MATCHES ATTENDEES TO PEOPLE; THE CLIENT NEVER RE-MATCHES.**
+`refresh_calendar` resolves each attendee email against `crm.contact_medium.value_key` and
+writes a `calendar_event → party` edge with role `attendee`. The client reads the EDGES. It asks
+`crm.party_contact_point` which address a linked Person holds only to decide which RSVP dot the
+door belongs beside — membership is the edge, and a Person whose stored address is no longer on
+the event still gets their door.
+
+🚨 **THE NOTE EDGE IS WRITTEN `calendar_event → note`, role `about`.** PLAN §4.6 writes it the
+other way round; the one chokepoint types its TARGET against `ASSOCIATION_TARGET_TYPES`, a
+curated list in `@ai-matrx/associations` that does not carry `calendar_event`. The role, the
+pair and the meaning are the plan's — only the row's direction differs, and it matches the
+direction the server already uses for this table. The People edges are `note → party`, which
+that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
+
 ## Invariants
 
 - 🚨 **THE FILE TYPES ARE DECLARED ONCE — `resource-types.ts`.**
@@ -288,6 +344,29 @@ button.
 
 ## Change log
 
+- 2026-09-18 — **U-W2: Calendar Planes A/C — the agenda, and an event that opens in place.** New
+  `calendar/` (above). `communication.calendar_event` joins THE item-presentation type map, so an
+  event opens as a window, a docked panel or `/detail/calendar_event/<id>` from one registration,
+  with curated fields, the health strip, the attendees (RSVP state, a door and open-deal count
+  for every attendee who is a Person here) and the four things a read-only grant cannot do,
+  stated as sentences with nothing to press. ONE `AgendaPanel` is mounted on the home screen, on
+  the Person record ("Upcoming with <name>", filtered to that record's own addresses, absent when
+  it has none) and as the `googleAgendaWindow` panel. Refresh on open only when the newest row is
+  older than `google.refresh.on_open_min_age_seconds` — read through the SHARED reader beside the
+  Docs record, not a second parser — plus refresh on demand, with "Refreshed N minutes ago from
+  Google" always on screen. `migrations/google_calendar_agenda_knobs.sql` seeds
+  `google.calendar.agenda_days` (7, max 31 — the max is the provider bound: the server refuses a
+  window outside 1..31) and the shared refresh floor (300); neither row is live yet, and until the
+  chair applies the file the surface says the window is the platform's default rather than an
+  administrator's choice. Red-then-green by mutation, five suites / 46 assertions: removing the
+  registry entry fails every presentation assertion; falling back to the generic field formatter
+  prints `__kind` and the whole attendee jsonb onto the screen; dropping the read-only section
+  fails; refreshing on open regardless of staleness, rendering an unreadable agenda as an empty
+  day, and replacing the ONE connector prompt card with a card of our own each fail by name;
+  reading an all-day row in the viewer's zone and grouping in UTC while a zone was passed fail in
+  America/New_York and Asia/Tokyo; and reading a knob that has no row as a ONE-DAY agenda
+  (`Number(null) === 0`) fails. Not verified on a screen: no browser can reach this environment,
+  and `communication.calendar_event` holds zero rows live.
 - 2026-09-18 — **U-W1: Docs Plane A/C — the Linked document opens as a record.** New
   `documents/` (above): `workbench.google_document` is registered as an item type, so a
   connected Doc opens in the Detail primitive in all three presentations with curated fields,

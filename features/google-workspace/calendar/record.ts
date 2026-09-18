@@ -39,30 +39,37 @@ export const MAX_AGENDA_DAYS = 31;
 export const MIN_AGENDA_DAYS = 1;
 
 /**
- * PLAN §7 — `google.refresh.on_open_min_age_seconds`, default 300. The default
- * that applies until `migrations/google_calendar_agenda_knobs.sql` is applied;
- * the surface says so rather than pretending a row answered.
+ * The knob address — the register's own PAIR, never a dotted string a helper
+ * re-splits (`lib/scoped-config/effectiveKnobs.ts` splits at the last dot, which
+ * is right for this key and is not something to depend on).
+ *
+ * The OTHER knob this surface reads, `google.refresh.on_open_min_age_seconds`, is
+ * NOT declared here: it is one posture for every Google record, so its address
+ * and its parser live once, in `features/google-workspace/documents/knobs.ts`
+ * (`REFRESH_KNOB`, `refreshSecondsFrom`), and this surface imports them. Two
+ * readers of one knob is how two surfaces come to disagree about the same
+ * setting.
  */
-export const DEFAULT_REFRESH_ON_OPEN_MIN_AGE_SECONDS = 300;
+export const AGENDA_DAYS_KNOB = { feature: "google.calendar", key: "agenda_days" } as const;
 
-/** The knob addresses, spelled once. */
-export const AGENDA_DAYS_KNOB = "google.calendar.agenda_days";
-export const REFRESH_ON_OPEN_KNOB = "google.refresh.on_open_min_age_seconds";
-
-/** The knob's value as a usable number of days, clamped to what Google allows. */
+/**
+ * The knob's value as a usable number of days, clamped to what Google allows.
+ *
+ * 🚨 `Number(null)` IS `0`, AND SO IS `Number("")`. Both are finite, so the
+ * obvious `Number.isFinite` guard alone turns "no row exists" into a ONE-DAY
+ * agenda — a person's whole week silently gone — for every organization. Only a
+ * real number, or a non-empty numeric string, is a value; everything else is the
+ * documented default.
+ */
 export function agendaDays(raw: unknown): number {
-  const value = typeof raw === "number" ? raw : Number(raw);
+  const value =
+    typeof raw === "number"
+      ? raw
+      : typeof raw === "string" && raw.trim() !== ""
+        ? Number(raw)
+        : Number.NaN;
   if (!Number.isFinite(value)) return DEFAULT_AGENDA_DAYS;
   return Math.min(MAX_AGENDA_DAYS, Math.max(MIN_AGENDA_DAYS, Math.floor(value)));
-}
-
-/** The staleness knob as a usable number of seconds. */
-export function refreshOnOpenMinAgeSeconds(raw: unknown): number {
-  const value = typeof raw === "number" ? raw : Number(raw);
-  if (!Number.isFinite(value) || value < 0) {
-    return DEFAULT_REFRESH_ON_OPEN_MIN_AGE_SECONDS;
-  }
-  return Math.floor(value);
 }
 
 // ─── Attendees ──────────────────────────────────────────────────────────────

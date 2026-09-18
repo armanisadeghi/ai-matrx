@@ -60,9 +60,22 @@ jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: () => "dddddddd-1111-2222-3333-444444444444",
 }));
 
+/**
+ * A knob is addressed by the register's own (feature, key) PAIR, and this mock
+ * matches on the pair for exactly that reason: a mock that matched a dotted
+ * string would keep passing while the surface asked for a different address.
+ */
 jest.mock("@/lib/scoped-config/effectiveKnobs", () => ({
-  useEffectiveKnob: (_org: unknown, _user: unknown, key: string) =>
-    key === "google.calendar.agenda_days" ? state.knobDays : state.knobMinAge,
+  useEffectiveKnob: (
+    _org: unknown,
+    _user: unknown,
+    ref: string | { feature: string; key: string },
+  ) => {
+    const address = typeof ref === "string" ? ref : `${ref.feature}.${ref.key}`;
+    if (address === "google.calendar.agenda_days") return state.knobDays;
+    if (address === "google.refresh.on_open_min_age_seconds") return state.knobMinAge;
+    throw new Error(`the agenda asked for an unexpected knob: ${address}`);
+  },
 }));
 
 jest.mock("@/features/connectors/google-adapter", () => ({

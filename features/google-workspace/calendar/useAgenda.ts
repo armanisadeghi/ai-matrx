@@ -29,17 +29,18 @@ import {
 import { extractErrorMessage } from "@/utils/errors";
 
 import {
+  REFRESH_KNOB,
+  refreshSecondsFrom,
+} from "@/features/google-workspace/documents/knobs";
+
+import {
   AGENDA_DAYS_KNOB,
   CALENDAR_PRODUCT_KEY,
-  DEFAULT_AGENDA_DAYS,
-  DEFAULT_REFRESH_ON_OPEN_MIN_AGE_SECONDS,
-  REFRESH_ON_OPEN_KNOB,
   agendaDays,
   attendeesOf,
   groupAgenda,
   isStaleForOpen,
   newestSyncedAt,
-  refreshOnOpenMinAgeSeconds,
   refreshedPhrase,
   undatedEvents,
   viewerTimeZone,
@@ -96,11 +97,13 @@ export function useAgenda(options?: {
   const connector = useGoogleConnectorState();
 
   const rawDays = useEffectiveKnob(organizationId, userId, AGENDA_DAYS_KNOB);
-  const rawMinAge = useEffectiveKnob(organizationId, userId, REFRESH_ON_OPEN_KNOB);
-  const days = agendaDays(rawDays ?? DEFAULT_AGENDA_DAYS);
-  const minAgeSeconds = refreshOnOpenMinAgeSeconds(
-    rawMinAge ?? DEFAULT_REFRESH_ON_OPEN_MIN_AGE_SECONDS,
-  );
+  // ONE reader for the refresh floor — `REFRESH_KNOB` / `refreshSecondsFrom` live
+  // beside the Docs record because "how old is too old" is one posture for every
+  // Google record, not a per-surface opinion. A second parser here is how two
+  // surfaces come to disagree about the same setting.
+  const rawMinAge = useEffectiveKnob(organizationId, userId, REFRESH_KNOB);
+  const days = agendaDays(rawDays);
+  const minAgeSeconds = refreshSecondsFrom(rawMinAge);
   const usingDefaultKnobs = rawDays === undefined || rawMinAge === undefined;
 
   const [events, setEvents] = useState<CalendarEventRow[] | null>(null);

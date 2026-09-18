@@ -155,10 +155,20 @@ describe("groupAgenda", () => {
 describe("agendaDays", () => {
   it("honours the knob and clamps to what the server accepts", () => {
     expect(agendaDays(14)).toBe(14);
+    expect(agendaDays("14")).toBe(14);
     expect(agendaDays(0)).toBe(1);
     expect(agendaDays(90)).toBe(31);
     expect(agendaDays("not a number")).toBe(7);
     expect(agendaDays(undefined)).toBe(7);
+  });
+
+  it("🚨 does NOT read 'no row' as a one-day agenda", () => {
+    // `Number(null)` and `Number("")` are both 0 — finite, not negative — so the
+    // obvious isFinite guard alone silently collapses a person's week to today.
+    expect(agendaDays(null)).toBe(7);
+    expect(agendaDays("")).toBe(7);
+    expect(agendaDays("   ")).toBe(7);
+    expect(agendaDays({})).toBe(7);
   });
 });
 
