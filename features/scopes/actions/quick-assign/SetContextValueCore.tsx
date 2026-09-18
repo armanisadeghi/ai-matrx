@@ -318,7 +318,7 @@ export function SetContextValueCore({
             className="flex-1 min-h-0"
             resetKey={`${stripThinkingEnabled}:${trimStart}:${trimEnd}:${savedScopeId ?? "draft"}`}
             scrollIntent={trimScroll.intent}
-            embedded={compact}
+            embedded
           />
         </div>
 
