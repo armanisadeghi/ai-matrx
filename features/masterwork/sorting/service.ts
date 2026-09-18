@@ -24,6 +24,7 @@
 // reason it has not.
 
 import { callApi } from "@/lib/api/call-api";
+import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
 import type { AppStore } from "@/lib/redux/store";
 import type { paths } from "@/types/python-generated/api-types";
 import {
@@ -59,9 +60,24 @@ export const DECLARED_KNOB_DEFAULTS = {
   voice_default_on: true,
 };
 
-/** The Mandate behind each half — shown to the Expert by `AgentCredit`. */
-export const SORT_CASE_WRITER_MANDATE = "masterwork.sort_case_writer";
-export const SORT_DISTILLER_MANDATE = "masterwork.sort_distiller";
+/**
+ * The Mandate behind each half — shown to the Expert by `AgentCredit`.
+ *
+ * Both are REAL `origin='code'` rows aidream declared on 2026-09-15 (verified
+ * live 2026-09-17), but the installed `@ai-matrx/agents` predates them, so the
+ * generated union cannot carry them yet. `dbAuthoredMandateKey` is the typed
+ * door for exactly that case (V-L6a, 2026-09-17): the literal stays visible to
+ * `pnpm check:mandate-keys`, which is why `scripts/mandate-keys-allowlist.json`
+ * carries a reason for each — and nothing here is typed `string`. Swap both for
+ * `MANDATE_KEYS.masterwork__sort_case_writer` / `__sort_distiller` and delete
+ * the allowlist rows once the package republishes.
+ */
+export const SORT_CASE_WRITER_MANDATE = dbAuthoredMandateKey(
+  "masterwork.sort_case_writer",
+);
+export const SORT_DISTILLER_MANDATE = dbAuthoredMandateKey(
+  "masterwork.sort_distiller",
+);
 
 function eventData(event: unknown): Record<string, unknown> | null {
   const data = (event as { data?: unknown } | null)?.data;

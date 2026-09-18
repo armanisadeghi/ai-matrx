@@ -20,6 +20,7 @@ import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { cn } from "@/lib/utils";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import type { paths } from "@/types/python-generated/api-types";
 import { DurableRunFailure } from "@/lib/durable-run/DurableRunFailure";
 import {
@@ -85,16 +86,14 @@ import { RunStages } from "../RunStages";
 const INGEST_MARKUP_PATH = "/masterworks/ingest-markup" satisfies keyof paths;
 
 /**
- * The red-pen distiller's mandate. A STRING LITERAL rather than
- * `MANDATE_KEYS.masterwork__markup_distiller` for exactly as long as the
- * installed `@ai-matrx/agents` (0.12.2, 399 keys) predates this mandate's
- * registration — the key is REAL (`mandate.definition` row
- * `masterwork.markup_distiller`, enabled, holder bound, created 2026-09-15 by
- * `scripts/mandates_generate.py`), and `AgentCredit` takes the key as a string,
- * so the credit and its link to the mandate admin are honest today. Swap it for
- * the constant on the first change here after the package republishes.
+ * The red-pen distiller's mandate, read from the vocabulary. It was a string
+ * literal while the installed `@ai-matrx/agents` (0.12.2, 399 keys) predated
+ * the mandate's registration; the package now publishes the key (413 keys), so
+ * the literal is gone and a rename or retirement on the server fails
+ * `pnpm type-check` here instead of arriving as a 404 nobody sees (V-L6a,
+ * 2026-09-17).
  */
-const MARKUP_MANDATE_KEY = "masterwork.markup_distiller";
+const MARKUP_MANDATE_KEY = MANDATE_KEYS.masterwork__markup_distiller;
 
 // KNOB MIRROR of platform.feature_knob "masterwork_distillation"
 // "min_corrections_before_distilling" — a synchronous form check mirroring the
