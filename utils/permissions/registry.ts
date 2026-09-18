@@ -1455,6 +1455,43 @@ export const SHAREABLE_RESOURCE_REGISTRY = {
     urlPathTemplate: "/hr/tasks/{id}",
     rlsUsesHasPermission: true,
   },
+  processed_document: {
+    resourceType: "processed_document",
+    tableName: "processed_documents",
+    schemaName: "docproc",
+    idColumn: "id",
+    // This table predates the canonical `created_by` column; the DB registry
+    // row names `owner_id` and the DB is the authority.
+    ownerColumn: "owner_id",
+    isPublicColumn: null,
+    displayLabel: "Processed document",
+    // Empty in the DB registry: no signed-in per-record destination exists.
+    // Never invent one here (D138).
+    urlPathTemplate: "",
+    rlsUsesHasPermission: true,
+  },
+  user_feedback: {
+    resourceType: "user_feedback",
+    tableName: "user_feedback",
+    schemaName: "users",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Feedback item",
+    urlPathTemplate: "",
+    rlsUsesHasPermission: true,
+  },
+  workflow_recovery_audit: {
+    resourceType: "workflow_recovery_audit",
+    tableName: "recovery_audit",
+    schemaName: "workflow",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Workflow recovery audit",
+    urlPathTemplate: "",
+    rlsUsesHasPermission: true,
+  },
 } as const satisfies Record<string, ShareableResourceEntry>;
 
 /**
