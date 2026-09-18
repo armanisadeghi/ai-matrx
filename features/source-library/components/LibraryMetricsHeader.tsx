@@ -426,6 +426,27 @@ function TopByViews({
     );
 }
 
+/**
+ * Updates that arrived during a run and could not be read.
+ *
+ * 🚨 NOTHING FAILS SILENTLY. A stream event whose shape this build cannot read
+ * is dropped from the typed stream — the run itself is the server's and keeps
+ * going — so the only honest thing left to do is say which part of the screen
+ * is therefore missing something. One line per distinct sentence.
+ */
+function SyncProblems({ problems }: { problems: string[] }): ReactNode {
+    if (problems.length === 0) return null;
+    return (
+        <ul className="space-y-0.5 pl-6">
+            {problems.map((problem) => (
+                <li key={problem} className="text-[11px] text-amber-700 dark:text-amber-400">
+                    {problem}
+                </li>
+            ))}
+        </ul>
+    );
+}
+
 /** The one strip that says what the sync is doing — always rendered, never absent. */
 function SyncStrip({
     library,
@@ -477,6 +498,7 @@ function SyncStrip({
                         ? "The provider claims that total; it is advisory and often disagrees with the real list. The moving number is what we have actually enumerated."
                         : "The provider gave no total, so there is nothing to measure progress against — the moving number is what we have actually enumerated."}
                 </p>
+                <SyncProblems problems={sync.problems} />
             </div>
         );
     }
@@ -500,6 +522,7 @@ function SyncStrip({
                 <p className="pl-6 text-xs tabular-nums text-muted-foreground">
                     {`This Library still holds ${formatCount(sync.partialTotal ?? 0)} Sources from this run.`}
                 </p>
+                <SyncProblems problems={sync.problems} />
             </div>
         );
     }

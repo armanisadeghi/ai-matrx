@@ -94,6 +94,11 @@ export function useJob(jobId: string | null): UseJob {
 
         void streamJob(dispatch, jobId, {
             signal: controller.signal,
+            // 🚨 A MALFORMED EVENT NEVER TAKES DOWN A RUNNING JOB. The work
+            // continues on the server; the panel keeps every row it already
+            // read and shows this sentence over them, beside the "Read it
+            // again" door that re-reads the durable truth.
+            onProblem: (message) => dispatch(jobLoadFailed({ jobId, message })),
             onEvent: (event) => {
                 switch (event.type) {
                     case "job.started":

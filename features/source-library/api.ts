@@ -24,6 +24,23 @@ import { callApi } from "@/lib/api/call-api";
 import type { ApiCallError } from "@/lib/api/call-api";
 import type { TypedStreamEvent } from "@/types/python-generated/stream-events";
 import "./contract-paths";
+import {
+    MediaApiError,
+    parseActionList,
+    parseEstimateResult,
+    parseJobAndCount,
+    parseJobDetailResponse,
+    parseJobEvent,
+    parseJobRow,
+    parseLibraryListResponse,
+    parseLibraryRow,
+    parseMediaSettingsResponse,
+    parseMetricsResponse,
+    parseResolveResult,
+    parseSyncEvent,
+    parseVideoListResponse,
+} from "./contract";
+import type { Parsed } from "@/lib/contract/narrow";
 
 import type {
     ActionDeclaration,
@@ -48,32 +65,18 @@ import type {
 } from "./types";
 
 /**
- * A server refusal the screen can print as-is.
+ * The refusal class and every shape parser live in `./contract`.
  *
- * The contract promises a SENTENCE on every failure (§1) and this class is
- * where that promise is kept on the client: a call that fails never hands the
- * UI a code, and never hands it an empty string to paper over with invented
- * copy. When the server did not supply one, the transport's own message is used
- * and `hasServerSentence` says so, so a surface can tell "the server explained"
- * from "we are guessing at why".
+ * 🚨 EVERY RESPONSE IS NARROWED, NEVER ASSERTED. `unwrap<T>()` used to be
+ * `return result.data as T` — a cast, not a check — on the return path of
+ * nearly every function in this file, while `JobPanel` rendered `item.title`
+ * and `item.attempt` straight into JSX. That is the exact hole that took
+ * `/exports` to the global error boundary on 2026-09-17 when one server key
+ * turned from a count into a list. Nothing below returns a value a parser did
+ * not build. `MediaApiError` is re-exported so every existing importer of it
+ * reads the same.
  */
-export class MediaApiError extends Error {
-    readonly code: string;
-    readonly remedy: string | null;
-    readonly retryable: boolean;
-    readonly status: number | undefined;
-    readonly hasServerSentence: boolean;
-
-    constructor(detail: MediaErrorDetail, status?: number, hasServerSentence = true) {
-        super(detail.message);
-        this.name = "MediaApiError";
-        this.code = detail.code;
-        this.remedy = detail.remedy ?? null;
-        this.retryable = detail.retryable ?? false;
-        this.status = status;
-        this.hasServerSentence = hasServerSentence;
-    }
-}
+export { MediaApiError, MediaContractError } from "./contract";
 
 function isMediaErrorDetail(value: unknown): value is MediaErrorDetail {
     if (!value || typeof value !== "object") return false;
@@ -107,9 +110,17 @@ export function toMediaError(error: ApiCallError): MediaApiError {
     );
 }
 
-function unwrap<T>(result: { data?: unknown; error?: ApiCallError }): T {
+/**
+ * The ONE return path: a refusal becomes a sentence, and a body becomes
+ * whatever the parser could prove it is. There is no overload that skips the
+ * parser — that was the defect.
+ */
+function read<T>(
+    result: { data?: unknown; error?: ApiCallError },
+    parse: (payload: unknown) => T,
+): T {
     if (result.error) throw toMediaError(result.error);
-    return result.data as T;
+    return parse(result.data);
 }
 
 /**
@@ -130,9 +141,11 @@ function unwrap<T>(result: { data?: unknown; error?: ApiCallError }): T {
 function asLibraryRow(payload: unknown): LibraryRow {
     if (payload && typeof payload === "object" && "library" in payload) {
         const inner = (payload as { library: unknown }).library;
-        if (inner && typeof inner === "object") return normalizeVisibility(inner as LibraryRow);
+        if (inner && typeof inner === "object") {
+            return normalizeVisibility(parseLibraryRow(inner, "this Library"));
+        }
     }
-    return normalizeVisibility(payload as LibraryRow);
+    return normalizeVisibility(parseLibraryRow(payload, "this Library"));
 }
 
 /**
@@ -167,7 +180,7 @@ export async function resolveMediaInput(
             connectTimeoutMs: 30_000,
         }),
     );
-    return unwrap<ResolveResult>(result);
+    return read(result, parseResolveResult);
 }
 
 // ─────────────────────────────────────────────────────────── §3 libraries ──
@@ -213,7 +226,7 @@ export async function createLibrary(
             connectTimeoutMs: 30_000,
         }),
     );
-    return asLibraryRow(unwrap<unknown>(result));
+    return asLibraryRow(read(result, (payload) => payload));
 }
 
 export interface LibraryListQuery {
@@ -242,10 +255,10 @@ export async function listLibraries(
             queryParams: params,
         }),
     );
-    const response = unwrap<LibraryListResponse>(result);
+    const response = read(result, parseLibraryListResponse);
     return {
         ...response,
-        libraries: (response.libraries ?? []).map(normalizeVisibility),
+        libraries: response.libraries.map(normalizeVisibility),
     };
 }
 
@@ -261,7 +274,7 @@ export async function getLibrary(
             expectedErrorStatuses: [404],
         }),
     );
-    return asLibraryRow(unwrap<unknown>(result));
+    return asLibraryRow(read(result, (payload) => payload));
 }
 
 export async function updateLibrary(
@@ -283,7 +296,7 @@ export async function updateLibrary(
             expectedErrorStatuses: [404],
         }),
     );
-    return asLibraryRow(unwrap<unknown>(result));
+    return asLibraryRow(read(result, (payload) => payload));
 }
 
 export async function deleteLibrary(
@@ -311,22 +324,38 @@ export async function deleteLibrary(
  * as the contract says (§4.1). Anything that is not one of ours is ignored here
  * and still reaches the platform's own capture inside the parser.
  */
-export function asSyncEvent(event: TypedStreamEvent): SyncEvent | null {
+export function asSyncEvent(
+    event: TypedStreamEvent,
+    onProblem?: (message: string) => void,
+): SyncEvent | null {
     if (event.event !== "data") return null;
-    const payload = event.data as unknown as { type?: unknown };
-    if (typeof payload?.type !== "string") return null;
-    if (!payload.type.startsWith("library.sync.") && payload.type !== "classify.completed") {
+    const standIns: string[] = [];
+    const read = parseSyncEvent(event.data, standIns);
+    for (const sentence of standIns) onProblem?.(sentence);
+    if (read === null) return null;
+    if ("problem" in read) {
+        // 🚨 NEITHER SILENT NOR FATAL. Throwing here would abort the reader and
+        // freeze a sync that is still running on the server; swallowing it
+        // would leave a screen quietly missing a page of Sources. The sentence
+        // goes to the caller, which shows it beside the progress.
+        onProblem?.(read.problem);
         return null;
     }
-    return payload as unknown as SyncEvent;
+    return read.event;
 }
 
-export function asJobEvent(event: TypedStreamEvent): JobEvent | null {
+export function asJobEvent(
+    event: TypedStreamEvent,
+    onProblem?: (message: string) => void,
+): JobEvent | null {
     if (event.event !== "data") return null;
-    const payload = event.data as unknown as { type?: unknown };
-    if (typeof payload?.type !== "string") return null;
-    if (!payload.type.startsWith("job.")) return null;
-    return payload as unknown as JobEvent;
+    const read = parseJobEvent(event.data);
+    if (read === null) return null;
+    if ("problem" in read) {
+        onProblem?.(read.problem);
+        return null;
+    }
+    return read.event;
 }
 
 export interface SyncOptions {
@@ -334,6 +363,8 @@ export interface SyncOptions {
     classify?: boolean;
     signal?: AbortSignal;
     onEvent: (event: SyncEvent) => void;
+    /** An update this screen could not read. The run continues; say so. */
+    onProblem?: (message: string) => void;
 }
 
 /**
@@ -360,7 +391,7 @@ export async function syncLibrary(
             stream: true,
             ...(options.signal ? { signal: options.signal } : {}),
             onStreamEvent: (event) => {
-                const parsed = asSyncEvent(event);
+                const parsed = asSyncEvent(event, options.onProblem);
                 if (parsed) options.onEvent(parsed);
             },
             expectedErrorStatuses: [404, 409],
@@ -378,6 +409,7 @@ export async function classifyLibrary(
         shortsThresholdSeconds?: number;
         signal?: AbortSignal;
         onEvent?: (event: SyncEvent) => void;
+        onProblem?: (message: string) => void;
     } = {},
 ): Promise<void> {
     const result = await dispatch(
@@ -393,7 +425,7 @@ export async function classifyLibrary(
             stream: true,
             ...(options.signal ? { signal: options.signal } : {}),
             onStreamEvent: (event) => {
-                const parsed = asSyncEvent(event);
+                const parsed = asSyncEvent(event, options.onProblem);
                 if (parsed && options.onEvent) options.onEvent(parsed);
             },
             expectedErrorStatuses: [404],
@@ -443,14 +475,23 @@ export async function listVideos(
             expectedErrorStatuses: [404],
         }),
     );
-    return unwrap<VideoListResponse>(result);
+    return read(result, parseVideoListResponse);
 }
 
+/**
+ * §5 — the numbers behind the header.
+ *
+ * It returns `Parsed` rather than the metrics alone because two of them (the
+ * caption coverage percentage and the total hours) are RECOVERABLE: both are
+ * computable from figures printed beside them, so a server that mislabels one
+ * must not cost a person the whole header. The stand-in announces itself —
+ * `problems` carries the sentence and `LibraryPage` puts it on the screen.
+ */
 export async function getLibraryMetrics(
     dispatch: AppDispatch,
     libraryId: string,
     query: VideoQuery = {},
-): Promise<LibraryMetrics> {
+): Promise<Parsed<LibraryMetrics>> {
     const result = await dispatch(
         callApi({
             path: "/media/libraries/{library_id}/metrics",
@@ -460,7 +501,7 @@ export async function getLibraryMetrics(
             expectedErrorStatuses: [404],
         }),
     );
-    return unwrap<LibraryMetrics>(result);
+    return read(result, parseMetricsResponse);
 }
 
 // ────────────────────────────────────────────── §7 estimate, jobs, actions ──
@@ -480,7 +521,7 @@ export async function estimateAction(
             connectTimeoutMs: 60_000,
         }),
     );
-    return unwrap<EstimateResult>(result);
+    return read(result, parseEstimateResult);
 }
 
 export async function createJob(
@@ -498,7 +539,7 @@ export async function createJob(
             connectTimeoutMs: 60_000,
         }),
     );
-    return unwrap<JobRow>(result);
+    return read(result, parseJobRow);
 }
 
 export async function getJob(
@@ -520,13 +561,18 @@ export async function getJob(
             expectedErrorStatuses: [404],
         }),
     );
-    return unwrap<JobDetailResponse>(result);
+    return read(result, parseJobDetailResponse);
 }
 
 export async function streamJob(
     dispatch: AppDispatch,
     jobId: string,
-    options: { signal?: AbortSignal; onEvent: (event: JobEvent) => void },
+    options: {
+        signal?: AbortSignal;
+        onEvent: (event: JobEvent) => void;
+        /** An update this panel could not read. The job keeps running; say so. */
+        onProblem?: (message: string) => void;
+    },
 ): Promise<void> {
     const result = await dispatch(
         callApi({
@@ -536,7 +582,7 @@ export async function streamJob(
             stream: true,
             ...(options.signal ? { signal: options.signal } : {}),
             onStreamEvent: (event) => {
-                const parsed = asJobEvent(event);
+                const parsed = asJobEvent(event, options.onProblem);
                 if (parsed) options.onEvent(parsed);
             },
             expectedErrorStatuses: [404],
@@ -557,7 +603,7 @@ export async function resumeJob(
             expectedErrorStatuses: [404],
         }),
     );
-    return unwrap<{ job: JobRow; reclaimed: number }>(result);
+    return read(result, (payload) => parseJobAndCount(payload, "reclaimed"));
 }
 
 export async function retryFailedJobItems(
@@ -572,7 +618,7 @@ export async function retryFailedJobItems(
             expectedErrorStatuses: [400, 404, 409],
         }),
     );
-    return unwrap<{ job: JobRow; requeued: number }>(result);
+    return read(result, (payload) => parseJobAndCount(payload, "requeued"));
 }
 
 export async function cancelJob(dispatch: AppDispatch, jobId: string): Promise<JobRow> {
@@ -584,7 +630,7 @@ export async function cancelJob(dispatch: AppDispatch, jobId: string): Promise<J
             expectedErrorStatuses: [404, 409],
         }),
     );
-    return unwrap<JobRow>(result);
+    return read(result, parseJobRow);
 }
 
 /**
@@ -597,7 +643,7 @@ export async function listActions(dispatch: AppDispatch): Promise<ActionDeclarat
     const result = await dispatch(
         callApi({ path: "/media/actions", method: "GET" }),
     );
-    return unwrap<{ actions: ActionDeclaration[] }>(result).actions;
+    return read(result, parseActionList);
 }
 
 // ────────────────────────────────────────────────────────────── §9 settings ──
@@ -613,7 +659,7 @@ export async function getMediaSettings(
             ...(libraryId ? { queryParams: { library_id: libraryId } } : {}),
         }),
     );
-    return unwrap<MediaSettingsResponse>(result);
+    return read(result, parseMediaSettingsResponse);
 }
 
 export async function putMediaSettings(
@@ -630,5 +676,5 @@ export async function putMediaSettings(
             expectedErrorStatuses: [400, 404, 422],
         }),
     );
-    return unwrap<MediaSettingsResponse>(result);
+    return read(result, parseMediaSettingsResponse);
 }
