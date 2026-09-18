@@ -116,6 +116,12 @@ const config: Config = {
         "/node_modules/",
         "/.next/",
         "/.claude/",
+        // Other lanes park whole checkouts under .wt/ and .matrx/*/checkout/
+        // (and cold-walk scratch under .coldwalk*/); without this every suite
+        // ran once per copy — seven times on 2026-09-18.
+        "/.wt/",
+        "/.matrx/",
+        "/.coldwalk",
         // This is an explicit Playwright gate that requires a running app and
         // Chromium; Jest owns the unit suite and must not attempt to load it.
         "/features/content-ir/sandbox/browser/",
