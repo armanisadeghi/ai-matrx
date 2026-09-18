@@ -40,9 +40,9 @@ import type {
 /** Route templates, exactly as the generated contract publishes them. */
 const RESOURCES_ROUTE = "/connections/resources" satisfies keyof paths;
 const ATTACHMENTS_ROUTE =
-  "/ai/conversations/{conversation_id}/attachments" satisfies keyof paths;
+  "/conversations/{conversation_id}/attachments" satisfies keyof paths;
 const ATTACHMENT_ROUTE =
-  "/ai/conversations/{conversation_id}/attachments/{association_id}" satisfies keyof paths;
+  "/conversations/{conversation_id}/attachments/{association_id}" satisfies keyof paths;
 
 /** Fill a contract route template; every `{param}` must be supplied. */
 function fillRoute(

@@ -51,7 +51,7 @@ const correspondenceRow: PurposeRow = {
 };
 
 /** A pre-B-26 row: the field is simply not there. */
-const preB26Row: PurposeRow = {
+const preB26Row: Omit<PurposeRow, "purpose" | "purpose_note"> = {
   id: "identity-old",
   from_address: "sales@acme.com",
   status: "draft",
