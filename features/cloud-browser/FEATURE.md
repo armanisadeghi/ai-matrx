@@ -292,6 +292,18 @@ The frontend never receives a password, seed, or generated code from that path.
 
 ## Change log
 
+- **2026-09-18** — Residential egress provenance. `CloudBrowserRun` carries
+  `egress` (from `browser.run.metadata.egress`) and `ProgressEvent` carries
+  `egress` / `egressUnavailable` (from the navigate command result on
+  `browser.action_event`). `TelemetrySurface` says "Browsing through <name>"
+  when a run went out through the person's own computer, and offers the
+  "Set up a home connection" door to `/connect-computer` when a navigate was
+  blocked with no computer to retry through — a detected problem shipping its
+  own fix, not a dead end. BOTH renders are guarded on presence and on shape,
+  because the aidream half is deploying separately: a run with neither field
+  renders exactly what it rendered before. Shapes are hand-typed from
+  `common-docs/systems/platform/residential-egress/FEATURE.md` until
+  `pnpm sync-types` carries them.
 - **2026-09-18 — the panel's chosen browser reaches the agent.** New
   `hooks/useCloudBrowserProfileContextSync.ts`, mounted in `CloudBrowserBody`, publishes
   the active profile as the single `cloud_browser_profile` context entry

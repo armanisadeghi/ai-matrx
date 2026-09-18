@@ -112,6 +112,33 @@ export interface CloudBrowserProfile {
   isPersonalDefault: boolean;
 }
 
+/**
+ * Which way out of the internet this run is taking, when the server says.
+ *
+ * 🚨 TODO(residential-egress owner): hand-typed from the cross-repo contract
+ * (`common-docs/systems/platform/residential-egress/FEATURE.md` § When we are
+ * blocked). The server writes `metadata.egress` on `browser.run` and
+ * `egress` / `egress_unavailable` on a navigate command result; neither is in
+ * `types/python-generated/api-types.ts` yet. Every render of these is guarded
+ * on presence, so a run started before the server half deploys looks exactly
+ * as it does today.
+ */
+export interface RunEgress {
+  kind: "datacenter" | "residential";
+  /** The person's own computer that carried the page. Null for datacenter. */
+  deviceName: string | null;
+}
+
+/**
+ * Why a page could not be retried through one of the person's own computers:
+ * the contract's `no_computer` / `offline` / `paused` / `org_forbids` /
+ * `feature_off`, plus the plain sentence the server sent with it.
+ */
+export interface EgressUnavailable {
+  reason: string;
+  message: string | null;
+}
+
 export interface CloudBrowserRun {
   id: string;
   profileId: string;
@@ -130,6 +157,8 @@ export interface CloudBrowserRun {
   stoppedAt: string | null;
   errorCode: string | null;
   errorDetailSafe: string | null;
+  /** Null until the server half ships, and for every run that never needed it. */
+  egress: RunEgress | null;
 }
 
 /** The agent's live play-by-play — discrete structured progress, NOT a token stream. */
@@ -145,6 +174,10 @@ export interface ProgressEvent {
   summary: string;
   /** Safe origin/title the step touched (never a page value). */
   origin?: string | null;
+  /** Present on a navigate that went out through the person's own computer. */
+  egress?: RunEgress | null;
+  /** Present on a navigate that was blocked and could NOT be retried that way. */
+  egressUnavailable?: EgressUnavailable | null;
 }
 
 export interface CloudBrowserHandoff {

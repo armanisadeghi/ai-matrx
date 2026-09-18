@@ -18,8 +18,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import Link from "next/link";
+import { HouseWifi } from "lucide-react";
 import { formatFileSize } from "@ai-matrx/kit/format";
-import type { TelemetryMetric, TelemetrySnapshot } from "../types";
+import type {
+  EgressUnavailable,
+  RunEgress,
+  TelemetryMetric,
+  TelemetrySnapshot,
+} from "../types";
 
 function formatValue(m: TelemetryMetric): string {
   if (!m.measured || m.value === null) return "—";
@@ -32,19 +39,70 @@ function formatValue(m: TelemetryMetric): string {
   return `${m.value.toLocaleString()}${m.unit ? " " + m.unit : ""}`;
 }
 
+/**
+ * WHERE THE BROWSING WENT OUT (residential-egress contract, rule 5: announce,
+ * never hide). Both halves are guarded on presence, so a run from before the
+ * server half deploys renders exactly what it renders today.
+ */
+function EgressLine({
+  egress,
+  unavailable,
+}: {
+  egress: RunEgress | null | undefined;
+  unavailable: EgressUnavailable | null | undefined;
+}) {
+  if (egress?.kind === "residential") {
+    return (
+      <p className="flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-[11px] text-foreground">
+        <HouseWifi className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+        Browsing through {egress.deviceName ?? "your own computer"} — a site
+        turned away our servers, so this page came in over your own connection.
+      </p>
+    );
+  }
+  if (unavailable) {
+    return (
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-md border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-400">
+        <HouseWifi className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+        <span>
+          {unavailable.message ??
+            "A site blocked our servers and we could not open it another way."}
+        </span>
+        {/* A detected problem ships its own fix — a door, never a dead end. */}
+        <Link
+          href="/connect-computer"
+          className="font-medium underline underline-offset-2"
+        >
+          Set up a home connection
+        </Link>
+      </div>
+    );
+  }
+  return null;
+}
+
 export function TelemetrySurface({
   telemetry,
+  egress,
+  egressUnavailable,
   onRefresh,
   className,
 }: {
   telemetry: TelemetrySnapshot | null;
+  /** The run's `metadata.egress`, when the server said. */
+  egress?: RunEgress | null;
+  /** The newest navigate that was blocked with no computer to retry through. */
+  egressUnavailable?: EgressUnavailable | null;
   onRefresh?: () => void;
   className?: string;
 }) {
   if (!telemetry) {
     return (
-      <div className={cn("p-4 text-sm text-muted-foreground", className)}>
-        Usage numbers load with the panel.
+      <div className={cn("flex flex-col gap-2 p-4", className)}>
+        <EgressLine egress={egress} unavailable={egressUnavailable} />
+        <p className="text-sm text-muted-foreground">
+          Usage numbers load with the panel.
+        </p>
       </div>
     );
   }
@@ -61,6 +119,8 @@ export function TelemetrySurface({
           </Button>
         ) : null}
       </div>
+
+      <EgressLine egress={egress} unavailable={egressUnavailable} />
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {telemetry.metrics.map((m) => (

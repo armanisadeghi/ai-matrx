@@ -200,6 +200,7 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   { href: "/agent-apps", favicon: { color: "#059669", letter: "AA" } },
   { href: "/drive", favicon: { color: "#0ea5e9", letter: "Dr" } },
   { href: "/connected-sources", favicon: { color: "#2563eb", letter: "CS" } },
+  { href: "/connect-computer", favicon: { color: "#2563eb", letter: "CC" } },
   { href: "/shapes", favicon: { color: "#8b5cf6", letter: "Sh" } },
   { href: "/documents", favicon: { color: DOCS_COLOR, letter: "DO" } },
   { href: "/workbooks", favicon: { color: SHEETS_COLOR, letter: "WB" } },

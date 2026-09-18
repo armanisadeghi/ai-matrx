@@ -119,6 +119,7 @@ export const FIXTURE_RUN: CloudBrowserRun = {
   stoppedAt: null,
   errorCode: null,
   errorDetailSafe: null,
+  egress: null,
 };
 
 export const FIXTURE_PROGRESS: ProgressEvent[] = [
