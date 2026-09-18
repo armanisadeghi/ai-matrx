@@ -1156,3 +1156,74 @@ describe("the two Google tool-result kinds route to their own component", () => 
     expect(markup).not.toContain("complete within the window asked for");
   });
 });
+
+/**
+ * 🚨 THE CALENDAR DOOR READS THE SERVER'S `record_table` (F-93, V-22 NEW-9).
+ *
+ * The event door used to say `type="calendar_event"` beside `event.record_id`
+ * while the server stamps `record_id`, **`record_table`** and
+ * `record_sync_status` on every event it names
+ * (`aidream/services/google_workspace/tools.py`). V-22 fed an event carrying
+ * `record_table: "media.source_library"` and got an Open control that opens a
+ * `calendar_event` with a foreign id — the V-21 `document → udt_document` defect
+ * in a new place, and exactly the protection a token-driven reader has and a
+ * hardcoded type throws away.
+ *
+ * `RecordDoor` now resolves the stamp through the ONE resolution
+ * (`itemTypeForRecordTable`, derived from the item-presentation type map) and
+ * renders NOTHING when the stamp names a table no item type reads: a door to the
+ * wrong record reads as a fact and is a lie.
+ */
+describe("a calendar event's door obeys the server's record_table (NEW-9)", () => {
+  const event = (extra: Record<string, unknown>) => ({
+    __kind: WORKSPACE_KIND,
+    action: "read_calendar",
+    events: [
+      {
+        event_id: "g-evt-1",
+        title: "Weekly sync",
+        starts_at: "2026-09-18T15:00:00Z",
+        record_id: "812e1df9-e3ff-4a60-b90c-ccfaabe2b88e",
+        ...extra,
+      },
+    ],
+  });
+
+  const render = (value: Record<string, unknown>) => {
+    kindRegistry.upsertDefinition({
+      kind: WORKSPACE_KIND,
+      schema: null,
+      schemaSource: "content_ir",
+      tier: "warm",
+    });
+    componentRegistry.ingestDbRows([registeredRow(WORKSPACE_KIND)]);
+    const routed = applyIrKindRoute(kindBlock(WORKSPACE_KIND, value));
+    expect(markerOf(routed)?.key).toBe(WORKSPACE_KIND);
+    return mount(
+      <GoogleWorkspaceResultBlock
+        content={routed.content}
+        metadata={routed.metadata}
+      />,
+    );
+  };
+
+  it("opens the event when the stamp says it IS a calendar event", () => {
+    const markup = render(event({ record_table: "communication.calendar_event" }));
+    expect(markup).toContain("Open Weekly sync in AI Matrx");
+  });
+
+  it("renders NO door when the stamp names a table no item type reads", () => {
+    // V-22's exact probe. The old door offered "Open" and opened a
+    // `calendar_event` with a `media.source_library` id.
+    const markup = render(event({ record_table: "media.source_library" }));
+    expect(markup).not.toContain("in AI Matrx");
+    // The event itself is still shown — the record is what has no door, not the
+    // answer.
+    expect(markup).toContain("Weekly sync");
+  });
+
+  it("still opens an older payload that carries no stamp at all", () => {
+    const markup = render(event({}));
+    expect(markup).toContain("Open Weekly sync in AI Matrx");
+  });
+});

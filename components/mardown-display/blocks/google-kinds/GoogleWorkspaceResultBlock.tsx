@@ -589,8 +589,12 @@ const GoogleWorkspaceResultBlock: React.FC<ResultKindBlockProps> = ({
                     reason={event.record_sync_status_reason}
                   />
                   <OpenInGoogle href={event.html_url} label="In Google" />
+                  {/* 🚨 The TYPE comes from the server's own `record_table`
+                      (F-93, V-22 NEW-9); `calendar_event` is only the answer for
+                      an older payload that carries no stamp. */}
                   <RecordDoor
                     type="calendar_event"
+                    recordTable={event.record_table}
                     id={event.record_id}
                     name={name}
                     fallbackLabel="event"

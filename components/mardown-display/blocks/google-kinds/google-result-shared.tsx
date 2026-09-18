@@ -54,7 +54,10 @@ import {
   UNAVAILABLE_EVENT_SENTENCE,
 } from "@/features/google-workspace/calendar/record";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
-import { getItemConfig } from "@/features/item-presentation/registry";
+import {
+  getItemConfig,
+  itemTypeForRecordTable,
+} from "@/features/item-presentation/registry";
 import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
 import type { ItemType } from "@/features/item-presentation/types";
 import {
@@ -90,6 +93,20 @@ export function readBlock(value: unknown): Record<string, unknown> | null {
  * is the platform's single opener for these item types, so this renders nothing
  * at all when the type has no wired opener: a control that cannot open is worse
  * than no control.
+ *
+ * 🚨 THE ROW'S OWN `record_table` OUTRANKS THE CALLER'S `type` (F-93, V-22 NEW-9).
+ * Our servers stamp `record_id` AND `record_table` (`"schema.table"`) on every row
+ * they name. A caller that hardcodes the type is confidently wrong the moment the
+ * stamp says something else: V-22 fed a calendar-shaped event carrying
+ * `record_table: "media.source_library"` to `type="calendar_event"` and got an
+ * Open control for a calendar event with a foreign id — the V-21
+ * `document → udt_document` defect in a new place. So when a row carries the
+ * stamp, the stamp decides, through the ONE resolution
+ * (`itemTypeForRecordTable`, derived from the item-presentation type map). A
+ * stamp naming a table no item type reads resolves to nothing and this renders
+ * NO door — which is the correct answer, because a door to the wrong record
+ * reads as a fact and is a lie. `type` remains the answer for a row with no
+ * stamp (an imported Person carries `person_id`, not `record_table`).
  */
 export const RecordDoor: React.FC<{
   type: ItemType;
@@ -97,10 +114,17 @@ export const RecordDoor: React.FC<{
   name?: string | null;
   /** Shown instead of the name when the row has none. */
   fallbackLabel?: string;
-}> = ({ type, id, name, fallbackLabel = "record" }) => {
+  /** The server's own `record_table` for THIS row, when the payload carries one. */
+  recordTable?: unknown;
+}> = ({ type, id, name, fallbackLabel = "record", recordTable }) => {
   const open = useOpenItemPresentation();
   const recordId = readText(id);
-  const { config, recognized } = getItemConfig(type);
+  const stamped = itemTypeForRecordTable(recordTable);
+  // A stamp that arrived and named a table we cannot open is a REFUSAL, not a
+  // reason to fall back to the caller's guess.
+  if (readText(recordTable) && !stamped) return null;
+  const resolvedType = stamped ?? type;
+  const { config, recognized } = getItemConfig(resolvedType);
   if (!recordId || !recognized || !config.open) return null;
   const label = name?.trim() || fallbackLabel;
   return (
@@ -110,7 +134,7 @@ export const RecordDoor: React.FC<{
       title={`Open ${label} in AI Matrx`}
       onClick={(event) => {
         event.stopPropagation();
-        open(type, recordId, { name: name ?? undefined });
+        open(resolvedType, recordId, { name: name ?? undefined });
       }}
       className="inline-flex shrink-0 items-center gap-1 rounded px-1 py-0.5 text-xs font-medium text-primary transition-colors hover:bg-primary/10"
     >

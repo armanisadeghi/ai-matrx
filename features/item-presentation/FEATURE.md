@@ -200,12 +200,11 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
   `ENTITY_TYPE_METADATA` row, because `google_document` owns its load through `refineDetail` and
   declares no `detailSource`); an unknown table returns `null` so the caller renders NO door, and a
   bare table name never resolves (`definition` lives in two schemas).
-  `__tests__/a-door-reads-the-servers-record-table.test.ts` replays V-22's attack, 18/18.
-  **STILL OPEN, and it is one line:** the offending call site,
-  `components/mardown-display/blocks/google-kinds/GoogleWorkspaceResultBlock.tsx:560-565`, belongs
-  to another lane's file (F-90/91) and was NOT edited — it must become
-  `<RecordDoor type={itemTypeForRecordTable(event.record_table) ?? "calendar_event"} …>`, or better,
-  `RecordDoor` itself should take `recordTable` and prefer it. 421 green across
+  `__tests__/a-door-reads-the-servers-record-table.test.ts` replays V-22's attack, 18/18. The
+  consumer is `RecordDoor` (`components/mardown-display/blocks/google-kinds/google-result-shared.tsx`),
+  which now takes the row's `recordTable` and prefers it over the caller's `type` — adopted after
+  F-90's own change landed and explicitly left NEW-9 open — so the class is closed in the shared
+  door rather than at one call site. 421 green across
   `features/item-presentation` + `features/scopes`; scoped `tsc` clean on every file touched (the
   whole-repo `pnpm type-check` is UNMEASURED here — the sandbox OOM-kills it at ~80s).
   No screen was seen.
