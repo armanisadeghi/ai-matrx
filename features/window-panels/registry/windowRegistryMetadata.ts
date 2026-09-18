@@ -1065,6 +1065,20 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
 
   // ── Scope Editor ──────────────────────────────────────────────────────────
   {
+    slug: "agent-variable-editor-window",
+    overlayId: "agentVariableEditorWindow",
+    kind: "window",
+    label: "Variable Editor",
+    defaultData: {
+      agentId: null,
+      variableName: null,
+      justCreated: false,
+    },
+    // A half-edited variable form is not a document: never restored on reload.
+    ephemeral: true,
+    mobilePresentation: "drawer",
+  },
+  {
     slug: "scope-edit-window",
     overlayId: "scopeEditWindow",
     kind: "window",

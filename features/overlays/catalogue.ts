@@ -852,6 +852,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: false,
   },
+  agentVariableEditorWindow: {
+    label: "Variable Editor",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   scopeEditWindow: {
     label: "Scope Editor",
     instanceMode: "singleton",
