@@ -162,6 +162,36 @@ export function refineGoogleDocumentDetail(base: DetailRecordType): DetailRecord
 }
 
 /**
+ * The item card's "In Google" line — the sentence the item-presentation card
+ * shows next to the health strip. A detached record is a CHOICE, not an outage
+ * (Cursor Bugbot, B-29 review): it never says "Not reachable right now", which
+ * would contradict the health strip's own honest "kept as AI Matrx data" state.
+ * An `available` record needs no line at all — the strip already says it's fine,
+ * and repeating "Reachable" here is noise, not truth.
+ *
+ * Exhaustive over `GoogleDocumentSyncStatus | "unknown"` (the only shape
+ * `syncStatusOf` returns) so a fifth status word fails to COMPILE here instead
+ * of silently landing in the wrong sentence.
+ */
+function inGoogleValue(row: GoogleDocumentRow): string | null {
+  const status = syncStatusOf(row);
+  switch (status) {
+    case "available":
+      return null;
+    case "unavailable":
+      return "Not reachable right now";
+    case "detached":
+      return row.sync_status_reason?.trim() || "Kept as AI Matrx data";
+    case "unknown":
+      return "Not reachable right now";
+    default: {
+      const exhaustive: never = status;
+      return exhaustive;
+    }
+  }
+}
+
+/**
  * The registry entry. `entityToken` is omitted because the item type and the
  * entity token are the same word — `google_document` is a registered
  * `platform.entity_types` token (migration 0766), which is what gives the record
@@ -181,16 +211,13 @@ export const GOOGLE_DOCUMENT_ITEM_TYPE: ItemTypeConfig = {
   enrich: async (_client, id): Promise<EnrichedItem> => {
     const row = await readGoogleDocumentRow(id);
     if (!row) return { notFound: true };
+    const details: EnrichedItem["details"] = [{ label: "Kind", value: mimeKindLabel(row.mime_kind) }];
+    const inGoogle = inGoogleValue(row);
+    if (inGoogle) details.push({ label: "In Google", value: inGoogle });
     return {
       name: row.title,
       about: row.owner_email ? `Owned by ${row.owner_email} in Google` : mimeKindLabel(row.mime_kind),
-      details: [
-        { label: "Kind", value: mimeKindLabel(row.mime_kind) },
-        {
-          label: "In Google",
-          value: syncStatusOf(row) === "available" ? "Reachable" : "Not reachable right now",
-        },
-      ],
+      details,
     };
   },
   refineDetail: refineGoogleDocumentDetail,

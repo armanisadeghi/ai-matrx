@@ -352,6 +352,25 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 ## Change log
 
+- `2026-09-18` — **F-53: Cursor Bugbot's two findings on B-29's detach/archive commit, fixed.**
+  (1) `GoogleDocumentPanel` still mounted the Append composer on a detached record — a Matrx-owned
+  copy that can no longer reach the Google file, so appending would either call a file the record
+  no longer talks to or toast success while the detached body silently never updates. A detached
+  record now renders no `AppendComposer`; in its place a one-line, honest notice
+  (`data-google-document-append-disabled`) says appends go to Google and this record no longer
+  does. (2) `itemType.tsx`'s `enrich` flattened every non-`available` `sync_status` into "Not
+  reachable right now", which contradicted the health strip's own "kept as AI Matrx data" sentence
+  for a detached record — a choice, not an outage. `enrich` now reads a new exhaustive
+  `inGoogleValue` helper (a `never`-typed `default` branch over `GoogleDocumentSyncStatus |
+  "unknown"`, so a fifth status word fails to compile instead of landing in the wrong sentence):
+  `detached` gets the row's own `sync_status_reason` or "Kept as AI Matrx data"; `unavailable` is
+  unchanged; `available` now omits the "In Google" line entirely rather than repeating "Reachable"
+  redundantly beside an already-healthy strip. 4 new tests in `documents/__tests__` (51 total),
+  each proven red against the pre-fix code first: no-Append-composer + positive control in
+  `the-last-two-actions-are-real.test.tsx`, and the four-way `inGoogleValue` mapping in
+  `the-strip-and-the-composer-tell-the-truth.test.tsx`. No screen was seen — the table still holds
+  zero live rows.
+
 - `2026-09-18` — **F-51: the projections are gone and Calendar's account is chosen by the product.** `googleDocumentDetailRow` / `calendarEventDetailRow` no longer rename `synced_via_connection_id` to `connection_id` — the shared producer (`features/item-presentation/sourceHealth.ts`) reads the live column, so a registration projects only what its row genuinely does not say. `useAgenda` now names its product when it asks for an account (`forProductKey`), so the agenda stops reading Calendar's health on whichever account holds the most other products. Red-then-green: `calendar/__tests__/the-refresh-runs-through-the-account-that-holds-calendar.test.tsx` (3 cases, real health derivation, bigger account listed first) and `features/item-presentation/__tests__/the-strip-reads-the-connection-the-row-names.test.ts`. Calendar and Tasks also got their first useful action in the consent dialog (`features/connectors/provider-config.ts`). No screen was seen.
 
 - 2026-09-18 — **B-29: the last two of the four unavailable actions are real.** "Keep as AI Matrx

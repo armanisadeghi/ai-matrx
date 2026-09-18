@@ -469,7 +469,21 @@ export function GoogleDocumentPanel({ initialRow }: { initialRow: GoogleDocument
         <h4 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Add to the end of this doc
         </h4>
-        <AppendComposer row={row} heading={appendHeading} />
+        {status === "detached" ? (
+          // A detached record is a Matrx-owned copy: it can no longer reach the
+          // Google file "Keep as AI Matrx data" detached it from (that action is
+          // offered from the unavailable notice, one state back). Mounting the
+          // composer here would either call a file this record no longer talks
+          // to, or toast success while the detached body never updates — nothing
+          // fails silently (Law 4), so the panel says why instead of pretending
+          // the control still works.
+          <p className="text-xs text-muted-foreground" data-google-document-append-disabled>
+            Appends go to the Google file, and this record no longer does. Pick the file in
+            Google again to add to it there.
+          </p>
+        ) : (
+          <AppendComposer row={row} heading={appendHeading} />
+        )}
       </div>
     </div>
   );

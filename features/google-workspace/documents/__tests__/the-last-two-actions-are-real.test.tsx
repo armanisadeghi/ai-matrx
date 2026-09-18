@@ -251,3 +251,29 @@ test("a record already kept as AI Matrx data says so, offers no Keep, and never 
   // A refresh-on-open here would be the screen undoing the person's choice.
   expect(calls).toEqual([]);
 });
+
+test("a record kept as AI Matrx data renders no Append composer, and says why (Cursor Bugbot, B-29 review)", async () => {
+  const detached = googleDocumentRow({
+    sync_status: "detached",
+    sync_status_reason:
+      "Kept as Matrx data on 2026-09-18: this Google document no longer refreshes from Google and keeps what it had that day.",
+  });
+  await mount(detached);
+
+  // Appending would either call a Google file this record no longer reaches, or
+  // toast success while the detached body silently never updates — so the
+  // composer is gone, not disabled-looking (Law 4).
+  expect(container.querySelector("[data-google-document-append]")).toBeNull();
+  const disabledNotice = container.querySelector("[data-google-document-append-disabled]");
+  expect(disabledNotice).not.toBeNull();
+  expect(disabledNotice?.textContent).toContain("Appends go to the Google file");
+  expect(disabledNotice?.textContent).toContain("this record no longer does");
+});
+
+test("an available record still renders the Append composer (positive control)", async () => {
+  const available = googleDocumentRow({ sync_status: "available" });
+  await mount(available);
+
+  expect(container.querySelector("[data-google-document-append]")).not.toBeNull();
+  expect(container.querySelector("[data-google-document-append-disabled]")).toBeNull();
+});

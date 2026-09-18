@@ -24,6 +24,7 @@ import { DetailHostProvider, type DetailHostPorts } from "@/lib/detail/host";
 import { resolveItemDetailType } from "@/features/item-presentation/detail";
 
 import { CONNECTION_ID, DOC_ID, FILE_ID, googleDocumentRow } from "./fixtures";
+import { GOOGLE_DOCUMENT_ITEM_TYPE } from "../itemType";
 import type { GoogleDocumentRow } from "../types";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -406,5 +407,51 @@ describe("the Append composer", () => {
     expect(body.connection_id).toBe(CONNECTION_ID);
     expect(body.text).toBe(shown);
     m.unmount();
+  });
+});
+
+/**
+ * 🚨 Cursor Bugbot, B-29 review — the item card's "In Google" line must not
+ * flatten every non-`available` status into "Not reachable right now". A
+ * detached record is a CHOICE, not an outage, and the card must not contradict
+ * the health strip's own honest "kept as AI Matrx data" state.
+ */
+describe("the item card's In Google line (itemType.enrich)", () => {
+  it("gives a detached record its own sentence, not the outage sentence", async () => {
+    currentRow = googleDocumentRow({
+      sync_status: "detached",
+      sync_status_reason: "Kept as Matrx data on 2026-09-18.",
+    });
+    const item = await GOOGLE_DOCUMENT_ITEM_TYPE.enrich!({} as never, DOC_ID);
+    if ("notFound" in item) throw new Error("expected an enriched item");
+    const line = item.details?.find((d) => d.label === "In Google");
+    expect(line?.value).toBe("Kept as Matrx data on 2026-09-18.");
+    expect(line?.value).not.toContain("Not reachable");
+  });
+
+  it("falls back to a plain 'Kept as AI Matrx data' when detached with no reason", async () => {
+    currentRow = googleDocumentRow({ sync_status: "detached", sync_status_reason: null });
+    const item = await GOOGLE_DOCUMENT_ITEM_TYPE.enrich!({} as never, DOC_ID);
+    if ("notFound" in item) throw new Error("expected an enriched item");
+    const line = item.details?.find((d) => d.label === "In Google");
+    expect(line?.value).toBe("Kept as AI Matrx data");
+  });
+
+  it("keeps the unavailable sentence unchanged", async () => {
+    currentRow = googleDocumentRow({
+      sync_status: "unavailable",
+      sync_status_reason: "Google would not open this file.",
+    });
+    const item = await GOOGLE_DOCUMENT_ITEM_TYPE.enrich!({} as never, DOC_ID);
+    if ("notFound" in item) throw new Error("expected an enriched item");
+    const line = item.details?.find((d) => d.label === "In Google");
+    expect(line?.value).toBe("Not reachable right now");
+  });
+
+  it("says nothing about Google reachability for an available record", async () => {
+    currentRow = googleDocumentRow({ sync_status: "available" });
+    const item = await GOOGLE_DOCUMENT_ITEM_TYPE.enrich!({} as never, DOC_ID);
+    if ("notFound" in item) throw new Error("expected an enriched item");
+    expect(item.details?.find((d) => d.label === "In Google")).toBeUndefined();
   });
 });
