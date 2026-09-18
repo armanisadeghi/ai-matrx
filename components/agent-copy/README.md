@@ -43,3 +43,15 @@ Source/package evidence does not establish deployed behavior. The current releas
 ## Change log
 
 - 2026-09-12 — Reconciled the adapter contract with the package menu and the approved table defaults; removed retired two-icon and all-rows claims.
+
+## Export rows carry unique ids (2026-09-18)
+
+`jsonExportItem` / `csvExportItem` derive their `id` from the row LABEL — `csv` for
+the default label, `csv:changed-fields` for a custom one. They used to hardcode
+`id: "csv"` / `"json"`, so a menu offering two rows of one format registered two
+content transfers under one id; the registry refuses duplicates by throwing during
+render, which killed the whole route behind "Something went wrong — Transfer id
+"export:csv" is empty or registered more than once". Every agent version-diff page
+was dead that way on production, with eleven more surfaces in the same class.
+Guard: `export-item-ids.test.ts`. Two rows sharing one label still throw — a menu
+with two identical rows is its own defect.
