@@ -302,6 +302,27 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
   `import/__tests__/an-import-panel-waits-for-the-organization.test.tsx` (3,
   3 RED on HEAD). Guard: `pnpm check:org-three-states`.
 
+- `2026-09-18` — **F-89 follow-up (Bugbot MEDIUM on `d9dbbc61`): the consent
+  runner's one-window lock now covers the organization wait.** Adding the wait to
+  `useGoogleConsentRunner().run` put a multi-second await — on a cold load, the
+  exact gap the wait exists to survive — BETWEEN the `if (running.current)` guard
+  and the line that takes the lock, so a second press inside it walked straight
+  through and Google opened a SECOND authorization window: two consent popups and
+  two exchanges for one intent. `running.current = true` is now the line after
+  the guard, the wait and its refusal live INSIDE the `try`, and the single
+  `finally` releases the lock on the refusal path too, so a press that never
+  opened a window cannot leave the runner stuck. Census of the class in
+  `features/connectors` + `features/google-workspace`: three other `useRef(false)`
+  values exist (`ChatConnectorStrip.hasDrawnRef`,
+  `GoogleContactsImportPanel.typedRef`, `GoogleDocumentPanel.openRefreshTried`)
+  and none is a single-flight lock — they are one-shot markers — and
+  `openRecord.tsx`'s `if (busy) return; setBusy(true)` takes its lock
+  synchronously, so this was a class of one. New
+  `__tests__/one-google-window-even-while-the-organization-resolves.test.tsx` (2):
+  a second press during a pending wait, RED on `d9dbbc61` with
+  `Received: "opened a SECOND window"`, and a refused wait that releases the lock
+  so the next press runs.
+
 - `2026-09-18` — **F-80 (V-21, N4 MED): the Record-backed candidate's two doors
   are touch-sized and distinguishable without hover.** `ResourceAttachPicker`'s
   "open the record" (`ArrowUpRight`) and "join the meeting" (`ExternalLink`)

@@ -376,18 +376,26 @@ export function useGoogleConsentRunner() {
       if (running.current) {
         throw new Error("A Google authorization window is already open.");
       }
-      // 🚨 A PRESS WAITS FOR THE ANSWER, IT NEVER REFUSES ON A RACE
-      // (VERIFY-R7-FIX-WAVE NEW-1). The bounded platform wait joins the answer
-      // boot is already fetching and, settled with nothing, carries its own
-      // sentence and remedy.
-      const workspace = await awaitEffectiveOrganizationId();
-      if (workspace.status !== "ready") {
-        throw new Error(
-          `${workspace.reason} Every Google connection is recorded against one organization.`,
-        );
-      }
+      // 🚨 THE LOCK COVERS EVERY AWAIT IN THIS FUNCTION — IT IS TAKEN HERE, ON
+      // THE LINE AFTER THE GUARD, AND NOWHERE LATER (Bugbot MEDIUM on d9dbbc61).
+      // The organization wait below is a MULTI-SECOND gap on a cold load — the
+      // exact gap this change exists to survive — and taking the lock after it
+      // meant a second press walked straight through `running.current` and
+      // opened a second Google authorization window. A lock that does not cover
+      // the slowest await in the function is not a lock.
       running.current = true;
       try {
+        // 🚨 A PRESS WAITS FOR THE ANSWER, IT NEVER REFUSES ON A RACE
+        // (VERIFY-R7-FIX-WAVE NEW-1). The bounded platform wait joins the answer
+        // boot is already fetching and, settled with nothing, carries its own
+        // sentence and remedy. The refusal throws from INSIDE the try, so the
+        // `finally` releases the lock and the next press is free to run.
+        const workspace = await awaitEffectiveOrganizationId();
+        if (workspace.status !== "ready") {
+          throw new Error(
+            `${workspace.reason} Every Google connection is recorded against one organization.`,
+          );
+        }
         const code = await google.requestAuthorizationCode(
           request.scopes,
           options.loginHint ?? undefined,
