@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-09-17`
+**Last updated:** `2026-09-18`
 
 ---
 
@@ -310,6 +310,28 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
   sentence, remedy included, when it settles with nothing. New
   `import/__tests__/an-import-panel-waits-for-the-organization.test.tsx` (3,
   3 RED on HEAD). Guard: `pnpm check:org-three-states`.
+
+- `2026-09-18` — **F-112 (V-24): a selection can only contain ids the current
+  read returned.** Opening `?panels=google_contacts_import:<bogus
+  externalId>:o-<org>` rendered "This Google account has no contacts we can
+  read. 1 selected  Review the field map" — `GoogleContactsImportPanel`'s
+  `selected` state started from the window address's `initialExternalId`
+  BEFORE any read had happened and was never reconciled against what the read
+  actually returned, so a stale link, a removed contact, or an id outside the
+  read's page left a phantom selection over an empty (or merely
+  non-matching) list forever — a real "Review the field map" a person could
+  click into for a contact the account does not have. Fixed at the class: a
+  `useEffect` keyed on `search` now filters `selected` down to exactly the
+  `external_id`s the last read returned, on every read, and a dedicated
+  sentence — "The contact this link named is not in this account's readable
+  contacts." — fires only when the address named an id absent from the read,
+  never conflated with "this account has no contacts" or "no match for the
+  typed search". `GoogleTasksImportPanel`'s address carries a `projectId`
+  (the import TARGET), never a pre-selected task id, so it does not carry
+  this defect shape. New `import/phantom-selection.test.tsx` (2): the bogus-id
+  case reproduces V-24's exact sentence and is RED against HEAD ("1 selected"
+  present, the review button enabled) and green after; a second case pins
+  that an id the read DOES return stays selected with no false warning.
 
 - `2026-09-18` — **F-89 follow-up (Bugbot MEDIUM on `d9dbbc61`): the consent
   runner's one-window lock now covers the organization wait.** Adding the wait to
