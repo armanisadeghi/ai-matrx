@@ -117,7 +117,8 @@ the rules an agent editing THIS directory must obey.
   them from app code.
 - **Verifying the canvas surface:** `/canvas` is not a route, and on a MAPPED route the route
   surface wins — verify on `/artifacts` (no route→surface mapping), reached by CLIENT-SIDE
-  navigation with the pane open, since a reload empties the slice.
+  navigation with the pane open, since a reload empties the slice. That reload behaviour is a
+  KNOWN OPEN ITEM, not a settled design — see the 2026-09-18 change-log entry.
 - **A public shared canvas owns the viewport.** Both `/canvas/shared/[token]` and the canonical
   `/s/[token]` lens suppress the generic public header/footer through
   `data-public-immersive-surface`, render the same identity/action header, and keep
@@ -129,6 +130,31 @@ the rules an agent editing THIS directory must obey.
 path updates the node's `STATE.md` in the same session.
 
 ## Change log
+
+- `2026-09-18` — **THE HEADER'S CANVAS SLOT IS RESERVED BY AVAILABILITY, NOT BY
+  ITEM COUNT.** The 2026-09-17 fix held the slot only between OPEN and CLOSED;
+  `CanvasShellHeaderToggle` still returned `null` while `itemCount === 0`, so
+  the FIRST canvas item both created the 44px box and pushed every button left
+  of it sideways — and folding the canvas away never gave the space back. An
+  independent live review of review row 34bfd1e8 re-found it on production and
+  measured it on one chat, one click (Records 1043.39 → 999.39, Canvas 1132 →
+  1088, Conversation actions 1164 → 1120, Agents for this page 1192 → 1148;
+  same on the documents page). Now: `isAvailable` alone decides whether the
+  slot exists; `itemCount`/`isOpen` decide only what is inside it — an inert,
+  aria-hidden, buttonless `CanvasHeaderSlotSpacer` sized with the same
+  `var(--matrx-tap-target-size, 2.75rem)` the tap target itself uses, or the
+  real control. Guards: `__tests__/canvas-header-slot-reserved.test.tsx`
+  (rendered DOM; mutation = restore `!isAvailable || itemCount === 0` → RED)
+  and a fourth case + `MATRX_LAYOUT_GATE_MUTATION=first-item` in
+  `features/shell/layout-gate/canvas-one-presentation.spec.ts` (real layout).
+  **Still open, deliberately not changed here:** `/artifacts` drops its canvas
+  item on reload while a chat restores its own. That is NOT a persistence path
+  the artifacts route is missing — the slice is not persisted anywhere. The
+  chat RE-DERIVES its items from persisted `cx_tool_call` rows in the headless
+  `tool-results/ToolResultCanvasOpener`, a source `/artifacts` has none of.
+  Giving `/artifacts` the same behaviour means inventing a new record of which
+  artifact was open (URL param, or a persisted pointer) — a product decision,
+  not a reuse. Owner ruling needed before it is built.
 
 - `2026-09-17` — **THE CANVAS HAS ONE PRESENTATION AGAIN; THE CHAT ROUTE'S
   PARALLEL LAYER IS GONE.** Owner rejection (review row 34bfd1e8, 2026-09-16,
