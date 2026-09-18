@@ -30,7 +30,13 @@ export async function loadSharedKnowledgeDirectory(): Promise<SharedKnowledgeDir
       )
       .eq("kind", "library")
       .order("name", { ascending: true }),
-    admin.schema("rag").from("data_store_members").select("data_store_id"),
+    // deleted_at IS NULL: removing a member is a soft delete (db-rules §8/§8a),
+    // so an unfiltered count would keep tombstones and only ever grow.
+    admin
+      .schema("rag")
+      .from("data_store_members")
+      .select("data_store_id")
+      .is("deleted_at", null),
   ]);
 
   if (storesResult.error) {
