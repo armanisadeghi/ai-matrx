@@ -12,12 +12,19 @@
  *                       own `coverage_notes` — the one behaviour we want, never
  *                       punished with a red box (see `AuthorTopicalMapResult`).
  *
- * THE TREE RENDERS THROUGH `TopicTree` READ-ONLY UNTIL LANE G'S KIND COMPONENT
- * LANDS. R12 gives `map_topic_proposal_v1` exactly one compiled component
- * (`features/content-ir/kinds/map-topic-proposal.ts`); it did not exist when
- * this screen shipped, so this file adapts the payload onto the shared tree
- * primitive (`proposalRows.ts`) and says so in the UI. When the kind component
- * exists, replace `<ProposalTree>` with it and delete the adapter.
+ * THE TREE RENDERS THROUGH THE ONE KIND COMPONENT — `MapTopicProposalView`
+ * (R12, "a shape has exactly ONE component"). This screen used to adapt the
+ * payload onto `TopicTree` itself through a local `ProposalTree` +
+ * `start/proposalRows.ts`, an explicit interim stand-in "until Lane G's kind
+ * component lands". It landed; both are gone, and chat, the tool-result
+ * renderer and this screen now draw a proposed tree with the same component.
+ *
+ * WHAT THE VIEW NEEDS FROM US: the map, and only when there IS one. Accept and
+ * reject write to a map through `seo.patch_map_topics` / `seo.reject_map_topics`,
+ * so a run that wrote nothing (`applied: false` — the tree was proposed back)
+ * hands it `mapId: null` and `readOnly`, and the view says in its own words
+ * that there is nothing here to accept or reject. Offering the controls over a
+ * map that was never written is a click that does nothing.
  *
  * COST IS UNMEASURED HERE. Lane S landed `store=True` on the author's provider
  * calls in aidream (a `chat.request` row per call), but the result document
@@ -26,18 +33,15 @@
  */
 
 import Link from "next/link";
-import { useState } from "react";
 import { BrainCircuit, ExternalLink, FlaskConical, Info } from "lucide-react";
 
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
-import { TopicTree } from "@/components/official/topic-tree/TopicTree";
 import { Button } from "@/components/ui/button";
 
 import { useMapLinks } from "../links";
-import type { AuthorTopicalMapResult, MapTopicProposal } from "../map-author";
-import { TopicStatusMark } from "../ui/TopicStatusMark";
-import { proposalRows } from "./proposalRows";
+import type { AuthorTopicalMapResult } from "../map-author";
+import { MapTopicProposalView } from "../proposals/MapTopicProposalView";
 
 export function StartMapResult({
   result,
@@ -150,14 +154,26 @@ export function StartMapResult({
           </p>
         </div>
       ) : result.proposal ? (
-        <ProposalTree proposal={result.proposal} />
+        <div className="rounded-xl border border-border bg-card p-4">
+          <MapTopicProposalView
+            proposal={result.proposal}
+            mapId={result.applied ? result.map_id : null}
+            readOnly={!result.applied}
+            density="comfortable"
+          />
+        </div>
       ) : null}
 
-      {topics.length > 0 && (result.coverage_notes || result.proposal?.coverage_notes) ? (
+      {/* The RUN's coverage notes. The proposal's own notes are rendered by the
+          kind component; this block carries the run-level ones only when they
+          say something different, so the same sentence is never printed twice. */}
+      {topics.length > 0 &&
+      result.coverage_notes &&
+      result.coverage_notes !== result.proposal?.coverage_notes ? (
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-sm font-medium">Still to settle</p>
           <p className="mt-1 whitespace-pre-wrap text-sm text-muted-foreground">
-            {result.coverage_notes || result.proposal?.coverage_notes}
+            {result.coverage_notes}
           </p>
         </div>
       ) : null}
@@ -189,55 +205,5 @@ function Notes({ notes }: { notes: string[] }) {
         </li>
       ))}
     </ul>
-  );
-}
-
-/**
- * The proposed tree through the shared primitive, read-only — the interim
- * render described in the file header. Everything starts expanded: a proposal
- * is reviewed whole, and a collapsed root would hide what was proposed.
- */
-function ProposalTree({ proposal }: { proposal: MapTopicProposal }) {
-  const allSlugs = () => new Set(proposal.topics.map((t) => t.slug));
-  const [expanded, setExpanded] = useState<Set<string>>(allSlugs);
-  const [selected, setSelected] = useState<string | null>(null);
-  const { rows, orphans, total } = proposalRows(proposal.topics, expanded, selected);
-
-  return (
-    <div className="rounded-xl border border-border bg-card">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-2">
-        <p className="text-sm font-medium">
-          {total} proposed {total === 1 ? "topic" : "topics"}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          Read-only preview through the shared tree until the proposal kind component lands;
-          accept or reject in the map&apos;s history and outline.
-        </p>
-      </div>
-      {orphans.length > 0 ? (
-        <p role="alert" className="border-b border-border px-4 py-2 text-xs text-destructive">
-          {orphans.length} {orphans.length === 1 ? "topic names" : "topics name"} a parent the
-          proposal does not contain ({orphans.join(", ")}); shown at the root rather than dropped.
-        </p>
-      ) : null}
-      <div className="max-h-[60vh] overflow-auto p-2">
-        <TopicTree
-          rows={rows.map((row) => ({
-            ...row,
-            trailing: row.status ? <TopicStatusMark status={row.status} compact /> : undefined,
-          }))}
-          ariaLabel="Proposed topics"
-          onToggleExpand={(id) =>
-            setExpanded((prev) => {
-              const next = new Set(prev);
-              if (next.has(id)) next.delete(id);
-              else next.add(id);
-              return next;
-            })
-          }
-          onSelect={(id) => setSelected(id)}
-        />
-      </div>
-    </div>
   );
 }
