@@ -29,7 +29,7 @@
  * overlay's own data at the new name.
  */
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
@@ -62,6 +62,31 @@ export default function AgentVariableEditorWindow({
   const { agentId, variableName, justCreated } = data;
   const variables =
     useAppSelector((s) => selectAgentVariableDefinitions(s, agentId)) ?? [];
+
+  // Focus returns to the opener when the editor closes (keyboard and screen-
+  // reader users must not be dropped on <body>). The chip that opened it may be
+  // a different DOM node by then — the builder swaps trees across the 768px
+  // breakpoint — so fall back to finding the chip by the variable it names.
+  const openerRef = useRef<HTMLElement | null>(null);
+  const nameRef = useRef(variableName);
+  useEffect(() => {
+    nameRef.current = variableName;
+  }, [variableName]);
+  useEffect(() => {
+    const active = document.activeElement;
+    openerRef.current = active instanceof HTMLElement ? active : null;
+    return () => {
+      const remembered = openerRef.current;
+      const target =
+        remembered && remembered.isConnected
+          ? remembered
+          : document.querySelector<HTMLElement>(
+              `button[aria-label^="Edit variable ${CSS.escape(nameRef.current)}"]`,
+            );
+      // After the window's own teardown, so nothing steals focus back.
+      requestAnimationFrame(() => target?.focus());
+    };
+  }, []);
 
   if (!isOpen) return null;
 
