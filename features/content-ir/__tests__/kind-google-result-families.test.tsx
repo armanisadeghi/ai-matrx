@@ -1984,3 +1984,237 @@ describe("Bugbot findings on 5d6bd755: a sent receipt, a repeated door id, and a
     expect(WORKSPACE_PROMOTED).toContain("completeness");
   });
 });
+
+/**
+ * 🚨 V-24 NEW-1 — AN EXPLICIT `null` ON A CLAIM KEY IS A STATED VALUE.
+ *
+ * F-104 gave every member of the boolean write-claim family ONE unreadable
+ * rule — and then excluded `null` from it by hand
+ * (`value[key] !== undefined && value[key] !== null`), so the ONE value a
+ * Python tool produces most easily when it declares a key it could not settle
+ * (`None` → JSON `null`) fell straight through to `none`. Because `appended`
+ * is a {@link WRITE_CLAIM_KEYS} member both blocks omit from the meta strip
+ * AND the leftovers, the key then left the screen entirely: the verifier's
+ * `{action:"append_document", title:"Q3 Plan", appended:null}` rendered, in
+ * full, "Q3 Plan Append document" — V-23 NEW-4's exact outcome at a different
+ * value.
+ *
+ * AN ABSENT KEY STATES NOTHING; AN EXPLICIT `null` STATES SOMETHING THIS CARD
+ * CANNOT READ. That is the same distinction `TruncationChip` already draws for
+ * `truncated` (F-99), and it is now drawn in the ONE predicate the whole claim
+ * family is read through.
+ */
+describe("V-24 NEW-1: an explicit null claim key is stated, never swallowed", () => {
+  const NULLABLE_CLAIM_KEYS = WRITE_CLAIM_KEYS.filter((key) => key !== "approval");
+
+  it.each(NULLABLE_CLAIM_KEYS.map((key) => [key] as const))(
+    "%s: null alone is an unreadable claim, named with the value the tool sent",
+    (key) => {
+      const claim = readWriteClaim({ action: "append_document", [key]: null });
+      expect(claim.state).toBe("unreadable_claim");
+      expect(claim.nothingWasWritten).toBe(true);
+      expect(claim.showsReceiptChips).toBe(false);
+      expect(claim.unreadableClaimKeys).toContain(key);
+      expect(claim.detail).toContain(`"${key}"`);
+      expect(claim.detail).toContain("null");
+    },
+  );
+
+  it("an ABSENT key still states nothing — the two are not collapsed", () => {
+    const claim = readWriteClaim({ action: "append_document", title: "Q3 Plan" });
+    expect(claim.state).toBe("none");
+    expect(claim.unreadableClaimKeys).toEqual([]);
+  });
+
+  it("the verifier's payload, verbatim: the workspace card says nothing is shown as written", () => {
+    const markup = mount(
+      <GoogleWorkspaceResultBlock
+        content={JSON.stringify({
+          __kind: WORKSPACE_KIND,
+          action: "append_document",
+          title: "Q3 Plan",
+          appended: null,
+        })}
+        metadata={undefined}
+      />,
+    );
+    expect(markup).toContain("Nothing is shown as written.");
+    expect(markup).toContain("appended");
+    expect(markup).toContain("null");
+    expect(markup).toContain("cannot be read");
+  });
+
+  it("the dry_run sibling is read by the identical rule", () => {
+    const markup = mount(
+      <GoogleWorkspaceResultBlock
+        content={JSON.stringify({
+          __kind: WORKSPACE_KIND,
+          action: "append_document",
+          title: "Q3 Plan",
+          dry_run: null,
+        })}
+        metadata={undefined}
+      />,
+    );
+    expect(markup).toContain("Nothing is shown as written.");
+    expect(markup).toContain("dry_run");
+    expect(markup).toContain("null");
+  });
+
+  it("the marketing block reads the identical payload the identical way", () => {
+    const markup = mount(
+      <GoogleMarketingResultBlock
+        content={JSON.stringify({
+          __kind: MARKETING_KIND,
+          action: "traffic_summary",
+          appended: null,
+        })}
+        metadata={undefined}
+      />,
+    );
+    expect(markup).toContain("Nothing is shown as written.");
+    expect(markup).toContain("appended");
+  });
+
+  /**
+   * THE OTHER DIRECTION, which the fix must not break: a claim key that IS
+   * settled outranks one that is not. `awaiting_approval: true` answers the
+   * reader's question — nothing was written, a person is holding it — so a
+   * `dry_run: null` beside it must not downgrade that answer to "cannot be
+   * read". An unreadable COMPLETION marker never has a settled reading, so it
+   * still outranks everything but a contradiction.
+   */
+  it("a definite approval hold still leads, even beside a null dry_run", () => {
+    const claim = readWriteClaim({
+      action: "append_document",
+      dry_run: null,
+      awaiting_approval: true,
+      would_append: { text: "x" },
+    });
+    expect(claim.state).toBe("awaiting_approval");
+    expect(claim.headline).toContain("waiting for a person to approve it");
+  });
+
+  it("a null completion marker still outranks a definite hold — it can never be settled", () => {
+    const claim = readWriteClaim({
+      action: "append_document",
+      awaiting_approval: true,
+      appended: null,
+    });
+    expect(claim.state).toBe("unreadable_claim");
+    expect(claim.detail).toContain('"appended"');
+  });
+});
+
+/**
+ * 🚨 V-24 NEW-2 — THE REQUEST'S OWN PARAMETERS ARE THE FRAME, NEVER THE ANSWER.
+ *
+ * F-104 made emptiness come from what the card actually printed
+ * (`printsResidualFacts`) so it could never say "no rows" over rows it had just
+ * shown. But the residual pass prints the QUESTION — `site`, `start_date`,
+ * `end_date` — as facts, so the realistic empty GA4 read
+ * (`{action:"traffic_summary", site, start_date, end_date, rows:[]}`) printed
+ * the question back plus a collapsed "1 field did not apply" and NEVER said no
+ * rows came. Only a payload carrying nothing but `action` — which no tool emits
+ * — reached the sentence.
+ *
+ * A stated window is the FRAME an empty result sits inside: it makes the
+ * sentence MORE specific ("for example.com, 2026-09-01 to 2026-09-15"), never
+ * unreachable. And an empty collection is not content either.
+ */
+describe("V-24 NEW-2: an empty read inside a stated frame says so, and names the frame", () => {
+  const emptyGa4 = {
+    __kind: MARKETING_KIND,
+    action: "traffic_summary",
+    site: "example.com",
+    start_date: "2026-09-01",
+    end_date: "2026-09-15",
+    rows: [],
+  };
+
+  it("says no rows came, and names the window it was asked over", () => {
+    const markup = mount(
+      <GoogleMarketingResultBlock content={JSON.stringify(emptyGa4)} metadata={undefined} />,
+    );
+    expect(markup).toContain("This read returned no rows");
+    expect(markup).toContain("example.com, 2026-09-01 to 2026-09-15");
+    expect(markup).not.toContain("the window above");
+  });
+
+  it("prints the frame as the window it names, not as a promoted fact", () => {
+    const markup = mount(
+      <GoogleMarketingResultBlock content={JSON.stringify(emptyGa4)} metadata={undefined} />,
+    );
+    expect(markup).toContain("asked about");
+    // The MetaStrip's own "Start date: " labelling is what read as an answer.
+    expect(markup).not.toContain("Start date: ");
+    expect(markup).not.toContain("End date: ");
+  });
+
+  it("a frame with no window still gets the sentence, and never invents one", () => {
+    const markup = mount(
+      <GoogleMarketingResultBlock
+        content={JSON.stringify({
+          __kind: MARKETING_KIND,
+          action: "traffic_summary",
+          site: "example.com",
+        })}
+        metadata={undefined}
+      />,
+    );
+    expect(markup).toContain("This read returned no rows for example.com");
+    expect(markup).toContain("no window was stated");
+  });
+
+  it("an empty collection is not an answer either — data: [] is an empty read", () => {
+    const markup = mount(
+      <GoogleMarketingResultBlock
+        content={JSON.stringify({
+          __kind: MARKETING_KIND,
+          action: "traffic_summary",
+          site: "example.com",
+          start_date: "2026-09-01",
+          end_date: "2026-09-15",
+          data: [],
+        })}
+        metadata={undefined}
+      />,
+    );
+    expect(markup).toContain("This read returned no rows");
+  });
+
+  /**
+   * THE OTHER DIRECTION: a real row inside the same frame is content, and the
+   * card must never call that read empty.
+   */
+  it("one real row inside the same frame is NOT an empty read", () => {
+    const markup = mount(
+      <GoogleMarketingResultBlock
+        content={JSON.stringify({
+          ...emptyGa4,
+          rows: [{ date: "2026-09-02", sessions: 41 }],
+        })}
+        metadata={undefined}
+      />,
+    );
+    expect(markup).not.toContain("This read returned no rows");
+  });
+
+  it("a number that is not a request parameter is still content", () => {
+    const markup = mount(
+      <GoogleMarketingResultBlock
+        content={JSON.stringify({
+          __kind: MARKETING_KIND,
+          action: "traffic_summary",
+          site: "example.com",
+          start_date: "2026-09-01",
+          end_date: "2026-09-15",
+          sessions: 1234,
+        })}
+        metadata={undefined}
+      />,
+    );
+    expect(markup).toContain("1,234");
+    expect(markup).not.toContain("This read returned no rows");
+  });
+});
