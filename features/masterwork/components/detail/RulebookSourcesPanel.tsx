@@ -55,7 +55,13 @@ import {
   attachedKey,
 } from "@ai-matrx/associations/react";
 import { useContainerLinks } from "@/features/scopes/hooks/useContainerLinks";
-import { DUMP_ROLE, DUMP_SOURCE_TOKENS } from "../../sourceLinks";
+import {
+  DUMP_ROLE,
+  DUMP_SOURCE_TOKENS,
+  tallyOf,
+  useKeptSourceCount,
+  type KeptSourceCount,
+} from "../../sourceLinks";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { WebpageResourcePickerCore } from "@/features/resource-manager/resource-picker/WebpageResourcePicker";
@@ -298,7 +304,26 @@ export function RulebookSourcesPanel({
   );
 
   const stagedUrls = useMemo(() => dumpUrlSources(rulebook), [rulebook]);
-  const totalSources = sourceLinks.length + stagedUrls.length;
+
+  /**
+   * 🚨 THE OTHER HALF OF THIS RULEBOOK'S SOURCES (2026-09-18, D7).
+   *
+   * Attached edges and staged URLs are what somebody POINTED us at. Kept
+   * Sources are what we HAVE — everything that came through
+   * `raw_material.keep`: an export selection, a send from a Library, an
+   * extension capture, an interview's turns. This panel counted only the
+   * first half, so a Rulebook holding 50 of a person's own emails showed them
+   * "Add your first resource / Attach at least one source first" on both
+   * tabs. The addition happens in ONE place (`tallyOf`) that the interview
+   * start screen and the ingest gate share, so no two screens can disagree
+   * about whether this Rulebook has anything.
+   */
+  const kept = useKeptSourceCount(rulebook.id);
+  const keptRows = kept.state === "ready" ? kept.rows : [];
+  const { count: totalSources, tally } = tallyOf(
+    sourceLinks.length + stagedUrls.length,
+    kept.state === "ready" ? kept.count : 0,
+  );
   useEffect(() => {
     onCount?.(totalSources);
   }, [totalSources, onCount]);
@@ -464,6 +489,16 @@ export function RulebookSourcesPanel({
             url: s.url,
             ...(s.title ? { title: s.title } : {}),
           })),
+          // Material we already hold needs no resolver — the server reads the
+          // row. `source_key` IS the rule identity, so a kept email distilled
+          // here and the same email distilled by any other door are ONE
+          // source: the re-distill guard fires and the rules point back to the
+          // stored passage.
+          ...keptRows.map((k) => ({
+            kind: "kept_source",
+            source_key: k.source_key,
+            ...(k.label ? { title: k.label } : {}),
+          })),
         ],
         mode: "instructional",
       },
@@ -599,10 +634,22 @@ export function RulebookSourcesPanel({
             </p>
           ) : null}
 
+          {/* ── what this Rulebook already HOLDS (D7) ────────────────────
+              Sources arrive here from doors that are not this panel: an export
+              selection, a send from a Library, an extension capture. They are
+              listed, not just counted, because a screen that holds 50 of a
+              person's own emails and shows them a number is still telling them
+              less than it knows. */}
+          <KeptMaterialSummary
+            kept={kept}
+            rulebookId={rulebook.id}
+            attached={tally.attached}
+          />
+
           {/* ── capture ──────────────────────────────────────────────── */}
           {canEdit && !captureVisible ? (
             <div className="pt-3">
-              {totalSources > 0 ? (
+              {tally.attached > 0 ? (
                 <div className="overflow-hidden rounded-md border border-border/70 bg-card">
                   <SourceRows
                     sourceLinks={sourceLinks}
@@ -633,6 +680,8 @@ export function RulebookSourcesPanel({
                   onClick={() => setCaptureVisible(true)}
                 >
                   <Plus className="h-3.5 w-3.5" />
+                  {/* `totalSources`, never `tally.attached`: a Rulebook holding
+                      50 kept emails is not being asked for its FIRST resource. */}
                   {totalSources === 0 ? "Add your first resource" : "Add more"}
                 </Button>
               </div>
@@ -1261,6 +1310,114 @@ function DumpOutcomes({
       <Button size="sm" onClick={onDone}>
         Review the drafts
       </Button>
+    </div>
+  );
+}
+
+/**
+ * What this Rulebook already HOLDS, said out loud.
+ *
+ * 🚨 THE SCREEN THAT LIED (2026-09-18, VERIFICATION.md D7). A Rulebook was
+ * given 50 Sources through the export flow — rows written, edges written, the
+ * send returning 200 — and this panel said "Add your first resource". It was
+ * reading the attachment edges only, and the kept store had no reader anywhere
+ * on the platform. A person who followed the dialog's own "Open the Rulebook"
+ * landed on a page telling them they had nothing, holding 50 of their own
+ * emails.
+ *
+ * Three states, all honest: a read still in flight says so (never "0"), a
+ * failed read says WHAT failed and offers a retry (never "0"), and a Rulebook
+ * with kept material lists it and links to the reader.
+ */
+function KeptMaterialSummary({
+  kept,
+  rulebookId,
+  attached,
+}: {
+  kept: KeptSourceCount;
+  rulebookId: string;
+  attached: number;
+}) {
+  if (kept.state === "loading") {
+    return (
+      <p className="pt-3 text-xs text-muted-foreground">
+        <Loader2 className="mr-1 inline h-3 w-3 animate-spin" />
+        Checking what this rulebook has already kept…
+      </p>
+    );
+  }
+  if (kept.state === "failed") {
+    // Never "no kept material" on a failed read — that is the exact sentence
+    // this whole fix exists to stop a screen from saying.
+    return (
+      <div className="mt-3 rounded-md border border-amber-500/40 bg-amber-500/5 p-3 text-xs">
+        <p className="text-foreground">
+          We couldn&apos;t read the material this rulebook has kept, so the count
+          below may be short. {kept.reason}
+        </p>
+        <Button
+          size="sm"
+          variant="outline"
+          className="mt-2 h-7"
+          onClick={() => kept.retry()}
+        >
+          Try again
+        </Button>
+      </div>
+    );
+  }
+  if (kept.count === 0) return null;
+
+  const shown = kept.rows.slice(0, 5);
+  return (
+    <div className="mt-3 overflow-hidden rounded-md border border-border/70 bg-card">
+      <div className="flex items-center justify-between gap-2 border-b border-border/70 px-3 py-2">
+        <p className="text-xs font-medium text-foreground">
+          {kept.count === 1
+            ? "1 source is already here"
+            : `${kept.count.toLocaleString()} sources are already here`}
+          {attached > 0 ? (
+            <span className="font-normal text-muted-foreground">
+              {" "}
+              — besides the {attached === 1 ? "one" : attached} attached below
+            </span>
+          ) : null}
+        </p>
+        <Link
+          href={`/masterwork/${rulebookId}/sources/kept`}
+          data-tap-target
+          className="inline-flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+        >
+          <Library className="h-3 w-3" />
+          Read them
+        </Link>
+      </div>
+      <ul className="divide-y divide-border/60">
+        {shown.map((row) => (
+          <li
+            key={row.source_key}
+            className="flex items-center justify-between gap-3 px-3 py-1.5 text-xs"
+          >
+            <span className="truncate text-foreground">
+              {row.label || "Untitled"}
+            </span>
+            <span className="shrink-0 text-muted-foreground">
+              {row.word_count
+                ? `${row.word_count.toLocaleString()} words`
+                : row.medium}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {kept.count > shown.length ? (
+        <p className="border-t border-border/60 px-3 py-1.5 text-xs text-muted-foreground">
+          {`and ${(kept.count - shown.length).toLocaleString()} more`}
+          {kept.more
+            ? ` — one run turns the most recent ${kept.rows.length.toLocaleString()} into rules, then press it again for the rest`
+            : ""}
+          .
+        </p>
+      ) : null}
     </div>
   );
 }
