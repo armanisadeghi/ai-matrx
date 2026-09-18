@@ -215,6 +215,25 @@ export const marketingTopicalMapManifest: SurfaceManifest = {
   readinessNote:
     "The workspace body mounts the SurfaceRuntimeProvider and emits this scope from the live store (2026-09-18): map_id, map_screen, site_id, topic_total, selected_topic_slug, expanded_topic_slugs, visible_topics, and page_intents on the pages screen. The rest fill in as the view builders land — map_outline, map_diagnostics and map_history are read by their screens but not emitted yet, and page_intent_total is deliberately absent because the slice holds the rows this workspace LISTED, not the server's matched total. agentRoles: seo.map_curation is declared (Lane G, with its 'Ask the map' launcher in the map window and the canvas pane); seo.map_author is declared (Lane E, with the Content home's Start a map screen and Extend from the site); seo.page_mapper and seo.page_intent_proposer are declared (Lane F, with the pages workspace's run controls); seo.topic_curation lands with the topic panel's control (Lane D), never ahead of it.",
   urlPattern: "/marketing/[brandId]/content/map/[mapId]",
+  // Lane D (2026-09-18): the topic panel's two controls ("Rewrite description",
+  // "Ask about this topic") run this ONE fixed job, opened in place through
+  // `useOpenMandateWindow`. Declared here because the control exists
+  // (`panel/sections/TopicAgentControls.tsx`), never ahead of it. The key is a
+  // literal carried in scripts/mandate-keys-allowlist.json until
+  // @ai-matrx/agents republishes the regenerated key set (CONTRACTS.md §6).
+  agentRoles: [
+    {
+      name: "topic_curation",
+      label: "Topic agent",
+      description:
+        "Works inside ONE topic of the map: rewrites its description, answers questions about it, and changes it through the topical_map tool under the topic_agent_change_mode setting.",
+      kind: "single",
+      defaultAgentId: null,
+      mandateKey: "seo.topic_curation",
+      autoRun: "never",
+      sortOrder: 400,
+    },
+  ],
   intro: `<surface_intro>
 You are in a brand's TOPICAL MAP: the tree of subjects this brand should cover, and the plan for getting its website there. The map decides WHICH pages should exist and WHERE they live; the content plan, a separate surface, decides what one page says.
 Topics are addressed by SLUG, never by id. visible_topics is what the person can actually see right now — filters applied, collapsed branches excluded — while map_outline is the whole map. A count that is absent was not loaded; it never means zero.
