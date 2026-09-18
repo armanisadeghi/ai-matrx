@@ -159,4 +159,24 @@ describe("buildDisplayEntries — one bubble per live turn", () => {
       true,
     );
   });
+
+  it("does not duplicate a settled answer after hydration replaces live anchors", () => {
+    const entries = buildDisplayEntries({
+      messages: [
+        msg("u1", "user", 1),
+        // A successful conversation reload writes DB rows without the
+        // session-only _streamRequestId, while latestRequestId can persist.
+        msg("a1", "assistant", 2),
+      ],
+      isActive: false,
+      latestRequestId: "req-settled",
+      isErrorPhase: false,
+    });
+
+    expect(entries.map((entry) => entry.key)).toEqual(["u1", "a1"]);
+    expect(groupDisplayEntries(entries).map((group) => group.key)).toEqual([
+      "u1",
+      "grp:a1",
+    ]);
+  });
 });

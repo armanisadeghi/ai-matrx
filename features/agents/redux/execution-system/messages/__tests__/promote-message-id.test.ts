@@ -11,6 +11,7 @@
 
 import { configureStore } from "@reduxjs/toolkit";
 import messagesReducer, {
+  addOptimisticUserMessage,
   reserveMessage,
   promoteMessageId,
   updateMessageRecord,
@@ -29,6 +30,37 @@ function makeStore() {
 function entry(store: ReturnType<typeof makeStore>) {
   return store.getState().messages.byConversationId[CONV];
 }
+
+test("a late inbox bubble is inserted at its server position before a live assistant row", () => {
+  const store = makeStore();
+
+  // The assistant row can be reserved before the server emits
+  // `injection_consumed`, although its content (tool calls and the eventual
+  // answer) reaches the client afterwards. The inbox bubble must use the
+  // server's transcript position, never transport arrival order.
+  store.dispatch(
+    reserveMessage({
+      conversationId: CONV,
+      messageId: "assistant-after-steer",
+      role: "assistant",
+      position: 12,
+      requestId: "req-live",
+    }),
+  );
+  store.dispatch(
+    addOptimisticUserMessage({
+      conversationId: CONV,
+      clientTempId: "inbox-steer",
+      content: [{ type: "text", text: "Use the new direction." }],
+      position: 11,
+    }),
+  );
+
+  expect(entry(store).orderedIds).toEqual([
+    "inbox-steer",
+    "assistant-after-steer",
+  ]);
+});
 
 test("normal promote renames the record and the ordered id", () => {
   const store = makeStore();
