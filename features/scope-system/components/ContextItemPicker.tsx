@@ -188,7 +188,12 @@ export function ContextItemPicker({
 
   /** Scope type from a typed name — the Add Scope modal's own defaults. */
   const createScopeTypeFromName = async (typed: string) => {
-    if (!orgId) return null;
+    if (!orgId) {
+      // Nothing fails silently: a scope type belongs to an organization, so
+      // say why nothing happened instead of returning null into the void.
+      toast.error("Pick an organization first — a scope type belongs to one.");
+      return null;
+    }
     try {
       const created = await dispatch(
         createScopeType({
@@ -232,9 +237,25 @@ export function ContextItemPicker({
     keywords: i.key,
   }));
 
-  const itemPlaceholder =
-    !isSystem && !scopeTypeId
-      ? "Pick a scope type first"
+  /**
+   * A scope type is only really chosen when the picker can RESOLVE it in the
+   * org it is showing. A stored binding can carry a scope type from another
+   * organization (the picker falls back to the active org when the value has
+   * none), and then the scope-type trigger renders its placeholder while the
+   * item level speaks about a type the person never picked — the screen said
+   * "No items yet — type a name to create one" when no scope type was selected
+   * at all (PNI-000 F1). So: not resolvable = not picked, and while the org's
+   * types are still arriving the item level says it is loading, never that a
+   * scope type is empty.
+   */
+  const scopeTypePending =
+    !isSystem && Boolean(scopeTypeId) && !typesLoaded && !scopeType;
+  const scopeTypeMissing = !isSystem && !scopeTypePending && !scopeType;
+
+  const itemPlaceholder = scopeTypeMissing
+    ? "Pick a scope type first"
+    : scopeTypePending
+      ? "Loading…"
       : items.length === 0
         ? itemsLoaded
           ? isSystem
@@ -302,7 +323,10 @@ export function ContextItemPicker({
               searchPlaceholder="Search or type a new organization…"
               noun="organization"
               onCreateRequiresMore={(typed) => setOrgDraft(typed)}
-              manageAction={{ label: "Manage organizations", href: "/organizations" }}
+              manageAction={{
+                label: "Manage organizations",
+                href: "/organizations",
+              }}
               disabled={readonly}
               ariaLabel="Organization"
             />
@@ -325,7 +349,10 @@ export function ContextItemPicker({
               onCreate={createScopeTypeFromName}
               manageAction={
                 orgId
-                  ? { label: "Manage scope types", href: orgScopesHref(orgSegment) }
+                  ? {
+                      label: "Manage scope types",
+                      href: orgScopesHref(orgSegment),
+                    }
                   : undefined
               }
               disabled={readonly || !orgId}
@@ -381,8 +408,11 @@ export function ContextItemPicker({
                 }
               : undefined
           }
-          disabled={readonly || (!isSystem && !scopeTypeId)}
-          loading={Boolean(itemsKey) && !itemsLoaded}
+          disabled={readonly || scopeTypeMissing || scopeTypePending}
+          loading={
+            scopeTypePending ||
+            (Boolean(itemsKey) && !scopeTypeMissing && !itemsLoaded)
+          }
           ariaLabel={isSystem ? "System context item" : "Context item"}
         />
         {isSystem && (
@@ -391,7 +421,7 @@ export function ContextItemPicker({
             recomputed on every request.
           </p>
         )}
-        {itemDraft !== null && !isSystem && scopeTypeId && scopeType && (
+        {itemDraft !== null && !isSystem && scopeType && (
           <ContextItemAddForm
             scopeTypeId={scopeTypeId}
             labelPlural={scopeType.label_plural}

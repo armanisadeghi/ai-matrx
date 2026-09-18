@@ -31,6 +31,7 @@ import { makeSelectScopeTypesForOrg } from "@/features/scopes/redux/selectors/tr
 import { createScopeType } from "@/features/scopes/redux/thunks/scopeTreeMutations";
 import { createContextItem } from "@/features/scopes/redux/thunks/contextItemMutations";
 import { slugifyKey } from "@/features/scopes/utils/slugify";
+import { pluralize } from "@/features/scopes/utils/pluralize";
 import { isScopesRpcErr } from "@/features/scopes/types";
 
 type ContextItemDraft = { id: string; display_name: string };
@@ -47,13 +48,6 @@ const newItemRow = (): ContextItemDraft => ({
   id: Math.random().toString(36).slice(2),
   display_name: "",
 });
-
-function pluralize(s: string): string {
-  if (!s) return "";
-  if (/[sxz]$|[cs]h$/i.test(s)) return s + "es";
-  if (/[^aeiou]y$/i.test(s)) return s.slice(0, -1) + "ies";
-  return s + "s";
-}
 
 export function AddScopeModal({
   open,
@@ -200,7 +194,8 @@ export function AddScopeModal({
           max_assignments: maxAssignments
             ? parseInt(maxAssignments, 10)
             : undefined,
-          parent_type_id: parentTypeId === NONE_VALUE ? undefined : parentTypeId,
+          parent_type_id:
+            parentTypeId === NONE_VALUE ? undefined : parentTypeId,
           default_variable_keys: variableKeys,
         }),
       );
@@ -220,7 +215,9 @@ export function AddScopeModal({
       toast.success(`Created “${trimmedPlural || trimmedSingular}”`);
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create scope");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to create scope",
+      );
     } finally {
       setBusy(false);
     }
@@ -291,7 +288,11 @@ export function AddScopeModal({
           </div>
           <div className="space-y-1.5">
             <Label className="text-xs">Color</Label>
-            <ScopeColorPicker value={color} onChange={setColor} disabled={busy} />
+            <ScopeColorPicker
+              value={color}
+              onChange={setColor}
+              disabled={busy}
+            />
           </div>
         </div>
 
