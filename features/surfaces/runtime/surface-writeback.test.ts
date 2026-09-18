@@ -441,6 +441,7 @@ describe("surface approval comparison", () => {
     description: "The live text being replaced.",
     valueType: "string" as const,
     alwaysAvailable: true,
+    typicalCharCount: 2000,
   } satisfies SurfaceValue;
   const contentReadTwin = {
     ...stringReadTwin,
