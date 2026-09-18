@@ -1,4 +1,5 @@
 "use client";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 // features/flashcards/data/useGenerateCards.ts
 //
@@ -88,7 +89,7 @@ function isFromSourceVars(
 
 export interface GenerateCardsResult {
   generate: (
-    mandateKey: string,
+    mandateKey: AnyMandateKey,
     vars: GenerateCardsVariables | GenerateFromSourceVariables,
   ) => Promise<GeneratedCardSet>;
   isGenerating: boolean;
@@ -137,7 +138,7 @@ export function useGenerateCards(): GenerateCardsResult {
   const { run, isRunning, error, activeRequestId } = useHeadlessAgentJson();
 
   async function generate(
-    mandateKey: string,
+    mandateKey: AnyMandateKey,
     vars: GenerateCardsVariables | GenerateFromSourceVariables,
   ): Promise<GeneratedCardSet> {
     const fromSource = isFromSourceVars(vars);

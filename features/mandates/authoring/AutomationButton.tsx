@@ -1,4 +1,5 @@
 "use client";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 // features/mandates/authoring/AutomationButton.tsx
 //
@@ -106,7 +107,7 @@ export function AutomationButton({
   onRun,
   knownValues = {},
 }: {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /** Tight copy — two or three words ("Refine with AI"). */
   label: string;
   runningLabel: string;

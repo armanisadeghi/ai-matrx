@@ -1,4 +1,5 @@
 "use client";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * AgentSurfacesPanel — the agent engineer's view for binding an agent to
@@ -636,7 +637,9 @@ function SurfaceMandateRoles({ surfaceName }: { surfaceName: string }) {
   const roles = (getManifest(surfaceName)?.agentRoles ?? []).filter(
     (r) => typeof r.mandateKey === "string" && r.mandateKey.length > 0,
   );
-  const keys = roles.map((r) => r.mandateKey as string);
+  const keys: readonly AnyMandateKey[] = roles.flatMap((r) =>
+    r.mandateKey ? [r.mandateKey] : [],
+  );
   const resolved = useMandateSet(keys, { optionalKeys: keys });
 
   if (roles.length === 0) return null;

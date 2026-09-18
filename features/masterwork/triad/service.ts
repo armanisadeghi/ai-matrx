@@ -18,6 +18,7 @@
 // reason it has not.
 
 import { callApi } from "@/lib/api/call-api";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import type { AppStore } from "@/lib/redux/store";
 import type { paths } from "@/types/python-generated/api-types";
 import { parseDeck, type Triad, type TriadDeck, type TriadIngestSummary, type TriadMode } from "./types";
@@ -26,8 +27,8 @@ export const TRIAD_DEAL_PATH = "/masterworks/triads" satisfies keyof paths;
 export const TRIAD_INGEST_PATH = "/masterworks/ingest-triad" satisfies keyof paths;
 
 /** The Mandate behind each half — shown to the Expert by `AgentCredit`. */
-export const TRIAD_GENERATOR_MANDATE = "masterwork.triad_generator";
-export const TRIAD_DISTILLER_MANDATE = "masterwork.triad_distiller";
+export const TRIAD_GENERATOR_MANDATE = MANDATE_KEYS.masterwork__triad_generator;
+export const TRIAD_DISTILLER_MANDATE = MANDATE_KEYS.masterwork__triad_distiller;
 
 function eventData(event: unknown): Record<string, unknown> | null {
   const data = (event as { data?: unknown } | null)?.data;

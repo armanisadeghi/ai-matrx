@@ -1,4 +1,5 @@
 "use client";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * features/marketing/content-plan/setup/ai.ts
@@ -574,7 +575,7 @@ export function useSetupAgents(siteId: string | null) {
   const inFlight = useRef(false);
 
   async function run<T>(
-    mandateKey: string,
+    mandateKey: AnyMandateKey,
     label: string,
     variables: Record<string, string>,
     coerce: (value: unknown) => T,

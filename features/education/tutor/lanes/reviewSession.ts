@@ -21,6 +21,7 @@
 // variables, coercion, and the session_review persist.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import {
   livePosture,
   runHeadlessAgentJson,
@@ -58,7 +59,7 @@ export interface ReviewSessionArgs {
    */
   remainingCards?: string[];
   /** Override the review mandate (rare — testing only). */
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
   /**
    * Live handle — the review streams where the caller mounts it. A caller that
    * passes one owns the window (`StudyDeck` does); when it is omitted this lane

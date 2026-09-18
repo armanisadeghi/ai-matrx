@@ -10,6 +10,7 @@
 // options for that question — never a hard blocker.
 
 import type { AppDispatch, RootState } from "@/lib/redux/store";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { runHeadlessAgentJson } from "@/features/agents/redux/execution-system/thunks/run-headless-agent-json";
 import { FC_MANDATES } from "../mandates";
 import { QUIZ_ITEMS_KEY } from "./buildQuizQuestions";
@@ -28,7 +29,7 @@ export interface MakeQuizItemsArgs {
    */
   cardId?: string | null;
   /** Override the quiz-items mandate (testing only). */
-  mandateKey?: string | null;
+  mandateKey?: AnyMandateKey | null;
 }
 
 export interface MakeQuizItemsResult {

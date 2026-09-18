@@ -15,6 +15,7 @@
 // stops calling it).
 
 import type { AppDispatch } from "@/lib/redux/store";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { CloudFolders } from "@/features/files/utils/folder-conventions";
 import { verdictResult } from "@/features/education/trust/types";
 import { studyService } from "@/features/education/study/service/studyService";
@@ -72,7 +73,7 @@ function modeRubric(mode: SpokenPracticeMode, rubric: string): string {
  * other mode resolves the shared spoken-practice grader. Both return the
  * unified `SpokenGrade` shape.
  */
-function graderMandateKey(mode: SpokenPracticeMode): string {
+function graderMandateKey(mode: SpokenPracticeMode): AnyMandateKey {
   return mode === "pronunciation"
     ? SPOKEN_PRACTICE_MANDATES.gradePronunciation
     : SPOKEN_PRACTICE_MANDATES.gradeAnswer;

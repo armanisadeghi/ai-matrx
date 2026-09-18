@@ -14,6 +14,10 @@
 import type { Database } from "@/types/database.types";
 import type { Json } from "@/types/database.types";
 import {
+  storedMandateKey,
+  type AnyMandateKey,
+} from "@/features/mandates/mandate-key";
+import {
   isSourceFeature,
   type SourceFeature,
 } from "@/types/python-generated/source-attribution";
@@ -74,7 +78,7 @@ export type AssistAction =
   | {
       /** Execute a governed mandate immediately and float canonical progress. */
       kind: "run_mandate";
-      mandateKey: string;
+      mandateKey: AnyMandateKey;
       sourceFeature: SourceFeature;
       /** Declared variables only. Structured content never becomes user_input. */
       variables: Record<string, string>;
@@ -86,7 +90,7 @@ export type AssistAction =
       /** Direct agent id — or leave unset and provide `mandateKey`. */
       agentId?: string;
       /** Agent-mandate key resolved at click time (swappable, no deploy). */
-      mandateKey?: string;
+      mandateKey?: AnyMandateKey;
       /** Title-bar name shown while the agent definition loads. */
       agentName?: string;
       /** Composed intent pre-filled into the composer (pre-fill only). Human-
@@ -511,7 +515,7 @@ function narrowAction(value: Json): AssistAction | null {
     );
     return {
       kind,
-      mandateKey: obj.mandateKey,
+      mandateKey: storedMandateKey(String(obj.mandateKey)),
       sourceFeature: obj.sourceFeature,
       variables,
       workingMessage: obj.workingMessage,
@@ -544,7 +548,10 @@ function narrowAction(value: Json): AssistAction | null {
     return {
       kind,
       agentId: typeof obj.agentId === "string" ? obj.agentId : undefined,
-      mandateKey: typeof obj.mandateKey === "string" ? obj.mandateKey : undefined,
+      mandateKey:
+        typeof obj.mandateKey === "string"
+          ? storedMandateKey(obj.mandateKey)
+          : undefined,
       agentName: typeof obj.agentName === "string" ? obj.agentName : undefined,
       draftText: typeof obj.draftText === "string" ? obj.draftText : undefined,
       variableValues:

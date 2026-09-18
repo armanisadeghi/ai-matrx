@@ -21,6 +21,7 @@ import React from "react";
 import { TextWithDoors } from "@/components/official/entity-ref/TextWithDoors";
 
 import { useMandateGoal } from "./useMandateGoal";
+import type { AnyMandateKey } from "./mandate-key";
 
 export function MandateGoalBlock({
   mandateKey,
@@ -28,7 +29,12 @@ export function MandateGoalBlock({
   storedGoal = null,
   description,
 }: {
-  mandateKey: string;
+  /**
+   * Typed, never `string` (V-L6a, 2026-09-17) — this block feeds `useMandateGoal`,
+   * a carrier. A host holding a console ROW types it with `storedMandateKey()`,
+   * where the row is the authority.
+   */
+  mandateKey: AnyMandateKey;
   storedGoal?: string | null;
   description: string | null;
 }) {

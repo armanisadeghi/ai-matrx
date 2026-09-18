@@ -30,8 +30,15 @@
 // THE RULE THIS ENFORCES: a component may only render a value this file
 // returned. Nothing in `features/exports` renders a raw response field.
 
+import {
+  ContractError,
+  createReaders,
+  describe,
+  recovered,
+  type Parsed,
+} from "@/lib/contract/narrow";
+
 import type {
-  CountMap,
   CreateExportResponse,
   ExportAdapter,
   ExportAdapterCatalog,
@@ -53,150 +60,27 @@ import type {
  *
  * `message` is the sentence a person reads. It names the field, what was
  * expected, and what arrived — never a stack, never "something went wrong".
- */
-export class ExportContractError extends Error {
-  readonly field: string;
-  readonly expected: string;
-  readonly got: string;
-
-  constructor(field: string, expected: string, got: string) {
-    super(
-      `The server sent this screen a shape it cannot read: "${field}" should be ` +
-        `${expected} and arrived as ${got}. Nothing has been guessed or hidden — ` +
-        `this part of the screen stays empty until the server and this screen ` +
-        `agree again.`,
-    );
-    this.name = "ExportContractError";
-    this.field = field;
-    this.expected = expected;
-    this.got = got;
-  }
-}
-
-/** What arrived, in the words a person can read — never `[object Object]`. */
-export function describe(value: unknown): string {
-  if (value === null) return "nothing (null)";
-  if (value === undefined) return "nothing at all (the field was missing)";
-  if (Array.isArray(value)) {
-    return value.length === 1 ? "a list of 1 entry" : `a list of ${value.length} entries`;
-  }
-  switch (typeof value) {
-    case "string":
-      return "text";
-    case "number":
-      return Number.isFinite(value) ? "a number" : "a number that is not finite";
-    case "boolean":
-      return "true/false";
-    case "object": {
-      const keys = Object.keys(value as object);
-      return keys.length
-        ? `an object with keys {${keys.slice(0, 6).join(", ")}${keys.length > 6 ? ", …" : ""}}`
-        : "an empty object";
-    }
-    default:
-      return `a ${typeof value}`;
-  }
-}
-
-function fail(field: string, expected: string, value: unknown): never {
-  throw new ExportContractError(field, expected, describe(value));
-}
-
-// ─── the primitive readers ───────────────────────────────────────────────────
-
-function obj(value: unknown, field: string): Record<string, unknown> {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
-    fail(field, "an object", value);
-  }
-  return value as Record<string, unknown>;
-}
-
-function arr(value: unknown, field: string): unknown[] {
-  if (!Array.isArray(value)) fail(field, "a list", value);
-  return value;
-}
-
-function str(value: unknown, field: string): string {
-  if (typeof value !== "string") fail(field, "text", value);
-  return value;
-}
-
-function optStr(value: unknown, field: string): string | null {
-  if (value === undefined || value === null) return null;
-  if (typeof value !== "string") fail(field, "text or nothing", value);
-  return value;
-}
-
-function num(value: unknown, field: string): number {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    fail(field, "a number", value);
-  }
-  return value;
-}
-
-function optNum(value: unknown, field: string): number | null {
-  if (value === undefined || value === null) return null;
-  return num(value, field);
-}
-
-function bool(value: unknown, field: string): boolean {
-  if (typeof value !== "boolean") fail(field, "true or false", value);
-  return value;
-}
-
-function optBool(value: unknown, field: string, fallback: boolean): boolean {
-  if (value === undefined || value === null) return fallback;
-  return bool(value, field);
-}
-
-function strList(value: unknown, field: string): string[] {
-  return arr(value, field).map((entry, index) => str(entry, `${field}[${index}]`));
-}
-
-function countMap(value: unknown, field: string): CountMap {
-  const source = obj(value, field);
-  const out: CountMap = {};
-  for (const [key, entry] of Object.entries(source)) {
-    out[key] = num(entry, `${field}.${key}`);
-  }
-  return out;
-}
-
-/**
- * A field this screen can do without.
  *
- * 🚨 A STAND-IN ANNOUNCES ITSELF. When a redundant field (a count that the list
- * beside it already proves) arrives wrong, the screen does NOT die and does NOT
- * quietly paper over it: the derived value is used AND the problem is pushed
- * onto `problems`, which the component shows. Required fields never come
- * through here — they throw.
+ * The sentence, the readers below it and `recovered()` are NOT this feature's:
+ * they live in `lib/contract/narrow.ts`, because a boundary that can lie is
+ * every feature's problem and the outage above will not be the last one. This
+ * file keeps its own error TYPE so a screen can tell an unreadable `/media`
+ * export response from any other feature's.
  */
-function recovered<T>(
-  problems: string[],
-  field: string,
-  expected: string,
-  value: unknown,
-  read: () => T,
-  fallback: () => T,
-): T {
-  try {
-    return read();
-  } catch {
-    problems.push(
-      `The server's "${field}" should be ${expected} and arrived as ` +
-        `${describe(value)}. This screen worked it out from the list instead, ` +
-        `so the number below is counted here rather than reported by the server.`,
-    );
-    return fallback();
+export class ExportContractError extends ContractError {
+  constructor(field: string, expected: string, got: string) {
+    super(field, expected, got);
+    this.name = "ExportContractError";
   }
 }
 
-/** A parse that survived, plus every stand-in it had to announce. */
-export interface Parsed<T> {
-  value: T;
-  /** Empty when the server said exactly what it promised. */
-  problems: string[];
-}
+const { obj, arr, str, optStr, num, optNum, bool, optBool, strList, countMap } =
+  createReaders(
+    (field, expected, got) => new ExportContractError(field, expected, got),
+  );
+
+export { describe, recovered };
+export type { Parsed };
 
 // ─── the payloads ────────────────────────────────────────────────────────────
 

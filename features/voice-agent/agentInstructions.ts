@@ -12,6 +12,7 @@
 // loudly and refuse to run; none of them substitutes a prompt of its own.
 
 import { useEffect, useState } from "react";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import { fetchFullAgent } from "@/features/agents/redux/agent-definition/thunks";
 import { selectAgentReadyForBuilder } from "@/features/agents/redux/agent-definition/selectors";
@@ -47,7 +48,7 @@ export interface MandateAgentInstructions {
  * unresolved mandate or an instruction-less agent surfaces as `error`.
  */
 export function useMandateAgentInstructions(
-  mandateKey: string,
+  mandateKey: AnyMandateKey | "",
 ): MandateAgentInstructions {
   const dispatch = useAppDispatch();
   const store = useAppStore();

@@ -31,6 +31,7 @@
  */
 
 import type { OutputKind } from "./outputs";
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 
 /** The bundle every publishing output uses — the report, and nothing else. */
@@ -43,7 +44,7 @@ export interface DomainOutputDefinition {
   /** One line: what this produces and what it reads. */
   description: string;
   /** The mandate whose resolved agent writes it (`research_client.output_*`). */
-  mandateKey: string;
+  mandateKey: MandateKey;
   /** System bundle that feeds it. */
   bundleSlug: string;
   /** Slot in `rs_topic.outputs` where a generated report persists (D5). */

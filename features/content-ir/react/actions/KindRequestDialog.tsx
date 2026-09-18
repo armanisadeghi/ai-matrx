@@ -1,4 +1,5 @@
 "use client";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * KindRequestDialog — the reusable "ask an agent for a typed value, pick one,
@@ -171,7 +172,7 @@ export interface KindRequestDialogProps {
   agentId?: string;
   /** DB-managed mandate resolved inside the canonical launcher (preferred —
    *  the caller's binding + `config_overrides` apply). */
-  mandateKey?: string;
+  mandateKey?: AnyMandateKey;
   title: string;
   description?: string;
   /** Input fields collected from the user (name === agent variable name). */

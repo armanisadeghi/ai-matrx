@@ -389,6 +389,29 @@ else
     fail "MATRX PACKAGE VERSION DRIFT — run pnpm sync:matrx-packages, commit package.json + pnpm-lock.yaml, and retry."
 fi
 
+# MANDATE REFERENCES — deliberately outside --no-gates, because it can never be
+# the reason a release stops (ruling D23, and law 1 of
+# common-docs/projects/mandate-declaration-reporting/REGISTER.md). Skipping the
+# advisory suites must not make the fleet board go blind: every Mandate this
+# build names is reported to the platform with its exact file, symbol and line,
+# together with every place intelligence is reached outside a Mandate, and
+# /administration/mandates/references is what reads it.
+#
+# 🚨 THE VERSION IS PINNED EXACTLY, ON PURPOSE. "Always latest" is THE LAW for
+# @ai-matrx NPM packages — check:matrx-packages above enforces it. This is a
+# PYTHON release gate whose findings are compared between revisions:
+# reconciliation is keyed on (identity, revision_kind, revision) and the identity
+# hash includes the scanner's own classification, so a gate that silently changed
+# what it measured would make every comparison a lie. Bump the pin deliberately,
+# in a commit that says what changed.
+info "Scanning and reporting mandate references (loud, never blocking)..."
+if command -v uvx >/dev/null 2>&1; then
+    pnpm check:mandate-references || true
+    ok "Mandate references scanned and reported (findings above, if any, never block)."
+else
+    warn "uvx not found — this release reported NO mandate references. Install uv (https://astral.sh/uv) so the fleet board stops calling matrx-frontend unmeasured."
+fi
+
 # Also deliberately outside --no-gates, and first because everything after it
 # assumes a tree that compiles. A file that does not PARSE is not a quality
 # opinion: it cannot build, it cannot render, and it takes the shared dev

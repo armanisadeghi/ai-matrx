@@ -1,4 +1,5 @@
 "use client";
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * ContextAwareCodeEditorCompact (V3 Compact)
@@ -64,7 +65,7 @@ export interface ContextAwareCodeEditorCompactProps {
   code: string;
   language: string;
   /** Explicit editing job (mandate key). Overrides `promptKey`. */
-  mandateKey?: string;
+  mandateKey?: MandateKey;
   promptKey?: CodeEditorPromptKey;
   onCodeChange: (newCode: string, version: number) => void;
   selection?: string;

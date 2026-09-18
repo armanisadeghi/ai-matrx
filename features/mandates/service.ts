@@ -85,6 +85,7 @@ import {
   mandateDefinitions,
   mandateTreatments,
 } from "@/lib/supabase/mandateStorage";
+import type { AnyMandateKey } from "./mandate-key";
 import {
   TREATMENT_TIER_WIDGET,
   parseTreatmentConfig,
@@ -92,7 +93,7 @@ import {
 } from "@/features/bindings/treatment-shape";
 
 export interface ResolvedMandate {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   /**
    * `agent.mandate.id` — the row the JOB is, as opposed to the agent currently
    * holding it. Consumers that write something ABOUT the mandate (notes,
@@ -384,16 +385,23 @@ export interface ResolveMandateOptions {
   optional?: boolean;
 }
 
+/**
+ * 🚨 THE KEY IS TYPED, NEVER `string` (V-L6a, 2026-09-17) — a wrong or stale
+ * key must fail `pnpm type-check`, not arrive here as a 404 nobody sees. A
+ * DB-authored `app.*` / `shortcut.*` key is legitimate, so the parameter is
+ * `AnyMandateKey`; narrow an unknown string with `isMandateKey` at its
+ * boundary rather than widening this back.
+ */
 export function resolveMandate(
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   options: { optional: true },
 ): Promise<ResolvedMandate | null>;
 export function resolveMandate(
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   options?: ResolveMandateOptions,
 ): Promise<ResolvedMandate>;
 export async function resolveMandate(
-  mandateKey: string,
+  mandateKey: AnyMandateKey,
   options: ResolveMandateOptions = {},
 ): Promise<ResolvedMandate | null> {
   const supabase = createClient();
