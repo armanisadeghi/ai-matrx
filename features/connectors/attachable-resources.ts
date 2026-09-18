@@ -52,6 +52,15 @@ export interface AttachableResource {
    * verbatim so a new provider needs no frontend change.
    */
   label: string;
+  /**
+   * How to get MORE of this kind when the list is missing one, in the
+   * server's own words ("Choose more with the Google Picker…", "Open your
+   * agenda and refresh it…"). Absent for a kind the server has not declared
+   * one for yet. For a Record-backed kind (F-71's `calendar_event`) this is
+   * the ONLY door offered — a meeting cannot be hand-picked, so a caller must
+   * never paint a Picker button from this field.
+   */
+  add_more?: string | null;
 }
 
 /**

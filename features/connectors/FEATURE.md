@@ -278,6 +278,44 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 
 ## Change log
 
+- `2026-09-18` — **F-71: the attach picker renders a Record-backed candidate
+  (calendar events) honestly.** aidream lane F-62 made `calendar_event`
+  attachable through its OWN Record (`communication.calendar_event`, never a
+  live Google read) — `/connections/resources` now returns candidates
+  carrying `record_table` and an EMPTY `permission_level` (the server's access
+  chokepoint already passed before the row could ever be listed). Before this
+  lane `AttachableCandidate` (`attachments.service.ts`) carried none of
+  `resource_id` / `permission_level` / `record_table`, so a Record-backed
+  candidate had no way to open as its own Record and no explanation for why
+  it cannot be "chosen" like a Google Doc. Fixed: (1) `AttachableCandidate`
+  now carries all three fields, typed exactly as the server's `ConnectionResource`
+  payload; (2) `ResourceAttachPicker.tsx` renders an "open in place" control
+  (`ArrowUpRight`, `useOpenItemPresentation`) for any candidate carrying
+  `record_table`, SEPARATE from the row's own external door (a calendar
+  event's `link` is the meeting's join URL, never the Record's own screen —
+  the two are different doors and both render when both exist); the row's
+  existing `detail` line (server-composed) already says the kind, the time
+  and "no longer syncing (detached)" — no client change needed there, and
+  nothing here renders the empty `permission_level` as "no access" (nothing
+  in this file reads that field at all — it exists only so the type matches
+  the wire); (3) `AttachableResource` (`attachable-resources.ts`) gains an
+  optional `add_more` string, and the picker renders every visible
+  Record-backed kind's `add_more` sentence as plain text below the list — a
+  meeting cannot be hand-picked through any Picker, so this is never a
+  clickable "Choose…" control, only the server's own remedy sentence
+  (`recordKindAddMoreSentences`, derived from which candidates on screen carry
+  `record_table`, never a hand list of resource types). Attaching a
+  Record-backed candidate already rode the SAME checkbox-and-commit door as a
+  picked file (`toggle` → `commit` → `onAttach`, keyed on `resource_ref`) —
+  no change needed there. New DOM test
+  `__tests__/a-record-backed-candidate-renders-honestly.test.tsx`, a real
+  component in a real DOM, red on the three added behaviors (proven against a
+  disposable `git worktree` at the pre-change commit: the open-in-place
+  control, the join-link's distinct label, and the `add_more` sentence all
+  failed; the detail-line and attach-door assertions already passed, since
+  those rode existing server-composed fields) and green after. No screen was
+  seen — there is no browser in this container.
+
 - `2026-09-18` — **F-55: an overlay first action carries what its window needs, or the dialog will not render it.** Cursor Bugbot, Medium, thread 4043109495 on PR 228, commit `9e31d18a`: F-51's `ConnectorFirstAction` overlay variant carried only `overlayId`, so the Tasks row's button dispatched `openOverlay({ overlayId: "googleTasksImportWindow" })` with no `data` — the window it opens reads `organizationId` off that data (`GoogleTasksImportPanel.tsx`) and refuses to load without it, so the new "Import your tasks" button opened a window that could list and import nothing. Fixed at the class: the overlay variant now carries an optional `needs: readonly ConnectorFirstActionContextKey[]` (today just `"organizationId"`), the dialog resolves each key from its own scope via `resolveFirstActionData` (the SAME `selectEffectiveOrganizationId` value `TasksHeaderControls`' typed opener already passes) and refuses to render the button at all when a needed value is unavailable, never opening a window that can do nothing (Law 4). Census extended in `__tests__/every-connected-product-offers-its-first-action.test.ts` (`WINDOW_REQUIRED_CONTEXT_KEYS`, hand-verified against each window body's own prop contract) — the added case fails on the pre-fix config (Tasks missing `organizationId` in `needs`) and passes after. New dialog test `__tests__/the-tasks-button-opens-with-the-organization.test.tsx` clicks the real Tasks button through a real DOM and asserts the dispatched `openOverlay` action carries `{ organizationId }`. Calendar's agenda action needs nothing — confirmed against `GoogleAgendaWindow`, which takes no organization/project prop. No screen was seen — there is no browser in this container.
 
 - `2026-09-18` — **F-51: Calendar's first action exists, and the account preference is per PRODUCT.** (1) The consent dialog's promise — every connected row offers its first useful action — was unmet on five of the nine Google rows, Calendar among them although its first action (opening the agenda) had already been built and catalogued in the same project: `firstAction` could only hold an href, and a window has no route. It is now `ConnectorFirstAction`, three declared shapes, and the dialog renders an overlay action as a press that opens the window IN PLACE and steps the dialog aside. Calendar opens the agenda (`googleAgendaWindow`) and Tasks opens the import window that was already built and had no way in; Gmail, Tag Manager and YouTube declare `none` WITH the reason, which is visible debt escalated to the chair, not permission. Census: `__tests__/every-connected-product-offers-its-first-action.test.ts` walks every provider config — four cases, all four failing against the pre-fix config (11 undeclared rows) — and checks that an overlay action names a real catalogued WINDOW, that a route action is a real in-app path, and that the `none` list is exactly the named rows, each with a real sentence. (2) `preferredAccountId` ranked accounts by the NUMBER of live products, and a surface serving ONE product got the biggest collection instead of the account that holds what it serves: with Calendar on one Google account and five other products on another, the agenda read Calendar's health on the account without Calendar, told the person their calendar was not connected, and the doomed-call gate then correctly refused to refresh — a dead end with nothing on screen to explain it. Callers that serve one product now pass `forProductKey` (the agenda, and the detail health strip for a row that names no connection); the ranking is unchanged for everyone else and still decides ties. Red-then-green through the REAL derivation with the bigger account listed FIRST: `features/google-workspace/calendar/__tests__/the-refresh-runs-through-the-account-that-holds-calendar.test.tsx` (3 cases, all three failing before). No screen was seen — there is no browser in this container.

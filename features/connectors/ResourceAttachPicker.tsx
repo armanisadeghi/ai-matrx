@@ -31,6 +31,7 @@
 import { useEffect, useState } from "react";
 import {
   AlertTriangle,
+  ArrowUpRight,
   Check,
   ExternalLink,
   Loader2,
@@ -48,6 +49,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@ai-matrx/design-system";
 import { cn } from "@/lib/utils";
 import { GitHubConnectionCard } from "@/features/github-integration/GitHubConnectionCard";
+import { useOpenItemPresentation } from "@/features/item-presentation/useOpenItemPresentation";
 import {
   fetchAttachableResources,
   type AttachableCandidate,
@@ -110,6 +112,7 @@ function ResourceAttachPickerBody({
   const live = kinds.some((kind) => kind.source === "live");
   const nouns = kinds.map((kind) => kind.label.trim()).filter(Boolean);
   const noun = nouns[0] ?? "items";
+  const openItem = useOpenItemPresentation();
 
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
@@ -351,13 +354,39 @@ function ResourceAttachPickerBody({
                         </span>
                       )}
                     </button>
+                    {/* 🚨 A RECORD-BACKED CANDIDATE OPENS AS ITS RECORD, IN
+                        PLACE (F-71). `candidate.link` for one of these (a
+                        calendar event's `meeting_url`) is where the meeting is
+                        HELD, not the record's own screen — the two are
+                        different doors and neither one substitutes for the
+                        other, so both render when both exist. */}
+                    {candidate.record_table && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openItem(candidate.resource_type, candidate.resource_id, {
+                            name: candidate.display_name,
+                          })
+                        }
+                        className="shrink-0 text-muted-foreground hover:text-foreground"
+                        aria-label={`Open ${candidate.display_name}`}
+                        title={`Open ${candidate.display_name}`}
+                      >
+                        <ArrowUpRight className="h-3 w-3" />
+                      </button>
+                    )}
                     {candidate.link && (
                       <a
                         className="shrink-0 text-muted-foreground hover:text-foreground"
                         href={candidate.link}
                         target="_blank"
                         rel="noreferrer"
-                        aria-label={`Open ${candidate.display_name} at ${providerName}`}
+                        aria-label={
+                          candidate.record_table
+                            ? `Join ${candidate.display_name}`
+                            : `Open ${candidate.display_name} at ${providerName}`
+                        }
+                        title={candidate.record_table ? "Join the meeting" : undefined}
                       >
                         <ExternalLink className="h-3 w-3" />
                       </a>
@@ -374,6 +403,21 @@ function ResourceAttachPickerBody({
             owns the repository — a gap only the user can close, and the same
             door the GitHub card already owns. Reused, never re-implemented. */}
         {provider === "github" && <GitHubConnectionCard compact />}
+
+        {/* 🚨 A RECORD CANNOT BE HAND-PICKED — NEVER A PICKER BUTTON FOR ONE
+            (F-71). A synced calendar event is not something the Google Picker
+            can put in this list; the kind's own `add_more` sentence (the same
+            door `attachable_resource_kinds.json` declares for it — refresh
+            your agenda) is the whole remedy, said as a sentence, never as a
+            clickable "Choose…" affordance a meeting cannot answer to. */}
+        {recordKindAddMoreSentences(kinds, matches).map((sentence) => (
+          <p
+            key={sentence}
+            className="text-[11px] leading-tight text-muted-foreground"
+          >
+            {sentence}
+          </p>
+        ))}
 
         {saveError && (
           <p className="flex items-start gap-1.5 text-xs text-destructive">
@@ -441,4 +485,28 @@ function joinWithOr(words: string[]): string {
   if (words.length <= 1) return words[0] ?? "items";
   if (words.length === 2) return `${words[0]} or ${words[1]}`;
   return `${words.slice(0, -1).join(", ")}, or ${words[words.length - 1]}`;
+}
+
+/**
+ * The `add_more` sentence for every Record-backed kind actually on screen,
+ * de-duplicated. A kind is Record-backed when a visible candidate of that
+ * resource type carries `record_table` — never a hand list of resource types
+ * here, so a future Record-backed kind (not only `calendar_event`) is picked
+ * up for free the day it starts appearing in this same list.
+ */
+function recordKindAddMoreSentences(
+  kinds: readonly AttachableResource[],
+  candidates: readonly AttachableCandidate[],
+): string[] {
+  const recordTypes = new Set(
+    candidates.filter((c) => c.record_table).map((c) => c.resource_type),
+  );
+  if (recordTypes.size === 0) return [];
+  const sentences: string[] = [];
+  for (const kind of kinds) {
+    if (!recordTypes.has(kind.resource_type)) continue;
+    const sentence = kind.add_more?.trim();
+    if (sentence && !sentences.includes(sentence)) sentences.push(sentence);
+  }
+  return sentences;
 }
