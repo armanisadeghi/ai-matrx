@@ -14,6 +14,16 @@
  *   · hover knob: `renderHover` passed regardless of the knob → a HoverCard
  *     trigger exists with the knob off.
  *
+ * 🚨 THE RENAME CASE IS RED UNTIL THE COORDINATOR-OWNED SLICE IS FIXED, and
+ * that is the point. `redux/slice.ts`'s `snapshot()` calls `structuredClone`
+ * on an Immer DRAFT (a Proxy) inside `optimisticPatch` / `optimisticMove`;
+ * every browser's `structuredClone` throws `DataCloneError` on a Proxy, so
+ * every rename and every drag in every view fails at the optimistic step
+ * before `seo.patch_map_topics` is ever called — the banner then shows the
+ * clone error, not a database sentence. No P0 test dispatched either action.
+ * Fix (one line, coordinator's file): `structuredClone(current(topic))` with
+ * `current` from `immer`. When that lands this case goes green unchanged.
+ *
  * Mocked (with the reason): `AssistStrip` (reads the auth + assists slices),
  * `NonEditableContextMenu` (the v3 menu reads a dozen slices; the section it
  * gets is built by `buildTopicMenuSection`, tested elsewhere), `EntityRef`
@@ -234,10 +244,8 @@ describe("OutlineView", () => {
       setter.call(input, "Electronics and e-waste");
       input!.dispatchEvent(new Event("input", { bubbles: true }));
     });
-    console.log("DEBUG value after set:", (input as HTMLInputElement).value);
     press(input as HTMLElement, "Enter");
     await flush();
-    console.log("DEBUG editor still open:", Boolean(container.querySelector('input[aria-label="Rename"]')), "calls:", patchMapTopics.mock.calls.length, "alert:", container.querySelector('[role="alert"]')?.textContent);
 
     expect(patchMapTopics).toHaveBeenCalledWith(MAP_ID, [
       { slug: "electronics-recycling", name: "Electronics and e-waste" },
