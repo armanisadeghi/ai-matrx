@@ -240,13 +240,28 @@ function outcome(
     associationFailures: [],
     sendingEventId: "event-1",
     sendingEventGap: null,
+    /*
+      The spine's own CORRESPONDENCE-class answer (`compliance_report(envelope=
+      None)`): nothing was appended to the body the reviewer approved, and the
+      class says so rather than leaving it to be inferred from two booleans
+      (VERIFY-B1-B2-R5 W4 / chair ruling R24).
+    */
     compliance: {
       envelope: false,
       footerAppended: false,
       reason: "A reviewed one-to-one message carries no unsubscribe footer.",
+      complianceClass: "correspondence",
+      footerText: null,
     },
     warnings: [],
     auditColumnsWritten: ["approved_by", "approved_at"],
+    // Nothing the authority raised was set aside, and this mailbox's replies ARE
+    // read — the shapes a surface must not treat as "nobody told me" (W3 / W5).
+    exemptedBlocks: [],
+    bounceCorrelation: "watched",
+    bounceCorrelationNote:
+      "This mailbox's replies are read, so a bounce or spam complaint from this " +
+      "message will be matched back to it automatically.",
     ...overrides,
   };
 }

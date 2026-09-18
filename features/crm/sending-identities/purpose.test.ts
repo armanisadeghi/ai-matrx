@@ -13,6 +13,7 @@
 // `promotion_note`), measured against its source by
 // `./purpose-is-the-servers.test.ts`.
 
+import type { SendingIdentityView } from "./types";
 import {
   CONNECT_CORRESPONDENCE_FALLBACK_SENTENCE,
   DEFAULT_PURPOSE_FILTER,
@@ -24,8 +25,21 @@ import {
   purposeOf,
 } from "./purpose";
 
+/**
+ * The fields of a real list row these functions read — taken from
+ * `SendingIdentityView` itself, so a rename on the server is a compile error here
+ * instead of a fixture that agrees only with this test. `purpose` and
+ * `purpose_note` are optional on that type (the committed OpenAPI contract
+ * predates them; see `./types.ts`), which is what lets the pre-B-26 row below be
+ * the real absence rather than a cast.
+ */
+type PurposeRow = Pick<
+  SendingIdentityView,
+  "id" | "from_address" | "status" | "domain_verified" | "purpose" | "purpose_note"
+>;
+
 /** Exactly what `ensure_correspondence_identity` writes, as the view reads it. */
-const correspondenceRow = {
+const correspondenceRow: PurposeRow = {
   id: "identity-corr",
   from_address: "ada@gmail.com",
   status: "draft",
@@ -34,15 +48,15 @@ const correspondenceRow = {
   purpose_note:
     "Recorded for audit because reviewed one-to-one messages were sent from it. " +
     "It is not set up to run campaigns, and we do not read it.",
-} as const;
+};
 
 /** A pre-B-26 row: the field is simply not there. */
-const preB26Row = {
+const preB26Row: PurposeRow = {
   id: "identity-old",
   from_address: "sales@acme.com",
   status: "draft",
   domain_verified: false,
-} as const;
+};
 
 describe("purpose, read off the row", () => {
   it("recognises the row a reviewed send creates", () => {
@@ -71,7 +85,13 @@ describe("the list", () => {
   it("says what a correspondence row IS, in the server's words, naming it", () => {
     const sentence = correspondenceRowSentence(correspondenceRow);
     expect(sentence).toContain("ada@gmail.com");
-    expect(sentence).toContain(correspondenceRow.purpose_note);
+    // Not `?? ""` — that would pass trivially if the fixture lost its note, which
+    // is the one thing this assertion exists to check.
+    const note = correspondenceRow.purpose_note;
+    if (typeof note !== "string") {
+      throw new Error("the fixture must carry the server's purpose note");
+    }
+    expect(sentence).toContain(note);
     // 🚨 NEVER the permanent red demand this defect was named for.
     expect(sentence).not.toMatch(/prove you own|publish|DNS|TXT record/i);
   });
