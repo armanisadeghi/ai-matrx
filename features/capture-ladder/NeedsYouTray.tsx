@@ -136,7 +136,8 @@ export function NeedsYouTray() {
         }}
         aria-expanded={open}
         className={cn(
-          "group flex touch-none cursor-grab items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-lg backdrop-blur transition-colors active:cursor-grabbing",
+          "group flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium shadow-lg backdrop-blur transition-colors",
+          !isMobile && "touch-none cursor-grab active:cursor-grabbing",
           dragging && "ring-1 ring-primary/40",
           broken
             ? "border-destructive/40 bg-destructive/10 text-destructive"

@@ -1,10 +1,11 @@
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { NeedsYouTray } from "../NeedsYouTray";
 import { useNeedsYou } from "../useNeedsYou";
 
 jest.mock("@/hooks/use-mobile", () => ({
-  useIsMobile: () => false,
+  useIsMobile: jest.fn(),
 }));
 
 jest.mock("../NeedsYouList", () => ({
@@ -19,6 +20,7 @@ jest.mock("../useNeedsYou", () => ({
   .IS_REACT_ACT_ENVIRONMENT = true;
 
 const mockedUseNeedsYou = jest.mocked(useNeedsYou);
+const mockedUseIsMobile = jest.mocked(useIsMobile);
 
 describe("NeedsYouTray dragging", () => {
   let container: HTMLDivElement;
@@ -28,6 +30,7 @@ describe("NeedsYouTray dragging", () => {
     container = document.createElement("div");
     document.body.appendChild(container);
     root = createRoot(container);
+    mockedUseIsMobile.mockReturnValue(false);
     mockedUseNeedsYou.mockReturnValue({
       state: { kind: "ready", handoffs: [], dropped: 0 },
       handoffs: [],
@@ -93,5 +96,22 @@ describe("NeedsYouTray dragging", () => {
     expect(tray?.style.right).toBe("116px");
     expect(tray?.style.bottom).toBe("116px");
     expect(launcher?.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("leaves phone scrolling alone instead of exposing a disabled drag surface", () => {
+    mockedUseIsMobile.mockReturnValue(true);
+
+    act(() => {
+      root.render(<NeedsYouTray />);
+    });
+
+    const launcher = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("1 page needs your browser"),
+    );
+
+    expect(launcher).toBeDefined();
+    expect(launcher?.classList.contains("touch-none")).toBe(false);
+    expect(launcher?.classList.contains("cursor-grab")).toBe(false);
+    expect(launcher?.classList.contains("active:cursor-grabbing")).toBe(false);
   });
 });
