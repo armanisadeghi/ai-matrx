@@ -391,7 +391,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
                 refresh: { onRefresh: () => router.refresh() },
               }}
               copy={{
-                export: allIssuesExport,
+                export: () => allIssuesExport,
                 label: "Problem request",
                 listLabel: "Problem requests (this view)",
                 location: "/administration/chat/cx-dashboard/errors",
@@ -464,7 +464,7 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
                 refresh: { onRefresh: () => router.refresh() },
               }}
               copy={{
-                export: allIssuesExport,
+                export: () => allIssuesExport,
                 label: "Tool call error",
                 listLabel: "Tool call errors (this view)",
                 location: "/administration/chat/cx-dashboard/errors",
