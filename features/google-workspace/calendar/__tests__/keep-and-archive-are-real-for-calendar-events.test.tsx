@@ -37,6 +37,16 @@ jest.mock("@/features/marketing/google/service", () => ({
   },
 }));
 
+/**
+ * The notice's Reconnect (N11) opens the Google connect WINDOW, which dispatches
+ * into the real store. This suite mounts the section bare, so the opener stands in
+ * — the door itself has its own suite
+ * (`an-unavailable-event-offers-every-real-action.test.tsx`).
+ */
+jest.mock("@/features/overlays/openers/googleConnectWindow", () => ({
+  useOpenGoogleConnectWindow: () => () => ({ close: () => {} }),
+}));
+
 jest.mock("@/lib/api/organization-context", () => ({
   requireOrganizationContext: (id: string | null) => {
     if (!id) throw new Error("no organization");

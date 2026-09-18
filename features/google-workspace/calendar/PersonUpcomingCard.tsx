@@ -70,6 +70,9 @@ export function PersonUpcomingCard({
     <AgendaPanel
       title={partyName ? `Upcoming with ${partyName}` : "Upcoming with this person"}
       partyEmailKeys={emailKeys}
+      // N5: the filtered list's own empty sentence names THEM — "nothing upcoming
+      // with Duane in the next 7 days", never "your calendar is empty".
+      filterLabel={partyName ?? null}
       // The Person record is not the primary calendar surface, so opening it does
       // not spend a Google call; the home screen and the window do that, and the
       // Refresh control here is always available.

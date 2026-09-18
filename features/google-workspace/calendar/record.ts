@@ -18,6 +18,7 @@ import {
   CALENDAR_EVENT_ATTENDEES_KIND,
   CALENDAR_RSVPS,
   type AgendaGroup,
+  type AttendeePerson,
   type CalendarAttendee,
   type CalendarEventRow,
   type CalendarEventSyncStatus,
@@ -445,25 +446,168 @@ export function refreshedPhrase(syncedAt: string | null, now: Date): string {
 // ─── Doors ──────────────────────────────────────────────────────────────────
 
 /**
- * "Open in Google Calendar". Google's own event view takes the base64 of
- * `<eventId> <calendarId>`; we do not hold an `htmlLink` column, and inventing
- * one would be a dead door. `eid=` is the documented spelling of that link.
+ * "Open in Google Calendar" — the event's VIEW, which is the only destination a
+ * mirror we hold read-only can honestly offer.
+ *
+ * 🚨 N15 (VERIFY-U-W1-U-W2) — THE COMMENT AND THE CODE DISAGREED, AND THE CODE
+ * WAS WRONG TWICE. It built `/r/eventedit/<base64>`: Google's EDIT form, for a
+ * record whose own "What you cannot change from here" section says every write
+ * is impossible — and it used plain base64, not the base64url the comment
+ * claimed, so any payload whose encoding contains `+` or `/` produced a URL
+ * Google cannot decode (`+` is a space in a query string and `/` ends the path
+ * segment). Google's documented view link is `?eid=<base64url of
+ * "<eventId> <calendarId>">`, unpadded, and that is what this builds.
  */
 export function googleCalendarHref(event: CalendarEventRow): string | null {
   if (!event.external_id) return null;
+  // The calendar id is part of the payload whenever it is a real calendar; Google
+  // resolves the connected account's own calendar when it is absent.
   const calendar = event.calendar_id && event.calendar_id !== "primary" ? event.calendar_id : "";
   const raw = calendar ? `${event.external_id} ${calendar}` : event.external_id;
-  let eid: string;
+  let base64: string;
   try {
     // btoa in the browser; Buffer in node (jest). Either way: no dependency.
-    eid =
+    // `btoa` is byte-wise, so the string is encoded to UTF-8 bytes first — an
+    // accented calendar name would otherwise throw and cost the door entirely.
+    base64 =
       typeof btoa === "function"
-        ? btoa(raw)
+        ? btoa(String.fromCharCode(...new TextEncoder().encode(raw)))
         : Buffer.from(raw, "utf8").toString("base64");
   } catch {
     return null;
   }
-  return `https://calendar.google.com/calendar/u/0/r/eventedit/${eid.replace(/=+$/, "")}`;
+  const eid = base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return `https://calendar.google.com/calendar/u/0/r/event?eid=${eid}`;
+}
+
+// ─── Frozen rows: the ONE set of words, list and record alike ────────────────
+
+/**
+ * 🚨 N6 (VERIFY-U-W1-U-W2) — A FROZEN EVENT MUST NOT READ AS A FRESH ONE.
+ * A detached or unavailable event rendered in the agenda exactly like a live one
+ * while the header said "Refreshed less than a minute ago from Google", so the
+ * list a person actually looks at was the one surface that hid it. The Detail's
+ * notice says it; this is the SAME judgement and the SAME words, computed once
+ * here so a list row and a record can never disagree about a row's state.
+ *
+ * `null` for an `available` row — nothing to say, so nothing is said (law 4:
+ * never an empty box, never a badge that means "fine").
+ */
+export interface FrozenEventNotice {
+  /** Two or three words for a list row. */
+  label: string;
+  /** The row's own reason when it has one, else this state's honest default. */
+  sentence: string;
+  /** What it stops: the same sentence a record's notice leads with. */
+  status: "detached" | "unavailable" | "unknown";
+}
+
+export const DETACHED_EVENT_SENTENCE =
+  "This event is AI Matrx data now and no longer refreshes from Google Calendar.";
+export const UNAVAILABLE_EVENT_SENTENCE =
+  "Google Calendar would not give us this event the last time we asked, and did not say why.";
+
+export function frozenEventNotice(event: CalendarEventRow): FrozenEventNotice | null {
+  const status = syncStatusOf(event);
+  if (status === "available") return null;
+  const reason = event.sync_status_reason?.trim() || null;
+  if (status === "detached") {
+    return {
+      label: "Kept as AI Matrx data",
+      sentence: reason ?? DETACHED_EVENT_SENTENCE,
+      status: "detached",
+    };
+  }
+  if (status === "unavailable") {
+    return {
+      label: "Not answered by Google",
+      sentence: reason ?? UNAVAILABLE_EVENT_SENTENCE,
+      status: "unavailable",
+    };
+  }
+  // A word this build does not know is still NOT "available": the row says
+  // something about itself that we cannot read, and hiding that is the defect.
+  return {
+    label: "State we cannot read",
+    sentence:
+      reason ??
+      `Google Calendar stored a state for this event that this app does not recognise ("${String(
+        event.sync_status,
+      )}"), so it may not be refreshing. Refresh it, or keep it as AI Matrx data.`,
+    status: "unknown",
+  };
+}
+
+// ─── Attendees → People: ONE resolver, one-to-MANY ──────────────────────────
+
+/**
+ * 🚨 N3 (VERIFY-U-W1-U-W2) — ONE ADDRESS CAN BE TWO PEOPLE, AND BOTH ARE DOORS.
+ *
+ * Two surfaces each built `new Map(people.map(p => [p.email, p]))` and computed
+ * the leftovers as `people.filter(p => !byEmail.has(p.email))`. A shared inbox, a
+ * role address or a duplicated contact — all ordinary — gives two Persons the
+ * same address: the Map kept the LAST one, and the complement could not catch the
+ * loser because the key was present. One real Person vanished from the screen
+ * with no word at all, on both the agenda and the event's own Detail.
+ *
+ * So the join is resolved ONCE, here, as the one-to-many it actually is. Every
+ * Person at an address is returned, in a list, and the caller renders every one
+ * of them as a door.
+ */
+export interface AttendeeMatch {
+  attendee: CalendarAttendee;
+  /** EVERY Person here at this attendee's address. Usually one; never dropped. */
+  people: AttendeePerson[];
+}
+
+export interface AttendeePeopleIndex {
+  /** One entry per attendee, in the event's own order. */
+  matches: AttendeeMatch[];
+  /**
+   * Persons the server linked whose stored address is no longer on the event.
+   * The link is the fact, so they are still doors — listed after the attendees.
+   */
+  unplaced: AttendeePerson[];
+  /** True when at least one attendee address is held by more than one Person. */
+  hasSharedAddress: boolean;
+}
+
+export function resolveAttendeePeople(
+  attendees: readonly CalendarAttendee[],
+  people: readonly AttendeePerson[],
+): AttendeePeopleIndex {
+  // Matched by ADDRESS, which is the fact the service carries — never by name,
+  // which two different people can share. Both sides are already normalized the
+  // way crm normalizes (`contact_medium.value_key`, lower-cased).
+  const byEmail = new Map<string, AttendeePerson[]>();
+  for (const person of people) {
+    if (!person.email) continue;
+    const list = byEmail.get(person.email);
+    if (list) list.push(person);
+    else byEmail.set(person.email, [person]);
+  }
+  const placed = new Set<AttendeePerson>();
+  const matches: AttendeeMatch[] = [];
+  let hasSharedAddress = false;
+  for (const attendee of attendees) {
+    const matched = byEmail.get(attendee.email) ?? [];
+    for (const person of matched) placed.add(person);
+    if (matched.length > 1) hasSharedAddress = true;
+    matches.push({ attendee, people: matched });
+  }
+  // The complement is computed from the PERSONS THAT RENDERED, never from the
+  // key — that is the bug this function exists to make unrepeatable.
+  const unplaced = people.filter((person) => !placed.has(person));
+  return { matches, unplaced, hasSharedAddress };
+}
+
+/**
+ * The one sentence that says an address is shared, so neither surface invents its
+ * own wording. Plural only, because one Person at an address needs no sentence.
+ */
+export function sharedAddressSentence(count: number): string | null {
+  if (count < 2) return null;
+  return `${count} People here share this address — each one opens separately.`;
 }
 
 // ─── The Detail primitive's registration data ───────────────────────────────

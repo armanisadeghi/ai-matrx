@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Archive, Lock, Users } from "lucide-react";
+import { Archive, Lock, PlugZap, Users } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { toast } from "@/lib/toast";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useOpenDetail } from "@/lib/detail/useOpenDetail";
-import { fetchDealsForParty } from "@/features/crm/deals/service";
+import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
 import { extractErrorMessage } from "@/utils/errors";
 // 🚨 REUSE, NEVER FORK: ONE generic server pair serves every synced record
 // table (B-29). This is not a second implementation — it is the SAME two
@@ -31,23 +31,25 @@ import {
 import {
   CALENDAR_EVENT_TABLE,
   CALENDAR_UNAVAILABLE_ACTIONS,
+  DETACHED_EVENT_SENTENCE,
+  UNAVAILABLE_EVENT_SENTENCE,
   attendeesOf,
+  resolveAttendeePeople,
   rsvpDotClass,
   rsvpLabel,
+  sharedAddressSentence,
   syncStatusOf,
 } from "./record";
+import { OpenItemsCount } from "./OpenItemsCount";
 import { readAttendeePeople } from "./service";
 import type { AttendeePerson, CalendarEventRow } from "./types";
 
 /**
  * PLAN §4.6's edge: *"This attendee is a Person here; these are the three open
- * items on them"* — pure join work over data we already hold. The open items are
- * that Person's OPEN DEALS, read through crm's own `fetchDealsForParty`, which is
- * the only per-Person item lookup this platform has today; it is capped at 50
- * rows, so a count at the cap is shown as "50+" rather than as a number that
- * could be wrong.
+ * items on them"* — pure join work over data we already hold. The count itself is
+ * `OpenItemsCount`, which lives in its own module because the AGENDA needs the
+ * same sentence from the same source (N4).
  */
-const DEALS_QUERY_CAP = 50;
 
 export function CalendarEventAttendeesSection({ event }: { event: CalendarEventRow }) {
   const openDetail = useOpenDetail("party");
@@ -84,58 +86,64 @@ export function CalendarEventAttendeesSection({ event }: { event: CalendarEventR
     );
   }
 
-  const byEmail = new Map(
-    (people ?? []).filter((person) => person.email).map((person) => [person.email!, person]),
-  );
-  const unplaced = (people ?? []).filter(
-    (person) => !person.email || !byEmail.has(person.email),
-  );
+  // 🚨 N3 — ONE RESOLVER, ONE-TO-MANY, SHARED WITH THE AGENDA. The Map keyed on
+  // the address that used to be here kept the LAST Person at a shared address and
+  // computed the leftovers from the same key, so the other Person was dropped
+  // from the screen entirely with nothing said about it.
+  const index = resolveAttendeePeople(attendees, people ?? []);
+  const open = (person: AttendeePerson) => {
+    void openDetail({
+      type: "party",
+      id: person.partyId,
+      seed: { name: person.displayName },
+    });
+  };
 
   return (
     <div className="space-y-2">
       {problem ? <p className="text-xs text-muted-foreground">{problem}</p> : null}
       <ul className="space-y-1.5">
-        {attendees.map((attendee) => {
-          const person = byEmail.get(attendee.email) ?? null;
-          return (
-            <li key={attendee.email} className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span
-                className={cn("h-2 w-2 shrink-0 rounded-full", rsvpDotClass(attendee.rsvp))}
-                aria-label={rsvpLabel(attendee.rsvp)}
-              />
-              {person ? (
-                <EntityRef
-                  token="party"
-                  id={person.partyId}
-                  name={person.displayName ?? attendee.email}
-                  showIcon={false}
-                  labelClassName="text-sm"
-                  onOpen={() => {
-                    void openDetail({
-                      type: "party",
-                      id: person.partyId,
-                      seed: { name: person.displayName },
-                    });
-                  }}
-                />
-              ) : (
-                <span className="text-sm text-foreground">
-                  {attendee.displayName ?? attendee.email}
+        {index.matches.map(({ attendee, people: matched }) => (
+          <li key={attendee.email} className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span
+              className={cn("h-2 w-2 shrink-0 rounded-full", rsvpDotClass(attendee.rsvp))}
+              aria-label={rsvpLabel(attendee.rsvp)}
+            />
+            {matched.length === 0 ? (
+              <span className="text-sm text-foreground">
+                {attendee.displayName ?? attendee.email}
+              </span>
+            ) : (
+              matched.map((person) => (
+                <span key={person.partyId} className="inline-flex items-center gap-2">
+                  <EntityRef
+                    token="party"
+                    id={person.partyId}
+                    name={person.displayName ?? attendee.email}
+                    showIcon={false}
+                    labelClassName="text-sm"
+                    onOpen={() => open(person)}
+                  />
+                  <OpenItemsCount partyId={person.partyId} />
                 </span>
-              )}
-              <span className="text-xs text-muted-foreground">{attendee.email}</span>
-              <span className="text-xs text-muted-foreground">{rsvpLabel(attendee.rsvp)}</span>
-              {attendee.organizer ? (
-                <span className="text-xs text-muted-foreground">Organizer</span>
-              ) : null}
-              {attendee.optional ? (
-                <span className="text-xs text-muted-foreground">Optional</span>
-              ) : null}
-              {person ? <OpenItemsCount partyId={person.partyId} /> : null}
-            </li>
-          );
-        })}
-        {unplaced.map((person) => (
+              ))
+            )}
+            <span className="text-xs text-muted-foreground">{attendee.email}</span>
+            <span className="text-xs text-muted-foreground">{rsvpLabel(attendee.rsvp)}</span>
+            {attendee.organizer ? (
+              <span className="text-xs text-muted-foreground">Organizer</span>
+            ) : null}
+            {attendee.optional ? (
+              <span className="text-xs text-muted-foreground">Optional</span>
+            ) : null}
+            {matched.length > 1 ? (
+              <span className="text-xs text-muted-foreground">
+                {sharedAddressSentence(matched.length)}
+              </span>
+            ) : null}
+          </li>
+        ))}
+        {index.unplaced.map((person) => (
           <li key={person.partyId} className="flex flex-wrap items-center gap-x-2 gap-y-1">
             <Users className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <EntityRef
@@ -144,13 +152,7 @@ export function CalendarEventAttendeesSection({ event }: { event: CalendarEventR
               name={person.displayName ?? person.partyId}
               showIcon={false}
               labelClassName="text-sm"
-              onOpen={() => {
-                void openDetail({
-                  type: "party",
-                  id: person.partyId,
-                  seed: { name: person.displayName },
-                });
-              }}
+              onOpen={() => open(person)}
             />
             <span className="text-xs text-muted-foreground">
               Linked to this event; none of their stored addresses is on it any more.
@@ -161,46 +163,6 @@ export function CalendarEventAttendeesSection({ event }: { event: CalendarEventR
       </ul>
     </div>
   );
-}
-
-/** "3 open deals" beside a Person — or nothing at all rather than a wrong zero. */
-function OpenItemsCount({ partyId }: { partyId: string }) {
-  const [text, setText] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const deals = await fetchDealsForParty(partyId);
-        if (cancelled) return;
-        const open = deals.filter((deal) => deal.status === "open").length;
-        // A count that could be short is never printed as a plain number: the
-        // read is capped at 50 rows, so at the cap it says "50+".
-        const capped = deals.length >= DEALS_QUERY_CAP;
-        if (open === 0) {
-          setText(capped ? "No open deals in the most recent 50" : "No open deals");
-          return;
-        }
-        setText(
-          capped
-            ? `${open}+ open deals`
-            : open === 1
-              ? "1 open deal"
-              : `${open} open deals`,
-        );
-      } catch {
-        // The count is context, not the subject: a failed count says it could not
-        // be read rather than claiming zero.
-        if (!cancelled) setText("Open deals could not be read");
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [partyId]);
-
-  if (!text) return null;
-  return <span className="text-xs text-muted-foreground">{text}</span>;
 }
 
 /**
@@ -344,6 +306,49 @@ function CalendarEventKeepAndArchiveActions({
   );
 }
 
+/**
+ * The two actions that are not server calls on this record.
+ *
+ * RECONNECT is real, and it opens IN PLACE: the Google connect window runs
+ * incremental consent for exactly the missing scopes, which is the same door the
+ * record's own health strip offers through the host's `reconnectSource`. It is
+ * deliberately NOT an anchor to a settings page — nothing inside the Detail
+ * primitive navigates away.
+ *
+ * RE-PICKING is not real for a meeting and is not offered: an event is not a file
+ * somebody chose in Google Picker (the whole calendar window is read through the
+ * connected account), so there is nothing to choose again. A control that cannot
+ * work is worse than none, so this is one honest line with the remedy that does
+ * exist.
+ */
+function CalendarEventReconnectAction() {
+  const openGoogleConnect = useOpenGoogleConnectWindow();
+
+  return (
+    <div className="space-y-1.5">
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        onClick={() =>
+          openGoogleConnect({
+            reason: "to keep this meeting refreshing from your Google calendar",
+          })
+        }
+        data-calendar-event-reconnect
+      >
+        <PlugZap className="mr-1.5 h-3.5 w-3.5" />
+        Reconnect Google
+      </Button>
+      <p className="text-xs text-muted-foreground">
+        There is nothing to pick again for a meeting — events are read from the whole calendar
+        your connected Google account can see, not from a file you chose, so reconnecting that
+        account and refreshing is the repair.
+      </p>
+    </div>
+  );
+}
+
 function CalendarEventUnavailableNotice({
   event,
   onDetached,
@@ -360,11 +365,13 @@ function CalendarEventUnavailableNotice({
     >
       <p className="flex items-start gap-2 text-sm text-foreground">
         <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-        <span>
-          {event.sync_status_reason?.trim() ||
-            "Google Calendar would not give us this event the last time we asked, and did not say why."}
-        </span>
+        <span>{event.sync_status_reason?.trim() || UNAVAILABLE_EVENT_SENTENCE}</span>
       </p>
+      {/* 🚨 N11 — ALL FOUR ACTIONS THE DOC SIBLING OFFERS ARE ANSWERED HERE.
+          Reconnect is a real door and belongs to this refusal: the grant is what
+          Google withheld. Re-picking is the one that means nothing for a meeting,
+          so it is a sentence, not a control (law 4). */}
+      <CalendarEventReconnectAction />
       <CalendarEventKeepAndArchiveActions event={event} onDetached={onDetached} onArchived={onArchived} />
     </div>
   );
@@ -390,10 +397,7 @@ function CalendarEventDetachedNotice({
     >
       <p className="flex items-start gap-2 text-sm text-foreground">
         <Lock className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-        <span>
-          {event.sync_status_reason?.trim() ||
-            "This event is AI Matrx data now and no longer refreshes from Google Calendar."}
-        </span>
+        <span>{event.sync_status_reason?.trim() || DETACHED_EVENT_SENTENCE}</span>
       </p>
       <CalendarEventKeepAndArchiveActions event={event} onDetached={onDetached} onArchived={onArchived} />
     </div>

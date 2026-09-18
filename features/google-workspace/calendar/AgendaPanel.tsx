@@ -18,6 +18,7 @@ import { useState } from "react";
 import {
   CalendarDays,
   ExternalLink,
+  Lock,
   MapPin,
   RefreshCw,
   StickyNote,
@@ -39,10 +40,14 @@ import {
   CALENDAR_EVENT_TYPE,
   attendeesOf,
   eventTimeText,
+  frozenEventNotice,
   googleCalendarHref,
+  resolveAttendeePeople,
   rsvpDotClass,
   rsvpLabel,
+  sharedAddressSentence,
 } from "./record";
+import { OpenItemsCount } from "./OpenItemsCount";
 import { createNoteAboutEvent } from "./service";
 import { useAgenda, type AgendaValue } from "./useAgenda";
 import type { AttendeePerson, CalendarEventRow } from "./types";
@@ -52,6 +57,11 @@ export interface AgendaPanelProps {
   title?: string;
   /** Only events with an attendee at one of these addresses ("with this person"). */
   partyEmailKeys?: readonly string[] | null;
+  /**
+   * Who the list is filtered TO, in the person's own words — used by the empty
+   * sentences, which must never borrow the unfiltered ones (N5).
+   */
+  filterLabel?: string | null;
   /** The panel is the chrome itself (a window body) — no card border of its own. */
   variant?: "card" | "bare";
   className?: string;
@@ -62,11 +72,19 @@ export interface AgendaPanelProps {
 export function AgendaPanel({
   title = "Agenda",
   partyEmailKeys = null,
+  filterLabel = null,
   variant = "card",
   className,
   refreshOnOpen,
 }: AgendaPanelProps) {
   const agenda = useAgenda({ partyEmailKeys, refreshOnOpen });
+  // 🚨 N5 — A FILTERED LIST NEVER BORROWS THE UNFILTERED EMPTY SENTENCE. The body
+  // is TOLD it is filtered; it cannot infer it, and inferring is exactly how
+  // "Your Google Calendar is connected and there is nothing on it" ended up on a
+  // Person card belonging to a person with a full calendar.
+  const filter: AgendaFilter | null = partyEmailKeys
+    ? { label: filterLabel?.trim() || "this person" }
+    : null;
 
   return (
     <section
@@ -102,13 +120,25 @@ export function AgendaPanel({
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto p-2.5">
-        <AgendaBody agenda={agenda} />
+        <AgendaBody agenda={agenda} filter={filter} />
       </div>
     </section>
   );
 }
 
-function AgendaBody({ agenda }: { agenda: AgendaValue }) {
+/** What the list is narrowed to, when it is narrowed at all. */
+interface AgendaFilter {
+  /** The person's name, or "this person" when the caller could not name them. */
+  label: string;
+}
+
+function AgendaBody({
+  agenda,
+  filter,
+}: {
+  agenda: AgendaValue;
+  filter: AgendaFilter | null;
+}) {
   const hasEvents =
     agenda.groups.some((group) => group.events.length > 0) || agenda.undated.length > 0;
 
@@ -163,7 +193,9 @@ function AgendaBody({ agenda }: { agenda: AgendaValue }) {
                 </span>
               </div>
               {group.events.length === 0 ? (
-                <p className="text-xs text-muted-foreground">Nothing on your calendar.</p>
+                <p className="text-xs text-muted-foreground">
+                  {filter ? `Nothing with ${filter.label}.` : "Nothing on your calendar."}
+                </p>
               ) : (
                 <ul className="space-y-1">
                   {group.events.map((event) => (
@@ -201,9 +233,11 @@ function AgendaBody({ agenda }: { agenda: AgendaValue }) {
 
           {!hasEvents && !agenda.noAccount && agenda.problems.length === 0 ? (
             <p className="text-xs text-muted-foreground">
-              {agenda.connectionId
-                ? `Your Google Calendar is connected and there is nothing on it in the next ${agenda.days} days.`
-                : "No Google account here can show a calendar yet."}
+              {!agenda.connectionId
+                ? "No Google account here can show a calendar yet."
+                : filter
+                  ? `Nothing upcoming with ${filter.label} in the next ${agenda.days} days. Your calendar itself may be full — this list only shows what they are on.`
+                  : `Your Google Calendar is connected and there is nothing on it in the next ${agenda.days} days.`}
             </p>
           ) : null}
         </>
@@ -224,10 +258,21 @@ function AgendaEventRow({
   onChanged: () => void;
 }) {
   const openDetail = useOpenDetail(CALENDAR_EVENT_TYPE);
+  const openNote = useOpenDetail("note");
   const organizationId = useAppSelector(selectOrganizationId);
   const [savingNote, setSavingNote] = useState(false);
+  /** The note this row just created, so it stays reachable after the toast (N10). */
+  const [createdNoteId, setCreatedNoteId] = useState<string | null>(null);
   const attendees = attendeesOf(event.attendees);
   const googleHref = googleCalendarHref(event);
+  // 🚨 N6 — a frozen row is MARKED. The same judgement and the same words the
+  // record's own notice uses, from the one place both read (`frozenEventNotice`).
+  const frozen = frozenEventNotice(event);
+
+  const noteTitle = `Notes — ${event.title}`;
+  const openCreatedNote = (noteId: string) => {
+    void openNote({ type: "note", id: noteId, seed: { name: noteTitle } });
+  };
 
   const createNote = async () => {
     if (!organizationId) {
@@ -241,6 +286,15 @@ function AgendaEventRow({
         organizationId,
         partyIds: people.map((person) => person.partyId),
       });
+      setCreatedNoteId(result.noteId);
+      // 🚨 N10 — NO DEAD ENDS: the note it just created OPENS, from the toast and
+      // from the row itself (the toast expires; the record does not).
+      const door = {
+        action: {
+          label: "Open the note",
+          onClick: () => openCreatedNote(result.noteId),
+        },
+      };
       // HONEST ABOUT WHAT LANDED: the note always exists here; a link that did
       // not land is named, never folded into a cheerful "Note created".
       if (result.failures.length === 0) {
@@ -248,9 +302,10 @@ function AgendaEventRow({
           people.length > 0
             ? `Note created, linked to this event and ${people.length === 1 ? "1 person" : `${people.length} people`}.`
             : "Note created and linked to this event.",
+          door,
         );
       } else {
-        toast.error(result.failures.join(" "));
+        toast.error(result.failures.join(" "), door);
       }
       onChanged();
     } catch (error: unknown) {
@@ -261,7 +316,14 @@ function AgendaEventRow({
   };
 
   return (
-    <li className="rounded border border-border/60 bg-background px-2 py-1.5">
+    <li
+      className={cn(
+        "rounded border px-2 py-1.5",
+        frozen ? "border-dashed border-border bg-muted/40" : "border-border/60 bg-background",
+      )}
+      data-agenda-event={event.id}
+      {...(frozen ? { "data-agenda-frozen": frozen.status } : {})}
+    >
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
         <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
           {eventTimeText(event, timeZone)}
@@ -281,6 +343,19 @@ function AgendaEventRow({
           }}
         />
       </div>
+
+      {/* A frozen row says so IN THE LIST, not only on its record: the header
+          above says "Refreshed … from Google", and a row that stopped refreshing
+          sitting silently beside live ones is that sentence made false. */}
+      {frozen ? (
+        <p className="mt-0.5 flex items-start gap-1 text-xs text-muted-foreground">
+          <Lock className="mt-0.5 h-3 w-3 shrink-0" />
+          <span className="min-w-0 break-words">
+            <span className="font-medium text-foreground">{frozen.label}</span> —{" "}
+            {frozen.sentence}
+          </span>
+        </p>
+      ) : null}
 
       {event.location ? (
         <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
@@ -319,16 +394,55 @@ function AgendaEventRow({
           className="h-6 gap-1 px-1.5 text-xs max-sm:min-h-11"
           onClick={() => void createNote()}
           disabled={savingNote}
+          data-agenda-create-note
         >
           <StickyNote className="h-3.5 w-3.5" />
-          {savingNote ? "Creating a note" : "Create a note"}
+          {savingNote ? "Creating a note" : createdNoteId ? "Create another note" : "Create a note"}
         </Button>
+        {createdNoteId ? (
+          <button
+            type="button"
+            onClick={() => openCreatedNote(createdNoteId)}
+            className="inline-flex items-center gap-1 text-xs text-primary hover:underline max-sm:min-h-11"
+            data-agenda-note-door={createdNoteId}
+          >
+            <StickyNote className="h-3.5 w-3.5" />
+            Open the note
+          </button>
+        ) : null}
       </div>
 
       {attendees.length > 0 ? (
         <AttendeeLine attendees={attendees} people={people} />
       ) : null}
     </li>
+  );
+}
+
+function PersonDoor({
+  person,
+  fallbackLabel,
+  onOpen,
+}: {
+  person: AttendeePerson;
+  fallbackLabel: string;
+  onOpen: (person: AttendeePerson) => void;
+}) {
+  return (
+    <span className="inline-flex items-center gap-1">
+      <EntityRef
+        token="party"
+        id={person.partyId}
+        name={person.displayName ?? fallbackLabel}
+        showIcon={false}
+        labelClassName="text-xs"
+        onOpen={() => onOpen(person)}
+      />
+      {/* 🚨 N4 — THE NAME AND THE COUNT, the same count the event's Detail shows,
+          from the same component. A name alone is the reason for putting People
+          on an agenda, removed. */}
+      <OpenItemsCount partyId={person.partyId} />
+    </span>
   );
 }
 
@@ -340,68 +454,61 @@ function AttendeeLine({
   people: AttendeePerson[];
 }) {
   const openDetail = useOpenDetail("party");
-  // Matched by ADDRESS, which is the fact the service carries — never by name,
-  // which two different people can share.
-  const byEmail = new Map(
-    people.filter((person) => person.email).map((person) => [person.email!, person]),
-  );
-  // A Person the server linked whose stored address is no longer on the event
-  // still gets a door — the link is the fact — it is simply listed after the dots
-  // instead of beside one.
-  const unplaced = people.filter((person) => !person.email || !byEmail.has(person.email));
+  // 🚨 N3 — ONE RESOLVER, ONE-TO-MANY. Two Persons at one address are two doors;
+  // the Map-keyed-on-the-address version that used to live here (and in
+  // `CalendarEventSections.tsx`) kept the last one and dropped the other with no
+  // word on screen. The resolver is pure and shared, so neither surface can hold
+  // a private opinion about who is on an event.
+  const index = resolveAttendeePeople(attendees, people);
+  const open = (person: AttendeePerson) => {
+    void openDetail({
+      type: "party",
+      id: person.partyId,
+      seed: { name: person.displayName },
+    });
+  };
 
   return (
     <ul className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-      {attendees.map((attendee) => {
-        const person = byEmail.get(attendee.email) ?? null;
-        return (
-          <li key={attendee.email} className="flex items-center gap-1">
-            <span
-              className={cn("h-1.5 w-1.5 shrink-0 rounded-full", rsvpDotClass(attendee.rsvp))}
-              // The dot is never the only carrier of the state — colour alone is
-              // not information a person can rely on.
-              title={`${attendee.displayName ?? attendee.email}: ${rsvpLabel(attendee.rsvp)}`}
-              aria-label={`${attendee.displayName ?? attendee.email}: ${rsvpLabel(attendee.rsvp)}`}
-            />
-            {person ? (
-              <EntityRef
-                token="party"
-                id={person.partyId}
-                name={person.displayName ?? attendee.email}
-                showIcon={false}
-                labelClassName="text-xs"
-                onOpen={() => {
-                  void openDetail({
-                    type: "party",
-                    id: person.partyId,
-                    seed: { name: person.displayName },
-                  });
-                }}
-              />
-            ) : (
-              <span className="text-xs text-muted-foreground">
-                {attendee.displayName ?? attendee.email}
-              </span>
-            )}
-          </li>
-        );
-      })}
-      {unplaced.map((person) => (
-        <li key={person.partyId} className="flex items-center gap-1">
-          <EntityRef
-            token="party"
-            id={person.partyId}
-            name={person.displayName ?? person.partyId}
-            showIcon={false}
-            labelClassName="text-xs"
-            onOpen={() => {
-              void openDetail({
-                type: "party",
-                id: person.partyId,
-                seed: { name: person.displayName },
-              });
-            }}
+      {index.matches.map(({ attendee, people: matched }) => (
+        <li key={attendee.email} className="flex flex-wrap items-center gap-1">
+          <span
+            className={cn("h-1.5 w-1.5 shrink-0 rounded-full", rsvpDotClass(attendee.rsvp))}
+            // The dot is never the only carrier of the state — colour alone is
+            // not information a person can rely on.
+            title={`${attendee.displayName ?? attendee.email}: ${rsvpLabel(attendee.rsvp)}`}
+            aria-label={`${attendee.displayName ?? attendee.email}: ${rsvpLabel(attendee.rsvp)}`}
           />
+          {matched.length === 0 ? (
+            <span className="text-xs text-muted-foreground">
+              {attendee.displayName ?? attendee.email}
+            </span>
+          ) : (
+            matched.map((person) => (
+              <PersonDoor
+                key={person.partyId}
+                person={person}
+                fallbackLabel={attendee.email}
+                onOpen={open}
+              />
+            ))
+          )}
+          {/* Several People at one address is ordinary (a shared inbox, a role
+              address, a duplicated contact) — and it is SAID, so a person is not
+              left wondering why one address shows two names. */}
+          {matched.length > 1 ? (
+            <span className="text-xs text-muted-foreground">
+              {sharedAddressSentence(matched.length)}
+            </span>
+          ) : null}
+        </li>
+      ))}
+      {/* A Person the server linked whose stored address is no longer on the
+          event still gets a door — the link is the fact — listed after the dots
+          instead of beside one. */}
+      {index.unplaced.map((person) => (
+        <li key={person.partyId} className="flex items-center gap-1">
+          <PersonDoor person={person} fallbackLabel={person.partyId} onOpen={open} />
         </li>
       ))}
     </ul>
