@@ -111,7 +111,7 @@ export function TopicalMapHome() {
   return (
     <MapLinkProvider brand={brand}>
       <div className="h-full overflow-y-auto overflow-x-hidden bg-textured">
-        <div className="mx-auto grid max-w-5xl gap-4 p-4 pt-[calc(var(--shell-header-h)+1rem)] sm:p-6 sm:pt-[calc(var(--shell-header-h)+1.5rem)]">
+        <div className="grid w-full gap-4 p-4 pt-[calc(var(--shell-header-h)+1rem)] sm:p-6 sm:pt-[calc(var(--shell-header-h)+1.5rem)]">
           <section className="rounded-xl border border-border bg-card p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
