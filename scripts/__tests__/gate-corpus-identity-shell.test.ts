@@ -10,10 +10,15 @@
  *
  * No database, no credential, no connection.
  */
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import {
+  NOT_A_SECRET,
+  NOT_PERSONAL,
+  PERSONAL_DATA_TABLES,
   checkAuthSecretColumns,
   checkIdentityShell,
+  checkPersonalDataTables,
   checkRestoreGraphFile,
 } from "../gate-corpus/identity-shell-contract";
 
@@ -255,5 +260,84 @@ describe("the auth-wide secret deny-list — the RED half", () => {
       withOauth(OAUTH_OK.replace('"token_endpoint_auth_method"', '"token_endpoint_auth_style"')),
     );
     expect(v.map((x) => x.code)).toEqual(["copies-a-secret-column"]);
+  });
+});
+
+/**
+ * 🚨 THE PERSONAL-DATA TABLES — DENY BY DEFAULT, and the RED twin is one line.
+ *
+ * `crm.party` and the four tables its record page reads are the first tables in
+ * the copy set whose subject is a PERSON: 1,905 real parties with their names,
+ * birth dates, bios, job titles, addresses and email addresses. The `auth.*`
+ * rules above are deny-LISTS, which only ever cover the column somebody
+ * remembered; on these five tables the rule is inverted, so a column that is
+ * neither synthesised, nor structural, nor reasoned is a violation.
+ *
+ * Every fixture below mutates THE LIVE FILE's own text — not a hand-built
+ * miniature — because the thing worth proving is that the live file would fail
+ * if the mutation landed, not that a fixture can be made to fail.
+ */
+describe("the personal-data tables — deny by default", () => {
+  const live = () => readFileSync(RESTORE, "utf8");
+
+  it("plants one real-looking value and the guard names it", () => {
+    // Delete `first_name`'s synthesis and production's real first names are
+    // copied. This is the RED half, and it is exactly one line.
+    const planted = live().replace(
+      /\n\s*first_name: `case when "first_name"[^\n]*\n/,
+      "\n",
+    );
+    expect(planted).not.toEqual(live());
+    const v = checkPersonalDataTables(planted);
+    expect(v.map((x) => x.code)).toEqual(["copies-a-personal-column"]);
+    expect(v[0]!.detail).toContain('crm.party copies "first_name"');
+  });
+
+  it("is GREEN on the live file", () => {
+    expect(checkPersonalDataTables(live())).toEqual([]);
+  });
+
+  it("catches a personal table that quietly left the copy set", () => {
+    const without = live().replace(/\n {4}table: "crm\.address",/, '\n    table: "crm.addresses",');
+    const v = checkPersonalDataTables(without);
+    expect(v.map((x) => x.code)).toEqual(["personal-table-is-not-in-the-copy-set"]);
+  });
+
+  it("catches a personal table given a shell column list the census cannot see", () => {
+    const shelled = live().replace(
+      /\n {4}table: "crm\.affiliation",\n {4}policy: "upsert",/,
+      '\n    table: "crm.affiliation",\n    policy: "upsert",\n    columns: ["id", "party_id"],',
+    );
+    const v = checkPersonalDataTables(shelled);
+    expect(v.map((x) => x.code)).toEqual(["personal-table-has-a-shell-list"]);
+  });
+
+  it("keeps the reason list honest: every NOT_PERSONAL key is a live census column", () => {
+    for (const key of Object.keys(NOT_PERSONAL)) {
+      const table = key.split(".").slice(0, 2).join(".");
+      const column = key.split(".").slice(2).join(".");
+      expect(PERSONAL_DATA_TABLES[table]).toBeDefined();
+      expect(PERSONAL_DATA_TABLES[table]).toContain(column);
+      // A reason is a sentence, not a shrug.
+      expect(NOT_PERSONAL[key]!.length).toBeGreaterThan(20);
+    }
+    expect(Object.keys(NOT_PERSONAL)).toHaveLength(45);
+  });
+
+  it("runs the auth secret deny-list over the personal tables too", () => {
+    // `crm.contact_medium.phone_country` matches /phone/ and is copied. It gets
+    // through for exactly one reason — NOT_A_SECRET names it — and taking that
+    // reason away must fail, or the deny-list is not really running here.
+    expect(checkAuthSecretColumns(live())).toEqual([]);
+    const key = "crm.contact_medium.phone_country";
+    const saved = NOT_A_SECRET[key];
+    delete (NOT_A_SECRET as Record<string, string | undefined>)[key];
+    try {
+      const v = checkAuthSecretColumns(live());
+      expect(v.map((x) => x.code)).toEqual(["copies-a-secret-column"]);
+      expect(v[0]!.detail).toContain("crm.contact_medium");
+    } finally {
+      (NOT_A_SECRET as Record<string, string>)[key] = saved!;
+    }
   });
 });
