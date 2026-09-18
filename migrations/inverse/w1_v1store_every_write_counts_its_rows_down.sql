@@ -6,14 +6,15 @@
 -- `--target branch`.
 --
 -- The three bodies restored here are byte-for-byte the ones
--- `migrations/campaign/w1_v1store_success_counts_its_rows.sql` declares in its `-- based-on:`
--- lines (21dd0939…, 0fabd5eb…, 88015aca…), so the loop up -> inverse -> up returns the
+-- `migrations/campaign/w1_v1store_every_write_counts_its_rows.sql` declares in its `-- based-on:`
+-- lines (21dd0939…, 0fabd5eb…, 88015aca…, cdd7cecf…), so the loop up -> inverse -> up returns the
 -- catalogue to exactly where it started and a verifier can check that by hashing it. The
 -- `-- based-on:` lines below declare the bodies this file OVERWRITES - the row-counting ones -
 -- so the runner refuses to replay it over anybody else's later change (DD-220).
 --
 -- based-on: custom.promote_table(uuid,uuid) 0e373442c505224690ea278446475bb827f41986c558473db2cd9a691bf34839
 -- based-on: custom._field_definition_write() d3f8ab2668e9f6a5272a00ff786fab40f8ac4f973960ce1906c6ea771d5b9609
+-- based-on: custom.record_restore(uuid,uuid) d7842eecac9a00a3d682ebec294e3e2fb714d7150ce94eee4a2c3263adf783fe
 -- based-on: custom._rule_definition_write() 96983a7c21ba29a1afab4dd201ce9d2c1c6d027006da5f3176462d45c7edd69c
 
 CREATE OR REPLACE FUNCTION custom.promote_table(p_organization_id uuid, p_table_id uuid)
@@ -187,5 +188,39 @@ begin
    where organization_id = new.organization_id and id = new.id
      and table_id = custom.rule_kernel_id();
   return new;
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION custom.record_restore(p_organization_id uuid, p_record_id uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog'
+AS $function$
+declare
+  v_found boolean;
+begin
+  perform custom.assert_store_door(p_organization_id, 'custom.record_restore');
+
+  if p_organization_id is null or p_record_id is null then
+    raise exception 'custom.record_restore: organization_id and the record id are both required - the store is keyed (organization_id, id)'
+      using errcode = '22004';
+  end if;
+
+  update custom.record
+     set deleted_at = null
+   where organization_id = p_organization_id and id = p_record_id and deleted_at is not null
+  returning true into v_found;
+
+  if v_found is not true then
+    if exists (select 1 from custom.record r
+                where r.organization_id = p_organization_id and r.id = p_record_id) then
+      raise exception 'That record was not deleted, so there was nothing to bring back.'
+        using errcode = '02000', hint = 'REC-23: it is already here.';
+    end if;
+    raise exception 'There is no record % in this organization.', p_record_id
+      using errcode = '02000',
+            hint = 'REC-23: a record is reversible while its table still keeps its history, and this one is not in this organization at all.';
+  end if;
 end;
 $function$;
