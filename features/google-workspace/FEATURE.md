@@ -415,6 +415,29 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 
 ## Change log
 
+- `2026-09-18` — **F-93: the third Google mirror table got its first door, and the agenda door's
+  hardcoded type got its resolver (V-22 NEW-6, NEW-9).** `web.youtube_video` — the third mirror
+  beside `workbench.google_document` and `communication.calendar_event`, same shape
+  (`external_id`, `external_url`, `synced_at`, `sync_status`) and its connection side
+  `channel_resource_id → users.integration_connection_resources` — was a live, LISTED entity with
+  no door anywhere: no `hrefFor`, no peek, no in-place opener, so `<EntityRef
+  token="web_youtube_video">` rendered nothing and `/detail/web_youtube_video/<id>` showed nothing
+  about a stored record. It is now registered in `features/item-presentation/registry.tsx` and in
+  `features/scopes/registry/entityRegistry.ts`. Separately, the agenda door in
+  `components/mardown-display/blocks/google-kinds/GoogleWorkspaceResultBlock.tsx:560-565` hardcodes
+  `type="calendar_event"` beside `event.record_id` while the server stamps `record_table` on every
+  event (`aidream/services/google_workspace/tools.py`) — V-22 fed
+  `record_table: "media.source_library"` and got an Open control for a `calendar_event` with a
+  foreign id, the V-21 `document → udt_document` defect in a new place. The resolver that ends the
+  class now exists and is proven against that exact attack —
+  `itemTypeForRecordTable` in `features/item-presentation/registry.tsx`, derived from the type map,
+  `null` for an unknown table so the caller renders no door. **The one-line adoption is STILL OWED
+  and is not in this change:** that file belongs to another lane (F-90/91) and was deliberately not
+  edited. Censused for siblings: `CalendarEventSections.tsx` carries only `party` doors for
+  attendees (correct — an attendee IS a Person record), `GoogleMarketingResultBlock.tsx` passes
+  `web_site` with a `site_id` (correct), and no Google surface navigates to `/detail/...` as a
+  primary door. No screen was seen.
+
 - `2026-09-18` — **F-78: the contract pin now names the field this repo actually reads.**
   `scripts/aidream-contract-pin.json` sat at aidream `62fa56114` while these surfaces read
   `record_id` (and `record_sync_status`, `record_sync_status_reason`, `record_absent_reason`)

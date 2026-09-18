@@ -280,3 +280,93 @@ export const SYNCED_ROLE_CANDIDATES = Object.freeze({
   REFRESHED_COLUMNS,
   SOURCE_URL_COLUMNS,
 });
+
+// ───────────────────────────────────────────────────────────────────────────────
+// 🚨 THE UNIVERSE THIS CENSUS DERIVES FROM IS ITSELF CONFIGURED BY HAND — AND IT
+// WAS WRONG (lane F-93, hostile verifier V-22, finding NEW-5).
+//
+// Everything above derives its universe from `types/database.types.ts`: a synced
+// table IS a table whose generated `Row` declares `sync_status`. That derivation
+// is sound. What nobody had checked is the universe of the GENERATED FILE, which
+// is not the database — it is the hand-written `--schema` list in
+// `package.json`'s `db-types` script. Live, SIX tables carry `sync_status`:
+//
+//     code.code_repositories        commerce.cloud_sync_connection
+//     communication.calendar_event  media.source_library
+//     web.youtube_video             workbench.google_document
+//
+// The sixth, `media.source_library`, is an ACTIVE and LISTED entity
+// (`platform.entity_types.token = 'media_source_library'`, label "Source
+// Library") with `sync_status` + `external_id`, a working screen at
+// `/libraries/<id>`, and at least one live row — and the `media` schema was
+// absent from the `--schema` list, so it appears NOWHERE in the generated types.
+// Every leg of the F-54/F-81 machinery therefore could not see it: not
+// `SyncedTableColumn`, not the reverse census, not `UNREAD_ROLE_COLUMNS`. The
+// guards were green because the table does not exist as far as the type can
+// tell. The same audit found a second missing schema, `provider`, which holds
+// two registered entity types (`provider_account`,
+// `provider_account_credential`).
+//
+// THE FIX IS IN TWO HALVES, AND ONLY ONE OF THEM COULD BE MADE HERE. The
+// `--schema` list now names `media` and `provider` (and the script's own
+// post-generation assertions now demand both schemas landed, beside the existing
+// `hr` / `esign` ones). REGENERATING the file needs the Supabase management
+// token, which this environment does not have, so the committed types still lack
+// both schemas. That gap is DECLARED below rather than left to be discovered:
+// the guard names the schemas, prints the exact command, and fails the moment a
+// configured schema is missing and NOT declared — or a declared one has landed
+// and the entry was left behind.
+// ───────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Schemas the `db-types` generator is configured to emit that the COMMITTED
+ * `types/database.types.ts` does not carry yet, with what each one costs while
+ * it is missing. Each value must name the command that clears it.
+ *
+ * 🚨 An entry here is a MEASUREMENT GAP, never an exemption: while a schema is
+ * listed, every type-derived census in this feature is knowingly blind to its
+ * tables. Clear an entry by running the regeneration and deleting the line —
+ * both in the same change, because a stale entry hides a table that is now
+ * visible. Guard:
+ * `__tests__/the-generated-types-carry-every-configured-schema.test.ts`.
+ */
+export const SCHEMAS_AWAITING_REGENERATION: Readonly<Record<string, string>> =
+  Object.freeze({
+    media:
+      "Holds `media.source_library` — an active, LISTED entity carrying " +
+      "`sync_status` and `external_id`, i.e. the SIXTH synced table — plus five " +
+      "more registered entity types (capture_handoff, catalog_setting, " +
+      "library_item, selection_item, selection_job). While it is missing, the " +
+      "synced-table census and the health strip's column derivation cannot see " +
+      "that table at all. Remedy: `pnpm db-types` (needs SUPABASE_ACCESS_TOKEN), " +
+      "then delete this entry — and expect the reverse census to name " +
+      "`media.source_library.last_synced_at` immediately: it plays the freshness " +
+      "role and no candidate list holds that spelling, which is the F-51 defect " +
+      "waiting on the sixth table. It cannot be added to REFRESHED_COLUMNS " +
+      "before the regeneration, because `SyncedRoleColumn` is derived from the " +
+      "generated types and the name is not in them yet.",
+    provider:
+      "Holds the two registered `provider.*` entity types (`provider_account`, " +
+      "`provider_account_credential`). Neither carries `sync_status`, so no " +
+      "synced-table census is blind because of it, but any type-derived rule " +
+      "over the entity registry is. Remedy: `pnpm db-types` (needs " +
+      "SUPABASE_ACCESS_TOKEN), then delete this entry.",
+  });
+
+/**
+ * Every table that carries `sync_status` in the LIVE database, read 2026-09-18
+ * (`information_schema.columns`, project `brsgrqvjdzwihsvnfqkf`). This is the
+ * truth the generated types are measured AGAINST: the census asserts that the
+ * synced tables visible in the generated file are exactly this list minus the
+ * tables in the schemas declared above — so a synced table can no longer hide
+ * behind a schema nobody generated, and a NEW synced table in a schema we DO
+ * generate still fails the census by name.
+ */
+export const LIVE_SYNCED_TABLES = [
+  "code.code_repositories",
+  "commerce.cloud_sync_connection",
+  "communication.calendar_event",
+  "media.source_library",
+  "web.youtube_video",
+  "workbench.google_document",
+] as const;

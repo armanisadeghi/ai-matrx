@@ -149,6 +149,10 @@ export function useOpenItemPresentation() {
         // `calendar/itemType.tsx`) and have no bespoke window (F-63).
         case "google_document":
         case "calendar_event":
+        // The third mirror table (V-22 NEW-6). No YouTube surface in this repo
+        // is keyed on this row's id, so the Detail primitive IS its
+        // presentation, from the one registration in `registry.tsx`.
+        case "web_youtube_video":
           return openGenericDetail();
         default:
           return openGenericDetail();

@@ -60,7 +60,13 @@ export type KnownItemType =
   // canonical `platform.entity_types` token, `web_site`, never a twin spelled
   // `site`: the token already carries the route and the peek, and only the
   // in-place opener was missing (F-87).
-  | "web_site";
+  | "web_site"
+  // One synced YouTube video — `web.youtube_video`, the third Google mirror
+  // table beside the Doc record and the calendar event. The word is the
+  // canonical `platform.entity_types` token, `web_youtube_video`, never a twin
+  // spelled `youtube_video` (that spelling is already an agent CONTENT BLOCK
+  // type — a video someone pasted into a message — and is a different thing).
+  | "web_youtube_video";
 
 export type ItemType = KnownItemType | (string & {});
 
