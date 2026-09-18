@@ -41,6 +41,7 @@
  */
 
 import Dexie, { type Table } from "dexie";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 import type { SourceFeature } from "@/features/agents/types/instance.types";
 
 export const STUDY_OFFLINE_DB = "matrx-study-offline";
@@ -54,7 +55,7 @@ export const STUDY_OFFLINE_SCHEMA_VERSION = 2;
  * different one by the time this replays, which is correct).
  */
 export interface PendingGradeSpec {
-  mandateKey: string;
+  mandateKey: AnyMandateKey;
   front: string;
   back: string;
   secondsAllowed: number;

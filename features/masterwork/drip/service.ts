@@ -18,6 +18,7 @@ import { supabase } from "@/utils/supabase/client";
 import { guardedUpdate } from "@ai-matrx/data/db";
 import { operationFailed } from "@/utils/errors";
 import { callApi } from "@/lib/api/call-api";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
 import type { AppStore } from "@/lib/redux/store";
 import type { paths } from "@/types/python-generated/api-types";
 import { setNotificationPreference } from "@/features/settings/notification-preferences";
@@ -45,8 +46,8 @@ export const DRIP_SEND_NOW_PATH = "/masterworks/drip/send-now" as keyof paths;
 export const DRIP_INGEST_PATH = "/masterworks/ingest-drip" as keyof paths;
 
 /** The Mandates behind each half — shown to the Expert by `AgentCredit`. */
-export const DRIP_QUESTION_MANDATE = "masterwork.drip_question";
-export const DRIP_DISTILLER_MANDATE = "masterwork.drip_distiller";
+export const DRIP_QUESTION_MANDATE = MANDATE_KEYS.masterwork__drip_question;
+export const DRIP_DISTILLER_MANDATE = MANDATE_KEYS.masterwork__drip_distiller;
 
 export type DripWriteResult =
   | { status: "saved"; rulebook: Rulebook; drip: DailyDrip }

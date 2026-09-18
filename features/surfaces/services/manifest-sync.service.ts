@@ -29,6 +29,7 @@
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 import type { Database, Json } from "@/types/database.types";
 import {
   ALL_MANIFESTS,
@@ -318,7 +319,7 @@ function dbRowToSurfaceAgentRole(row: UiSurfaceAgentRoleRow): SurfaceAgentRole {
       ? (row.kind as DbRoleKind)
       : "single") as SurfaceAgentRole["kind"],
     defaultAgentId: row.default_agent_id,
-    mandateKey: row.mandate_key,
+    mandateKey: row.mandate_key ? storedMandateKey(row.mandate_key) : null,
     maxAgents: row.max_agents,
     allowCustom: row.allow_custom,
     autoRun: (AUTO_RUN_MODES.includes(row.auto_run as DbAutoRun)

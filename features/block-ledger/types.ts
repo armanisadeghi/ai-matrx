@@ -83,32 +83,30 @@ export function labelFor(
 }
 
 /**
- * Which blocks a retry could possibly clear. A block whose only lawful route
- * crosses DRM, a paywall, somebody else's login or a permission we never asked
- * for is NOT one of them — re-running the ladder against it would burn the
- * org's quota to reproduce the same refusal, and the screen says so instead of
- * offering a button that cannot work.
+ * Which blocks a retry could possibly clear — the SAME rule the server enforces
+ * (`aidream/services/block_ledger/actions.py` RETRYABLE_STATUSES). It lives here only
+ * so the confirm dialog can count honestly before the call; the server decides.
+ *
+ * A block whose only lawful route crosses DRM, a paywall, someone else's login or a
+ * permission we never asked for lands as `decision` and is never retried: re-running it
+ * would spend the organization's quota to reproduce the same refusal.
  */
 export function isRetryable(row: AcquisitionBlock): boolean {
-  return row.status !== "decision" && row.status !== "resolved";
+  return row.status === "open" || row.status === "retrying" || row.status === "escalated";
 }
 
-/** Which blocks a person's own logged-in browser could plausibly beat. */
-export const OWN_BROWSER_CLASSES = new Set([
-  "login_wall",
-  "paywall",
-  "bad_status",
-  "cloudflare_block",
-  "empty_content",
-  "thin_content",
-  "low_text_content",
-  "wrong_resource",
-]);
-
+/**
+ * Which blocks a person's own logged-in browser could be asked to open — again the
+ * server's rule (`link_handoffs`), mirrored only for the confirm's count.
+ *
+ * It is deliberately NOT narrowed to the ladder's own escalation classes: a person
+ * pressing this button has already made that judgement themselves, which is exactly
+ * what the capture ladder's `asked_by_a_person` class exists for.
+ */
 export function canGoToYourBrowser(row: AcquisitionBlock): boolean {
   return (
     row.source_type === "web_page" &&
-    OWN_BROWSER_CLASSES.has(row.error_class) &&
+    /^https?:\/\//.test(row.input_ref) &&
     row.status !== "resolved"
   );
 }

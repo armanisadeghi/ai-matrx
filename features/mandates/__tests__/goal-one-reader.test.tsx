@@ -35,13 +35,17 @@
  * Nothing here is stubbed but the network and the redux dispatch — the
  * resolver, the hook, the block and the invalidation are all shipped code.
  */
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 (globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean })
   .IS_REACT_ACT_ENVIRONMENT = true;
 
-const KEY = "zzz.fixq9.scratch";
+// A key invented on purpose (the guard's header, blind spot 2: a fixture bound
+// to the vocabulary would be a second authority). The carriers are typed since
+// V-L6a, so the fixture states that once, here.
+const KEY = "zzz.fixq9.scratch" as MandateKey;
 
 /** What the next `GET /mandates` answers with, and how many times it was asked. */
 let mockCatalogueEntries: Array<{ mandate_key: string; goal: string | null }> =

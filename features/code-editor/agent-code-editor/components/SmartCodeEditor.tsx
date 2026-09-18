@@ -52,6 +52,7 @@ import {
 } from "@/features/surfaces/manifests/smart-code-editor.manifest";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { useMandateSet } from "@/features/mandates/useMandateSet";
+import type { MandateKey } from "@ai-matrx/agents/mandates";
 import { setUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.slice";
 import { createManualInstance } from "@/features/agents/redux/execution-system/thunks/create-instance.thunk";
 import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
@@ -100,7 +101,7 @@ export interface SmartCodeEditorProps {
   /** The editing jobs (mandates) the editor supports. First is the picker default. */
   agents: CodeEditorAgentConfig[];
   /** Initial picker-selected mandate key. Defaults to `agents[0]`. */
-  defaultPickerMandateKey?: string;
+  defaultPickerMandateKey?: MandateKey;
 
   /** Single-file content (ignored when `files` is provided). */
   initialCode?: string;
@@ -194,7 +195,7 @@ export function SmartCodeEditor({
   );
 
   // ── Picker state ──────────────────────────────────────────────────────────
-  const [pickerMandateKey, setPickerMandateKey] = useState<string>(
+  const [pickerMandateKey, setPickerMandateKey] = useState<MandateKey | "">(
     defaultPickerMandateKey ?? agents[0]?.mandateKey ?? "",
   );
 
@@ -367,7 +368,7 @@ export function SmartCodeEditor({
   // `launchMandate` resolves the key INSIDE the launch funnel so the binding's
   // agent AND config_overrides both apply — never pass a resolved agent id.
   const handleCreateDraft = useCallback(
-    async (mandateKey: string) => {
+    async (mandateKey: MandateKey) => {
       const agent = agents.find((a) => a.mandateKey === mandateKey);
       if (!agent) return;
       try {

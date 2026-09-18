@@ -1,4 +1,5 @@
 "use client";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * CONTEXT BUILDER — the surface where a human decides what an agent reads.
@@ -459,7 +460,7 @@ interface AgentRunnerProps {
    *  a mandated bundle runs through `launchMandate`. */
   pickedAgentId: string | null;
   /** The domain output's mandate when the loaded system bundle backs one. */
-  mandateKey: string | null;
+  mandateKey: AnyMandateKey | null;
   /** Reports the mandate's resolved agent (null while loading / unresolved /
    *  no mandate) so the parent can persist it on save-as. */
   onMandateAgentResolved: (id: string | null) => void;
@@ -470,7 +471,7 @@ interface AgentRunnerProps {
 /** Mandate state handed to the body — the hook runs only when there IS a
  *  mandate, which is why the runner is split in two below. */
 interface RunnerMandate {
-  key: string;
+  key: AnyMandateKey;
   agentId: string | null;
   loading: boolean;
   error: string | null;
@@ -484,11 +485,18 @@ function AgentRunner(props: AgentRunnerProps) {
   );
 }
 
+/** `AgentRunnerProps` with the mandate PRESENT — spelled as its own interface
+ *  rather than an intersection: intersecting a 400-member key union with a
+ *  props object is a union TypeScript cannot represent (TS2590). */
+interface MandatedAgentRunnerProps extends Omit<AgentRunnerProps, "mandateKey"> {
+  mandateKey: AnyMandateKey;
+}
+
 function MandatedAgentRunner({
   mandateKey,
   onMandateAgentResolved,
   ...rest
-}: AgentRunnerProps & { mandateKey: string }) {
+}: MandatedAgentRunnerProps) {
   const { mandate, loading, error } = useMandate(mandateKey);
   const resolvedAgentId = mandate?.agentId ?? null;
   useEffect(() => {

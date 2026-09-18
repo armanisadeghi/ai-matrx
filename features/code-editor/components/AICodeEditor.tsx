@@ -135,7 +135,16 @@ export function AICodeEditor({
               {allowPromptSelection && (
                 <Select
                   value={selectedMandateKey}
-                  onValueChange={setSelectedMandateKey}
+                  onValueChange={(value) => {
+                    // The options ARE the typed job list, so the picked value
+                    // is one of them by construction; proving it against the
+                    // list keeps the key typed into `launchMandate` rather
+                    // than casting a `string` back in.
+                    const picked = availableJobs.find(
+                      (job) => job.mandateKey === value,
+                    );
+                    if (picked) setSelectedMandateKey(picked.mandateKey);
+                  }}
                   disabled={isLoadingPrompt}
                 >
                   <SelectTrigger className="w-[160px] h-7 text-xs">

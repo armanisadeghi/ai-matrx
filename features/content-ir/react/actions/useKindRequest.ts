@@ -1,4 +1,5 @@
 "use client";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * useKindRequest — the run engine behind "ask an agent for a typed value".
@@ -29,7 +30,7 @@ export interface KindRequestInput {
    * the run is mandate-attributed. Never resolve-then-pass a bare `agentId` —
    * that drops the overrides and the attribution.
    */
-  mandateKey?: string;
+  mandateKey?: AnyMandateKey;
   /** Variable values keyed by the agent's variable NAME. */
   variables: Record<string, string>;
   /** Stamped as `__kind` on the result if the agent didn't emit one. */

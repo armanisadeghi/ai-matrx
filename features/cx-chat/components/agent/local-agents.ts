@@ -9,7 +9,7 @@ import {
   Lightbulb,
 } from "lucide-react";
 import type { VariableDefinition } from "@/features/agents/types/agent-definition.types";
-import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
 
 export interface AgentOption {
   id: string;
@@ -151,7 +151,7 @@ export type ResponseMode = (typeof RESPONSE_MODES)[number];
  * silent fallback to a UUID.
  */
 export const RESPONSE_MODE_MANDATE_MAP: Readonly<
-  Record<ResponseMode, string | null>
+  Record<ResponseMode, MandateKey | null>
 > = {
   text: MANDATE_KEYS.chat__cx_default,
   images: MANDATE_KEYS.chat__cx_default,

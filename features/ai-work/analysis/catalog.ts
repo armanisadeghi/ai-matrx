@@ -1,4 +1,4 @@
-import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MANDATE_KEYS, type MandateKey } from "@ai-matrx/agents/mandates";
 
 /**
  * Conversation-analysis catalog — the five platform reviewers a user can run
@@ -23,7 +23,7 @@ export interface ConversationAnalysisKind {
   /** Stable key — LiveRunWindow instance ids and React keys. */
   key: string;
   /** The mandate resolved at launch time. */
-  mandateKey: string;
+  mandateKey: MandateKey;
   /** Short human label on the run button. */
   label: string;
   /** One-line explainer of exactly what will happen — shown BEFORE it runs. */

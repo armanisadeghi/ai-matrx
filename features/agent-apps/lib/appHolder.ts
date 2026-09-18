@@ -1,4 +1,5 @@
 "use client";
+import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 /**
  * THE APP HOLDER ROUTER — the one place this repo answers "which agent does
@@ -175,7 +176,9 @@ export function useAppHolder(
   const wantsClientResolve =
     APP_MANDATE_CUTOVER && !guest && Boolean(app?.mandate_key);
   const mandateState = useMandate(
-    wantsClientResolve ? (app?.mandate_key as string) : "",
+    wantsClientResolve && app?.mandate_key
+      ? storedMandateKey(app.mandate_key)
+      : "",
   );
 
   return useMemo<AppHolder>(() => {

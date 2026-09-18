@@ -13,6 +13,17 @@
  * DESIGN — the honest-disable is what makes that legal, so it is proven here
  * rather than assumed.
  */
+import type { MandateKey } from "@ai-matrx/agents/mandates";
+import type { AnyMandateKey } from "@/features/mandates/mandate-key";
+
+/**
+ * The DB-authored key this button is wired to (origin='user', so no generated
+ * union can carry it — the same case features/mandates/authoring/constants.ts
+ * opens with dbAuthoredMandateKey()). Named once so the fixture states it, and
+ * the carrier stays typed (V-L6a).
+ */
+const GOAL_WRITER = "mandate.goal_writer" as MandateKey;
+
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -65,7 +76,7 @@ const mockedUseMandate = useMandate as unknown as jest.Mock<MandateState>;
 let container: HTMLDivElement;
 let root: Root;
 
-function mount(mandateKey: string) {
+function mount(mandateKey: AnyMandateKey) {
   act(() => {
     root.render(
       <AutomationButton
@@ -103,7 +114,7 @@ describe("AutomationButton — the key resolves", () => {
       absent: false,
       organizationPending: false,
     });
-    const { button, text } = mount("mandate.goal_writer");
+    const { button, text } = mount(GOAL_WRITER);
 
     expect(button.disabled).toBe(false);
     expect(text).not.toContain("no live job has that name");
@@ -123,9 +134,14 @@ describe("AutomationButton — the key resolves to nothing", () => {
   // nothing — so `absent` is true and this sentence is the true one. A job that
   // exists and cannot answer is a different screen, guarded in
   // `features/mandates/__tests__/automation-availability-honesty.test.tsx`.
-  it.each([
+  it.each<[string, AnyMandateKey]>([
     ["a key with no row at all", KIND_CONVERTER_MANDATE_KEY],
-    ["the soft-deleted, holderless row Arman hit", "mandates.goal_writer"],
+    [
+      "the soft-deleted, holderless row Arman hit",
+      // The plural key whose row is SOFT-DELETED — never in any vocabulary, and
+      // that is the case under test.
+      "mandates.goal_writer" as MandateKey,
+    ],
   ])("%s: the button is DISABLED, with the reason on screen", (_why, key) => {
     mockedUseMandate.mockReturnValue({
       mandate: null,
@@ -214,7 +230,7 @@ describe("the inline ask captures EVERY character, then submits it", () => {
     act(() => {
       root.render(
         <AutomationButton
-          mandateKey="mandate.goal_writer"
+          mandateKey={GOAL_WRITER}
           label="Refine with AI"
           runningLabel="Refining…"
           running={false}

@@ -19,7 +19,13 @@ describe("useMandate — disabled key", () => {
   it.each(["", "   "])(
     "does not query or report loading for the empty sentinel %p",
     async (mandateKey) => {
-      const hook = await renderHook(() => useMandate(mandateKey));
+      // `""` is the declared sentinel; `"   "` is the same intent written
+      // sloppily, which the hook trims. Neither is a key, so neither is typed
+      // as one — the cast is what makes the test able to pass the sentinel at
+      // all now that the carrier is typed (V-L6a).
+      const hook = await renderHook(() =>
+        useMandate(mandateKey as ""),
+      );
 
       expect(resolveMandate).not.toHaveBeenCalled();
       expect(hook.current).toEqual({

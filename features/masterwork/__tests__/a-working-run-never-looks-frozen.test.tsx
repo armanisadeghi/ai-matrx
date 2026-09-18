@@ -176,7 +176,10 @@ describe("leg 2 — a run that only emits model tokens still shows movement", ()
       message: "Source split into 24 chunk(s)",
       total_chunks: 24,
     });
-    expect(progressHeadline(progress)).toContain("of 24 parts");
+    // Knowing there are 24 parts is not yet progress: until the server says a
+    // part is DONE, "0 of 24" cannot move and reads as a stall. Verified live
+    // 2026-09-17 — a finished run still said "0 of 3 parts distilled".
+    expect(progressHeadline(progress) ?? "").not.toContain("parts distilled");
     progress = reduceIngestProgress(progress, "masterwork_ingest_progress", {
       step: "chunk_distilled",
       message: "Chunk 7: 5 candidate rule(s).",

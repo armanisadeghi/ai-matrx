@@ -40,6 +40,7 @@ import type {
   SurfaceValueGroup,
   SurfaceWriteTarget,
 } from "@/features/surfaces/types";
+import { dbAuthoredMandateKey } from "@/features/mandates/mandate-key";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
 
 export const MANDATE_WORKSPACE_SURFACE_NAME = "matrx-admin/mandate-workspace";
@@ -50,7 +51,8 @@ export const MANDATE_WORKSPACE_SURFACE_NAME = "matrx-admin/mandate-workspace";
  * the same string for the button); this declaration is what puts the job in
  * the header Agents menu without adding a pixel to the page.
  */
-export const MANDATE_WORKSPACE_GOAL_WRITER_MANDATE_KEY = "mandate.goal_writer";
+export const MANDATE_WORKSPACE_GOAL_WRITER_MANDATE_KEY =
+  dbAuthoredMandateKey("mandate.goal_writer");
 
 const groups: SurfaceValueGroup[] = [
   {
