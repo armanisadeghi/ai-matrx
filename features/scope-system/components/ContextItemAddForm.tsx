@@ -156,7 +156,7 @@ export function ContextItemAddForm({
   function selectDatasetTemplate(templateId: string | null) {
     setDatasetTemplateId(templateId);
     if (templateId) {
-      setAllowedReferenceTypes(["dataset"]);
+      setAllowedReferenceTypes(["table"]);
       setMaxItems("1");
       setAllowedScopeTypeIds([]);
     }
