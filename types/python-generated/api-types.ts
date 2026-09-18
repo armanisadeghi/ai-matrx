@@ -49244,6 +49244,42 @@ export interface components {
          */
         BridgeOrigin: "independent_hook" | "matrx_local" | "matrx_sandbox";
         /**
+         * BridgePinDivergence
+         * @description The provider's star and the AI Matrx favorite disagreed — say so.
+         *
+         *     A coding session's pin exists on both sides: the provider's own star (what a
+         *     ``SessionMetadata`` observation reports, mirrored into the binding's
+         *     ``provider_pinned`` metadata) and the AI Matrx favorite
+         *     (``platform.user_entity_state.is_favorite``, the row every star in the app
+         *     reads and writes). They are TWO facts, and until 2026-09-18 the server
+         *     compared the provider's own echo against itself — so a divergence looked
+         *     like agreement and could never heal.
+         *
+         *     Which side wins a conflict is an ORG KNOB (``effective_setting`` key
+         *     ``coding_session_provider_pin_wins``, default: the provider wins, because
+         *     the coding agent is where the pin is made — Arman, 2026-09-18). Whatever the
+         *     knob says, the disagreement is REPORTED: it is never silently dropped, and
+         *     the identity list carries both values so a screen can show it.
+         */
+        BridgePinDivergence: {
+            /**
+             * Schema Version
+             * @default 1
+             */
+            schema_version?: number;
+            /** Provider Pinned */
+            provider_pinned: boolean;
+            /** Ai Matrx Is Favorite */
+            ai_matrx_is_favorite?: boolean | null;
+            /**
+             * Authority
+             * @enum {string}
+             */
+            authority: "ai_matrx" | "provider";
+            /** Mirrored */
+            mirrored: boolean;
+        };
+        /**
          * BridgeProjectionErrorGroup
          * @description One ``projection_error`` shape, and how many entries carry it.
          */
@@ -49419,6 +49455,7 @@ export interface components {
             stream_keys?: string[] | null;
             /** Deleted Entries */
             deleted_entries?: number | null;
+            pin_divergence?: components["schemas"]["BridgePinDivergence"] | null;
             /** Hookspecificoutput */
             hookSpecificOutput?: {
                 [key: string]: components["schemas"]["JsonValue"];
@@ -56385,6 +56422,8 @@ export interface components {
             claude_pinned_rank?: number | null;
             /** Claude Category */
             claude_category?: string | null;
+            /** Ai Matrx Is Favorite */
+            ai_matrx_is_favorite?: boolean | null;
         };
         /** CodingSessionIdentityList */
         CodingSessionIdentityList: {

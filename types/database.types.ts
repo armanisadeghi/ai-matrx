@@ -56288,6 +56288,621 @@ export type Database = {
       [_ in never]: never
     }
   }
+  media: {
+    Tables: {
+      capture_handoff: {
+        Row: {
+          attempt_count: number
+          batch_id: string | null
+          captured_at: string | null
+          captured_by_rung: string | null
+          captured_chars: number | null
+          captured_item_id: string | null
+          claim_expires_at: string | null
+          claimed_at: string | null
+          claimed_by: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          estimated_seconds: number | null
+          failure_note: string | null
+          final_url: string | null
+          id: string
+          library_id: string | null
+          metadata: Json
+          organization_id: string
+          reason: string
+          reason_note: string
+          rung: string
+          rung_trail: Json
+          status: string
+          title: string
+          updated_at: string
+          updated_by: string | null
+          url: string
+          version: number
+          what_to_do: string
+        }
+        Insert: {
+          attempt_count?: number
+          batch_id?: string | null
+          captured_at?: string | null
+          captured_by_rung?: string | null
+          captured_chars?: number | null
+          captured_item_id?: string | null
+          claim_expires_at?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          estimated_seconds?: number | null
+          failure_note?: string | null
+          final_url?: string | null
+          id?: string
+          library_id?: string | null
+          metadata?: Json
+          organization_id: string
+          reason: string
+          reason_note: string
+          rung: string
+          rung_trail?: Json
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          url: string
+          version?: number
+          what_to_do?: string
+        }
+        Update: {
+          attempt_count?: number
+          batch_id?: string | null
+          captured_at?: string | null
+          captured_by_rung?: string | null
+          captured_chars?: number | null
+          captured_item_id?: string | null
+          claim_expires_at?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          estimated_seconds?: number | null
+          failure_note?: string | null
+          final_url?: string | null
+          id?: string
+          library_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          reason?: string
+          reason_note?: string
+          rung?: string
+          rung_trail?: Json
+          status?: string
+          title?: string
+          updated_at?: string
+          updated_by?: string | null
+          url?: string
+          version?: number
+          what_to_do?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "capture_handoff_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "source_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      catalog_setting: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          values: Json
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          values?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          values?: Json
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+      library_item: {
+        Row: {
+          attachment_count: number
+          attachment_names: string[]
+          author_email: string | null
+          author_handle: string | null
+          author_key: string | null
+          author_name: string | null
+          body_container: string | null
+          body_encoding: string
+          body_length: number | null
+          body_offset: number | null
+          canonical_url: string | null
+          caption_languages: string[] | null
+          char_count: number
+          container_id: string | null
+          container_label: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          direction: string
+          duration_seconds: number | null
+          enclosure_bytes: number | null
+          enclosure_type: string | null
+          enclosure_url: string | null
+          external_id: string
+          extra: Json
+          file_id: string | null
+          first_discovered_at: string | null
+          has_captions: boolean | null
+          id: string
+          is_reply: boolean
+          item_kind: string
+          labels: string[]
+          last_seen_at: string | null
+          library_id: string
+          media_kind: string | null
+          media_kind_checked_at: string | null
+          media_kind_signal: string | null
+          metadata: Json
+          occurred_at: string | null
+          organization_id: string
+          position: number | null
+          recipients: Json
+          source_path: string | null
+          thumbnail_url: string | null
+          title: string
+          transcript_id: string | null
+          transcript_lane: string | null
+          transcript_status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          word_count: number
+        }
+        Insert: {
+          attachment_count?: number
+          attachment_names?: string[]
+          author_email?: string | null
+          author_handle?: string | null
+          author_key?: string | null
+          author_name?: string | null
+          body_container?: string | null
+          body_encoding?: string
+          body_length?: number | null
+          body_offset?: number | null
+          canonical_url?: string | null
+          caption_languages?: string[] | null
+          char_count?: number
+          container_id?: string | null
+          container_label?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          direction?: string
+          duration_seconds?: number | null
+          enclosure_bytes?: number | null
+          enclosure_type?: string | null
+          enclosure_url?: string | null
+          external_id: string
+          extra?: Json
+          file_id?: string | null
+          first_discovered_at?: string | null
+          has_captions?: boolean | null
+          id?: string
+          is_reply?: boolean
+          item_kind?: string
+          labels?: string[]
+          last_seen_at?: string | null
+          library_id: string
+          media_kind?: string | null
+          media_kind_checked_at?: string | null
+          media_kind_signal?: string | null
+          metadata?: Json
+          occurred_at?: string | null
+          organization_id: string
+          position?: number | null
+          recipients?: Json
+          source_path?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          transcript_id?: string | null
+          transcript_lane?: string | null
+          transcript_status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          word_count?: number
+        }
+        Update: {
+          attachment_count?: number
+          attachment_names?: string[]
+          author_email?: string | null
+          author_handle?: string | null
+          author_key?: string | null
+          author_name?: string | null
+          body_container?: string | null
+          body_encoding?: string
+          body_length?: number | null
+          body_offset?: number | null
+          canonical_url?: string | null
+          caption_languages?: string[] | null
+          char_count?: number
+          container_id?: string | null
+          container_label?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          direction?: string
+          duration_seconds?: number | null
+          enclosure_bytes?: number | null
+          enclosure_type?: string | null
+          enclosure_url?: string | null
+          external_id?: string
+          extra?: Json
+          file_id?: string | null
+          first_discovered_at?: string | null
+          has_captions?: boolean | null
+          id?: string
+          is_reply?: boolean
+          item_kind?: string
+          labels?: string[]
+          last_seen_at?: string | null
+          library_id?: string
+          media_kind?: string | null
+          media_kind_checked_at?: string | null
+          media_kind_signal?: string | null
+          metadata?: Json
+          occurred_at?: string | null
+          organization_id?: string
+          position?: number | null
+          recipients?: Json
+          source_path?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          transcript_id?: string | null
+          transcript_lane?: string | null
+          transcript_status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          word_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_item_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "source_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      selection_item: {
+        Row: {
+          attempt: number
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          error: string | null
+          external_id: string
+          id: string
+          job_id: string
+          lane: string | null
+          lease_expires_at: string | null
+          lease_id: string | null
+          metadata: Json
+          organization_id: string
+          result: Json
+          retryable: boolean
+          source_row_id: string
+          source_type: string
+          started_at: string | null
+          status: string
+          title: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          attempt?: number
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: string | null
+          external_id: string
+          id?: string
+          job_id: string
+          lane?: string | null
+          lease_expires_at?: string | null
+          lease_id?: string | null
+          metadata?: Json
+          organization_id: string
+          result?: Json
+          retryable?: boolean
+          source_row_id: string
+          source_type?: string
+          started_at?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          attempt?: number
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: string | null
+          external_id?: string
+          id?: string
+          job_id?: string
+          lane?: string | null
+          lease_expires_at?: string | null
+          lease_id?: string | null
+          metadata?: Json
+          organization_id?: string
+          result?: Json
+          retryable?: boolean
+          source_row_id?: string
+          source_type?: string
+          started_at?: string | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "selection_item_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "selection_job"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      selection_job: {
+        Row: {
+          action_key: string
+          allow_paid: boolean
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          error: string | null
+          estimate: Json | null
+          estimate_confirmed_at: string | null
+          id: string
+          library_id: string
+          metadata: Json
+          name: string | null
+          operation_id: string | null
+          organization_id: string
+          parallelism: number
+          params: Json
+          prefer_lane: string
+          selection: Json
+          started_at: string | null
+          status: string
+          total_items: number
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          action_key: string
+          allow_paid?: boolean
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: string | null
+          estimate?: Json | null
+          estimate_confirmed_at?: string | null
+          id?: string
+          library_id: string
+          metadata?: Json
+          name?: string | null
+          operation_id?: string | null
+          organization_id: string
+          parallelism?: number
+          params?: Json
+          prefer_lane?: string
+          selection?: Json
+          started_at?: string | null
+          status?: string
+          total_items?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          action_key?: string
+          allow_paid?: boolean
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          error?: string | null
+          estimate?: Json | null
+          estimate_confirmed_at?: string | null
+          id?: string
+          library_id?: string
+          metadata?: Json
+          name?: string | null
+          operation_id?: string | null
+          organization_id?: string
+          parallelism?: number
+          params?: Json
+          prefer_lane?: string
+          selection?: Json
+          started_at?: string | null
+          status?: string
+          total_items?: number
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "selection_job_library_id_fkey"
+            columns: ["library_id"]
+            isOneToOne: false
+            referencedRelation: "source_library"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      source_library: {
+        Row: {
+          adapter: string
+          canonical_url: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          enumeration_id: string | null
+          external_id: string
+          handle: string | null
+          id: string
+          item_count: number | null
+          last_sync_duration_ms: number | null
+          last_sync_operation_id: string | null
+          last_synced_at: string | null
+          metadata: Json
+          metrics: Json
+          name: string
+          organization_id: string
+          provider_data: Json
+          settings: Json
+          source_kind: string
+          subscriber_count: number | null
+          sync_error: string | null
+          sync_status: string
+          thumbnail_url: string | null
+          updated_at: string
+          updated_by: string | null
+          version: number
+          visibility: Database["platform"]["Enums"]["visibility"]
+        }
+        Insert: {
+          adapter?: string
+          canonical_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          enumeration_id?: string | null
+          external_id: string
+          handle?: string | null
+          id?: string
+          item_count?: number | null
+          last_sync_duration_ms?: number | null
+          last_sync_operation_id?: string | null
+          last_synced_at?: string | null
+          metadata?: Json
+          metrics?: Json
+          name: string
+          organization_id: string
+          provider_data?: Json
+          settings?: Json
+          source_kind: string
+          subscriber_count?: number | null
+          sync_error?: string | null
+          sync_status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Update: {
+          adapter?: string
+          canonical_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          enumeration_id?: string | null
+          external_id?: string
+          handle?: string | null
+          id?: string
+          item_count?: number | null
+          last_sync_duration_ms?: number | null
+          last_sync_operation_id?: string | null
+          last_synced_at?: string | null
+          metadata?: Json
+          metrics?: Json
+          name?: string
+          organization_id?: string
+          provider_data?: Json
+          settings?: Json
+          source_kind?: string
+          subscriber_count?: number | null
+          sync_error?: string | null
+          sync_status?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          visibility?: Database["platform"]["Enums"]["visibility"]
+        }
+        Relationships: []
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   meta: {
     Tables: {
       audit_exemption: {
@@ -67520,6 +68135,246 @@ export type Database = {
     }
     Functions: {
       [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
+  provider: {
+    Tables: {
+      account: {
+        Row: {
+          account_kind: string
+          auth_method: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_name: string
+          duplicate_of_id: string | null
+          environment_key: string
+          external_account_id: string | null
+          id: string
+          issuer: string | null
+          last_verified_at: string | null
+          last_verified_by: string | null
+          login_identity: string | null
+          login_url: string | null
+          metadata: Json
+          organization_id: string
+          primary_credential_item_id: string | null
+          provider_key: string
+          provisional_dedupe_key: string
+          safe_notes: string | null
+          status: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+          workspace_name: string | null
+        }
+        Insert: {
+          account_kind: string
+          auth_method: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name: string
+          duplicate_of_id?: string | null
+          environment_key?: string
+          external_account_id?: string | null
+          id?: string
+          issuer?: string | null
+          last_verified_at?: string | null
+          last_verified_by?: string | null
+          login_identity?: string | null
+          login_url?: string | null
+          metadata?: Json
+          organization_id: string
+          primary_credential_item_id?: string | null
+          provider_key: string
+          provisional_dedupe_key: string
+          safe_notes?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workspace_name?: string | null
+        }
+        Update: {
+          account_kind?: string
+          auth_method?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_name?: string
+          duplicate_of_id?: string | null
+          environment_key?: string
+          external_account_id?: string | null
+          id?: string
+          issuer?: string | null
+          last_verified_at?: string | null
+          last_verified_by?: string | null
+          login_identity?: string | null
+          login_url?: string | null
+          metadata?: Json
+          organization_id?: string
+          primary_credential_item_id?: string | null
+          provider_key?: string
+          provisional_dedupe_key?: string
+          safe_notes?: string | null
+          status?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+          workspace_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_duplicate_of_id_fkey"
+            columns: ["duplicate_of_id"]
+            isOneToOne: false
+            referencedRelation: "account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      account_credential: {
+        Row: {
+          account_id: string
+          created_at: string
+          created_by: string | null
+          credential_item_id: string
+          credential_role: string
+          deleted_at: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          updated_at: string
+          updated_by: string | null
+          version: number
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          created_by?: string | null
+          credential_item_id: string
+          credential_role: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          created_by?: string | null
+          credential_item_id?: string
+          credential_role?: string
+          deleted_at?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          updated_at?: string
+          updated_by?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_credential_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "account"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      _assert_org_admin: {
+        Args: { p_organization_id: string }
+        Returns: undefined
+      }
+      attach_credential: {
+        Args: {
+          p_account_id: string
+          p_credential_item_id: string
+          p_credential_role: string
+        }
+        Returns: string
+      }
+      create_account: {
+        Args: {
+          p_account_kind: string
+          p_auth_method: string
+          p_display_name: string
+          p_environment_key: string
+          p_issuer: string
+          p_login_identity: string
+          p_login_url: string
+          p_metadata?: Json
+          p_organization_id: string
+          p_primary_credential_item_id?: string
+          p_provider_key: string
+          p_provisional_dedupe_key: string
+          p_safe_notes?: string
+          p_workspace_name: string
+        }
+        Returns: string
+      }
+      list_accounts: {
+        Args: { p_organization_id: string }
+        Returns: {
+          account_kind: string
+          auth_method: string
+          credential_count: number
+          display_name: string
+          environment_key: string
+          external_account_id: string
+          id: string
+          issuer: string
+          last_verified_at: string
+          login_identity: string
+          login_url: string
+          metadata: Json
+          primary_credential_present: boolean
+          provider_key: string
+          safe_notes: string
+          status: string
+          workspace_name: string
+        }[]
+      }
+      set_account_status: {
+        Args: {
+          p_account_id: string
+          p_duplicate_of_id?: string
+          p_external_account_id?: string
+          p_last_verified_at?: string
+          p_status: string
+        }
+        Returns: undefined
+      }
+      verify_account_identity: {
+        Args: {
+          p_account_id: string
+          p_auth_method?: string
+          p_external_account_id: string
+          p_issuer?: string
+          p_login_identity: string
+          p_login_url?: string
+          p_safe_notes?: string
+          p_verified_at?: string
+          p_workspace_name?: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
@@ -106417,6 +107272,9 @@ export const Constants = {
   marketing: {
     Enums: {},
   },
+  media: {
+    Enums: {},
+  },
   meta: {
     Enums: {},
   },
@@ -106438,6 +107296,9 @@ export const Constants = {
     },
   },
   podcast: {
+    Enums: {},
+  },
+  provider: {
     Enums: {},
   },
   public: {
