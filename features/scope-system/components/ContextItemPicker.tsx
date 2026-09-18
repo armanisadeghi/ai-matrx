@@ -42,7 +42,7 @@
  * silent refusal.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -57,7 +57,11 @@ import {
 } from "@/components/ui/creatable-picker";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
-import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
+import {
+  makeSelectOrgIdForScopeType,
+  selectOrganizationsList,
+  selectTreeStatus,
+} from "@/features/scopes/redux/selectors/tree";
 import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
 import { ensureScopeTree } from "@/features/scopes/redux/thunks/ensureScopeTree";
 import {
@@ -121,6 +125,24 @@ export function ContextItemPicker({
   const dispatch = useAppDispatch();
   const activeOrgId = useAppSelector(selectActiveOrganizationId);
   const orgs = useAppSelector(selectOrganizationsList);
+  const treeStatus = useAppSelector(selectTreeStatus);
+  const selectOrgIdForScopeType = useMemo(
+    () => makeSelectOrgIdForScopeType(),
+    [],
+  );
+  /**
+   * THE ORGANIZATION COMES FROM THE SCOPE TYPE, never from whichever org
+   * happens to be active. A stored binding keeps only the item and its scope
+   * type (`ContextItemBinding` has no org), and a scope type belongs to exactly
+   * one organization — so the tree answers the question. Guessing with the
+   * active org is what made reopening a binding show the wrong organization, an
+   * unresolvable scope type and a frozen item picker (PNI-000 re-verify 1). The
+   * active org is the fallback for ONE case only: a binding with no scope type,
+   * where nothing has been chosen yet.
+   */
+  const ownerOrgId = useAppSelector((s) =>
+    selectOrgIdForScopeType(s, value.scopeTypeId),
+  );
 
   // A stored binding with a scope type is a Scope binding; otherwise System is
   // the default offer (it always has something to pick, for every user).
@@ -129,7 +151,7 @@ export function ContextItemPicker({
   const isSystem = source === "system";
 
   // Default the displayed org to the value, else the active org (never assumed/required).
-  const orgId = value.orgId || activeOrgId || "";
+  const orgId = value.orgId || ownerOrgId || activeOrgId || "";
   const scopeTypeId = value.scopeTypeId || "";
   // System items are cached under a sentinel so the same selectors serve both.
   const itemsKey = isSystem ? SYSTEM_ITEMS_KEY : scopeTypeId;
@@ -155,6 +177,15 @@ export function ContextItemPicker({
   // In-place creation drafts: the text the person typed before "Create …".
   const [orgDraft, setOrgDraft] = useState<string | null>(null);
   const [itemDraft, setItemDraft] = useState<string | null>(null);
+
+  // The owner lookup reads the scope tree, so a binding opened on a surface
+  // that never booted the tree must boot it (the thunk is the one sanctioned
+  // entry point and no-ops when it is already loaded).
+  useEffect(() => {
+    if (!isSystem && value.scopeTypeId && treeStatus === "idle") {
+      void dispatch(ensureScopeTree());
+    }
+  }, [isSystem, value.scopeTypeId, treeStatus, dispatch]);
 
   useEffect(() => {
     if (!isSystem && orgId && !typesLoaded) dispatch(fetchScopeTypes(orgId));
@@ -187,13 +218,11 @@ export function ContextItemPicker({
   };
 
   /** Scope type from a typed name — the Add Scope modal's own defaults. */
+  // Only ever called with an organization: the picker below passes it as
+  // `onCreate` only when one is resolved, and is disabled and says
+  // "Pick an organization first" until then. A runtime guard here would be a
+  // sentence no one can reach (PNI-000 re-verify 1, F5 residual).
   const createScopeTypeFromName = async (typed: string) => {
-    if (!orgId) {
-      // Nothing fails silently: a scope type belongs to an organization, so
-      // say why nothing happened instead of returning null into the void.
-      toast.error("Pick an organization first — a scope type belongs to one.");
-      return null;
-    }
     try {
       const created = await dispatch(
         createScopeType({
@@ -238,18 +267,22 @@ export function ContextItemPicker({
   }));
 
   /**
-   * A scope type is only really chosen when the picker can RESOLVE it in the
-   * org it is showing. A stored binding can carry a scope type from another
-   * organization (the picker falls back to the active org when the value has
-   * none), and then the scope-type trigger renders its placeholder while the
-   * item level speaks about a type the person never picked — the screen said
-   * "No items yet — type a name to create one" when no scope type was selected
-   * at all (PNI-000 F1). So: not resolvable = not picked, and while the org's
-   * types are still arriving the item level says it is loading, never that a
-   * scope type is empty.
+   * A scope type is only really chosen when the picker can RESOLVE it — the id
+   * is in the tree and in the org's loaded types. Three honest states, never a
+   * dead control wearing a value (PNI-000 F1 + re-verify 1):
+   *   pending      — the tree or the org's types are still arriving: "Loading…"
+   *   unresolvable — stored, but gone or no longer visible: a sentence says so
+   *   missing      — nothing chosen: "Pick a scope type first"
    */
+  const treeSettled = treeStatus === "ready" || treeStatus === "error";
   const scopeTypePending =
-    !isSystem && Boolean(scopeTypeId) && !typesLoaded && !scopeType;
+    !isSystem &&
+    Boolean(scopeTypeId) &&
+    !scopeType &&
+    (!typesLoaded || (Boolean(value.scopeTypeId) && !treeSettled));
+  /** Stored, the tree has spoken, and it still resolves to nothing. */
+  const scopeTypeUnresolvable =
+    !isSystem && Boolean(scopeTypeId) && !scopeType && !scopeTypePending;
   const scopeTypeMissing = !isSystem && !scopeTypePending && !scopeType;
 
   const itemPlaceholder = scopeTypeMissing
@@ -346,7 +379,7 @@ export function ContextItemPicker({
               }
               searchPlaceholder="Search or type a new scope type…"
               noun="scope type"
-              onCreate={createScopeTypeFromName}
+              onCreate={orgId ? createScopeTypeFromName : undefined}
               manageAction={
                 orgId
                   ? {
@@ -359,6 +392,14 @@ export function ContextItemPicker({
               loading={Boolean(orgId) && !typesLoaded}
               ariaLabel="Scope type"
             />
+            {scopeTypeUnresolvable && (
+              <p className="text-[11px] text-amber-700 dark:text-amber-300">
+                The scope type this variable was bound to is no longer visible
+                here — it may have been deleted, or it belongs to an
+                organization you are no longer in. Pick a scope type to rebind
+                it; the binding is unchanged until you do.
+              </p>
+            )}
           </div>
         </>
       )}

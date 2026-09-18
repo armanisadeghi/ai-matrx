@@ -332,6 +332,25 @@ The frontend primitive uses only five RPCs: `cat_list(p_dimension?)`, `cat_creat
 
 ## Change Log
 
+- 2026-09-18 — **The organization comes from the scope type, not from whichever org is
+  active** (PNI-000 review rounds 1–2). A `ContextItemBinding` stores only the item and its
+  scope type, and `ContextItemBindingEditor` used to seed the picker's org with the ACTIVE
+  organization — so reopening a binding whose scope type lives elsewhere showed the wrong
+  organization, a scope type that resolved to nothing, and (after round 1 tightened the
+  disabled state) an item picker frozen while still displaying the bound item's name. A scope
+  type belongs to exactly one org, so the tree answers it: new memoized selector
+  `makeSelectOrgIdForScopeType` (`redux/selectors/tree.ts`); `ContextItemPicker` resolves
+  `value.orgId || ownerOrgId || activeOrgId` and boots the tree when a stored scope type needs
+  it, and the editor seeds no org at all. The active org is the fallback for ONE case: a
+  binding with no scope type. Three honest states replace the raw id check — *pending* while
+  the tree or the org's types arrive, *unresolvable* (deleted, or an org you left) which now
+  says so in a sentence under the scope-type picker, and *missing* ("Pick a scope type
+  first"); no control is disabled while wearing a value and explaining nothing. Also:
+  the chip that opens the variable editor is a real `<button>` with a focus ring and an
+  `aria-label` (it was a `<span onClick>`), the duplicate `pluralize` in
+  `components/management/AddScopeModal.tsx` is gone, and `check:picker-add` no longer takes a
+  P11 sentence as an add affordance — it requires a wired alternative, proven by the new
+  `check:picker-add:self-test`.
 - 2026-09-18 — **P23 on the context-item binding picker: every level creates in place.**
   Arman hit `ContextItemPicker` (scope-system) on `/agents/[id]/build` → Edit Variable →
   Bind to a context item and found "No items on this scope type" with no way to add one
