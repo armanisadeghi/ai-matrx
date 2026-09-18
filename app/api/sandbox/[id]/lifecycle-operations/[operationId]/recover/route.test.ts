@@ -22,3 +22,9 @@ test("missing or malformed stored receipt fails closed before recovery POST", as
   const response = await POST({ nextUrl: new URL(`https://test/${id}?kind=stop`), json: async () => ({ graceful: true }) } as any, { params: Promise.resolve({ id, operationId }) });
   expect(response.status).toBe(409); expect(proxyLifecycleReceipt).not.toHaveBeenCalled();
 });
+
+// This file uses `require` + `jest.mock` factories that close over local
+// `const`s, so it has no import/export of its own. Without this marker
+// TypeScript treats it as a global script and its top-level consts collide
+// with the sibling lifecycle route test's identically named ones.
+export {};
