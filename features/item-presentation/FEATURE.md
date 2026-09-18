@@ -23,6 +23,8 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
 **Component**
 - `ItemPresentationBlock.tsx` — the renderer (instant skeleton → recognized icon/accent → DB enrichment → grow-in details → click-to-open).
 - `detail.tsx` — `resolveItemDetailType(type)`: turns a registry entry into the Detail primitive's `DetailRecordType` (`lib/detail`), so every registry-known type shows as a window (`detailWindow`, the default), a docked side panel (`detailDocked`) or a page (`/detail/[type]/[id]`) from this ONE type map. Seeds from the agent name/about, fetches the full row via `detailSource`, renders every populated scalar field. Replaced `ItemDetailWindow` on 2026-09-17.
+- `sourceHealth.ts` — the ONE producer of the Detail health strip for a synced record: it translates the connectors' own `productHealth` over the server's recorded `capability_health` into the strip, so a record and the connectors screen can never disagree about the same grant.
+- `syncedColumns.ts` — the synced-row vocabulary: the six candidate column lists the producer tries, and `SyncedRoleColumn`, computed from `types/database.types.ts` so a name no synced table carries cannot be written down (F-54).
 - `ItemDetailFrame.tsx` — the frame around every item body in all three presentations: the `matrx-user/item-detail` surface runtime + the right-click menu (moved verbatim from the old window).
 
 **Hooks**
@@ -70,6 +72,29 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
   its own column. A registration still projects what its row genuinely does not
   say (`provider` for a table that IS Google's, `provider_product` for the grant
   that refreshes it) — never a column the table already has under another name.
+- 🚨 **EVERY COLUMN NAME THE STRIP TRIES IS DERIVED FROM THE GENERATED TYPES,
+  AND THE COMPILER PROVES IT (F-54).** The six candidate lists live in
+  `syncedColumns.ts`, each `satisfies readonly SyncedRoleColumn[]` — a union
+  COMPUTED from `types/database.types.ts` (every column on every table whose
+  `Row` declares `sync_status`) plus the one column a registration projects
+  (`provider_product`, declared there with its reason). F-51 fixed one list by
+  hand; the F-54 census found the same fiction in all five siblings, so a
+  spelling no synced table carries is now a type error that names the spelling.
+  `__tests__/every-candidate-column-is-a-live-column.test.ts` owns what a type
+  cannot see: that the union is still narrow, and the reverse direction — a
+  synced table carrying a role-shaped column no list names fails until someone
+  lists it or writes down in `UNREAD_ROLE_COLUMNS` why the strip does not read
+  it. **One open escalation lives there:**
+  `communication.calendar_event.external_updated_at` is Google's own modified
+  time, and reading it as a freshness would change what an event with no
+  `synced_at` shows, so F-54 recorded it instead of choosing.
+- **A synced table with no provider column shows NO strip, by construction.**
+  `web.youtube_video` mirrors a Google record (`external_id`, `synced_at`,
+  `external_url`) and carries no provider column, and no registration projects
+  one, so `syncedProviderOf` answers null for every row of it. Nothing is wrong
+  on a screen today (no item type reads that table), but a YouTube registration
+  must give the row a provider before the strip can answer for it — the census
+  test names the table so nobody finds this the hard way.
 - **When the row names no connection, the account that HOLDS the record's product
   answers for it** — `sourceHealthProducerFor` passes `forProductKey` to
   `preferredAccountId`, so a record never claims its product is not connected
@@ -134,6 +159,8 @@ Renders the `item_presentation` render block — a ```json fence keyed by `item_
 ---
 
 ## Change log
+
+- 2026-09-18 — **F-54: the candidate column names are DERIVED from the generated types, and the fiction is gone from all six lists.** F-51 fixed `ACCOUNT_COLUMNS` by hand; the census behind this entry read `types/database.types.ts` for every sibling and found that **eight of the seventeen names matched no column on any table carrying `sync_status`** — `sync_provider`, `capability_key`, `product_key`, `external_message_id`, `last_refreshed_at` (which sat FIRST in its list) and `web_url` exist on no table at all, while `source_provider` (only `seo.keyword_market`) and `provider_id` (seven tables) and `source_url` (thirteen) live only on tables that are not synced. The strip worked purely because each synced table happened to carry one survivor. New `features/item-presentation/syncedColumns.ts` now owns the six lists and computes `SyncedRoleColumn` from `Database` — the union of every column on every `sync_status` table, plus the one declared projection (`provider_product`, which no table has because a product key is registration knowledge; both Google registrations put it on the row) — so each list is `satisfies readonly SyncedRoleColumn[]` and a fiction is a TYPE ERROR that names it. The surviving lists: `provider` / `provider_product` / `external_id` / `synced_via_connection_id` / `synced_at`,`external_modified_at` / `external_url`. **Behaviour is unchanged on every real row shape** — no live row of any synced table carries a retired name, and the 32 suites over `features/item-presentation` and `features/google-workspace` (270 tests) stay green, including the F-51 account test and both Google record suites as the positive control. Red-then-green, both directions: at the type level a planted `web_url` / `last_refreshed_at` / `capability_key` / `sync_provider` / `external_message_id` each fails scoped `tsc` by name; at run time `__tests__/every-candidate-column-is-a-live-column.test.ts` (32 cases) fails on a fiction planted past the compiler with a cast ("SOURCE_URL_COLUMNS carries `web_url`, which is not a column on any table declaring `sync_status`…"), and fails in the REVERSE direction — dropping `synced_at` from the list names all three mirror tables that carry it. The narrowness of the union is itself pinned, because this lane's first attempt typed the projection map `Readonly<Record<string, string>>`, which collapsed `SyncedRoleColumn` to `string` and let a planted fiction through every `satisfies`. Two findings recorded rather than chosen: `communication.calendar_event.external_updated_at` (a freshness the strip does not read — adding it would change what an event with no `synced_at` shows, so it is in `UNREAD_ROLE_COLUMNS` with the reason), and `web.youtube_video`, which mirrors a Google record with no provider column and would therefore show no strip at all if a registration ever pointed at it. Also honest now: `__tests__/a-synced-record-shows-its-refusal.test.tsx`'s fixture said `last_refreshed_at` and `web_url` — the very fiction under test — and now says `synced_at` and `external_url`, with no assertion changed. No screen was seen for this lane; the evidence is the suites, the gates and the generated types.
 
 - 2026-09-18 — **F-50: `sourceHealth.ts::grantStateFor` adopts the primitive's `blocked` grant word.** F-46 added `blocked` to `lib/detail/types.ts`'s grant vocabulary (rendered BLOCKED, and `reconnectFor` in `useDetailHealth.ts` refuses it a Reconnect structurally) for exactly the reading `case "unavailable"` used to fold into `unknown` because the word did not exist yet — a source the provider or our own configuration refuses OUTRIGHT (V17-1), where a Reconnect button would press for nothing. The producer now returns `"blocked"` for that case. Red-then-green over a REAL `capability_health`-shaped fixture, with a positive control: `__tests__/a-synced-record-shows-its-refusal.test.tsx`'s new describe block — a connection with `health: "unavailable"` (the live column value `googleAccount` reads as `account.blocked`) renders `data-detail-health-state="blocked"`, the word "Blocked" and NO Reconnect button; the file's standing `grant_expired_or_revoked` fixture (a real "reconnect will fix it" case) still renders one, proving the assertion is not vacuous. Before the fix: `"unknown"`. Restored: 6/6 green.
 

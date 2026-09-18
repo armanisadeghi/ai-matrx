@@ -102,14 +102,25 @@ const googleService = jest.requireMock("@/features/marketing/google/service") as
   listGoogleConnectionInventory: jest.Mock;
 };
 
-/** A Gmail message mirrored into the platform — the row a Detail would load. */
+/**
+ * A Gmail message mirrored into the platform — the row a Detail would load.
+ *
+ * 🚨 EVERY COLUMN NAME HERE IS A NAME A SYNCED TABLE REALLY CARRIES (lane F-54).
+ * This fixture used to say `last_refreshed_at` and `web_url`: two spellings NO
+ * table in `types/database.types.ts` has, which is exactly the fiction the strip
+ * was reading. `synced_at` and `external_url` are the live names for the same two
+ * facts (`workbench.google_document`, `web.youtube_video`,
+ * `communication.calendar_event`), so what this test proves is now what a real
+ * row would prove. No assertion below changes: the refusal sentence and the
+ * provider link are read exactly as before.
+ */
 const SYNCED_EMAIL: DetailRow = {
   id: "11111111-2222-3333-4444-555555555555",
   provider: "google",
   external_id: "18f0c0ffee",
   subject: "Quarterly plan",
-  last_refreshed_at: "2026-09-17T12:00:00Z",
-  web_url: "https://mail.google.com/mail/u/0/#inbox/18f0c0ffee",
+  synced_at: "2026-09-17T12:00:00Z",
+  external_url: "https://mail.google.com/mail/u/0/#inbox/18f0c0ffee",
 };
 
 const EMAIL_TYPE = {
