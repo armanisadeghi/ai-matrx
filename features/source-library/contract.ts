@@ -52,6 +52,7 @@ import type {
     ActionDeclaration,
     EstimateResult,
     JobDetailResponse,
+    JobListResponse,
     JobEvent,
     JobItemRow,
     JobRow,
@@ -673,6 +674,29 @@ export function parseJobDetailResponse(payload: unknown): JobDetailResponse {
         job: parseJobRow(root.job, "job"),
         items,
         items_total: number(root.items_total, "items_total", items.length),
+    };
+}
+
+/**
+ * `GET /media/libraries/{id}/jobs` — THE JOB-DISCOVERY DOOR (contract §7).
+ *
+ * After a reload this page knows only the Library id, so without this read a durable
+ * job cannot be found again and "survives a restart" is unprovable from the screen.
+ * This endpoint existed on the server the whole time and nothing here ever called it;
+ * the page kept job ids in `localStorage` instead, which meant a job whose id never
+ * reached the browser — exactly what the `POST …/jobs` envelope defect caused — was
+ * invisible forever even though its rows were sitting in the database.
+ */
+export function parseJobListResponse(payload: unknown): JobListResponse {
+    const root = obj(payload, "the jobs for this Library");
+    const jobs = arr(root.jobs ?? [], "jobs").map((entry, index) =>
+        parseJobRow(entry, `jobs[${index}]`),
+    );
+    return {
+        jobs,
+        total: number(root.total, "total", jobs.length),
+        limit: number(root.limit, "limit", jobs.length),
+        offset: number(root.offset, "offset", 0),
     };
 }
 

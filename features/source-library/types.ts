@@ -418,6 +418,14 @@ export interface JobDetailResponse {
     items_total: number;
 }
 
+/** `GET /media/libraries/{id}/jobs` — the job-discovery door (contract §7). */
+export interface JobListResponse {
+    jobs: JobRow[];
+    total: number;
+    limit: number;
+    offset: number;
+}
+
 export type JobEvent =
     | { type: "job.started"; job: JobRow }
     | { type: "job.item.started"; item: JobItemRow }
