@@ -22,6 +22,10 @@ import { Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { MatrxSplit } from "@/components/matrx/MatrxSplit";
+import {
+  type ScrollEdgeIntent,
+  useScrollEdgeIntent,
+} from "@/components/matrx/useTrimEdgeScrollIntent";
 import { MicrophoneIconButton } from "@/features/audio/components/MicrophoneIconButton";
 import { RichDocument } from "@/features/rich-document/RichDocument";
 import type {
@@ -36,6 +40,12 @@ import {
 import { cn } from "@/lib/utils";
 import type { TuiEditorContentRef } from "@/components/mardown-display/chat-markdown/tui/TuiEditorContent";
 import { noteIdentityContentSource } from "../richDocumentSource";
+
+function assignRef<T>(ref: React.Ref<T> | undefined, node: T | null) {
+  if (!ref) return;
+  if (typeof ref === "function") ref(node);
+  else (ref as React.MutableRefObject<T | null>).current = node;
+}
 
 const TuiEditorContent = dynamic(
   () =>
@@ -97,6 +107,8 @@ export interface NoteEditorCoreProps {
    * update arrives (note switch, realtime update, undo, fetch).
    */
   resetKey?: string;
+  /** One finite request to reveal the edge changed by a content trim. */
+  scrollIntent?: ScrollEdgeIntent;
   /**
    * Optional overlay rendered absolutely on top of the primary editor surface
    * (plain textarea, or the editor side in split mode). Must be
@@ -205,6 +217,7 @@ export function NoteEditorCore({
   previewClassName,
   syncScroll = true,
   resetKey,
+  scrollIntent,
   findOverlay,
   previewContainerRef,
   noteId,
@@ -233,14 +246,34 @@ export function NoteEditorCore({
     actionsSource ?? (noteId ? noteIdentityContentSource(noteId, `editor-core:${noteId}`) : { type: "raw" });
   const internalTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const internalTuiRef = useRef<TuiEditorContentRef>(null);
-
-  // Discrete-edit handler: prefer `onChangeFlush` if the parent provides one,
-  // otherwise fall back to `onChange`.
-  const flushChange = onChangeFlush ?? onChange;
+  const previewScrollRef = useRef<HTMLDivElement | null>(null);
+  const inactiveScrollRef = useRef<HTMLElement | null>(null);
 
   // Use external refs if provided, otherwise internal
   const textareaRef = externalTextareaRef || internalTextareaRef;
   const tuiEditorRef = externalTuiRef || internalTuiRef;
+
+  useScrollEdgeIntent(
+    scrollIntent,
+    [
+      editorMode === "split"
+        ? inactiveScrollRef
+        : (textareaRef as React.RefObject<HTMLElement | null>),
+      editorMode === "split"
+        ? inactiveScrollRef
+        : previewScrollRef,
+    ],
+    editorMode,
+  );
+
+  const setPreviewScrollRef = (node: HTMLDivElement | null) => {
+    assignRef(previewScrollRef, node);
+    assignRef(previewContainerRef, node);
+  };
+
+  // Discrete-edit handler: prefer `onChangeFlush` if the parent provides one,
+  // otherwise fall back to `onChange`.
+  const flushChange = onChangeFlush ?? onChange;
 
   // Keep content ref for voice transcription
   const contentRef = useRef(content);
@@ -363,7 +396,6 @@ export function NoteEditorCore({
       {/* ── Split View (MatrxSplit) ─────────────────────────────────── */}
       {editorMode === "split" && (
         <MatrxSplit
-          key={resetKey}
           value={content}
           readOnly={readOnly}
           onChange={readOnly ? () => {} : onChange}
@@ -391,13 +423,15 @@ export function NoteEditorCore({
             actionsSurfaceId ? "remote" : (previewActionsVariant ?? "icon-only")
           }
           actionsSurfaceId={actionsSurfaceId}
+          contentResetKey={resetKey}
+          scrollIntent={scrollIntent}
         />
       )}
 
       {/* ── Preview (Markdown with full edit-through) ───────────────── */}
       {editorMode === "preview" && (
         <div
-          ref={previewContainerRef}
+          ref={setPreviewScrollRef}
           className={cn(
             "h-full overflow-y-auto max-w-3xl mx-auto py-2 px-4",
             bottomPad,
