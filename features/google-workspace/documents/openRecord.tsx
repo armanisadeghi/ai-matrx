@@ -54,6 +54,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/lib/toast";
 import { supabase } from "@/utils/supabase/client";
 import { useOpenDetail } from "@/lib/detail/useOpenDetail";
+import { presentOrganizationRefusal } from "@/lib/organizations/organizationRefusalToast";
 import type { GoogleConnectionResource } from "@/features/marketing/google/types";
 
 import { GOOGLE_DOCUMENT_TYPE } from "./record";
@@ -227,7 +228,12 @@ export function OpenGoogleDocumentRecordButton({
         await openRecord(resource);
       } catch (error: unknown) {
         // NOTHING FAILS SILENTLY: a Record that could not be opened says so,
-        // and the list it was clicked from is unchanged.
+        // and the list it was clicked from is unchanged. The birth door
+        // (`refreshGoogleDocument`) resolves the active organization itself and
+        // fails closed with none selected — that refusal gets the honest,
+        // actionable toast, never the raw wire sentence ("Select an
+        // organization before sending this request.").
+        if (presentOrganizationRefusal(error, { act: "opened", subject: "This record" })) return;
         toast.error(failureSentence(error));
       } finally {
         setBusy(false);

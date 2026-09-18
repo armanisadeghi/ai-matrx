@@ -1640,6 +1640,12 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     defaultData: {},
     ephemeral: true,
     mobilePresentation: "drawer",
+    // D11: it raises itself once a day, so it must say where it is allowed to
+    // do that. The dashboard and the administration surfaces are where a
+    // super admin is already looking at how the platform is doing; a drop
+    // zone, a chat, or a document is not. Away from home it DEFERS — the
+    // "shown today" record is untouched and it raises on the next visit here.
+    unbiddenHome: ["/dashboard", "/administration"],
   },
 
   // ── Details (one structured value, through the canonical renderer) ────────

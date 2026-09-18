@@ -70,6 +70,8 @@ import FlowStepResultBlock from "@/components/mardown-display/blocks/result-kind
 import CollectionResultBlock from "@/components/mardown-display/blocks/result-kinds/CollectionResultBlock";
 import FileOperationResultBlock from "@/components/mardown-display/blocks/result-kinds/FileOperationResultBlock";
 import ValueResultBlock from "@/components/mardown-display/blocks/result-kinds/ValueResultBlock";
+import GoogleWorkspaceResultBlock from "@/components/mardown-display/blocks/google-kinds/GoogleWorkspaceResultBlock";
+import GoogleMarketingResultBlock from "@/components/mardown-display/blocks/google-kinds/GoogleMarketingResultBlock";
 import MarkdownKindBlock from "@/components/mardown-display/blocks/markdown/MarkdownKindBlock";
 // Lazy shell (next/dynamic ssr:false inside) — Babel/compiler weight ships in
 // its own chunk, fetched only when a block actually routed to a db component.
@@ -268,6 +270,10 @@ export function isBlockLoading(block: {
  *    `kind_component` row per kind, on exactly the `web_analysis_item` model:
  *    one shared reader question per family, the platform's value renderer
  *    underneath. Reached ONLY via applyIrKindRoute's resolver-only path.
+ *  - `google_workspace_result` / `google_marketing_result` — the two GOOGLE
+ *    tool-result renderers. One union kind per tool (fifteen Workspace actions,
+ *    six marketing reads), so one component each, reached through that kind's
+ *    `kind_component` row on the resolver-only path. Never emitted upstream.
  *  - `web_analysis_item` — the ONE renderer for the `web_analysis_item`
  *    kind family (the 83 registered `web_*_v1` site-audit checks, which share
  *    one verified shape). Produced ONLY by `applyIrKindRoute`'s resolver-only
@@ -518,6 +524,8 @@ export type FeSynthesizedBlockType =
   | "collection_result"
   | "file_operation_result"
   | "value_result"
+  | "google_workspace_result"
+  | "google_marketing_result"
   | "markdown_stream"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
@@ -692,6 +700,8 @@ export type ShapeBlockType =
   | "collection_result"
   | "file_operation_result"
   | "value_result"
+  | "google_workspace_result"
+  | "google_marketing_result"
   | "markdown_stream"
   | typeof GENERIC_STRUCTURED_COMPONENT_KEY
   | typeof DB_KIND_COMPONENT_KEY;
@@ -2512,6 +2522,29 @@ const SHAPE_BLOCK_DISPATCH = {
   ),
   value_result: ({ block, index }) => (
     <ValueResultBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+
+  // The two GOOGLE tool-result routes (features/content-ir/react/kind-route.ts
+  // resolver-only path): `google_workspace_result` and `google_marketing_result`
+  // are ONE union kind per tool — fifteen Workspace actions and six marketing
+  // reads — so each gets ONE component that branches on the shape of the data,
+  // pointed at by that kind's `kind_component` row. Before these rows existed
+  // every Google answer reached the reader through the generic floor, which
+  // cannot tell a dry-run PREVIEW from a receipt or a capped window from a
+  // total. Reached ONLY via applyIrKindRoute.
+  google_workspace_result: ({ block, index }) => (
+    <GoogleWorkspaceResultBlock
+      key={index}
+      content={block.content}
+      metadata={block.metadata}
+    />
+  ),
+  google_marketing_result: ({ block, index }) => (
+    <GoogleMarketingResultBlock
       key={index}
       content={block.content}
       metadata={block.metadata}

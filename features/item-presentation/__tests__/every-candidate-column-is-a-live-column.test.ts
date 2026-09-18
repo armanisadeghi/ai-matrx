@@ -32,12 +32,44 @@
  *
  * IT READS THE GENERATED FILE ITSELF, not a fixture, so it fails on the real
  * `pnpm db-types` output.
+ *
+ * 🚨 THE REVERSE HALF RECOGNISES THE ACCOUNT ROLE BY STRUCTURE, NOT SPELLING
+ * (lane F-81, hostile verifier V-21). It used to ask its question through a
+ * per-role regex listing remembered names, so it could only find a column
+ * somebody had already thought of. `web.youtube_video` is a mirror
+ * (`external_id`, `external_url`, `synced_at`) and names its connection side
+ * `channel_resource_id`: no spelling matched, `UNREAD_ROLE_COLUMNS` came back
+ * empty, and this guard was GREEN while the strip could not read that table's
+ * account at all — F-51 re-armed on the third mirror table, invisible to the
+ * guard written to prevent it. The ACCOUNT shape is now the noun set of the
+ * connection-side relations (`users.integration_connections` and its child
+ * `users.integration_connection_resources`) with any prefix and the `_id`
+ * suffix, which also surfaced a second blind-spot column,
+ * `workbench.google_document.resource_id`.
+ *
+ * 🚨 RESIDUAL BLIND SPOT, STATED PLAINLY. The rule would rather read the foreign
+ * key and CANNOT: every FK on all three mirror tables points out of the
+ * generated schema set (`users.*`, `iam.*`, `auth.*`) and Supabase typegen drops
+ * a cross-schema relationship, so all three carry `Relationships: []` here while
+ * the constraints are live (`youtube_video_channel_resource_id_fkey →
+ * users.integration_connection_resources`, `calendar_event_synced_via_connection_id_fkey
+ * → users.integration_connections`, read live 2026-09-18). What IS readable from
+ * the generated types is the one hop inside `users` —
+ * `integration_connection_resources.connection_id → integration_connections` —
+ * and this file asserts it, so the seed the noun set stands on cannot vanish
+ * quietly. A mirror that names its connection side with none of those nouns
+ * (`refreshed_through`, `google_account_ref`) is STILL invisible to this census;
+ * the day typegen emits cross-schema FKs, replace the noun set with the FK and
+ * this paragraph goes away.
  */
 
 import fs from "node:fs";
 import path from "node:path";
 
 import {
+  ACCOUNT_COLUMNS,
+  ACCOUNT_RELATION_CHILD,
+  ACCOUNT_RELATION_SEED,
   PROJECTED_ROLE_COLUMNS,
   REFRESHED_COLUMNS,
   ROLE_COLUMN_SHAPE,
@@ -226,6 +258,95 @@ describe("ruling R28 — external_updated_at is read, not parked", () => {
 });
 
 /**
+ * LANE F-81 — the ACCOUNT role's structural rule, and the one FK the generated
+ * types really do declare. `readSeedFkChildren` looks for relations whose
+ * declared FK references `ACCOUNT_RELATION_SEED`; the noun set in
+ * `syncedColumns.ts` stands on exactly that hop, so if the constraint (or the
+ * generated `Relationships` block carrying it) goes away, this fails instead of
+ * the rule quietly becoming a hand list.
+ */
+function readSeedFkChildren(seed: string): Set<string> {
+  const source = fs.readFileSync(GENERATED, "utf8");
+  const children = new Set<string>();
+  const shape =
+    /foreignKeyName: "([a-zA-Z_0-9]+)"\s*\n\s*columns: \[([^\]]*)\]\s*\n\s*isOneToOne: (?:true|false)\s*\n\s*referencedRelation: "([a-zA-Z_0-9]+)"/g;
+  for (const match of source.matchAll(shape)) {
+    if (match[3] !== seed) continue;
+    // The constraint name is `<child>_<column>_fkey`; the child is what the
+    // column's own table is called, which is the only thing this needs.
+    const column = match[2].replace(/["\s]/g, "");
+    const suffix = `_${column}_fkey`;
+    if (!match[1].endsWith(suffix)) continue;
+    children.add(match[1].slice(0, -suffix.length));
+  }
+  return children;
+}
+
+describe("the ACCOUNT role is recognised by structure, not by spelling (F-81)", () => {
+  const SHAPE = ROLE_COLUMN_SHAPE.ACCOUNT_COLUMNS;
+
+  it("the seed relation and its one declared child both exist in the generated types", () => {
+    const seedTables = [...ALL_TABLES.keys()].filter(
+      (key) => key.slice(key.lastIndexOf(".") + 1) === ACCOUNT_RELATION_SEED,
+    );
+    expect(seedTables.length).toBeGreaterThan(0);
+    const childTables = [...ALL_TABLES.keys()].filter(
+      (key) => key.slice(key.lastIndexOf(".") + 1) === ACCOUNT_RELATION_CHILD,
+    );
+    expect(childTables.length).toBeGreaterThan(0);
+    // The hop the noun set stands on: a resource BELONGS to a connection.
+    expect([...readSeedFkChildren(ACCOUNT_RELATION_SEED)]).toContain(
+      ACCOUNT_RELATION_CHILD,
+    );
+  });
+
+  it("classifies every live mirror's connection-side column, whatever its prefix", () => {
+    const seen: Record<string, string[]> = {};
+    for (const [table, columns] of MIRRORS) {
+      seen[table] = [...columns].filter((column) => SHAPE.test(column)).sort();
+    }
+    expect(seen).toEqual({
+      "communication.calendar_event": ["synced_via_connection_id"],
+      "web.youtube_video": ["channel_resource_id"],
+      "workbench.google_document": ["resource_id", "synced_via_connection_id"],
+    });
+  });
+
+  it("is a strict superset of the spelling list it replaced", () => {
+    for (const name of [
+      "synced_via_connection_id",
+      "connection_id",
+      "account_id",
+      "refreshed_via_account",
+    ]) {
+      expect(`${name}:${SHAPE.test(name)}`).toBe(`${name}:true`);
+    }
+  });
+
+  it("does not sweep in a column that is not connection-side", () => {
+    for (const name of [
+      "external_id",
+      "organization_id",
+      "created_by",
+      "analysis_agent_id",
+      "video_external_id",
+      "sync_status",
+      "published_at",
+    ]) {
+      expect(`${name}:${SHAPE.test(name)}`).toBe(`${name}:false`);
+    }
+  });
+
+  it("the strip reads the connection outright FIRST, then a resource that belongs to one", () => {
+    expect([...ACCOUNT_COLUMNS]).toEqual([
+      "synced_via_connection_id",
+      "resource_id",
+      "channel_resource_id",
+    ]);
+  });
+});
+
+/**
  * THE CENSUS, ASSERTED. Not decoration: when the database grows a synced table
  * this fails and names it, which is the only moment anyone will ask whether the
  * strip should answer for it. `web.youtube_video` is the live near-miss — it
@@ -253,6 +374,16 @@ describe("the synced-table census the strip was measured against", () => {
       "web.youtube_video",
       "workbench.google_document",
     ]);
+  });
+
+  it("`web.youtube_video` names its connection side, and the strip now reads that column", () => {
+    const columns = ALL_TABLES.get("web.youtube_video");
+    expect([...(columns ?? [])]).toContain("channel_resource_id");
+    // It carries NO connection column: `channel_resource_id` is the only thing
+    // the strip can read for a YouTube row, which is why leaving it unseen was
+    // F-51 waiting for U-M3 to ship.
+    expect([...(columns ?? [])]).not.toContain("synced_via_connection_id");
+    expect([...ACCOUNT_COLUMNS]).toContain("channel_resource_id");
   });
 
   it("`web.youtube_video` still has no provider column, so the strip stays silent for it", () => {

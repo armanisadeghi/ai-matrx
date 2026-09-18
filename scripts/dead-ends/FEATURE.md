@@ -374,10 +374,46 @@ files out of 6,809 scanned, in ~9s.**
 ## Truth vs code, not a hardcoded list
 
 `entity-tokens.ts` parses the **live** `features/scopes/registry/entityRegistry.ts`
-for tokens and which of them carry an `hrefFor`. Add a route to a token and the
-next run re-ranks itself with no edit here. If the registry moves or changes
-shape the loader **throws loudly** rather than degrading to an empty token map
-that would silently downgrade every finding.
+for tokens and which of them carry an `hrefFor`, and reads each token's LABEL from
+`ENTITY_TYPE_METADATA` (the generated `platform.entity_types` mirror the registry
+itself merges). Add a route to a token and the next run re-ranks itself with no
+edit here. If the registry moves or changes shape the loader **throws loudly**
+rather than degrading to an empty token map that would silently downgrade every
+finding.
+
+The label is not decoration: **every remedy names the entity's own noun** — "Open
+the calendar event", "Open the SEO keyword", "Open the project". The toast rule
+used to print `label: "Open the note"` for all of them (V-21).
+
+### A bare noun that names several entities names NONE of them
+
+The noun→token map is curated (an everyday word's meaning is a ruling, not
+something to derive), but **ambiguity is derived**: `loadEntityTokens` computes
+the head noun of every registered token and its label, and any word heading more
+than one is ambiguous. Three consequences, all load-bearing:
+
+1. **A qualified phrase wins over the bare noun inside it.** Keys may be phrases,
+   the longest match wins, and matching is on consecutive whole segments — so
+   `importGoogleDocument` / "Google document imported" is a `google_document`.
+   Before this, the bare word `document` was mapped to `udt_document` and an
+   imported Google file was reported as the custom-data document: a confident,
+   wrong record name, promoted to HIGH because that token owns a route (V-21).
+2. **`document` maps to nothing at all.** Four registered entities end in it
+   (`udt_document`, `google_document`, `working_document`, `processed_document`).
+3. **A colliding bare noun can only resolve through an explicit ruling** in
+   `AMBIGUOUS_NOUN_RULINGS`, each carrying its reason (`file` is the platform's
+   file — a `code_file` is spoken of as a "code file"; same for `folder`; `task`
+   is a workspace task and a `sch_task` is always a "scheduled task"). Put a
+   colliding noun in `NOUN_TO_TOKEN` instead and **the run throws**, naming the
+   noun and both remedies. That guard is why the class cannot come back under
+   another word.
+
+When a TOAST MESSAGE reaches such a noun, nothing is reported — and the run says
+so: the report ends with an **Ambiguous nouns** block naming the word and the
+files. Fix it at the source (qualify the word, or register the entity); never
+guess a record here. The ledger is message-only on purpose: fed from identifier
+text it filled with `item`, `list` and `set` off 400 files of ordinary variable
+names, which is a scoreboard nobody can act on.
 
 ## The allowlist has reasons, by type
 
@@ -414,11 +450,12 @@ the same maps.
 |---|---|
 | `check-dead-ends.ts` | CLI: walk, run, rank, print, `--write` the snapshot |
 | `scan.ts` | The AST rules, skip contexts, and door detection |
-| `entity-tokens.ts` | Live entity-registry reader + noun→token inference |
+| `entity-tokens.ts` | Live entity-registry reader (tokens, routes, labels) + noun/phrase→token inference + the ambiguity guard |
 | `describe.ts` | ONE message builder, shared by the CLI and the dashboard |
 | `types.ts` | The published report contract (the dashboard depends on it) |
 | `allowlist.ts` | Deliberate exemptions, `reason` required by type |
-| `self-test/` | The RED fixture (`AgendaPanel.tsx` verbatim at `66f75b7a`) + what the GREEN half is — `self-test/README.md` |
+| `self-test/` | The fixtures and `cases.ts`, THE table both `--self-test` and the jest suite read — `self-test/README.md` |
+| `__tests__/` | `toast-names-record.test.ts` — the same fixture table under jest, plus the remedy-noun and ambiguity assertions |
 | `report.json` | Committed snapshot the dashboard renders |
 | `history.json` | Append-only totals per `--write`, capped at 120 points — the trend, with no new DB table |
 
@@ -431,6 +468,33 @@ existing `public.ts_check_runs` shape is the model to reuse — do not invent a
 new one.
 
 ## Change Log
+
+- **2026-09-18 (V-21, F-82)** — **two registries, and this one was not told.**
+  `calendar_event` and `google_document` were registered as openable kinds in the
+  item-presentation registry (F-63) but absent from the ENTITY registry this
+  checker reads, so a doorless `toast.success("Calendar event created")` after
+  `createCalendarEvent(...)` produced **no finding at all**, and
+  `toast.success("Google document imported")` after `importGoogleDocument(...)`
+  produced a HIGH finding against **`udt_document`** — the wrong record. Fixed in
+  three places, class not instance: both tokens registered in
+  `features/scopes/registry/entityRegistry.ts` with the Detail primitive's
+  addressable door; `entity-tokens.ts` stopped mapping the bare noun `document`
+  to any token, learned noun PHRASES (longest match wins, consecutive segments),
+  and now derives ambiguity from the registry and **throws** when a colliding
+  bare noun is mapped without a ruling; and every remedy now names the entity's
+  own label instead of the hard-coded `"Open the note"`. `verbNamesThisEntity`
+  matches multi-word nouns — without it a phrase token would be inferred and then
+  silently gated out. V-21's two probe arms plus a control with a door are now the
+  guard's own fixtures, read by BOTH `--self-test` and
+  `__tests__/toast-names-record.test.ts` from one table. Proof: on `468e1bd8` arm
+  one reported 0 findings and arm two reported `udt_document` with an "Open the
+  note" remedy; after, one HIGH `calendar_event` finding, one HIGH
+  `google_document` finding, and zero on the control. Whole-tree delta: **none**
+  (59 findings before and after, same files, same lines) — no live surface names
+  either record in a doorless toast today, and no live finding had been attributed
+  through the bare `document` noun. New honest output: the **Ambiguous nouns**
+  block (16 files, on `item`, `topic`, `set`, `list`, `session`), which reports
+  misses instead of guessing at them.
 
 - **2026-09-18 (`toast-names-record`)** — the detector could not reach a record
   named in a TOAST. `pnpm check:dead-ends` read JSX text only, so

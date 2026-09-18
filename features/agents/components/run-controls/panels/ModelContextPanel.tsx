@@ -91,7 +91,14 @@ export function ModelContextPanel({ conversationId }: ModelContextPanelProps) {
   // render the calm lie "No context measurements yet. Fire a turn to populate."
   // Firing a turn would not have populated anything. Skip the call while the
   // selection is unresolved, and say the true thing once it settles with none.
-  const { canLoad, organizationRequired } = useOrganizationRequired();
+  //
+  // 🚨 And `resolving` is the THIRD state, not a rounding error (2026-09-18).
+  // `organizationRequired` is true ONLY once boot has settled; during boot it
+  // and `canLoad` are both false, so taking only those two put the panel right
+  // back on the same calm lie for the seconds before anyone knows — the defect
+  // this comment claims to have fixed. Unresolved renders as reading, never as
+  // "nothing measured".
+  const { canLoad, organizationRequired, resolving } = useOrganizationRequired();
 
   useEffect(() => {
     if (!canLoad) return undefined;
@@ -112,7 +119,13 @@ export function ModelContextPanel({ conversationId }: ModelContextPanelProps) {
 
   if (!state) {
     return (
-      <EmptyStats text="No context measurements yet. Fire a turn to populate." />
+      <EmptyStats
+        text={
+          resolving
+            ? "Reading this conversation's context…"
+            : "No context measurements yet. Fire a turn to populate."
+        }
+      />
     );
   }
 
