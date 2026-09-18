@@ -35,10 +35,21 @@ export function ConnectorPromptHost({
     ),
   );
 
+  /**
+   * Every account this person has is BLOCKED — nothing can be approved, so the
+   * offer is withheld rather than opening a provider window that cannot land
+   * (V17-1). A person with no account at all still gets the offer: the fault is
+   * per account, and a first connect may be exactly what works.
+   */
+  const blocked =
+    state.accounts.length > 0 &&
+    state.accounts.every((account) => account.blocked === true);
+
   return (
     <ConnectorPromptCard
       provider={provider}
       connected={connected}
+      blocked={blocked}
       // A read that FAILED is not "not connected": while the answer is unknown
       // the card stays away rather than offering to connect something that may
       // already be connected.

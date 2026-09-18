@@ -54,6 +54,7 @@ import { ConnectedAccountHealth } from "../ConnectedAccountHealth";
 import { accountHealth, type ConnectorCapabilityRollout } from "../health";
 import { buildConsentPlan, emptyPlanAnswer } from "../consent-plan";
 import { GOOGLE_CONNECTOR_PROVIDER } from "../provider-config";
+import { shouldShowConnectorPrompt } from "../ConnectorPromptCard";
 import {
   connectionSummary,
   type ConnectionRow,
@@ -241,5 +242,22 @@ describe("a status word this build has never heard of", () => {
       (button) => button.textContent ?? "",
     );
     expect(labels.filter((label) => /Reconnect|Connect\b/.test(label))).toEqual([]);
+  });
+});
+
+describe("the offer to connect", () => {
+  const base = { dismissedAt: null, resurfaceDays: 7, now: Date.now() };
+
+  it("is withheld while every account is blocked — no press that cannot land", () => {
+    expect(shouldShowConnectorPrompt({ ...base, connected: false, blocked: true })).toBe(
+      false,
+    );
+  });
+
+  it("is still made to a person who has no account at all", () => {
+    // The fault is per account; a first connect may be exactly what works.
+    expect(shouldShowConnectorPrompt({ ...base, connected: false, blocked: false })).toBe(
+      true,
+    );
   });
 });

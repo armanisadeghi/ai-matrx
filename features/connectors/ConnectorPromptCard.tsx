@@ -60,16 +60,28 @@ function daysSince(iso: string, now: number): number {
  */
 export function shouldShowConnectorPrompt({
   connected,
+  blocked = false,
   dismissedAt,
   resurfaceDays,
   now,
 }: {
   connected: boolean;
+  /**
+   * 🚨 True when every account this person has with the provider is BLOCKED —
+   * the provider, or our own app configuration, refuses everything and no
+   * approval can succeed (VERIFY-U-P2-R5 V17-1, chair ruling R22). The offer is
+   * then withheld: a "Connect Google" press would open a provider window that
+   * cannot land, which is the dead control law 4 forbids. The fault itself is
+   * stated where a person goes to look at it — the account's own health card in
+   * Settings → Connectors — not in an offer.
+   */
+  blocked?: boolean;
   dismissedAt: string | null;
   resurfaceDays: number | undefined;
   now: number;
 }): boolean {
   if (connected) return false;
+  if (blocked) return false;
   if (!dismissedAt) return true;
   if (!resurfaceDays || resurfaceDays <= 0) return false;
   return daysSince(dismissedAt, now) >= resurfaceDays;
@@ -79,6 +91,8 @@ export interface ConnectorPromptCardProps {
   provider: ConnectorProviderConfig;
   /** True when any of the provider's products is live for this person. */
   connected: boolean;
+  /** True when every account is blocked, so no approval could succeed (V17-1). */
+  blocked?: boolean;
   /** Suppress the card while we do not yet know whether it is connected. */
   loading?: boolean;
   onConnect: () => void;
@@ -90,6 +104,7 @@ export interface ConnectorPromptCardProps {
 export function ConnectorPromptCard({
   provider,
   connected,
+  blocked = false,
   loading = false,
   onConnect,
   variant = "card",
@@ -109,6 +124,7 @@ export function ConnectorPromptCard({
   const dismissedAt = dismissals?.[provider.id] ?? null;
   const show = shouldShowConnectorPrompt({
     connected,
+    blocked,
     dismissedAt,
     resurfaceDays: typeof resurface === "number" ? resurface : undefined,
     now: Date.now(),
