@@ -810,24 +810,42 @@ export function rolloutSentence(row: ConnectorProductHealth): string | null {
 }
 
 /**
- * WHICH ACCOUNT A CONSENT SURFACE SHOULD OPEN ON (D7). Never "the first row the
+ * WHICH ACCOUNT A SURFACE SHOULD WORK THROUGH (D7). Never "the first row the
  * inventory happened to return": that is how a dialog opens on an account that
  * holds nothing and tells a person Docs is not connected while Docs is
  * connected on the account beside it. The order is: the account the calling
- * surface is already using, then the usable account holding the MOST live
- * products, ties broken by config order of the inventory.
+ * surface is already using, then — when the surface serves ONE product — an
+ * account that actually holds THAT product, then the usable account holding the
+ * MOST live products, ties broken by config order of the inventory.
+ *
+ * 🚨 THE PREFERENCE IS PER PRODUCT, BECAUSE A COUNT IS NOT AN ANSWER (lane F-51,
+ * escalated from U-W2). Ranking by the NUMBER of live products picks the account
+ * with the biggest collection, which is not the same as the account that can
+ * serve the surface asking: with Calendar granted on one account and five other
+ * products granted on another, the agenda chose the second, found Calendar not
+ * connected there and told the person their calendar was not connected while the
+ * account beside it could have served it. So a caller that serves one product
+ * NAMES it (`forProductKey`) and only accounts whose health for that product
+ * reads `connected` are ranked; when none of them holds it, the old ranking
+ * decides, so a surface still opens somewhere honest instead of nowhere.
  */
 export function preferredAccountId({
   provider,
   accounts,
   rollout,
   preferAccountId,
+  forProductKey,
 }: {
   provider: ConnectorProviderConfig;
   accounts: readonly ConnectorAccount[];
   rollout: readonly ConnectorCapabilityRollout[];
   /** The account the surface is using, when it knows. Wins outright. */
   preferAccountId?: string | null;
+  /**
+   * The ONE product this surface is serving, when it serves one. An account
+   * holding it beats an account holding more of everything else.
+   */
+  forProductKey?: string | null;
 }): string | null {
   if (
     preferAccountId &&
@@ -837,12 +855,21 @@ export function preferredAccountId({
   }
   const usable = accounts.filter((account) => account.usable);
   const pool = usable.length > 0 ? usable : accounts;
+  const ranked = pool.map((account) => ({
+    id: account.id,
+    health: accountHealth({ provider, account, rollout }),
+  }));
+  const holders = forProductKey
+    ? ranked.filter((entry) =>
+        entry.health.some(
+          (row) => row.product.key === forProductKey && row.state === "connected",
+        ),
+      )
+    : [];
   let best: { id: string; live: number } | null = null;
-  for (const account of pool) {
-    const live = accountHealth({ provider, account, rollout }).filter(
-      (row) => row.state === "connected",
-    ).length;
-    if (!best || live > best.live) best = { id: account.id, live };
+  for (const entry of holders.length > 0 ? holders : ranked) {
+    const live = entry.health.filter((row) => row.state === "connected").length;
+    if (!best || live > best.live) best = { id: entry.id, live };
   }
   return best?.id ?? null;
 }

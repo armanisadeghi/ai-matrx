@@ -57,8 +57,20 @@ const PROVIDER_COLUMNS = ["provider", "source_provider", "sync_provider"] as con
 const PRODUCT_COLUMNS = ["provider_product", "capability_key", "product_key"] as const;
 /** Columns that prove the row is a mirror of something we do not own. */
 const EXTERNAL_ID_COLUMNS = ["external_id", "external_message_id", "provider_id"] as const;
-/** Columns naming the connected account the row refreshes through. */
-const ACCOUNT_COLUMNS = ["refreshed_via_account", "connection_id", "account_id"] as const;
+/**
+ * The column a synced row names the connected account it refreshes through.
+ *
+ * 🚨 IT IS THE LIVE COLUMN NAME, READ HERE ONCE (lane F-51, escalated from U-W2).
+ * This list used to read `refreshed_via_account` / `connection_id` / `account_id`
+ * — three spellings NO table in `types/database.types.ts` carries. Both synced
+ * tables the platform actually has spell it `synced_via_connection_id`
+ * (`workbench.google_document`, `communication.calendar_event`), so the producer
+ * found nothing, fell back to ranking the accounts, and every registration paid
+ * a projection to rename its own column into a name invented here. The producer
+ * reads what the tables say; the next synced table inherits the strip by naming
+ * its connection the same way `platform.create_entity_table` already does.
+ */
+const ACCOUNT_COLUMNS = ["synced_via_connection_id"] as const;
 /** Columns holding when we last refreshed the row from the source. */
 const REFRESHED_COLUMNS = ["last_refreshed_at", "synced_at", "external_modified_at"] as const;
 /** Columns holding where the record lives at the provider. */
@@ -186,6 +198,11 @@ export function sourceHealthProducerFor(
       accounts,
       rollout,
       preferAccountId: wantedAccountId,
+      // When the row does not name its connection, the account that HOLDS this
+      // record's product answers for it — never the account holding the most
+      // products, which is how a record claimed its product was not connected
+      // while the account beside it served it (lane F-51).
+      forProductKey: product.key,
     });
     const account = accounts.find((a) => a.id === accountId) ?? null;
 

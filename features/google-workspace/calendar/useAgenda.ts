@@ -122,6 +122,11 @@ export function useAgenda(options?: {
           provider: GOOGLE_PROVIDER,
           accounts: connector.accounts,
           rollout: connector.rollout,
+          // 🚨 THE ACCOUNT THAT HOLDS CALENDAR, never the one holding the most
+          // products (lane F-51): with Calendar on one account and five other
+          // products on another, the count picked the second and this panel said
+          // the calendar was not connected while the first could have served it.
+          forProductKey: CALENDAR_PRODUCT_KEY,
         }),
     ) ?? null;
   const productHealth =

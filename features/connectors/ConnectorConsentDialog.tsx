@@ -61,7 +61,8 @@ import {
 import Link from "next/link";
 import { toast } from "@/lib/toast";
 import { cn } from "@/lib/utils";
-import { useAppSelector } from "@/lib/redux/hooks";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
@@ -376,6 +377,53 @@ export interface ConnectorConsentBodyProps {
   /** Pre-switch-on these rows (a surface that knows what the person is using). */
   initialProductKeys?: readonly string[];
   onDone?: () => void;
+}
+
+/**
+ * THE FIRST USEFUL ACTION, whatever shape the product declared it in. A route is
+ * a link; a catalogued overlay is a press that opens the window IN PLACE and
+ * then steps the dialog aside, because a window opened behind a modal is a
+ * control that looks like it did nothing. A row that has nothing to offer yet
+ * says so in the config and renders no control — never a dead link.
+ *
+ * The provider is still not named here: the row carries an overlay id from the
+ * platform catalogue, so the next provider's first action is a config row.
+ */
+function FirstAction({
+  product,
+  onOpened,
+}: {
+  product: ConnectorProduct;
+  onOpened?: () => void;
+}) {
+  const dispatch = useAppDispatch();
+  const action = product.firstAction;
+  if (action.kind === "none") return null;
+  if (action.kind === "route") {
+    return (
+      <Link
+        href={action.href}
+        className="inline-flex shrink-0 items-center gap-0.5 font-medium text-primary hover:underline"
+      >
+        {action.label}
+        <ChevronRight className="h-3 w-3" aria-hidden />
+      </Link>
+    );
+  }
+  return (
+    <button
+      type="button"
+      data-connector-first-action={product.key}
+      onClick={() => {
+        dispatch(openOverlay({ overlayId: action.overlayId }));
+        onOpened?.();
+      }}
+      className="inline-flex shrink-0 items-center gap-0.5 font-medium text-primary hover:underline"
+    >
+      {action.label}
+      <ChevronRight className="h-3 w-3" aria-hidden />
+    </button>
+  );
 }
 
 /**
@@ -760,15 +808,7 @@ export function ConnectorConsentBody({
                     <span className="truncate text-muted-foreground">
                       {row.product.name}
                     </span>
-                    {row.product.firstAction ? (
-                      <Link
-                        href={row.product.firstAction.href}
-                        className="inline-flex shrink-0 items-center gap-0.5 font-medium text-primary hover:underline"
-                      >
-                        {row.product.firstAction.label}
-                        <ChevronRight className="h-3 w-3" aria-hidden />
-                      </Link>
-                    ) : null}
+                    <FirstAction product={row.product} onOpened={onDone} />
                   </li>
                 ))}
             </ul>

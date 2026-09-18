@@ -60,26 +60,25 @@ export function mimeKindLabel(mimeKind: string): string {
  * 🚨 THE HEALTH STRIP READS THE ROW, AND THIS ROW DOES NOT NAME ITS PROVIDER.
  *
  * `features/item-presentation/sourceHealth.ts` decides a record is a mirror by
- * looking for a `provider` column plus an external identity, and finds the
- * account it refreshes through in `refreshed_via_account` / `connection_id` /
- * `account_id`. `workbench.google_document` has NO `provider` column (the table
- * IS Google's) and spells the connection `synced_via_connection_id`, so the
- * strip would answer `null` for every one of these records and the section the
- * plan calls fixed would simply be absent.
+ * looking for a `provider` column plus an external identity.
+ * `workbench.google_document` has NO `provider` column — the table IS Google's —
+ * so without this the strip would answer `null` for every one of these records
+ * and the section the plan calls fixed would simply be absent.
  *
- * So the registration hands the strip a PROJECTION of the row that says out loud
- * what the table already knows. Nothing is invented: `provider` is the table's
- * own subject, `provider_product` is the product whose grant really refreshes it,
- * and `connection_id` is the column's own value under the name the producer reads.
- * The projection is additive — every real column is still there for the fields,
- * the doors and the history.
+ * So the registration says out loud what the table already knows, and nothing
+ * more: `provider` is the table's own subject and `provider_product` is the
+ * product whose grant really refreshes it. It is additive — every real column is
+ * still there for the fields, the doors and the history.
+ *
+ * The CONNECTION is not renamed here any more (lane F-51): the producer reads
+ * `synced_via_connection_id`, which is what this table and every other synced
+ * table actually call it.
  */
 export function googleDocumentDetailRow(row: GoogleDocumentRow): DetailRow {
   return {
     ...row,
     provider: "google",
     provider_product: GOOGLE_DOCUMENT_PRODUCT_KEY,
-    connection_id: row.synced_via_connection_id,
   };
 }
 

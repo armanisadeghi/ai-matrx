@@ -168,8 +168,9 @@ item-presentation type map (`itemType.tsx` → `features/item-presentation/regis
   `types/python-generated/api-types.ts` yet; when `pnpm sync-types` regenerates the contract
   that interface is DELETED and the generated one imported.
 - `record.ts` — pure: the row → detail-row projection (the health producer looks for a
-  `provider` column and a `connection_id`, and this table has neither — it IS Google's, and
-  spells the connection `synced_via_connection_id`), the staleness rule, the freshness
+  `provider` column and the product whose grant refreshes the row, and this table names
+  neither — it IS Google's; the CONNECTION is no longer projected, because since F-51 the
+  producer reads this table's own `synced_via_connection_id`), the staleness rule, the freshness
   sentence, and the CURATED field list. Never `fieldsFromRow`: the generic formatter would
   print the whole cached document as a field.
 - `appendBlock.ts` — the ONE composer of the exact block. The preview and the request are the
@@ -240,10 +241,17 @@ instant files a Sep 25 holiday on Sep 24 in every negative-offset zone.
 
 🚨 **THE LIVE COLUMNS ARE NOT THE PLAN'S WORDS.** PLAN §4.6 names `source_state`,
 `last_refreshed_at` and `refreshed_via_account`; the table that was built spells them
-`sync_status`, `synced_at` and `synced_via_connection_id`. Read the live column, and note that
-the shared health strip looks for the connection in `refreshed_via_account` / `connection_id` /
-`account_id` — so `calendarEventDetailRow` projects it under `connection_id`, or the strip
-answers null for every event and the fixed section is simply absent.
+`sync_status`, `synced_at` and `synced_via_connection_id`. Read the live column — and so does
+the shared health strip, since F-51: it finds the connection in `synced_via_connection_id`
+itself, so `calendarEventDetailRow` projects only what the row genuinely does not say (which
+connector product's grant refreshes it). Never re-add a `connection_id` alias.
+
+🚨 **THE AGENDA REFRESHES THROUGH THE ACCOUNT THAT HOLDS CALENDAR.** `useAgenda` asks
+`preferredAccountId` with `forProductKey: CALENDAR_PRODUCT_KEY`. Without it the ranking returns
+whichever connected account holds the MOST products, and with Calendar on one account and five
+other products on another the panel read Calendar's health on the wrong one, said the calendar
+was not connected, and the doomed-call gate then correctly refused to refresh (F-51). Any new
+single-product surface names its product the same way.
 
 🚨 **THE SERVER MATCHES ATTENDEES TO PEOPLE; THE CLIENT NEVER RE-MATCHES.**
 `refresh_calendar` resolves each attendee email against `crm.contact_medium.value_key` and
@@ -343,6 +351,8 @@ that union does carry. Widening it is a package change (THE SAME-SESSION LAW).
 - The frontend and backend canonical scope registries must remain aligned with `common-docs/projects/google-oauth-verification/PLAN.md`.
 
 ## Change log
+
+- `2026-09-18` — **F-51: the projections are gone and Calendar's account is chosen by the product.** `googleDocumentDetailRow` / `calendarEventDetailRow` no longer rename `synced_via_connection_id` to `connection_id` — the shared producer (`features/item-presentation/sourceHealth.ts`) reads the live column, so a registration projects only what its row genuinely does not say. `useAgenda` now names its product when it asks for an account (`forProductKey`), so the agenda stops reading Calendar's health on whichever account holds the most other products. Red-then-green: `calendar/__tests__/the-refresh-runs-through-the-account-that-holds-calendar.test.tsx` (3 cases, real health derivation, bigger account listed first) and `features/item-presentation/__tests__/the-strip-reads-the-connection-the-row-names.test.ts`. Calendar and Tasks also got their first useful action in the consent dialog (`features/connectors/provider-config.ts`). No screen was seen.
 
 - 2026-09-18 — **B-29: the last two of the four unavailable actions are real.** "Keep as AI Matrx
   data" and "Archive this record" were honest words ("not wired up yet") because the server had no

@@ -8,8 +8,8 @@
  * `source_state`, `last_refreshed_at` and `refreshed_via_account`; the table
  * that was actually built and certified (migration 0766, live since
  * 2026-09-17) spells them `sync_status`, `synced_at` and
- * `synced_via_connection_id`. Everything here reads the LIVE column, and the
- * projection below is what lets the shared health strip find them.
+ * `synced_via_connection_id`. Everything here reads the LIVE column — including
+ * the shared health strip's producer, since lane F-51.
  */
 
 import type { DetailField, DetailRow } from "@/lib/detail/types";
@@ -424,22 +424,20 @@ export function googleCalendarHref(event: CalendarEventRow): string | null {
 // ─── The Detail primitive's registration data ───────────────────────────────
 
 /**
- * 🚨 THE HEALTH STRIP READS THE ROW, AND THIS ROW SPELLS ITS COLUMNS
- * DIFFERENTLY. `features/item-presentation/sourceHealth.ts` finds the connected
- * account in `refreshed_via_account` / `connection_id` / `account_id`;
- * `communication.calendar_event` spells it `synced_via_connection_id`, which is
- * in none of those lists. So the registration hands the strip a PROJECTION that
- * says out loud what the table already knows — nothing is invented: `provider`
- * is already a real column (`google`), `provider_product` is the product whose
- * grant really refreshes it, and `connection_id` carries the column's own value
- * under the name the producer reads. Additive: every real column is still there
- * for the fields, the doors and the history.
+ * 🚨 THE HEALTH STRIP READS THE ROW, AND THE ROW MUST NAME ITS PRODUCT.
+ * `features/item-presentation/sourceHealth.ts` reads the provider from the
+ * table's own `provider` column (already `google` here) and the connection from
+ * `synced_via_connection_id` — this table's real column, which the producer now
+ * reads directly (lane F-51; it used to look for three names no table carries,
+ * and this function renamed the column to satisfy one of them). What is left is
+ * the ONE fact the row does not carry: which connector product's grant refreshes
+ * it. Additive — every real column is still there for the fields, the doors and
+ * the history.
  */
 export function calendarEventDetailRow(row: CalendarEventRow): DetailRow {
   return {
     ...row,
     provider_product: CALENDAR_PRODUCT_KEY,
-    connection_id: row.synced_via_connection_id,
   };
 }
 

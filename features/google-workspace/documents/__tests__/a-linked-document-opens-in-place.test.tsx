@@ -242,10 +242,16 @@ describe("the registration itself", () => {
     expect("row" in result).toBe(true);
     const row = (result as { row: Record<string, unknown> }).row;
     expect(type.title(row as never, null)).toBe("Q3 Plan");
-    // The projection the health producer reads, added without losing a column.
+    // What the table does not say out loud, added without losing a column: this
+    // table has no `provider` column (it IS Google's) and does not name the
+    // connector product whose grant refreshes it.
     expect(row.provider).toBe("google");
     expect(row.provider_product).toBe("workspace_files");
-    expect(row.connection_id).toBe(CONNECTION_ID);
+    // 🚨 AND THE CONNECTION IS NOT RENAMED ANY MORE (lane F-51). The health
+    // producer reads `synced_via_connection_id` — the column this table really
+    // has — so the old `connection_id` alias is gone from every registration.
+    expect(row.synced_via_connection_id).toBe(CONNECTION_ID);
+    expect(row.connection_id).toBeUndefined();
     expect(row.external_id).toBe(ROW.external_id);
   });
 

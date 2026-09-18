@@ -42,7 +42,34 @@ import {
   GOOGLE_SCOPE,
   GOOGLE_WORKSPACE_FILE_SCOPES,
 } from "@/lib/googleScopes";
+import type { OverlayId } from "@/features/overlays/catalogue";
 import type { ConnectorId } from "./types";
+
+/**
+ * THE FIRST USEFUL THING A CONNECTED ROW OFFERS (PLAN §2's promise: "every
+ * connected row offers its first useful action"). A row declares ONE of three
+ * shapes and the dialog renders it; there is no fourth, and `null` is gone.
+ *
+ * 🚨 WHY IT IS NO LONGER A NULLABLE `{ label, href }` (lane F-51, escalated from
+ * U-W2). Calendar's first useful action is OPENING THE AGENDA — a catalogued
+ * window, not a page — and an href-or-nothing field left it as `firstAction:
+ * null`, so the one row whose first action was already built offered nothing.
+ * Four other rows were `null` too, and nothing anywhere could tell a deliberate
+ * "nothing exists yet" from a row somebody forgot: that is what `kind: "none"`
+ * with its written reason fixes, and what
+ * `__tests__/every-connected-product-offers-its-first-action.test.ts` censuses
+ * over the whole config.
+ */
+export type ConnectorFirstAction =
+  /** A page the person goes to. */
+  | { kind: "route"; label: string; href: string }
+  /**
+   * A catalogued overlay the surface opens IN PLACE — the one door to a window
+   * that has no route of its own (`features/overlays/catalogue.ts`).
+   */
+  | { kind: "overlay"; label: string; overlayId: OverlayId }
+  /** Nothing to offer YET, and the row says why in writing. Never a bare null. */
+  | { kind: "none"; because: string };
 
 export interface ConnectorProduct {
   /** Stable, provider-scoped key. Never renamed — it addresses stored state. */
@@ -74,7 +101,7 @@ export interface ConnectorProduct {
   /** Short clause completing "Revoking this account stops …". */
   stopsOnRevoke: string;
   /** The first useful thing to do once it is connected. No dead ends. */
-  firstAction: { label: string; href: string } | null;
+  firstAction: ConnectorFirstAction;
 }
 
 export interface ConnectorProductGroup {
@@ -214,6 +241,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       ],
       stopsOnRevoke: "the Docs and Sheets you picked from opening here",
       firstAction: {
+        kind: "route",
         label: "Pick your first file",
         href: "/user-settings/integrations",
       },
@@ -228,7 +256,15 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.gmailSend],
       attachableResourceTypes: [],
       stopsOnRevoke: "any reviewed email from being sent as this account",
-      firstAction: null,
+      // A person does not start a Gmail send from a screen: an agent drafts one
+      // and it waits in the approval queue, which is empty the moment this row is
+      // switched on, so sending them there would be a door onto nothing. Revisit
+      // when a compose surface exists (lane F-51 escalated it to the chair).
+      firstAction: {
+        kind: "none",
+        because:
+          "Nothing to open yet — a Gmail send begins with an agent's draft, not with a screen a person visits.",
+      },
     },
     {
       key: "calendar",
@@ -243,7 +279,13 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       ],
       attachableResourceTypes: [],
       stopsOnRevoke: "your agenda from showing here",
-      firstAction: null,
+      // The agenda is a catalogued window with no route of its own, and it is the
+      // whole point of connecting Calendar (PLAN §4.6).
+      firstAction: {
+        kind: "overlay",
+        label: "Open your agenda",
+        overlayId: "googleAgendaWindow",
+      },
     },
     {
       key: "contacts",
@@ -256,7 +298,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.contactsReadonly],
       attachableResourceTypes: [],
       stopsOnRevoke: "importing a contact from this Google account",
-      firstAction: { label: "Import a contact", href: "/crm/import" },
+      firstAction: { kind: "route", label: "Import a contact", href: "/crm/import" },
     },
     {
       key: "tasks",
@@ -269,7 +311,13 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.tasksReadonly],
       attachableResourceTypes: [],
       stopsOnRevoke: "importing tasks from this Google account",
-      firstAction: null,
+      // The Google Tasks import window (`features/overlays/openers/
+      // googleImportWindows.tsx`) was already built and the row offered no way in.
+      firstAction: {
+        kind: "overlay",
+        label: "Import your tasks",
+        overlayId: "googleTasksImportWindow",
+      },
     },
     {
       key: "search_console",
@@ -282,6 +330,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       attachableResourceTypes: ["search_console_property"],
       stopsOnRevoke: "Search Console data from refreshing on your sites",
       firstAction: {
+        kind: "route",
         label: "Bind a site",
         href: "/marketing/connections/google",
       },
@@ -297,6 +346,7 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       attachableResourceTypes: ["analytics_property"],
       stopsOnRevoke: "Analytics numbers from refreshing on your sites",
       firstAction: {
+        kind: "route",
         label: "Bind a property",
         href: "/marketing/connections/google",
       },
@@ -311,7 +361,15 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.tagManagerReadonly],
       attachableResourceTypes: [],
       stopsOnRevoke: "your tracking health line from updating",
-      firstAction: null,
+      // Tag Manager surfaces as a line inside the tracking health of a site that
+      // is already bound; there is no Tag Manager screen of its own to open, and
+      // pointing at a site's settings would be a guess about which site. Open
+      // with the chair (lane F-51).
+      firstAction: {
+        kind: "none",
+        because:
+          "Nothing to open yet — Tag Manager shows up inside a site's tracking health, and no surface of its own exists.",
+      },
     },
     {
       key: "youtube",
@@ -331,7 +389,14 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       ],
       attachableResourceTypes: ["youtube_channel"],
       stopsOnRevoke: "your channel's videos and reports from loading here",
-      firstAction: null,
+      // A channel must be bound before anything loads, and the binding surface
+      // for YouTube is not built the way it is for Search Console and Analytics.
+      // Open with the chair (lane F-51).
+      firstAction: {
+        kind: "none",
+        because:
+          "Nothing to open yet — a YouTube channel has no binding surface here, unlike Search Console and Analytics.",
+      },
     },
   ],
   scopeLanguage: GOOGLE_SCOPE_LANGUAGE,
