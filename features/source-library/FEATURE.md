@@ -143,6 +143,14 @@ nothing moves; the claim is gone. The day the server publishes a word count,
 
 ## Change log
 
+- `2026-09-18` — **An estimate no longer fails on an unrelated, absent YouTube
+  quota snapshot.** Pricing a selection reads already-catalogued Sources and does
+  not call the YouTube Data API; production therefore correctly omits `quota`.
+  The client now treats only that absent snapshot as optional while continuing to
+  reject malformed quota objects and every price, count, expiry, and token field.
+  Guard: `three-laws.test.tsx` parses the production-shaped estimate before a
+  confirmation can be offered.
+
 - `2026-09-18` — **The header speaks the Library's own words, and a not-yet stops
   looking like a failure.** New `vocabulary.ts` picks the nouns and the axes from
   the Library's adapter: a podcast is counted in Episodes with a Total listening

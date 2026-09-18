@@ -354,7 +354,12 @@ export interface EstimateResult {
         wall_seconds_estimate: number;
         parallelism: number;
     };
-    quota: { units_required: number; units_remaining: number };
+    /**
+     * Estimates do not call the YouTube Data API, so a server may omit this
+     * unrelated ledger snapshot. When it does provide one, both values are
+     * still narrowed by the wire parser rather than guessed.
+     */
+    quota: { units_required: number; units_remaining: number } | null;
     warnings: string[];
     requires_confirmation: boolean;
 }
