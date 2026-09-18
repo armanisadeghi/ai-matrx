@@ -251,7 +251,7 @@ export function sourceHealthProducerFor(
       requiredScopes: cap.required_scopes.map((scope) => scope.scope),
       ineligibleReason: cap.eligible ? null : admissionLanguage(cap.admission_error),
     }));
-    const wantedAccountId = stringColumn(row, ACCOUNT_COLUMNS);
+    const wantedAccountId = resolveRowAccountId(row, inventory);
     const accountId = preferredAccountId({
       provider: GOOGLE_PROVIDER,
       accounts,
@@ -299,6 +299,52 @@ export function sourceHealthProducerFor(
       onReconnect: reconnectWouldHelp(health) ? undefined : null,
     };
   };
+}
+
+/**
+ * The CONNECTED ACCOUNT the row names — whether it names the account itself or a
+ * resource that belongs to one (lane F-81).
+ *
+ * 🚨 A RESOURCE ID IS NOT AN ACCOUNT ID, AND PASSING ONE AS IF IT WERE IS F-51.
+ * `ACCOUNT_COLUMNS` now carries the connection-side columns the structural census
+ * found — `synced_via_connection_id` (→ `users.integration_connections`, the
+ * account) and `resource_id` / `channel_resource_id` (→
+ * `users.integration_connection_resources`, a picked file or channel that BELONGS
+ * to one). `web.youtube_video` carries only the second kind, so without this hop a
+ * YouTube row would hand `preferredAccountId` a value matching no account, which
+ * matches nothing silently and ranks the accounts instead — the exact defect F-51
+ * found. The hop costs no read: `listGoogleConnectionInventory` already returns
+ * `resources`, each with its `connection_id`, for the Disconnect consequence.
+ *
+ * A value we cannot place is announced, never swallowed (law 4): the row names a
+ * connection or a resource this viewer's inventory does not hold, and the strip
+ * then falls back to the product-holding account exactly as it does for a row that
+ * names nothing.
+ */
+function resolveRowAccountId(
+  row: DetailRow,
+  inventory: {
+    connections?: readonly { id: string }[];
+    resources?: readonly { id: string; connection_id: string }[];
+  } | null,
+): string | null {
+  const named = stringColumn(row, ACCOUNT_COLUMNS);
+  if (!named) return null;
+  if ((inventory?.connections ?? []).some((connection) => connection.id === named)) {
+    return named;
+  }
+  const resource = (inventory?.resources ?? []).find((entry) => entry.id === named);
+  if (resource) return resource.connection_id;
+  console.warn(
+    `[detail] A synced row names \`${named}\` as the Google account or picked resource that ` +
+      "keeps it fresh, and this viewer's connection inventory holds neither, so the strip " +
+      "answers for whichever connected account holds the product instead. Remedy: if the " +
+      "account was disconnected, the record's own row still points at it and should be " +
+      "re-pointed or cleared; if the column is a connection-side id of a KIND the inventory " +
+      "does not return, extend listGoogleConnectionInventory rather than widening " +
+      "ACCOUNT_COLUMNS in features/item-presentation/syncedColumns.ts.",
+  );
+  return null;
 }
 
 /** The strip's grant word for a connector product row. */

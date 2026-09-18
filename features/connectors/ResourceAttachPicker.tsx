@@ -383,16 +383,22 @@ function ResourceAttachPickerBody({
                             name: candidate.display_name,
                           })
                         }
-                        className="shrink-0 text-muted-foreground hover:text-foreground"
+                        className="inline-flex shrink-0 items-center gap-1 rounded text-muted-foreground hover:text-foreground max-sm:min-h-11 max-sm:min-w-11 max-sm:justify-center"
                         aria-label={`Open ${candidate.display_name}`}
                         title={`Open ${candidate.display_name}`}
                       >
-                        <ArrowUpRight className="h-3 w-3" />
+                        <ArrowUpRight className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">Open</span>
                       </button>
                     )}
                     {candidate.link && (
                       <a
-                        className="shrink-0 text-muted-foreground hover:text-foreground"
+                        className={cn(
+                          "inline-flex shrink-0 items-center gap-1 rounded max-sm:min-h-11 max-sm:min-w-11 max-sm:justify-center",
+                          candidate.record_table
+                            ? "text-primary hover:underline"
+                            : "text-muted-foreground hover:text-foreground",
+                        )}
                         href={candidate.link}
                         target="_blank"
                         rel="noreferrer"
@@ -403,7 +409,10 @@ function ResourceAttachPickerBody({
                         }
                         title={candidate.record_table ? "Join the meeting" : undefined}
                       >
-                        <ExternalLink className="h-3 w-3" />
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">
+                          {candidate.record_table ? "Join" : "Open"}
+                        </span>
                       </a>
                     )}
                   </div>
