@@ -41,6 +41,11 @@ import type { KeywordOfferingPlacement } from "@/features/marketing/seo/keyword-
 import { marketingRoutes } from "@/features/marketing/lib/routes";
 import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/components/DimensionValuePicker";
 import { LocationCell } from "@/features/marketing/seo/value-system/locations/LocationCell";
+import {
+  buildKeywordMapTopicColumn,
+  MAP_TOPIC_COLUMN_ID,
+} from "@/features/marketing/seo/topical-map/linkins/keywordMapTopicColumn";
+import type { KeywordMapHomes } from "@/features/marketing/seo/topical-map/linkins/useKeywordMapHomes";
 import type { KeywordCoreColumnId } from "./state";
 import type { KeywordRowsResult } from "./useKeywordRows";
 
@@ -95,6 +100,8 @@ export interface BuildKeywordColumnsInput {
   brandId: string;
   hasCompare: boolean;
   handlers: KeywordColumnHandlers;
+  /** The keywords' homes on the site's topical map — the `map_topic` column's read. */
+  mapHomes: KeywordMapHomes;
 }
 
 export function buildKeywordColumns({
@@ -105,6 +112,7 @@ export function buildKeywordColumns({
   brandId,
   hasCompare,
   handlers,
+  mapHomes,
 }: BuildKeywordColumnsInput): MatrxColumnDef<GscBreakdownRow>[] {
   const {
     stampFor,
@@ -168,6 +176,10 @@ export function buildKeywordColumns({
             : undefined,
       }),
     );
+  }
+
+  if (shown.has(MAP_TOPIC_COLUMN_ID)) {
+    columns.push(buildKeywordMapTopicColumn({ brandSeg: brandId, homes: mapHomes }));
   }
 
   if (shown.has("traffic_class")) {

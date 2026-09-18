@@ -24,6 +24,8 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@ai-matrx/design-system";
 import { Label } from "@/components/ui/label";
+import { useMarketingBrandOptional } from "@/features/marketing/lib/brand-context";
+import { PlanNodeTopicField } from "@/features/marketing/seo/topical-map/linkins/PlanNodeTopicField";
 import {
   Select,
   SelectContent,
@@ -176,6 +178,8 @@ export function NodePanel({
   hosted?: boolean;
 }) {
   const update = useUpdatePlanNode(siteId);
+  // The brand segment for the Topic field's map doors; null on the flat route.
+  const brand = useMarketingBrandOptional();
   const remove = useDeletePlanNode(siteId);
   // THE one SEO-plan store, site-wide (content-planning invariant 9).
   const sitePlans = useSitePlanIndex(siteId);
@@ -1084,6 +1088,21 @@ export function NodePanel({
                           }))
                         }
                         className="h-8 font-mono"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <Label className="mb-1 block text-xs font-medium">
+                        Topic (on the topical map)
+                      </Label>
+                      {/* R3: `plan.node.topic_id` is the canonical node→topic
+                          link; saved with the rest of the draft. */}
+                      <PlanNodeTopicField
+                        siteId={siteId}
+                        brandSeg={brand?.seg ?? null}
+                        value={current.topic_id ?? null}
+                        onChange={(topicId) =>
+                          setDraft((d) => ({ ...d, topic_id: topicId }))
+                        }
                       />
                     </div>
                     <div>

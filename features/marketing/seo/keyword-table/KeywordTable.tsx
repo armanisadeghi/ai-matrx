@@ -93,6 +93,7 @@ import type { PickedValue } from "@/features/marketing/seo/keyword-workbench/com
 import { WhyScoreHint } from "@/features/marketing/seo/value-system/workbench/WhyScore";
 import { humanizeSlug } from "@/features/marketing/seo/value-system/lib";
 import { ColumnChooser } from "./ColumnChooser";
+import { useKeywordMapHomes } from "@/features/marketing/seo/topical-map/linkins/useKeywordMapHomes";
 import { buildKeywordColumns, OFFERING_COLUMN_ID } from "./columns";
 import {
   liveSearchParams,
@@ -343,6 +344,14 @@ export function KeywordTable({
     dimensions: state.dimensions,
   });
   const { rows, total } = data;
+  // Where each keyword on this page lives on the site's topical map (the
+  // `map_topic` column). One read per page of ids; "no map" and "not homed
+  // yet" are real answers the column renders, never blanks.
+  const mapHomes = useKeywordMapHomes(
+    siteId,
+    brandId,
+    rows.map((row) => row.keyword_id),
+  );
 
   /* -------------------------------------------------------------- selection */
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -527,6 +536,7 @@ export function KeywordTable({
       siteId,
       brandId,
       hasCompare: periods.compare !== null,
+      mapHomes,
       handlers: {
         onPlaceService: (keywordId, offeringId, keyword) =>
           void placeService(keywordId, offeringId, keyword),
