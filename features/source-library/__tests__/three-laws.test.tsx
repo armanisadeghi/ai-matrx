@@ -74,7 +74,6 @@ const estimateAction = jest.fn();
 const createJob = jest.fn();
 const listActions = jest.fn();
 const getJob = jest.fn();
-const streamJob = jest.fn();
 
 class FakeMediaApiError extends Error {
     remedy: string | null = null;
@@ -95,7 +94,6 @@ jest.mock("../api", () => ({
     createJob: (...args: unknown[]) => createJob(...args),
     listActions: (...args: unknown[]) => listActions(...args),
     getJob: (...args: unknown[]) => getJob(...args),
-    streamJob: (...args: unknown[]) => streamJob(...args),
     resumeJob: jest.fn(),
     retryFailedJobItems: jest.fn(),
     cancelJob: jest.fn(),
@@ -458,17 +456,11 @@ describe("B · a job is correct on mount, not only while you are watching", () =
         return null;
     }
 
-    it("a reload mid-job shows the server's rows without a single stream event", async () => {
+    it("a reload mid-job shows the server's rows before anything else happens", async () => {
         const order: string[] = [];
         getJob.mockImplementation(async () => {
             order.push("mount-read");
             return { job: JOB, items: ITEMS, items_total: 10 };
-        });
-        // A stream that never emits — exactly a job whose events all happened
-        // while the tab was closed.
-        streamJob.mockImplementation(async () => {
-            order.push("stream");
-            return new Promise(() => {});
         });
 
         mount(<Harness />);
@@ -478,14 +470,13 @@ describe("B · a job is correct on mount, not only while you are watching", () =
         expect(job!.items).toHaveLength(3);
         expect(job!.job?.totals.succeeded).toBe(2);
         expect(job!.job?.totals.failed).toBe(1);
-        // The mount read happens FIRST. A panel that subscribes before it reads
-        // is correct only if it was lucky.
+        // The mount read happens FIRST, and it is the ONLY thing the panel is
+        // ever correct because of — there is no job stream on the server.
         expect(order[0]).toBe("mount-read");
     });
 
     it("the failure sentence survives the round trip verbatim", async () => {
         getJob.mockResolvedValue({ job: JOB, items: ITEMS, items_total: 10 });
-        streamJob.mockImplementation(async () => new Promise(() => {}));
         mount(<Harness />);
         await flush();
 
@@ -496,7 +487,7 @@ describe("B · a job is correct on mount, not only while you are watching", () =
         expect(failed?.retryable).toBe(true);
     });
 
-    it("a job the server reports as finished is never subscribed to", async () => {
+    it("a job the server reports as finished is never re-read again", async () => {
         getJob.mockResolvedValue({
             job: { ...JOB, status: "completed", completed_at: new Date().toISOString() },
             items: ITEMS,
@@ -507,7 +498,9 @@ describe("B · a job is correct on mount, not only while you are watching", () =
 
         expect(job!.loaded).toBe(true);
         expect(job!.isLive).toBe(false);
-        expect(streamJob).not.toHaveBeenCalled();
+        // ONE read: the mount read. A terminal job costs no traffic at all,
+        // which is what stops the re-read loop from being a poller.
+        expect(getJob).toHaveBeenCalledTimes(1);
     });
 });
 

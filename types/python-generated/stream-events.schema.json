@@ -994,7 +994,7 @@
                 "type": "null"
               }
             ],
-            "default": 0.0,
+            "default": 0,
             "title": "Cost"
           }
         },
@@ -1184,7 +1184,7 @@
             "title": "Total Cost"
           },
           "known_cost_subtotal": {
-            "default": 0.0,
+            "default": 0,
             "title": "Known Cost Subtotal",
             "type": "number"
           },
@@ -1352,7 +1352,7 @@
             "type": "null"
           }
         ],
-        "default": 0.0,
+        "default": 0,
         "title": "Cost"
       }
     },
@@ -1542,7 +1542,7 @@
         "title": "Total Cost"
       },
       "known_cost_subtotal": {
-        "default": 0.0,
+        "default": 0,
         "title": "Known Cost Subtotal",
         "type": "number"
       },
@@ -1952,7 +1952,7 @@
         "type": "integer"
       },
       "progress": {
-        "default": 0.0,
+        "default": 0,
         "title": "Progress",
         "type": "number"
       },
@@ -4169,7 +4169,7 @@
         "type": "string"
       },
       "elapsed_seconds": {
-        "default": 0.0,
+        "default": 0,
         "title": "Elapsed Seconds",
         "type": "number"
       },
@@ -5281,7 +5281,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0.0,
+        "default": 0,
         "title": "Cost",
         "type": "number"
       },
@@ -5341,7 +5341,7 @@
         "type": "integer"
       },
       "cost": {
-        "default": 0.0,
+        "default": 0,
         "title": "Cost",
         "type": "number"
       },
@@ -6309,7 +6309,7 @@
         "title": "Bottom Left"
       },
       "confidence": {
-        "default": 0.0,
+        "default": 0,
         "title": "Confidence",
         "type": "number"
       },
@@ -8572,6 +8572,18 @@
             "default": null,
             "title": "Error"
           },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Note"
+          },
           "already_distilled": {
             "anyOf": [
               {
@@ -9657,12 +9669,12 @@
         "type": "string"
       },
       "cost_usd": {
-        "default": 0.0,
+        "default": 0,
         "title": "Cost Usd",
         "type": "number"
       },
       "seconds": {
-        "default": 0.0,
+        "default": 0,
         "title": "Seconds",
         "type": "number"
       },
@@ -9820,7 +9832,7 @@
         "title": "C Seconds"
       },
       "total_cost_usd": {
-        "default": 0.0,
+        "default": 0,
         "title": "Total Cost Usd",
         "type": "number"
       },
@@ -10007,7 +10019,7 @@
             "type": "object"
           },
           "confidence": {
-            "default": 0.0,
+            "default": 0,
             "title": "Confidence",
             "type": "number"
           },
@@ -10137,7 +10149,7 @@
             "type": "object"
           },
           "confidence": {
-            "default": 0.0,
+            "default": 0,
             "title": "Confidence",
             "type": "number"
           },
@@ -12303,7 +12315,7 @@
         "type": "integer"
       },
       "cost_usd": {
-        "default": 0.0,
+        "default": 0,
         "title": "Cost Usd",
         "type": "number"
       },
@@ -12352,7 +12364,7 @@
         "type": "string"
       },
       "month_to_date_usd": {
-        "default": 0.0,
+        "default": 0,
         "title": "Month To Date Usd",
         "type": "number"
       }
@@ -12362,6 +12374,486 @@
       "reason"
     ],
     "title": "ProofRunSkippedData",
+    "type": "object"
+  },
+  "LibrarySyncStartedData": {
+    "additionalProperties": false,
+    "properties": {
+      "type": {
+        "const": "library.sync.started",
+        "default": "library.sync.started",
+        "title": "Type",
+        "type": "string"
+      },
+      "library_id": {
+        "title": "Library Id",
+        "type": "string"
+      },
+      "seq": {
+        "title": "Seq",
+        "type": "integer"
+      },
+      "at": {
+        "title": "At",
+        "type": "string"
+      },
+      "mode": {
+        "title": "Mode",
+        "type": "string"
+      },
+      "expected_total": {
+        "anyOf": [
+          {
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Expected Total"
+      }
+    },
+    "required": [
+      "library_id",
+      "seq",
+      "at",
+      "mode"
+    ],
+    "title": "LibrarySyncStartedData",
+    "type": "object"
+  },
+  "LibrarySyncPageData": {
+    "$defs": {
+      "JsonValue": {}
+    },
+    "additionalProperties": false,
+    "description": "One page of Sources, ON SCREEN before any of it has been written.\n\nThe rows in `videos` are the full Source shape the list endpoint returns, so a\nclient renders a page from this event alone and never waits for a database\nround trip it does not need.",
+    "properties": {
+      "type": {
+        "const": "library.sync.page",
+        "default": "library.sync.page",
+        "title": "Type",
+        "type": "string"
+      },
+      "library_id": {
+        "title": "Library Id",
+        "type": "string"
+      },
+      "seq": {
+        "title": "Seq",
+        "type": "integer"
+      },
+      "at": {
+        "title": "At",
+        "type": "string"
+      },
+      "page_index": {
+        "title": "Page Index",
+        "type": "integer"
+      },
+      "page_size": {
+        "title": "Page Size",
+        "type": "integer"
+      },
+      "cumulative": {
+        "title": "Cumulative",
+        "type": "integer"
+      },
+      "next_page_token_present": {
+        "title": "Next Page Token Present",
+        "type": "boolean"
+      },
+      "videos": {
+        "items": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "type": "object"
+        },
+        "title": "Videos",
+        "type": "array"
+      }
+    },
+    "required": [
+      "library_id",
+      "seq",
+      "at",
+      "page_index",
+      "page_size",
+      "cumulative",
+      "next_page_token_present"
+    ],
+    "title": "LibrarySyncPageData",
+    "type": "object"
+  },
+  "LibrarySyncPersistedData": {
+    "additionalProperties": false,
+    "description": "A page's rows landed. `ids` maps provider id -> the platform row id.",
+    "properties": {
+      "type": {
+        "const": "library.sync.persisted",
+        "default": "library.sync.persisted",
+        "title": "Type",
+        "type": "string"
+      },
+      "library_id": {
+        "title": "Library Id",
+        "type": "string"
+      },
+      "seq": {
+        "title": "Seq",
+        "type": "integer"
+      },
+      "at": {
+        "title": "At",
+        "type": "string"
+      },
+      "ids": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "title": "Ids",
+        "type": "object"
+      },
+      "count": {
+        "title": "Count",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "library_id",
+      "seq",
+      "at",
+      "count"
+    ],
+    "title": "LibrarySyncPersistedData",
+    "type": "object"
+  },
+  "LibrarySyncListedData": {
+    "additionalProperties": false,
+    "description": "Listing is complete. Typing may still be running behind this.",
+    "properties": {
+      "type": {
+        "const": "library.sync.listed",
+        "default": "library.sync.listed",
+        "title": "Type",
+        "type": "string"
+      },
+      "library_id": {
+        "title": "Library Id",
+        "type": "string"
+      },
+      "seq": {
+        "title": "Seq",
+        "type": "integer"
+      },
+      "at": {
+        "title": "At",
+        "type": "string"
+      },
+      "total_listed": {
+        "title": "Total Listed",
+        "type": "integer"
+      },
+      "elapsed_ms": {
+        "title": "Elapsed Ms",
+        "type": "integer"
+      },
+      "deciding": {
+        "title": "Deciding",
+        "type": "integer"
+      },
+      "skipped_by_reason": {
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "title": "Skipped By Reason",
+        "type": "object"
+      },
+      "skipped_total": {
+        "default": 0,
+        "title": "Skipped Total",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "library_id",
+      "seq",
+      "at",
+      "total_listed",
+      "elapsed_ms",
+      "deciding"
+    ],
+    "title": "LibrarySyncListedData",
+    "type": "object"
+  },
+  "LibrarySyncClassifiedData": {
+    "$defs": {
+      "JsonValue": {}
+    },
+    "additionalProperties": false,
+    "description": "A batch of media-kind verdicts.\n\n`from_cache` is not decoration: a cached verdict cost nothing and a probed one\ncost a provider call, and a screen that says \"checked just now\" for a verdict\nrestored from an earlier sync is lying about work that never happened.",
+    "properties": {
+      "type": {
+        "const": "library.sync.classified",
+        "default": "library.sync.classified",
+        "title": "Type",
+        "type": "string"
+      },
+      "library_id": {
+        "title": "Library Id",
+        "type": "string"
+      },
+      "seq": {
+        "title": "Seq",
+        "type": "integer"
+      },
+      "at": {
+        "title": "At",
+        "type": "string"
+      },
+      "classifications": {
+        "items": {
+          "additionalProperties": {
+            "$ref": "#/$defs/JsonValue"
+          },
+          "type": "object"
+        },
+        "title": "Classifications",
+        "type": "array"
+      },
+      "from_cache": {
+        "title": "From Cache",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "library_id",
+      "seq",
+      "at",
+      "from_cache"
+    ],
+    "title": "LibrarySyncClassifiedData",
+    "type": "object"
+  },
+  "LibrarySyncCompletedData": {
+    "$defs": {
+      "JsonValue": {}
+    },
+    "additionalProperties": false,
+    "description": "The terminal success event.\n\n`listed_ms` and `elapsed_ms` are deliberately BOTH here: the first is when the\nchannel appeared, the second is when every Source was typed, and collapsing\nthem into one number hides the only tail a person ever notices.",
+    "properties": {
+      "type": {
+        "const": "library.sync.completed",
+        "default": "library.sync.completed",
+        "title": "Type",
+        "type": "string"
+      },
+      "library_id": {
+        "title": "Library Id",
+        "type": "string"
+      },
+      "seq": {
+        "title": "Seq",
+        "type": "integer"
+      },
+      "at": {
+        "title": "At",
+        "type": "string"
+      },
+      "total_listed": {
+        "title": "Total Listed",
+        "type": "integer"
+      },
+      "elapsed_ms": {
+        "title": "Elapsed Ms",
+        "type": "integer"
+      },
+      "listed_ms": {
+        "title": "Listed Ms",
+        "type": "integer"
+      },
+      "quota_units_spent": {
+        "title": "Quota Units Spent",
+        "type": "integer"
+      },
+      "metrics": {
+        "additionalProperties": {
+          "$ref": "#/$defs/JsonValue"
+        },
+        "title": "Metrics",
+        "type": "object"
+      },
+      "removed_count": {
+        "default": 0,
+        "title": "Removed Count",
+        "type": "integer"
+      },
+      "skipped_by_reason": {
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "title": "Skipped By Reason",
+        "type": "object"
+      },
+      "skipped_total": {
+        "default": 0,
+        "title": "Skipped Total",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "library_id",
+      "seq",
+      "at",
+      "total_listed",
+      "elapsed_ms",
+      "listed_ms",
+      "quota_units_spent"
+    ],
+    "title": "LibrarySyncCompletedData",
+    "type": "object"
+  },
+  "LibrarySyncUnavailableData": {
+    "additionalProperties": false,
+    "description": "The honest announced stop: a named cause, a remedy, and what still stands.\n\nThis is what makes \"the channel is empty\" impossible to confuse with \"we could\nnot ask\" — a missing key or an exhausted quota arrives as THIS, never as a\nsuccessful sync that listed nothing.",
+    "properties": {
+      "type": {
+        "const": "library.sync.unavailable",
+        "default": "library.sync.unavailable",
+        "title": "Type",
+        "type": "string"
+      },
+      "library_id": {
+        "title": "Library Id",
+        "type": "string"
+      },
+      "seq": {
+        "title": "Seq",
+        "type": "integer"
+      },
+      "at": {
+        "title": "At",
+        "type": "string"
+      },
+      "code": {
+        "title": "Code",
+        "type": "string"
+      },
+      "message": {
+        "title": "Message",
+        "type": "string"
+      },
+      "remedy": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Remedy"
+      },
+      "partial_total": {
+        "default": 0,
+        "title": "Partial Total",
+        "type": "integer"
+      }
+    },
+    "required": [
+      "library_id",
+      "seq",
+      "at",
+      "code",
+      "message"
+    ],
+    "title": "LibrarySyncUnavailableData",
+    "type": "object"
+  },
+  "LibrarySyncFailedData": {
+    "additionalProperties": false,
+    "properties": {
+      "type": {
+        "const": "library.sync.failed",
+        "default": "library.sync.failed",
+        "title": "Type",
+        "type": "string"
+      },
+      "library_id": {
+        "title": "Library Id",
+        "type": "string"
+      },
+      "seq": {
+        "title": "Seq",
+        "type": "integer"
+      },
+      "at": {
+        "title": "At",
+        "type": "string"
+      },
+      "code": {
+        "title": "Code",
+        "type": "string"
+      },
+      "message": {
+        "title": "Message",
+        "type": "string"
+      },
+      "partial_total": {
+        "default": 0,
+        "title": "Partial Total",
+        "type": "integer"
+      },
+      "retryable": {
+        "default": true,
+        "title": "Retryable",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "library_id",
+      "seq",
+      "at",
+      "code",
+      "message"
+    ],
+    "title": "LibrarySyncFailedData",
+    "type": "object"
+  },
+  "MediaSelectionJobProgressData": {
+    "additionalProperties": false,
+    "description": "One run of one Action over a selection of Sources, as it drains.\n\n`totals` carries the item counts by status (total/queued/running/succeeded/\nfailed/skipped/cancelled), which is the whole progress picture in one object —\na client never has to add up events it might have missed.",
+    "properties": {
+      "type": {
+        "const": "job.progress",
+        "default": "job.progress",
+        "title": "Type",
+        "type": "string"
+      },
+      "job_id": {
+        "title": "Job Id",
+        "type": "string"
+      },
+      "at": {
+        "title": "At",
+        "type": "string"
+      },
+      "totals": {
+        "additionalProperties": {
+          "type": "integer"
+        },
+        "title": "Totals",
+        "type": "object"
+      }
+    },
+    "required": [
+      "job_id",
+      "at"
+    ],
+    "title": "MediaSelectionJobProgressData",
     "type": "object"
   },
   "ToolStartedData": {
