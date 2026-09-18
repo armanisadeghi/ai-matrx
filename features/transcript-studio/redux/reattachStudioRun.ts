@@ -306,6 +306,8 @@ export async function reattachStudioRun({
         label,
         progress: {
           title: label,
+          // An ordered narration of ONE pass: rejoin, then run, then done.
+          shape: "sequence",
           description:
             "This pass was still running when the page reloaded — rejoined from the server.",
           items: [

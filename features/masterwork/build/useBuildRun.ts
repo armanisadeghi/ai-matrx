@@ -210,6 +210,9 @@ export function useBuildRun(
     });
     return {
       title: progressTitle,
+      // ORDERED milestones: the Build's later steps genuinely need the earlier
+      // ones, so a failure really does stop what follows.
+      shape: "sequence",
       failureRemedy: BUILD_FAILURE_REMEDY,
       description: run.rejoinedTarget
         ? "This Build kept running while you were away — picking it back up."
@@ -222,6 +225,7 @@ export function useBuildRun(
             doing: "Building",
             keepsGoingWithoutYou: true,
             steps: items,
+            shape: "sequence",
             failureRemedy: BUILD_FAILURE_REMEDY,
           }),
       items,

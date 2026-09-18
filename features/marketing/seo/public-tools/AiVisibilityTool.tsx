@@ -36,6 +36,9 @@ const ENGINES = [
 function initialProgress(): LiveRunProgressState {
   return {
     title: "Checking AI recommendations",
+    // One row per ENGINE, each asked independently — Claude failing has never
+    // meant Gemini would not run.
+    shape: "fan_out",
     description:
       "Each engine updates here as its response and analysis complete.",
     items: ENGINES.map(([id, label]) => ({
