@@ -961,6 +961,15 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "multi",
     isWindow: true,
   },
+  // One topical map's whole workspace as a floating window — the door that
+  // lets the map be added ANYWHERE in the system (Arman). MULTI so two maps
+  // (a client's and a competitor's) can float side by side; the instance id is
+  // the map id, so the same map focuses rather than stacks.
+  topicalMapWindow: {
+    label: "Topical map",
+    instanceMode: "multi",
+    isWindow: true,
+  },
   transcriptStudioWindow: {
     label: "Transcript Studio Window",
     instanceMode: "singleton",

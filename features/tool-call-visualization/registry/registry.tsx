@@ -33,6 +33,7 @@ import {
   MousePointerClick,
   Wrench,
   Network,
+  ListTree,
   type LucideIcon,
 } from "lucide-react";
 
@@ -95,6 +96,12 @@ import { SqlInline } from "../renderers/sql/SqlInline";
 import { FsInline } from "../renderers/fs/FsInline";
 import { ShellInline } from "../renderers/shell/ShellInline";
 import { SkillInline } from "../renderers/skill/SkillInline";
+import { TopicalMapInline } from "../renderers/topical-map/TopicalMapInline";
+import {
+  TOPICAL_MAP_ACTION_LABELS,
+  humanizeAction,
+  topicalMapActionOf,
+} from "../renderers/topical-map/topicalMapResult";
 import { AskInline } from "../renderers/ask/AskInline";
 import { CloudBrowserInline } from "../renderers/cloud-browser/CloudBrowserRunCard";
 import { cloudBrowserAction } from "../renderers/cloud-browser/cloudBrowserRun";
@@ -551,6 +558,31 @@ export const toolRendererRegistry: ToolRegistry = {
   // on an `action` argument. SeoInline/SeoOverlay resolve on RESULT SHAPE, so
   // the same pair also serves the legacy tool names still present in persisted
   // conversation history. One renderer, every SEO payload.
+
+  // The `topical_map` agent tool — 28 actions over one brand's topical map
+  // (aidream tools/topical_map_tool.py). ONE in-code renderer (R12): tree /
+  // get / outline reads render through the shared TopicTree, which a runtime
+  // `tool_ui` row cannot import; every other action renders its typed payload.
+  topical_map: {
+    toolName: "topical_map",
+    chrome: "card",
+    displayName: "Topical map",
+    icon: ListTree,
+    accent: "green",
+    resultsLabel: "Map result",
+    InlineComponent: TopicalMapInline,
+    keepExpandedOnStream: true,
+    getPhaseLabels: (entry) => {
+      const action = topicalMapActionOf(entry);
+      const labels = action ? TOPICAL_MAP_ACTION_LABELS[action] : undefined;
+      return {
+        running: labels?.running ?? `${humanizeAction(action)} (topical map)`,
+        complete: labels?.complete ?? humanizeAction(action),
+        errorPrefix: `Topical map ${action ? action.replace(/_/g, " ") : "call"} failed`,
+      };
+    },
+    getHeaderSubtitle: (entry) => topicalMapActionOf(entry),
+  },
 
   seo: {
     toolName: "seo",

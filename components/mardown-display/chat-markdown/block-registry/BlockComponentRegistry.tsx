@@ -17,6 +17,7 @@ import TasksBlock from "../../blocks/tasks/TasksBlock";
 import StructuredPlanBlock from "../../blocks/plan/StructuredPlanBlock";
 import FlashcardsBlock from "../../blocks/flashcards/FlashcardsBlock";
 import VideoPromptOptionsBlock from "../../blocks/video-prompt-options/VideoPromptOptionsBlock";
+import MapTopicProposalBlock from "../../blocks/map-topic-proposal/MapTopicProposalBlock";
 import KeywordResearchBlock from "../../blocks/keyword-research/KeywordResearchBlock";
 import KeywordClassificationBatchBlock from "../../blocks/keyword-research/KeywordClassificationBatchBlock";
 import KeywordSerpIntentAnalysisBlock from "../../blocks/keyword-research/KeywordSerpIntentAnalysisBlock";
@@ -361,6 +362,13 @@ export const BlockComponents = {
   ) => (
     <LazyBlockWrapper>
       <VideoPromptOptionsBlock {...props} />
+    </LazyBlockWrapper>
+  ),
+  MapTopicProposalBlock: (
+    props: React.ComponentProps<typeof MapTopicProposalBlock>,
+  ) => (
+    <LazyBlockWrapper>
+      <MapTopicProposalBlock {...props} />
     </LazyBlockWrapper>
   ),
   KeywordResearchBlock: (

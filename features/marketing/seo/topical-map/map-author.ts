@@ -268,6 +268,15 @@ function readProposalNode(value: unknown): MapTopicProposalNode | null {
   };
 }
 
+/**
+ * THE ONE reader for `map_topic_proposal_v1` — the run client and the compiled
+ * kind component (Lane G's `MapTopicProposalBlock`) both narrow through it, so
+ * a payload the chat renders is exactly the payload a review screen writes.
+ */
+export function readMapTopicProposal(value: unknown): MapTopicProposal | null {
+  return readProposal(value);
+}
+
 function readProposal(value: unknown): MapTopicProposal | null {
   if (!isJsonObject(value)) return null;
   const topics = Array.isArray(value.topics)

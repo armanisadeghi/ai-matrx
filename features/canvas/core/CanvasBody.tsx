@@ -69,6 +69,18 @@ const DocumentCanvasBody = dynamic(
     })),
   { ssr: false },
 );
+// A TOPICAL MAP hosted in the canvas pane. The body mounts the canonical
+// `TopicalMapWorkspaceBody` (the page route's and the window's component) in
+// `host="canvas"` with a screen switcher; heavy (the map slice, six views, the
+// graph's own lazy edge), so it stays out of the canvas base chunk until a map
+// pane actually opens. CanvasPane supplies the frame and the title.
+const TopicalMapCanvasBody = dynamic(
+  () =>
+    import("@/features/marketing/seo/topical-map/canvas/TopicalMapCanvasBody").then((m) => ({
+      default: m.TopicalMapCanvasBody,
+    })),
+  { ssr: false },
+);
 const CodeEditErrorCanvas = dynamic(
   () =>
     import("@/features/canvas/custom-components/CodeEditErrorCanvas").then(
@@ -322,6 +334,7 @@ export function getDefaultTitle(type: string): string {
     cloud_browser: "Cloud Browser",
     sandbox: "Sandbox",
     udt_document: "Document",
+    topical_map: "Topical map",
   };
   return titles[type] || "Canvas View";
 }
@@ -481,6 +494,19 @@ function renderContent(content: CanvasContent): React.ReactNode {
               ? content.metadata.title
               : undefined
           }
+          className="h-full"
+        />
+      );
+
+    case "topical_map":
+      // `data` is a pointer { mapId, screen, siteId }. The rows are the truth
+      // and the body reads them live — see NON_PERSISTABLE_CANVAS_TYPES.
+      return (
+        <TopicalMapCanvasBody
+          mapId={typeof data?.mapId === "string" ? data.mapId : ""}
+          initialScreen={typeof data?.screen === "string" ? data.screen : "outline"}
+          siteId={typeof data?.siteId === "string" ? data.siteId : null}
+          conversationId={content.metadata?.conversationId}
           className="h-full"
         />
       );

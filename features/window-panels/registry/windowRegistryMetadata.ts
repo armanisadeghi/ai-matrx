@@ -2592,6 +2592,28 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
       requiredDataKeys: ["mapId", "slug"],
     },
   },
+
+  // ── Topical map: the whole workspace as a window ─────────────────────────
+  // RESERVED in CONTRACTS.md §5 for Lane G and landed here. The window hosts
+  // the same `TopicalMapWorkspaceBody` the page route renders, with the six
+  // screens switched from the title bar, so a map can float over chat, over a
+  // content-plan page, over anything. `mapId: ""` is a real state: the Tools
+  // grid opens it that way and the window shows a map picker instead of a
+  // dead frame. `?panels=topical_map:<mapId>:s-<screen>` deep-links to it.
+  {
+    slug: "topical-map-window",
+    overlayId: "topicalMapWindow",
+    kind: "window",
+    label: "Topical map",
+    defaultData: { mapId: "", screen: "outline", siteId: null },
+    mobilePresentation: "drawer",
+    instanceMode: "multi",
+    urlSync: { key: "topical_map" },
+    preservation: {
+      dataKeys: ["mapId", "screen", "siteId"],
+      requiredDataKeys: ["mapId"],
+    },
+  },
 ];
 
 // ─── Lookup maps ──────────────────────────────────────────────────────────────

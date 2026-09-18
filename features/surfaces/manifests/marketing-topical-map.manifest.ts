@@ -26,6 +26,8 @@ import type {
   SurfaceValueGroup,
 } from "@/features/surfaces/types";
 import { mergeBaselineValues, pickBaseline } from "./_baseline.manifest";
+import { MANDATE_KEYS } from "@ai-matrx/agents/mandates";
+import { MAP_CURATION_MANDATE_KEY } from "@/features/marketing/seo/topical-map/mandateKeys";
 
 const groups: SurfaceValueGroup[] = [
   {
@@ -211,7 +213,7 @@ export const marketingTopicalMapManifest: SurfaceManifest = {
   label: "Topical Map",
   readiness: "partial",
   readinessNote:
-    "The workspace body mounts the SurfaceRuntimeProvider and emits this scope from the live store (2026-09-18): map_id, map_screen, site_id, topic_total, selected_topic_slug, expanded_topic_slugs, visible_topics, and page_intents on the pages screen. The rest fill in as the view builders land — map_outline, map_diagnostics and map_history are read by their screens but not emitted yet, and page_intent_total is deliberately absent because the slice holds the rows this workspace LISTED, not the server's matched total. agentRoles carries seo.page_mapper and seo.page_intent_proposer, declared with the pages workspace's run controls that launch them; a mandate is declared here only by the lane that ships the control running it (seo.map_author, seo.topic_curation, seo.map_curation are still to come), never ahead of its control.",
+    "The workspace body mounts the SurfaceRuntimeProvider and emits this scope from the live store (2026-09-18): map_id, map_screen, site_id, topic_total, selected_topic_slug, expanded_topic_slugs, visible_topics, and page_intents on the pages screen. The rest fill in as the view builders land — map_outline, map_diagnostics and map_history are read by their screens but not emitted yet, and page_intent_total is deliberately absent because the slice holds the rows this workspace LISTED, not the server's matched total. agentRoles: seo.map_curation is declared (Lane G, with its 'Ask the map' launcher in the map window and the canvas pane); seo.map_author is declared (Lane E, with the Content home's Start a map screen and Extend from the site); seo.page_mapper and seo.page_intent_proposer are declared (Lane F, with the pages workspace's run controls); seo.topic_curation lands with the topic panel's control (Lane D), never ahead of it.",
   urlPattern: "/marketing/[brandId]/content/map/[mapId]",
   intro: `<surface_intro>
 You are in a brand's TOPICAL MAP: the tree of subjects this brand should cover, and the plan for getting its website there. The map decides WHICH pages should exist and WHERE they live; the content plan, a separate surface, decides what one page says.
@@ -224,18 +226,52 @@ Every change goes through the topical_map tool, never by writing rows.
     pickBaseline("selection", "context"),
     surfaceSpecific,
   ),
-  // The two fixed jobs the pages workspace already runs behind its header
-  // controls (`views/pages/runs/**`). Disclosure ONLY: these rows put the
-  // mandates in the shell's top Agents menu and add nothing visible to the
-  // screen.
-  //
-  // STRING LITERALS, not `MANDATE_KEYS`: the installed @ai-matrx/agents 0.12.5
-  // has no `seo__page_mapper` / `seo__page_intent_proposer` — aidream's
-  // regeneration (d2b14cee) added both for the first time and the package has
-  // not republished. Both keys are named in `scripts/mandate-keys-allowlist.json`
-  // with that reason; swap the literals for `MANDATE_KEYS` and drop those rows
-  // on the first change here after the package publishes (CONTRACTS.md §6).
+  // Disclosure (agent-disclosure law): each role lands WITH the control that
+  // runs it, never ahead of it. `map_curation` runs from the "Ask the map"
+  // launcher in the map window and the chat canvas pane (Lane G); `map_author`
+  // from the Content home (Lane E); the page mapper and the intent proposer
+  // from the pages workspace's run controls (Lane F); the topic agent is added
+  // by the lane that ships its control (CONTRACTS §6).
   agentRoles: [
+    {
+      name: "map_curation",
+      label: "Topical Map Agent",
+      description:
+        "Reads and edits the whole open map through the topical_map tool — answers questions about it, proposes or applies topic changes under the map_agent_change_mode knob. Launched in place from the map window and the chat canvas pane.",
+      kind: "single",
+      defaultAgentId: null,
+      mandateKey: MAP_CURATION_MANDATE_KEY,
+      allowCustom: false,
+      autoRun: "never",
+      sortOrder: 100,
+    },
+    {
+      // Lane E: runs from the Content home's "Start a map" screen and the
+      // per-site "Extend from the site" control (`POST
+      // /seo/brands/{brand_id}/map/author`, `useAuthorTopicalMap`). The key is
+      // published by @ai-matrx/agents 0.12.5 (`seo__map_author`).
+      name: "map_author",
+      label: "Topical Map Author",
+      description:
+        "Authors a brand's topic tree from one chosen source — the brand's data, documents, a description, a web page, or research — and writes it to the map as active topics or proposals under the map_agent_change_mode knob. Runs from the Content home's Start a map screen and from Extend from the site.",
+      kind: "single",
+      defaultAgentId: null,
+      mandateKey: MANDATE_KEYS.seo__map_author,
+      allowCustom: false,
+      autoRun: "never",
+      sortOrder: 110,
+    },
+    // Lane F: the two fixed jobs the pages workspace runs behind its header
+    // controls (`views/pages/runs/**`). Disclosure ONLY: these rows put the
+    // mandates in the shell's top Agents menu and add nothing visible to the
+    // screen.
+    //
+    // STRING LITERALS, not `MANDATE_KEYS`: the installed @ai-matrx/agents 0.12.5
+    // has no `seo__page_mapper` / `seo__page_intent_proposer` — aidream's
+    // regeneration (d2b14cee) added both for the first time and the package has
+    // not republished. Both keys are named in `scripts/mandate-keys-allowlist.json`
+    // with that reason; swap the literals for `MANDATE_KEYS` and drop those rows
+    // on the first change here after the package publishes (CONTRACTS.md §6).
     {
       name: "page_mapper",
       label: "Page mapper",

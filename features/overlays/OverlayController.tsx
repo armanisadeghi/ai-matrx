@@ -1096,6 +1096,10 @@ const TopicalMapTopicPanel = lazyOverlay(
     import("@/features/window-panels/windows/marketing/TopicalMapTopicPanel"),
   { ssr: false },
 );
+const TopicalMapWindow = lazyOverlay(
+  () => import("@/features/window-panels/windows/marketing/TopicalMapWindow"),
+  { ssr: false },
+);
 const TranscriptStudioWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/transcript-studio/TranscriptStudioWindow").then(
@@ -2121,6 +2125,9 @@ export default function OverlayController() {
     ),
     topicalMapTopicPanel: useAppSelector((s) =>
       selectOpenInstances(s, "topicalMapTopicPanel"),
+    ),
+    topicalMapWindow: useAppSelector((s) =>
+      selectOpenInstances(s, "topicalMapWindow"),
     ),
     voicePad: useAppSelector((s) => selectOpenInstances(s, "voicePad")),
     voicePadAdvanced: useAppSelector((s) =>
@@ -7265,6 +7272,41 @@ export default function OverlayController() {
             mapId={data.mapId}
             slug={data.slug}
             siteId={typeof data.siteId === "string" ? data.siteId : null}
+          />
+        );
+      })}
+
+      {/* topicalMapWindow — multi-instance; instance id = map id, or "picker" */}
+      {instancesById.topicalMapWindow.map((inst) => {
+        const data = inst.data as Record<string, unknown> | null | undefined;
+        const screen = data?.screen;
+        return (
+          <TopicalMapWindow
+            key={inst.instanceId}
+            instanceId={inst.instanceId}
+            stackIndex={
+              typeof data?.stackIndex === "number" ? data.stackIndex : 0
+            }
+            onClose={() =>
+              dispatch(
+                closeOverlay({
+                  overlayId: "topicalMapWindow",
+                  instanceId: inst.instanceId,
+                }),
+              )
+            }
+            mapId={typeof data?.mapId === "string" ? data.mapId : ""}
+            screen={
+              screen === "outline" ||
+              screen === "table" ||
+              screen === "graph" ||
+              screen === "text" ||
+              screen === "pages" ||
+              screen === "history"
+                ? screen
+                : "outline"
+            }
+            siteId={typeof data?.siteId === "string" ? data.siteId : null}
           />
         );
       })}
