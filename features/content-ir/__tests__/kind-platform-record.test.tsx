@@ -57,6 +57,13 @@ import PlatformRecordBlock, {
 } from "@/components/mardown-display/blocks/result-kinds/PlatformRecordBlock";
 // The real registry — the door's own gate.
 import { getItemConfig } from "@/features/item-presentation/registry";
+import { ENTITY_TYPE_METADATA, type EntityTypeToken } from "@ai-matrx/associations";
+// The F-93 census of listed entity tokens with no door — the ONE place a
+// "doorless" fixture token is allowed to come from, so this suite never
+// re-hardcodes which token is doorless (doors get added; F-91 hardcoded
+// `web_youtube_video` and F-93 gave it a door nine hours later, DD-shaped
+// failure this derivation exists to make impossible).
+import { DOORLESS_LISTED_ENTITIES } from "@/features/scopes/registry/listed-entity-doors";
 
 jest.mock("@/lib/diagnostics/errorCaptureStore", () => ({
   ...jest.requireActual("@/lib/diagnostics/errorCaptureStore"),
@@ -85,6 +92,28 @@ function mount(node: React.ReactNode): string {
     reducer: { probe: (state: Record<string, never> = {}) => state },
   });
   return renderToStaticMarkup(<Provider store={store}>{node}</Provider>);
+}
+
+/**
+ * The first token the F-93 census still names as doorless, verified live
+ * against the item registry rather than trusted from the census text (a
+ * stale census entry, like `web_youtube_video`'s, hides the very door it
+ * claims is missing). Never hard-code a specific token here: doors get
+ * added, and the next one to gain a door must not turn this suite red.
+ */
+function firstDoorlessToken(): EntityTypeToken {
+  for (const token of Object.keys(DOORLESS_LISTED_ENTITIES) as EntityTypeToken[]) {
+    if (!getItemConfig(token).recognized) {
+      return token;
+    }
+  }
+  throw new Error(
+    "THE F-93 CENSUS NO LONGER NAMES A DOORLESS TOKEN: every listed entity " +
+      "token it records now has a wired opener in the item-presentation " +
+      "registry. The 'no wired opener renders no control' case this test " +
+      "proves still needs a fixture — add a synthetic, never-registered " +
+      "entity token for it instead of deleting or skipping this test.",
+  );
 }
 
 /** The registered row, as the warm loader projects it. */
@@ -334,17 +363,22 @@ describe("platform_record routes to its own component", () => {
   });
 
   it("a Record whose entity token has no wired opener renders no control at all", () => {
-    // Live and active in platform.entity_types, and NOT in the item registry
-    // (V-22 NEW-6): the third mirror table still has no door.
-    expect(getItemConfig("web_youtube_video").recognized).toBe(false);
+    // Derived from the F-93 census, never hard-coded: a token this suite
+    // names as doorless today can gain a door tomorrow (it happened to
+    // `web_youtube_video` nine hours after F-91 wrote this fixture), so the
+    // token is picked live and its doorless premise is asserted, not assumed.
+    const doorlessToken = firstDoorlessToken();
+    expect(getItemConfig(doorlessToken).recognized).toBe(false);
+    const meta = ENTITY_TYPE_METADATA[doorlessToken];
+    const table = meta ? `${meta.schema}.${meta.table}` : `unknown.${doorlessToken}`;
     const markup = mount(
       <PlatformRecordBlock
         content={JSON.stringify({
           __kind: KIND,
-          entity_type: "web_youtube_video",
+          entity_type: doorlessToken,
           record_id: "22222222-2222-2222-2222-222222222222",
-          table: "web.youtube_video",
-          entity_label: "YouTube Video",
+          table,
+          entity_label: "Doorless Entity",
           record_label: "Launch walkthrough",
           organization_id: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
           fields: { id: "22222222-2222-2222-2222-222222222222", title: "Launch walkthrough" },
