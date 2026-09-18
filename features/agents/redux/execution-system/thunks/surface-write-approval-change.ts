@@ -60,7 +60,9 @@ import type { ApprovalChange } from "@/features/agents/ui-first-tools/ui/approva
  * What approving the write will actually do, in the user's terms. Stated per
  * `mode` because "approve" means three genuinely different things.
  */
-function timingSentence(mode: SurfaceWriteApprovalProposal["target"]["mode"]): string {
+function timingSentence(
+  mode: SurfaceWriteApprovalProposal["target"]["mode"],
+): string {
   if (mode === "entity") return "This saves immediately if approved.";
   if (mode === "draft") {
     return "Approval only stages it in the editor; you still review and save.";
@@ -86,7 +88,19 @@ export function buildSurfaceWriteApprovalChange(
 
   // A string is prose — the diff field renders it better than a document view.
   if (typeof value === "string") {
-    return { ...change, fields: [{ label: "Proposed value", after: value, block: true }] };
+    return {
+      ...change,
+      fields: [
+        {
+          label: change.verb === "append" ? "Text to append" : target.label,
+          ...(proposal.currentValue !== undefined
+            ? { before: proposal.currentValue }
+            : {}),
+          after: value,
+          block: true,
+        },
+      ],
+    };
   }
 
   // Nothing proposed. Say so in words; an empty JSON literal is not an answer.
