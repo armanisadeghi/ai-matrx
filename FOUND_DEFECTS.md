@@ -15,6 +15,25 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D332 — Six files under `coding-sessions/` carry no `kind` and no session id, so no session has ever listed them (2026-09-17)
+
+**Status:** open · **Priority:** P3 (six rows, and they are not a regression) · **Repo:** DB rows + whichever writer produced them
+
+Found by the new unstamped-row detector in `pnpm check:artifact-read-latency` while CS-30 was
+checking its own backfill. `select … from files.files where file_path like 'coding-sessions/%'
+and deleted_at is null` returns 50 rows with no `artifact_kind`: 44 are the deploy-gap rows CS-30
+swept (uploaded between the backfill and the upload door's deploy), and **6, all created
+2026-09-14 14:46:50-14:46:57Z, carry no `metadata.kind` AND no `metadata.cli_session_id` at all.**
+They sit under the artifact path prefix, so some coding-session writer produced them, but nothing
+attributes them to a session — the panel could not list them under the old JSONB filter either, so
+this is a pre-existing gap and not something the column change caused.
+
+**To act:** identify the writer that produced those six (the path carries the provider and the
+session id: `coding-sessions/<provider>/<session id>/<relative path>`, so the session id is
+recoverable from `file_path` even though the metadata lost it), then either backfill their identity
+from the path or explain why the row exists without it. Related: CS-20/CS-21 artifact truth
+(`common-docs/projects/coding-agent-bridge/REGISTER.md`).
+
 ### D331 — Every client read of `files.files` pays 2.5-6 s of RLS predicate SETUP the moment one examined row is not the reader's own (2026-09-17)
 
 **Status:** open · **Priority:** P1 — it is the whole remaining latency of the coding-session Files tab, and it is not specific to that read · **Repo:** DB (the access system) · **Owner:** the access system's, not a feature lane's

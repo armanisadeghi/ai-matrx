@@ -35,7 +35,7 @@
  * is. That is the access system's generated predicate, escalated separately;
  * this guard measures it rather than hiding it.
  *
- * WHAT THIS GUARD DOES. Three detectors, all must pass.
+ * WHAT THIS GUARD DOES. Four detectors, all must pass.
  *
  * 1. STATIC — the query this guard replays is still the query the app ships.
  *    `service.ts` must still filter the two REAL COLUMNS, order by
@@ -603,6 +603,59 @@ async function main(): Promise<number> {
   console.log(
     `${TAG.ok}${runs}/${runs} of the panel's own reads returned 200 as ${creds.email} on the live ` +
       `database, slowest ${s.max} ms of a ${STATEMENT_TIMEOUT_MS} ms ceiling.`,
+  );
+
+  // ── Detector 4: no artifact row is INVISIBLE to the panel ────────────────
+  //
+  // The panel now finds rows by `artifact_kind` / `provider_session_id`, so a
+  // coding-session artifact whose columns were never stamped is not "slow" —
+  // it is GONE from its session, silently. Two ways that happens: a window
+  // between the backfill and the upload door's deploy, and a future writer that
+  // sets the metadata without the columns.
+  //
+  // The detector asks for rows under the artifact path prefix that CLAIM the
+  // kind in their metadata and carry no `artifact_kind`. The prefix does the
+  // narrowing — `file_path=like.coding-sessions/%` is a text range, leakproof,
+  // so it rides an index under RLS — and the JSONB equality then filters a set
+  // already down to dozens of rows, which is why this probe is not itself the
+  // slow shape the header warns about. It is deliberately NOT a bare
+  // `artifact_kind is null` under the prefix: rows that carry no `kind` at all
+  // (six from 2026-09-14) were never listed by this panel under either shape,
+  // and a guard that is permanently red for a pre-existing gap teaches nothing.
+  // Its view is this identity's rows only (RLS), so it is a canary, not a
+  // census: it cannot see another account's unstamped rows.
+  const orphanQs = new URLSearchParams({
+    select: "id,file_path",
+    file_path: "like.coding-sessions/%",
+    artifact_kind: "is.null",
+    "metadata->>kind": "eq.coding_session_artifact",
+    deleted_at: "is.null",
+    limit: "5",
+  });
+  const orphans = await get(creds, token, "files", `files?${orphanQs.toString()}`);
+  if (orphans.status >= 300) {
+    console.error(
+      `${TAG.fail}UNMEASURED — could not check for unstamped artifact rows ` +
+        `(HTTP ${orphans.status}).`,
+    );
+    return 2;
+  }
+  const orphanRows = JSON.parse(orphans.body) as { file_path: string }[];
+  if (orphanRows.length > 0) {
+    console.error(
+      `${TAG.fail}ARTIFACT ROWS ARE INVISIBLE TO THE PANEL — ${orphanRows.length}+ row(s) under ` +
+        `coding-sessions/ carry no \`artifact_kind\`, so no session lists them however fast the ` +
+        `read is. First: ${orphanRows[0]?.file_path}. Either aidream's upload door ` +
+        `(matrx_files/artifact_identity.py) is not stamping the columns on this path, or rows ` +
+        `landed between the backfill and that door's deploy. Re-stamp them: UPDATE files.files ` +
+        `SET artifact_kind = metadata->>'kind', provider_session_id = metadata->>'cli_session_id' ` +
+        `WHERE metadata->>'kind' = 'coding_session_artifact' AND artifact_kind IS NULL.`,
+    );
+    return 1;
+  }
+  console.log(
+    `${TAG.ok}No artifact row of this identity is missing its identity columns, so nothing is ` +
+      `invisible to the panel.`,
   );
 
   // ── Detector 3: the list the panel treats as COMPLETE is complete ─────────
