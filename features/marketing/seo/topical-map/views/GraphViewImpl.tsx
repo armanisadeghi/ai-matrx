@@ -51,6 +51,9 @@ import {
 import "@xyflow/react/dist/style.css";
 import "./graph/topical-map-graph.css";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { useBrand } from "@/features/marketing/data/hooks";
 
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { toast } from "@/lib/toast";
@@ -62,7 +65,7 @@ import {
   TopicalMapLoading,
 } from "../components/TopicalMapStates";
 import { topicalMapErrorText } from "../errors";
-import { useMapGraph, usePageIntents, useSetMapTopicLayout } from "../hooks";
+import { useMapGraph, usePageIntents, useSetMapTopicLayout, useTopicalMap } from "../hooks";
 import { useTopicalMapKnobs } from "../knobs";
 import { useMapLinks } from "../links";
 import { useOpenTopicPanel } from "@/features/overlays/openers/topicalMapTopicPanel";
@@ -193,7 +196,19 @@ function FacetMoreFlowNode({ data }: NodeProps) {
   return <FacetMoreBody remaining={flow.remaining} onReveal={flow.onReveal} />;
 }
 
+const COMPANY_ROOT_ID = "topical-map-company-root";
+
+function CompanyFlowNode({ data }: NodeProps) {
+  return (
+    <div className="flex min-h-16 w-60 items-center rounded-xl border-2 border-primary bg-card px-4 py-3 text-sm font-semibold text-foreground shadow-sm">
+      {typeof data.href === "string" ? <Link href={data.href} className="nodrag hover:underline">{String(data.name)}</Link> : String(data.name)}
+      <Handle type="source" position={Position.Right} className={HANDLE_CLASS} />
+    </div>
+  );
+}
+
 const nodeTypes: NodeTypes = {
+  company: CompanyFlowNode,
   topic: TopicFlowNode,
   facetValue: FacetFlowNode,
   facetMore: FacetMoreFlowNode,
@@ -259,6 +274,9 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
 
   const { knobs, loading: knobsLoading, error: knobsError } = useTopicalMapKnobs();
   const query = useMapGraph(mapId, groupBy, siteId);
+  const map = useTopicalMap(mapId);
+  const brand = useBrand(readOnly ? "" : (map.data?.brand_id ?? ""));
+  const companyName = brand.data?.name ?? (readOnly ? "Company (details unavailable in this view)" : brand.isError ? "Company name unavailable" : "Loading company…");
   const setLayout = useSetMapTopicLayout(mapId);
 
   const [revealedValues, setRevealedValues] = useState(FACET_AXIS_REVEAL_STEP);
@@ -336,6 +354,15 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
 
   const model = buildGraphModel(query.data);
   const visibleIds = visibleTopicIds(model, graph.focusSlug);
+  // A focused branch still belongs to its real ancestors; do not promote a
+  // nested topic into a direct child of the company just because siblings hide.
+  let ancestor = graph.focusSlug ? model.topicBySlug.get(graph.focusSlug) : undefined;
+  const ancestorIds = new Set<string>();
+  while (ancestor?.data.parent_id && !ancestorIds.has(ancestor.data.parent_id)) {
+    ancestorIds.add(ancestor.data.parent_id);
+    visibleIds.add(ancestor.data.parent_id);
+    ancestor = model.topicById.get(ancestor.data.parent_id);
+  }
   const topics = visibleTopics(model, visibleIds);
   const treeEdges = visibleTreeEdges(model, visibleIds);
   // `card` while the knobs are still loading is a placeholder for ONE render
@@ -353,6 +380,7 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
   });
 
   const positions = layoutTopics({
+    companyRootId: COMPANY_ROOT_ID,
     topics,
     treeEdges,
     width: geometry.width,
@@ -483,7 +511,15 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
       });
     }
 
-    return [...facetNodes, ...topicNodes];
+    const companyNode: Node = {
+      id: COMPANY_ROOT_ID,
+      type: "company",
+      position: positions.get(COMPANY_ROOT_ID) ?? { x: 0, y: 0 },
+      draggable: false,
+      selectable: false,
+      data: { name: companyName, href: !readOnly && map.data?.brand_id ? marketingRoutes.brand(map.data.brand_id) : null },
+    };
+    return [companyNode, ...facetNodes, ...topicNodes];
   };
 
   const buildFlowEdges = (): Edge[] => {
@@ -507,7 +543,15 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
         type: "smoothstep",
         className: "topical-map-facet-edge",
       }));
-    return [...tree, ...facet];
+    const children = new Set(treeEdges.map(edge => edge.target));
+    const companyEdges: Edge[] = topics.filter(topic => !children.has(topic.id)).map(topic => ({
+      id: `${COMPANY_ROOT_ID}:${topic.id}`,
+      source: COMPANY_ROOT_ID,
+      target: topic.id,
+      targetHandle: "tree",
+      type: "smoothstep",
+    }));
+    return [...companyEdges, ...tree, ...facet];
   };
 
   const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
@@ -518,6 +562,7 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
   // NOT the query object's identity. Same shape as the orchestra canvas: a
   // drag must never rebuild the whole graph.
   const signature = [
+    companyName,
     band,
     graph.focusSlug ?? "",
     selectedSlug ?? "",
@@ -587,6 +632,7 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
   if (knobsError || !knobs) {
     return <TopicalMapFailed what="the map drawing's settings" error={knobsError} />;
   }
+  if (map.isError) return <TopicalMapFailed what="the map company" error={map.error} />;
   if (query.isPending) return <TopicalMapLoading what="the map drawing" />;
   if (query.isError) return <TopicalMapFailed what="the map drawing" error={query.error} />;
   if (model.topics.length === 0) {
@@ -686,6 +732,7 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
                 // to see the tree straightened is not an arrangement anybody
                 // asked to keep.
                 const arranged = autoArrangeTopics({
+                  companyRootId: COMPANY_ROOT_ID,
                   topics,
                   treeEdges,
                   width: geometry.width,
@@ -721,6 +768,11 @@ function GraphCanvas({ mapId, siteId, host, readOnly }: MapViewProps) {
               skipped={{ nodes: model.skippedNodes, edges: model.skippedEdges }}
             />
           </Panel>
+          {brand.isError ? (
+            <Panel position="bottom-center">
+              <TopicalMapFailed what="the company name" error={brand.error} />
+            </Panel>
+          ) : null}
           {intents.isError ? (
             <Panel position="bottom-center">
               <div className="max-w-[420px]">
