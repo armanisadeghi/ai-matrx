@@ -34,18 +34,8 @@ import {
   selectOrganizationId,
   selectOrgBootstrapResolved,
 } from "@/lib/redux/slices/appContextSlice";
-import {
-  errorRowsHref,
-  fetchMandateReferenceBoard,
-  formatBytes,
-  formatRepoList,
-  formatSeconds,
-  formatUsd,
-  type MandatePatrolRun,
-  type MandatePatrolSection,
-  type MandateReferenceBoard,
-  type MandateReferenceBoardRepo,
-} from "./references";
+import { errorRowsHref, fetchMandateReferenceBoard, formatRepoList, formatSeconds, costCell, type MandatePatrolRun, type MandatePatrolSection, type MandateReferenceBoard, type MandateReferenceBoardRepo } from "./references";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 function ScanLine({
   label,
@@ -183,7 +173,7 @@ function RepoCard({ repo }: { repo: MandateReferenceBoardRepo }) {
  *
  * The three things it must never do:
  *  * print **$0.00** for a run nobody priced. Container time has no configured
- *    rate; `no rate set` is the truth and `formatUsd` owns that decision.
+ *    rate; `no rate set` is the truth and `costCell` owns that decision.
  *  * present a duration the BOARD derived from two timestamps as one the patrol
  *    measured — a derived cell is marked.
  *  * show an empty table when the numbers are simply unreadable. A scheduler
@@ -270,7 +260,7 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
                 Total compute
               </th>
               <td className="px-3 py-1.5">
-                {formatUsd(patrol.cumulative_compute_cost_usd)}
+                {costCell(patrol.cumulative_compute_cost_usd)}
                 <span className="ml-1 text-muted-foreground">
                   ({patrol.cumulative_vcpu_seconds} vCPU-s)
                 </span>
@@ -359,7 +349,7 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
                         .filter(Boolean)
                         .join(" · ")}
                     >
-                      {formatUsd(run.compute_cost_usd)}
+                      {costCell(run.compute_cost_usd)}
                     </td>
                     <td
                       className="whitespace-nowrap px-3 py-2 text-right"
@@ -390,7 +380,7 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
                       {run.error_rows_resolved ?? "—"}
                     </td>
                     <td className="whitespace-nowrap px-3 py-2 text-right">
-                      {formatBytes(run.git_clone_bytes)}
+                      {formatFileSize(run.git_clone_bytes)}
                     </td>
                     <td className="px-3 py-2">
                       {run.revision ? (

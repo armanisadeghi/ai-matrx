@@ -37,6 +37,7 @@ import {
   type ConnectedBrowseReport,
   type ConnectedBrowseTarget,
 } from "./service";
+import { formatFileSize } from "@ai-matrx/kit/format";
 
 const KIND_WORDS: Record<string, string> = {
   file: "File",
@@ -51,16 +52,15 @@ const KIND_WORDS: Record<string, string> = {
   presentation: "Slides",
 };
 
+/**
+ * AN OPTION-BINDING WRAPPER over `@ai-matrx/kit/format`. What it binds is this
+ * column's own statement for "no size on record" — an EMPTY CELL rather than an
+ * em-dash, because the column is one of several and a placeholder in every row
+ * would be noise. The binary tiers and the rounding are the package's.
+ */
 function formatBytes(bytes: number | null): string {
   if (bytes === null || bytes <= 0) return "";
-  const units = ["B", "KB", "MB", "GB", "TB"];
-  let value = bytes;
-  let unit = 0;
-  while (value >= 1024 && unit < units.length - 1) {
-    value /= 1024;
-    unit += 1;
-  }
-  return `${value < 10 && unit > 0 ? value.toFixed(1) : Math.round(value)} ${units[unit]}`;
+  return formatFileSize(bytes);
 }
 
 const SOURCE_COLUMNS: EntityColumnSpec<ConnectedSourceRow>[] = [

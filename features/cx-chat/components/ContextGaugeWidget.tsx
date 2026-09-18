@@ -25,6 +25,7 @@ import {
   DEFAULT_CONTEXT_WINDOW_TOKENS,
 } from "@/features/agents/redux/execution-system/context-state/context-state.selectors";
 import { cn } from "@/lib/utils";
+import { formatCount } from "@ai-matrx/kit/format";
 
 export interface ContextGaugeWidgetProps {
   /** The conversation whose context we're gauging. */
@@ -115,9 +116,13 @@ export function ContextGaugeWidget({
   );
 }
 
+/**
+ * AN OPTION-BINDING WRAPPER over kit's compact count voice (0.14.0). The tiers
+ * are the package's now — "1.2k", "12k", "1.2M" — so every abbreviated number
+ * in the fleet speaks the same `k`, and 999,999 reads "1.0M" instead of the
+ * "1000K" this body printed.
+ */
 function formatK(n: number): string {
   if (!Number.isFinite(n) || n <= 0) return "0";
-  if (n < 1000) return String(n);
-  if (n < 10_000) return `${(n / 1000).toFixed(1)}K`;
-  return `${Math.round(n / 1000)}K`;
+  return formatCount(n, { style: "compact" });
 }

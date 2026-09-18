@@ -24,6 +24,7 @@ import { useDesktopPresence } from "@/features/agents/hooks/useDesktopPresence";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { formatCount, formatPercent } from "@ai-matrx/kit/format";
 
 type RangePreset = "today" | "yesterday" | "last-12-hours" | "custom";
 
@@ -99,8 +100,14 @@ function timestamp(value: string | null | undefined): string {
   });
 }
 
+/**
+ * The producer of this column clamps to 0..100, so it is the 0..100 spelling
+ * THE UNIT LAW asks for. "Not available" is this dashboard's own word for an
+ * unmeasured row. A measured share below half a percent now reads "<1%"
+ * instead of a confident "0%".
+ */
 function percentage(value: number | null | undefined): string {
-  return value == null ? "Not available" : `${value.toFixed(0)}%`;
+  return formatPercent(value, { unknown: "Not available" });
 }
 
 function labelFor(row: CodexUsageRow, fallback: string): string {

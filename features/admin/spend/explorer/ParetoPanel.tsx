@@ -22,11 +22,12 @@ import type {
   SpendDimension,
   SpendDimensionRow,
 } from "../types";
-import { DIMENSION_LABEL, identityHref, percent, rowLabel } from "./labels";
+import { DIMENSION_LABEL, identityHref, rowLabel } from "./labels";
 import {
   buildSpendLeadingKpis,
   type SpendLeadingKpis,
 } from "./TotalsStrip";
+import { formatPercentFromFraction } from "@ai-matrx/kit/format";
 
 const PARETO_DIMENSIONS: readonly SpendDimension[] = [
   "user",
@@ -104,11 +105,11 @@ export function paretoCopyText(
     `Explained by a request: ${kpis.explainedByRequest.value} · ${kpis.explainedByRequest.hint}`,
     "",
     `${data.dimension} — 80% of spend`,
-    `${data.shownCount} of ${data.distinctCount} shown · ${percent(data.shownShare)} · Total ${usd(data.windowTotal)}`,
+    `${data.shownCount} of ${data.distinctCount} shown · ${formatPercentFromFraction(data.shownShare)} · Total ${usd(data.windowTotal)}`,
     ...data.rows.map(
-      (row) => `${row.label}\t${percent(row.share)}\t${usd(row.cost)}`,
+      (row) => `${row.label}\t${formatPercentFromFraction(row.share)}\t${usd(row.cost)}`,
     ),
-    `Everything else (${data.everythingElse.count} more)\t${percent(data.everythingElse.share)}\t${usd(data.everythingElse.cost)}`,
+    `Everything else (${data.everythingElse.count} more)\t${formatPercentFromFraction(data.everythingElse.share)}\t${usd(data.everythingElse.cost)}`,
   ].join("\n");
 }
 
@@ -229,7 +230,7 @@ function ParetoCard({
         </span>
         <div className="flex min-w-0 items-center gap-1.5 text-[11px] tabular-nums text-muted-foreground">
           <span className="truncate">
-            {cut.head.length} of {cut.distinct} · {percent(headShare)}
+            {cut.head.length} of {cut.distinct} · {formatPercentFromFraction(headShare)}
           </span>
           <span className="shrink-0 font-medium text-foreground">
             Total {usd(total)}
@@ -269,7 +270,7 @@ function ParetoCard({
                 {label}
               </button>
               <span className="relative w-10 shrink-0 text-right text-[11px] tabular-nums text-muted-foreground">
-                {percent(row.share)}
+                {formatPercentFromFraction(row.share)}
               </span>
               <span className="relative w-16 shrink-0 text-right text-xs font-medium tabular-nums text-foreground">
                 {usd(row.cost)}
@@ -294,7 +295,7 @@ function ParetoCard({
             Everything else ({cut.restCount} more)
           </span>
           <span className="w-10 shrink-0 text-right tabular-nums">
-            {percent(total > 0 ? cut.restCost / total : 0)}
+            {formatPercentFromFraction(total > 0 ? cut.restCost / total : 0)}
           </span>
           <span className="w-16 shrink-0 text-right tabular-nums">
             {usd(cut.restCost)}

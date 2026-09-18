@@ -17,7 +17,8 @@ import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 
 import { timestamp, usd } from "../format";
 import type { SpendDimension, SpendRequestRow } from "../types";
-import { compactNumber, percent } from "./labels";
+import { compactNumber } from "./labels";
+import { formatPercentFromFraction } from "@ai-matrx/kit/format";
 
 function Drill({
   label,
@@ -77,7 +78,7 @@ export function TopRequestsTable({
         <span className="tabular-nums font-medium">
           {usd(r.cost)}
           <span className="ml-1 text-[10px] text-muted-foreground">
-            {percent(r.share)}
+            {formatPercentFromFraction(r.share)}
           </span>
         </span>
       ),
