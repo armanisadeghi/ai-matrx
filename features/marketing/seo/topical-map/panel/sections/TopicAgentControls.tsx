@@ -23,6 +23,7 @@ import { BrainCircuit, PenLine } from "lucide-react";
 
 import { useMandate } from "@/features/mandates/useMandate";
 import { useOpenMandateWindow } from "@/features/overlays/openers/mandateWindow";
+import { useDeclaredSurfaceMandates } from "@/features/surfaces/runtime/surface-mandates";
 import { cn } from "@/lib/utils";
 
 import type { MapAgentChangeMode, MapDescriptionRegenerationMode } from "../../knobs";
@@ -51,6 +52,17 @@ export function TopicAgentControls({ changeMode, regenerationMode }: TopicAgentC
   });
   const openMandate = useOpenMandateWindow();
   const available = mandate !== null;
+
+  // The panel floats over ANY page (a window on /chat, a peek on a note), so the
+  // host page's manifest may not be this surface's; register the fixed job in
+  // the top Agents menu from the control that runs it. Renders nothing.
+  useDeclaredSurfaceMandates([
+    {
+      mandateKey: TOPIC_CURATION_MANDATE_KEY,
+      does: "rewrites this topic's description and answers questions about it",
+      surfaceName: TOPICAL_MAP_SURFACE_NAME,
+    },
+  ]);
 
   function open() {
     openMandate({
