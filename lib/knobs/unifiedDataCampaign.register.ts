@@ -111,6 +111,12 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "THE migration runner (`pnpm db:apply`); imports migration-target for the --target refusal. Never part of a served request.",
     },
     {
+        id: "db-based-on",
+        file: "scripts/db-based-on.ts",
+        kind: "tooling",
+        why: "`pnpm db:based-on` — prints the `-- based-on:` line for a function from the LIVE catalogue. It imports migration-target only to resolve `--based-on-target branch`, which picks WHICH database it measures; a hash taken from one database and checked against the other refuses when the bodies differ. Read-only, run by hand, never part of a served request.",
+    },
+    {
         id: "check-migrations",
         file: "scripts/check-migrations.ts",
         kind: "tooling",
