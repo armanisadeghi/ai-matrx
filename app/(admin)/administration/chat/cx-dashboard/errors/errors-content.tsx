@@ -7,7 +7,7 @@
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Ban, Hourglass, Wrench } from "lucide-react";
+import { AlertTriangle, Ban, Hourglass } from "lucide-react";
 import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
 import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { CxFiltersBar } from "@/features/cx-dashboard/components/CxFiltersBar";
@@ -353,10 +353,6 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
         {/* Problem requests */}
         {errors.error_requests.length > 0 && (
           <section className="space-y-2">
-            <h3 className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-              <AlertTriangle className="h-3.5 w-3.5" />
-              Problem Requests ({errors.error_requests.length})
-            </h3>
             <NonEditableContextMenu
               sourceFeature="admin"
               contentSource={{ type: "raw" }}
@@ -371,7 +367,12 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
               getRowId={(r) => r.id}
               pageSize={25}
               emptyState={{ title: "No problem requests" }}
-              toolbar={{ search: true, searchPlaceholder: "Search requests…" }}
+              toolbar={{
+                title: "Problem Requests",
+                search: true,
+                searchPlaceholder: "Search requests…",
+                refresh: { onRefresh: () => router.refresh() },
+              }}
               copy={{
                 label: "Problem request",
                 listLabel: "Problem requests (this view)",
@@ -424,10 +425,6 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
         {/* Tool call errors */}
         {errors.error_tool_calls.length > 0 && (
           <section className="space-y-2">
-            <h3 className="flex items-center gap-2 text-xs font-medium text-red-500">
-              <Wrench className="h-3.5 w-3.5" />
-              Tool Call Errors ({errors.error_tool_calls.length})
-            </h3>
             <NonEditableContextMenu
               sourceFeature="admin"
               contentSource={{ type: "raw" }}
@@ -443,8 +440,10 @@ export function ErrorsContent({ errors }: { errors: ErrorsData }) {
               pageSize={25}
               emptyState={{ title: "No tool call errors" }}
               toolbar={{
+                title: "Tool Call Errors",
                 search: true,
                 searchPlaceholder: "Search tool calls…",
+                refresh: { onRefresh: () => router.refresh() },
               }}
               copy={{
                 label: "Tool call error",
