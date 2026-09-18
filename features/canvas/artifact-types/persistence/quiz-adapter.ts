@@ -35,6 +35,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import type { QuizState } from "@/components/mardown-display/blocks/quiz/quiz-types";
 import type {
   ArtifactPersistenceAdapter,
@@ -212,6 +213,12 @@ export const QUIZ_ADAPTER: ArtifactPersistenceAdapter<QuizArtifactState> = {
 
       return true;
     } catch (err) {
+      // "No organization is selected" is a REFUSAL the person can fix, not a
+      // save failure to hide: swallowing it into `false` leaves a quiz that
+      // silently never persists (a dead click). Propagate so the boundary
+      // (`useArtifactState.flush`) shows the remedy.
+      // Law: common-docs/policies/context-is-carried-never-rebuilt.md.
+      if (isOrganizationRequiredError(err)) throw err;
       console.error("[QUIZ_ADAPTER.saveState] error:", err);
       return false;
     }

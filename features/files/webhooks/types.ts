@@ -60,7 +60,13 @@ export interface WebhookDelivery {
 export interface CreateWebhookInput {
   target_url: string;
   description?: string | null;
-  /** Org-wide fan-out: an org the owner belongs to, or null for personal scope. */
+  /**
+   * The organization the webhook is filed in and fans out to. Omit it for the
+   * "my own events" choice and the service names the person's OWN workspace
+   * explicitly (`resolvePersonalOrgId`) — the row is never left NULL for
+   * `public._stamp_org_default` to fill in silently.
+   * common-docs/policies/context-is-carried-never-rebuilt.md
+   */
   organization_id?: string | null;
   /** null/undefined = all events. */
   event_types?: string[] | null;

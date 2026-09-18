@@ -111,6 +111,8 @@ via `<CostValue>`/`useCostDisplay`; never `toFixed(2)` a dollar figure in a rese
 
 ## Change log
 
+- `2026-09-17` — **Creating a context bundle carries the organization instead of `?? null`.** `createBundle` wrote `organization_id: input.organizationId ?? null` into `research.rs_context_bundle`, and a NULL there is the `public._stamp_org_default` trigger filing the bundle in the writer's personal workspace. It now resolves through `ensureOrgId(input.organizationId)` — the caller's organization, else the one the person SELECTED, else an `OrganizationContextError` the surface renders as "select an organization". Guard: `pnpm check:organization-context`.
+
 - 2026-09-11 — Media gallery file naming is the package's ruling end to end: the display
   label is `fileNameFromUrl` (`@ai-matrx/data/files`) → source host → raw URL; a UUID or
   extension-less segment is never shown as a name (previously the fallback still surfaced

@@ -96,6 +96,7 @@ function feedbackItem(id: string): UserFeedback {
 }
 
 const NOTE = "  Approving this, but the queue itself needs a way to do both.  ";
+const ORG = "0d3f1a2b-4c5d-4e6f-8a7b-9c0d1e2f3a4b";
 const TRIMMED = "Approving this, but the queue itself needs a way to do both.";
 
 beforeEach(() => {
@@ -111,7 +112,7 @@ describe("approveAndRaise", () => {
     });
 
     await expect(
-      approveAndRaise({ row: ROW, userId: "user-1", note: NOTE }),
+      approveAndRaise({ row: ROW, userId: "user-1", note: NOTE, organizationId: ORG }),
     ).resolves.toEqual({
       status: "approved_and_raised",
       feedbackId: "fb-1111",
@@ -131,10 +132,37 @@ describe("approveAndRaise", () => {
       route:
         "/administration/users/agent-review/11111111-2222-4333-8444-555555555555",
       description: TRIMMED,
+      organization_id: ORG,
       metadata: {
         raised_from_review_row: "11111111-2222-4333-8444-555555555555",
       },
     });
+  });
+
+  it("refuses without an organization BEFORE approving — never an approved row whose note can never file", async () => {
+    await expect(
+      approveAndRaise({ row: ROW, userId: "user-1", note: NOTE, organizationId: null }),
+    ).resolves.toEqual({
+      status: "not_approved",
+      reason:
+        "Select an organization before raising a note \u2014 the feedback item is filed under one organization. Pick yours from the avatar menu.",
+    });
+    expect(mockRecordHumanReviewAction).not.toHaveBeenCalled();
+    expect(mockSubmitFeedback).not.toHaveBeenCalled();
+  });
+
+  it("on the retry lane, a missing organization is reported as approved_not_raised", async () => {
+    await expect(
+      approveAndRaise({
+        row: ROW,
+        userId: "user-1",
+        note: NOTE,
+        organizationId: "  ",
+        alreadyApproved: true,
+      }),
+    ).resolves.toMatchObject({ status: "approved_not_raised" });
+    expect(mockRecordHumanReviewAction).not.toHaveBeenCalled();
+    expect(mockSubmitFeedback).not.toHaveBeenCalled();
   });
 
   it("says the row is approved and the note was NOT raised when filing fails", async () => {
@@ -145,7 +173,7 @@ describe("approveAndRaise", () => {
     });
 
     await expect(
-      approveAndRaise({ row: ROW, userId: "user-1", note: NOTE }),
+      approveAndRaise({ row: ROW, userId: "user-1", note: NOTE, organizationId: ORG }),
     ).resolves.toEqual({
       status: "approved_not_raised",
       reason: "new row violates row-level security policy",
@@ -157,7 +185,7 @@ describe("approveAndRaise", () => {
     mockSubmitFeedback.mockRejectedValue(new Error("Failed to fetch"));
 
     await expect(
-      approveAndRaise({ row: ROW, userId: "user-1", note: NOTE }),
+      approveAndRaise({ row: ROW, userId: "user-1", note: NOTE, organizationId: ORG }),
     ).resolves.toEqual({
       status: "approved_not_raised",
       reason: "Failed to fetch",
@@ -170,7 +198,7 @@ describe("approveAndRaise", () => {
     );
 
     await expect(
-      approveAndRaise({ row: ROW, userId: "user-1", note: NOTE }),
+      approveAndRaise({ row: ROW, userId: "user-1", note: NOTE, organizationId: ORG }),
     ).resolves.toEqual({
       status: "not_approved",
       reason: "This review item has no conversation thread.",
@@ -189,6 +217,7 @@ describe("approveAndRaise", () => {
         row: ROW,
         userId: "user-1",
         note: NOTE,
+        organizationId: ORG,
         alreadyApproved: true,
       }),
     ).resolves.toEqual({
@@ -203,7 +232,12 @@ describe("approveAndRaise", () => {
 
   it("refuses an empty note without approving or filing anything", async () => {
     await expect(
-      approveAndRaise({ row: ROW, userId: "user-1", note: "   " }),
+      approveAndRaise({
+        row: ROW,
+        userId: "user-1",
+        note: "   ",
+        organizationId: ORG,
+      }),
     ).resolves.toEqual({
       status: "not_approved",
       reason:

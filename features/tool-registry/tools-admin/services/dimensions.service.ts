@@ -199,6 +199,8 @@ export async function addToolToSurface(args: {
     const { error } = await client
       .schema("tool").from("surface_defaults")
       .insert({
+        // org-fallback-deliberate: a tool dimension is platform-wide tool
+        //   vocabulary, identical for every organization
         organization_id: await resolveSystemOrgId(client),
         visibility: "public",
         surface_name: args.surfaceName,

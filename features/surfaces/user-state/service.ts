@@ -9,6 +9,7 @@
 
 import { supabase } from "@/utils/supabase/client";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 
 /** A surface_key → state map for one (user, feature). '_default' is the global. */
 export type SurfaceStateRows = Record<string, Record<string, unknown>>;
@@ -42,7 +43,14 @@ export const surfaceUserStateService = {
       .upsert(
         {
           user_id: userId,
-          organization_id: await ensureOrgId(undefined),
+          // A surface's remembered layout is still the person's data, and a
+          // save that silently stops happening is how they lose it on the
+          // next visit. Say it once, with the remedy.
+          organization_id: await withOrganizationRefusalShown(
+            "saved",
+            () => ensureOrgId(undefined),
+            { subject: "Your layout for this screen" },
+          ),
           feature,
           surface_key: surfaceKey,
           state: state as never,

@@ -1558,13 +1558,25 @@ button.shell-nav-flyout-item {
   scroll-padding-bottom: var(--shell-fixed-alert-clearance);
 }
 
-/* A full-page route may own vertical scrolling instead of .shell-main. The
-   shell still owns the clearance for document-sticky content inside it: table
-   headers and anchor targets must settle below the entire header scrim. */
+/* A full-page route may own vertical scrolling instead of .shell-main. Keep
+   document-sticky content flush with the header's actual edge. Reserving the
+   translucent fade tail here leaves a visible strip of scrolling content
+   between the shell header and a sticky table header. */
 .shell-root:not([data-pathname^="/administration"]) .shell-main,
 .shell-root:not([data-pathname^="/administration"])
   .shell-main > :is(.overflow-y-auto, .overflow-auto) {
-  scroll-padding-top: var(--shell-header-clearance);
+  scroll-padding-top: var(--shell-header-h);
+}
+
+/* The shell fade is translucent by design. When a document-sticky table is on
+   the page, that tail would either wash out the pinned column labels or expose
+   scrolling rows in a gap above them. Drop the outside tail automatically for
+   these pages; the full header band stays opaque and the table meets its edge. */
+.shell-root:not([data-pathname^="/administration"]):has(
+    .shell-main [data-matrx-table-sticky-header="true"].relative
+  ) {
+  --shell-header-fade-h: 0rem;
+  --shell-header-clearance: var(--shell-header-h);
 }
 
 /* Padding on an overflow owner is absorbed by border-box sizing when a route

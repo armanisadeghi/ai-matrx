@@ -6,15 +6,18 @@
  * those Actions started.
  *
  * 🚨 HOW A RELOAD MID-JOB LOSES NOTHING. Every number on this page has a server
- * mount read behind it (`GET …/videos`, `GET …/metrics`, `GET /media/jobs/{id}`),
- * and `useJob` reads before it streams. The one thing the contract does not yet
- * publish is a way to ASK which jobs belong to a Library, so after a reload the
- * page would not know a job's id at all. Until
- * `GET /media/libraries/{id}/jobs` exists — filed in the contract's Frontend
- * requests section — the ids this browser started are remembered per viewer in
- * `localStorage`, which is honest about what it is: it restores the panel on
- * this device and says plainly that a job started elsewhere cannot be listed
- * here yet. The JOB itself is durable either way; this is only the door to it.
+ * mount read behind it — `GET …/videos`, `GET …/metrics`, `GET …/jobs` and
+ * `GET /media/jobs/{id}` — and `useJob` reads before it streams.
+ *
+ * This file used to say the contract published no way to ASK which jobs belong to
+ * a Library, and kept job ids in `localStorage` instead. That was wrong:
+ * `GET /media/libraries/{id}/jobs` is the contract's own "job discovery door" and
+ * the server has always served it. Believing otherwise is what made the
+ * `POST …/jobs` envelope defect cost real money — the id never arrived, so nothing
+ * was remembered, so a running billable job was unfindable from this screen while
+ * its rows sat in the database. The server's rows are now the only authority here;
+ * the per-device store is gone, because a second door that can be empty beside a
+ * door that cannot is not a fallback, it is the bug.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -32,6 +35,7 @@ import {
     getLibrary,
     getLibraryMetrics,
     isOrganizationNotReady,
+    listLibraryJobs,
 } from "../api";
 import { createCatalogListConfig } from "../catalog/listConfig";
 import { useActionRegistry } from "../hooks/useActionRegistry";
@@ -47,34 +51,6 @@ import { JobPanel } from "./JobPanel";
 import { LibraryMetricsHeader } from "./LibraryMetricsHeader";
 import { SourceDetailPanel } from "./SourceDetailPanel";
 
-/** Per-viewer, per-device door back to a job after a reload. Never the truth. */
-function jobsKey(libraryId: string) {
-    return `matrx.source-library.jobs.${libraryId}`;
-}
-
-function readRememberedJobs(libraryId: string): string[] {
-    try {
-        const raw = window.localStorage.getItem(jobsKey(libraryId));
-        if (!raw) return [];
-        const parsed: unknown = JSON.parse(raw);
-        return Array.isArray(parsed)
-            ? parsed.filter((value): value is string => typeof value === "string")
-            : [];
-    } catch {
-        return [];
-    }
-}
-
-function rememberJob(libraryId: string, jobId: string) {
-    try {
-        const next = [jobId, ...readRememberedJobs(libraryId).filter((id) => id !== jobId)];
-        window.localStorage.setItem(jobsKey(libraryId), JSON.stringify(next.slice(0, 10)));
-    } catch {
-        // A blocked or full store costs this device its shortcut back to the
-        // panel, nothing else — the job is the server's and keeps running.
-    }
-}
-
 export function LibraryPage({ libraryId }: { libraryId: string }) {
     const dispatch = useAppDispatch();
     const router = useRouter();
@@ -87,6 +63,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
     const [metricsProblems, setMetricsProblems] = useState<string[]>([]);
     const [openVideo, setOpenVideo] = useState<VideoRow | null>(null);
     const [jobIds, setJobIds] = useState<string[]>([]);
+    const [jobsDoorError, setJobsDoorError] = useState<string | null>(null);
     const [listGeneration, setListGeneration] = useState(0);
     const startedRef = useRef(false);
     // Every metrics read takes a ticket. A read that returns after a newer one
@@ -186,10 +163,54 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
         };
     }, [dispatch, libraryId, organizationId, refreshMetrics]);
 
-    // Jobs this device started, restored so a reload lands back on the panel.
+    // 🚨 THE JOB-DISCOVERY MOUNT READ — the server is the door back to a job,
+    // and this page had never opened it.
+    //
+    // `GET /media/libraries/{id}/jobs` has been published and implemented the whole
+    // time; this page kept ids in `localStorage` instead and the comment at the top
+    // of this file said the endpoint did not exist. It does. That mistake is what
+    // turned the `POST …/jobs` envelope defect from an ugly error message into lost
+    // money: the response was unreadable, so no id was ever remembered, so a real
+    // running paid transcription was invisible on this screen forever — while its
+    // rows sat in the database the entire time, findable by this one call.
+    //
+    // So the durable rows are now the authority and `localStorage` is gone. This asks
+    // only for the jobs that are still going: a person must be able to find work that
+    // is running and spending, and a finished job's panel is history, not an alarm.
+    // Anything started in this tab is added by `onJobStarted` regardless of status.
     useEffect(() => {
-        setJobIds(readRememberedJobs(libraryId));
-    }, [libraryId]);
+        if (!organizationId) return;
+        let cancelled = false;
+        void (async () => {
+            try {
+                const found = await listLibraryJobs(dispatch, libraryId, {
+                    status: ["pending", "running"],
+                    limit: 10,
+                });
+                if (cancelled) return;
+                const live = found.jobs.map((job) => job.id);
+                // Union, never replace: a job this tab just started is not in the
+                // answer to a read that raced it.
+                setJobIds((current) => [
+                    ...live,
+                    ...current.filter((id) => !live.includes(id)),
+                ]);
+            } catch (error) {
+                if (cancelled || isOrganizationNotReady(error)) return;
+                // NOTHING FAILS SILENTLY. A job may be running and spending right
+                // now and this screen cannot list it — say so, with the remedy,
+                // rather than showing an empty panel area that reads as "no jobs".
+                setJobsDoorError(
+                    error instanceof MediaApiError
+                        ? `Work already running on this Library could not be listed, so anything in progress is not shown below. ${error.message}`
+                        : "Work already running on this Library could not be listed, so anything in progress is not shown below. Reload to try again.",
+                );
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [dispatch, libraryId, organizationId]);
 
     // `?sync=1` (fresh from the paste box) and `?resync=1` (bring up to date)
     // both start the one enumeration door, once, then leave the address clean.
@@ -208,10 +229,9 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
 
     const onJobStarted = useCallback(
         (jobId: string) => {
-            rememberJob(libraryId, jobId);
             setJobIds((current) => [jobId, ...current.filter((id) => id !== jobId)]);
         },
-        [libraryId],
+        [],
     );
 
     const runner = useActionRunner(libraryId, registry.actions, onJobStarted);
@@ -298,6 +318,25 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                                         onClick={() => void registry.reload()}
                                     >
                                         Check again
+                                    </Button>
+                                </span>
+                            </p>
+                        )}
+
+                        {/* NOTHING FAILS SILENTLY: work may be running and
+                            spending right now that this screen could not list. An
+                            empty space here would read as "nothing is running". */}
+                        {jobsDoorError && (
+                            <p className="flex items-start gap-2 text-sm text-destructive">
+                                <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+                                <span>
+                                    {jobsDoorError}
+                                    <Button
+                                        variant="link"
+                                        className="ml-1 h-auto p-0 text-sm"
+                                        onClick={() => router.refresh()}
+                                    >
+                                        Try again
                                     </Button>
                                 </span>
                             </p>

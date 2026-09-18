@@ -292,6 +292,9 @@ function OneMandateBindingWorkspace({
   onChanged,
 }: OneBindingWorkspaceProps) {
   const userId = useAppSelector(selectUserId);
+  // The organization the person selected — the only honest seed for the org
+  // rung when the bar does not name one.
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
   const { organizations } = useUserOrganizations();
 
   const pinned = pinnedRungs(fixedRung);
@@ -413,9 +416,20 @@ function OneMandateBindingWorkspace({
           setWriteReport(null);
           setWrittenSignature(null);
           setRung(nextRung);
+          // Moving onto the organization rung without naming one lands on the
+          // organization the PERSON selected — never whichever organization
+          // sorted first in their membership list, which is how a binding gets
+          // written for someone else's workspace. With no selection (and none
+          // named) the rung stays empty and the bar says "Choose the
+          // organization below" — `rungReady` keeps Save refused until then.
+          // Law: common-docs/policies/context-is-carried-never-rebuilt.md.
           setOrganizationId(
             nextRung === "org"
-              ? (nextOrgId ?? organizations[0]?.id ?? null)
+              ? (nextOrgId ??
+                  (activeOrganizationId &&
+                  organizations.some((o) => o.id === activeOrganizationId)
+                    ? activeOrganizationId
+                    : null))
               : null,
           );
           // The bottom rung is not a binding, so leaving batch mode with it is

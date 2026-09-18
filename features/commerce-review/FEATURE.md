@@ -59,9 +59,17 @@ a faux in-body header bar.
 
 ## Change Log
 
+- 2026-09-17 — **The active organization, never the "effective" one.** The triage, drafts and
+  attention queues and the store-connect shell read `selectOrganizationId` instead of
+  `selectEffectiveOrganizationId`: with no organization selected they no longer review (and write
+  verdicts against) the user's PERSONAL workspace. Each queue now says so and names the remedy,
+  and step 1 of store-connect renames itself to "Choose the organization this store belongs to"
+  instead of pointing at a personal-workspace settings page
+  (`common-docs/policies/context-is-carried-never-rebuilt.md`).
+
 - 2026-08-29 — Deleted the `/commerce/settings` parallel config surface (Arman's ruling;
   no-legacy): the store-connect step 1 now opens `/organizations/[orgId]/settings/configuration`
-  (active org via `selectEffectiveOrganizationId`, `/organizations` when none). Added
+  (the SELECTED active org, `/organizations` when none — see the 2026-09-17 entry). Added
   `pt-[var(--shell-header-h)]` clearance to the triage/drafts/attention/stores bodies —
   their top-of-page controls sat behind the glass header. Registered the commerce
   billing-dimensions module in this feature's admin map.

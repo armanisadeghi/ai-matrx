@@ -12,6 +12,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 import {
   isRecordUnavailableError,
   recordUnavailable,
@@ -625,11 +626,15 @@ export const canvasArtifactService = {
       }
       if (existing) return { id: existing.id };
 
-      // Scope columns: chat rows inherit org/task from the conversation;
-      // non-chat rows fall back to the active/personal org. A feature table
-      // may not depend on a project FK — project membership, when it exists,
-      // is a `platform.associations` edge on the conversation.
-      let organizationId: string | null = null;
+      // Scope columns: a chat row inherits its organization and task from the
+      // conversation it belongs to; a non-chat row acts in the organization the
+      // person SELECTED (`ensureOrgId` throws `OrganizationContextError` when
+      // there is none — it never substitutes the personal workspace). The
+      // organization is NEVER left for `public._stamp_org_default` to choose.
+      // common-docs/policies/context-is-carried-never-rebuilt.md
+      // A feature table may not depend on a project FK — project membership,
+      // when it exists, is a `platform.associations` edge on the conversation.
+      let organizationId: string;
       let taskId: string | null = null;
       if (isChat) {
         // A chat row needs its conversation for scope columns; some
@@ -644,10 +649,13 @@ export const canvasArtifactService = {
           .eq("id", input.conversationId)
           .maybeSingle();
 
-        if (conversationErr || !conversation) {
+        if (conversationErr || !conversation?.organization_id) {
           console.error(
             "[canvasArtifactService.upsertDiscoveryIndex] conversation lookup error:",
-            conversationErr ?? "zero-row conversation read",
+            conversationErr ??
+              (conversation
+                ? "conversation carries no organization — refusing to let the trigger choose one"
+                : "zero-row conversation read"),
           );
           return null;
         }
@@ -745,6 +753,11 @@ export const canvasArtifactService = {
 
       return { id: keyed.id };
     } catch (err) {
+      // Both callers (`materializeBlocks`, `ensureArtifactPersisted`) collect
+      // thrown errors into the `errors` list they return, so propagating the
+      // org refusal makes it visible instead of returning a null nobody can
+      // explain. Law: common-docs/policies/context-is-carried-never-rebuilt.md.
+      if (isOrganizationRequiredError(err)) throw err;
       console.error("[canvasArtifactService.upsertDiscoveryIndex] error:", err);
       return null;
     }

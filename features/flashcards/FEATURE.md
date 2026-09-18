@@ -168,6 +168,8 @@ own fresh conversation):
 
 ## Change log
 
+- `2026-09-17` — **A card's detail layer carries its card's organization.** `fcService.addDetail` omitted `organization_id` on `education.fc_detail` and leaned on the `_inherit_org` trigger, but `public._stamp_org_default` fires on a NULL first and files the layer in the writer's personal workspace. The service now reads the parent card's `organization_id`, writes it, and refuses in plain words when the card cannot be read. Guard: `pnpm check:organization-context`.
+
 - `2026-09-17` — **The Flashcard-set agent surface is registered and has production run and binding evidence, but is not fully certified.** Commit `b19524edf9` wired the route and manifest but did not synchronize its runtime registration; the live database was missing that one parent surface out of 200. The transactional repair seeded the complete 12-key mirror at 06:33:55Z. Run `a8c5bdb0-9640-4075-9630-70426bbf0083` completed around 06:38Z with two completed `chat.request` rows, `card_count=50`, the correct deck title and first question, and only the deferred context tool. Independent production proof then bound Badass Agent at User/Me scope with empty mappings: the success receipt appeared, the Agents menu showed Run/Settings/Remove controls, and the exact association carried the expected user-tier role before cleanup. Broader full surface certification is still required, so the surface remains `partial`.
 
 - `2026-09-16` — **Flashcard set detail is now a real agent surface, not a

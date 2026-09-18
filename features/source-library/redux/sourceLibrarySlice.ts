@@ -35,6 +35,9 @@ export interface SyncState {
     /** Server-reported elapsed at the terminal event, so the final number is its. */
     finishedElapsedMs: number | null;
     listed: number;
+    /** How many pages the walk discarded, and why. See the "done" banner. */
+    skippedTotal: number;
+    skippedByReason: Record<string, number>;
     expectedTotal: number | null;
     pagesReceived: number;
     operationId: string | null;
@@ -59,6 +62,8 @@ const EMPTY_SYNC: SyncState = {
     startedAt: null,
     finishedElapsedMs: null,
     listed: 0,
+    skippedTotal: 0,
+    skippedByReason: {},
     expectedTotal: null,
     pagesReceived: 0,
     operationId: null,
@@ -254,6 +259,8 @@ const sourceLibrarySlice = createSlice({
                     sync.listed = event.total_listed;
                     sync.finishedElapsedMs = event.elapsed_ms;
                     sync.quotaUnitsSpent = event.quota_units_spent;
+                    sync.skippedTotal = event.skipped_total;
+                    sync.skippedByReason = event.skipped_by_reason;
                     entry.metrics = event.metrics;
                     if (entry.library) {
                         entry.library.sync_status = "idle";

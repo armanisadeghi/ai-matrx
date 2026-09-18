@@ -148,15 +148,22 @@ export function OrganizationsAdminClient() {
       !focusedUserId || membershipOrganizationIds.has(organization.id),
   );
 
-  const effectiveSelectedOrganizationId =
-    visibleOrganizations.find(
-      (organization) => organization.id === requestedOrganizationId,
-    )?.id ??
-    visibleOrganizations.find(
-      (organization) => organization.id === selectedOrganizationId,
-    )?.id ??
-    visibleOrganizations[0]?.id ??
-    null;
+  // The organization shown is the one the admin PICKED — from the URL (`?org=`)
+  // or by opening a row in the table beside this panel. Nothing pre-picks the
+  // first organization in the list: a first-membership pick puts an admin in
+  // front of a tenant they never chose, and every action in this panel acts on
+  // it. With nothing picked the panel says "Select an organization".
+  // common-docs/policies/context-is-carried-never-rebuilt.md
+  const isVisibleOrganization = (id: string | null): boolean =>
+    Boolean(id) &&
+    visibleOrganizations.some((organization) => organization.id === id);
+  const effectiveSelectedOrganizationId = isVisibleOrganization(
+    requestedOrganizationId,
+  )
+    ? requestedOrganizationId
+    : isVisibleOrganization(selectedOrganizationId)
+      ? selectedOrganizationId
+      : null;
 
   const userById = new Map(users.map((user) => [user.id, user]));
   const focusedUser = focusedUserId ? userById.get(focusedUserId) : undefined;

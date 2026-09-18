@@ -147,11 +147,28 @@ export async function addItemToList(params: {
   isPublic?: boolean;
   publicRead?: boolean;
 }) {
+  // An item lives in its LIST's tenant — never in whatever organization the
+  // person happens to have selected, and never in a database default. Read the
+  // parent's organization and refuse when the list has none.
+  const { data: parentList, error: parentError } = await supabase
+    .schema("workbench")
+    .from("udt_structured_lists")
+    .select("organization_id")
+    .eq("id", params.listId)
+    .single();
+  if (parentError)
+    throw new Error(`Failed to read the list: ${parentError.message}`);
+  if (!parentList.organization_id)
+    throw new Error(
+      "This list isn't filed in an organization, so a new item has no organization to live in. Open the list from an organization workspace and try again.",
+    );
+
   const { data, error } = await supabase
     .schema("workbench")
     .from("udt_structured_list_items")
     .insert({
       list_id: params.listId,
+      organization_id: parentList.organization_id,
       user_id: params.userId,
       label: params.label,
       description: params.description ?? null,

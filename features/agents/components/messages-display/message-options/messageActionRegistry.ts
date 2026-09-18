@@ -85,10 +85,7 @@ import { openAssistantMessageEditor } from "./openAssistantMessageEditor";
 import type { AssistantEditTarget } from "./resolveAssistantEditTarget";
 import { hasConvertibleContent } from "./convertibleContent";
 import { messageMayContainKindBlock } from "@/features/content-ir/studio/message-kind-gate";
-import {
-  selectEffectiveOrganizationId,
-  selectOrganizationId,
-} from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { requireOrganizationContext } from "@/lib/api/organization-context";
 import {
   ensureOrganizationContext,
@@ -1600,13 +1597,27 @@ function saveShapeInstanceItem(ctx: MessageActionContext): MenuItem {
     label: "Save to my Shapes",
     action: async () => {
       ctx.onClose();
+      // THE EXPLICIT ACTIVE ORG, NEVER A PERSONAL SUBSTITUTE. This read the
+      // legacy effective-org selector, so a shape saved with no organization
+      // selected was filed into the user's personal workspace with nothing on
+      // screen saying so. The gate asks instead of guessing; cancelling writes
+      // nothing and says nothing.
+      let organizationId: string;
+      try {
+        organizationId = await ensureOrganizationContext({
+          organizationId: selectOrganizationId(ctx.getState()),
+        });
+      } catch (error) {
+        if (isOrganizationSelectionCancelled(error)) return;
+        throw error;
+      }
       const toastId = toast.loading("Saving shape instance…");
       try {
         const { saveKindInstancesFromMessage } =
           await import("@/features/content-ir/studio/message-kind-instances");
         const saved = await saveKindInstancesFromMessage({
           text,
-          organizationId: selectEffectiveOrganizationId(ctx.getState()),
+          organizationId,
           // Provenance rides with the save (DD-131 slice 1): the record is
           // HOMED in this conversation and carries a `produced_by` edge back
           // to this message, exactly as the server store writes it.

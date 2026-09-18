@@ -228,6 +228,9 @@ export async function PUT(request: NextRequest) {
     }
 
     // Upsert preferences (scoped to the user's personal org)
+    // org-fallback-deliberate: sms_notification_preferences is a per-person
+    //   singleton (upsert on user_id) — one row that follows the person across
+    //   organizations
     const organizationId = await ensureOrgIdServer(supabase, undefined);
     const { data, error } = await adminSupabase
       .schema("communication")

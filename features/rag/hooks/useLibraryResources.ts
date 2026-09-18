@@ -25,7 +25,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { createClient } from "@/utils/supabase/client";
 import type { CatalogEntitlement } from "@/features/rag/hooks/useLibraryCatalog";
 
@@ -166,13 +166,19 @@ export function itemNoun(entityType: LibraryEntityType, count: number): string {
 
 /**
  * @param overrideOrganizationId — evaluate entitlement against a SPECIFIC org
- * instead of the effective active org. Access itself never depends on the
- * active org; this only decides which org's state the rows describe.
+ * instead of the active org. Access itself never depends on the active org;
+ * this only decides which org's state the rows describe.
+ *
+ * 🚨 The active org is the EXPLICITLY SELECTED one, never
+ * `selectEffectiveOrganizationId`: entitlement described against a personal
+ * workspace the user never chose is a wrong answer stated confidently. With
+ * none selected the catalog still lists (the RPC is keyed on auth.uid() and the
+ * org only narrows entitlement) and the rows simply claim no org entitlement.
  */
 export function useLibraryResources(overrideOrganizationId?: string | null) {
   const userId = useAppSelector(selectUserId);
-  const effectiveOrganizationId = useAppSelector(selectEffectiveOrganizationId);
-  const organizationId = overrideOrganizationId ?? effectiveOrganizationId;
+  const activeOrganizationId = useAppSelector(selectOrganizationId);
+  const organizationId = overrideOrganizationId ?? activeOrganizationId;
   const [items, setItems] = useState<LibraryResource[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -228,7 +234,11 @@ export function useLibraryResources(overrideOrganizationId?: string | null) {
         return false;
       }
       if (!organizationId) {
-        setError("an organization is required to subscribe");
+        // Fail closed and NAME the remedy — a subscription belongs to an
+        // organization, and there is no "effective" one to fall back to.
+        setError(
+          "No organization is selected, so this cannot be added — choose one from the organization picker in the header, then add it again. Nothing was subscribed.",
+        );
         return false;
       }
       try {
@@ -252,7 +262,9 @@ export function useLibraryResources(overrideOrganizationId?: string | null) {
   const unsubscribe = useCallback(
     async (resource: LibraryResource): Promise<boolean> => {
       if (!organizationId) {
-        setError("an organization is required");
+        setError(
+          "No organization is selected, so there is nothing to remove it from — choose one from the organization picker in the header and try again. Nothing was changed.",
+        );
         return false;
       }
       try {

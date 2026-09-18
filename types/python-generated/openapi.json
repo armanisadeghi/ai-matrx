@@ -8042,6 +8042,111 @@
         }
       }
     },
+    "/coding-sessions/codex/capabilities": {
+      "get": {
+        "tags": [
+          "Coding Sessions"
+        ],
+        "summary": "Codex Managed Capabilities",
+        "description": "Can THIS box run a Codex turn — CLI, broker audience, mint, and all.\n\nThe same door shape as `/claude/capabilities`, and for the same reason:\na screen must be able to learn the answer with a reason instead of\ndiscovering it from a launch that fails.",
+        "operationId": "codex_managed_capabilities_coding_sessions_codex_capabilities_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodexManagedCapabilitiesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coding-sessions/codex/stream": {
+      "post": {
+        "tags": [
+          "Coding Sessions"
+        ],
+        "summary": "Codex Managed Stream",
+        "operationId": "codex_managed_stream_coding_sessions_codex_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CodexManagedRestRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Codex exec JSONL event stream",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/coding-sessions/codex/runtimes/{runtime_id}/cancel": {
+      "post": {
+        "tags": [
+          "Coding Sessions"
+        ],
+        "summary": "Cancel Codex Managed Runtime",
+        "operationId": "cancel_codex_managed_runtime_coding_sessions_codex_runtimes__runtime_id__cancel_post",
+        "parameters": [
+          {
+            "name": "runtime_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Runtime Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CodexManagedCancelResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/skills": {
       "get": {
         "tags": [
@@ -8857,6 +8962,22 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/broker/gateway/openai_codex/v1/responses": {
+      "post": {
+        "tags": [
+          "Token Broker",
+          "Token Broker"
+        ],
+        "summary": "Openai Codex Responses",
+        "description": "The Codex CLI's data plane — `{base_url}/responses`, SSE, scoped-token auth.\n\nThe path is NOT cosmetic: `codex exec` derives it from the `base_url` of\nits `model_providers.<id>` entry, so the credential's `endpoint` minus\n`/responses` is exactly what the runtime configures. Scoped token only —\nno `context_dep` here, by the gateway contract.",
+        "operationId": "openai_codex_responses_broker_gateway_openai_codex_v1_responses_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response"
           }
         }
       }
@@ -122576,6 +122697,203 @@
           "operational"
         ],
         "title": "CoderPadServiceStatus"
+      },
+      "CodexManagedAction": {
+        "type": "string",
+        "enum": [
+          "resume",
+          "start"
+        ],
+        "title": "CodexManagedAction"
+      },
+      "CodexManagedCancelResponse": {
+        "properties": {
+          "runtime_id": {
+            "type": "string",
+            "title": "Runtime Id"
+          },
+          "cancelled": {
+            "type": "boolean",
+            "title": "Cancelled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "runtime_id",
+          "cancelled"
+        ],
+        "title": "CodexManagedCancelResponse"
+      },
+      "CodexManagedCapabilitiesResponse": {
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "native_resume": {
+            "type": "boolean",
+            "title": "Native Resume"
+          },
+          "native_fork": {
+            "type": "boolean",
+            "title": "Native Fork"
+          },
+          "cli_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cli Version"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "available",
+          "native_resume",
+          "native_fork"
+        ],
+        "title": "CodexManagedCapabilitiesResponse"
+      },
+      "CodexManagedRestRequest": {
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/CodexManagedAction",
+            "default": "start"
+          },
+          "conversation": {
+            "$ref": "#/components/schemas/BridgeConversation"
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 200000,
+            "minLength": 1,
+            "title": "Prompt"
+          },
+          "workspace_root": {
+            "type": "string",
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Workspace Root",
+            "default": "/home/agent"
+          },
+          "thread_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thread Id"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "sandbox_mode": {
+            "type": "string",
+            "enum": [
+              "read-only",
+              "workspace-write"
+            ],
+            "title": "Sandbox Mode",
+            "default": "read-only"
+          },
+          "turn_timeout_seconds": {
+            "type": "integer",
+            "maximum": 7200,
+            "minimum": 30,
+            "title": "Turn Timeout Seconds",
+            "default": 1800
+          },
+          "max_budget_usd": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000,
+                "exclusiveMinimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Budget Usd"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "conversation",
+          "prompt"
+        ],
+        "title": "CodexManagedRestRequest",
+        "description": "HTTP carrier that accepts, but never trusts, frontend-injected scope."
       },
       "CodingReplyResponder": {
         "properties": {

@@ -36,7 +36,7 @@ import {
 import { escrowSessionKey } from "./escrow";
 import { KeyHandoff, type EscrowStatus } from "./KeyHandoff";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useDownloadBlob } from "@/features/pdf/hooks/useDownloadBlob";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 
@@ -64,7 +64,11 @@ export function MaskDialog({ fileId, open, onOpenChange }: MaskDialogProps) {
   const [handoff, setHandoff] = useState<StoredSession | null>(null);
   const [maskedBlob, setMaskedBlob] = useState<Blob | null>(null);
   const [escrowStatus, setEscrowStatus] = useState<EscrowStatus>(null);
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // The EXPLICIT active org. Escrow is an ORGANIZATION recovery path, so with
+  // no organization selected `escrowSessionKey` refuses and the handoff dialog
+  // says the key exists only in this browser — never a key quietly escrowed to
+  // a personal workspace the user never chose.
+  const organizationId = useAppSelector(selectOrganizationId);
 
   const handleRun = async () => {
     if (!candidates.length) return;

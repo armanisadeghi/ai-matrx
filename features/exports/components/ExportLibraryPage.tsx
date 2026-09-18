@@ -177,12 +177,43 @@ export function ExportLibraryPage({ libraryId }: { libraryId: string }) {
     })();
   }, [libraryId]);
 
-  // Index only what has not been indexed. A Library that came back WITH a
-  // summary is done; re-POSTing would redo work nobody asked for.
+  /**
+   * Index only what has not been indexed, and never what is being indexed.
+   *
+   * A Library that came back WITH a summary is done; re-POSTing would redo work
+   * nobody asked for.
+   *
+   * 🚨 AND A LIBRARY THE SERVER SAYS IS `syncing` IS ALREADY BEING READ. An
+   * index pass is authoritative — it clears the Library's rows and rebuilds
+   * them — so a second pass started from a re-mount does not "resume", it
+   * throws away the progress of the pass still running and starts from zero.
+   * On a 1 GB mailbox that is minutes of work lost to opening the page twice.
+   * The status is the server's own; if a pass really died mid-read it stays
+   * `syncing` and the person's own "Index it again" is the way back, which is
+   * the right place for that decision.
+   */
   useEffect(() => {
     if (!library) return;
     if (summary) return;
     if (indexState.phase !== "idle") return;
+    if (library.status === "syncing") {
+      // Not a stand-in and not a guess: the server says it is reading this
+      // export right now. Starting a second pass would throw that progress
+      // away, so this shows the live readout instead — and only claims a
+      // COUNT when the server has published one. `item_count` is written when
+      // a pass ends, so mid-pass it is 0, and "Found 0 items so far" beside a
+      // list already showing tens of thousands would be the screen lying about
+      // the very thing it is reporting.
+      const counted = library.total_items ?? 0;
+      setIndexState({
+        phase: counted > 0 ? "running" : "starting",
+        cumulative: counted,
+        elapsedMs: 0,
+        message: null,
+        partialTotal: null,
+      });
+      return;
+    }
     runIndex();
   }, [library, summary, indexState.phase, runIndex]);
 

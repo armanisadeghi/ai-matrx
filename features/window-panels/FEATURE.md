@@ -121,6 +121,12 @@ side panel) and the `/detail/[type]/[id]` route. Presentation is the person's
 ## Change Log
 
 - 2026-09-17 — **The Detail primitive (`lib/detail`) replaces `itemDetailWindow`.** `windows/item-detail/ItemDetailWindow.tsx` and its opener are deleted; the same body (loader, fields, surface scope, right-click menu) now comes from `features/item-presentation/detail.tsx` + `ItemDetailFrame.tsx` through one `DetailRecordType`, and shows as `detailWindow` (default), `detailDocked` (side panel on `SidePanelSurface`) and the `/detail/[type]/[id]` page. Metadata: both overlays carry `urlSync.key: "detail"`; the hydrator reads `detail:<type>.<id>:as-<presentation>`. Host binding in `detail/`; presentation knob `ui.detail.default_presentation` (`migrations/detail_presentation_knob.sql`, applied by the google-native chair). Surface: `/detail` in `(core)` (`features/window-panels/detail/DetailShowcase.tsx`), with `/demos/detail-primitive` rendering the same body for the demos deployment — the demo-only path 307s under the `core` profile, so it was never the proof screen (F-5, 2026-09-17).
+- **2026-09-17** — **A feedback report is filed in the organization the person is
+  acting in.** `submitFeedback` resolved the submitter's PERSONAL organization
+  server-side; a Server Action carries no `X-Organization-Id` header, so
+  `CreateFeedbackInput` now carries `organization_id` and `FeedbackWindow`
+  reads it from `selectOrganizationId` and refuses — with the text preserved —
+  when nothing is selected. Guard: `pnpm check:organization-context`.
 
 - 2026-09-14 — **Dialog-to-WindowPanel interaction census.** Repaired twelve dialogs that launched a child WindowPanel behind a blocking modal or auto-dismissed when the child received its first click. Coexisting hosts now use the design-system's `modal={false}` z-layer contract and prevent outside interaction from dismissing the host; blocking overwrite confirmations close before launching the diff window. `window-launching-dialogs.test.ts` pins every audited host and both confirmation handoffs.
 

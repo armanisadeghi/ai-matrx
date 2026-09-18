@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/utils/supabase/adminClient";
-import { resolveOrgIdForUserServer } from "@/lib/organizations/personalOrg";
+import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 
 const PayloadSchema = z.object({
   fingerprint: z.string().regex(/^[a-zA-Z0-9]{16,200}$/),
@@ -31,10 +31,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unknown guest identity" }, { status: 404 });
   }
 
-  const organizationId = await resolveOrgIdForUserServer(
-    admin,
-    guest.auth_user_id,
-  );
+  // org-fallback-deliberate: a GUEST has no organization — `guest_executions`
+  //   carries none and the person has chosen none — and ops.system_error is
+  //   the platform's own error ledger, so the platform is the only tenant this
+  //   row can belong to. It used to resolve the guest's personal organization
+  //   first, filing the platform's diagnostics in a private workspace.
+  const organizationId = await resolveSystemOrgId(admin);
   const { error } = await admin.schema("ops").from("system_error").insert({
     kind: `client:${parsed.data.source}`,
     error_text: parsed.data.message,

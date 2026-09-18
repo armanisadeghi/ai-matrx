@@ -85,6 +85,8 @@ export async function upsertUiClient(
     .upsert(
       {
         ...row,
+        // org-fallback-deliberate: the tool registry's lookup rows are platform-wide
+        //   vocabulary every organization reads
         organization_id: await resolveSystemOrgId(client),
         visibility: "public",
       },
@@ -117,6 +119,8 @@ export async function upsertToolExecutor(
     .upsert(
       {
         ...row,
+        // org-fallback-deliberate: the same platform-wide tool-registry vocabulary
+        //   as above
         organization_id: await resolveSystemOrgId(client),
         visibility: "public",
       },

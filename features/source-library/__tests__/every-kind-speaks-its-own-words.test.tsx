@@ -52,6 +52,7 @@ const IDLE_SYNC: SyncState = {
     phase: "idle", startedAt: null, finishedElapsedMs: null, listed: 0,
     expectedTotal: null, pagesReceived: 0, operationId: null, message: null,
     remedy: null, retryable: false, partialTotal: null, quotaUnitsSpent: null, problems: [],
+    skippedTotal: 0, skippedByReason: {},
 };
 
 function library(adapter: MediaAdapter, total: number): LibraryRow {

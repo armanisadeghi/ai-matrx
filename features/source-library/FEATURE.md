@@ -54,9 +54,21 @@ Transcript text is a genuine direct Supabase read (`transcriptService.ts`).
    `POST …/jobs` is called at all. The shell's own `confirm` is synchronous and
    therefore cannot carry an honest cost, which is the only reason this feature
    has a confirm of its own.
-3. **A reload mid-job loses nothing.** `useJob` reads `GET /media/jobs/{id}`
-   BEFORE it attaches a stream, always. A panel that is only correct if it
-   caught the stream is the defect this order exists to prevent.
+3. **A reload mid-job loses nothing, and a started job is always findable.**
+   `LibraryPage` mounts by asking `GET /media/libraries/{id}/jobs` — the
+   contract's own JOB-DISCOVERY DOOR — for everything still `pending` or
+   `running`, and `useJob` then reads `GET /media/jobs/{id}` BEFORE it attaches
+   a stream. A panel that is only correct if it caught the stream is the defect
+   that order exists to prevent; a page that can only list jobs whose ids this
+   browser happened to learn is the defect the mount read exists to prevent.
+   This page used to keep job ids in `localStorage` because a comment here
+   claimed the discovery endpoint did not exist. It always had. That mistake is
+   what turned a `POST …/jobs` envelope mismatch into lost money on 2026-09-18:
+   the id never arrived, so nothing was remembered, so a real running paid
+   transcription was invisible on this screen while its rows sat in the
+   database. The per-device store is gone — a second door that can be empty
+   beside a door that cannot is not a fallback, it is the bug. Guard:
+   `__tests__/a-started-job-is-always-findable.test.ts`.
 4. **The Action bar is the server's.** `useActionRegistry` reads
    `GET /media/actions` and there is no fallback list anywhere. One declaration
    server-side is enough to appear; a retired one disappears. If the registry
@@ -142,6 +154,29 @@ nothing moves; the claim is gone. The day the server publishes a word count,
 `vocabulary.ts` is the only file that changes.
 
 ## Change log
+
+- `2026-09-18` — **A job that started is a job this screen can find.** Two
+  independent failures, both fixed. (1) `POST …/jobs` answered `{"job": {…}}`
+  where §7.3 publishes a bare Job row, so `job.id` was `undefined` on a job the
+  server had already accepted, started and billed — the screen refused honestly
+  and the person's $2.19 became untrackable. The server now sends the bare row
+  (guarded there by a test that walks EVERY documented endpoint against the
+  router); `asJobRow` reads either shape anyway, because a client and a server
+  deploy minutes apart. (2) The real defect: this page had never called
+  `GET /media/libraries/{id}/jobs`, the contract's job-discovery door, and kept
+  ids in `localStorage` instead. It is now the Library page's mount read, and
+  the per-device store is deleted. A failure to list is a sentence on screen
+  with a retry, never an empty space that reads as "nothing is running".
+  Guard: `__tests__/a-started-job-is-always-findable.test.ts`, proven red
+  against the envelope with the exact sentence the live test screenshotted.
+
+- `2026-09-18` — **An estimate no longer fails on an unrelated, absent YouTube
+  quota snapshot.** Pricing a selection reads already-catalogued Sources and does
+  not call the YouTube Data API; production therefore correctly omits `quota`.
+  The client now treats only that absent snapshot as optional while continuing to
+  reject malformed quota objects and every price, count, expiry, and token field.
+  Guard: `three-laws.test.tsx` parses the production-shaped estimate before a
+  confirmation can be offered.
 
 - `2026-09-18` — **The header speaks the Library's own words, and a not-yet stops
   looking like a failure.** New `vocabulary.ts` picks the nouns and the axes from

@@ -113,6 +113,7 @@ import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import { useActionRunner } from "../hooks/useActionRunner";
 import { useActionRegistry } from "../hooks/useActionRegistry";
 import { useJob } from "../hooks/useJob";
+import { parseEstimateResult } from "../contract";
 import type {
     ActionDeclaration,
     EstimateResult,
@@ -248,6 +249,16 @@ describe("A · nothing is spent before a person has seen what it costs", () => {
         runner = useActionRunner("lib-1", actions);
         return <>{runner.dialog}</>;
     }
+
+    it("accepts the live estimate when its unrelated YouTube quota snapshot is absent", () => {
+        const { quota: _quota, ...liveEstimate } = ESTIMATE;
+
+        const parsed = parseEstimateResult(liveEstimate);
+
+        expect(parsed.quota).toBeNull();
+        expect(parsed.estimate_token).toBe(ESTIMATE.estimate_token);
+        expect(parsed.cost).toEqual(ESTIMATE.cost);
+    });
 
     it("no job is created before a person has seen the cost", async () => {
         estimateAction.mockResolvedValue(ESTIMATE);

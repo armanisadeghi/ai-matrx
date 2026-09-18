@@ -151,6 +151,8 @@ RLS via `iam.apply_rls` (entity/component/entity). Registered in `entity_types`,
 
 ## Change log
 
+- `2026-09-17` — **Assessment items carry the parent assessment's organization explicitly.** `addItems` omitted `organization_id` and relied on the `_inherit_org` trigger; an omitted key is indistinguishable from a NULL, and `public._stamp_org_default` fires first, filing questions in the writer's personal workspace. The service now reads the parent assessment's `organization_id` and puts it on every row, and refuses in plain words when the parent cannot be read. Guard: `pnpm check:organization-context`.
+
 - **2026-09-08** — `GradedAnswerBlock` is THE verdict render (`answer_grade` kind → `answer_grade_verdict`): `take/QuestionView` `FeedbackBlock` and `grade-work/GradeWorkSurface` mount it and their two copies of the verdict pill + misconception + explanation + transcription are deleted; `StepBreakdown` stays beside it (steps are not part of the kind).
 - **2026-08-18** — all AI steps resolve through mandates (IC-1); UUID registry deleted
   (`data/agents.ts` → `data/mandates.ts`, `ASSESSMENT_MANDATES`; item-type constants moved with it).

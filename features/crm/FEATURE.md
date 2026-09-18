@@ -1362,6 +1362,7 @@ module in the folder + the two deleted filenames).
   Per-value provenance lands in `crm.party.field_provenance` (aidream migration
   0778); until it is applied the write is skipped WITH its remedy, never
   silently. Nothing is ever written back to Google.
+- 2026-09-17 — **CRM stamps the org the user CHOSE, never a substitute.** `CrmListPage` and `DealsPage` read `selectOrganizationId` instead of the legacy `selectEffectiveOrganizationId` (`organization_id ?? personal_organization_id`), and `DealsPage` also drops its `?? list.ctx.orgIds[0]` fallback — an arbitrary membership standing in for a choice. `ImportWizard` seeds its own "Into organization" picker from the explicit org, and `OutreachListCreateDialog` resolves through the bounded workspace wait. With no organization selected: the create form refuses with the sentence `PartyCreateForm` already uses, the deal dialog refuses by name, Save view is disabled with its reason, and nothing is written.
 
 - 2026-09-13 — **A customer row says who made it, and the grid has ONE chip for
   it** (DD-131 slice 3). `crm.party` gained `created_by_tier` /

@@ -13,15 +13,25 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import { EntityListPage } from "@/lib/entity-list/components/EntityListPage";
+import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectOrganizationId,
+  selectOrgBootstrapResolved,
+} from "@/lib/redux/slices/appContextSlice";
 
 import { buildCertifiedPrinterListConfig } from "../listConfig";
 import { certifyPrinterHref } from "../types";
 
 export function CertifiedPrintersPage() {
   const router = useRouter();
-  const organizationId = useAppSelector(selectEffectiveOrganizationId);
+  // THE ACTIVE ORGANIZATION, NEVER AN "EFFECTIVE" ONE — this read the
+  // personal-org fallback, so an unselected picker listed the PERSONAL
+  // workspace's printers as if they were the organization's.
+  const organizationId = useAppSelector(selectOrganizationId);
+  // Without an org there is no list to build: say so rather than render a
+  // header over an empty page that looks broken.
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
 
   const config = useMemo(
     () =>
@@ -66,6 +76,9 @@ export function CertifiedPrintersPage() {
           </Link>
         </div>
       </PageHeader>
+      {!organizationId && orgBootstrapResolved && (
+        <OrganizationRequiredNotice what="Certified printers" />
+      )}
       {config && (
         <EntityListPage
           config={config}

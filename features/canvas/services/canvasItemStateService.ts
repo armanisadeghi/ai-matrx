@@ -10,6 +10,7 @@
 import { supabase } from "@/utils/supabase/client";
 import { requireUserId } from "@/utils/auth/getUserId";
 import { ensureOrgId } from "@/lib/organizations/personalOrg";
+import { isOrganizationRequiredError } from "@/lib/organizations/organizationRequiredError";
 
 export const canvasItemStateService = {
   /** Current user's saved state for an artifact, or null if none. */
@@ -62,6 +63,9 @@ export const canvasItemStateService = {
       }
       return true;
     } catch (err) {
+      // The org refusal is fixable by the person — never a silent `false`.
+      // Law: common-docs/policies/context-is-carried-never-rebuilt.md.
+      if (isOrganizationRequiredError(err)) throw err;
       console.error("[canvasItemStateService.saveState] error:", err);
       return false;
     }

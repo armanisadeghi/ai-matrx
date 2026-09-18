@@ -48,7 +48,7 @@ import type { ItemMenuConfig } from "@/components/official/item/types";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
 import { EntityScopeTabs } from "@/lib/entity-list/components/EntityScopeTabs";
 import { useAppSelector } from "@/lib/redux/hooks";
-import { selectEffectiveOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { useListViewPrefs } from "@/lib/list-views/useListViewPrefs";
 import { LIST_VIEW_PAGE_SIZES } from "@/lib/list-views/defaults";
 import { cn } from "@/lib/utils";
@@ -542,9 +542,12 @@ export function CrmListPage({
     direction: prefs.direction,
     pageSize: prefs.pageSize,
   });
-  // New records land in the active org (falls back to the personal org while
-  // none is explicitly selected). Access never depends on it — only stamping.
-  const effectiveOrgId = useAppSelector(selectEffectiveOrganizationId);
+  // New records land in the EXPLICIT active org — never a personal-workspace
+  // fallback (a record silently stamped personal is the incident documented in
+  // PartyCreateForm). With none selected the create form refuses and says so,
+  // and Save view is disabled with its reason. Access never depends on this —
+  // only stamping.
+  const activeOrgId = useAppSelector(selectOrganizationId);
   const openGoogleContactsImport = useOpenGoogleContactsImport();
   const openRow = (row: PartyListRow) => {
     const href = resolveEntityDoors("party", row.id).href;
@@ -594,7 +597,7 @@ export function CrmListPage({
   const savedViewOrgId =
     list.query.scope.kind === "orgs" && list.query.scope.organizationId
       ? list.query.scope.organizationId
-      : effectiveOrgId;
+      : activeOrgId;
 
   /** One bulk write + one refresh, with the selection cleared on success. */
   const runBulk = async (
@@ -1056,7 +1059,7 @@ export function CrmListPage({
               list.query.scope.kind === "orgs" &&
               list.query.scope.organizationId
                 ? list.query.scope.organizationId
-                : effectiveOrgId,
+                : activeOrgId,
           })
         }
       >
@@ -1074,7 +1077,7 @@ export function CrmListPage({
               list.query.scope.kind === "orgs" &&
               list.query.scope.organizationId
                 ? list.query.scope.organizationId
-                : effectiveOrgId,
+                : activeOrgId,
           });
         }}
       >
@@ -1091,7 +1094,7 @@ export function CrmListPage({
               list.query.scope.kind === "orgs" &&
               list.query.scope.organizationId
                 ? list.query.scope.organizationId
-                : effectiveOrgId,
+                : activeOrgId,
           });
         }}
       >
