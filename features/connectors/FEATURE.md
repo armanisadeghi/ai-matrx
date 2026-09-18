@@ -311,6 +311,51 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
   `import/__tests__/an-import-panel-waits-for-the-organization.test.tsx` (3,
   3 RED on HEAD). Guard: `pnpm check:org-three-states`.
 
+- `2026-09-18` — **F-112 third pass, THE CLASS FIX (Bugbot on `8e612aa2`,
+  review 5247049760, comments 4046121991 and 4046121996): a selection holds
+  only ids a read has returned; an address names a REQUEST, never a
+  selection.** Three Bugbot rounds on this fix were three INSTANCES of one
+  root defect, not three unrelated bugs: `GoogleContactsImportPanel` seeded
+  `selected` directly from the window address's `initialExternalId` before
+  any read had proven the contact exists, and every earlier patch (reconcile
+  against the latest page, then a `seenIds` union) still left that
+  provisional id able to leak through whichever hole the read could not yet
+  close. This round found two more: (1) `load()` shared ONE abort controller,
+  so a keystroke before the mount's unfiltered read resolved ABORTED the one
+  read that can prove absence — a typed load never wrote `unfilteredSearch`,
+  so the address id sat in `selected` with Review ENABLED and neither
+  banner: the ORIGINAL V-24 phantom, reachable a new way, by typing early;
+  (2) the organization-change effect reset `seenIds` and `unfilteredSearch`
+  but not `selected` itself, so the PREVIOUS account's ids stayed selected
+  and Review could fire them at the new account.
+  Fixed at the class, not the instance: `contactSelectionReducer`, one
+  `useReducer` holding `selected`, `seenIds`, `unfilteredSearch` and a new
+  `requestedExternalId` together. The address id is now held ONLY as
+  `requestedExternalId` — a request — until the FIRST read that returns it
+  promotes it into `selected`, exactly once; `selected` can therefore never
+  contain an id no read has proven. An organization change dispatches ONE
+  `reset` action that clears all four fields together, so a future hole
+  cannot again reset only some of them. `load()` now takes TWO independent
+  `AbortController`s — one for the unfiltered (empty-query) read, one for a
+  typed query — so typing narrows the visible list without ever cancelling
+  the read that proves the address's contact does or does not exist; a
+  monotonic `callSeqRef` still lets only the most-recently-STARTED call paint
+  the visible list, while every settled read (even a superseded one) still
+  contributes its ids to `seenIds`. A new banner, `requestedStillLooking`
+  ("Still looking for the contact this link named…"), covers the honest gap
+  while the unfiltered read has not settled at all — never silent while
+  `selected` truthfully reads zero.
+  `phantom-selection.test.tsx` gained two cases, both RED on `8e612aa2` and
+  green after: a keystroke landing before the mount read resolves (resolving
+  the typed read first, without the contact, shows 0 selected/Review
+  disabled/"still looking"; the unfiltered read then settling shows the "not
+  in this account" sentence) and an organization change with two contacts
+  already ticked (0 selected, Review disabled, nothing survives). The
+  existing truncated-read case was corrected to the new, correct invariant:
+  it had asserted "1 selected" for an UNPROVEN id, which was itself the
+  provisional-selection shape this fix removes — it now asserts 0 selected
+  and Review disabled until the contact is actually found.
+
 - `2026-09-18` — **F-112 follow-up (Bugbot on `75fd614c`, review 5246968154
   comment 4046052473): a selection may hold any id the panel has SEEN this
   session, never only the current page.** F-112's first fix (below)

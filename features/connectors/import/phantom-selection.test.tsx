@@ -1,6 +1,6 @@
 /**
- * FORCING TEST — A SELECTION MAY HOLD ANY ID THE PANEL HAS SEEN THIS SESSION,
- * NEVER ONLY THE CURRENT PAGE.
+ * FORCING TEST — THE INVARIANT: A SELECTION HOLDS ONLY IDS A READ HAS
+ * RETURNED; AN ADDRESS NAMES A REQUEST, NEVER A SELECTION.
  *
  * V-24 (hostile verifier, `/projects/google-native/VERIFY-R9-FIX-WAVE.md`):
  * opening `?panels=google_contacts_import:<bogus externalId>:o-<org>` rendered
@@ -8,16 +8,26 @@
  * field map" — the panel said it found nothing AND pre-selected one contact
  * and offered a field map for it.
  *
- * First fix (`75fd614c`): reconciled `selected` against the LATEST `search`
- * page. Bugbot (review 5246968154, comment 4046052473) found that treats one
- * page as the whole account: a typed query that narrows the page, or a
- * truncated first page (default `limit` 50), silently dropped a REAL,
- * still-existing contact — and finding it again later never restored the
- * selection. This file's later cases pin the class fix: a `seenIds` union
- * across every read this session, reconciled only against the unfiltered,
- * NOT-truncated read (the one read that can actually prove absence), and a
- * separate, weaker sentence for a truncated unfiltered read that has not
- * (yet) turned the contact up.
+ * Three rounds of Bugbot findings on this file's fix turned out to be THREE
+ * INSTANCES OF ONE ROOT DEFECT: the address's `initialExternalId` was seeded
+ * directly into `selected` before any read had proven it existed, and every
+ * later patch (`75fd614c` reconciling against the latest page, `8e612aa2`'s
+ * `seenIds` union) still let that provisional id leak through a hole a read
+ * could not close — a typed query's narrower page (a), a truncated first
+ * page (b), the "not in this account" banner firing off either (c), a
+ * keystroke aborting the ONE read that proves absence before it resolved
+ * (review 5247049760 comment 4046121991), and an organization change that
+ * reset `seenIds`/`unfilteredSearch` but not `selected` itself (comment
+ * 4046121996).
+ *
+ * The class fix (`contactSelectionReducer` in the panel): the address id
+ * never enters `selected` directly — it is held as `requestedExternalId`
+ * until the FIRST read that returns it promotes it, exactly once. `selected`,
+ * `seenIds`, `unfilteredSearch` and `requestedExternalId` are one
+ * `useReducer`, reset together on an organization change, so there is no
+ * field left half-reset. Two independent abort controllers (unfiltered vs.
+ * typed) mean a keystroke narrows the visible list without ever cancelling
+ * the one read that can prove the address's contact does not exist.
  */
 
 import * as React from "react";
@@ -312,17 +322,170 @@ describe("the address's externalId is reconciled against what the read returns",
     expect(text).not.toContain(
       "The contact this link named is not in this account's readable contacts.",
     );
-    // The honest, weaker sentence instead — and the selection is NOT dropped
-    // just because it has not turned up yet.
+    // The honest, weaker sentence instead. THE INVARIANT: `selected` holds
+    // only ids a read has proven — a truncated read that has not (yet)
+    // turned Ada up proves NOTHING, so she is not selected either. The
+    // pre-invariant version of this test asserted "1 selected" here, which
+    // was the address's id riding as a provisional selection — exactly the
+    // shape of all three Bugbot findings.
     expect(text).toContain("We could not find this contact in the first");
-    expect(text).toContain("1 selected");
+    expect(text).toContain("0 selected");
+    const reviewButtonBeforeFound = [...container.querySelectorAll("button")].find(
+      (candidate) => (candidate.textContent ?? "").includes("Review the field map"),
+    );
+    expect((reviewButtonBeforeFound as HTMLButtonElement).disabled).toBe(true);
 
-    // (d) Finding it later (searching by name) restores/keeps the selection
-    // and clears the bounded sentence — nothing here ever removed it, so
-    // there is nothing to "restore", which is the fix, not a special case.
+    // (d) Finding it later (searching by name) PROMOTES the request to a
+    // real selection for the first time — there is nothing to "restore",
+    // because nothing false was ever selected in the first place.
     await typeQuery("Ada Lovelace");
     text = container.textContent ?? "";
     expect(text).toContain("1 selected");
     expect(text).not.toContain("We could not find this contact in the first");
+  });
+
+  function findButton(label: string): HTMLButtonElement {
+    const button = [...container.querySelectorAll("button")].find((candidate) =>
+      (candidate.textContent ?? "").includes(label),
+    );
+    if (!button) throw new Error(`no button matching ${label}`);
+    return button as HTMLButtonElement;
+  }
+
+  function clickByAriaLabel(label: string) {
+    const el = [...container.querySelectorAll("[aria-label]")].find(
+      (candidate) => candidate.getAttribute("aria-label") === label,
+    );
+    if (!el) throw new Error(`no control with aria-label ${label}`);
+    el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  }
+
+  it("a keystroke before the mount read resolves never re-creates the phantom, and stays honest until the unfiltered read settles (review 5247049760, comment 4046121991)", async () => {
+    let resolveUnfiltered: ((value: unknown) => void) | null = null;
+    let resolveTyped: ((value: unknown) => void) | null = null;
+
+    mockSearch.mockImplementation(
+      (args: { query?: string | null }) =>
+        new Promise((resolve) => {
+          if (args.query) resolveTyped = resolve;
+          else resolveUnfiltered = resolve;
+        }),
+    );
+
+    await act(async () => {
+      root.render(
+        <GoogleContactsImportPanel organizationId="org-1" initialExternalId="people/1" />,
+      );
+    });
+    await settle();
+
+    // Type BEFORE the mount's unfiltered read has resolved at all.
+    const input = container.querySelector("input") as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      "value",
+    )!.set!;
+    await act(async () => {
+      setter.call(input, "zzz-no-match");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+    await settle();
+
+    expect(resolveTyped).toBeTruthy();
+    expect(resolveUnfiltered).toBeTruthy();
+
+    // Resolve the TYPED read first, without the address's contact.
+    await act(async () => {
+      resolveTyped!({
+        provider_key: "google_contacts",
+        google_account: "me@example.com",
+        contacts: [],
+        count: 0,
+        total_read: 0,
+        already_imported: 0,
+        truncated: false,
+        warnings: [],
+      });
+    });
+    await settle();
+
+    let text = container.textContent ?? "";
+    // 🚨 THE ORIGINAL V-24 PHANTOM, reachable a new way: if the typed miss
+    // were allowed to answer for the address, this would read "1 selected"
+    // with Review enabled, exactly like the bug report.
+    expect(text).toContain("0 selected");
+    expect(findButton("Review the field map").disabled).toBe(true);
+    // Never silent: the unfiltered (proof) read has not settled yet.
+    expect(text).toContain("Still looking for the contact this link named");
+    expect(text).not.toContain(
+      "The contact this link named is not in this account's readable contacts.",
+    );
+
+    // NOW the mount's own unfiltered read settles — complete, and without
+    // the address's contact either.
+    await act(async () => {
+      resolveUnfiltered!({
+        provider_key: "google_contacts",
+        google_account: "me@example.com",
+        contacts: [],
+        count: 0,
+        total_read: 0,
+        already_imported: 0,
+        truncated: false,
+        warnings: [],
+      });
+    });
+    await settle();
+
+    text = container.textContent ?? "";
+    expect(text).toContain("0 selected");
+    expect(findButton("Review the field map").disabled).toBe(true);
+    expect(text).not.toContain("Still looking for the contact this link named");
+    expect(text).toContain(
+      "The contact this link named is not in this account's readable contacts.",
+    );
+  });
+
+  it("an organization change clears the previous account's selection entirely (review 5247049760, comment 4046121996)", async () => {
+    const BOB = { ...ADA, external_id: "people/2", display_name: "Bob" };
+    mockSearch.mockResolvedValue({
+      provider_key: "google_contacts",
+      google_account: "me@example.com",
+      contacts: [ADA, BOB],
+      count: 2,
+      total_read: 2,
+      already_imported: 0,
+      truncated: false,
+      warnings: [],
+    });
+
+    await act(async () => {
+      root.render(<GoogleContactsImportPanel organizationId="org-1" initialExternalId={null} />);
+    });
+    await settle();
+
+    await act(async () => {
+      clickByAriaLabel("Select Ada Lovelace");
+      clickByAriaLabel("Select Bob");
+    });
+    await settle();
+    expect(container.textContent ?? "").toContain("2 selected");
+
+    // A DIFFERENT organization is a different Google account — nothing from
+    // the old one may survive, including the selection itself.
+    await act(async () => {
+      root.render(<GoogleContactsImportPanel organizationId="org-2" initialExternalId={null} />);
+    });
+    await settle();
+
+    const text = container.textContent ?? "";
+    // 🚨 THE HOLE: the previous fix reset `seenIds`/`unfilteredSearch` on an
+    // organization change but left `selected` holding the OLD account's ids
+    // — Review could fire them at the NEW account.
+    expect(text).toContain("0 selected");
+    expect(findButton("Review the field map").disabled).toBe(true);
   });
 });

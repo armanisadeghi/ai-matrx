@@ -14,7 +14,7 @@
  * preview and the diff) → import. Read-only toward Google.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
 
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
@@ -118,6 +118,100 @@ function valueText(value: string | string[] | null): string {
   return Array.isArray(value) ? value.join(", ") : value;
 }
 
+/**
+ * 🚨 THE INVARIANT (three Bugbot rounds on `75fd614c`/`8e612aa2` all patched
+ * an INSTANCE of the same root defect — this is the class fix): A SELECTION
+ * HOLDS ONLY IDS A READ HAS RETURNED; AN ADDRESS NAMES A REQUEST, NEVER A
+ * SELECTION. The window address's `initialExternalId` is a REQUEST
+ * (`requestedExternalId`) until some read proves the contact exists — it
+ * never enters `selected` directly, so there is no provisional id for any
+ * later hole (an aborted read, a narrowed page, an organization swap, …) to
+ * leak into "N selected" or the Review button. One `useReducer`, so every
+ * field that answers "what is selected, and why" changes together:
+ *
+ * - `selected` — ids the person has ticked, or that a read has confirmed
+ *   answer to `requestedExternalId`. NEVER seeded from the address.
+ * - `seenIds` — the UNION of every `external_id` any read has returned this
+ *   session (never shrinks; reset only by `reset`), so a contact once proven
+ *   to exist stays provably real regardless of what a later, narrower read
+ *   shows.
+ * - `unfilteredSearch` — the last COMPLETE, empty-query read: the only read
+ *   that can prove absence, because it is the one read that is not itself a
+ *   narrower page.
+ * - `requestedExternalId` — the address's contact, while it remains
+ *   unresolved-or-not-yet-proven; the banners below read this plus
+ *   `seenIds`/`unfilteredSearch`, never `selected`.
+ *
+ * `reset` clears every field at once on an organization change — a
+ * different Google account invalidates all of them together, so a
+ * per-field reset (the shape of the two Bugbot-found holes on `8e612aa2`)
+ * cannot happen again.
+ */
+interface ContactSelectionState {
+  selected: string[];
+  seenIds: Set<string>;
+  unfilteredSearch: ContactSearchResultPending | null;
+  requestedExternalId: string | null;
+}
+
+type ContactSelectionAction =
+  | { type: "reset"; requestedExternalId: string | null }
+  | {
+      type: "read";
+      contacts: ContactCandidatePending[];
+      unfiltered: boolean;
+      result: ContactSearchResultPending;
+    }
+  | { type: "toggle"; externalId: string }
+  | { type: "setSelected"; ids: string[] };
+
+function contactSelectionReducer(
+  state: ContactSelectionState,
+  action: ContactSelectionAction,
+): ContactSelectionState {
+  switch (action.type) {
+    case "reset":
+      return {
+        selected: [],
+        seenIds: new Set(),
+        unfilteredSearch: null,
+        requestedExternalId: action.requestedExternalId,
+      };
+    case "read": {
+      const seenIds = new Set(state.seenIds);
+      for (const contact of action.contacts) seenIds.add(contact.external_id);
+      // The FIRST read that proves the address's contact exists promotes it
+      // from a request to a real selection, exactly once — never re-added if
+      // the person un-ticks it afterward.
+      const selected =
+        state.requestedExternalId &&
+        !state.selected.includes(state.requestedExternalId) &&
+        seenIds.has(state.requestedExternalId)
+          ? [...state.selected, state.requestedExternalId]
+          : state.selected;
+      return {
+        ...state,
+        seenIds,
+        selected,
+        unfilteredSearch: action.unfiltered ? action.result : state.unfilteredSearch,
+      };
+    }
+    case "toggle": {
+      const has = state.selected.includes(action.externalId);
+      return {
+        ...state,
+        selected: has
+          ? state.selected.filter((value) => value !== action.externalId)
+          : [...state.selected, action.externalId],
+      };
+    }
+    case "setSelected":
+      return { ...state, selected: action.ids };
+    default:
+      return state;
+  }
+}
+
 export function GoogleContactsImportPanel({
   organizationId,
   initialExternalId = null,
@@ -135,9 +229,6 @@ export function GoogleContactsImportPanel({
   const [search, setSearch] = useState<ContactSearchResultPending | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<string[]>(
-    initialExternalId ? [initialExternalId] : [],
-  );
   const [step, setStep] = useState<Step>("pick");
   const [plans, setPlans] = useState<ContactImportOutcomePending[]>([]);
   const [edits, setEdits] = useState<EditMap>({});
@@ -151,14 +242,57 @@ export function GoogleContactsImportPanel({
     results: ContactImportOutcomePending[];
     warnings: string[];
   } | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
+
+  // See `contactSelectionReducer` above for THE INVARIANT this holds:
+  // `selected` never holds a provisional id, only ids a read has proven.
+  const [selection, dispatchSelection] = useReducer(
+    contactSelectionReducer,
+    initialExternalId,
+    (requestedExternalId): ContactSelectionState => ({
+      selected: [],
+      seenIds: new Set<string>(),
+      unfilteredSearch: null,
+      requestedExternalId: requestedExternalId ?? null,
+    }),
+  );
+
+  // An organization change is a different Google account: NOTHING the old
+  // one proved carries over — reset every field of the selection together,
+  // in one dispatch, so a future hole cannot again reset only some of them
+  // (Bugbot on `8e612aa2`: the previous, per-field reset cleared `seenIds`
+  // and `unfilteredSearch` but left `selected` holding the OLD account's
+  // ids, so Review could fire them at the new one).
+  useEffect(() => {
+    dispatchSelection({ type: "reset", requestedExternalId: initialExternalId });
+    // `initialExternalId` is the window's own address and does not change
+    // for a mounted panel; the reset is keyed on the organization only.
+  }, [effectiveOrganizationId]);
+
+  // 🚨 TWO ABORT CONTROLLERS, NEVER ONE (Bugbot on `8e612aa2`: a keystroke
+  // before the mount's unfiltered read resolves aborted the ONE read that can
+  // prove absence — a typed load never wrote `unfilteredSearch`, so the
+  // address id sat in `selected` with Review enabled and neither banner: the
+  // original V-24 phantom, reachable by typing early). A typed query and the
+  // unfiltered (empty-query) read are two INDEPENDENT questions — "what
+  // matches these words" and "does the whole account have this contact" —
+  // and answering one must never cancel the other. `callSeqRef` additionally
+  // guards which reply is allowed to update the VISIBLE list: two reads can
+  // now be in flight at once, and only the most recently STARTED one may
+  // win that race (a stale reply still contributes its ids to `seenIds` via
+  // the "read" dispatch — proving existence never goes stale).
+  const typedAbortRef = useRef<AbortController | null>(null);
+  const unfilteredAbortRef = useRef<AbortController | null>(null);
+  const callSeqRef = useRef(0);
 
   const load = useCallback(
     async (text: string) => {
       if (!effectiveOrganizationId) return;
-      abortRef.current?.abort();
+      const unfiltered = text === "";
+      const ref = unfiltered ? unfilteredAbortRef : typedAbortRef;
+      ref.current?.abort();
       const controller = new AbortController();
-      abortRef.current = controller;
+      ref.current = controller;
+      const seq = ++callSeqRef.current;
       setLoading(true);
       setError(null);
       try {
@@ -167,30 +301,19 @@ export function GoogleContactsImportPanel({
           query: text,
           signal: controller.signal,
         });
-        setSearch(result);
-        // 🚨 SET IN THE SAME TICK AS `setSearch`/`setUnfilteredSearch` BELOW,
-        // NEVER FROM A SEPARATE EFFECT KEYED ON `search`. An effect-derived
-        // `seenIds` lands one commit LATER than `unfilteredSearch` — the
-        // reconcile effect below (keyed on both) would then fire first with
-        // the STALE, still-empty `seenIds` and wrongly drop a selection this
-        // very read just confirmed exists, before `seenIds` ever caught up.
-        // Batching all three setters here means the render the reconcile
-        // effect sees always carries the read's own ids already unioned in.
-        setSeenIds((current) => {
-          const next = new Set(current);
-          for (const contact of result.contacts) next.add(contact.external_id);
-          return next;
-        });
-        // Tagged by the TEXT THIS CALL WAS MADE WITH, never by `typedRef` at
-        // resolve time — a keystroke landing while the mount's unfiltered
-        // read is still in flight must not make its own, still-unfiltered
-        // result look like a typed one once it resolves.
-        if (text === "") setUnfilteredSearch(result);
+        // Only the most recently STARTED call may paint the visible list —
+        // an unfiltered read that resolves after a later typed one must not
+        // overwrite what the person is currently looking at.
+        if (callSeqRef.current === seq) setSearch(result);
+        // Proving existence is never stale: every settled read, even a
+        // superseded one, unions its ids in and may promote the address's
+        // request to a real selection.
+        dispatchSelection({ type: "read", contacts: result.contacts, unfiltered, result });
       } catch (cause) {
         if (controller.signal.aborted) return;
-        setError(getUserMessage(cause));
+        if (callSeqRef.current === seq) setError(getUserMessage(cause));
       } finally {
-        if (!controller.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted && callSeqRef.current === seq) setLoading(false);
       }
     },
     [effectiveOrganizationId],
@@ -198,70 +321,41 @@ export function GoogleContactsImportPanel({
 
   // ONE read on mount, debounced only on later keystrokes. Two effects both
   // firing for the empty query meant the debounced one ABORTED the first — a
-  // wasted Google Contacts request and a slower first paint.
+  // wasted Google Contacts request and a slower first paint. Clearing the box
+  // back to "" re-enters this same branch's `load("")` — which is how a
+  // never-completed unfiltered read (aborted only by ANOTHER unfiltered call,
+  // never by a typed one) gets re-run without any special-casing.
   const typedRef = useRef(false);
   useEffect(() => {
     if (!typedRef.current) {
       void load("");
-      return () => abortRef.current?.abort();
+      return () => unfilteredAbortRef.current?.abort();
     }
     const handle = window.setTimeout(() => void load(query), 250);
     return () => window.clearTimeout(handle);
     // `load` is stable per organization; re-running per keystroke is the point.
   }, [query, load]);
-  useEffect(() => () => abortRef.current?.abort(), []);
-
-  // 🚨 A SELECTION MAY HOLD ANY ID THE PANEL HAS SEEN THIS SESSION, NEVER ONLY
-  // THE CURRENT PAGE (Bugbot on 75fd614c, review 5246968154 comment 4046052473).
-  // The first fix reconciled `selected` against the LATEST `search` page —
-  // which treated one page as the whole account: a typed query that narrows
-  // the page, or a truncated first page (the search caps at `limit`, default
-  // 50), silently dropped a real, still-existing contact from `selected`,
-  // and finding it again later never restored the selection. `seenIds` is the
-  // UNION of every `external_id` any read has returned since mount (or since
-  // the organization changed — a different Google account has different
-  // ids); reconciliation only ever ADDS to it, so a contact this session has
-  // proven exists stays selected regardless of what a later, narrower read
-  // shows.
-  const [seenIds, setSeenIds] = useState<Set<string>>(new Set());
-  // 🚨 THE UNFILTERED (empty-query) READ, AND ONLY IT, IS "THE WHOLE ACCOUNT" —
-  // a typed-query miss proves nothing about whether a contact exists, only
-  // that it did not match those words. This is the ONE read the "not in this
-  // account" sentence is allowed to reason from, and only when it was not
-  // itself truncated: the service exposes no next-page token or lookup-by-id
-  // (`./service.ts`), so a truncated unfiltered read can prove absence NO
-  // FURTHER than the page it returned.
-  const [unfilteredSearch, setUnfilteredSearch] = useState<ContactSearchResultPending | null>(
-    null,
+  useEffect(
+    () => () => {
+      typedAbortRef.current?.abort();
+      unfilteredAbortRef.current?.abort();
+    },
+    [],
   );
 
-  useEffect(() => {
-    // A different organization is a different Google account — nothing seen
-    // under the old one proves anything about this one.
-    setSeenIds(new Set());
-    setUnfilteredSearch(null);
-  }, [effectiveOrganizationId]);
-
-  // A selected id is dropped ONLY once the unfiltered, NOT-truncated read has
-  // settled and still does not carry it — the one read that can actually
-  // prove absence. A typed query's page, or a truncated unfiltered page,
-  // proves nothing, so neither one may remove anything from `selected`.
-  useEffect(() => {
-    if (!unfilteredSearch || unfilteredSearch.truncated) return;
-    setSelected((current) => current.filter((externalId) => seenIds.has(externalId)));
-  }, [unfilteredSearch, seenIds]);
-
   const contacts = search?.contacts ?? [];
-  const selectedSet = useMemo(() => new Set(selected), [selected]);
+  const selectedSet = useMemo(() => new Set(selection.selected), [selection.selected]);
+  const { requestedExternalId, unfilteredSearch, seenIds } = selection;
+  const requestedFound = Boolean(requestedExternalId && seenIds.has(requestedExternalId));
   // The address named a contact NO read has ever returned, AND the complete
   // (unfiltered, untruncated) account read has already settled — never fired
   // off a typed-query miss (that proves nothing) or a truncated read (see
   // `requestedContactBounded` below for that honest, weaker sentence).
   const requestedContactMissing = Boolean(
-    initialExternalId &&
+    requestedExternalId &&
       unfilteredSearch &&
       !unfilteredSearch.truncated &&
-      !seenIds.has(initialExternalId),
+      !requestedFound,
   );
   // The unfiltered read was truncated and the address's contact has not
   // turned up in anything read so far — honestly bounded, never "not in this
@@ -269,22 +363,24 @@ export function GoogleContactsImportPanel({
   // moment a later read (e.g. the person searching for it by name) proves the
   // contact IS there.
   const requestedContactBounded = Boolean(
-    initialExternalId &&
-      unfilteredSearch?.truncated &&
-      !seenIds.has(initialExternalId),
+    requestedExternalId && unfilteredSearch?.truncated && !requestedFound,
+  );
+  // 🚨 NEVER SILENT WHILE THE PROOF IS STILL PENDING (Bugbot on `8e612aa2`):
+  // the unfiltered read has not settled yet at all (aborted, still loading,
+  // or the person is mid-keystroke before it fires) and the contact has not
+  // turned up anywhere else either — say so, rather than showing nothing
+  // while `selected` truthfully sits at zero.
+  const requestedStillLooking = Boolean(
+    requestedExternalId && !unfilteredSearch && !requestedFound,
   );
 
   const toggle = (externalId: string) => {
-    setSelected((current) =>
-      current.includes(externalId)
-        ? current.filter((value) => value !== externalId)
-        : [...current, externalId],
-    );
+    dispatchSelection({ type: "toggle", externalId });
   };
 
-  const review = async (ids: string[] = selected) => {
+  const review = async (ids: string[] = selection.selected) => {
     if (!effectiveOrganizationId || ids.length === 0) return;
-    setSelected(ids);
+    dispatchSelection({ type: "setSelected", ids });
     setBusy(true);
     setError(null);
     try {
@@ -437,7 +533,7 @@ export function GoogleContactsImportPanel({
             onClick={() => {
               setDone(null);
               setPlans([]);
-              setSelected([]);
+              dispatchSelection({ type: "setSelected", ids: [] });
               setStep("pick");
             }}
           >
@@ -751,6 +847,16 @@ export function GoogleContactsImportPanel({
           {unfilteredSearch?.total_read ?? "the"} read — search for it by
           name below.
         </p>
+      ) : requestedStillLooking ? (
+        /* 🚨 NEVER SILENT WHILE THE PROOF IS STILL PENDING (Bugbot on
+           `8e612aa2`): the unfiltered read has not settled yet — still
+           loading, or its previous attempt never completed — so nothing here
+           can say "found" OR "not found" honestly. Absence of this line would
+           read as the panel simply forgetting the link it was opened with. */
+        <p className="flex items-start gap-2 border-b border-border bg-muted/40 px-4 py-2 text-xs text-muted-foreground">
+          <Loader2 className="mt-0.5 h-3.5 w-3.5 shrink-0 animate-spin" />
+          Still looking for the contact this link named…
+        </p>
       ) : null}
       <div className="min-h-0 flex-1 overflow-y-auto">
         {!loading && contacts.length === 0 ? (
@@ -844,13 +950,13 @@ export function GoogleContactsImportPanel({
       </div>
       <div className="flex items-center gap-2 border-t border-border px-4 py-2">
         <span className="text-xs text-muted-foreground">
-          {selected.length} selected
+          {selection.selected.length} selected
         </span>
         <Button
           size="sm"
           className="ml-auto"
           onClick={() => void review()}
-          disabled={busy || selected.length === 0}
+          disabled={busy || selection.selected.length === 0}
         >
           {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
           Review the field map
