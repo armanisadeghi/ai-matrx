@@ -67,7 +67,7 @@ export const GRAPH_BAND_GEOMETRY: Record<GraphBand, GraphBandGeometry> = {
   // 240px wide, three lines of 13px title + a counts line + the status mark.
   card: { width: 240, height: 132, fontPx: 13, nodeSep: 44, rankSep: 96 },
   compact: { width: 200, height: 56, fontPx: 12, nodeSep: 28, rankSep: 64 },
-  line: { width: 150, height: 28, fontPx: 11, nodeSep: 18, rankSep: 44 },
+  line: { width: 220, height: 44, fontPx: 12, nodeSep: 18, rankSep: 64 },
   shape: { width: 28, height: 28, fontPx: 10, nodeSep: 14, rankSep: 34 },
 };
 
