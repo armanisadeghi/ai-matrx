@@ -84,7 +84,10 @@ import {
   AdminUserDoorControls,
   AdminUserRef,
 } from "@/features/admin/users/components/AdminUserRef";
-import { FEEDBACK_DEEP_LINK_PARAM, feedbackHref } from "../doors";
+import {
+  FEEDBACK_DEEP_LINK_PARAM,
+  feedbackHref,
+} from "@/features/admin/feedback/doors";
 import { CopyButtons } from "@/components/agent-copy/CopyButtons";
 import { csvExportItem, jsonExportItem } from "@/components/agent-copy/export";
 import { feedbackBrief, feedbackRowSummary } from "../format";

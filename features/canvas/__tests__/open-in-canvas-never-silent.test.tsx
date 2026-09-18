@@ -38,7 +38,6 @@ import { configureStore } from "@reduxjs/toolkit";
 
 import {
   canvasSlice,
-  registerCanvasDock,
   selectCanvasIsAvailable,
   selectCanvasItems,
   setCanvasAvailable,
@@ -123,7 +122,7 @@ beforeEach(() => {
 describe("an open-in-canvas request never silently does nothing", () => {
   it("announces-unreachable: refusing an open on a route with no canvas surface is VISIBLE, not a no-op", () => {
     const store = makeStore();
-    // No sheet mounted, no dock mounted — exactly the state in which the slice
+    // No canvas surface mounted at all — exactly the state in which the slice
     // used to accept the item and render nothing at all.
     expect(selectCanvasIsAvailable(store.getState())).toBe(false);
 
@@ -166,14 +165,16 @@ describe("an open-in-canvas request never silently does nothing", () => {
     probe.unmount();
   });
 
-  it("dock-is-a-surface: a document opens into the canvas while a dock is mounted and the sheet island has not hydrated", () => {
+  it("one-surface: availability has exactly ONE source — the global front door's flag", () => {
     const store = makeStore();
-    // The dock is the DEFAULT presentation; `CanvasSideSheet` is idle-deferred,
-    // so `isAvailable` is still false at this moment on a real chat route.
+    // The canonical canvas is the ONE globally mounted `CanvasSideSheet`, on
+    // chat exactly as on documents and artifacts. It raises this flag on
+    // mount, and nothing else may raise it: a per-route presentation with a
+    // second availability source is the parallel layer the owner rejected on
+    // 2026-09-16.
     act(() => {
-      store.dispatch(registerCanvasDock());
+      store.dispatch(setCanvasAvailable(true));
     });
-    expect(store.getState().canvas.isAvailable).toBe(false);
     expect(selectCanvasIsAvailable(store.getState())).toBe(true);
 
     const probe = mountOpener(store);

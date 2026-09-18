@@ -172,23 +172,6 @@ interface CanvasState {
   isAvailable: boolean; // Whether canvas is available in current context/layout
   canvasWidth: number; // Width of canvas panel in pixels (persisted)
   renderMode: CanvasRenderMode; // Preferred render mode
-  /**
-   * How many DOCK HOSTS are mounted. A dock host is a route region that gives
-   * the canvas a real column beside its own content (`CanvasDock`), so the
-   * canvas is a RESIZABLE SPLIT there instead of an overlay sheet drawn over
-   * the page. While this is > 0 the global sheet renders nothing — the two
-   * presentations must never both be on screen.
-   *
-   * Owner standard (2026-09-13): the canvas is "a nice adjustable sidebar
-   * that can be folded out and in" — the thread shrinks, nothing is covered.
-   * The sheet remains correct where there is no room to split (phone).
-   */
-  dockHosts: number;
-  /**
-   * Percentage of the docked row the canvas column takes (0–100). Persisted
-   * to localStorage by `CanvasDock` so a reload restores the user's width.
-   */
-  dockRatio: number;
 }
 
 const initialState: CanvasState = {
@@ -200,8 +183,6 @@ const initialState: CanvasState = {
   isAvailable: false, // Default to false, layouts enable it
   canvasWidth: 768, // Default width matches max-w-3xl so content fills perfectly
   renderMode: "auto", // Auto-detect best render mode
-  dockHosts: 0,
-  dockRatio: 42,
 };
 
 export const canvasSlice = createSlice({
@@ -559,23 +540,6 @@ export const canvasSlice = createSlice({
       state.canvasWidth = action.payload;
     },
 
-    /**
-     * A route region mounted a `CanvasDock`. Reference-counted because a
-     * client navigation mounts the next route's dock before the previous one
-     * unmounts; a boolean would flash the sheet in between.
-     */
-    registerCanvasDock: (state) => {
-      state.dockHosts += 1;
-    },
-    unregisterCanvasDock: (state) => {
-      state.dockHosts = Math.max(0, state.dockHosts - 1);
-    },
-    /** Persist the docked canvas column width (percent of the row). */
-    setCanvasDockRatio: (state, action: PayloadAction<number>) => {
-      const next = Math.max(20, Math.min(70, action.payload));
-      if (Number.isFinite(next)) state.dockRatio = next;
-    },
-
     // Set preferred render mode
     setCanvasRenderMode: (state, action: PayloadAction<CanvasRenderMode>) => {
       state.renderMode = action.payload;
@@ -603,9 +567,6 @@ export const {
   setCanvasAvailable,
   setCanvasWidth,
   setCanvasRenderMode,
-  registerCanvasDock,
-  unregisterCanvasDock,
-  setCanvasDockRatio,
 } = canvasSlice.actions;
 
 // Selectors — use optional chaining so these work safely with the lite Redux store
@@ -621,17 +582,14 @@ export const selectCurrentItemId = (state: WithCanvas) =>
 /**
  * Is a canvas surface actually on screen for this route?
  *
- * TWO surfaces answer yes, not one. `isAvailable` is raised by the global
- * `CanvasSideSheet` front door — which mounts behind `useIdleReady` in
- * `DeferredIslands` — while a route that DOCKS the canvas (`CanvasDock`, the
- * default presentation since 2026-09-14) raises `dockHosts` instead and never
- * touched this flag. A docked route therefore reported "no canvas here" until
- * the idle island happened to hydrate: every affordance gated on availability
- * stayed hidden, and an open dispatched in that window went nowhere with
- * nothing said. A mounted dock IS a canvas surface, so it counts.
+ * ONE surface answers, on every route alike: the global `CanvasSideSheet`
+ * front door raises this flag on mount and lowers it on unmount. There is no
+ * second presentation and therefore no second source of availability — a
+ * per-route canvas column used to raise its own count here, and that parallel
+ * layer is exactly what the owner rejected on 2026-09-16.
  */
 export const selectCanvasIsAvailable = (state: WithCanvas) =>
-  (state.canvas?.isAvailable ?? false) || (state.canvas?.dockHosts ?? 0) > 0;
+  state.canvas?.isAvailable ?? false;
 
 // Get the currently active canvas item
 export const selectCurrentCanvasItem = (
@@ -683,16 +641,6 @@ export const selectCanvasWidth = (state: WithCanvas) =>
 // return type to string and could hand consumers a mode that does not exist.
 export const selectCanvasRenderMode = (state: WithCanvas): CanvasRenderMode =>
   state.canvas?.renderMode ?? "auto";
-
-/**
- * Is a dock host mounted? When true the canvas belongs to a route column and
- * the global overlay sheet must render nothing.
- */
-export const selectCanvasIsDocked = (state: WithCanvas) =>
-  (state.canvas?.dockHosts ?? 0) > 0;
-
-export const selectCanvasDockRatio = (state: WithCanvas) =>
-  state.canvas?.dockRatio ?? 42;
 
 // Export types
 export type { CanvasItem };

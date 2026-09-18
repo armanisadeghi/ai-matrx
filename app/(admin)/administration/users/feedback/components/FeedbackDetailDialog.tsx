@@ -117,7 +117,7 @@ import { filterAndSortBySearch } from "@ai-matrx/kit/search-scoring";
 import { InlineMediaRef } from "@ai-matrx/media/react";
 import { MatrxUuidCell } from "@ai-matrx/design-system/data-table/uuid-cell";
 import { AdminUserDoorControls } from "@/features/admin/users/components/AdminUserRef";
-import { feedbackHref } from "../doors";
+import { feedbackHref } from "@/features/admin/feedback/doors";
 import { ProTextarea } from "@/components/official/ProTextarea";
 
 interface FeedbackDetailDialogProps {
