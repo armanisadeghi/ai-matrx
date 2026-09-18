@@ -25,6 +25,13 @@
  *      which is exactly what both Google types do.
  */
 
+// Referenced from inside a `jest.mock` factory, so both names carry the `mock`
+// prefix the hoisting transform requires.
+import {
+  workspaceReady as mockWorkspaceReady,
+  workspaceUnavailable as mockWorkspaceUnavailable,
+} from "@/features/organizations/workspaceResolution";
+
 const events: string[] = [];
 let workspaceReady = true;
 let rowFound = true;
@@ -33,12 +40,11 @@ jest.mock("@/features/organizations/awaitWorkspace", () => ({
   awaitOrganizationForRecordRead: async () => {
     events.push("organization-question");
     return workspaceReady
-      ? { status: "ready", organizationId: "11111111-2222-3333-4444-555555555555" }
-      : {
-          status: "unavailable",
-          reason:
-            "No organization is selected, so there was nothing to read this record from. Pick the one you are working in from the menu under your avatar and it will load.",
-        };
+      ? mockWorkspaceReady("11111111-2222-3333-4444-555555555555")
+      : mockWorkspaceUnavailable(
+          "no-selection",
+          "No organization is selected, so there was nothing to read this record from. Pick the one you are working in from the menu under your avatar and it will load.",
+        );
   },
 }));
 

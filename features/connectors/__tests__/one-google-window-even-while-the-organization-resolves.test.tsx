@@ -21,6 +21,12 @@
 import * as React from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
+// `workspaceReady` below is this file's own boolean switch, so the constructor
+// is aliased rather than shadowed.
+import {
+  workspaceReady as makeWorkspaceReady,
+  workspaceUnavailable,
+} from "@/features/organizations/workspaceResolution";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -99,8 +105,11 @@ function mountRunner(): { run: ReturnType<typeof useGoogleConsentRunner>["run"];
 /** Settle every organization wait taken so far. */
 function releaseWorkspace(): void {
   const answer = workspaceReady
-    ? { status: "ready", organizationId: "11111111-2222-3333-4444-555555555555" }
-    : { status: "unavailable", reason: "We could not tell which workspace to file this in." };
+    ? makeWorkspaceReady("11111111-2222-3333-4444-555555555555")
+    : workspaceUnavailable(
+        "no-selection",
+        "We could not tell which workspace to file this in.",
+      );
   const waiting = pendingWaits.splice(0, pendingWaits.length);
   for (const resolve of waiting) resolve(answer);
 }

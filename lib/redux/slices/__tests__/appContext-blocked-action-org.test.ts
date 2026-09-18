@@ -10,6 +10,7 @@
  */
 
 import reducer, {
+  makeAppContextState,
   resolveOrganizationForBlockedAction,
   setOrganization,
 } from "../appContextSlice";
@@ -17,10 +18,7 @@ import reducer, {
 const TEAM_ORG = "f9cb3e35-2a65-4f2a-8525-088d6551071c";
 const OTHER_ORG = "3e790542-fdaf-40b2-8bf3-658bf94fe67f";
 
-const composing = {
-  organization_id: null,
-  organization_name: null,
-  personal_organization_id: null,
+const composing = makeAppContextState({
   scope_selections: { s1: "s1" },
   active_scope_type_ids: ["t1"],
   project_id: "p1",
@@ -29,7 +27,7 @@ const composing = {
   task_name: "Task",
   conversation_id: "conversation-being-composed",
   orgBootstrapResolved: true,
-};
+});
 
 describe("resolveOrganizationForBlockedAction", () => {
   test("sets the organization and KEEPS the conversation", () => {

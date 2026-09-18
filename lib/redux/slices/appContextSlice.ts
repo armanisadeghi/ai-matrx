@@ -133,7 +133,12 @@ export interface AppContextState {
   orgBootstrapFailure: string | null;
 }
 
-const initialState: AppContextState = {
+/**
+ * The ONE complete spelling of `AppContextState`. Everything that needs a whole
+ * one — the slice's own initial state and every fixture — comes from here, so a
+ * field added above lands everywhere at once.
+ */
+export const appContextInitialState: AppContextState = {
   organization_id: null,
   organization_name: null,
   personal_organization_id: null,
@@ -147,6 +152,27 @@ const initialState: AppContextState = {
   orgBootstrapResolved: false,
   orgBootstrapFailure: null,
 };
+
+const initialState = appContextInitialState;
+
+/**
+ * 🚨 THE FIXTURE LAW. A test that needs an `AppContextState` builds it HERE and
+ * names only the fields it is about — it never hand-spells the whole literal.
+ *
+ * Hand-spelled literals are why lane F-102's `orgBootstrapFailure` (THE FOURTH
+ * STATE, R37) broke ten call sites across four files the moment it became a
+ * required field: every fixture had frozen a copy of the shape, so the shape
+ * could not grow without breaking all of them at once. Built from
+ * `appContextInitialState`, a new field costs nothing and every fixture keeps
+ * asserting only what it actually cares about.
+ *
+ * Guarded by `lib/redux/slices/__tests__/the-fixture-law.organization-context.test.ts`.
+ */
+export function makeAppContextState(
+  overrides: Partial<AppContextState> = {},
+): AppContextState {
+  return { ...appContextInitialState, ...overrides };
+}
 
 const appContextSlice = createSlice({
   name: "appContext",

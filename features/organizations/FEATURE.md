@@ -297,6 +297,43 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-09-18` — **F-107: THE FIXTURE LAW — a test never hand-spells a whole
+  `AppContextState`, and a `WorkspaceResolution` is never built by hand.** When
+  F-102 made `orgBootstrapFailure` (THE FOURTH STATE, R37) a required field and
+  gave the `unavailable` branch of `WorkspaceResolution` a required `cause`, ten
+  type errors landed in four test files at once — every fixture had frozen its
+  own copy of the eleven-key literal, so the shape could not grow without
+  breaking all of them. The fixtures hiding behind an `as never` cast
+  (`features/education/notes/EduNoteNew.test.tsx`) did not even break; they went
+  on asserting against a state the slice no longer produces. Same class on the
+  other side: a `{ status: "unavailable", reason }` spelled inside a `jest.mock`
+  factory is never type-checked, so it silently drops `cause` and tells a person
+  nobody looked up to "pick an organization". **The class fix:**
+  `makeAppContextState(overrides)` — exported from `lib/redux/slices/appContextSlice.ts`
+  beside the newly exported `appContextInitialState`, so the slice's own initial
+  state is the one complete spelling — and `workspaceReady` /
+  `workspaceUnavailable(cause, reason)` in the new leaf
+  `features/organizations/workspaceResolution.ts`. That leaf exists separately
+  from `awaitWorkspace.ts` because every refusal test mocks `awaitWorkspace`
+  wholesale; its only tie to it is a type-only import. `workspaceUnavailable`
+  takes the cause FIRST and has no default — naming it is the point.
+  **Migrated:** `lib/redux/slices/__tests__/appContext-blocked-action-org.test.ts`,
+  `features/notes/redux/draftInitialization.control.integration.test.tsx`,
+  `features/notes/components/FolderQuickPick.legacy-collision.test.tsx`,
+  `features/education/notes/EduNoteNew.test.tsx`,
+  `features/media-capture/upload/__tests__/capture-uploader.test.ts`,
+  `features/connectors/__tests__/one-google-window-even-while-the-organization-resolves.test.tsx`,
+  `features/item-presentation/__tests__/the-record-read-asks-the-organization-first.test.ts`.
+  **Guard:** `lib/redux/slices/__tests__/the-fixture-law.organization-context.test.ts`
+  over the structural detector `scripts/app-context-fixture-law.ts` — it walks
+  out from each `orgBootstrapResolved` key to its enclosing object literal and
+  fails the file when that literal carries five or more other `AppContextState`
+  keys (a literal handed to `makeAppContextState(` is the remedy, not the
+  offence). Proven RED against the pre-migration files (all four named) and
+  GREEN after; its allowlist is empty and only shrinks. The `organization-context`
+  segment in the filename puts it inside the `check:organization-context` CI
+  gate as well as `pnpm test`.
+
 - `2026-09-18` — **F-102 follow-up: THE GATE READS ITS INPUTS THROUGH PURE
   LEAVES.** The fourth state landed by adding a slice selector and
   `useAppDispatch` to `useOrganizationRequired` — and killed seven suites / 25
