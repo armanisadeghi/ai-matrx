@@ -12,19 +12,14 @@
 
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { CircleAlert, RefreshCw, Trash2 } from "lucide-react";
+import { CircleAlert, RefreshCw } from "lucide-react";
 import type { AppDispatch } from "@/lib/redux/store";
-import { useAppDispatch } from "@/lib/redux/hooks";
 import type {
     EntityListConfig,
-    EntityListController,
     EntityRowActionsResult,
 } from "@/lib/entity-list/config";
 import { Muted, timeCell, type EntityColumnSpec } from "@/lib/entity-list/columns";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "@/lib/toast";
-import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
-import { MediaApiError, deleteLibrary } from "../api";
 import { formatCount } from "../format";
 import type { LibraryRow } from "../types";
 import { LIBRARY_LIST_SCOPES, createLibraryListService } from "./service";
@@ -146,11 +141,8 @@ const LIBRARY_COLUMNS: EntityColumnSpec<LibraryRow>[] = [
     },
 ];
 
-function useLibraryRowActions(
-    list: EntityListController<LibraryRow>,
-): EntityRowActionsResult<LibraryRow> {
+function useLibraryRowActions(): EntityRowActionsResult<LibraryRow> {
     const router = useRouter();
-    const dispatch = useAppDispatch();
 
     const onOpenRow = useCallback(
         (row: LibraryRow) => router.push(libraryHref(row)),
@@ -177,43 +169,19 @@ function useLibraryRowActions(
                         },
                     ],
                 },
-                {
-                    id: "danger",
-                    label: "Danger",
-                    items: [
-                        {
-                            id: "remove",
-                            label: "Remove this Library",
-                            icon: Trash2,
-                            tone: "destructive" as const,
-                            onSelect: async () => {
-                                const ok = await confirm({
-                                    title: `Remove ${row.name}?`,
-                                    description:
-                                        `This removes the Library and its list of ${formatCount(row.item_count ?? 0)} Sources from your workspace. ` +
-                                        "The catalogued videos and any transcripts already made from them are kept — they are shared across the platform — so nothing you have transcribed is lost, and re-adding the channel finds them again.",
-                                    confirmLabel: "Remove Library",
-                                    variant: "destructive" as const,
-                                });
-                                if (!ok) return;
-                                try {
-                                    await deleteLibrary(dispatch, row.id);
-                                    list.removeRow(row.id);
-                                    toast.success(`${row.name} was removed.`);
-                                } catch (error) {
-                                    toast.error(
-                                        error instanceof MediaApiError
-                                            ? error.message
-                                            : "That Library could not be removed.",
-                                    );
-                                }
-                            },
-                        },
-                    ],
-                },
+                // 🚨 NO "Remove this Library" ITEM, AND THAT IS DELIBERATE.
+                // `DELETE /media/libraries/{id}` is published in
+                // API-CONTRACT.md §3 but §0.5's "NOT working" table says
+                // plainly "Not implemented" — and the router has never carried
+                // the route. So this menu spent its life offering a
+                // confirm-dialog and a 404: the person was told what removal
+                // would keep, said yes, and got an error toast. A control is
+                // absent or honest, never dead, so it is absent until the
+                // server ships the route and `pnpm sync-types` puts it in
+                // `paths`. Filed in FOUND_DEFECTS.md.
             ],
         }),
-        [dispatch, list, router],
+        [router],
     );
 
     return { actions: { menuFor, onOpenRow } };

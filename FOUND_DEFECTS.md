@@ -15,6 +15,38 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D333 — Four Media Source Catalog endpoints are published in the contract but were never built, and the frontend called all four (2026-09-18)
+
+**Status:** open (frontend half fixed; the server half is aidream's) · **Priority:** P2 — one of them was a visible, user-reachable control · **Repo:** aidream (`aidream/api/routers/media_catalog.py`) + `common-docs/projects/media-source-catalog/API-CONTRACT.md`
+
+`pnpm sync-types:live` on 2026-09-18 replaced `features/source-library/contract-paths.ts` with the
+real generated contract and showed that four endpoints the client called do not exist on the server
+and never did. Each is marked `implemented: False` in `aidream/tests/test_media_catalog_wire_shapes.py`
+and appears in API-CONTRACT.md §0.5's "NOT working" table, yet §3/§6/§7 publish them as if they work:
+
+| Endpoint | Contract says | The client did |
+|---|---|---|
+| `PATCH /media/libraries/{id}` | §3 published; §0.5 "Not implemented" | `updateLibrary` (no callers) |
+| `DELETE /media/libraries/{id}` | §3 published; §0.5 "Not implemented" | **"Remove this Library" in the Library row menu** — confirm dialog, then a 404 and an error toast, every time |
+| `POST …/classify` | §6 published; §0.5 "no separate endpoint, classification runs inside every sync" | `classifyLibrary` (no callers) |
+| `GET /media/jobs/{id}/stream` | §7 publishes six event types; the wire table says "Progress rides the platform operation stream, not a /media path" | `streamJob` → the job panel's only live update, so every job panel 404'd and then sat frozen on its mount read |
+
+This is the third instance of the class §0.5 itself records (`POST /media/jobs/{id}/cancel` was
+published and called for the feature's whole life with no route serving it). The wire-shape guard
+catches a route with no table entry and a table entry claiming `implemented` with no route — it does
+NOT catch a section of the contract document publishing an endpoint the table marks unimplemented,
+which is what a client lane reads and builds from.
+
+**Frontend half, done in `chore(types): adopt the live API contract…`:** all four callers deleted;
+the Remove control is absent rather than dead; job progress re-reads the durable rows every 2s
+(`features/source-library/hooks/useJob.ts`).
+
+**To act (server lane):** either build the four routes, or mark them in §3/§6/§7 themselves — at the
+endpoint heading, where a client lane reads — as not built, and extend the wire guard's third
+reconciliation to fail when a documented endpoint heading carries no "not built" marker while its
+table entry says `implemented: False`. Job progress in particular is a real capability gap: until a
+stream exists, the frontend re-read is the honest ceiling.
+
 ### D332 — Six files under `coding-sessions/` carry no `kind` and no session id, so no session has ever listed them (2026-09-17)
 
 **Status:** open · **Priority:** P3 (six rows, and they are not a regression) · **Repo:** DB rows + whichever writer produced them

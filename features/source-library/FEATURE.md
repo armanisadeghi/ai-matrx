@@ -21,7 +21,7 @@ experience a human has and how quickly and easily we can do things."*
 | File | What it is |
 |---|---|
 | `types.ts` | The contract's TypeScript face. Nothing here is invented. |
-| `contract-paths.ts` | 🚨 **Binds those shapes to `callApi`'s `paths` and DELETES ITSELF.** Interface merging refuses a duplicate key whose type differs, so the moment `pnpm sync-types` writes the real `/media` operations, `pnpm type-check` fails by name and this file goes. It is not a shim to live beside the generated types. |
+| ~~`contract-paths.ts`~~ | 🚨 **GONE, exactly as designed (2026-09-18).** It bound the contract's shapes to `callApi`'s `paths` while the server lane built, and it promised to delete itself the moment `pnpm sync-types` wrote the real `/media` operations. That happened: every key collided (TS2717), `pnpm type-check` failed by name, and the file was deleted in that session — along with `features/connected-sources/contract-paths.ts` and the `lib/api/contract-ahead-route.ts` wrapper both used. Paths and bodies now come from `types/python-generated/api-types.ts` and nothing else. |
 | `api.ts` | Every call the screen makes, through the ONE door. |
 | `format.ts` | Pure formatting, so one number is formatted once. |
 
@@ -154,6 +154,26 @@ nothing moves; the claim is gone. The day the server publishes a word count,
 `vocabulary.ts` is the only file that changes.
 
 ## Change log
+
+- `2026-09-18` — **The generated contract arrived, and four calls turned out to
+  be calling nothing.** `pnpm sync-types:live` wrote the real `/media/*`
+  operations into `types/python-generated/api-types.ts`, `contract-paths.ts`
+  collided on every key and was deleted exactly as its header promised, and the
+  truth underneath it was that this module named four endpoints the server never
+  built — each one marked `implemented: False` in
+  `aidream/tests/test_media_catalog_wire_shapes.py` and listed in
+  API-CONTRACT.md §0.5's "NOT working" table: `PATCH` and `DELETE
+  /media/libraries/{id}`, `POST …/classify`, and `GET /media/jobs/{id}/stream`.
+  `updateLibrary`, `deleteLibrary`, `classifyLibrary` and `streamJob` are gone
+  rather than left calling 404s — the same class §0.5 records for the Cancel
+  button. What a person could actually see change: **"Remove this Library" is no
+  longer in the row menu** (it asked for confirmation and then showed an error
+  toast, every time), and **job progress now re-reads the durable rows every two
+  seconds** instead of attaching to a stream that never existed and then sitting
+  frozen. Two body fields the server never read went with them: `sync_now` on
+  create (`CreateLibraryBody` has no such key) and `stream` in the sync body
+  (`SyncBody` is `{ mode, classify }`; that endpoint always streams). The server
+  gap is filed in `FOUND_DEFECTS.md`.
 
 - `2026-09-18` — **A job that started is a job this screen can find.** Two
   independent failures, both fixed. (1) `POST …/jobs` answered `{"job": {…}}`

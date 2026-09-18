@@ -424,9 +424,16 @@ function CapabilityCatalog({
             connection?.health === "connected" &&
             !permissionGranted,
           );
-          const capabilityBusy = busy?.startsWith(
-            `capability:${capabilityKey}:`,
-          );
+          // `busy` holds the EXACT token the enable handler set
+          // (`capability:<key>:popup` / `:redirect`), so the two labels below
+          // compare against those tokens. They used to compare a BOOLEAN
+          // (`busy?.startsWith(...)`) with a string, which is never equal — so
+          // neither "Enabling …" nor "Opening Google…" ever appeared and the
+          // button looked inert for the whole round trip (2026-09-18).
+          const capabilityPopupBusy =
+            busy === `capability:${capabilityKey}:popup`;
+          const capabilityRedirectBusy =
+            busy === `capability:${capabilityKey}:redirect`;
           return (
             <article
               key={capability.key}
@@ -529,7 +536,7 @@ function CapabilityCatalog({
                     onClick={() => onEnableCapability(capability)}
                     disabled={authorizationActionDisabled}
                   >
-                    {capabilityBusy === "capability:" + capabilityKey + ":popup"
+                    {capabilityPopupBusy
                       ? `Enabling ${capability.title}…`
                       : `Enable ${capability.title}`}
                   </Button>
@@ -539,8 +546,7 @@ function CapabilityCatalog({
                     onClick={() => onEnableCapability(capability, true)}
                     disabled={authorizationActionDisabled}
                   >
-                    {capabilityBusy ===
-                    "capability:" + capabilityKey + ":redirect"
+                    {capabilityRedirectBusy
                       ? "Opening Google…"
                       : "Continue in this tab"}
                   </Button>

@@ -39,7 +39,9 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PROBES = ["node_modules", "packages/example/node_modules"];
 
 function git(cwd, args) {
-  return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  // 256 MiB: other lanes park whole checkouts under .wt/ and .matrx/, and the
+// default 1 MiB buffer overflowed on their untracked listing (ENOBUFS, 2026-09-18).
+  return execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], maxBuffer: 256 * 1024 * 1024 });
 }
 
 /** Tracked paths that are, or sit inside, a `node_modules` segment. */

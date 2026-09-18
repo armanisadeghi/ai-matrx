@@ -106,11 +106,13 @@ chooser door named in the provider's own words (`Choose repositories…`) plus a
 count of what is already attached. An empty list keeps the chip **plain**,
 because a door onto nothing is a dead control.
 
-The chooser writes `platform.associations` edges through aidream. Picks made on
-`/chat/new` — before the conversation row exists — are held against that same
-minted id and flushed the instant the attachments GET proves the row is there;
-until then they render as their own pending chips rather than passing for
-attached. The full list, the remove controls and "Add more" live in the Tools
+The chooser writes `platform.associations` edges through aidream — including on
+`/chat/new`, before a single message exists. aidream creates the conversation
+row on the first write against the browser-minted id, so a pick there is a real
+`POST` whose answer is the chip you see; the id never changes on the way to the
+real conversation, so nothing has to be "carried over". The only picks still
+held as pending chips are the ones INHERITED from another chat by an agent
+switch, and they are written the instant this conversation's read succeeds. The full list, the remove controls and "Add more" live in the Tools
 picker (the composer rail is one 16px line); the chat header carries a summary
 where every item opens at the provider.
 
@@ -182,9 +184,9 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
   chooser's label in the provider's own words, `ResourceAttachPicker` is the
   one chooser for every provider (inventory filters locally, live search
   debounces and announces itself), and `redux/attachments.slice.ts` keeps what
-  was chosen per conversation as `platform.associations` edges — including
-  picks made on `/chat/new` before the row existed, which are held against the
-  same minted id and flushed when the read proves it is there. The reaper
+  was chosen per conversation as `platform.associations` edges — written
+  straight to the minted id on `/chat/new`, with only agent-switch inheritance
+  ever held as pending. The reaper
   (`destroyInstanceIfAbandoned`) now counts choosing what a chat works on as
   work, closing the same class that took per-run tool additions until
   2026-09-14. Guards, each proven failing-then-passing:
@@ -219,6 +221,13 @@ One entry in `registry.ts`: id (generic to the provider, permanent), name (today
 - `2026-09-12` — Replaced the Google inventory's forbidden vault-reference
   projection with database-generated boolean health facts, and stopped the
   shared query policy from replaying deterministic PostgreSQL `42501` denials.
+- `2026-09-18` — Retired the `messageCount > 0` hold: attaching now works from
+  `/chat/new` onward, because aidream creates the conversation row on the first
+  write against the browser-minted id. The chooser reads and writes the real
+  server rows before the first message, so the chip is never an optimistic
+  claim about an attachment the server has not taken. Guards proven
+  failing-then-passing in `attachments-survive-the-new-chat-handoff.test.ts`
+  and `nothing-is-read-when-nothing-is-attachable.test.tsx`.
 - `2026-09-12` — Strengthened the shared Google inventory boundary to require
   a bearer token, not merely a session object, before constructing the
   authenticated-only PostgREST read.

@@ -2,8 +2,10 @@
  * Every call the Browse-everything screen makes, through the ONE door.
  *
  * `callApi` owns auth, base URL, organization scope and error capture. Paths
- * are typed through ./contract-paths.ts until `pnpm sync-types` supplies the
- * generated ones (that file deletes itself the moment they land).
+ * and bodies are typed by the GENERATED contract
+ * (`types/python-generated/api-types.ts`) — the `/connected-sources/*`
+ * operations landed there on 2026-09-18 and the contract-ahead augmentation
+ * that stood in for them deleted itself, exactly as its header promised.
  *
  * WHY THESE READS GO THROUGH THE SERVER AND NOT SUPABASE. The house rule is
  * that rows go direct to Supabase — but these rows are not in our database at
@@ -22,7 +24,6 @@
 import type { AppDispatch } from "@/lib/redux/store";
 import { callApi } from "@/lib/api/call-api";
 import type { ApiCallError } from "@/lib/api/call-api";
-import "./contract-paths";
 
 import type {
   ConnectedAdapterRow,

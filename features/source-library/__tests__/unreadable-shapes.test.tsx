@@ -36,9 +36,12 @@
  *     npx jest features/source-library/__tests__/unreadable-shapes.test.tsx
  *   → with the cast back in place, block A dies inside React with
  *     "Objects are not valid as a React child (found: object with keys {label,
- *     block})" — the 2026-09-17 crash, on this screen — and block B's
- *     malformed event is passed to the panel as a real item, which renders the
- *     same way. Restore with `git checkout -- features/source-library/api.ts`.
+ *     block})" — the 2026-09-17 crash, on this screen. Restore with
+ *     `git checkout -- features/source-library/api.ts`. Block B is proved the
+ *     same way against `parseSyncEvent`'s `number()` narrowing: take it out and
+ *     the shape-shifted `cumulative` comes back as an event instead of a named
+ *     problem. (Block B moved from the job stream to the sync stream on
+ *     2026-09-18 — see its own note for why.)
  */
 
 import React, { act } from "react";
@@ -90,6 +93,7 @@ jest.mock("@/lib/api/call-api", () => ({
 import sourceLibraryReducer from "../redux/sourceLibrarySlice";
 import appContextReducer from "@/lib/redux/slices/appContextSlice";
 import { JobPanel } from "../components/JobPanel";
+import { asSyncEvent } from "../api";
 
 function makeStore() {
     return configureStore({
@@ -248,76 +252,63 @@ describe("A · a field that changed shape on the wire never reaches React", () =
 
 // ═══════════════════════════════ B ═══════════════════════════════════════════
 
-describe("B · a malformed update never takes down a running job", () => {
-    it("keeps the rows, keeps reading the stream, and says what it dropped", async () => {
-        const events: Array<{ event: string; data?: unknown }> = [
-            // Malformed: `attempt` is a count the panel prints — it arrives as
-            // an object. The job itself is running on the server regardless.
-            {
-                event: "data",
-                data: {
-                    type: "job.item.finished",
-                    item: item({ id: "i2", video_id: "v2", attempt: { tries: 2 } }),
-                    totals: JOB.totals,
-                },
-            },
-            // The very next event is good. It arriving at all is the proof that
-            // the malformed one did not tear the reader down.
-            {
-                event: "data",
-                data: {
-                    type: "job.progress",
-                    totals: { ...JOB.totals, succeeded: 2, queued: 0 },
-                    progress_percent: 75,
-                    elapsed_ms: 61_000,
-                    eta_seconds: 20,
-                },
-            },
-        ];
-
-        transport.mockImplementation((config: FakeCall) => {
-            if (config.stream) {
-                for (const event of events) config.onStreamEvent?.(event);
-                return Promise.resolve({ data: undefined });
-            }
-            return Promise.resolve({
-                data: { job: JOB, items: [item({})], items_total: 1 },
-            });
-        });
-
-        mount(<JobPanel jobId="job-7" />);
-        await flush();
-        await flush();
-
-        // The job is still on screen with what the mount read proved.
-        expect(text()).toContain("Transcribe 3 videos");
-        // The later event was still delivered — the stream survived.
-        expect(text()).toContain("75%");
-        // And the dropped update is named rather than swallowed.
-        expect(text()).toContain("job.item.finished.item.attempt");
-        expect(text()).toContain("Nothing has been guessed or hidden");
-        expect(text()).not.toContain("[object Object]");
+describe("B · a malformed update never takes down a running SYNC", () => {
+    /**
+     * 🚨 THIS BLOCK MOVED FROM THE JOB STREAM TO THE SYNC STREAM (2026-09-18),
+     * because the job stream never existed. `GET /media/jobs/{id}/stream` is
+     * published in API-CONTRACT.md §7 but is marked `implemented: False` in
+     * the server's own wire table and is absent from the live contract, so the
+     * old version of this block fed a stub transport events that no server
+     * has ever sent — a test proving its author's own fixture, which is the
+     * defect `forcing-function-tests` names. The enumeration stream
+     * (`POST /media/libraries/{id}/sync`) is real, measured at 11 streamed
+     * pages over 533 videos, and it carries the SAME law: one update this
+     * build cannot read never takes the reader down, and is named rather than
+     * swallowed. `asSyncEvent` is the real narrowing the real reader calls;
+     * only the envelope around it is constructed here.
+     */
+    const page = (overrides: Record<string, unknown> = {}) => ({
+        event: "data" as const,
+        data: {
+            type: "library.sync.page",
+            library_id: "lib-1",
+            at: new Date().toISOString(),
+            page_index: 0,
+            page_size: 50,
+            videos: [],
+            cumulative: 50,
+            next_page_token_present: true,
+            ...overrides,
+        },
     });
 
-    it("an event this build has never heard of is simply ignored", async () => {
-        transport.mockImplementation((config: FakeCall) => {
-            if (config.stream) {
-                config.onStreamEvent?.({ event: "data", data: { type: "job.teleported" } });
-                config.onStreamEvent?.({ event: "phase", data: { phase: "working" } });
-                return Promise.resolve({ data: undefined });
-            }
-            return Promise.resolve({
-                data: { job: JOB, items: [item({})], items_total: 1 },
-            });
-        });
+    it("keeps reading, and says which field it dropped", () => {
+        const problems: string[] = [];
+        // `cumulative` is a count the screen prints. It arrives as an object —
+        // the verbatim 2026-09-17 mutation, on the stream that exists.
+        const dropped = asSyncEvent(
+            page({ cumulative: { label: "50", block: null } }) as never,
+            (message) => problems.push(message),
+        );
+        expect(dropped).toBeNull();
+        expect(problems.join(" ")).toContain("library.sync.page.cumulative");
+        expect(problems.join(" ")).not.toContain("[object Object]");
 
-        mount(<JobPanel jobId="job-7" />);
-        await flush();
-        await flush();
+        // The very next event is good, and it still reads — the reader was
+        // never torn down.
+        const good = asSyncEvent(page() as never, (message) => problems.push(message));
+        expect(good).not.toBeNull();
+        expect(good!.type).toBe("library.sync.page");
+    });
 
-        expect(text()).toContain("Transcribe 3 videos");
+    it("an event this build has never heard of is simply ignored", () => {
+        const problems: string[] = [];
+        const unknown = asSyncEvent(
+            { event: "data", data: { type: "library.teleported" } } as never,
+            (message) => problems.push(message),
+        );
         // Unknown traffic is not a problem and must not be reported as one.
-        expect(text()).not.toContain("cannot read");
-        expect(text()).not.toContain("Nothing has been guessed or hidden");
+        expect(unknown).toBeNull();
+        expect(problems).toHaveLength(0);
     });
 });

@@ -29,6 +29,14 @@ export interface UsePartyListResult {
   rows: PartyListRow[];
   total: number;
   counts: EntityScopeCounts;
+  /**
+   * "The counts we are holding do not answer the question being asked" —
+   * DERIVED from the request identity, exactly as `useEntityList` derives it,
+   * never written from an effect body. A scope badge shows nothing at all while
+   * this is true, because a badge that says 0 before anything was counted is a
+   * lie the user cannot tell from an empty tab.
+   */
+  countsLoading: boolean;
   isLoading: boolean;
   isFetching: boolean;
   error: string | null;
@@ -49,6 +57,15 @@ export function usePartyList(opts: PartySortOpts): UsePartyListResult {
   const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generation, setGeneration] = useState(0);
+  const [countsAnsweredFor, setCountsAnsweredFor] = useState<string | null>(
+    null,
+  );
+
+  // The identity of the counts question currently being asked. `counts` come
+  // from the same round trip as the page, so the key is the same query plus the
+  // manual-refresh token.
+  const countsKey = JSON.stringify({ query, generation });
+  const countsLoading = countsAnsweredFor !== countsKey;
 
   // Resolve the caller's org memberships ONCE — the "orgs" scope predicate
   // and the My Orgs narrowing dropdown both come from this, never from a
@@ -89,7 +106,12 @@ export function usePartyList(opts: PartySortOpts): UsePartyListResult {
         setError(message);
         setIsLoading(false);
       } finally {
-        if (generationRef.current === gen) setIsFetching(false);
+        if (generationRef.current === gen) {
+          setIsFetching(false);
+          // Answered either way: a failed counts read must not leave the badges
+          // spinning forever — the error above is what says so.
+          setCountsAnsweredFor(countsKey);
+        }
       }
     }
     return () => clearTimeout(timer);
@@ -124,6 +146,7 @@ export function usePartyList(opts: PartySortOpts): UsePartyListResult {
       rows,
       total,
       counts,
+      countsLoading,
       isLoading,
       isFetching,
       error,
@@ -138,6 +161,7 @@ export function usePartyList(opts: PartySortOpts): UsePartyListResult {
       rows,
       total,
       counts,
+      countsLoading,
       isLoading,
       isFetching,
       error,

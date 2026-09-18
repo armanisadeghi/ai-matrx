@@ -379,7 +379,7 @@ export function TeachBack({
         subjectId: runId,
         verdict: "positive",
         surfaceName: EXPERT_SIGNATURE_SURFACE,
-        originalContent: current.explanation,
+        originalContent: current.explanation ?? "",
         prose: current.subject
           ? `Teach-back signed: ${current.subject}`
           : "Teach-back signed",
@@ -607,7 +607,7 @@ export function TeachBack({
                   : "text-muted-foreground",
               )}
             >
-              {describeBasis(current.basis)}
+              {describeBasis(current.basis ?? "")}
             </p>
             <h2 className="mb-2 text-base font-semibold text-foreground">
               Here&apos;s how I understand{" "}
@@ -616,17 +616,17 @@ export function TeachBack({
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
               {current.explanation}
             </p>
-            {current.rule_ids.length ? (
+            {(current.rule_ids ?? []).length ? (
               <p className="mt-3 text-xs text-muted-foreground">
-                Built from {current.rule_ids.length}{" "}
-                {current.rule_ids.length === 1 ? "rule" : "rules"} of yours —
+                Built from {(current.rule_ids ?? []).length}{" "}
+                {(current.rule_ids ?? []).length === 1 ? "rule" : "rules"} of yours —
                 those are the ones your sign-off will land on.
               </p>
             ) : null}
             {/* THE PLAY CONTROL IS ABSENT OR HONEST, never dead: it appears only
                 when there is something to say, and it always reflects the one
                 app-wide playback queue rather than a local guess. */}
-            {current.explanation.trim() ? (
+            {(current.explanation ?? "").trim() ? (
               <div className="mt-3 flex items-center gap-2">
                 {playing ? (
                   <Button variant="outline" size="sm" onClick={() => pause()}>
@@ -642,7 +642,7 @@ export function TeachBack({
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => speakExplanation(current.explanation)}
+                    onClick={() => speakExplanation(current.explanation ?? "")}
                   >
                     <Volume2 className="size-3.5" />
                     {speechStatus === "loading" ? "Starting…" : "Read it to me"}
@@ -735,9 +735,9 @@ export function TeachBack({
       ) : null}
 
       {/* ── WHAT IT WASN'T SURE ABOUT — the invitation to interrupt ──────── */}
-      {current && !finished && uncertainParts[current.explanation] ? (
+      {current && !finished && uncertainParts[current.explanation ?? ""] ? (
         <p className="rounded-md border border-border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
-          The part I&apos;m least sure about: {uncertainParts[current.explanation]}
+          The part I&apos;m least sure about: {uncertainParts[current.explanation ?? ""]}
         </p>
       ) : null}
 
@@ -807,7 +807,7 @@ export function TeachBack({
           <ol className="mt-2 space-y-2">
             {rounds.slice(0, finished ? rounds.length : -1).map((round, index) => (
               <li
-                key={`${index}-${round.explanation.slice(0, 24)}`}
+                key={`${index}-${(round.explanation ?? "").slice(0, 24)}`}
                 className="rounded-md border border-border bg-card px-3 py-2 text-sm"
               >
                 <p className="text-muted-foreground">

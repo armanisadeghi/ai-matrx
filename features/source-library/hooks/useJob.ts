@@ -1,16 +1,26 @@
 "use client";
 
 /**
- * A selection job, read from the server FIRST and streamed second.
+ * A selection job, read from the server and kept current from the server.
  *
- * 🚨 THE ORDER IS THE WHOLE POINT. The mount read (`GET /media/jobs/{id}`) runs
- * before any stream is attached, so a reload, a closed tab, a crashed browser or
- * a machine that was asleep all lose nothing: the panel renders the durable rows
- * and only then subscribes for what happens NEXT. A panel that could only be
- * correct if it caught the stream is the defect this shape exists to prevent.
+ * 🚨 THE MOUNT READ IS THE WHOLE POINT. `GET /media/jobs/{id}` runs before
+ * anything else, so a reload, a closed tab, a crashed browser or a machine that
+ * was asleep all lose nothing: the panel renders the durable rows. A panel that
+ * could only be correct if it caught a stream is the defect this shape exists
+ * to prevent.
+ *
+ * 🚨 WHY THIS RE-READS INSTEAD OF STREAMING. `GET /media/jobs/{id}/stream` is
+ * published in API-CONTRACT.md §7 but was never built — the server's own wire
+ * table (`aidream/tests/test_media_catalog_wire_shapes.py`) marks it
+ * `implemented: False`, "Progress rides the platform operation stream, not a
+ * /media path", and the live contract carries no such path. Calling it was a
+ * 404 nobody saw, and the panel then sat frozen on its mount read. So while the
+ * job is running this re-reads the SAME durable rows on an interval: the panel
+ * is never ahead of the database and never behind it by more than one tick. It
+ * goes back to a subscription the day the server ships a real stream.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import {
     MediaApiError,
@@ -18,21 +28,25 @@ import {
     getJob,
     resumeJob,
     retryFailedJobItems,
-    streamJob,
 } from "../api";
 import {
     jobAttached,
-    jobItemUpdated,
     jobLoadFailed,
     jobLoaded,
-    jobProgress,
-    jobRowUpdated,
     selectJobItems,
     selectJobLive,
 } from "../redux/sourceLibrarySlice";
 import type { JobItemRow, JobRow } from "../types";
 
 const LIVE_STATUSES = new Set<JobRow["status"]>(["pending", "running"]);
+
+/**
+ * How often a RUNNING job re-reads its durable rows. Two seconds is the
+ * interval a person reads as "live" on a progress list while costing one cheap
+ * read per running job per tick; it stops the moment the job reaches a terminal
+ * status, so a finished panel makes no traffic at all.
+ */
+const LIVE_REREAD_INTERVAL_MS = 2_000;
 
 export interface UseJob {
     job: JobRow | null;
@@ -55,7 +69,6 @@ export function useJob(jobId: string | null): UseJob {
         jobId ? selectJobLive(state, jobId) : null,
     );
     const items = useAppSelector((state) => (jobId ? selectJobItems(state, jobId) : EMPTY));
-    const abortRef = useRef<AbortController | null>(null);
     const [now, setNow] = useState(() => Date.now());
 
     const job = live?.job ?? null;
@@ -84,56 +97,17 @@ export function useJob(jobId: string | null): UseJob {
         void reload();
     }, [reload]);
 
-    // 2. The stream — only for a job that is actually still running, and only
-    //    after the rows are on screen.
+    // 2. Keeping it current — only for a job that is actually still running,
+    //    and only after the rows are on screen. See the header: there is no
+    //    job stream on the server, so "what happens NEXT" is the same durable
+    //    read, taken again.
     useEffect(() => {
         if (!jobId || !isLive || !live?.loadedFromServer) return;
-        const controller = new AbortController();
-        abortRef.current = controller;
         dispatch(jobAttached({ jobId, attachedAt: Date.now() }));
-
-        void streamJob(dispatch, jobId, {
-            signal: controller.signal,
-            // 🚨 A MALFORMED EVENT NEVER TAKES DOWN A RUNNING JOB. The work
-            // continues on the server; the panel keeps every row it already
-            // read and shows this sentence over them, beside the "Read it
-            // again" door that re-reads the durable truth.
-            onProblem: (message) => dispatch(jobLoadFailed({ jobId, message })),
-            onEvent: (event) => {
-                switch (event.type) {
-                    case "job.started":
-                        dispatch(jobRowUpdated(event.job));
-                        break;
-                    case "job.item.started":
-                    case "job.item.finished":
-                        dispatch(jobItemUpdated({ jobId, item: event.item }));
-                        break;
-                    case "job.progress":
-                        dispatch(
-                            jobProgress({
-                                jobId,
-                                totals: event.totals,
-                                progressPercent: event.progress_percent,
-                                elapsedMs: event.elapsed_ms,
-                                etaSeconds: event.eta_seconds,
-                            }),
-                        );
-                        break;
-                    case "job.completed":
-                        dispatch(jobRowUpdated(event.job));
-                        break;
-                    case "job.failed":
-                        dispatch(jobRowUpdated(event.job));
-                        break;
-                }
-            },
-        }).catch(() => {
-            // The stream died; the durable rows are still right. Re-read rather
-            // than leaving a panel frozen at whatever it last heard.
-            if (!controller.signal.aborted) void reload();
-        });
-
-        return () => controller.abort();
+        const id = window.setInterval(() => {
+            void reload();
+        }, LIVE_REREAD_INTERVAL_MS);
+        return () => window.clearInterval(id);
     }, [dispatch, jobId, isLive, live?.loadedFromServer, reload]);
 
     useEffect(() => {

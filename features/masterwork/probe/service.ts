@@ -14,7 +14,7 @@
 // resumable in the ordinary way — a durable run pointer and a rejoin — instead
 // of needing a bespoke session row nothing else in Masterwork has.
 
-import type { paths } from "@/types/python-generated/api-types";
+import type { components, paths } from "@/types/python-generated/api-types";
 
 /**
  * Served by `aidream/aidream/services/distillation/probe.py`.
@@ -39,22 +39,15 @@ export const DECLARED_KNOB_DEFAULTS = {
   voice_default_on: true,
 };
 
-/** One round of a probe session, exactly as the wire carries it. */
-export interface ProbeRound {
-  example_title: string;
-  example_body: string;
-  /**
-   * The boundary this variant probed, as the generator named it. Carried back
-   * so a later round cannot re-probe covered ground.
-   *
-   * 🚨 NEVER RENDERED BESIDE THE EXAMPLE. Naming the ground we are testing is
-   * one hint short of naming the flaw, and a probe whose answer is on screen
-   * is not a probe. It is session state, not a label.
-   */
-  probe_label: string;
-  /** The Expert's own words. Empty until they answer this round. */
-  critique: string;
-}
+/**
+ * One round of a probe session, exactly as the wire carries it.
+ *
+ * 🚨 `probe_label` NEVER RENDERED BESIDE THE EXAMPLE. Naming the ground we are
+ * testing is one hint short of naming the flaw, and a probe whose answer is
+ * on screen is not a probe. It is session state, not a label. `critique` is
+ * the Expert's own words, empty until they answer this round.
+ */
+export type ProbeRound = components["schemas"]["ProbeRound"];
 
 /** The terminal `masterwork_probe_round` payload. */
 export interface ProbeRoundResult {
