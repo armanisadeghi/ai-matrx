@@ -368,7 +368,7 @@ function PatrolRunsTable({ patrol }: { patrol: MandatePatrolSection }) {
                         <Link
                           href={href}
                           className="underline underline-offset-2"
-                          title={`The ${run.error_rows_filed} error row(s) this run filed (request_id ${run.error_rows_request_id})`}
+                          title={`Open the ${run.error_rows_filed} error row(s) this run filed`}
                         >
                           {run.error_rows_filed}
                         </Link>
