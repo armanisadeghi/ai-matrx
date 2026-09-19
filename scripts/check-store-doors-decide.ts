@@ -76,6 +76,35 @@ const RECORD_CENSUS = (deciders: string[]) => `
      ${deciders.length ? `and pg_get_functiondef(p.oid) !~* '(${deciders.join("|")})'` : ""}
    order by 1`;
 
+/**
+ * THE FOURTH CENSUS — ONE LADDER (2026-09-19).
+ *
+ * The store had TWO implementations of "may this person reach this record": the read doors
+ * asked `custom.has_visibility` (owner + a direct grant), the write doors asked
+ * `iam.has_access_for` (the platform kernel), and field masking asked `iam.effective_level`.
+ * Measured live as a real colleague: 25 records they were allowed to REWRITE and refused
+ * when they tried to OPEN. The rule is now one function at four thresholds, and the rule is
+ * a query: `custom.doors_not_on_one_ladder()` names any function in schema `custom` that
+ * still decides a row with a ladder of its own. It reads the body with `--` comments
+ * stripped, because a comment is not a decision.
+ */
+const ONE_LADDER_CENSUS = `select function_name, identity_args, why from custom.doors_not_on_one_ladder()`;
+
+/**
+ * The RED half of it: the same query with `custom.has_visibility` ADDED to the list of
+ * ladders it objects to. Every door that carries the fix must then be named — otherwise the
+ * census is reading an empty set and its green answer above proves nothing.
+ */
+const ONE_LADDER_RED = `
+  select p.proname::text as function_name, pg_get_function_identity_arguments(p.oid) as identity_args
+    from pg_proc p
+   where p.pronamespace = 'custom'::regnamespace
+     and regexp_replace(pg_get_functiondef(p.oid), '--[^' || chr(10) || ']*', '', 'g')
+         ~* '(iam\\.has_access_for|iam\\.effective_level|public\\.has_permission_for|custom\\.has_visibility)'
+     and p.proname not in ('has_visibility', 'has_visibility_at', 'effective_level',
+                           'visible_record_ids', 'doors_not_on_one_ladder')
+   order by 1`;
+
 const GRANT_CENSUS = `
   select d.function_name, d.identity_args,
          case when p.oid is null then 'declared, but no function in schema custom has that exact signature'
@@ -152,16 +181,43 @@ async function main(): Promise<void> {
         `[ OK ] self-test - with no decider accepted, the censuses name ${names.size} door(s) ` +
           "including all five that carry the fix. The queries can go red.",
       );
+
+      // AND THE ONE-LADDER CENSUS, the same way: with `custom.has_visibility` itself listed
+      // as a ladder it objects to, every routed door must be named.
+      const redLadder = (await client.query<Row>(ONE_LADDER_RED)).rows;
+      const ladderNames = new Set(redLadder.map((r) => r.function_name));
+      const mustRoute = [
+        "read_record",
+        "read_records",
+        "assert_client_may_change",
+        "io_restore",
+        "anon_publish",
+      ];
+      const unrouted = mustRoute.filter((n) => !ladderNames.has(n));
+      if (unrouted.length > 0) {
+        fail(
+          "SELF-TEST FAILED - with custom.has_visibility itself counted as a ladder to object " +
+            `to, the one-ladder census did not name ${unrouted.join(", ")}. Either those doors ` +
+            "are no longer on the one ladder, or the census is not reading the bodies it claims to.",
+        );
+      }
+      console.log(
+        `[ OK ] self-test - counting the one ladder itself as an objection, the one-ladder ` +
+          `census names ${ladderNames.size} door(s) including all five that must be routed. ` +
+          "It can go red.",
+      );
     }
 
     const callers = (await client.query<Row>(CALLER_CENSUS(DECIDERS))).rows;
     const records = (await client.query<Row>(RECORD_CENSUS(DECIDERS))).rows;
     const grants = (await client.query<Row>(GRANT_CENSUS)).rows;
+    const ladder = (await client.query<Row>(ONE_LADDER_CENSUS)).rows;
 
     const ok = [
       report("client doors taking an organization id that never decide the caller", callers),
       report("client doors that write a record without deciding that row", records),
       report("declared doors whose grant or signature does not match the live catalog", grants),
+      report("doors deciding a row with a ladder of their own instead of the one function", ladder),
     ].every(Boolean);
 
     if (!ok) {
@@ -169,7 +225,9 @@ async function main(): Promise<void> {
         "\n  A door into schema `custom` that a signed-in caller may execute decides, FIRST:\n" +
           "    the organization  - custom.assert_client_may_reach(organization, door)\n" +
           "    and the row       - custom.assert_client_may_change(organization, subject, door[, level, word])\n" +
-          "  A read door decides the row with iam.has_access_for / custom.has_visibility, and the\n" +
+          "  A read door decides the row with custom.has_visibility - THE ONE LADDER, asked at\n" +
+          "  viewer to read, commenter to comment, editor to write, admin for the structural\n" +
+          "  doors - and the\n" +
           "  anonymous doors decide with custom.anon_token_verify. Adding a door is adding one of\n" +
           "  those lines; there is no door that decides nothing.\n",
       );
