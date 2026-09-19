@@ -40898,6 +40898,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/storage-oauth/{provider}/authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Authorize Storage */
+        post: operations["authorize_storage_storage_oauth__provider__authorize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/storage-oauth/{provider}/disconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disconnect Storage */
+        post: operations["disconnect_storage_storage_oauth__provider__disconnect_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/storage-oauth/{provider}/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh Storage */
+        post: operations["refresh_storage_storage_oauth__provider__refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/{provider}/oauth/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Storage Callback */
+        get: operations["storage_callback__provider__oauth_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -118660,16 +118728,16 @@ export interface components {
         };
         /** ValidationError */
         ValidationError: {
+            /** Context */
+            ctx?: Record<string, never>;
+            /** Input */
+            input?: unknown;
             /** Location */
             loc: (string | number)[];
             /** Message */
             msg: string;
             /** Error Type */
             type: string;
-            /** Input */
-            input?: unknown;
-            /** Context */
-            ctx?: Record<string, never>;
         };
         /**
          * ValidationIssue
@@ -126215,6 +126283,53 @@ export interface components {
             url?: string | null;
             /** Text Preview */
             text_preview?: string | null;
+        };
+        /** StorageAuthorizationResponse */
+        StorageAuthorizationResponse: {
+            /**
+             * Auth Mode
+             * @constant
+             */
+            auth_mode: "confidential_authorization_code";
+            /** Authorization Url */
+            authorization_url: string;
+            /**
+             * Pkce
+             * @constant
+             */
+            pkce: "unsupported_not_used";
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "box" | "dropbox";
+            /** Requested Scopes */
+            requested_scopes: string[];
+        };
+        /** StorageConnectionRequest */
+        StorageConnectionRequest: {
+            /** Connection Id */
+            connection_id: string;
+        };
+        /** StorageLifecycleResponse */
+        StorageLifecycleResponse: {
+            /** Connection Id */
+            connection_id: string;
+            /** Granted Scopes */
+            granted_scopes: string[];
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "box" | "dropbox";
+            /** Provider Revoked */
+            provider_revoked?: boolean | null;
+            /** Requested Scopes */
+            requested_scopes: string[];
+            /** Scope Evidence */
+            scope_evidence: string;
+            /** Status */
+            status: string;
         };
     };
     responses: never;
@@ -190572,6 +190687,140 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    authorize_storage_storage_oauth__provider__authorize_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "box" | "dropbox";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageAuthorizationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disconnect_storage_storage_oauth__provider__disconnect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "box" | "dropbox";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageLifecycleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_storage_storage_oauth__provider__refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "box" | "dropbox";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageLifecycleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    storage_callback__provider__oauth_callback_get: {
+        parameters: {
+            query: {
+                state: string;
+                code?: string | null;
+                error?: string | null;
+            };
+            header?: never;
+            path: {
+                provider: "box" | "dropbox";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            307: {
                 headers: {
                     [name: string]: unknown;
                 };
