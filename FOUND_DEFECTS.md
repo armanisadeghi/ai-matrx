@@ -15,6 +15,93 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D340 — `check:kind-marker-law` cannot tell "ignore the marker while inspecting" from "strip the marker before passing", and is red on `main` for a call site that does the former (2026-09-18)
+
+**Blocking gate, red on `main`, one finding, and I believe the finding is wrong.** The guard
+names `features/workflow-runtime/workflow-document-text.ts:49`:
+
+```
+✗ features/workflow-runtime/workflow-document-text.ts:49  filters the marker key out — `__kind` is part of the data.
+```
+
+Identical on `main` (run 35392537346, head `1ab494a7`) and on this branch, so it is base-branch
+state, not any one PR's.
+
+**What line 49 actually does.** `workflowDocumentText()` decides whether a kindless
+`output.to_frontend` payload carries exactly ONE document field, so that Copy / Save to Notes /
+Save to Task never silently save one field of a multi-field result:
+
+```ts
+const fields = Object.entries(data).filter(([key]) => key !== KIND_KEY);
+if (fields.length !== 1) return null;
+```
+
+The marker is excluded **from a count**, in a function whose return type is `string | null`. No
+object is rebuilt, nothing is stored, passed or rendered without its marker. That is
+accept-and-ignore — the very thing the law's remedy text asks a consumer to do — expressed as a
+filter because counting is how this consumer ignores it.
+
+**Why this is the guard's problem and not the call site's.** Any correct implementation of "does
+this payload have exactly one document field besides its marker" must disregard the marker while
+inspecting. Rewriting the expression only changes which syntax the detector sees; it cannot make
+the semantics stop being "ignore the marker". So the call site cannot be fixed into compliance
+without breaking it: drop the filter and EVERY kinded payload has ≥2 fields, `fields.length !== 1`
+is always true, and the function returns null for every document — the actions silently stop
+working.
+
+**Recommended fix, which I did not make:** teach `scripts/check-kind-marker-law.ts` to separate a
+read-only inspection (a filter/entries whose result is counted, or consumed into a non-object
+return) from a strip (a filter/omit/destructure whose result is re-emitted as the payload). Prove
+it failing-then-passing with both cases as fixtures, including a planted real strip so the
+narrowed detector is shown still to catch it.
+
+**Why I stopped there.** Narrowing a blocking law guard is exactly the kind of change that must not
+be made on one agent's authority mid-task: get it slightly wrong and the guard goes quiet on real
+marker stripping, which is the failure the law exists to prevent, and nobody would see it until
+kinds started disappearing from stored rows. That is a decision for the lane that owns the marker
+law. Until then this gate stays red for every PR in the repo, so it is not a slow-burn item.
+
+### D339 — `rag.kg_chunks` unique indexes count removed rows: soft-delete a chunk and it can never be re-ingested (2026-09-18)
+
+**Latent, not yet biting — measured, not assumed.** `rag.kg_chunks` carries `deleted_at`,
+holds **23,198 rows**, and **0 are soft-deleted today**. Three of its unique indexes have no
+`deleted_at IS NULL` predicate, so a soft-deleted chunk keeps holding its key:
+
+| index | columns |
+|---|---|
+| `kg_chunks_content_sha_idx` | `(source_kind, source_id, content_sha256, chunker_version)` |
+| `kg_chunks_derivation_set_uidx` | `(processed_document_id, chunk_index, derivation_kind)` — partial, but on `derivation_kind <> 'initial_extract'` only |
+| `kg_chunks_source_kind_source_id_field_id_chunk_index_chunke_key` | `(source_kind, source_id, field_id, chunk_index, chunker_version)` |
+
+Effect: soft-delete a chunk, re-ingest or re-chunk the same source, and the insert is refused
+against a row nobody can see or restore. Re-ingestion is the normal operation on this table, so
+this is the whole class, not an edge: the first person to soft-delete and re-ingest is the first
+report. Today it costs a migration; after the first soft delete it costs a data cleanup too.
+
+**The judgment call the next owner must make, not skip.** The guard's own text allows a unique
+index to stay exact across removed rows when it is genuinely an idempotency key or an external
+system's id — but then it must be listed in the baseline BY HAND with that reason
+(`--update-baseline` deliberately will not do it). `kg_chunks_content_sha_idx` is the one that
+could plausibly qualify, since a content hash is a dedupe key. It still looks like a defect to me:
+its purpose is to stop duplicate LIVE chunks, and a removed chunk is not one. Recommendation:
+make all three partial on `deleted_at IS NULL`; if the RAG lane disagrees about the content-hash
+one, the disagreement belongs in the baseline with the reason written down.
+
+**Not fixed here.** I have no apply path from this container — the Postgres pooler is unreachable,
+so `pnpm db:apply` cannot run, and hand-applying through the Supabase MCP is forbidden in this repo
+(CLAUDE.md § Migrations). It needs an owner with a terminal; a `DROP INDEX` is non-additive, so it
+is a chair step under the same rule D320 went through.
+
+Surfaced by `check:soft-delete-unique --strict`, which is BLOCKING in per-PR CI and is currently
+red on `main` for exactly these three — so every PR in the repo inherits a red check until it is
+fixed. Verified on run 35392537346 (head `1ab494a7`, 2026-09-18 20:39Z): three NEW findings, all
+`rag.kg_chunks`, and no `workbench.note_folders` finding at all.
+
+**Also still open in the same check's output:** the INFO line
+`fixed workbench.udt_dataset_rows:udt_dataset_rows_dataset_id_id_unique — remove it:
+pnpm check:soft-delete-unique -- --update-baseline`. That is a stale baseline entry for an index
+already fixed; clearing it is a one-command housekeeping step for whoever runs the baseline next.
+
 ### D338 — A ledgered index rebuild on `workbench.note_folders` was undone by something that left no ledger row (2026-09-18)
 
 `chair_step_2026_09_18_db_guard_findings_non_additive.sql` (ledgered 15:22:24Z) rebuilt `note_folders_organization_created_by_name_unique` as `where deleted_at is null`, and its same-transaction proof asserts the predicate — so it WAS partial at 15:22Z. At ~19:30Z the live index was a full index again (`indpred IS NULL`). No `_schema_migrations` row between the two names it, and nothing in matrx-frontend, aidream, matrx-local or common-docs creates it outside `notes_n01_…` (`CREATE … IF NOT EXISTS`, which cannot replace an existing index). Meaning: some path executes DDL on production without the ledger — exactly what `pnpm db:apply` exists to prevent. Consequences seen: `check:soft-delete-unique` reports green for a shape the database does not have. `chair_step_2026_09_18a_note_folders_org_blind_name_key.sql` rebuilds it again; **if it reverts a second time the actor is still running.** Not investigated further: needs Postgres logs (`query_logs` for `CREATE UNIQUE INDEX note_folders_organization`) from an owner of the hunt.
@@ -407,48 +494,42 @@ DD-169 revokes and are held by name in `scripts/impl-doors/closed-helper-reach-b
 Fix per the D18 remedy (definer trigger, auth.uid()-bound door, or a declared door) and delete
 the baseline entry in the same commit — the gate fails on a stale entry.
 
-### D320 — `workbench.note_folders` unique indexes count removed rows: delete a folder, you can never reuse its name (2026-09-13)
+### D320 — FIX APPLIED 2026-09-18, NOT YET CLOSED — `workbench.note_folders` unique indexes counted removed rows (found 2026-09-13)
 
-**Update 2026-09-18 — PARTLY RESOLVED, one chair step away.** The `(id, organization_id)` index is not
-a defect and never was: an index that carries the row's own `id` cannot be held by a removed row, and
-`scripts/check-soft-delete-unique.ts` now says so (identity exclusion, `--self-test`). The org-scoped
-NAME index becomes partial on `deleted_at is null` in
-`migrations/chair_step_2026_09_18_db_guard_findings_non_additive.sql`, which needs the owner at a
-terminal (JUDGMENT §5) because a DROP INDEX is non-additive. The pre-existing `(created_by, name)`
-index stays exact and frozen in the baseline: the client still HARD-deletes folder rows
-(scripts/client-hard-delete-allowlist.json, DD-119) and its one upsert infers that index, so the
-workbench lane owns the switch to soft delete + a partial key together.
+**The fix is on the live database. It is NOT closed, and D338 is the reason.** Measured on Matrx
+Main at 20:40Z:
 
-**Latent, not yet biting — say so honestly.** `workbench.note_folders` carries
-`deleted_at`, and THREE of its unique indexes have no `WHERE deleted_at IS NULL`:
-
-| index | columns | status |
+| index | was | at 20:40Z |
 |---|---|---|
-| `note_folders_organization_created_by_name_unique` | `(organization_id, created_by, name)` | **NEW** since the 2026-09-12 census |
-| `note_folders_id_organization_unique` | `(id, organization_id)` | **NEW** since the 2026-09-12 census |
-| `note_folders_created_by_name_unique` | `(created_by, name)` | pre-existing, in the frozen baseline |
+| `note_folders_organization_created_by_name_unique` | `(organization_id, created_by, name)`, exact | **partial** — `WHERE (deleted_at IS NULL)` |
+| `note_folders_created_by_name_unique` | `(created_by, name)`, exact, frozen in the baseline | **dropped** — the org-blind key is gone |
+| `note_folders_id_organization_unique` | `(id, organization_id)` | unchanged, and correctly so (below) |
 
-Effect: delete a folder called "Projects", try to create "Projects" again, and the
-database refuses — naming a row the person cannot see or restore. The two `name`
-indexes each cause it independently, so the pre-existing one is enough on its own; the
-`(id, organization_id)` one is harmless in practice, since `id` is already unique.
+And the guard agrees rather than just the migration: on CI run 35392537346 (head `1ab494a7`,
+20:39Z) `check:soft-delete-unique --strict` names **no `workbench.note_folders` index at all**.
 
-**Nobody has hit it yet:** `select count(*) from workbench.note_folders where
-deleted_at is not null` returns **0**. The first person to delete a folder and reuse its
-name is the first report. Fixing it before that costs nothing; after, it needs a data
-cleanup as well.
+🚨 **Why that is not enough to close it.** D338 (above) records that this VERY index was rebuilt
+partial at 15:22:24Z, and was a full index again by ~19:30Z — reverted by something that wrote no
+ledger row, with the actor unidentified and, in D338's words, *"if it reverts a second time the
+actor is still running."* The rebuild I measured (`1ab494a7`) landed at 20:38Z, so my 20:40Z
+reading is **two minutes old**. It proves the rebuild APPLIED. It cannot prove it HOLDS — the last
+revert took somewhere under four hours. Anyone closing this entry needs a reading from well after
+that window, not a reading from just after the migration.
 
-Remedy per the guard's own text: re-create the indexes `WHERE deleted_at IS NULL` in a
-migration (pattern: `migrations/soft_delete_partial_unique_indexes_context.sql`). The
-`(id, organization_id)` one deserves a second look — it may exist only to back a
-composite foreign key, in which case it should stay and be listed by hand with that
-reason, which `--update-baseline` deliberately will not do for you.
+**The `(id, organization_id)` index was never a defect** and the entry said so before: an index
+carrying the row's own `id` cannot be held by a removed row, and
+`scripts/check-soft-delete-unique.ts` now encodes that as an identity exclusion with a
+`--self-test`.
 
-Surfaced by `check:soft-delete-unique --strict` on armanisadeghi/ai-matrx#225, whose
-whole diff is two lines of a markdown skill file. The check reads LIVE indexes, so this
-is database state, not this PR's.
+**What it is.** `workbench.note_folders` carries `deleted_at`, and the two `name` indexes each
+independently meant that deleting a folder called "Projects" and creating "Projects" again was
+refused by the database — naming a row the person could not see or restore. It has never bitten
+anyone: `select count(*) from workbench.note_folders where deleted_at is not null` has been **0**
+throughout, so it is being fixed at the cost of a migration and no data cleanup. Surfaced by
+`check:soft-delete-unique --strict` on armanisadeghi/ai-matrx#225, whose whole diff was two lines
+of a markdown skill file — the check reads LIVE indexes, so it was database state, never that PR's.
 
-### D319 — 32 HR client doors are ungranted, so those surfaces 403 for EVERY signed-in user (2026-09-13)
+### D319 — RESOLVED 2026-09-18 — 32 HR client doors were ungranted, so those surfaces 403'd for EVERY signed-in user (found 2026-09-13)
 
 🚨 **Live product breakage, measured on Matrx Main, not inferred.** Of the 166
 `public.hr_*` SECURITY DEFINER wrappers, **32 give `authenticated` no EXECUTE**, so
@@ -501,11 +582,23 @@ diff is two lines of a markdown skill file. The check's own `grandfathered_owner
 calls these SECURITY INVOKER; live `pg_proc.prosecdef` says they are SECURITY DEFINER,
 so that note is stale and should be corrected with the fix.
 
-**Not fixed here.** The remedy is a migration adding the 32 `client_callable_door` rows
+**RESOLVED on the live database, 2026-09-18.** Migration
+`hr_public_wrappers_are_declared_doors_not_caller_census_casualties.sql` was applied at
+14:59:29Z by another lane. Measured on Matrx Main at 17:32Z the same day: the dead-door
+count went 32 → 2, and **every one of the 164 granted `public.hr_*` SECURITY DEFINER
+wrappers now has a `platform.client_callable_door` row — zero granted without one**, so
+the fix went through the door-row path the §6d-4 guard requires rather than around it.
+
+The two still ungranted are `hr_leave_accrual_apply` and `hr_leave_reinstate_on_rehire`.
+Neither is a dead button: a grep of both checkouts finds no call site for either outside
+the generated `types/database.types.ts`, so no UI control depends on them. They read as
+system/back-office jobs, correctly left un-client-callable. If a surface is ever wired to
+one, it needs a door row FIRST, then the grant.
+
+**Not fixed in the finding session.** The remedy was a migration adding the 32 `client_callable_door` rows
 and re-granting, which is HR-lane and access-layer work; `docs/official/db-rules.md` §6
 forbids changing a security layer on your own authority, and the session that found it
-was branch-restricted. **This needs an owner today** — it is not latent, it is 32 dead
-buttons in production.
+was branch-restricted. It needed an owner, and got one on 2026-09-18 (see the RESOLVED note above).
 
 ### D317 — the `shell_execution` KIND is still inactive and routed to the generic floor
 
