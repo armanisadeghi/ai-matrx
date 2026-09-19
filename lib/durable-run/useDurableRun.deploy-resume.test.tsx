@@ -161,14 +161,24 @@ describe("a durable run tells a person a deploy resumed it, and only that", () =
           event: "data",
           data: { type: "masterwork_step", message: "Reading your sources" },
         });
+        // 🚨 THIS MUST BE THE REAL BACKEND EVENT NAME AND SHAPE
+        // (`masterwork_runs.py`'s `MasterworkRunDraining` handler,
+        // aidream f22ae67a15 `publish_event`), not a name this suite invents
+        // to match whatever `MASTERWORK_RUN_WIRE.drainingEvent` happens to
+        // say. Before that field was corrected from the never-real
+        // `"masterwork_run_draining"` to `"masterwork_run_continuing"`, this
+        // exact test still passed — because it was faking the SAME wrong name
+        // the wire was misconfigured with, not the one the server actually
+        // sends. A test that copies the bug it means to catch proves nothing.
         request.onStreamEvent?.({
           event: "data",
           data: {
-            type: "masterwork_run_draining",
+            type: "masterwork_run_continuing",
             run_id: RUN_ID,
-            reason: "deploy_drain",
+            done: 3,
+            remaining: 5,
             user_message:
-              "The server is restarting. This run will pick up where it left off — nothing you have already paid for is repeated.",
+              "We are updating the server, so this run is moving to a new one. The 3 source(s) it already read are saved — it picks up from there in a moment. You do not need to do anything.",
           },
         });
         // The stream stays open — the recovery sweep won before the socket died.

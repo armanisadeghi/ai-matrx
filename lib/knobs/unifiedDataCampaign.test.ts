@@ -1,14 +1,18 @@
 /**
- * The unified-data campaign switch must be OFF, and must be the ONLY door into
- * campaign code.
+ * ONE SWITCH PER ORGANIZATION, and it must be the ONLY door into campaign code.
  *
  * This is a forcing-function test, not a tautology. It fails when:
  *   1. the shipped default stops being OFF (the failure this test exists for —
  *      campaign code ships continuously, so a default of ON is a production
  *      incident, not a bug report);
- *   2. an unreadable / missing knob row stops meaning OFF, or stops announcing
+ *   2. an unreadable / refused switch stops meaning OFF, or stops announcing
  *      itself;
- *   3. a campaign entry point is registered whose module does not actually go
+ *   3. THE SECOND SWITCH COMES BACK. The 19 September verdict found an admin
+ *      who had turned the store on for their organization still locked out by a
+ *      per-PERSON knob (`custom.code_paths_enabled`) they could only set for
+ *      themselves. This suite reads this module's own source and fails if that
+ *      key, or a per-person knob resolver, reappears in it;
+ *   4. a campaign entry point is registered whose module does not actually go
  *      through the gate. Proven red-then-green: put a file in ENTRY_POINTS that
  *      never calls `UNIFIED_DATA_CAMPAIGN.enabled()` and this suite goes red.
  */
@@ -23,17 +27,32 @@ import {
     UNIFIED_DATA_CAMPAIGN,
     UNIFIED_DATA_CAMPAIGN_DEFAULT,
     UNIFIED_DATA_CAMPAIGN_FEATURE,
-    UNIFIED_DATA_CAMPAIGN_KNOB,
     UNIFIED_DATA_CAMPAIGN_KEY,
-    type CampaignEntryPoint,
+    UNIFIED_DATA_STORE_DOOR,
 } from "./unifiedDataCampaign";
-import { knobBool } from "./featureKnobs";
+import { createClient } from "@/utils/supabase/client";
 
-jest.mock("./featureKnobs", () => ({ knobBool: jest.fn() }));
+/** The browser client, stood in with exactly the two calls this module makes. */
+jest.mock("@/utils/supabase/client", () => ({ createClient: jest.fn() }));
 
-const knobBoolMock = knobBool as jest.MockedFunction<typeof knobBool>;
+const createClientMock = createClient as unknown as jest.Mock;
+const rpc = jest.fn();
 
+function theDoorAnswers(answer: unknown, error: { message: string } | null = null) {
+    rpc.mockResolvedValue({ data: answer, error });
+}
+
+const ORG = "11111111-2222-3333-4444-555555555555";
 const REPO_ROOT = path.resolve(__dirname, "..", "..");
+const OWN_SOURCE = fs.readFileSync(path.resolve(__dirname, "unifiedDataCampaign.ts"), "utf8");
+/**
+ * The module's CODE, with its comments blanked. A guard that reads raw source
+ * cannot tell a read from the same characters inside the paragraph explaining
+ * why that read was removed — and this repo has already watched a comment be
+ * reworded to dodge a guard (`check:signout-scope`). The comments here
+ * deliberately NAME the closed door; the code must not reach it.
+ */
+const OWN_CODE = OWN_SOURCE.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/\/\/[^\n]*/g, " ");
 
 /** Every tracked file that actually IMPORTS the switch, minus the ones whose
  *  job is to police it. Resolved through the TypeScript AST, not grepped. */
@@ -58,27 +77,24 @@ function trackedImportersOfTheSwitch(): string[] {
     ].sort();
 }
 
-describe("unified data campaign switch", () => {
+describe("the unified record store's one switch", () => {
     let warn: jest.SpyInstance;
 
     beforeEach(() => {
-        knobBoolMock.mockReset();
+        rpc.mockReset();
+        createClientMock.mockReset();
+        createClientMock.mockReturnValue({ schema: () => ({ rpc }) });
         warn = jest.spyOn(console, "warn").mockImplementation(() => {});
     });
     afterEach(() => warn.mockRestore());
 
-    it("is addressed at platform.feature_knob custom.code_paths_enabled", () => {
+    it("is addressed at the ORGANIZATION's knob, custom.system_enabled", () => {
         expect(UNIFIED_DATA_CAMPAIGN_FEATURE).toBe("custom");
-        expect(UNIFIED_DATA_CAMPAIGN_KEY).toBe("code_paths_enabled");
+        expect(UNIFIED_DATA_CAMPAIGN_KEY).toBe("system_enabled");
         expect(UNIFIED_DATA_CAMPAIGN.FEATURE).toBe("custom");
-        expect(UNIFIED_DATA_CAMPAIGN.KEY).toBe("code_paths_enabled");
-        // The `{ feature, key }` ref every reader takes says the SAME address.
-        // It is written as literals so the knob census can resolve a call site
-        // that imports it; this is what stops the two spellings drifting.
-        expect(UNIFIED_DATA_CAMPAIGN_KNOB).toEqual({
-            feature: UNIFIED_DATA_CAMPAIGN_FEATURE,
-            key: UNIFIED_DATA_CAMPAIGN_KEY,
-        });
+        expect(UNIFIED_DATA_CAMPAIGN.KEY).toBe("system_enabled");
+        expect(UNIFIED_DATA_STORE_DOOR).toBe("unified_data_store_on");
+        expect(UNIFIED_DATA_CAMPAIGN.DOOR).toBe("unified_data_store_on");
     });
 
     it("SHIPS OFF: the default is false", () => {
@@ -86,54 +102,59 @@ describe("unified data campaign switch", () => {
         expect(UNIFIED_DATA_CAMPAIGN.DEFAULT).toBe(false);
     });
 
-    it("is OFF and ANNOUNCES ITSELF when the knob row is missing", async () => {
-        knobBoolMock.mockRejectedValue(
-            new Error(
-                'Missing feature knob "custom.code_paths_enabled". Knobs have no code fallback by design',
-            ),
-        );
-        await expect(UNIFIED_DATA_CAMPAIGN.enabled()).resolves.toBe(false);
+    it("THERE IS NO SECOND SWITCH: this module never reads the per-person knob", () => {
+        // The verdict's second finding, guarded at its source. `code_paths_enabled`
+        // is `overridable_by {user}`-shaped thinking and a per-person resolver is
+        // how it got here; neither may appear in the module the pages read.
+        expect(OWN_CODE).not.toMatch(/code_paths_enabled/);
+        expect(OWN_CODE).not.toMatch(/useEffectiveKnob|ensureEffectiveKnob|knobBool/);
+        // …and the reader takes ONE argument: the organization. A reader with no
+        // organization is a platform-wide answer, which is what the second switch was.
+        expect(UNIFIED_DATA_CAMPAIGN.enabled.length).toBe(1);
+    });
+
+    it("is ON only when the organization's own door says so", async () => {
+        theDoorAnswers({ on: true, organization_id: ORG, why: "…" });
+        await expect(UNIFIED_DATA_CAMPAIGN.enabled(ORG)).resolves.toBe(true);
+        expect(rpc).toHaveBeenCalledWith("unified_data_store_on", { p_organization_id: ORG });
+        expect(warn).not.toHaveBeenCalled();
+    });
+
+    it("is OFF, silently, when the door says the organization is not on it", async () => {
+        theDoorAnswers({ on: false, organization_id: ORG, why: "…" });
+        await expect(UNIFIED_DATA_CAMPAIGN.enabled(ORG)).resolves.toBe(false);
+        expect(warn).not.toHaveBeenCalled();
+    });
+
+    it("is OFF, silently, and asks nothing when no organization is picked", async () => {
+        await expect(UNIFIED_DATA_CAMPAIGN.enabled(null)).resolves.toBe(false);
+        expect(rpc).not.toHaveBeenCalled();
+        expect(warn).not.toHaveBeenCalled();
+    });
+
+    it("is OFF and ANNOUNCES ITSELF when the door refuses", async () => {
+        theDoorAnswers(null, { message: "permission denied for function unified_data_store_on" });
+        await expect(UNIFIED_DATA_CAMPAIGN.enabled(ORG)).resolves.toBe(false);
         expect(warn).toHaveBeenCalledTimes(1);
         const said = String(warn.mock.calls[0][0]);
-        expect(said).toContain("custom");
-        expect(said).toContain("code_paths_enabled");
+        expect(said).toContain("unified_data_store_on");
         expect(said).toMatch(/OFF/);
         expect(said).toMatch(/Remedy:/);
+        expect(said).toContain("permission denied");
     });
 
     it("is OFF and ANNOUNCES ITSELF when the read throws for any other reason", async () => {
-        knobBoolMock.mockRejectedValue(new Error("fetch failed"));
-        await expect(UNIFIED_DATA_CAMPAIGN.enabled()).resolves.toBe(false);
+        rpc.mockRejectedValue(new Error("fetch failed"));
+        await expect(UNIFIED_DATA_CAMPAIGN.enabled(ORG)).resolves.toBe(false);
         expect(warn).toHaveBeenCalledTimes(1);
         expect(String(warn.mock.calls[0][0])).toContain("fetch failed");
     });
 
-    it("is OFF, silently, when the row exists and says false", async () => {
-        knobBoolMock.mockResolvedValue(false);
-        await expect(UNIFIED_DATA_CAMPAIGN.enabled()).resolves.toBe(false);
-        expect(warn).not.toHaveBeenCalled();
-    });
-
-    it("is ON only when the row itself says true", async () => {
-        knobBoolMock.mockResolvedValue(true);
-        await expect(UNIFIED_DATA_CAMPAIGN.enabled()).resolves.toBe(true);
-        expect(knobBoolMock).toHaveBeenCalledWith("custom", "code_paths_enabled");
-    });
-
     it("never reads an env var (an env var is a value, never a toggle)", () => {
-        const src = fs.readFileSync(
-            path.resolve(__dirname, "unifiedDataCampaign.ts"),
-            "utf8",
-        );
-        expect(src).not.toMatch(/process\.env/);
+        expect(OWN_CODE).not.toMatch(/process\.env/);
     });
 
     // ---- THE REGISTER AND THE GUARD -------------------------------------
-    //
-    // `expect(audit(ENTRY_POINTS)).toEqual([])` used to live here, over an
-    // EMPTY list: an audit of nothing, green forever, while the switch guarded
-    // no code at all (adversarial review ATTACK-4, finding 5, 2026-09-15). The
-    // three tests below are what replaced it.
 
     it("REGISTER IS HONEST: every entry names a kind and a reason, and the file exists", () => {
         expect(ENTRY_POINTS.length).toBeGreaterThan(0);
@@ -150,24 +171,12 @@ describe("unified data campaign switch", () => {
         // differ between "switch OFF" and "campaign module deleted from the
         // repo" must therefore CALL it.
         //
-        // Until 2026-09-18 this was a census over an EMPTY set: no shipped file
-        // imported the switch at all, so deleting the module changed no served
-        // byte, and the test asserted exactly that — while saying, in its own
-        // words, that "the moment a lane adds one, this test starts pointing at
-        // it and the claim must be re-earned by the gate, not by this census."
-        // W6-APP added the first three (`/data-v2`, `/data-v2/[tableId]`, and
-        // the CRM record page's custom-fields section), so the claim is re-earned
-        // here the way that comment demanded: the census still runs, and every
-        // file it finds must be a `runtime` entry on the register — which the
-        // gate independently requires to call `enabled()`. Anything else
-        // importing the switch is a file that would ship unguarded, and fails.
         // The census reads TRACKED files, and the register may legitimately
         // carry a runtime entry another lane has written but not yet committed
         // in this shared checkout — so the direction that matters is this one:
         // nothing that SHIPS may import the switch without being registered
-        // runtime. A registered file that the census cannot see is covered by
-        // the two tests around this one (it must exist on disk, and it must
-        // call the gate).
+        // runtime. A registered file the census cannot see is covered by the two
+        // tests around this one (it must exist on disk, and it must call the gate).
         const importers = trackedImportersOfTheSwitch();
         const runtime = UNIFIED_DATA_CAMPAIGN.RUNTIME_ENTRY_POINTS.map((e) => e.file).sort();
         expect(runtime.length).toBeGreaterThan(0);

@@ -3,8 +3,15 @@ import { supabase } from "@/utils/supabase/client";
 import { pgErrorToError } from "@ai-matrx/data";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { DatabaseTool } from "@/utils/supabase/tools-service";
+import { filterToolsByOrgKnobs } from "@/lib/knobs/toolKnobGating";
 
-type WithTools = { tools: { tools: DatabaseTool[]; status: string } };
+type WithTools = {
+  tools: { tools: DatabaseTool[]; status: string };
+  // Read-only, for the organization-knob eligibility pass below. Both slices are
+  // already in the store on every signed-in screen; neither is written here.
+  appContext?: { organization_id?: string | null } | null;
+  userAuth?: { id?: string | null } | null;
+};
 
 type ToolLookupStatus = "idle" | "loading" | "succeeded" | "failed";
 type WithToolLookups = WithTools & {
@@ -33,7 +40,19 @@ export const fetchAvailableTools = createAsyncThunk<
     .order("name", { ascending: true });
 
   if (error) throw pgErrorToError(error);
-  return data ?? [];
+
+  // ELIGIBILITY. Almost every tool is platform-wide and flows straight through. A tool
+  // whose usefulness depends on an organization switch (`records`, whose every action
+  // answers "the custom data store is switched off" when the store is closed) is shown
+  // only where that organization actually has it — see lib/knobs/toolKnobGating.ts. A
+  // control that is present and can only refuse is the dead-control shape the platform
+  // forbids; absent is the honest form.
+  const state = getState();
+  return await filterToolsByOrgKnobs(
+    data ?? [],
+    state.appContext?.organization_id ?? null,
+    state.userAuth?.id ?? null,
+  );
 });
 
 /**

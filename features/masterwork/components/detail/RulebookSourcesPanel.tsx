@@ -36,6 +36,7 @@ import {
 } from "./fileSourceSizeLabel";
 import Link from "next/link";
 import {
+  AlertTriangle,
   ChevronDown,
   ChevronRight,
   ExternalLink,
@@ -49,6 +50,10 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "@/lib/toast";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { clearUploadEntry, uploadFiles } from "@/features/files/redux/thunks";
+import { selectFailedUploadsForFolderPath } from "@/features/files/redux/selectors";
+import type { UploadState } from "@/features/files/types";
 import { Button } from "@/components/ui/button";
 import {
   firstBlockingReason,
@@ -508,6 +513,32 @@ export function RulebookSourcesPanel({
     [sourceLinks],
   );
 
+  /**
+   * 🚨 THE UPLOAD THAT FAILED, LEFT WITHOUT A HOME (2026-09-19 silent failure —
+   * `common-docs/projects/acquisition-frontier/own-files/VERIFICATION.md` §18
+   * claim 1b). A 400 on a fresh Rulebook's upload said the real reason ONLY in
+   * a toast, which is gone by the time anyone looks back at the card — and the
+   * card kept reading "Nothing attached yet" before, during and after. The
+   * association edge (`sourceLinks`) only exists for a file that LANDED, so a
+   * failure needs a home outside that edge list: `state.cloudFiles.uploads`
+   * already tracks every upload's outcome by requestId and never auto-clears
+   * an `error` entry (see `clearCompletedUploads`), so it survives exactly as
+   * long as this fix needs it to. `sourcesFolderPath` is unique to THIS
+   * Rulebook, so it also doubles as the correlation key: it is handed to the
+   * capture toolbar below as `uploadFolderPath`, and read back here.
+   */
+  const sourcesFolderPath = useMemo(
+    () => `Masterwork/Sources/${rulebook.id}`,
+    [rulebook.id],
+  );
+  const dispatch = useAppDispatch();
+  const failedUploads = useAppSelector((state) =>
+    selectFailedUploadsForFolderPath(state, sourcesFolderPath),
+  );
+  const [retryingUploadId, setRetryingUploadId] = useState<string | null>(
+    null,
+  );
+
   const attachSource = useCallback(
     async (token: EntityTypeToken, resourceId: string, label?: string | null) =>
       gate.track(
@@ -531,6 +562,55 @@ export function RulebookSourcesPanel({
       opts?: { label?: string },
     ) => attachSource(token, resourceId, opts?.label),
     [attachSource],
+  );
+
+  /**
+   * "Retry" hands the person a file picker for the ONE file that failed —
+   * never a re-run of the same bytes against the same 400, and never a
+   * silent no-op. Success uploads the freshly-picked file to this
+   * Rulebook's own folder, attaches it exactly as the toolbar's own upload
+   * path does, and only THEN clears the stale failed row. A retry that fails
+   * again is not swallowed: `uploadFiles` tracks its own fresh failed entry
+   * under this same `sourcesFolderPath`, so the new reason takes the old
+   * row's place on the next render — it is never dropped on the floor.
+   */
+  const retryFailedUpload = useCallback(
+    async (upload: UploadState, file: File) => {
+      setRetryingUploadId(upload.requestId);
+      try {
+        const result = await dispatch(
+          uploadFiles({
+            files: [file],
+            folderPath: sourcesFolderPath,
+            visibility: "personal",
+          }),
+        ).unwrap();
+        const fileId = result.uploaded[0];
+        if (fileId) {
+          await attachSource("file", fileId);
+        }
+      } catch (err) {
+        // The thunk itself only rejects on something outside a per-file
+        // outcome (e.g. the store isn't ready) — a real upload failure
+        // resolves normally with `failed` populated and is announced above.
+        toast.error(
+          err instanceof Error ? err.message : "Couldn't retry the upload",
+        );
+      } finally {
+        // The old attempt's row is always retired here — a fresh failure
+        // from the retry above already wrote its OWN row before this runs.
+        dispatch(clearUploadEntry({ requestId: upload.requestId }));
+        setRetryingUploadId(null);
+      }
+    },
+    [dispatch, sourcesFolderPath, attachSource],
+  );
+
+  const dismissFailedUpload = useCallback(
+    (requestId: string) => {
+      dispatch(clearUploadEntry({ requestId }));
+    },
+    [dispatch],
   );
 
   const detachSource = useCallback(
@@ -864,7 +944,7 @@ export function RulebookSourcesPanel({
           {/* ── capture ──────────────────────────────────────────────── */}
           {canEdit && !captureVisible ? (
             <div className="pt-3">
-              {tally.attached > 0 ? (
+              {tally.attached > 0 || failedUploads.length > 0 ? (
                 <div className="overflow-hidden rounded-md border border-border/70 bg-card">
                   <SourceRows
                     sourceLinks={sourceLinks}
@@ -885,6 +965,12 @@ export function RulebookSourcesPanel({
                     canEdit={canEdit}
                     onDetach={detachAttached}
                     onRemoveUrl={(url) => void removeUrl(url)}
+                    failedUploads={failedUploads}
+                    retryingUploadId={retryingUploadId}
+                    onRetryUpload={(upload, file) =>
+                      void retryFailedUpload(upload, file)
+                    }
+                    onDismissUpload={dismissFailedUpload}
                   />
                 </div>
               ) : null}
@@ -907,7 +993,7 @@ export function RulebookSourcesPanel({
             <div className="mt-3 overflow-hidden rounded-md border border-border/70 bg-card">
               <AssociationCaptureToolbar
                 attach={captureAttach}
-                uploadFolderPath="Masterwork/Sources"
+                uploadFolderPath={sourcesFolderPath}
                 uploadLocationLabel="your Files (Masterwork/Sources)"
                 // The packaged toolbar (W5 swap) has no "Add document" chip at
                 // all — it was a strict subset of "From your workspace" below,
@@ -1055,6 +1141,12 @@ export function RulebookSourcesPanel({
                   canEdit={canEdit}
                   onDetach={detachAttached}
                   onRemoveUrl={(url) => void removeUrl(url)}
+                  failedUploads={failedUploads}
+                  retryingUploadId={retryingUploadId}
+                  onRetryUpload={(upload, file) =>
+                    void retryFailedUpload(upload, file)
+                  }
+                  onDismissUpload={dismissFailedUpload}
                 />
               </AssociationCaptureToolbar>
             </div>
@@ -1074,6 +1166,7 @@ export function RulebookSourcesPanel({
                 canEdit={false}
                 onDetach={() => undefined}
                 onRemoveUrl={() => undefined}
+                failedUploads={failedUploads}
               />
             </div>
           ) : null}
@@ -1163,7 +1256,9 @@ export function RulebookSourcesPanel({
 
 // ── attached-sources list ───────────────────────────────────────────────────
 
-function SourceRows({
+const EMPTY_FAILED_UPLOADS: readonly UploadState[] = [];
+
+export function SourceRows({
   sourceLinks,
   stagedUrls,
   titleFor,
@@ -1178,6 +1273,10 @@ function SourceRows({
   canEdit,
   onDetach,
   onRemoveUrl,
+  failedUploads = EMPTY_FAILED_UPLOADS,
+  retryingUploadId = null,
+  onRetryUpload,
+  onDismissUpload,
 }: {
   sourceLinks: {
     token: string;
@@ -1213,6 +1312,18 @@ function SourceRows({
   canEdit: boolean;
   onDetach: (token: string, resourceId: string) => void | Promise<void>;
   onRemoveUrl: (url: string) => void;
+  /**
+   * 🚨 THE 2026-09-19 SILENT FAILURE, MADE VISIBLE HERE. An upload that failed
+   * has no attachment edge — `sourceLinks` will never contain it — so it gets
+   * its OWN row, in this same list, with the server's sentence, a Retry, and
+   * a Dismiss. Rendered even when every other list is empty: an upload that
+   * failed must never be indistinguishable from an upload nobody started.
+   */
+  failedUploads?: readonly UploadState[];
+  /** The one row currently re-uploading — its Retry button shows a spinner. */
+  retryingUploadId?: string | null;
+  onRetryUpload?: (upload: UploadState, file: File) => void;
+  onDismissUpload?: (requestId: string) => void;
 }) {
   if (status === "loading" || status === "idle") {
     return (
@@ -1228,7 +1339,11 @@ function SourceRows({
       </p>
     );
   }
-  if (sourceLinks.length === 0 && stagedUrls.length === 0) {
+  if (
+    sourceLinks.length === 0 &&
+    stagedUrls.length === 0 &&
+    failedUploads.length === 0
+  ) {
     return (
       <p className="p-3 text-xs text-muted-foreground">
         Nothing attached yet. Upload files, attach things from your workspace,
@@ -1239,6 +1354,24 @@ function SourceRows({
   }
   return (
     <ul className="divide-y divide-border/70">
+      {failedUploads.map((upload) => (
+        <FailedUploadRow
+          key={upload.requestId}
+          upload={upload}
+          canEdit={canEdit}
+          retrying={retryingUploadId === upload.requestId}
+          onRetry={
+            onRetryUpload
+              ? (file) => onRetryUpload(upload, file)
+              : undefined
+          }
+          onDismiss={
+            onDismissUpload
+              ? () => onDismissUpload(upload.requestId)
+              : undefined
+          }
+        />
+      ))}
       {sourceLinks.map((link) => {
         const info = tryGetEntityInfo(link.token);
         const key = attachedKey(link.token, link.resourceId);
@@ -1384,6 +1517,85 @@ function SourceRows({
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * One row for an upload that failed — the server's own sentence (see
+ * `announceUploadFailures` in `features/files/redux/thunks.ts`, which put the
+ * SAME sentence in the toast this row outlives), a Retry that lets the
+ * person pick the file again without leaving this card, and a Dismiss that
+ * clears it. Never rendered as a bare filename with no reason — that IS the
+ * defect this row exists to close.
+ */
+function FailedUploadRow({
+  upload,
+  canEdit,
+  retrying,
+  onRetry,
+  onDismiss,
+}: {
+  upload: UploadState;
+  canEdit: boolean;
+  retrying: boolean;
+  onRetry?: (file: File) => void;
+  onDismiss?: () => void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  return (
+    <li className="bg-destructive/5 px-3 py-2.5">
+      <div className="flex min-h-14 items-start gap-3">
+        <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm text-foreground">
+            Couldn&apos;t upload {upload.fileName}
+          </p>
+          {/* THE SERVER'S SENTENCE, WHOLE — never a house sentence that hides
+              it (see `announceUploadFailures`'s guard tests). */}
+          <p className="mt-0.5 whitespace-pre-line break-words text-[11px] text-destructive">
+            {upload.error ||
+              "The server refused the upload and gave no reason."}
+          </p>
+        </div>
+        {canEdit ? (
+          <div className="flex shrink-0 items-center gap-1">
+            <input
+              ref={inputRef}
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (file) onRetry?.(file);
+              }}
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7"
+              disabled={retrying || !onRetry}
+              onClick={() => inputRef.current?.click()}
+            >
+              {retrying ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                "Retry"
+              )}
+            </Button>
+            <button
+              type="button"
+              title="Dismiss this failed upload"
+              disabled={retrying}
+              onClick={() => onDismiss?.()}
+              className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground/60 transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-50"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </li>
   );
 }
 

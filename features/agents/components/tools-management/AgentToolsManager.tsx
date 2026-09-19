@@ -387,10 +387,14 @@ export function AgentToolsManager({ agentId }: AgentToolsManagerProps) {
 
   const [fetchedMetadata, setFetchedMetadata] = useState<any>(null);
   const [isFetchingMetadata, setIsFetchingMetadata] = useState(!externalTools);
-  // External services are the action users reach for first. Open their
-  // catalogue directly so a connected GitHub/Notion/etc. server is never
-  // hidden behind the unrelated registry-tool search.
-  const [activeTab, setActiveTab] = useState<ToolsTab>("mcp");
+  // External services are the action users reach for first, so an agent that
+  // carries nothing still opens on their catalogue. But an agent that ALREADY
+  // carries platform tools opens on those: landing on 134 third-party servers
+  // when the thing you came to check is the agent's own `records` tool is how
+  // the 2026-09-19 verification pass concluded the picker did not exist.
+  const [activeTab, setActiveTab] = useState<ToolsTab>(
+    Array.isArray(savedTools) && savedTools.length > 0 ? "server" : "mcp",
+  );
 
   // Derive metadata from externalTools if available, otherwise use the fetched RPC metadata
   const metadata = useMemo(() => {

@@ -37,6 +37,8 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 
 function fail(message: string): never {
   console.error(`[FAIL] ${message}`);
+  // exitAfterDrain's return type is `never` (it always calls process.exit), so a
+  // trailing statement here can never run — that made TS7027 flag it as dead code.
   exitAfterDrain(1);
 }
 
@@ -185,6 +187,60 @@ const DECLARED_SWITCH_CENSUS = (accept: boolean) => `
      ${accept ? `and ${NO_COMMENTS} !~* '(custom\\.assert_store_door|custom\\.store_is_open)'` : ""}
    order by 1`;
 
+/**
+ * THE EIGHTH CENSUS — A CLOSED SCHEMA IS CLOSED, NOT MERELY DESCRIBED AS CLOSED
+ * (2026-09-19, lane OPEN-CENSUS).
+ *
+ * Censuses 1-7 all read a door somebody DECLARED or a body somebody WROTE. None of
+ * them could see the opposite thing: a function nobody declared at all, holding a
+ * client EXECUTE grant nobody decided to give it. Measured live on the main database
+ * when this was written: THIRTY-ONE of them.
+ *
+ *   - `custom`, 10, straight from Postgres's own default. `CREATE FUNCTION` grants
+ *     EXECUTE to PUBLIC, `authenticated` holds USAGE on the schema, and both birth
+ *     guards stand down — `platform.enforce_definer_client_grants` skips SECURITY
+ *     INVOKER by design and `platform.close_new_functions_to_anon` does not list
+ *     `custom` at all. `custom.delete_cascade_closure(uuid, uuid)`, created after
+ *     lane REACH's sweep, was executable by `authenticated` AND by `anon`.
+ *   - `history`, 21, from one blanket `GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA
+ *     history TO authenticated`.
+ *
+ * `platform.schema_client_exposure` had declared `custom` closed since 2026-09-18 and
+ * nothing in the database ever acted on that row: `platform.reopen_declared_doors`
+ * had an OPENING pass only. It now has a closing pass, it runs at `CREATE FUNCTION`
+ * as well as at `REVOKE`, and THIS is the query that says whether it is still true.
+ *
+ * The rule is the whole declaration, not one schema: every schema declared closed in
+ * `platform.schema_client_exposure` reaches a client through a
+ * `platform.client_callable_door` row or not at all.
+ */
+const CLOSED_SCHEMA_CENSUS = (respectDeclarations: boolean) => `
+  select n.nspname || '.' || p.proname as function_name,
+         pg_get_function_identity_arguments(p.oid) as identity_args,
+         'in schema ' || n.nspname || ', declared CLOSED in platform.schema_client_exposure, and '
+         'reachable by a client with no platform.client_callable_door row opening a client lane. '
+         'Run select * from platform.reopen_declared_doors(' || quote_literal(n.nspname) || ') to '
+         'close it, or declare it if a person is meant to call it.'::text as why
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    join platform.schema_client_exposure e
+      on e.schema_name = n.nspname and not coalesce(e.client_exposed, false)
+   where p.prokind in ('f', 'p')
+     and p.prorettype not in ('pg_catalog.trigger'::regtype, 'pg_catalog.event_trigger'::regtype)
+     and not exists (select 1 from pg_depend dep where dep.objid = p.oid and dep.deptype = 'e')
+     and (has_function_privilege('authenticated', p.oid, 'EXECUTE')
+       or has_function_privilege('anon', p.oid, 'EXECUTE')
+       or has_function_privilege('public', p.oid, 'EXECUTE'))
+     ${
+       respectDeclarations
+         ? `and not exists (select 1 from platform.client_callable_door d
+                             where d.schema_name = n.nspname and d.function_name = p.proname
+                               and d.identity_argtypes = platform.door_argtypes(p.proargtypes)
+                               and (d.signed_in_callers or d.anonymous_callers))`
+         : ""
+     }
+   order by 1`;
+
 const TABLE_PRIVILEGE_CENSUS = `
   select c.relname::text as function_name,
          string_agg(g.role || ' ' || g.priv, ', ' order by g.role, g.priv) as identity_args,
@@ -216,20 +272,192 @@ const GRANT_CENSUS = `
           or (d.signed_in_callers and not has_function_privilege('authenticated', p.oid, 'EXECUTE')))
    order by 1`;
 
+/**
+ * CENSUS 9 — A DOOR ROW SAYS THE SIGNATURE THE CATALOG SAYS, IN EVERY SCHEMA.
+ *
+ * `identity_args` is text, and text renders differently depending on the search_path of
+ * whoever rendered it: `pg_get_function_identity_arguments` schema-qualifies a type that is
+ * not visible on the path, so a door written at `search_path = pg_catalog` reads
+ * `p_required public.permission_level` while every reader on an ordinary session reads
+ * `p_required permission_level`. Census 3 above joins on that text, so a door with an enum
+ * argument was reported as naming no live function while both the door and the function were
+ * fine — and two lanes repaired their own rows by hand before anybody fixed the helper
+ * (`iam.door_identity_args`, TABLE-OWNER 2026-09-19).
+ *
+ * This census asks the class rather than the instance: matched by `identity_argtypes`, which
+ * is the search-path-free key, does the stored TEXT equal what the catalog renders here?
+ * `argtypes` null is not this census's business — census 3 already refuses a row that names
+ * no live function at all.
+ */
+const IDENTITY_RENDERING_CENSUS = `
+  select d.schema_name || '.' || d.function_name as function_name,
+         d.identity_args,
+         'the row stores ' || quote_literal(d.identity_args) ||
+         ' and the catalog renders ' || quote_literal(pg_get_function_identity_arguments(p.oid)) as why
+    from platform.client_callable_door d
+    join pg_namespace n on n.nspname = d.schema_name
+    join pg_proc p on p.proname = d.function_name and p.pronamespace = n.oid
+     and platform.door_argtypes(p.proargtypes) = d.identity_argtypes
+   where d.identity_argtypes is not null
+     and d.identity_args is distinct from pg_get_function_identity_arguments(p.oid)
+   order by 1`;
+
+/**
+ * CENSUS 10 — THE TWO-SEAT PROBE: "VIEWER" MEANS VIEWER, AND REVOKED MEANS REVOKED
+ * (2026-09-19, lane LEVEL-FIX).
+ *
+ * Censuses 1-9 all read the CATALOGUE. Every one of them was green on the day the fifth
+ * independent pass shared a record with a colleague at VIEWER through the Share dialog and
+ * watched her rewrite it, delete it, create her own in the table, and go on editing after the
+ * share was revoked. Nothing about the shape of a door was wrong. The ANSWER was wrong:
+ * `iam.has_access_for_base`'s organization-member lane hard-coded `p_required <= 'editor'` for
+ * every member of every organization, so the read door said `editor` while
+ * `custom.share_access` said `viewer` in the same breath.
+ *
+ * A shape census cannot see that, so this one is not a shape census. It BUILDS a throwaway
+ * organization with two real seats inside a transaction it always rolls back, shares one record
+ * at viewer, and asks the doors the two questions the product promises:
+ *
+ *   a. A VIEWER CANNOT WRITE - `custom.record_update`, `custom.record_delete` and
+ *      `custom.record_write` all refuse, as role `authenticated` carrying her claims.
+ *   b. REVOKED CANNOT READ - with the share gone, in an organization that has said membership
+ *      alone shows nothing (`custom/member_default_visibility = shared_only`),
+ *      `custom.read_record` refuses.
+ *
+ * And, because a probe that can only pass is not a probe, its RED half (`--self-test`) inverts
+ * exactly two real things inside the same rolled-back transaction - the grant is written at
+ * `editor` instead of `viewer`, and the organization is left at the shipped `all_records` - and
+ * requires both clauses to FAIL. Those are the two states in which the product genuinely does
+ * allow the write and the read, so a green answer above is green about something.
+ *
+ * It uses `admin@admin.com` and `test@test.com` and nobody else, touches no existing row, and
+ * commits nothing.
+ */
+const TWO_SEAT_ORG = "1ef10000-0000-4a00-8a00-0000000000d1";
+const TWO_SEAT_TBL = "1ef10000-0000-4a00-8a00-0000000000d2";
+const TWO_SEAT_REC = "1ef10000-0000-4a00-8a00-0000000000d3";
+const TWO_SEAT_ADMIN = "87a6e699-3622-4869-8843-d0867456c0dd";
+const TWO_SEAT_MEMBER = "4060701e-706a-4c76-b3ca-0bbc69fa5a14";
+/** The kernel Table every store fixture hangs off. */
+const TWO_SEAT_KERNEL_ORG = "11111111-0000-4000-8000-000000000004";
+
+const TWO_SEAT_FIXTURE = (grantLevel: string, visibilityKnob: string) => `
+  select set_config('app.actor_system', 'check_store_doors_decide', true);
+  insert into iam.organizations (id, name, slug, abbreviation, created_by)
+  values ('${TWO_SEAT_ORG}', 'STORE DOORS two-seat probe', 'store-doors-two-seat-probe', 'SDP',
+          '${TWO_SEAT_ADMIN}');
+  insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
+  values ('${TWO_SEAT_ORG}', 'organization', '${TWO_SEAT_ORG}', '${TWO_SEAT_ADMIN}', 'owner', 'active'),
+         ('${TWO_SEAT_ORG}', 'organization', '${TWO_SEAT_ORG}', '${TWO_SEAT_MEMBER}', 'member', 'active');
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom', 'system_enabled', 'organization', '${TWO_SEAT_ORG}', '${TWO_SEAT_ORG}',
+          'true'::jsonb, 'check:store-doors-decide two-seat probe'),
+         ('custom', 'member_default_visibility', 'organization', '${TWO_SEAT_ORG}', '${TWO_SEAT_ORG}',
+          '"${visibilityKnob}"'::jsonb, 'check:store-doors-decide two-seat probe');
+  insert into custom.record (id, organization_id, table_id, data_class, data, created_by)
+  values ('${TWO_SEAT_TBL}', '${TWO_SEAT_ORG}', '${TWO_SEAT_KERNEL_ORG}', 'record',
+          jsonb_build_object('name', 'Two-seat probe table'), '${TWO_SEAT_ADMIN}'),
+         ('${TWO_SEAT_REC}', '${TWO_SEAT_ORG}', '${TWO_SEAT_TBL}', 'record',
+          jsonb_build_object('title', 'The admin''s record'), '${TWO_SEAT_ADMIN}');
+  -- The share the dialog writes - on the record AND on the table it lives in, because
+  -- custom.record_write asks for editor ON THE TABLE and the probe has to be able to invert
+  -- into a person who genuinely may create a record, not merely one who may edit an existing one.
+  insert into iam.permissions (resource_type, resource_id, granted_to_user_id, permission_level, created_by)
+  values ('record', '${TWO_SEAT_REC}', '${TWO_SEAT_MEMBER}', '${grantLevel}', '${TWO_SEAT_ADMIN}'),
+         ('record', '${TWO_SEAT_TBL}', '${TWO_SEAT_MEMBER}', '${grantLevel}', '${TWO_SEAT_ADMIN}');
+`;
+
+/** Each clause the member's seat must be refused, and the name it is reported under. */
+const TWO_SEAT_WRITE_CLAUSES: ReadonlyArray<readonly [string, string]> = [
+  ["custom.record_update", `select custom.record_update('${TWO_SEAT_ORG}', '${TWO_SEAT_REC}', '{"title":"probe"}'::jsonb, null)`],
+  ["custom.record_delete", `select custom.record_delete('${TWO_SEAT_ORG}', '${TWO_SEAT_REC}')`],
+  ["custom.record_write", `select custom.record_write('${TWO_SEAT_ORG}', '${TWO_SEAT_TBL}', '{"title":"probe"}'::jsonb)`],
+];
+
+const TWO_SEAT_BECOME_MEMBER = `
+  select set_config('request.jwt.claims',
+    '{"sub":"${TWO_SEAT_MEMBER}","role":"authenticated"}', true);
+  set local role authenticated;
+`;
+
+interface TwoSeatResult {
+  /** Doors that took a write from somebody shared at the probe's level. */
+  readonly wroteAnyway: string[];
+  /** True when the revoked seat could still open the record. */
+  readonly readAfterRevoke: boolean;
+}
+
+/**
+ * Run the probe inside ONE transaction and roll it back, whatever happens. `grantLevel` and
+ * `visibilityKnob` are what the self-test inverts.
+ */
+async function twoSeatProbe(
+  client: { query: (sql: string) => Promise<unknown> },
+  grantLevel: string,
+  visibilityKnob: string,
+): Promise<TwoSeatResult> {
+  const wroteAnyway: string[] = [];
+  let readAfterRevoke = false;
+  await client.query("begin");
+  try {
+    await client.query("set local statement_timeout = '120s'");
+    await client.query("set local lock_timeout = '20s'");
+    await client.query(TWO_SEAT_FIXTURE(grantLevel, visibilityKnob));
+
+    for (const [name, sql] of TWO_SEAT_WRITE_CLAUSES) {
+      await client.query("savepoint probe");
+      try {
+        await client.query(TWO_SEAT_BECOME_MEMBER);
+        await client.query(sql);
+        wroteAnyway.push(name);
+      } catch {
+        // refused, which is the answer the product promises
+      } finally {
+        await client.query("rollback to savepoint probe");
+      }
+    }
+
+    // …and the revoked seat.
+    await client.query(
+      `delete from iam.permissions where resource_type = 'record'
+         and resource_id in ('${TWO_SEAT_REC}', '${TWO_SEAT_TBL}')
+         and granted_to_user_id = '${TWO_SEAT_MEMBER}'`,
+    );
+    await client.query("savepoint probe");
+    try {
+      await client.query(TWO_SEAT_BECOME_MEMBER);
+      await client.query(`select custom.read_record('${TWO_SEAT_ORG}', '${TWO_SEAT_REC}', false)`);
+      readAfterRevoke = true;
+    } catch {
+      // refused
+    } finally {
+      await client.query("rollback to savepoint probe");
+    }
+  } finally {
+    await client.query("rollback").catch(() => undefined);
+  }
+  return { wroteAnyway, readAfterRevoke };
+}
+
 interface Row {
   function_name: string;
   identity_args: string;
   why?: string;
 }
 
-function report(title: string, rows: Row[]): boolean {
+/**
+ * `qualified` says the census already returns `<schema>.<name>` — census 8 spans every
+ * schema declared closed, so prefixing it with `custom.` would print a lie.
+ */
+function report(title: string, rows: Row[], qualified = false): boolean {
   if (rows.length === 0) {
     console.log(`[ OK ] ${title} - none.`);
     return true;
   }
   console.error(`[FAIL] ${title} - ${rows.length}:`);
   for (const r of rows) {
-    console.error(`       custom.${r.function_name}(${r.identity_args})${r.why ? ` - ${r.why}` : ""}`);
+    const name = qualified ? r.function_name : `custom.${r.function_name}`;
+    console.error(`       ${name}(${r.identity_args})${r.why ? ` - ${r.why}` : ""}`);
   }
   return false;
 }
@@ -349,6 +577,64 @@ async function main(): Promise<void> {
         `[ OK ] self-test - counting the switch itself as an objection, the switch census names ` +
           `${switchNames.size} writing door(s). It can go red.`,
       );
+
+      // CENSUS 8, THE RED HALF. With the declarations NOT respected, every client-reachable
+      // function in a declared-closed schema must be named — which is every door lane REACH
+      // opened. If it names nothing, the query is reading an empty set and its green answer
+      // above proves only that `platform.schema_client_exposure` has no rows it can see.
+      const redClosed = (await client.query<Row>(CLOSED_SCHEMA_CENSUS(false))).rows;
+      const closedNames = new Set(redClosed.map((r) => r.function_name));
+      const mustBeReachable = [
+        "custom.record_write",
+        "custom.record_update",
+        "custom.read_record",
+        "custom.migrate_rename",
+        "custom.io_export",
+      ];
+      const unreachable = mustBeReachable.filter((n) => !closedNames.has(n));
+      if (unreachable.length > 0) {
+        fail(
+          "SELF-TEST FAILED - with the door declarations not respected, the closed-schema census " +
+            `did not name ${unreachable.join(", ")}, which ARE client-reachable in a schema ` +
+            "declared closed. Either platform.schema_client_exposure no longer declares their " +
+            "schema closed, or the census is not reading the catalog it claims to - and then its " +
+            "green answer means nothing.",
+        );
+      }
+      console.log(
+        `[ OK ] self-test - ignoring the declarations, the closed-schema census names ` +
+          `${closedNames.size} client-reachable function(s) in a declared-closed schema, ` +
+          "including all five that must be. It can go red.",
+      );
+      // CENSUS 10, THE RED HALF. The same probe with exactly two real things inverted: the
+      // grant is written at EDITOR rather than viewer, and the organization is left at the
+      // shipped `all_records` rather than `shared_only`. Both clauses must then FAIL - those
+      // are the two states in which the product really does allow the write and the read, so
+      // if they do not fail, the probe is not driving the doors it claims to drive.
+      const redProbe = await twoSeatProbe(client, "editor", "all_records");
+      const missedWrites = TWO_SEAT_WRITE_CLAUSES.map(([n]) => n).filter(
+        (n) => !redProbe.wroteAnyway.includes(n),
+      );
+      if (missedWrites.length > 0) {
+        fail(
+          "SELF-TEST FAILED - with the colleague granted EDITOR outright, the two-seat probe " +
+            `still saw ${missedWrites.join(", ")} refuse her. Either those doors are broken for ` +
+            "somebody who may, or the probe is not calling them - and then its green answer proves " +
+            "nothing.",
+        );
+      }
+      if (!redProbe.readAfterRevoke) {
+        fail(
+          "SELF-TEST FAILED - with the organization left at the shipped `all_records`, a member " +
+            "with no share at all was still refused the read. Either the member lane is gone " +
+            "entirely, or the probe is not calling custom.read_record.",
+        );
+      }
+      console.log(
+        "[ OK ] self-test - inverting the grant to editor and the organization to all_records, " +
+          `the two-seat probe sees all ${redProbe.wroteAnyway.length} write door(s) take the ` +
+          "write and the read go through. It can go red.",
+      );
     }
 
     const callers = (await client.query<Row>(CALLER_CENSUS(DECIDERS))).rows;
@@ -358,6 +644,28 @@ async function main(): Promise<void> {
     const declaredLadder = (await client.query<Row>(DECLARED_LADDER_CENSUS(LADDER_RUNGS))).rows;
     const declaredSwitch = (await client.query<Row>(DECLARED_SWITCH_CENSUS(true))).rows;
     const tablePrivileges = (await client.query<Row>(TABLE_PRIVILEGE_CENSUS)).rows;
+    const closedSchemas = (await client.query<Row>(CLOSED_SCHEMA_CENSUS(true))).rows;
+    const rendering = (await client.query<Row>(IDENTITY_RENDERING_CENSUS)).rows;
+
+    // CENSUS 10 — the two seats, live, in a transaction that is always rolled back.
+    const probe = await twoSeatProbe(client, "viewer", "shared_only");
+    const twoSeat: Row[] = [
+      ...probe.wroteAnyway.map((name) => ({
+        function_name: name.replace(/^custom\./, ""),
+        identity_args: "shared at viewer",
+        why: "a person shared at VIEWER was allowed to write through this door - the Share dialog, "
+          + "the Access tab and custom.share_access all say viewer, so the door has to as well",
+      })),
+      ...(probe.readAfterRevoke
+        ? [{
+            function_name: "read_record",
+            identity_args: "share revoked",
+            why: "the share was revoked and the record still opened for her, in an organization "
+              + "whose custom/member_default_visibility is shared_only - a revoke that does not "
+              + "take effect on the next call is not a revoke",
+          }]
+        : []),
+    ];
 
     const ok = [
       report("client doors taking an organization id that never decide the caller", callers),
@@ -367,6 +675,16 @@ async function main(): Promise<void> {
       report("declared client doors whose body never goes through the one ladder", declaredLadder),
       report("declared client doors that write a record without asking the store's switch", declaredSwitch),
       report("client roles holding a TABLE privilege in schema custom", tablePrivileges),
+      report(
+        "functions a client may execute in a declared-closed schema with no door row at all",
+        closedSchemas,
+        true,
+      ),
+      report("door rows whose stored signature is not what the catalog renders", rendering, true),
+      report(
+        "doors that took a write from somebody shared at viewer, or showed a revoked person the record",
+        twoSeat,
+      ),
     ].every(Boolean);
 
     if (!ok) {
@@ -380,6 +698,8 @@ async function main(): Promise<void> {
           "  anonymous doors decide with custom.anon_token_verify. Adding a door is adding one of\n" +
           "  those lines; there is no door that decides nothing.\n",
       );
+      // exitAfterDrain returns `never` (it always calls process.exit), so the `return`
+      // that used to follow it here was unreachable — TS7027 caught it as dead code.
       exitAfterDrain(1);
     }
     console.log("\nEvery client door into the record store decides the caller and the row.");
