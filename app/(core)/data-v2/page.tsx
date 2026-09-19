@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { RecordsMount, TablesHome, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
+import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -75,7 +76,7 @@ export default function UnifiedDataPage() {
               actor: personActor(userId),
               organizationId: organizationId!,
             }}
-            host={{ Link, density: "condensed", members }}
+            host={{ Link, density: "condensed", members, share: recordStoreShare }}
           >
             <TablesHome onOpenTable={(tableId) => router.push(`/data-v2/${tableId}`)} />
           </RecordsMount>

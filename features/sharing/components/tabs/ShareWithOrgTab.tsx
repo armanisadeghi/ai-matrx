@@ -259,9 +259,10 @@ export function ShareWithOrgTab({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="viewer">Viewer</SelectItem>
-              {/* `commenter` joined `public.permission_level` and the generated
-                  `Constants` on 2026-09-18 (30e05dbd80). A level the database
-                  accepts and no picker offers is a capability nobody can grant. */}
+              {/* VIS-17b: `commenter` is the FOURTH rung of the one ladder — it has been in
+                  `public.permission_level` since G0 and every policy and RPC accepts it, and
+                  this picker was the one place a person could not choose it (lane SHARE,
+                  2026-09-19). A ladder with a rung nobody can reach is not one ladder. */}
               <SelectItem value="commenter">Commenter</SelectItem>
               <SelectItem value="editor">Editor</SelectItem>
               {/* THE SCOPE-QUALIFIED ADMIN RULE (access/DECISIONS.md 2026-09-10): the heading

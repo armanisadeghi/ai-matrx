@@ -37,6 +37,8 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 
 function fail(message: string): never {
   console.error(`[FAIL] ${message}`);
+  // exitAfterDrain's return type is `never` (it always calls process.exit), so a
+  // trailing statement here can never run — that made TS7027 flag it as dead code.
   exitAfterDrain(1);
 }
 
@@ -270,6 +272,36 @@ const GRANT_CENSUS = `
           or (d.signed_in_callers and not has_function_privilege('authenticated', p.oid, 'EXECUTE')))
    order by 1`;
 
+/**
+ * CENSUS 9 — A DOOR ROW SAYS THE SIGNATURE THE CATALOG SAYS, IN EVERY SCHEMA.
+ *
+ * `identity_args` is text, and text renders differently depending on the search_path of
+ * whoever rendered it: `pg_get_function_identity_arguments` schema-qualifies a type that is
+ * not visible on the path, so a door written at `search_path = pg_catalog` reads
+ * `p_required public.permission_level` while every reader on an ordinary session reads
+ * `p_required permission_level`. Census 3 above joins on that text, so a door with an enum
+ * argument was reported as naming no live function while both the door and the function were
+ * fine — and two lanes repaired their own rows by hand before anybody fixed the helper
+ * (`iam.door_identity_args`, TABLE-OWNER 2026-09-19).
+ *
+ * This census asks the class rather than the instance: matched by `identity_argtypes`, which
+ * is the search-path-free key, does the stored TEXT equal what the catalog renders here?
+ * `argtypes` null is not this census's business — census 3 already refuses a row that names
+ * no live function at all.
+ */
+const IDENTITY_RENDERING_CENSUS = `
+  select d.schema_name || '.' || d.function_name as function_name,
+         d.identity_args,
+         'the row stores ' || quote_literal(d.identity_args) ||
+         ' and the catalog renders ' || quote_literal(pg_get_function_identity_arguments(p.oid)) as why
+    from platform.client_callable_door d
+    join pg_namespace n on n.nspname = d.schema_name
+    join pg_proc p on p.proname = d.function_name and p.pronamespace = n.oid
+     and platform.door_argtypes(p.proargtypes) = d.identity_argtypes
+   where d.identity_argtypes is not null
+     and d.identity_args is distinct from pg_get_function_identity_arguments(p.oid)
+   order by 1`;
+
 interface Row {
   function_name: string;
   identity_args: string;
@@ -447,6 +479,7 @@ async function main(): Promise<void> {
     const declaredSwitch = (await client.query<Row>(DECLARED_SWITCH_CENSUS(true))).rows;
     const tablePrivileges = (await client.query<Row>(TABLE_PRIVILEGE_CENSUS)).rows;
     const closedSchemas = (await client.query<Row>(CLOSED_SCHEMA_CENSUS(true))).rows;
+    const rendering = (await client.query<Row>(IDENTITY_RENDERING_CENSUS)).rows;
 
     const ok = [
       report("client doors taking an organization id that never decide the caller", callers),
@@ -461,6 +494,7 @@ async function main(): Promise<void> {
         closedSchemas,
         true,
       ),
+      report("door rows whose stored signature is not what the catalog renders", rendering, true),
     ].every(Boolean);
 
     if (!ok) {
@@ -474,6 +508,8 @@ async function main(): Promise<void> {
           "  anonymous doors decide with custom.anon_token_verify. Adding a door is adding one of\n" +
           "  those lines; there is no door that decides nothing.\n",
       );
+      // exitAfterDrain returns `never` (it always calls process.exit), so the `return`
+      // that used to follow it here was unreachable — TS7027 caught it as dead code.
       exitAfterDrain(1);
     }
     console.log("\nEvery client door into the record store decides the caller and the row.");
