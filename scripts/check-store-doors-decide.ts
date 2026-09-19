@@ -58,6 +58,7 @@ const CALLER_CENSUS = (deciders: string[]) => `
   select p.proname::text as function_name, pg_get_function_identity_arguments(p.oid) as identity_args
     from pg_proc p
    where p.pronamespace = 'custom'::regnamespace
+     and p.prosecdef
      and has_function_privilege('authenticated', p.oid, 'EXECUTE')
      and pg_get_function_identity_arguments(p.oid) ~ 'p_organization_id uuid'
      and p.proname <> 'store_is_open'
@@ -102,6 +103,103 @@ const ONE_LADDER_RED = `
          ~* '(iam\\.has_access_for|iam\\.effective_level|public\\.has_permission_for|custom\\.has_visibility)'
      and p.proname not in ('has_visibility', 'has_visibility_at', 'effective_level',
                            'visible_record_ids', 'doors_not_on_one_ladder')
+   order by 1`;
+
+/**
+ * THE FIFTH AND SIXTH CENSUSES — EVERY DECLARED DOOR GOES THROUGH THE LADDER,
+ * AND EVERY DECLARED DOOR THAT WRITES ASKS THE SWITCH (2026-09-19, lane REACH).
+ *
+ * The first four censuses read the CATALOGUE — "this function holds a grant, does
+ * its body decide". That catches a door somebody granted. It does not catch the
+ * opposite and now much more common thing: a door somebody DECLARED. Schema
+ * `custom` went from 28 client-reachable functions to 67 in one sitting, and every
+ * one of those arrived as a row in `platform.client_callable_door` rather than as
+ * a GRANT. A declaration whose body decides nothing is the seo.keyword_value_map
+ * class again, with a truthful-looking row in front of it.
+ *
+ * So the rule is read from the DECLARATION side as well:
+ *
+ *   5. LADDER — a door row that opens a SECURITY DEFINER function taking a uuid to
+ *      a client, whose body never reaches the one ladder. "The one ladder" is
+ *      `custom.assert_client_may_reach` (the organization wall),
+ *      `custom.assert_client_may_change` / `custom.assert_client_may_open` (the
+ *      wall and then the row), `custom.has_visibility` / `custom.visible_record_ids`
+ *      (the ladder itself), or `custom.anon_token_verify` for a door whose caller
+ *      has no account. The uuid condition and the SECURITY DEFINER condition are
+ *      the live trigger `platform.door_body_must_decide`'s own carve-outs, stated
+ *      the same way here: a SECURITY INVOKER function in this schema is bounded by
+ *      table privileges, and census 7 is what proves that boundary still exists.
+ *
+ *   6. SWITCH — a client door whose body WRITES a record and never asks
+ *      `custom.assert_store_door` / `custom.store_is_open`. The OFF switch is the
+ *      campaign's own product switch: a store that is switched off must answer a
+ *      sentence, not take the write quietly. Measured live when this was written:
+ *      home_add, record_reparent and relation_own had just become client-reachable
+ *      and none of the three asked it.
+ *
+ *   7. THE BOUNDARY CENSUS 5 LEANS ON — `authenticated` (or anon, or PUBLIC) must
+ *      hold NO table privilege anywhere in schema `custom`. The store is reached
+ *      through its doors or not at all; the moment one table privilege exists, a
+ *      SECURITY INVOKER function in this schema stops being harmless and censuses
+ *      1 and 5 are excusing something real.
+ */
+const LADDER_RUNGS = [
+  "custom\\.assert_client_may_reach",
+  "custom\\.assert_client_may_change",
+  "custom\\.assert_client_may_open",
+  "custom\\.has_visibility",
+  "custom\\.visible_record_ids",
+  "custom\\.anon_token_verify",
+];
+
+const DECLARED_DOOR_BODY = `
+    from pg_proc p
+    join platform.client_callable_door d
+      on d.schema_name = 'custom'
+     and d.function_name = p.proname
+     and d.identity_argtypes = platform.door_argtypes(p.proargtypes)
+   where p.pronamespace = 'custom'::regnamespace
+     and (d.signed_in_callers or d.anonymous_callers)`;
+
+/** `--` comments stripped: a sentence promising the ladder is not the ladder. */
+const NO_COMMENTS = `regexp_replace(pg_get_functiondef(p.oid), '--[^' || chr(10) || ']*', '', 'g')`;
+
+const DECLARED_LADDER_CENSUS = (rungs: string[]) => `
+  select p.proname::text as function_name, pg_get_function_identity_arguments(p.oid) as identity_args,
+         'declared client-callable, is SECURITY DEFINER, takes an id - and its body never reaches '
+         'the one ladder (custom.assert_client_may_reach / _may_change / _may_open / has_visibility)'::text as why
+    ${DECLARED_DOOR_BODY}
+     and p.prosecdef
+     and p.prorettype not in ('pg_catalog.trigger'::regtype, 'pg_catalog.event_trigger'::regtype)
+     and exists (select 1 from unnest(p.proargtypes) t(typ)
+                  where t.typ in ('pg_catalog.uuid'::regtype, 'pg_catalog.uuid[]'::regtype))
+     ${rungs.length ? `and ${NO_COMMENTS} !~* '(${rungs.join("|")})'` : ""}
+   order by 1`;
+
+const DECLARED_SWITCH_CENSUS = (accept: boolean) => `
+  select p.proname::text as function_name, pg_get_function_identity_arguments(p.oid) as identity_args,
+         'declared client-callable and writes a record, but never asks whether the store is open '
+         '(custom.assert_store_door / custom.store_is_open)'::text as why
+    ${DECLARED_DOOR_BODY}
+     and ${NO_COMMENTS} ~* '(insert into custom\\.record|update custom\\.record|custom\\.record_write|custom\\.record_update|custom\\.record_delete|custom\\.record_restore)'
+     ${accept ? `and ${NO_COMMENTS} !~* '(custom\\.assert_store_door|custom\\.store_is_open)'` : ""}
+   order by 1`;
+
+const TABLE_PRIVILEGE_CENSUS = `
+  select c.relname::text as function_name,
+         string_agg(g.role || ' ' || g.priv, ', ' order by g.role, g.priv) as identity_args,
+         'a client role holds a TABLE privilege in schema custom - the store is reached through '
+         'its doors or not at all, and censuses 1 and 5 excuse SECURITY INVOKER bodies only '
+         'because this is empty'::text as why
+    from pg_class c
+   cross join (values ('authenticated','SELECT'), ('authenticated','INSERT'),
+                      ('authenticated','UPDATE'), ('authenticated','DELETE'),
+                      ('anon','SELECT'), ('anon','INSERT'),
+                      ('anon','UPDATE'), ('anon','DELETE')) as g(role, priv)
+   where c.relnamespace = 'custom'::regnamespace
+     and c.relkind in ('r', 'p', 'v', 'f')
+     and has_table_privilege(g.role, c.oid, g.priv)
+   group by c.relname
    order by 1`;
 
 const GRANT_CENSUS = `
@@ -205,18 +303,70 @@ async function main(): Promise<void> {
           `census names ${ladderNames.size} door(s) including all five that must be routed. ` +
           "It can go red.",
       );
+
+      // CENSUS 5, THE RED HALF. With NO rung accepted as the ladder, every declared
+      // SECURITY DEFINER door that takes an id must be named - including the ones lane
+      // REACH routed. If it names nothing, it is reading an empty set.
+      const redDeclared = (await client.query<Row>(DECLARED_LADDER_CENSUS([]))).rows;
+      const declaredNames = new Set(redDeclared.map((r) => r.function_name));
+      const mustDeclare = [
+        "migrate_rename",
+        "query_across_homes",
+        "home_add",
+        "relation_targets",
+        "query_record_as_of",
+        "record_aggregate",
+        "io_export",
+      ];
+      const undeclared = mustDeclare.filter((n) => !declaredNames.has(n));
+      if (undeclared.length > 0) {
+        fail(
+          "SELF-TEST FAILED - with no rung accepted as the one ladder, the declared-door census " +
+            `did not name ${undeclared.join(", ")}. One door per group - a migration verb, a ` +
+            "query, a home, a relation, an as-of read, an aggregate and an export - has to be in " +
+            "reach of this query or its green answer proves nothing.",
+        );
+      }
+      console.log(
+        `[ OK ] self-test - with no rung accepted, the declared-door census names ` +
+          `${declaredNames.size} door(s) including one from every group lane REACH opened. It can go red.`,
+      );
+
+      // CENSUS 6, THE RED HALF. With the switch itself not accepted, every declared door
+      // that writes a record must be named.
+      const redSwitch = (await client.query<Row>(DECLARED_SWITCH_CENSUS(false))).rows;
+      const switchNames = new Set(redSwitch.map((r) => r.function_name));
+      const mustAsk = ["record_write", "migrate_rename", "home_add", "relation_own"];
+      const notAsking = mustAsk.filter((n) => !switchNames.has(n));
+      if (notAsking.length > 0) {
+        fail(
+          "SELF-TEST FAILED - with the store's switch not accepted as an answer, the switch " +
+            `census did not name ${notAsking.join(", ")}, which all write a record through a ` +
+            "client door. The query is not reading the bodies it claims to.",
+        );
+      }
+      console.log(
+        `[ OK ] self-test - counting the switch itself as an objection, the switch census names ` +
+          `${switchNames.size} writing door(s). It can go red.`,
+      );
     }
 
     const callers = (await client.query<Row>(CALLER_CENSUS(DECIDERS))).rows;
     const records = (await client.query<Row>(RECORD_CENSUS(DECIDERS))).rows;
     const grants = (await client.query<Row>(GRANT_CENSUS)).rows;
     const ladder = (await client.query<Row>(ONE_LADDER_CENSUS)).rows;
+    const declaredLadder = (await client.query<Row>(DECLARED_LADDER_CENSUS(LADDER_RUNGS))).rows;
+    const declaredSwitch = (await client.query<Row>(DECLARED_SWITCH_CENSUS(true))).rows;
+    const tablePrivileges = (await client.query<Row>(TABLE_PRIVILEGE_CENSUS)).rows;
 
     const ok = [
       report("client doors taking an organization id that never decide the caller", callers),
       report("client doors that write a record without deciding that row", records),
       report("declared doors whose grant or signature does not match the live catalog", grants),
       report("doors deciding a row with a ladder of their own instead of the one function", ladder),
+      report("declared client doors whose body never goes through the one ladder", declaredLadder),
+      report("declared client doors that write a record without asking the store's switch", declaredSwitch),
+      report("client roles holding a TABLE privilege in schema custom", tablePrivileges),
     ].every(Boolean);
 
     if (!ok) {
