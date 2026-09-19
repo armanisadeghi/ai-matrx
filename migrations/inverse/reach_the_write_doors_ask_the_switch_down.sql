@@ -1,0 +1,25 @@
+-- A NOTE, NOT A MIGRATION. This file runs nothing: the campaign file it inverts declared no doors and only added one line to three existing bodies, so its undo is the three bodies whose hashes are named below.
+-- The inverse of migrations/campaign/reach_the_write_doors_ask_the_switch.sql (lane REACH, 2026-09-19).
+--
+-- TWO HALVES, and only the second is a statement.
+--
+-- 1. THE BODIES. That file replaced the function bodies below. `CREATE OR REPLACE` has
+--    no undo of its own, so the inverse of a body change is THE BODY IT WAS BASED ON,
+--    and the campaign file names each of those by sha256 in its own `-- based-on:`
+--    header. To revert one, take the definition whose body hashes to the value beside
+--    its signature here and re-apply it through the runner:
+--
+--   custom.home_add(uuid, uuid, uuid)
+--     was sha256 b5de0147b5ccee58003aea4c7899d2dcf6e90d8b2f610f45f65511fd455d4931
+--   custom.record_reparent(uuid, uuid, uuid)
+--     was sha256 185e0fd9de133fba6c2fe2400e9f9336968a8474e4eb92ac99af71d63439d168
+--   custom.relation_own(uuid, uuid, uuid)
+--     was sha256 ab44011ab1dcdc7d666730a3686923e1df784aa08abe217e3275681ede4133b1
+--
+--    There is no second copy of those bodies in this repository. The hash is the
+--    identity; the git history of the campaign directory is where the text is.
+--
+-- 2. THERE ARE NO DOORS TO CLOSE. That file declared none: it only added the store's
+--    OFF switch to three doors another REACH file had already declared. Reverting it
+--    means the three write doors stop asking whether the store is open, which is
+--    strictly worse; the campaign file's own hashes above are the only undo.

@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2077",
+  "version": "0.4.2087",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
@@ -510,6 +510,7 @@
     "check:record-toasts:self-test": "tsx scripts/check-record-toasts.ts --self-test",
     "test:kind-sandbox:browser": "playwright test -c playwright.kind-sandbox.config.ts",
     "test:shell-layout": "playwright test -c playwright.shell-layout.config.ts",
+    "test:rule-row-squeeze": "playwright test -c playwright.rule-row-squeeze.config.ts",
     "check:kind-sandbox-gate": "tsx scripts/check-kind-sandbox-gate.ts",
     "check:kind-sandbox-gate:self-test": "tsx scripts/check-kind-sandbox-gate.ts --self-test",
     "check:kind-sandbox-protocol": "tsx scripts/check-kind-sandbox-protocol.ts",

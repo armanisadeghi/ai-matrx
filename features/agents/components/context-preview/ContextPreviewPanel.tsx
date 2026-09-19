@@ -129,6 +129,132 @@ function VariableGroup({
   );
 }
 
+/** One resolution trace row, narrowed to what the panel can show honestly. */
+function traceFields(t: unknown): {
+  target: string;
+  key: string;
+  outcome: string;
+  source: string | null;
+  itemKey: string | null;
+  winner: string | null;
+  losers: { rung: string; why: string }[];
+  scopeCount: number | null;
+} | null {
+  if (!t || typeof t !== "object") return null;
+  const o = t as Record<string, unknown>;
+  const key = typeof o.target_key === "string" ? o.target_key : "";
+  if (!key) return null;
+  const rawLosers = Array.isArray(o.losers) ? o.losers : [];
+  const losers = rawLosers.flatMap((l) => {
+    if (!l || typeof l !== "object") return [];
+    const lo = l as Record<string, unknown>;
+    const rung = typeof lo.rung === "string" ? lo.rung : "";
+    if (!rung) return [];
+    return [{ rung, why: typeof lo.why === "string" ? lo.why : "" }];
+  });
+  const scopeIds = Array.isArray(o.scope_ids) ? o.scope_ids : null;
+  return {
+    target: typeof o.target === "string" ? o.target : "value",
+    key,
+    outcome: typeof o.outcome === "string" ? o.outcome : "resolved",
+    source: typeof o.source === "string" ? o.source : null,
+    itemKey: typeof o.item_key === "string" ? o.item_key : null,
+    winner: typeof o.winner === "string" ? o.winner : null,
+    losers,
+    scopeCount: scopeIds ? scopeIds.length : null,
+  };
+}
+
+/** Plain English for a precedence rung, because `scope_bound` is not a word. */
+const RUNG_WORDS: Record<string, string> = {
+  agent_default: "the agent's saved default",
+  scope_bound: "the scope it is bound to",
+  client: "the value sent with this turn",
+};
+
+function rungWords(rung: string): string {
+  return RUNG_WORDS[rung] ?? rung;
+}
+
+/**
+ * WHY THIS VALUE — the resolution traces the server already sends and nothing
+ * rendered. `bindings.traces` carries one row per resolution: where the value
+ * came from, whether more than one scope offered it, and (DYN-11) which rung of
+ * the precedence ladder won with every rung that lost and why. The server has
+ * emitted this since scope bindings shipped; until now it arrived and was
+ * dropped on the floor, so "why did it say that" had an answer nobody could see.
+ *
+ * Values are deliberately absent here — a trace row names the RUNG, never what
+ * it held, so a provenance list can never become a second copy of a sensitive
+ * cell. The value itself is one section up, where the reader's own permissions
+ * already decided whether they may see it.
+ */
+function BindingTraces({ traces }: { traces: unknown[] | null | undefined }) {
+  const rows = useMemo(
+    () =>
+      (traces ?? [])
+        .map(traceFields)
+        .filter((r): r is NonNullable<ReturnType<typeof traceFields>> => !!r),
+    [traces],
+  );
+  if (rows.length === 0) return null;
+  return (
+    <section className="px-4 pt-4">
+      <div className="flex items-baseline gap-2">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-primary">
+          Why this value
+        </h3>
+        <span className="text-[10px] text-muted-foreground">
+          one row per resolution — names only, never the value
+        </span>
+      </div>
+      <ul className="mt-1.5 divide-y divide-border/60 rounded-md border border-border">
+        {rows.map((r, i) => (
+          <li key={`${r.target}:${r.key}:${i}`} className="px-2.5 py-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="min-w-0 flex-1 truncate font-mono text-xs font-semibold text-foreground">
+                {r.key}
+              </span>
+              <span className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                {r.target === "context_policy" ? "slot" : "variable"}
+              </span>
+              <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                {r.outcome}
+              </span>
+            </div>
+            <div className="mt-1 space-y-0.5 text-[11px] leading-relaxed text-foreground/90">
+              {r.winner && (
+                <p>
+                  Took{" "}
+                  <span className="font-medium">{rungWords(r.winner)}</span>.
+                </p>
+              )}
+              {r.losers.map((l) => (
+                <p key={l.rung} className="text-muted-foreground">
+                  Did not take{" "}
+                  <span className="font-medium">{rungWords(l.rung)}</span>
+                  {l.why ? ` — ${l.why}.` : "."}
+                </p>
+              ))}
+              {r.source && !r.winner && (
+                <p>
+                  From <span className="font-medium">{r.source}</span>
+                  {r.itemKey ? ` (context item ${r.itemKey})` : ""}.
+                </p>
+              )}
+              {r.scopeCount !== null && r.scopeCount > 1 && (
+                <p className="text-muted-foreground">
+                  {r.scopeCount} active scopes offered a value for this name.
+                </p>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 /** One plain-text bundle of everything resolved — for "Copy all for AI". */
 function buildCopyAllText(data: ContextPreviewResponse): string {
   const parts: string[] = [];
@@ -358,6 +484,9 @@ function ResolvedBody({
             title="Context policies"
             hint="scope-filled"
             vars={data.bindings.context as Record<string, unknown> | undefined}
+          />
+          <BindingTraces
+            traces={data.bindings.traces as unknown[] | undefined}
           />
         </section>
       )}

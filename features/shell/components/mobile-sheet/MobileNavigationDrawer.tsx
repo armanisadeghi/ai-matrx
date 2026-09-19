@@ -10,6 +10,7 @@ import type {
   ShellNavChild,
   ShellNavItem,
 } from "@/features/shell/constants/nav-data";
+import { useShellNavGates } from "@/features/shell/navigation/useShellNavGates";
 import {
   NAV_WINDOW_PANEL_ICON,
   partitionNavChildren,
@@ -152,6 +153,8 @@ export default function MobileNavigationDrawer({
   const navActions = useNavActions();
   const navPanelActions = useNavPanelActions();
   const pathname = usePathname() ?? "";
+  // Which gated destinations exist for this person right now.
+  const gates = useShellNavGates();
   const settingsRoute = isUserSettingsPath(pathname);
 
   const allItems = [...items, settingsItem];
@@ -285,6 +288,7 @@ export default function MobileNavigationDrawer({
   const renderGroup = (group: ShellNavItem) => {
     const { sections, panels, actions } = partitionNavChildren(
       group.children ?? [],
+      gates,
     );
     const activeChild = findActiveNavChild(pathname, group);
     const overviewActive =

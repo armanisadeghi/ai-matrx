@@ -45,6 +45,9 @@ import {
   ExternalLink,
   FileChartColumn,
   RotateCcw,
+  Archive,
+  ArchiveRestore,
+  Trash2,
 } from "lucide-react";
 import { toast } from "@/lib/toast-service";
 import { cn } from "@/lib/utils";
@@ -73,6 +76,7 @@ import {
   ADMIN_SYSTEM_AGENTS_BASE_PATH,
   isAdminSystemAgentsContext,
 } from "@/features/agents/components/shared/agent-route-context";
+import { useAgentLifecycleActions } from "@/features/agents/lifecycle/useAgentLifecycleActions";
 
 const INTERFACE_VARIATIONS = [
   "Full Modal",
@@ -336,6 +340,11 @@ export function AgentOptionsMenu({
   // Admin actions (incl. "Find Usages (Admin)") are super-admin only. The
   // server RPCs enforce is_super_admin() regardless; this hides the entry.
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  // Archive and delete, on the screen where a person decides they are done with an
+  // agent. Before 2026-09-19 this menu had neither and said nothing about where to go
+  // instead, so the builder was a dead end for the one thing you cannot do anywhere else
+  // while you are standing in it.
+  const lifecycle = useAgentLifecycleActions(agentId, basePath);
   // The organization a converted template is filed in — carried to the
   // route as `X-Organization-Id`, never resolved into a personal one.
   const selectedOrganizationId = useAppSelector(selectOrganizationId);
@@ -704,6 +713,36 @@ export function AgentOptionsMenu({
               ))}
             </>
           )}
+          {/* ── Manage this agent ── */}
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
+            Manage
+          </DropdownMenuLabel>
+          <DropdownMenuItem
+            disabled={lifecycle.isBusy}
+            onClick={() => {
+              setOpen(false);
+              void lifecycle.toggleArchived();
+            }}
+          >
+            {lifecycle.isArchived ? (
+              <ArchiveRestore className="w-4 h-4 mr-2 text-muted-foreground" />
+            ) : (
+              <Archive className="w-4 h-4 mr-2 text-muted-foreground" />
+            )}
+            <span className="flex-1">{lifecycle.archiveLabel}</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            disabled={lifecycle.isBusy}
+            onClick={() => {
+              setOpen(false);
+              void lifecycle.remove();
+            }}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            <span className="flex-1">Delete</span>
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
       {duplicateDialog}
@@ -757,6 +796,11 @@ function MobileMenuContent({
   // Admin actions (incl. "Find Usages (Admin)") are super-admin only. The
   // server RPCs enforce is_super_admin() regardless; this hides the entry.
   const isSuperAdmin = useAppSelector(selectIsSuperAdmin);
+  // Archive and delete, on the screen where a person decides they are done with an
+  // agent. Before 2026-09-19 this menu had neither and said nothing about where to go
+  // instead, so the builder was a dead end for the one thing you cannot do anywhere else
+  // while you are standing in it.
+  const lifecycle = useAgentLifecycleActions(agentId, basePath);
   // The organization a converted template is filed in — carried to the
   // route as `X-Organization-Id`, never resolved into a personal one.
   const selectedOrganizationId = useAppSelector(selectOrganizationId);
@@ -1015,6 +1059,42 @@ function MobileMenuContent({
           </div>
         </>
       )}
+
+      {/* ── Manage this agent ── */}
+      <div className="h-px bg-border mx-3 my-1" />
+      <div className="px-4 py-1.5">
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
+          Manage
+        </span>
+      </div>
+      <div className="py-1">
+        <button
+          disabled={lifecycle.isBusy}
+          onClick={() => {
+            onClose();
+            void lifecycle.toggleArchived();
+          }}
+          className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-foreground hover:bg-muted/50 active:bg-muted/70 transition-colors disabled:opacity-50"
+        >
+          {lifecycle.isArchived ? (
+            <ArchiveRestore className="w-4 h-4 text-muted-foreground shrink-0" />
+          ) : (
+            <Archive className="w-4 h-4 text-muted-foreground shrink-0" />
+          )}
+          <span className="flex-1 text-left">{lifecycle.archiveLabel}</span>
+        </button>
+        <button
+          disabled={lifecycle.isBusy}
+          onClick={() => {
+            onClose();
+            void lifecycle.remove();
+          }}
+          className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-destructive hover:bg-muted/50 active:bg-muted/70 transition-colors disabled:opacity-50"
+        >
+          <Trash2 className="w-4 h-4 shrink-0" />
+          <span className="flex-1 text-left">Delete</span>
+        </button>
+      </div>
     </div>
   );
 }

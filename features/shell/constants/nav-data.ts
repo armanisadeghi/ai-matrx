@@ -147,6 +147,33 @@ export interface ShellNavChild {
    * "Add X" that navigates to `/x/new` with no overlay handler).
    */
   actionItem?: boolean;
+  /**
+   * A destination that only exists where a switch is on. The sidebar resolves
+   * the switch and drops the child when it is off; every other surface (the
+   * dashboard tiles, the profile menu, the flattened destination list) never
+   * shows a gated child at all, because those surfaces are built synchronously
+   * and cannot wait for an answer. One field, one filter — NOT a second
+   * navigation system.
+   *
+   * `unified-data-campaign` is `custom.code_paths_enabled`, resolved for this
+   * person in this organization by `useUnifiedDataCampaign`.
+   */
+  gate?: ShellNavGateId;
+}
+
+/** The switches a nav child may hang on. One id per switch, and no more. */
+export type ShellNavGateId = "unified-data-campaign";
+
+/** Which gates are currently on, as the sidebar resolved them. */
+export type ShellNavGates = Partial<Record<ShellNavGateId, boolean>>;
+
+/**
+ * A child with no gate always shows. A gated child shows only where its switch
+ * answered TRUE — an unanswered gate is OFF, because a destination that appears
+ * for a second and then vanishes is worse than one that arrives a moment late.
+ */
+export function navChildPassesGates(child: ShellNavChild, gates: ShellNavGates = {}): boolean {
+  return child.gate === undefined || gates[child.gate] === true;
 }
 
 /**
@@ -671,6 +698,18 @@ export const primaryNavItems: ShellNavItem[] = [
         color: "cyan",
         profileMenu: true,
         dashboard: true,
+      },
+      {
+        // The unified record store's tables. It appears only where the store's
+        // campaign switch is on, which is why it carries a gate: everywhere
+        // else the screens behind it answer with the switch's own sentence and
+        // a destination that only says "not yet" is not a destination.
+        label: "Records",
+        href: "/data-v2",
+        iconName: "Table",
+        description: "Tables, fields and records on the unified store",
+        color: "cyan",
+        gate: "unified-data-campaign",
       },
       {
         label: "Data Tables Window",
@@ -2064,12 +2103,16 @@ export interface PartitionedNavChildren {
  */
 export function partitionNavChildren(
   children: ShellNavChild[],
+  gates: ShellNavGates = {},
 ): PartitionedNavChildren {
-  const navChildren = children.filter(
+  // A gated child is dropped BEFORE anything is grouped, so an empty group
+  // never renders a heading with nothing under it.
+  const visible = children.filter((c) => navChildPassesGates(c, gates));
+  const navChildren = visible.filter(
     (c) => !isNavActionChild(c) && !isNavPanelChild(c),
   );
-  const panelChildren = children.filter(isNavPanelChild);
-  const actions = children.filter(isNavActionChild);
+  const panelChildren = visible.filter(isNavPanelChild);
+  const actions = visible.filter(isNavActionChild);
   return {
     sections: groupNavChildren(navChildren),
     panels: panelChildren,
