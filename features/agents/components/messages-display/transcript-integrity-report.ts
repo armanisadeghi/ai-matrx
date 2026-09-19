@@ -220,7 +220,7 @@ export function buildTranscriptIntegrityReport(
   //    promoted it (no record_reserved for the user row reached this client).
   const requestSettled =
     !!activeRequest &&
-    (activeRequest.status === "completed" || activeRequest.status === "error");
+    (activeRequest.status === "complete" || activeRequest.status === "error");
   for (const r of records) {
     if (r.role !== "user" || r._clientStatus !== "pending") continue;
     const ageMs = now.getTime() - new Date(r.createdAt).getTime();

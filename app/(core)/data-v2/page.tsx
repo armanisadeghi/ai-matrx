@@ -13,6 +13,7 @@
 // row for this person in this organization, so the campaign can be on for one
 // builder while it stays off for everybody else.
 
+import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { RecordsMount, TablesHome, personActor, recordsDataSource } from "@ai-matrx/records-ui";
@@ -21,7 +22,9 @@ import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { getOrganizationMembers } from "@/features/organizations/service";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { createClient } from "@/utils/supabase/client";
 import {
   UNIFIED_DATA_CAMPAIGN,
@@ -32,12 +35,25 @@ import {
 export default function UnifiedDataPage() {
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
-  const organizationId = useAppSelector(selectActiveOrganizationId);
+  const { organizationId, organizationState } = useOrganizationRequired();
   const campaign = useUnifiedDataCampaign({
     organizationId,
+    organizationState,
     userId,
     platformDefault: () => UNIFIED_DATA_CAMPAIGN.enabled(),
   });
+
+  /** The same membership port the table page binds — see its comment. */
+  const members = useCallback(async () => {
+    if (!organizationId) return [];
+    const roster = await getOrganizationMembers(organizationId);
+    return roster.map((member) => ({
+      userId: member.userId,
+      name: member.user?.displayName ?? null,
+      email: member.user?.email ?? null,
+      avatarUrl: member.user?.avatarUrl ?? null,
+    }));
+  }, [organizationId]);
 
   return (
     <>
@@ -45,11 +61,8 @@ export default function UnifiedDataPage() {
         <HeaderStructured title="Data" />
       </PageHeader>
       <div className="h-full overflow-y-auto pt-[var(--shell-header-h)] p-4">
-        {!organizationId ? (
-          <p className="max-w-2xl text-sm opacity-80">
-            Pick an organization first — the record store is keyed by organization, so there is no
-            list to show until one is chosen.
-          </p>
+        {organizationState !== "ready" ? (
+          <OrganizationContextNotice state={organizationState} what="Data records" />
         ) : campaign.on === null ? null : !campaign.on ? (
           <p className="max-w-2xl text-sm opacity-80">
             {UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE} <span className="opacity-70">{campaign.because}</span>
@@ -60,9 +73,9 @@ export default function UnifiedDataPage() {
             config={{
               dataSource: recordsDataSource(createClient()),
               actor: personActor(userId),
-              organizationId,
+              organizationId: organizationId!,
             }}
-            host={{ Link, density: "condensed" }}
+            host={{ Link, density: "condensed", members }}
           >
             <TablesHome onOpenTable={(tableId) => router.push(`/data-v2/${tableId}`)} />
           </RecordsMount>

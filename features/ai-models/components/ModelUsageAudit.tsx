@@ -4,6 +4,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { hasCompatibleDecisionInteraction } from "@/features/ai-models/capabilities/types";
 import {
   RefreshCcw,
   ArrowRightLeft,
@@ -18,9 +19,7 @@ import type { AiModel, ModelUsageResult } from "../types";
 import { ModelSettingsReviewDialog } from "./ModelSettingsReviewDialog";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
 import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
+import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
 
 interface ModelUsageAuditProps {
   model: AiModel;
@@ -66,7 +65,10 @@ export default function ModelUsageAudit({
     (usage?.agentTemplates.length ?? 0);
 
   const replacementOptions = allModels.filter(
-    (m) => m.id !== model.id && !m.is_deprecated,
+    (m) =>
+      m.id !== model.id &&
+      !m.is_deprecated &&
+      hasCompatibleDecisionInteraction(model.capabilities, m.capabilities),
   );
   const selectedReplacement = allModels.find((m) => m.id === replacementId);
 
@@ -202,6 +204,7 @@ export default function ModelUsageAudit({
               (candidate) => candidate.id,
             )}
             catalogVariant="admin"
+            selectionPurpose="admin"
             placeholder="Select replacement model…"
             className="h-8 w-full justify-between text-xs"
           />

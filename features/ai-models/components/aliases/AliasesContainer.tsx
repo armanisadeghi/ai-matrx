@@ -339,6 +339,7 @@ export default function AliasesContainer() {
                   .filter((model) => !model.is_deprecated)
                   .map((model) => model.id)}
                 catalogVariant="admin"
+                selectionPurpose="admin"
                 placeholder="Choose model…"
                 className="h-8 w-full justify-between text-sm"
               />

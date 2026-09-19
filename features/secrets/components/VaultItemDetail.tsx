@@ -62,6 +62,9 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/utils/cn";
 import { toast } from "@/lib/toast";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useUserOrganizations } from "@/features/organizations/hooks";
 import { sanitizeFieldName } from "@/utils/user-table-utls/field-name-sanitizer";
 import { normalizeVaultLoginUrlInput, safeVaultLoginUrl } from "../utils";
@@ -87,6 +90,10 @@ import {
   recommendedHandlingForFieldKey,
 } from "../credential-identity";
 import { SecretValue, useFieldSecret } from "./SecretValue";
+import {
+  VaultPasswordGenerator,
+  isEligibleVaultPasswordField,
+} from "./VaultPasswordGenerator";
 import {
   HANDLING_PRESENTATION,
   VaultHandlingControl,
@@ -157,7 +164,9 @@ export function VaultItemDetail({
   const otherFields = item.fields.filter(
     (field) => !primaryIds.has(field.id) && field.id !== recoveryCodesField?.id,
   );
-  const hasProtectedExecutionField = item.fields.some(isProtectedExecutionField);
+  const hasProtectedExecutionField = item.fields.some(
+    isProtectedExecutionField,
+  );
   const panelEligibility: Record<Panel, boolean> = {
     none: true,
     share: caps.can_manage === true,
@@ -216,8 +225,7 @@ export function VaultItemDetail({
       key: "give",
       icon: UserPlus,
       label: "Give ownership",
-      show:
-        panelEligibility.give,
+      show: panelEligibility.give,
     },
     {
       key: "fork",
@@ -490,7 +498,9 @@ export function VaultItemDetail({
           }}
         />
       )}
-      {panel === "audit" && panelEligibility.audit && <AuditPanel itemId={item.id} />}
+      {panel === "audit" && panelEligibility.audit && (
+        <AuditPanel itemId={item.id} />
+      )}
 
       <ConfirmDialog
         open={confirmDelete}
@@ -920,6 +930,8 @@ function FieldRow({
   actions: VaultActions;
   editMode: boolean;
 }) {
+  const currentUserId = useAppSelector(selectUserId);
+  const currentOrganizationId = useAppSelector(selectOrganizationId);
   const caps = item.capabilities;
   const [valueDraft, setValueDraft] = useState("");
   const [envDraft, setEnvDraft] = useState(field.env_key ?? "");
@@ -928,8 +940,17 @@ function FieldRow({
   const [confirmSeal, setConfirmSeal] = useState(false);
   const envInputRef = useRef<HTMLInputElement>(null);
 
-  const displayLabel = fieldLabelOf(field, label);
   const protectedExecution = isProtectedExecutionField(field);
+  const valueDraftContext = `${currentUserId ?? ""}:${currentOrganizationId ?? ""}:${item.id}:${field.id}:${field.is_active}:${field.editable}:${field.handling}:${protectedExecution}:${caps.can_edit}`;
+  const valueDraftContextRef = useRef(valueDraftContext);
+  useEffect(() => {
+    if (valueDraftContextRef.current === valueDraftContext) return;
+    valueDraftContextRef.current = valueDraftContext;
+    setValueDraft("");
+    setEditingValue(false);
+  }, [valueDraftContext]);
+
+  const displayLabel = fieldLabelOf(field, label);
   const showEnvAlias = !envAliasIsRedundant(field);
   const metadataChanged =
     envDraft !== (field.env_key ?? "") ||
@@ -1016,6 +1037,18 @@ function FieldRow({
             autoFocus
             aria-label={`New value for ${displayLabel}`}
           />
+          <VaultPasswordGenerator
+            targetKey={`edit:${item.id}:${field.id}`}
+            eligible={isEligibleVaultPasswordField({
+              fieldKey: field.field_key,
+              active: field.is_active,
+              editable: field.editable,
+              handling: field.handling,
+              protectedExecution,
+              canEdit: caps.can_edit === true,
+            })}
+            onUse={(value) => setValueDraft(value)}
+          />
           <Button
             size="icon"
             variant="ghost"
@@ -1080,24 +1113,24 @@ function FieldRow({
 
       {!protectedExecution &&
         (showEnvAlias || field.inject_into_sandbox || field.description) && (
-        <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
-          {showEnvAlias && (
-            <code className="max-w-full whitespace-normal break-all rounded bg-muted/45 px-1.5 py-0.5 font-mono">
-              {field.env_key}
-            </code>
-          )}
-          {field.inject_into_sandbox && (
-            <span className="rounded bg-muted/45 px-1.5 py-0.5">
-              Available to sandboxes
-            </span>
-          )}
-          {field.description && (
-            <span className="min-w-0 whitespace-pre-wrap break-words">
-              {field.description}
-            </span>
-          )}
-        </div>
-      )}
+          <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-muted-foreground">
+            {showEnvAlias && (
+              <code className="max-w-full whitespace-normal break-all rounded bg-muted/45 px-1.5 py-0.5 font-mono">
+                {field.env_key}
+              </code>
+            )}
+            {field.inject_into_sandbox && (
+              <span className="rounded bg-muted/45 px-1.5 py-0.5">
+                Available to sandboxes
+              </span>
+            )}
+            {field.description && (
+              <span className="min-w-0 whitespace-pre-wrap break-words">
+                {field.description}
+              </span>
+            )}
+          </div>
+        )}
 
       {editMode && caps.can_edit && !protectedExecution && (
         <div className="mt-2 space-y-2 border-t border-border/60 pt-2">

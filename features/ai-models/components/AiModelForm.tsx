@@ -12,6 +12,7 @@ import { MODEL_DESCRIPTION_MAX_CHARS } from '../model-metadata';
 import { ModelListDropdown } from '@/features/ai-models/components/lab/ModelListDropdown';
 import type { AiModelFormData, AiProvider, AiModel } from '../types';
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { hasCompatibleDecisionInteraction } from "@/features/ai-models/capabilities/types";
 
 interface AiModelFormProps {
     data: AiModelFormData;
@@ -64,8 +65,9 @@ export default function AiModelForm({
     const toggle = (key: keyof AiModelFormData) => (checked: boolean) =>
         onChange({ ...data, [key]: checked });
 
+    const currentModel = allModels.find((model) => model.name === data.name);
     const fallbackModelIds = allModels
-        .filter((model) => model.name !== data.name && !model.is_deprecated)
+        .filter((model) => model.name !== data.name && !model.is_deprecated && (!currentModel || hasCompatibleDecisionInteraction(currentModel.capabilities, model.capabilities)))
         .map((model) => model.id);
 
     return (
@@ -268,6 +270,7 @@ export default function AiModelForm({
                             inputModalities={[]}
                             allowedModelIds={fallbackModelIds}
                             catalogVariant="admin"
+                            selectionPurpose="admin"
                             emptyOptionLabel="No swap"
                             onClear={() => onChange({ ...data, retry_fallback_id: "" })}
                             placeholder="Choose retry fallback…"
@@ -316,6 +319,7 @@ export default function AiModelForm({
                             inputModalities={[]}
                             allowedModelIds={fallbackModelIds}
                             catalogVariant="admin"
+                            selectionPurpose="admin"
                             emptyOptionLabel="No swap"
                             onClear={() => onChange({ ...data, mid_fallback_id: "" })}
                             placeholder="Choose mid-tier fallback…"
@@ -334,6 +338,7 @@ export default function AiModelForm({
                             inputModalities={[]}
                             allowedModelIds={fallbackModelIds}
                             catalogVariant="admin"
+                            selectionPurpose="admin"
                             emptyOptionLabel="No swap"
                             onClear={() => onChange({ ...data, guest_fallback_id: "" })}
                             placeholder="Choose guest fallback…"
