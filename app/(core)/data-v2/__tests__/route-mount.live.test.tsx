@@ -122,6 +122,20 @@ jest.mock("@/lib/redux/selectors/userSelectors", () => ({ selectUserId: () => us
 jest.mock("@/features/scopes/redux/selectors/active-context", () => ({
   selectActiveOrganizationId: () => activeOrg,
 }));
+jest.mock("@/features/organizations/useOrganizationRequired", () => ({
+  useOrganizationRequired: () => ({
+    organizationId: activeOrg,
+    organizationState: activeOrg ? "ready" : "required",
+  }),
+}));
+jest.mock("@/features/organizations/components/OrganizationRequiredNotice", () => ({
+  OrganizationContextNotice: ({ what }: { what?: string }) => (
+    <div>
+      <h3>{what ? `${what} need an organization` : "Choose an organization"}</h3>
+      <p>Nothing was loaded because no organization is selected for this session.</p>
+    </div>
+  ),
+}));
 jest.mock("next/navigation", () => ({ useRouter: () => ({ push: jest.fn() }) }));
 // Page chrome is the platform's and is proved by its own tests; it drags the
 // whole shell (and its own store reads) into jsdom for nothing here.
@@ -209,11 +223,11 @@ describeLive("/data-v2 — the route files bind the store, live main database", 
     // both the failure this asserts against.
     activeOrg = null;
     const { default: UnifiedDataPage }: typeof import("../page") = require("../page");
-    await mount(<UnifiedDataPage />, (text) => text.includes("Pick an organization") || text.includes("switched off"));
+    await mount(<UnifiedDataPage />, (text) => text.includes("Data records need an organization") || text.includes("switched off"));
 
     const text = container.textContent ?? "";
-    expect(text).toContain("Pick an organization first");
-    expect(text).toContain("the record store is keyed by organization");
+    expect(text).toContain("Data records need an organization");
+    expect(text).toContain("Nothing was loaded because no organization is selected");
     expect(text).not.toContain("404");
     // The route still drew its own header, so this is a page with a sentence on
     // it and not a crashed mount.
