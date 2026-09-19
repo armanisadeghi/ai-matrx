@@ -76,6 +76,13 @@ const config: Config = {
         // rule, same reason as agents/matrx above.
         "^@ai-matrx/associations/(core|react)$":
             "<rootDir>/node_modules/@ai-matrx/associations/dist/$1/index.js",
+        // @ai-matrx/records subpaths are DIRECTORIES too (dist/core/index.js,
+        // dist/react/index.js) — map before the generic rule, same reason as
+        // agents/matrx and associations above. First consumer: 2026-09-19,
+        // features/list-change-proposals/applyListChange.ts's `kind:"table"`
+        // branch (`@ai-matrx/records/core`'s `createRecordsClient`).
+        "^@ai-matrx/records/(core|react)$":
+            "<rootDir>/node_modules/@ai-matrx/records/dist/$1/index.js",
         // design-system's data-table public entry is likewise a directory
         // target in dist, while its leaf subpaths remain files.
         "^@ai-matrx/design-system/data-table$":
