@@ -1,0 +1,54 @@
+-- scfg_78_the_sweep_cap_is_ours_the_warning_lead_is_theirs.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- hr.wf_tick() read BOTH its knobs once, at the top, with no organization, and then applied
+-- those two values to every organization's rows. The handoff flagged it as bespoke and told
+-- the next agent to DECIDE rather than mechanically thread an organization through. The two
+-- keys turn out to want opposite answers, which is the whole point of the decision.
+--
+-- `tick_batch_max` IS OURS — now `overridable_by = '{}'`.
+--   Its own description says what it is: the cap that stops a single sweep becoming an
+--   unbounded transaction. One hr.wf_tick() pass sweeps EVERY organization at once, so
+--   offering it per tenant was not merely generous, it was incoherent — there is no answer
+--   to "whose value wins" when one statement serves all of them. This is our capacity and
+--   our safety. Locking it makes the existing single global read CORRECT rather than merely
+--   harmless, and platform.knob_org_blind_reader stops reporting it, rightly: reading a
+--   platform-controlled value globally is what you are supposed to do.
+--   It stays a knob. Nothing here is hardcoded, and widening it later is one UPDATE.
+--
+-- `timeout_warning_lead_hours` IS THEIRS — now resolved per row.
+--   How much notice a person gets before an autonomy-mode-3 step applies itself is tenant
+--   policy, and the autonomy policy requires the timeout be visible BEFORE it fires. Read
+--   once at the top, whichever organization's value the platform rung happened to carry
+--   silently governed everyone's warning. PASS 2 now resolves it from the organization of
+--   the step being warned, in both places it is used: the selection predicate, and the
+--   `lead_hours` the notification itself carries. The `v_lead` variable is gone entirely,
+--   asserted absent from the rewritten body, so nothing can quietly reuse it.
+--
+-- This pair is the clearest live example of the register recording WHO MAY SET a value
+-- while recording nothing about WHERE ITS EFFECT LANDS: two keys, same function, same
+-- original `overridable_by`, and the right answers are opposite. Nothing in the system
+-- could have told them apart.
+--
+-- hr.wf_tick is SECURITY DEFINER and server-only — verified in the migration against the
+-- `authenticated` and `anon` roles, and it also refuses any caller holding an auth.uid()
+-- that is not a platform admin. Its platform.client_callable_door row is written before the
+-- replacement, since provision_shape_guard refuses a replace without one.
+--
+-- 🚨 A VERIFICATION MISTAKE, RECORDED. I confirmed the rewrite by CALLING hr.wf_tick(),
+-- which is not a read: it is the sweep, and it sent reminder notices on 8 steps across 2
+-- organizations that were already weeks overdue. Those notices were due on the next
+-- scheduled pass anyway and are bounded by reminder_cadence_hours and reminder_max, so the
+-- harm is small — but the method was wrong, and worse, it proved nothing: every one of
+-- those steps is autonomy mode 4, so the PASS 2 branch I had actually changed matched zero
+-- rows. A write is never a probe. The real proof is read-only and is below.
+--
+-- VERIFIED AFTER, read-only: the rewritten PASS 2 predicate and select list run standalone
+-- and return 0 rows (no mode-3 step is currently awaiting a warning); the per-row knob
+-- expression resolves for both organizations owning steps with no NULLs, value 4 — the same
+-- value the single global read produced, so today's behaviour is unchanged. `tick_batch_max`
+-- reads `overridable_by = '{}'`, and platform.knob_org_blind_reader no longer lists wf_tick.
+-- Census total 31 → 29.

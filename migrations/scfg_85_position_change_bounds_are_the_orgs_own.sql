@@ -1,0 +1,32 @@
+-- scfg_85_position_change_bounds_are_the_orgs_own.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- public.hr_position_change(p_payload jsonb) — TWO keys, and the second is a governance control.
+--
+--   future_dated_change_max_days bounds how far ahead a position change may be dated, on the
+--   reasoning that a date further out than that is almost always a typo in the year. How far is
+--   "too far" is an organization's own judgement about its own hiring and transfer practice.
+--
+--   🚨 position_change_requires_approval decides whether a MANAGER's proposed change routes
+--   through an approval workflow or applies directly. (An HR admin with the authority IS the
+--   approver, so their own write is never queued — §4.2 node D.) That is a governance decision
+--   about who may change someone's job without a second pair of eyes, and it was reading the
+--   platform rung: an organization that had turned approval ON would have had managers writing
+--   straight through, and one that had turned it OFF would have had its managers queued anyway.
+--   Of everything closed in this sweep, this is the key whose org value most deserves to win.
+--
+-- THE DECLARATION. The only argument is a payload, and the one entity id inside it —
+-- employment_id — IS an authorization input and is treated as one: the organization is derived
+-- from that employment row, an id matching no live row returns `not_reachable` rather than
+-- proceeding with a null org, and that is the same word a caller without standing gets, so the
+-- id is not an existence oracle. hr._l1_write_gate then runs for working_record.write against
+-- that employment, and BOTH knob reads happen only after it returns clean. Nothing else in the
+-- payload grants anything: effective_from is a date the door itself bounds, and the rest
+-- describes the change and is applied under the organization already established.
+--
+-- VERIFIED AFTER: census 17 → 15 rows over 9 functions; hr_position_change no longer appears; a
+-- fabricated employment id still answers `not_reachable`, and that probe is safe by construction
+-- — the door returns before hr.wf_request or hr._l1_apply_position, so nothing was written.

@@ -4644,3 +4644,72 @@ verification, not a side effect of the list-change-proposals feature.
 "This DELETES the row … outright — it is gone from <list>, not archived, and this cannot be
 undone" — rather than a generic warning that implies recovery. Found by building
 `features/list-change-proposals/`.
+
+## hr.capability asked without a tenant — 11 three-argument call sites (2026-09-19, scfg_91)
+
+`hr.capability(user, capability, subject)` derives the authoritative organization from the
+SUBJECT employment. When that subject is NULL and no organization is passed, the tenant clause
+goes vacuously true AND `population_contains` is skipped, so the question becomes "does this
+caller hold this capability anywhere, over anybody". That is the class closed at hr_l1_59 and
+hr_l1_64; `hr.reveal_ssn` was still carrying it and is fixed in scfg_91 (latent, not exploitable
+— zero live employees lack an employment row).
+
+The call sites were listed live by `hr.capability_asked_without_a_tenant`, 11 rows over
+9 functions. **2 are CLEARED (scfg_92):** both `hr.wf_inbox` literal-null calls are affordance
+gates — one decides whether to build the queue scope, the other sets `can_view_queue` for the UI —
+while every row the function returns is authorized separately with the five-argument form carrying
+`i.subject_employment_id` and `i.organization_id`. The census now carries
+`same_capability_tenant_checked` to say so, and still reports the rows rather than hiding them.
+
+**1 FIXED (scfg_93):** `hr_authority_revoke` assigned its subject only on the `employment`
+branch while `holder_kind` permits `position | employment | role`, so revoking a position- or
+role-held approval authority asked only "does this caller hold authority.grant anywhere". Latent
+— all 129 live rows across 7 orgs are `employment` — and now five-argument, pinned by contract.
+
+**4 CLEARED (scfg_93), each proved:** `hr_role_assign` and `hr_set_employment_pin` resolve the id
+against `hr.employment` and raise P0002 above the gate; `hr_role_revoke` reads a NOT NULL column
+off a P0002-guarded row; `hr_authority_delegation_end` likewise. Three rest on a guarantee held
+some lines away, so the rows stay listed as a standing guard against a reordering edit.
+
+**1 MORE FIXED (scfg_94):** `hr_mint_records_request_token` — both gate calls were
+three-argument over a nullable `records_request.employment_id`, and passing the gate MINTS AN
+OUTSIDER TOKEN granting read+download delivered to a caller-supplied address. An HR admin in one
+employer could have issued themselves a download link for another employer's records request. The
+null is the DESIGNED shape here (an ex-employee or third party has no current employment), not an
+edge. Fixed before the lane carried its first row — `hr.records_request` is empty. Both calls now
+five-argument with `rq.organization_id`, pinned by contract.
+
+**THE LAST 2 ARE FIXED (scfg_95), and the "product decision" framing above was wrong.** This
+entry previously said `hr.wf_pending` and `hr._wf_display` needed the workflow lane to decide
+what a multi-employer inbox shows. That is a real question, but it is not this one. Asking what
+the ANSWER spans rather than what the caller passed settles both mechanically: an
+`hr.workflow_instance` belongs to exactly ONE organization (`inst.organization_id`, NOT NULL), so
+"may this person read its content" is a question about that one; and `hr.wf_pending`'s gate sits
+in the branch where `p_employment_id` is non-null, with `v_org` read from that employment row two
+lines above. Both are now five-argument.
+
+**Terminal: `hr.capability_asked_without_a_tenant` is 6 rows, and every one is cleared with
+recorded evidence** — the two `hr.wf_inbox` affordance gates, and the four whose subject is
+provably non-null above the gate. Nothing in that census is open work. The detector stays live so
+the count cannot grow unnoticed.
+
+### A knob read in a DECLARE initializer resolves before its organization exists (fixed, scfg_95)
+
+Found underneath the above, and a class of its own. `hr.wf_pending` initialized
+`v_limit` from `hr._hr_knob('hr.workflow','inbox_page_size', v_org, null)` in its DECLARE block,
+where `v_org` is declared two lines up and assigned forty lines down — and a PL/pgSQL DECLARE
+default is evaluated at block entry, in declaration order, so the read was made with NULL on
+every call while reading as though it were scoped. Proven live, not assumed.
+
+Nothing in the system could see it: the call site names an organization, so the org-blind census
+does not report it; it is not a type error and no test executes it; and it is inert while the
+knob is locked. It goes live silently on the unrelated day somebody delegates that knob, at which
+point `hr.wf_inbox` honours the employer and `hr.wf_pending` does not — two halves of one inbox
+paginating differently with nothing to explain it.
+
+Census: `platform.knob_read_before_its_org_exists`, 1 row → 0. **The first version of this view
+measured the wrong thing** — it asked "is an organization passed to a knob no organization can
+override" and returned ten rows, eight of which are not defects: passing an organization to a
+LOCKED knob is inert, and it is the safer spelling, since the call site is already right if the
+lock is lifted. A parameter or a self-contained subquery in a DECLARE initializer is likewise
+fine (`hr.wf_inbox` does exactly that and is correct). Owner: closed.

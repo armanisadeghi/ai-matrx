@@ -1,0 +1,50 @@
+-- scfg_79_the_directory_door_reads_the_org_it_already_checked.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- The first of the 18 CLIENT-CALLABLE doors in the org-blind census, and the one that
+-- establishes the pattern for the rest. scfg_70 deliberately stopped at the server-only lane
+-- because replacing a client-callable SECURITY DEFINER function requires a
+-- platform.client_callable_door row stating WHAT EACH ENTITY-ID ARGUMENT IS CHECKED AGAINST,
+-- and writing a generic sentence to satisfy that is fabricating a security decision.
+--
+-- So this one was read, and the declaration was written from the body:
+--
+--   p_organization_id is the ONLY entity id here that is an authorization input, and it is
+--   checked before anything else happens. The caller must hold at least one HR capability in
+--   that organization, OR an organization role, OR an hr.employee row in it joined to an
+--   iam.organization_member row for the same user. None of the three and the door raises
+--   42501 "no standing in this employer". A null auth.uid() is refused first, so there is no
+--   anonymous path.
+--
+--   Every other id arrives inside p_filter — manager_employee_id, department_id, location_id,
+--   job_title_id, my_team — and none is an authorization input. They are predicates inside a
+--   query already fenced by `e.organization_id = p_organization_id`, so the worst a forged one
+--   can do is return FEWER rows from a set the caller was already entitled to. worker_class is
+--   refused outright at directory tier, because offering a filter whose column the projection
+--   withholds would let a viewer probe one person at a time for the answer. p_sort is clamped
+--   to four literal column names, so it is not a dynamic-SQL surface.
+--
+-- That is what made the change safe, and it is also what made it trivial: the organization is
+-- literally parameter #1 and is fully gated fifty lines above the knob reads. Three reads —
+-- directory_shows_hire_date, directory_shows_manager, contractor_directory_visible — were
+-- resolving the platform rung while the door already knew, and had already verified, which
+-- organization was asking. An org that turned off "show hire dates" had that setting ignored.
+--
+-- NULL rule: p_organization_id cannot be null in these reads, because a null would have failed
+-- the standing check before any knob was read.
+--
+-- 🚨 THE 17 REMAINING DOORS ARE NOT ALL THIS EASY, and the reason this one was is the test to
+-- apply to each: the organization was already an argument AND already authorization-checked.
+-- Where a door takes only an employee or employment id, the organization has to be derived
+-- from that row, and then the question "what is this id checked against" has to be answered
+-- for real before anything is rewritten. hr.reveal_ssn in particular is a disclosure door and
+-- gets read on its own terms, not by analogy to this one.
+--
+-- VERIFIED AFTER: platform.knob_org_blind_reader no longer lists hr_directory_list (census
+-- 29 → 26); the door row exists with its gate_predicate recorded; the function is still
+-- client-callable, so the §6d-4 guard did not revoke the client EXECUTE inside the change; and
+-- the three keys resolve per organization with the same values the platform rung carried, so
+-- no tenant's directory changed today.

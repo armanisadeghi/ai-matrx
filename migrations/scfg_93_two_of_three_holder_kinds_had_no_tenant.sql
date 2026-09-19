@@ -1,0 +1,83 @@
+-- scfg_93_two_of_three_holder_kinds_had_no_tenant.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- Second unit of the hr.capability tenant sweep (scfg_91 opened it, scfg_92 cleared the two
+-- affordance gates). Every one of the nine remaining call sites now has a verdict backed by
+-- evidence rather than by pattern-matching, and the one real defect among them is fixed.
+--
+-- ── THE FIX: public.hr_authority_revoke(p_authority_id, p_reason)
+--
+--     if v_kind = 'employment' then v_holder_emp := v_hid::uuid; end if;
+--     if not (hr.capability(v_uid, 'authority.grant', v_holder_emp) or <org owner>) then
+--
+-- v_holder_emp is assigned on ONE branch. `hr.approval_authority.holder_kind` is CHECK-
+-- constrained to `position | employment | role`, so for TWO of the three permitted kinds the
+-- variable stays NULL — and a null subject with no organization makes hr.capability's tenant
+-- clause vacuously true and skips population_contains entirely. Revoking a position-held or
+-- role-held approval authority therefore asked only "does this caller hold authority.grant
+-- ANYWHERE". Somebody with that capability in their own employer could revoke approval
+-- authority in somebody else's. The org-owner alternative is an OR and does not save it.
+--
+-- Now `hr.capability(v_uid, 'authority.grant', v_holder_emp, current_date, v_org)`. v_org is
+-- read from the authority row and P0002-guarded above, so it is authoritative even when the
+-- holder is not an employment. A null subject still skips the population check — that is
+-- inherent to having no subject — but the cross-tenant half, which is the serious half, closes.
+--
+-- EXPLOITABLE TODAY? NO, AND MEASURED: all 129 live hr.approval_authority rows across 7
+-- organizations are holder_kind='employment', so v_holder_emp has always been assigned in
+-- practice. It was latent. It turns on the first time anyone grants approval authority to a
+-- POSITION or a ROLE, which the schema explicitly permits and which is plainly a shape the
+-- feature was designed for. A contract row pins the five-argument call and bans the three-
+-- argument spelling by name.
+--
+-- ── THE FOUR THAT ARE SAFE, AND WHY — each proved, not assumed
+--
+--   public.hr_role_assign (role.assign, p_employment_id)
+--     p_employment_id is resolved against hr.employment (deleted_at is null) and raises P0002
+--     when nothing matches, ten lines above the gate. A null finds no row, so it cannot reach
+--     the call.
+--   public.hr_set_employment_pin (working_record.write, p_employment_id)
+--     Identical shape, same P0002 guard. Its ORGANIZATION half was already closed in scfg_82.
+--   public.hr_role_revoke (role.assign, v_emp)
+--     v_emp is hr.role_assignment.employment_id, which is NOT NULL in the schema, read from a
+--     row whose absence raises P0002.
+--   public.hr_authority_delegation_end (authority.grant, d.delegator_employment_id)
+--     hr.approval_delegation.delegator_employment_id is NOT NULL, and a missing delegation
+--     raises P0002 before the gate.
+--
+-- Three of those four rest on a NOT NULL column or a P0002 raise sitting some lines above the
+-- call. That is a real guarantee and it is why they are not being rewritten — but it is a
+-- guarantee held at a distance, and a future edit that reorders the body would break it
+-- silently. The census is the standing guard against that, which is the argument for keeping
+-- the rows listed rather than deleting them once judged.
+--
+-- ── THE FOUR THAT ARE STILL REAL, with the fact that makes each one real
+--
+--   hr.wf_pending (workflow.view_queue, p_employment_id)
+--     p_employment_id is a PARAMETER declared `uuid DEFAULT NULL`, and hr.wf_inbox passes its
+--     own equally-nullable p_employment_id straight into it. Null is the ordinary case, not an
+--     edge: it is what a caller sends when asking about themselves.
+--   hr._wf_display (workflow.view_queue, inst.subject_employment_id)
+--     hr.workflow_instance.subject_employment_id is NULLABLE — hr.wf_inbox's own team branch
+--     tests `i.subject_employment_id is not null` before using it, which is the same fact
+--     stated from the other side.
+--   public.hr_mint_records_request_token (identity.read, rq.employment_id)
+--   public.hr_mint_records_request_token (records.govern, rq.employment_id)
+--     hr.records_request.employment_id is NULLABLE. This door MINTS A TOKEN, so it gets read
+--     whole and on its own terms before anything is changed — a records-request token is an
+--     outsider credential and the class of door the security arc closed four live P0s in.
+--
+-- Deliberately not fixed in this unit. wf_pending and _wf_display are the workflow lane's read
+-- path and need their answer decided (refuse without an employment? resolve the caller's own?)
+-- rather than an organization threaded in mechanically — the wrong choice there either breaks
+-- every self-service inbox or widens what a queue shows. The token door needs its own reading.
+--
+-- VERIFIED AFTER: hr.capability_asked_without_a_tenant 11 → 10 rows, hr_authority_revoke no
+-- longer listed; public.__hr_punch_write_path_conformance() reports zero failing blocking
+-- checks including function_contracts_hold over the new row; the door is still executable by
+-- `authenticated`, so nothing was revoked inside the change. Not probed by calling it: it
+-- revokes an approval authority and writes an audit row, and a write is never a probe
+-- (scfg_78).

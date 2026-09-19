@@ -436,6 +436,13 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
         ],
       },
       {
+        name: "Unified Data",
+        iconName: "ToggleLeft",
+        destinations: [
+          destination("/administration/database/unified-data-ramp"),
+        ],
+      },
+      {
         name: "Integrity",
         iconName: "ShieldCheck",
         destinations: [destination("/administration/database/data-integrity")],

@@ -1,0 +1,54 @@
+-- scfg_80_three_more_doors_read_the_org_they_checked.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- The three remaining client doors that pass scfg_79's test: the organization is already an
+-- argument AND already authorization-checked before any knob is read. Each declaration was
+-- written from its own body; none is a copy of another.
+--
+-- public.hr_org_chart(p_organization_id, p_on) — org_chart_history_enabled
+--   Gate: at least one HR capability in that organization, or an organization role; neither
+--   and it raises 42501 "no standing in this employer". Null caller refused first. p_on is a
+--   date, not an id.
+--   🚨 This door ALREADY resolved hr.employees.disclosure_existence_statements with
+--   p_organization_id, two lines below the org-blind read. The scoped call and the blind one
+--   sat side by side. That is what this class looks like from the inside: not a decision
+--   anyone made, just the one nobody noticed.
+--
+-- public.hr_duplicate_scan(p_organization_id, p_probe) — duplicate_scan_fields
+--   Gate: hr.capability(caller, 'identity.write', null, current_date, p_organization_id) must
+--   be true, else a forbidden envelope and no work. p_probe carries no ids at all — a
+--   candidate name, emails, an SSN HMAC — matched inside the organization already established.
+--
+-- public.hr_access_audit_query(…, p_organization_id) — employee_can_see_own_access_log
+--   Gate: iam.has_org_access_for(caller, v_org), widened by an employment of the caller in the
+--   same organization. This is the one with history: DD-192 records that until 2026-09-13 the
+--   door took the argument ON TRUST, so a signed-in stranger passing any organization's id
+--   WROTE A ROW into that organization's access log before anything established standing —
+--   "an audit log anyone can write into is an audit log nobody can trust".
+--   🚨 The knob read therefore uses `v_org`, NEVER the raw argument: when p_organization_id is
+--   omitted the organization is DERIVED from the caller's own employments, and a null after
+--   that raises 22023 rather than proceeding. v_org is the checked value; the parameter is
+--   only a claim.
+--
+-- Every one of these was resolving the platform rung while the door already knew — and had
+-- already verified — which organization was asking.
+--
+-- STILL OPEN, and none of them passes the test: 13 doors where the organization is not an
+-- argument at all (hr_employee_profile, hr_employee_update, hr_incident_create,
+-- hr_corrective_action_issue, hr_break_glass, hr_position_change, hr_verification_request_create,
+-- hr_incident_assign, hr_authority_delegation_request, hr_kiosk_authenticate, hr_kiosk_pin_reset,
+-- hr_set_employment_pin, hr_my_verification_consents), plus hr.reveal_ssn, plus two
+-- server-internal bespoke ones (hr._timecard_reject_reopen, custom._containment_guard). For
+-- each of those the organization has to be derived from an employee, employment, device or
+-- payload id, and "what is THAT id checked against" is the question that has to be answered
+-- first. hr.reveal_ssn is a disclosure door and gets read entirely on its own terms.
+--
+-- VERIFIED AFTER: census 26 → 23; none of the three appears in platform.knob_org_blind_reader;
+-- all three bodies re-read clean from pg_get_functiondef with the scoped call present and no
+-- org-blind hr.employees or hr.access read remaining; three door rows recorded with their
+-- gate_predicate; and all three are still client-callable, so the §6d-4 guard revoked nothing
+-- inside the change. Zero organizations had set any of the three keys, so nothing changed for
+-- any tenant today.
