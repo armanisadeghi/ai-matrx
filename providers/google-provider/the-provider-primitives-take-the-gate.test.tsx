@@ -44,11 +44,14 @@ const GoogleAPIProvider = require("./GoogleApiProvider").default as React.Compon
 const { useGoogleAPI } = require("./GoogleApiProvider") as {
   useGoogleAPI: () => {
     isGoogleLoaded: boolean;
+    error: string | null;
     requestAuthorizationCode: (scopes: string[]) => Promise<string>;
     startAuthorizationCodeRedirect: (
       scopes: string[],
       options: Record<string, unknown>,
     ) => Promise<void>;
+    signIn: (scopes: string[]) => Promise<string | null>;
+    requestScopes: (scopes: string[]) => Promise<boolean>;
   };
 };
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -69,8 +72,22 @@ type StubbedClient = {
 };
 let clients: StubbedClient[] = [];
 
+/**
+ * The TOKEN clients — the other shape of Google window. `signIn` and
+ * `requestScopes` open one of these, which is why they belong to the same gate.
+ */
+type StubbedTokenClient = {
+  config: {
+    callback?: (response: Record<string, unknown>) => void;
+    error_callback?: (response: { type: string }) => void;
+  };
+  requested: boolean;
+};
+let tokenClients: StubbedTokenClient[] = [];
+
 function installGoogleIdentityStub(): void {
   clients = [];
+  tokenClients = [];
   (window as unknown as { google: unknown }).google = {
     accounts: {
       oauth2: {
@@ -83,7 +100,15 @@ function installGoogleIdentityStub(): void {
             },
           };
         },
-        initTokenClient: () => ({ requestAccessToken: () => {} }),
+        initTokenClient: (config: StubbedTokenClient["config"]) => {
+          const client: StubbedTokenClient = { config, requested: false };
+          tokenClients.push(client);
+          return {
+            requestAccessToken: () => {
+              client.requested = true;
+            },
+          };
+        },
         revoke: (_token: string, done: () => void) => done(),
       },
     },
@@ -224,6 +249,127 @@ describe("the provider primitives take the one-window gate themselves", () => {
       expect(await first).toBe(
         "Google authorization was closed before it finished.",
       );
+      expect(googleAuthorizationGateIsHeld()).toBe(false);
+    } finally {
+      mounted.unmount();
+    }
+  });
+});
+
+/**
+ * 🚨 THE TOKEN-WINDOW PRIMITIVES TAKE THE SAME GATE (the F-103 class, finished).
+ *
+ * F-103 routed nineteen call sites through the gate and made
+ * `requestAuthorizationCode` / `startAuthorizationCodeRedirect` take it
+ * themselves — but `signIn` and `requestScopes` were left behind the very guard
+ * F-103 proved was not one: `if (authInProgress)`, a state flag read from a
+ * rendered closure. Two presses in one tick both saw the stale `false`, and
+ * `signIn` is what a "Connect Google" button and the presentation export call.
+ * So there were still two locks and one of them was not a lock.
+ *
+ * Both now take the ONE module-level gate, and because their contracts are
+ * `string | null` / `boolean` — called straight from a button's `onClick`, where
+ * a throw would be an unhandled rejection — the refusal is surfaced on the
+ * provider's own `error`, the channel every caller already shows, rather than
+ * the `console.log` nobody reads.
+ */
+describe("signIn and requestScopes are on the same one-window gate", () => {
+  beforeEach(() => {
+    resetGoogleAuthorizationGateForTests();
+    installGoogleIdentityStub();
+  });
+
+  it("two signIn presses in the same tick reach Google exactly once", async () => {
+    const mounted = mountProvider();
+    try {
+      const first = press(() => mounted.api().signIn(SCOPES));
+      const second = press(() => mounted.api().signIn(SCOPES));
+
+      expect(await second).toBeNull();
+      expect(tokenClients).toHaveLength(1);
+      expect(tokenClients[0].requested).toBe(true);
+
+      await act(async () => {
+        tokenClients[0].config.callback?.({
+          access_token: "token-1",
+          expires_in: 3600,
+          scope: SCOPES.join(" "),
+        });
+      });
+      await expect(first).resolves.toBe("token-1");
+      expect(googleAuthorizationGateIsHeld()).toBe(false);
+    } finally {
+      mounted.unmount();
+    }
+  });
+
+  it("the refused press is TOLD — the named sentence, on the provider's error", async () => {
+    const mounted = mountProvider();
+    try {
+      const first = press(() => mounted.api().signIn(SCOPES));
+      await act(async () => {
+        await mounted.api().signIn(SCOPES);
+      });
+      expect(mounted.api().error).toContain(GOOGLE_AUTHORIZATION_BUSY_MESSAGE);
+
+      await act(async () => {
+        tokenClients[0].config.callback?.({
+          access_token: "token-1",
+          expires_in: 3600,
+          scope: SCOPES.join(" "),
+        });
+      });
+      await first;
+    } finally {
+      mounted.unmount();
+    }
+  });
+
+  it("a signIn press and an authorization-code press are ONE window between them", async () => {
+    const mounted = mountProvider();
+    try {
+      const popup = press(() => mounted.api().requestAuthorizationCode(SCOPES));
+      const token = press(() => mounted.api().signIn(SCOPES));
+
+      expect(await token).toBeNull();
+      expect(tokenClients).toHaveLength(0);
+      expect(clients).toHaveLength(1);
+
+      await act(async () => {
+        clients[0].config.callback?.({ code: "auth-code" });
+      });
+      await expect(popup).resolves.toBe("auth-code");
+    } finally {
+      mounted.unmount();
+    }
+  });
+
+  it("requestScopes is on the same gate, and a dismissed window releases it", async () => {
+    const mounted = mountProvider();
+    try {
+      // `requestScopes` needs the token client `signIn` mints, so take one
+      // window first and let Google answer it.
+      const first = press(() => mounted.api().signIn(SCOPES));
+      await act(async () => {
+        tokenClients[0].config.callback?.({
+          access_token: "token-1",
+          expires_in: 3600,
+          scope: SCOPES.join(" "),
+        });
+      });
+      await first;
+      expect(googleAuthorizationGateIsHeld()).toBe(false);
+
+      const scopeRequest = press(() => mounted.api().requestScopes(SCOPES));
+      expect(googleAuthorizationGateIsHeld()).toBe(true);
+      const refused = press(() => mounted.api().signIn(["another.scope"]));
+      expect(await refused).toBeNull();
+      expect(tokenClients).toHaveLength(2);
+
+      await act(async () => {
+        tokenClients[1].config.error_callback?.({ type: "popup_closed" });
+      });
+      await expect(scopeRequest).resolves.toBe(false);
       expect(googleAuthorizationGateIsHeld()).toBe(false);
     } finally {
       mounted.unmount();
