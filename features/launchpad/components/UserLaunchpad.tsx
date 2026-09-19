@@ -25,6 +25,29 @@ import { useVisibilityAwarePageRefresh } from "../hooks/useVisibilityAwarePageRe
 
 const PREVIEW_DESTINATION_COUNT = 3;
 
+/**
+ * One 32px-step height per preview density. Cards never stretch to the
+ * tallest sibling in the row — empty space under a shorter card is the grid.
+ */
+const LAUNCHPAD_CARD_HEIGHT = {
+  compact: "h-24",
+  one: "h-32",
+  two: "h-40",
+  three: "h-48",
+  more: "h-60",
+} as const;
+
+function launchpadCardHeightClass(
+  previewCount: number,
+  hasMoreDestinations: boolean,
+): string {
+  if (previewCount <= 0) return LAUNCHPAD_CARD_HEIGHT.compact;
+  if (previewCount === 1) return LAUNCHPAD_CARD_HEIGHT.one;
+  if (previewCount === 2) return LAUNCHPAD_CARD_HEIGHT.two;
+  if (hasMoreDestinations) return LAUNCHPAD_CARD_HEIGHT.more;
+  return LAUNCHPAD_CARD_HEIGHT.three;
+}
+
 export default function UserLaunchpad() {
   const [searchQuery, setSearchQuery] = useState("");
   const { favorites: pinnedFavorites } = usePinned();
@@ -139,7 +162,7 @@ export default function UserLaunchpad() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+              <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {USER_LAUNCHPAD_GROUPS.map((group) => (
                   <LaunchpadGroupCard
                     key={group.id}
@@ -223,9 +246,18 @@ function LaunchpadGroupCard({
     .slice(0, PREVIEW_DESTINATION_COUNT);
   const remainingCount =
     group.destinations.length - 1 - previewDestinations.length;
+  const heightClass = launchpadCardHeightClass(
+    previewDestinations.length,
+    remainingCount > 0,
+  );
 
   return (
-    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+    <article
+      className={cn(
+        "flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm",
+        heightClass,
+      )}
+    >
       <div className="flex items-center gap-2 border-b border-border p-3">
         <LaunchpadAnchor
           href={group.href}
@@ -267,7 +299,7 @@ function LaunchpadGroupCard({
       </div>
 
       {previewDestinations.length > 0 ? (
-        <div className="flex-1 p-1.5">
+        <div className="min-h-0 p-1.5">
           {previewDestinations.map((destination) => (
             <LaunchpadAnchor
               key={destination.href}

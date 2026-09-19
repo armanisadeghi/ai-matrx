@@ -48,7 +48,7 @@ destinations derive from the shell navigation registry.
 - `/dashboard` stays a hub. Do not move its metrics or rotating discovery content here.
 - The default browse state stays compact. Full destination density appears only after a search or an explicit `View all` action.
 - The route uses the canonical `(core)` AppShell sidebar, header, and full-height body rules.
-- Browse cards sit on a CSS grid so cards share a row top-edge even when some areas have more destinations.
+- Browse cards sit on a CSS grid and use one of five fixed heights (header only, 1, 2, 3, or 3-plus-more destinations). They never stretch to the tallest card in the row.
 - Area-card descriptions stay on one line. The catalog shortens long nav copy for the card; search still ranks the full nav description.
 
 ## Doctrine compliance
@@ -68,5 +68,5 @@ and favorites into an always-open launcher.
 
 ## Change log
 
-- `2026-09-19` — Cursor: restored the left shell sidebar, replaced masonry columns with a snapping CSS grid, forced one-line area-card descriptions, and removed the unused browse helper sentence.
+- `2026-09-19` — Cursor: area cards use five fixed 32px-step heights instead of stretching to the tallest card in the row; restored the left shell sidebar; one-line card descriptions; removed the unused browse helper sentence.
 - `2026-08-20` — Codex: created the authenticated user Launchpad, registry-backed search and browse cards, shared new-tab quick starts and favorites, the persistent shell door, unique route identity, and shared visibility-aware stale-page refresh.
