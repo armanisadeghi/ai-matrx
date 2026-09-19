@@ -1,0 +1,47 @@
+-- scfg_75_one_ip_verification_key.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- TWO defects in the web-punch IP path, both latent, both in the same coalesce.
+--
+-- 1. A SETTABLE CONTROL THAT COULD NEVER DO ANYTHING. hr.punch_record read:
+--
+--        v_ip_mode := coalesce(
+--          hr._punch_knob('ip_verification_mode',      'null'::jsonb, v_org) #>> '{}',
+--          hr._punch_knob('web_punch_ip_verification', '"off"'::jsonb, v_org) #>> '{}',
+--          'off');
+--
+--    `ip_verification_mode` is SEEDED, with the value 'off' — not null. So the first arm
+--    always answers and the second is unreachable. `web_punch_ip_verification` was a live
+--    register row an admin could set, in the settings UI, that changed nothing. That is
+--    worse than a missing control: a missing one is visibly absent, this one lies.
+--
+--    The dead arm is deleted from the body and the row is gone. The remaining key keeps
+--    the same effective default ('off') — the arm that was already deciding.
+--
+-- 2. THE REGISTER AND ITS OWN READER DISAGREED ABOUT A TYPE. `web_punch_ip_allowlist` was
+--    registered `value_type = 'string'` holding "", while hr.punch_record reads it with
+--    jsonb_array_length() and <<= CIDR containment. It is latent ONLY because the guard is
+--        v_ip_mode in ('warn','block') and jsonb_array_length(v_allowlist) > 0 …
+--    and `and` short-circuits while the mode is 'off'. The first organization to choose
+--    warn or block would have had EVERY punch raise "cannot get array length of a scalar".
+--    The reader was right; the register was wrong. Now `json`, holding [].
+--
+-- ORDERING WAS LOAD-BEARING, and scfg_74 now enforces it rather than trusting the author:
+-- platform.knob_resolve RAISES on a missing key, so deleting the row before rewriting the
+-- body would have taken punches down. The delete runs last, after hr.punch_record and
+-- hr.punch_knobs_missing have both stopped naming the key, and the trigger would have
+-- refused it otherwise.
+--
+-- hr.punch_knobs_missing is an EXPECTATIONS list, so it had to lose the key in the same
+-- change — otherwise it reports the deliberate deletion as a missing seed, forever.
+--
+-- hr.punch_record is SECURITY DEFINER and server-only (verified in the migration against the
+-- `authenticated` and `anon` roles); its platform.client_callable_door row is written before
+-- the replacement, because provision_shape_guard refuses a replace without one.
+--
+-- VERIFIED AFTER: the inert twin is gone; no function body names it; the allowlist is `json`
+-- resolving to [] and jsonb_array_length() succeeds on it; hr.punch_knobs_missing() returns
+-- no rows. Zero organizations had set either key, so no tenant's behaviour changed.
