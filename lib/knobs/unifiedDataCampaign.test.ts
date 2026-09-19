@@ -23,6 +23,7 @@ import {
     UNIFIED_DATA_CAMPAIGN,
     UNIFIED_DATA_CAMPAIGN_DEFAULT,
     UNIFIED_DATA_CAMPAIGN_FEATURE,
+    UNIFIED_DATA_CAMPAIGN_KNOB,
     UNIFIED_DATA_CAMPAIGN_KEY,
     type CampaignEntryPoint,
 } from "./unifiedDataCampaign";
@@ -71,6 +72,13 @@ describe("unified data campaign switch", () => {
         expect(UNIFIED_DATA_CAMPAIGN_KEY).toBe("code_paths_enabled");
         expect(UNIFIED_DATA_CAMPAIGN.FEATURE).toBe("custom");
         expect(UNIFIED_DATA_CAMPAIGN.KEY).toBe("code_paths_enabled");
+        // The `{ feature, key }` ref every reader takes says the SAME address.
+        // It is written as literals so the knob census can resolve a call site
+        // that imports it; this is what stops the two spellings drifting.
+        expect(UNIFIED_DATA_CAMPAIGN_KNOB).toEqual({
+            feature: UNIFIED_DATA_CAMPAIGN_FEATURE,
+            key: UNIFIED_DATA_CAMPAIGN_KEY,
+        });
     });
 
     it("SHIPS OFF: the default is false", () => {

@@ -45,6 +45,7 @@ import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/ac
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import {
   UNIFIED_DATA_CAMPAIGN,
+  UNIFIED_DATA_CAMPAIGN_KNOB,
   UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE,
 } from "@/lib/knobs/unifiedDataCampaign";
 import { ensureEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
@@ -207,10 +208,10 @@ async function unifiedDataCampaignOn(
   userId: string | null,
 ): Promise<boolean> {
   if (!organizationId) return UNIFIED_DATA_CAMPAIGN.enabled();
-  const resolved = await ensureEffectiveKnob(organizationId, userId, {
-    feature: UNIFIED_DATA_CAMPAIGN.FEATURE,
-    key: UNIFIED_DATA_CAMPAIGN.KEY,
-  });
+  // The shared ref constant, not an inline `{ feature: X.FEATURE, key: X.KEY }`:
+  // the knob census reads addresses out of the source and cannot follow a member
+  // access on an imported object, so that shape made this read UNEXPLAINED.
+  const resolved = await ensureEffectiveKnob(organizationId, userId, UNIFIED_DATA_CAMPAIGN_KNOB);
   return resolved === true || resolved === "true";
 }
 

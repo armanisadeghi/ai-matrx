@@ -53,16 +53,37 @@ const MIGRATION_DIRS = [
  * fabricated pair matching a real read's address by accident is not a shape any
  * of these files produces.
  */
+/** Every `.sql` under `dir`, at any depth. */
+function sqlFiles(dir: string, out: string[] = []): string[] {
+  if (!existsSync(dir)) return out;
+  for (const entry of readdirSync(dir)) {
+    const full = join(dir, entry);
+    if (statSync(full).isDirectory()) {
+      sqlFiles(full, out);
+      continue;
+    }
+    if (entry.endsWith(".sql")) out.push(full);
+  }
+  return out;
+}
+
 function declaredPairs(): { pairs: Set<string>; files: number } {
   const pairs = new Set<string>();
   let files = 0;
   const re =
     /'([a-z][a-z0-9_]*(?:\.[a-z0-9_]+)*)'\s*,\s*'([a-z][a-z0-9_]*(?:\.[a-z0-9_]+)*)'\s*,/gi;
   for (const dir of MIGRATION_DIRS) {
-    if (!existsSync(dir)) continue;
-    for (const entry of readdirSync(dir)) {
-      if (!entry.endsWith(".sql")) continue;
-      const text = readFileSync(join(dir, entry), "utf8");
+    // 🚨 RECURSIVE. This used to be a flat `readdirSync`, and BOTH repos keep
+    // seeds in subdirectories — `migrations/campaign/`, `migrations/inverse/`,
+    // aidream's `db/migrations/campaign/`. So every campaign knob looked
+    // undeclared: `custom.code_paths_enabled` IS seeded (the register migration
+    // and its inverse both name it) and the census could not see the row, so a
+    // call site addressing it would have been reported as a miss. It only never
+    // fired because the one client read of it was ALSO invisible — an inline
+    // `{ feature: X.FEATURE, key: X.KEY }` the address reader cannot follow.
+    // Two blind spots cancelling out is not a green guard.
+    for (const file of sqlFiles(dir)) {
+      const text = readFileSync(file, "utf8");
       if (!/platform\.feature_knob/i.test(text)) continue;
       files += 1;
       re.lastIndex = 0;

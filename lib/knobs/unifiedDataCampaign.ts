@@ -38,6 +38,20 @@ import {
 export const UNIFIED_DATA_CAMPAIGN_FEATURE = "custom";
 export const UNIFIED_DATA_CAMPAIGN_KEY = "code_paths_enabled";
 
+/**
+ * The SAME address as the pair above, in the `{ feature, key }` shape every
+ * scoped-config reader takes — written as literals on purpose.
+ *
+ * `lib/scoped-config/__tests__/every-knob-read-addresses-a-real-row.test.ts`
+ * resolves a call site's address by reading the source: an inline
+ * `{ feature: UNIFIED_DATA_CAMPAIGN.FEATURE, key: … }` is a member access on an
+ * imported object, which it cannot follow, so the read counted as COMPUTED and
+ * the census could not tell whether it addressed a real row. A call site that
+ * imports THIS constant resolves like any other. The pair is pinned against the
+ * two constants above by this module's own test, so the literals cannot drift.
+ */
+export const UNIFIED_DATA_CAMPAIGN_KNOB = { feature: "custom", key: "code_paths_enabled" };
+
 /** What the switch reads as when it cannot be read at all. */
 export const UNIFIED_DATA_CAMPAIGN_DEFAULT = false;
 
@@ -137,10 +151,7 @@ export function useUnifiedDataCampaign(args: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const resolved = useEffectiveKnob(organizationId, userId, {
-    feature: UNIFIED_DATA_CAMPAIGN_FEATURE,
-    key: UNIFIED_DATA_CAMPAIGN_KEY,
-  });
+  const resolved = useEffectiveKnob(organizationId, userId, UNIFIED_DATA_CAMPAIGN_KNOB);
 
   if (!organizationId) {
     return {

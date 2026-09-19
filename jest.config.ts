@@ -145,6 +145,18 @@ const config: Config = {
     // they have no `describe`/`it` blocks. Restricting `testMatch` makes
     // the file extension authoritative — Jest only runs real Jest tests.
     testMatch: ["**/?(*.)+(test|spec).[jt]s?(x)"],
+    // 🚨 NOT JEST'S 5s. A per-test deadline is not an assertion — it is the
+    // wall the slowest machine has to clear — and at 5s it made every heavy
+    // jsdom render suite a coin flip on load. Two suites failed the 2026-09-19
+    // whole-battery run purely on it (`verify-owner-claims`,
+    // `finishing-lands-in-the-room-never-a-bare-chat`) and both passed alone;
+    // the second takes 10s for five tests on an IDLE machine, so the first test
+    // had no margin at all under 40 workers. 30s still fails a hung test — the
+    // whole battery is ~340s over 2,218 suites — and it stops the deadline
+    // deciding whether an assertion gets to run. A suite that NEEDS more than
+    // this is telling you something and should say so with its own
+    // `jest.setTimeout`.
+    testTimeout: 30_000,
 };
 
 export default config;

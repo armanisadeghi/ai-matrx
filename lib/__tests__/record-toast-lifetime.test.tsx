@@ -165,19 +165,21 @@ describe("a record toast cannot outlive its record on screen", () => {
     await act(async () => {
       // 🚨 THE DURATION IS THE MARGIN. `arm()` dismisses at `expiresAt`, so a
       // 60ms toast had to be raised, rendered and asserted inside 60 real
-      // milliseconds — which a loaded machine does not promise. 300ms keeps the
-      // test's whole meaning (it still expires on the WALL clock, still well
-      // inside the 400ms wait below, and sonner's own clock is still paused
-      // because the document is hidden) and stops the race.
-      toast.success("Plain notice", { duration: 300 });
-      recordToast.success(RECORD_A, 'Created "ZZZ Alpha"', { duration: 300 });
+      // milliseconds — which a loaded machine does not promise; 300ms was not
+      // enough either (the whole battery emptied the screen before the first
+      // assertion twice on 2026-09-19). 3s keeps the test's whole meaning — it
+      // still expires on the WALL clock, still inside the wait below, and
+      // sonner's own clock is still paused because the document is hidden — and
+      // costs the suite three seconds to stop being a coin flip.
+      toast.success("Plain notice", { duration: 3_000 });
+      recordToast.success(RECORD_A, 'Created "ZZZ Alpha"', { duration: 3_000 });
     });
     await settle();
     expect(toastText()).toContain('Created "ZZZ Alpha"');
     expect(toastText()).toContain("Plain notice");
 
     await act(async () => {
-      await wait(400);
+      await wait(3_400);
     });
 
     // Sonner's own timer is paused because the document is hidden. Neither
@@ -194,14 +196,14 @@ describe("a record toast cannot outlive its record on screen", () => {
       // Exactly the shape the 391 baselined call sites have: a template that
       // names a record, raised without a ref. It cannot follow the route, so
       // the wall clock is what takes it — and sonner's clock would never run.
-      toast.success(`Created "${RECORD_A.title}"`, { duration: 300 });
+      toast.success(`Created "${RECORD_A.title}"`, { duration: 3_000 });
     });
     await settle();
     expect(toastText()).toContain('Created "ZZZ Alpha"');
 
     await navigateTo("/mandates/BBBB-2222");
     await act(async () => {
-      await wait(400);
+      await wait(3_400);
     });
 
     expect(toastText()).not.toContain("ZZZ Alpha");

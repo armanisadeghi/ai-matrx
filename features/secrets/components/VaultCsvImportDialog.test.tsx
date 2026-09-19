@@ -931,7 +931,12 @@ describe("VaultCsvImportDialog", () => {
       maxPlaintextFieldBytes: 1_000,
       maxRequestBodyBytes: 10_000,
       maxJsonDepth: 64,
-      jsonWorkerTimeoutMs: 50,
+      // SHORT ENOUGH TO FIRE ON PURPOSE, LONG ENOUGH NOT TO FIRE BY ACCIDENT.
+      // The first half of this test drives the ERROR path and asserts on it; at
+      // 50ms the deadline beat those assertions under the full battery and the
+      // screen read "took too long" where the test expected "could not be read".
+      // 400ms is still a deadline this test waits out deliberately below.
+      jsonWorkerTimeoutMs: 400,
     };
     fetchBitwardenJsonImportLimitsMock
       .mockResolvedValueOnce(shortDeadline)
@@ -991,9 +996,10 @@ describe("VaultCsvImportDialog", () => {
     });
     const second = workers[1];
     if (!second) throw new Error("replacement worker missing");
-    // This is the deadline behavior under test, so wait for the configured worker deadline.
+    // This is the deadline behavior under test, so wait out the configured worker
+    // deadline (400ms above) with margin.
     await act(async () => {
-      await new Promise((resolve) => setTimeout(resolve, 60));
+      await new Promise((resolve) => setTimeout(resolve, 600));
     });
     expect(second.terminate).toHaveBeenCalled();
     expect(document.body.textContent).toContain("took too long");
