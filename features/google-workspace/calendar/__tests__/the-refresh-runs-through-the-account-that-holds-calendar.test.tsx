@@ -90,6 +90,26 @@ const state = {
   refreshedThrough: [] as string[],
 };
 
+/**
+ * THE FIXTURE LAW (F-107) — the slice builds its own state and the REAL
+ * selectors read it. This file used to hand-write
+ * `selectShouldPromptForOrganization` in the slice stand-in; the organization
+ * gate now reads that rule from a pure leaf nobody mocks
+ * (`lib/organizations/shouldPromptForOrganization.ts`), so a hand-written copy
+ * is dead code that silently stops being consulted — and an empty state handed
+ * to the real leaf reads as "boot has not answered yet", which is how the Tasks
+ * import control's suite went red on 2026-09-19. One fixture, no re-implemented
+ * rule, nothing to go stale.
+ */
+const { makeAppContextState } = jest.requireActual<
+  typeof import("@/lib/redux/slices/appContextSlice")
+>("@/lib/redux/slices/appContextSlice");
+
+const appContext = makeAppContextState({
+  organization_id: "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
+  orgBootstrapResolved: true,
+});
+
 jest.mock("@/features/google-workspace/calendar/service", () => ({
   // No events at all: the window is stale by definition, which is exactly when a
   // refresh-on-open must run — and when the wrong account silently costs a person
@@ -110,12 +130,8 @@ jest.mock("@/features/google-workspace/calendar/service", () => ({
 }));
 
 jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: (selector: (s: unknown) => unknown) => selector({}),
+  useAppSelector: (selector: (s: unknown) => unknown) => selector({ appContext }),
   useAppDispatch: () => () => {},
-}));
-jest.mock("@/lib/redux/slices/appContextSlice", () => ({
-  selectOrganizationId: () => "5dc930e9-bd65-44a1-8369-af773f6e1a5b",
-  selectShouldPromptForOrganization: () => false,
 }));
 jest.mock("@/lib/redux/selectors/userSelectors", () => ({
   selectUserId: () => "dddddddd-1111-2222-3333-444444444444",

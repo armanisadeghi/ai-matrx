@@ -299,6 +299,24 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-09-19` — **A TEST NEVER RE-IMPLEMENTS THE ORGANIZATION RULE (the pure
+  leaf's other half).** Moving `selectShouldPromptForOrganization` into a leaf
+  nobody mocks turned every hand-written copy of it in a slice stand-in into
+  dead code — and the real leaf, handed the `{}` those suites pass their
+  `useAppSelector`, honestly answers "boot has not answered yet". The Tasks
+  import suite caught it: the disabled button said *"Checking which organization
+  you are working in…"* where it expects the refusal, and the suite was right —
+  a settled boot with nothing selected IS the refusal. The leaf is unchanged
+  (defaulting an unknown state to `resolving` rather than to a refusal nobody
+  verified is the whole R37 posture); the eight suites that hand-wrote the rule
+  now drive REAL state through `makeAppContextState` (THE FIXTURE LAW, F-107)
+  and let the real selectors answer: `features/tasks/.../the-import-button-refuses-with-no-organization`
+  (the red one, which also gained the fourth-state case), five
+  `google-workspace/calendar/__tests__` suites and two `connectors/__tests__`
+  suites, all of which were latent — green only because they never tested a
+  no-organization case. Census: those eight were every suite in the repo that
+  stood a `selectShouldPromptForOrganization` in; none is left.
+
 - `2026-09-19` — **THE LEGACY PAIR IS NOT A READING OF FOUR STATES — five surfaces
   were waiting forever under a failed read, and rule 4 now refuses the shape.**
   `useOrganizationRequired` still exposes `organizationRequired` and `resolving`
