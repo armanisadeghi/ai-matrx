@@ -135,6 +135,23 @@ describe("a channel with no history before this window", () => {
     expect(String(delta.caveat)).not.toContain("sessions");
     expect(gscDeltaRefusalLabel(delta)).toContain("no previous period");
   });
+
+  // 🚨 THE OTHER BRANCH, which the sentence above does not reach: nothing in
+  // EITHER window. This is where the judge used to say "there were no sessions
+  // in this window either" — a noun a YouTube channel does not have, on a
+  // module three surfaces now share.
+  it("is metric-neutral when BOTH windows recorded nothing", () => {
+    const empty = judgeGscWindowDelta({
+      current: 0,
+      previous: 0,
+      currentDaysWithData: 30,
+      previousDaysWithData: 30,
+      windowDays: CHANNEL_WINDOW_DAYS,
+    });
+    expect(empty.verdict).toBe("no_baseline");
+    expect(String(empty.caveat)).not.toContain("sessions");
+    expect(String(empty.caveat)).toContain("Nothing was recorded in this window");
+  });
 });
 
 describe("average view duration", () => {
