@@ -27,13 +27,28 @@ import { formatRelativeTime, parseTimestamp } from "@/utils/datetime";
 export const GOOGLE_MARKETING_KNOB_FEATURE = "google.marketing";
 export const FRESHNESS_WARNING_HOURS_KNOB = "freshness_warning_hours";
 
-export type FreshnessProvider = "search_console" | "analytics";
+export type FreshnessProvider = "search_console" | "analytics" | "tag_manager";
 
 /** What Google itself does, in plain words — never a guess per surface. */
 export const PROVIDER_LAG_SENTENCE: Record<FreshnessProvider, string> = {
   search_console: "Google runs about three days behind",
   analytics: "Google runs about a day behind",
+  // Tag Manager has no reporting lag at all — its caveat is a different one, and it is the whole
+  // reason this line exists on a tracking snapshot: the read API exposes the container's current
+  // WORKSPACE DRAFT, which can differ from what is published on the live site. A reader who
+  // takes a Tag Manager verdict as "what the site does" is reading a draft as production.
+  tag_manager:
+    "Tag Manager shows the container's workspace draft, not what is published",
 };
+
+/**
+ * Providers whose freshness is a POINT IN TIME, not a covered range. A tracking snapshot IS its
+ * timestamp — there is no "data through" day — so the line must not print "no data stored yet"
+ * beside a snapshot that exists. One describer, one branch, no second component.
+ */
+const POINT_IN_TIME_PROVIDERS: ReadonlySet<FreshnessProvider> = new Set([
+  "tag_manager",
+]);
 
 export interface FreshnessInput {
   provider: FreshnessProvider;
@@ -106,11 +121,17 @@ export function describeFreshness(
     pulledHoursAgo !== null &&
     pulledHoursAgo > input.warningAfterHours;
   const parts: string[] = [
-    input.dataThrough
-      ? dataThroughInFuture
-        ? `dated through ${formatDay(input.dataThrough)}, a day that has not happened yet — the stored day is wrong, so read nothing into how fresh this looks`
-        : `data through ${formatDay(input.dataThrough)}`
-      : "no data stored yet",
+    // A point-in-time provider contributes no range clause at all; "no data stored yet" beside a
+    // real snapshot would be a lie about a record we are holding.
+    ...(POINT_IN_TIME_PROVIDERS.has(input.provider) && !input.dataThrough
+      ? []
+      : [
+          input.dataThrough
+            ? dataThroughInFuture
+              ? `dated through ${formatDay(input.dataThrough)}, a day that has not happened yet — the stored day is wrong, so read nothing into how fresh this looks`
+              : `data through ${formatDay(input.dataThrough)}`
+            : "no data stored yet",
+        ]),
     pulled
       ? clockAhead
         ? `pull time is ${roundedHours(-(pulledHoursAgo as number))} ahead of your clock, so its age is unknown — one of the two clocks is wrong`

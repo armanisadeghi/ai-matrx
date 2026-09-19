@@ -1296,6 +1296,11 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
         "Google Analytics for one site, beside whatever the reader was looking at. The window is the frame only: it wraps the canonical SiteAnalyticsPanel (the same component the brand Analytics route and the site's Google Analytics settings section mount). Opened via useOpenSiteAnalyticsWindow.",
     },
     {
+      overlayId: "siteTrackingWindow",
+      description:
+        "Tag Manager tracking for one site (U-M2), beside whatever the reader was looking at. The window is the frame only: it wraps the canonical SiteTrackingPanel, the same component the site's Integrations settings section mounts. Addressed: ?panels=site_tracking:<siteId>. Opened via useOpenSiteTrackingWindow.",
+    },
+    {
       overlayId: "gscDrilldownWindow",
       description:
         "Search Console drill-down panel (multi-instance): any (site, dimension, filters, period) slice as KPI band + mini chart + dimension table; panel rows re-drill into further panels for side-by-side comparison. Opened from Search Console rows and Keyword Value topic rows via useOpenGscDrilldownWindow.",
@@ -1314,6 +1319,13 @@ const MARKETING_ADMIN_MAP: FeatureAdminMap = {
       filePath: "features/marketing/analytics/components/SiteAnalyticsPanel.tsx",
       description:
         "THE site Analytics panel — the one component behind the brand Analytics route, the site's Google Analytics settings section and the siteAnalyticsWindow. Reads seo.web_analytics_daily through features/marketing/analytics/window.ts (winning-run dedup per day; users are summed and say so), prints only the caveats Google actually reported (analytics/caveats.ts over extras.ga4_collection_metadata), and turns quota exhaustion or a refused grant into a named state with the site's one Reconnect door (analytics/failures.ts). The trend is hand-drawn SVG, not recharts (the panel mounts inside statically imported chrome). DataFreshnessLine is the ONE freshness line, shared with the Search Console header and portfolio cards.",
+      tier: "official",
+    },
+    {
+      name: "SiteTrackingPanel / SiteTrackingCard / trackingHealth",
+      filePath: "features/marketing/tracking/components/SiteTrackingPanel.tsx",
+      description:
+        "THE site tracking panel (PLAN \u00a74.10) \u2014 the one component behind the site's Integrations settings section and the siteTrackingWindow. Reads the newest web.tag_manager_snapshot directly and grades through features/marketing/tracking/health.ts, the ONE derivation the sixth site-status chip also reads. \ud83d\udea8 Everything Tag Manager exposes is the container's WORKSPACE DRAFT, so the server reconciles it against our own live raw-HTML fetch of the site (aidream google_sync/page_reconciliation.py); a fetch we could not make renders as not_checked WITH the reason, never a pass and never a fail. Re-check states its consequence first (a Tag Manager request plus one fetch of the customer's homepage). Staleness comes from the knob google.tracking.snapshot_max_age_hours (168); a missing row prints a named stand-in, never a silent default.",
       tier: "official",
     },
     {

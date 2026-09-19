@@ -5,16 +5,31 @@ import {
   providerReferenceStatus,
 } from "@/features/marketing/data/integrations-schema";
 import { judgeGscBindingWrite } from "@/features/marketing/google/gsc-property";
+import { trackingHealth } from "@/features/marketing/tracking/health";
+import type { TagManagerSnapshotRow } from "@/features/marketing/tracking/types";
 
 /**
- * The five big-picture connection statuses for a site. This module is the ONE
+ * The six big-picture connection statuses for a site. This module is the ONE
  * place they are derived so the portfolio list and the site page can never
  * disagree (same law as features/admin/applications/version.ts).
+ *
+ * The sixth, `tracking`, is the Tag Manager verdict (google-native PLAN §4.10 Plane A). Its
+ * derivation lives in `features/marketing/tracking/health.ts` — the same one the
+ * `SiteTrackingPanel` renders — so the chip and the panel can never disagree either. It needs
+ * the site's newest snapshot row, which this pure function cannot read, so the caller passes it;
+ * with nothing passed the chip still tells the truth from the BINDING alone ("bound but never
+ * checked" / "not connected"), never a grey blank.
  */
 export type SiteConnectionState = "connected" | "attention" | "off";
 
 export interface SiteConnectionStatus {
-  key: "initialized" | "search_console" | "analytics" | "pagespeed" | "cms";
+  key:
+    | "initialized"
+    | "search_console"
+    | "analytics"
+    | "pagespeed"
+    | "cms"
+    | "tracking";
   /** Short chip label. */
   label: string;
   /** Full name for the site page status board. */
@@ -114,7 +129,43 @@ export function parseInitialization(
   };
 }
 
-/** Derive the five connection statuses from a site row. Pure; no fetching. */
+/**
+ * The `tracking` chip, through the ONE tracking derivation. A caller that has not read the
+ * snapshot still gets the honest binding-only answer rather than a chip that reads "off" on a
+ * site whose container is bound and passing.
+ */
+function trackingStatus(
+  containerBound: boolean,
+  tracking: SiteTrackingStatusInput | undefined,
+): SiteConnectionStatus {
+  const health = trackingHealth({
+    snapshot: tracking?.snapshot ?? null,
+    containerBound,
+    maxAgeHours: tracking?.maxAgeHours ?? null,
+    now: tracking?.now ?? new Date(),
+  });
+  return {
+    key: "tracking",
+    label: health.label,
+    name: health.name,
+    state: health.state,
+    detail: health.stale
+      ? `${health.detail} — last checked more than your organization allows before a tracking check is called stale.`
+      : health.detail,
+  };
+}
+
+/** What the caller can supply so the `tracking` chip carries a real verdict. */
+export interface SiteTrackingStatusInput {
+  /** The site's newest live `web.tag_manager_snapshot` row, or null. */
+  snapshot: TagManagerSnapshotRow | null;
+  /** `google.tracking.snapshot_max_age_hours`; null when the knob is unreadable. */
+  maxAgeHours: number | null;
+  /** Injectable so one clock judges the age (the DataFreshnessLine contract). */
+  now?: Date;
+}
+
+/** Derive the six connection statuses from a site row. Pure; no fetching. */
 export function siteConnectionStatuses(
   site: Pick<
     MarketingSite,
@@ -125,6 +176,7 @@ export function siteConnectionStatuses(
     | "domain"
     | "root_url"
   >,
+  tracking?: SiteTrackingStatusInput,
 ): SiteConnectionStatus[] {
   const init = parseInitialization(site);
   const integrations = parseSiteIntegrations(site.integrations);
@@ -248,5 +300,7 @@ export function siteConnectionStatuses(
         ? "Configured kind, not connected"
         : "Not configured",
     ),
+    trackingStatus(integrations.googleTagManager.enabled &&
+      Boolean(integrations.googleTagManager.resourceRef.trim()), tracking),
   ];
 }

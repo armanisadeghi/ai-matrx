@@ -413,14 +413,14 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.tagManagerReadonly],
       attachableResourceTypes: [],
       stopsOnRevoke: "your tracking health line from updating",
-      // Tag Manager surfaces as a line inside the tracking health of a site that
-      // is already bound; there is no Tag Manager screen of its own to open, and
-      // pointing at a site's settings would be a guess about which site. Open
-      // with the chair (lane F-51).
+      // U-M2 closed the gap F-51 left open here. Tag Manager now has a real surface — the
+      // `SiteTrackingPanel`, on every site's Integrations settings and in the `siteTrackingWindow`
+      // panel — so this stops being a dead end. It still cannot name WHICH site (that would be a
+      // guess), so it opens the brand list every site hangs off, one click away from any of them.
       firstAction: {
-        kind: "none",
-        because:
-          "Nothing to open yet — Tag Manager shows up inside a site's tracking health, and no surface of its own exists.",
+        kind: "route",
+        label: "See a site's tracking",
+        href: "/marketing/brands",
       },
     },
     {

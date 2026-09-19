@@ -8,6 +8,7 @@ import { secureImageUrl } from "@/features/marketing/lib/website-url";
 import {
   siteConnectionStatuses,
   type SiteConnectionState,
+  type SiteTrackingStatusInput,
 } from "@/features/marketing/lib/site-status";
 
 const stateDotClass: Record<SiteConnectionState, string> = {
@@ -23,11 +24,16 @@ const stateTextClass: Record<SiteConnectionState, string> = {
 };
 
 /**
- * The five big-picture connection chips (Init / GSC / GA4 / PSI / CMS),
+ * The six big-picture connection chips (Init / GSC / GA4 / PSI / CMS / Tracking),
  * derived exclusively through lib/site-status.ts so every surface agrees.
+ *
+ * `tracking` is optional: a caller that has already read the site's newest Tag Manager snapshot
+ * passes it and the chip carries the real verdict; one that has not still gets the honest
+ * binding-only answer (never a chip that reads "off" on a bound, passing site).
  */
 export function SiteConnectionChips({
   site,
+  tracking,
   className,
 }: {
   // `domain` / `root_url` are part of the status derivation now: a Search
@@ -42,9 +48,10 @@ export function SiteConnectionChips({
     | "domain"
     | "root_url"
   >;
+  tracking?: SiteTrackingStatusInput;
   className?: string;
 }) {
-  const statuses = siteConnectionStatuses(site);
+  const statuses = siteConnectionStatuses(site, tracking);
   return (
     <div className={cn("flex flex-wrap items-center gap-1", className)}>
       {statuses.map((status) => (
