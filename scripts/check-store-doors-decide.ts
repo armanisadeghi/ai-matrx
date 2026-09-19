@@ -185,6 +185,60 @@ const DECLARED_SWITCH_CENSUS = (accept: boolean) => `
      ${accept ? `and ${NO_COMMENTS} !~* '(custom\\.assert_store_door|custom\\.store_is_open)'` : ""}
    order by 1`;
 
+/**
+ * THE EIGHTH CENSUS — A CLOSED SCHEMA IS CLOSED, NOT MERELY DESCRIBED AS CLOSED
+ * (2026-09-19, lane OPEN-CENSUS).
+ *
+ * Censuses 1-7 all read a door somebody DECLARED or a body somebody WROTE. None of
+ * them could see the opposite thing: a function nobody declared at all, holding a
+ * client EXECUTE grant nobody decided to give it. Measured live on the main database
+ * when this was written: THIRTY-ONE of them.
+ *
+ *   - `custom`, 10, straight from Postgres's own default. `CREATE FUNCTION` grants
+ *     EXECUTE to PUBLIC, `authenticated` holds USAGE on the schema, and both birth
+ *     guards stand down — `platform.enforce_definer_client_grants` skips SECURITY
+ *     INVOKER by design and `platform.close_new_functions_to_anon` does not list
+ *     `custom` at all. `custom.delete_cascade_closure(uuid, uuid)`, created after
+ *     lane REACH's sweep, was executable by `authenticated` AND by `anon`.
+ *   - `history`, 21, from one blanket `GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA
+ *     history TO authenticated`.
+ *
+ * `platform.schema_client_exposure` had declared `custom` closed since 2026-09-18 and
+ * nothing in the database ever acted on that row: `platform.reopen_declared_doors`
+ * had an OPENING pass only. It now has a closing pass, it runs at `CREATE FUNCTION`
+ * as well as at `REVOKE`, and THIS is the query that says whether it is still true.
+ *
+ * The rule is the whole declaration, not one schema: every schema declared closed in
+ * `platform.schema_client_exposure` reaches a client through a
+ * `platform.client_callable_door` row or not at all.
+ */
+const CLOSED_SCHEMA_CENSUS = (respectDeclarations: boolean) => `
+  select n.nspname || '.' || p.proname as function_name,
+         pg_get_function_identity_arguments(p.oid) as identity_args,
+         'in schema ' || n.nspname || ', declared CLOSED in platform.schema_client_exposure, and '
+         'reachable by a client with no platform.client_callable_door row opening a client lane. '
+         'Run select * from platform.reopen_declared_doors(' || quote_literal(n.nspname) || ') to '
+         'close it, or declare it if a person is meant to call it.'::text as why
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    join platform.schema_client_exposure e
+      on e.schema_name = n.nspname and not coalesce(e.client_exposed, false)
+   where p.prokind in ('f', 'p')
+     and p.prorettype not in ('pg_catalog.trigger'::regtype, 'pg_catalog.event_trigger'::regtype)
+     and not exists (select 1 from pg_depend dep where dep.objid = p.oid and dep.deptype = 'e')
+     and (has_function_privilege('authenticated', p.oid, 'EXECUTE')
+       or has_function_privilege('anon', p.oid, 'EXECUTE')
+       or has_function_privilege('public', p.oid, 'EXECUTE'))
+     ${
+       respectDeclarations
+         ? `and not exists (select 1 from platform.client_callable_door d
+                             where d.schema_name = n.nspname and d.function_name = p.proname
+                               and d.identity_argtypes = platform.door_argtypes(p.proargtypes)
+                               and (d.signed_in_callers or d.anonymous_callers))`
+         : ""
+     }
+   order by 1`;
+
 const TABLE_PRIVILEGE_CENSUS = `
   select c.relname::text as function_name,
          string_agg(g.role || ' ' || g.priv, ', ' order by g.role, g.priv) as identity_args,
@@ -222,14 +276,19 @@ interface Row {
   why?: string;
 }
 
-function report(title: string, rows: Row[]): boolean {
+/**
+ * `qualified` says the census already returns `<schema>.<name>` — census 8 spans every
+ * schema declared closed, so prefixing it with `custom.` would print a lie.
+ */
+function report(title: string, rows: Row[], qualified = false): boolean {
   if (rows.length === 0) {
     console.log(`[ OK ] ${title} - none.`);
     return true;
   }
   console.error(`[FAIL] ${title} - ${rows.length}:`);
   for (const r of rows) {
-    console.error(`       custom.${r.function_name}(${r.identity_args})${r.why ? ` - ${r.why}` : ""}`);
+    const name = qualified ? r.function_name : `custom.${r.function_name}`;
+    console.error(`       ${name}(${r.identity_args})${r.why ? ` - ${r.why}` : ""}`);
   }
   return false;
 }
@@ -349,6 +408,35 @@ async function main(): Promise<void> {
         `[ OK ] self-test - counting the switch itself as an objection, the switch census names ` +
           `${switchNames.size} writing door(s). It can go red.`,
       );
+
+      // CENSUS 8, THE RED HALF. With the declarations NOT respected, every client-reachable
+      // function in a declared-closed schema must be named — which is every door lane REACH
+      // opened. If it names nothing, the query is reading an empty set and its green answer
+      // above proves only that `platform.schema_client_exposure` has no rows it can see.
+      const redClosed = (await client.query<Row>(CLOSED_SCHEMA_CENSUS(false))).rows;
+      const closedNames = new Set(redClosed.map((r) => r.function_name));
+      const mustBeReachable = [
+        "custom.record_write",
+        "custom.record_update",
+        "custom.read_record",
+        "custom.migrate_rename",
+        "custom.io_export",
+      ];
+      const unreachable = mustBeReachable.filter((n) => !closedNames.has(n));
+      if (unreachable.length > 0) {
+        fail(
+          "SELF-TEST FAILED - with the door declarations not respected, the closed-schema census " +
+            `did not name ${unreachable.join(", ")}, which ARE client-reachable in a schema ` +
+            "declared closed. Either platform.schema_client_exposure no longer declares their " +
+            "schema closed, or the census is not reading the catalog it claims to - and then its " +
+            "green answer means nothing.",
+        );
+      }
+      console.log(
+        `[ OK ] self-test - ignoring the declarations, the closed-schema census names ` +
+          `${closedNames.size} client-reachable function(s) in a declared-closed schema, ` +
+          "including all five that must be. It can go red.",
+      );
     }
 
     const callers = (await client.query<Row>(CALLER_CENSUS(DECIDERS))).rows;
@@ -358,6 +446,7 @@ async function main(): Promise<void> {
     const declaredLadder = (await client.query<Row>(DECLARED_LADDER_CENSUS(LADDER_RUNGS))).rows;
     const declaredSwitch = (await client.query<Row>(DECLARED_SWITCH_CENSUS(true))).rows;
     const tablePrivileges = (await client.query<Row>(TABLE_PRIVILEGE_CENSUS)).rows;
+    const closedSchemas = (await client.query<Row>(CLOSED_SCHEMA_CENSUS(true))).rows;
 
     const ok = [
       report("client doors taking an organization id that never decide the caller", callers),
@@ -367,6 +456,11 @@ async function main(): Promise<void> {
       report("declared client doors whose body never goes through the one ladder", declaredLadder),
       report("declared client doors that write a record without asking the store's switch", declaredSwitch),
       report("client roles holding a TABLE privilege in schema custom", tablePrivileges),
+      report(
+        "functions a client may execute in a declared-closed schema with no door row at all",
+        closedSchemas,
+        true,
+      ),
     ].every(Boolean);
 
     if (!ok) {
