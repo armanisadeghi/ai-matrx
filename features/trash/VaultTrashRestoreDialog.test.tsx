@@ -70,6 +70,7 @@ const supportedPreview: VaultRecoveryPreview = {
   deletion_id: "00000000-0000-4000-8000-000000000001",
   fields_count: 2,
   attachments_count: 1,
+  native_passkeys_count: 0,
   prior_was_disabled: false,
   supported: true,
   reason: null,
@@ -78,6 +79,7 @@ const supportedPreview: VaultRecoveryPreview = {
 const restoredResult: VaultRestoreResult = {
   restored_fields: 2,
   restored_attachments: 1,
+  restored_native_passkeys: 0,
   already_restored: false,
   notice: "sharing_and_automatic_use_off",
 };
@@ -148,6 +150,7 @@ describe("VaultTrashRestoreDialog", () => {
       deletion_id: "00000000-0000-4000-8000-000000000001",
       fields_count: null,
       attachments_count: null,
+      native_passkeys_count: null,
       prior_was_disabled: true,
       supported: false,
       reason: "protected_component_requires_native_recovery",
@@ -177,6 +180,16 @@ describe("VaultTrashRestoreDialog", () => {
     );
   });
 
+  test("shows the passkey count and keeps website acceptance separate", async () => {
+    await render({
+      ...supportedPreview,
+      native_passkeys_count: 1,
+    });
+    expect(document.body.textContent).toContain("1 passkey, 2 fields");
+    expect(document.body.textContent).toContain("does not reenable it");
+    expect(document.body.textContent).toContain("website accepts it");
+  });
+
   test("fresh-auth refusal opens identity confirmation without retrying", async () => {
     restoreMock.mockRejectedValue(
       new VaultRestoreTransportError("recent_auth_required"),
@@ -196,7 +209,8 @@ describe("VaultTrashRestoreDialog", () => {
     await render();
     await act(async () => button("Restore disabled credential").click());
     const password = document.querySelector("#vault-restore-password");
-    if (!(password instanceof HTMLInputElement)) throw new Error("password missing");
+    if (!(password instanceof HTMLInputElement))
+      throw new Error("password missing");
     password.value = "test-only-password";
   }
 

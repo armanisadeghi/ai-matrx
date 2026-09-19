@@ -21,7 +21,11 @@ type VaultRecoveryUnsupportedReason =
   | "recovery_tracking_unavailable"
   | "recovery_manifest_unsupported"
   | "protected_component_requires_native_recovery"
-  | "linked_component_requires_native_recovery";
+  | "linked_component_requires_native_recovery"
+  | "native_recovery_unavailable"
+  | "native_components_missing"
+  | "native_components_conflict"
+  | "native_manifest_invalid";
 
 export type VaultRecoveryPreview =
   | {
@@ -29,6 +33,7 @@ export type VaultRecoveryPreview =
       deletion_id: string;
       fields_count: number;
       attachments_count: number;
+      native_passkeys_count: 0 | 1;
       prior_was_disabled: boolean;
       reason: null;
     }
@@ -37,6 +42,7 @@ export type VaultRecoveryPreview =
       deletion_id: string | null;
       fields_count: null;
       attachments_count: null;
+      native_passkeys_count: 0 | null;
       prior_was_disabled: boolean | null;
       reason: VaultRecoveryUnsupportedReason;
     };
@@ -118,11 +124,19 @@ function isUnsupportedReason(
     value === "recovery_tracking_unavailable" ||
     value === "recovery_manifest_unsupported" ||
     value === "protected_component_requires_native_recovery" ||
-    value === "linked_component_requires_native_recovery"
+    value === "linked_component_requires_native_recovery" ||
+    value === "native_recovery_unavailable" ||
+    value === "native_components_missing" ||
+    value === "native_components_conflict" ||
+    value === "native_manifest_invalid"
   );
 }
 
-function parseVaultRecoveryPreview(raw: unknown): VaultRecoveryPreview {
+function isNativePasskeysCount(value: unknown): value is 0 | 1 {
+  return value === 0 || value === 1;
+}
+
+export function parseVaultRecoveryPreview(raw: unknown): VaultRecoveryPreview {
   if (!raw || typeof raw !== "object") {
     throw new Error(
       "Recovery details were unavailable. Reload Trash and try again.",
@@ -131,6 +145,8 @@ function parseVaultRecoveryPreview(raw: unknown): VaultRecoveryPreview {
   const fieldsCount = "fields_count" in raw ? raw.fields_count : null;
   const attachmentsCount =
     "attachments_count" in raw ? raw.attachments_count : null;
+  const nativePasskeysCount =
+    "native_passkeys_count" in raw ? raw.native_passkeys_count : undefined;
   const priorWasDisabled =
     "prior_was_disabled" in raw ? raw.prior_was_disabled : null;
   const supported = "supported" in raw ? raw.supported : null;
@@ -142,6 +158,10 @@ function parseVaultRecoveryPreview(raw: unknown): VaultRecoveryPreview {
     );
   }
   if (supported) {
+    // Version 1 did not include this count. Its absence remains ordinary-only
+    // compatibility, never evidence that a native component is present.
+    const nativePasskeys =
+      nativePasskeysCount === undefined ? 0 : nativePasskeysCount;
     if (
       typeof fieldsCount !== "number" ||
       !Number.isInteger(fieldsCount) ||
@@ -149,6 +169,8 @@ function parseVaultRecoveryPreview(raw: unknown): VaultRecoveryPreview {
       typeof attachmentsCount !== "number" ||
       !Number.isInteger(attachmentsCount) ||
       attachmentsCount < 0 ||
+      !isNativePasskeysCount(nativePasskeys) ||
+      (nativePasskeys === 1 && fieldsCount < 1) ||
       typeof priorWasDisabled !== "boolean" ||
       typeof deletionId !== "string" ||
       !UUID.test(deletionId) ||
@@ -163,6 +185,7 @@ function parseVaultRecoveryPreview(raw: unknown): VaultRecoveryPreview {
       deletion_id: deletionId,
       fields_count: fieldsCount,
       attachments_count: attachmentsCount,
+      native_passkeys_count: nativePasskeys,
       prior_was_disabled: priorWasDisabled,
       reason: null,
     };
@@ -173,6 +196,9 @@ function parseVaultRecoveryPreview(raw: unknown): VaultRecoveryPreview {
     (priorWasDisabled !== null && typeof priorWasDisabled !== "boolean") ||
     fieldsCount !== null ||
     attachmentsCount !== null ||
+    (nativePasskeysCount !== undefined &&
+      nativePasskeysCount !== null &&
+      nativePasskeysCount !== 0) ||
     !isUnsupportedReason(reason)
   ) {
     throw new Error(
@@ -184,6 +210,7 @@ function parseVaultRecoveryPreview(raw: unknown): VaultRecoveryPreview {
     deletion_id: deletionId,
     fields_count: null,
     attachments_count: null,
+    native_passkeys_count: nativePasskeysCount === 0 ? 0 : null,
     prior_was_disabled: priorWasDisabled,
     reason,
   };

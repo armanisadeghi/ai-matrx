@@ -4630,7 +4630,7 @@ export interface paths {
         head?: never;
         patch?: never;
         trace?: never;
-    }
+    };
     "/vault/items/{item_id}/fields": {
         parameters: {
             query?: never;
@@ -5249,6 +5249,125 @@ export interface paths {
         put?: never;
         /** Materialize */
         post: operations["materialize_vault_native_passwords__item_id__materialize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/passkeys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create */
+        post: operations["create_vault_native_passkeys_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/passkeys/receipts/{mutation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Receipt */
+        get: operations["receipt_vault_native_passkeys_receipts__mutation_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/passkeys/matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Matches */
+        post: operations["matches_vault_native_passkeys_matches_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/passkeys/{item_id}/materialize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Materialize */
+        post: operations["materialize_vault_native_passkeys__item_id__materialize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/passkeys/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Capabilities */
+        get: operations["capabilities_vault_native_passkeys_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/items/{item_id}/native-passkey/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enable Native Passkey */
+        post: operations["enable_native_passkey_vault_items__item_id__native_passkey_enable_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vault/native/identities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Identities */
+        post: operations["identities_vault_native_identities_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7011,6 +7130,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/storage-sources/browse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Browse Provider Folder
+         * @description Return one bounded page from an actor-owned provider connection.
+         */
+        post: operations["browse_provider_folder_storage_sources_browse_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/storage-sources/import": {
         parameters: {
             query?: never;
@@ -7025,6 +7164,74 @@ export interface paths {
          * @description Import provider bytes into one actor-owned canonical Matrx file.
          */
         post: operations["import_provider_file_storage_sources_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/storage-oauth/{provider}/authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Authorize Storage */
+        post: operations["authorize_storage_storage_oauth__provider__authorize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/{provider}/oauth/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Storage Callback */
+        get: operations["storage_callback__provider__oauth_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/storage-oauth/{provider}/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh Storage */
+        post: operations["refresh_storage_storage_oauth__provider__refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/storage-oauth/{provider}/disconnect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disconnect Storage */
+        post: operations["disconnect_storage_storage_oauth__provider__disconnect_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -37887,6 +38094,26 @@ export interface paths {
         get: operations["integrations_aidream_cloud_files_integrations_aidream_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/browser-manager/local/transport/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify Local Transport
+         * @description Verify a daemon's existing lifecycle grant without changing any state.
+         */
+        post: operations["verify_local_transport_browser_manager_local_transport_verify_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -86643,6 +86870,31 @@ export interface components {
         NativeErrorOut: {
             detail: components["schemas"]["NativeErrorDetail"];
         };
+        /** NativeIdentitiesOut */
+        NativeIdentitiesOut: {
+            /** Snapshot Id */
+            snapshot_id: string;
+            /** Identities */
+            identities: (components["schemas"]["NativePasswordIdentityOut"] | components["schemas"]["NativePasskeyIdentityOut"])[];
+            /** Next After */
+            next_after?: string | null;
+            /** Complete */
+            complete: boolean;
+            /** Unsupported Count */
+            unsupported_count: number;
+        };
+        /** NativeIdentityErrorDetail */
+        NativeIdentityErrorDetail: {
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "invalid_request" | "inventory_changed" | "inventory_limit" | "native_session_required" | "native_unavailable" | "organization_required" | "request_too_large";
+        };
+        /** NativeIdentityErrorOut */
+        NativeIdentityErrorOut: {
+            detail: components["schemas"]["NativeIdentityErrorDetail"];
+        };
         /** NativeMatchOut */
         NativeMatchOut: {
             /**
@@ -86683,6 +86935,111 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** NativePasskeyCapabilitiesOut */
+        NativePasskeyCapabilitiesOut: {
+            /**
+             * Protocol Version
+             * @constant
+             */
+            protocol_version: 1;
+            /** Activation Revision */
+            activation_revision: number;
+            /** Max Source Bytes */
+            max_source_bytes: number;
+            /** Max Credential Ids */
+            max_credential_ids: number;
+            /** Max Request Body Bytes */
+            max_request_body_bytes: number;
+            /** Algorithms */
+            algorithms: -7[];
+        };
+        /** NativePasskeyIdentityOut */
+        NativePasskeyIdentityOut: {
+            /**
+             * Kind
+             * @constant
+             */
+            kind: "passkey";
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /**
+             * Passkey Id
+             * Format: uuid
+             */
+            passkey_id: string;
+            /** Rp Id */
+            rp_id: string;
+            /** Credential Id */
+            credential_id: string;
+            /** User Handle */
+            user_handle: string;
+            /** User */
+            user: string;
+        };
+        /** NativePasskeyMatchOut */
+        NativePasskeyMatchOut: {
+            /** Item Id */
+            item_id: string;
+            /** Passkey Id */
+            passkey_id: string;
+            /** Credential Id */
+            credential_id: string;
+            /** User Handle */
+            user_handle: string;
+            /** Username */
+            username: string | null;
+            /** Display Name */
+            display_name: string | null;
+        };
+        /** NativePasskeyMatchesOut */
+        NativePasskeyMatchesOut: {
+            /** Matches */
+            matches: components["schemas"]["NativePasskeyMatchOut"][];
+            /** Truncated */
+            truncated: boolean;
+        };
+        /** NativePasskeyMaterializeOut */
+        NativePasskeyMaterializeOut: {
+            /** Source */
+            source: string;
+        };
+        /** NativePasskeyReceiptOut */
+        NativePasskeyReceiptOut: {
+            /** Mutation Id */
+            mutation_id: string;
+            /** Item Id */
+            item_id: string;
+            /** Field Id */
+            field_id: string;
+            /** Passkey Id */
+            passkey_id: string;
+            /** Source Sha256 */
+            source_sha256: string;
+            /**
+             * Status
+             * @constant
+             */
+            status: "saved_waiting_for_site";
+        };
+        /** NativePasswordIdentityOut */
+        NativePasswordIdentityOut: {
+            /**
+             * Kind
+             * @constant
+             */
+            kind: "password";
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            service: components["schemas"]["NativeUrlService"];
+            /** User */
+            user: string;
+        };
         /** NativeServiceIdentifierIn */
         NativeServiceIdentifierIn: {
             /**
@@ -86690,6 +87047,16 @@ export interface components {
              * @enum {string}
              */
             type: "domain" | "url";
+            /** Identifier */
+            identifier: string;
+        };
+        /** NativeUrlService */
+        NativeUrlService: {
+            /**
+             * Type
+             * @constant
+             */
+            type: "url";
             /** Identifier */
             identifier: string;
         };
@@ -110888,6 +111255,97 @@ export interface components {
             /** State */
             state: string;
         };
+        /** StorageAuthorizationResponse */
+        StorageAuthorizationResponse: {
+            /** Authorization Url */
+            authorization_url: string;
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "box" | "dropbox";
+            /** Requested Scopes */
+            requested_scopes: string[];
+            /**
+             * Auth Mode
+             * @constant
+             */
+            auth_mode: "confidential_authorization_code";
+            /**
+             * Pkce
+             * @constant
+             */
+            pkce: "unsupported_not_used";
+        };
+        /**
+         * StorageBrowseItem
+         * @description Safe provider identity for one visible file or folder.
+         */
+        StorageBrowseItem: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "file" | "folder";
+            /** Item Ref */
+            item_ref: string;
+            /** Name */
+            name: string;
+            /** Mime Type */
+            mime_type?: string | null;
+            /** Size */
+            size?: number | null;
+            /** Revision */
+            revision?: string | null;
+            /** Modified At */
+            modified_at?: string | null;
+        };
+        /**
+         * StorageBrowsePage
+         * @description One nonrecursive provider page with an opaque continuation.
+         */
+        StorageBrowsePage: {
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "box" | "dropbox" | "onedrive";
+            /** Connection Id */
+            connection_id: string;
+            /** Folder Ref */
+            folder_ref: string | null;
+            /** Items */
+            items: components["schemas"]["StorageBrowseItem"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        };
+        /**
+         * StorageBrowseRequest
+         * @description One bounded provider-folder page under the authenticated actor.
+         */
+        StorageBrowseRequest: {
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "box" | "dropbox" | "onedrive";
+            /** Connection Id */
+            connection_id: string;
+            /** Folder Ref */
+            folder_ref?: string | null;
+            /**
+             * Page Size
+             * @default 50
+             */
+            page_size?: number;
+            /** Cursor */
+            cursor?: string | null;
+        };
+        /** StorageConnectionRequest */
+        StorageConnectionRequest: {
+            /** Connection Id */
+            connection_id: string;
+        };
         /**
          * StorageImportResult
          * @description Safe result of importing a provider item into canonical Matrx Files.
@@ -110905,6 +111363,26 @@ export interface components {
             created: boolean;
             source: components["schemas"]["ExternalSourceMetadata"];
         };
+        /** StorageLifecycleResponse */
+        StorageLifecycleResponse: {
+            /** Connection Id */
+            connection_id: string;
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "box" | "dropbox";
+            /** Status */
+            status: string;
+            /** Requested Scopes */
+            requested_scopes: string[];
+            /** Granted Scopes */
+            granted_scopes: string[];
+            /** Scope Evidence */
+            scope_evidence: string;
+            /** Provider Revoked */
+            provider_revoked?: boolean | null;
+        };
         /**
          * StorageSourceImportRequest
          * @description Safe caller-supplied portion of an exact-item canonical import.
@@ -110914,7 +111392,7 @@ export interface components {
              * Provider
              * @enum {string}
              */
-            provider: "google_drive" | "onedrive";
+            provider: "box" | "dropbox" | "google_drive" | "onedrive";
             /** Connection Id */
             connection_id: string;
             /** Source Ref */
@@ -119894,6 +120372,47 @@ export interface components {
             /** Items */
             items: components["schemas"]["VaultLoginCsvPreviewItem"][];
         };
+        /**
+         * VaultNativePasskeyEnableRequest
+         * @description Bind the explicit reenablement request to one recorded deletion.
+         */
+        VaultNativePasskeyEnableRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /**
+             * Deletion Id
+             * Format: uuid
+             */
+            deletion_id: string;
+        };
+        /** VaultNativePasskeyEnableResponse */
+        VaultNativePasskeyEnableResponse: {
+            /**
+             * Item Id
+             * Format: uuid
+             */
+            item_id: string;
+            /**
+             * Enabled
+             * @constant
+             */
+            enabled: true;
+            /** Already Enabled */
+            already_enabled: boolean;
+        };
         /** VaultResolveRef */
         VaultResolveRef: {
             /** Item Id */
@@ -119943,16 +120462,22 @@ export interface components {
              * @description Organization context for the request; omitted to use the authenticated context.
              */
             organization_id?: string | null;
-            /** Project Id */
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
             project_id?: string | null;
-            /** Task Id */
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
             task_id?: string | null;
             /**
              * Deletion Id
              * Format: uuid
              */
             deletion_id: string;
-        }
+        };
         /** VaultRestoreResponse */
         VaultRestoreResponse: {
             item: components["schemas"]["VaultItemOut"];
@@ -119960,11 +120485,16 @@ export interface components {
             restored_fields: number;
             /** Restored Attachments */
             restored_attachments: number;
+            /** Restored Native Passkeys */
+            restored_native_passkeys: number;
             /** Already Restored */
             already_restored: boolean;
-            /** Notice */
+            /**
+             * Notice
+             * @constant
+             */
             notice: "sharing_and_automatic_use_off";
-        }
+        };
         /** VaultRevealRequest */
         VaultRevealRequest: {
             /**
@@ -135653,6 +136183,314 @@ export interface operations {
             };
         };
     };
+    create_vault_native_passkeys_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Mutation Id */
+                    mutation_id: string;
+                    /** Source */
+                    source: string;
+                    /** Label */
+                    label: string;
+                    /**
+                     * Principal Type
+                     * @enum {string}
+                     */
+                    principal_type: "organization" | "user";
+                    /** Excluded Credential Ids */
+                    excluded_credential_ids?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativePasskeyReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    receipt_vault_native_passkeys_receipts__mutation_id__get: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                mutation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativePasskeyReceiptOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    matches_vault_native_passkeys_matches_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Rp Id */
+                    rp_id: string;
+                    /** Allowed Credential Ids */
+                    allowed_credential_ids?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativePasskeyMatchesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    materialize_vault_native_passkeys__item_id__materialize_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Rp Id */
+                    rp_id: string;
+                    /** Allowed Credential Ids */
+                    allowed_credential_ids?: string[];
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativePasskeyMaterializeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    capabilities_vault_native_passkeys_capabilities_get: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativePasskeyCapabilitiesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enable_native_passkey_vault_items__item_id__native_passkey_enable_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultNativePasskeyEnableRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultNativePasskeyEnableResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    identities_vault_native_identities_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeIdentitiesOut"];
+                };
+            };
+            /** @description Unauthorized */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeIdentityErrorOut"];
+                };
+            };
+            /** @description Forbidden */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeIdentityErrorOut"];
+                };
+            };
+            /** @description Conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeIdentityErrorOut"];
+                };
+            };
+            /** @description Content Too Large */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeIdentityErrorOut"];
+                };
+            };
+            /** @description Unprocessable Content */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeIdentityErrorOut"];
+                };
+            };
+            /** @description Service Unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NativeIdentityErrorOut"];
+                };
+            };
+        };
+    };
     list_authenticators_authenticator_get: {
         parameters: {
             query?: never;
@@ -138412,6 +139250,39 @@ export interface operations {
             };
         };
     };
+    browse_provider_folder_storage_sources_browse_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageBrowseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageBrowsePage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     import_provider_file_storage_sources_import_post: {
         parameters: {
             query?: never;
@@ -138432,6 +139303,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StorageImportResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    authorize_storage_storage_oauth__provider__authorize_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "box" | "dropbox";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageAuthorizationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    storage_callback__provider__oauth_callback_get: {
+        parameters: {
+            query: {
+                state: string;
+                code?: string | null;
+                error?: string | null;
+            };
+            header?: never;
+            path: {
+                provider: "box" | "dropbox";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            307: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_storage_storage_oauth__provider__refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "box" | "dropbox";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageLifecycleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disconnect_storage_storage_oauth__provider__disconnect_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider: "box" | "dropbox";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageConnectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageLifecycleResponse"];
                 };
             };
             /** @description Validation Error */
@@ -185641,6 +186646,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BridgeIntegrationResponse"];
+                };
+            };
+        };
+    };
+    verify_local_transport_browser_manager_local_transport_verify_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };
