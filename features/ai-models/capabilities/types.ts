@@ -24,8 +24,17 @@
 // (extraction models emit structured entities; vector models emit embeddings),
 // while `document` appears on inputs. All are members of the one shared set
 // because input/output share the vocabulary.
-export const CONTENT_TYPES = ["text", "image", "audio", "video", "document", "entities", "embedding", "decision"] as const;
-export type ContentType = typeof CONTENT_TYPES[number];
+export const CONTENT_TYPES = [
+  "text",
+  "image",
+  "audio",
+  "video",
+  "document",
+  "entities",
+  "embedding",
+  "decision",
+] as const;
+export type ContentType = (typeof CONTENT_TYPES)[number];
 
 // Full live vocabulary (verified against ai.model_definition 2026-08-16:
 // turn, single, extraction, realtime, embedding, agent).
@@ -45,7 +54,7 @@ export const INTERACTION_MODES = [
   "agent",
   "decision",
 ] as const;
-export type InteractionMode = typeof INTERACTION_MODES[number];
+export type InteractionMode = (typeof INTERACTION_MODES)[number];
 
 // The complete feature vocabulary present on live `ai.model_definition` rows
 // (swept 2026-09-12). Adding a NEW feature value to the DB requires adding it
@@ -127,7 +136,7 @@ export const FEATURE_KEYS = [
   "music_generation",
   "real_time_translation",
 ] as const;
-export type FeatureKey = typeof FEATURE_KEYS[number];
+export type FeatureKey = (typeof FEATURE_KEYS)[number];
 
 export interface ModelCapabilities {
   input: ContentType[];
@@ -149,7 +158,19 @@ export function isDecisionModelCapability(
 export function isConversationalModelCapability(
   capabilities: Pick<ModelCapabilities, "interaction">,
 ): boolean {
-  return capabilities.interaction === "turn" || capabilities.interaction === "single";
+  return (
+    capabilities.interaction === "turn" || capabilities.interaction === "single"
+  );
+}
+
+/** Fallback/replacement models must keep the same decision wire contract. */
+export function hasCompatibleDecisionInteraction(
+  source: Pick<ModelCapabilities, "interaction">,
+  candidate: Pick<ModelCapabilities, "interaction">,
+): boolean {
+  return (
+    isDecisionModelCapability(source) === isDecisionModelCapability(candidate)
+  );
 }
 
 /**
@@ -166,13 +187,22 @@ export const DEFAULT_CAPABILITIES: ModelCapabilities = {
 
 /** True iff `value` is a member of the const tuple `arr`. Type-narrow helper. */
 export function isContentType(value: unknown): value is ContentType {
-  return typeof value === "string" && (CONTENT_TYPES as readonly string[]).includes(value);
+  return (
+    typeof value === "string" &&
+    (CONTENT_TYPES as readonly string[]).includes(value)
+  );
 }
 
 export function isFeatureKey(value: unknown): value is FeatureKey {
-  return typeof value === "string" && (FEATURE_KEYS as readonly string[]).includes(value);
+  return (
+    typeof value === "string" &&
+    (FEATURE_KEYS as readonly string[]).includes(value)
+  );
 }
 
 export function isInteractionMode(value: unknown): value is InteractionMode {
-  return typeof value === "string" && (INTERACTION_MODES as readonly string[]).includes(value);
+  return (
+    typeof value === "string" &&
+    (INTERACTION_MODES as readonly string[]).includes(value)
+  );
 }

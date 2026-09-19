@@ -1451,8 +1451,7 @@ export function ModelListDropdown({
   const [adminMode, setAdminMode] = useState(false);
   const variant: ModelCatalogVariant =
     catalogVariant ?? (adminMode && isSuperAdmin ? "admin" : "user");
-  const effectiveSelectionPurpose =
-    selectionPurpose ?? (variant === "admin" ? "admin" : "chat");
+  const effectiveSelectionPurpose = selectionPurpose ?? "chat";
   const { models, isLoading, error } = useModelCatalog(variant);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -1501,12 +1500,8 @@ export function ModelListDropdown({
   };
 
   const favoriteSet = useMemo(() => new Set(favoriteIds), [favoriteIds]);
-  const allowedModelSet = allowedModelIds
-    ? new Set(allowedModelIds)
-    : null;
-  const priorityModelSet = priorityModelIds
-    ? new Set(priorityModelIds)
-    : null;
+  const allowedModelSet = allowedModelIds ? new Set(allowedModelIds) : null;
+  const priorityModelSet = priorityModelIds ? new Set(priorityModelIds) : null;
   const eligibleModels = allowedModelSet
     ? models.filter((model) => allowedModelSet.has(model.id))
     : models;
@@ -1534,9 +1529,7 @@ export function ModelListDropdown({
     () =>
       [
         ...new Set(
-          eligibleModels
-            .map((m) => m.maker)
-            .filter((v): v is string => !!v),
+          eligibleModels.map((m) => m.maker).filter((v): v is string => !!v),
         ),
       ].sort((a, b) => a.localeCompare(b)),
     [eligibleModels],
@@ -1580,10 +1573,7 @@ export function ModelListDropdown({
     const hasAvailable = (m: CatalogModel) =>
       (m.admin?.offerings ?? []).some((o) => o.isAvailable);
     const rows = eligibleModels.filter((m) => {
-      if (
-        effectiveSelectionPurpose === "chat" &&
-        isDecisionModelCapability(m)
-      )
+      if (effectiveSelectionPurpose === "chat" && isDecisionModelCapability(m))
         return false;
       if (
         effectiveSelectionPurpose === "decision" &&
@@ -1726,7 +1716,16 @@ export function ModelListDropdown({
       return [...prioritize(favs), ...prioritize(rest)];
     }
     return prioritize(sorted);
-  }, [eligibleModels, query, filters, tab, favoriteSet, variant, priorityModelSet, effectiveSelectionPurpose]);
+  }, [
+    eligibleModels,
+    query,
+    filters,
+    tab,
+    favoriteSet,
+    variant,
+    priorityModelSet,
+    effectiveSelectionPurpose,
+  ]);
 
   const activeFilterCount =
     filters.input.size +
@@ -1829,28 +1828,28 @@ export function ModelListDropdown({
       )}
     >
       {triggerVariant === "settings" ? (
-      <div className="flex min-w-0 flex-1 items-center gap-1.5">
-        {selected ? (
-          <>
-            <MakerBrandGlyph
-              maker={selected.maker}
-              colored
-              className="h-3.5 w-3.5 shrink-0"
-            />
-            <span className="min-w-0 whitespace-normal text-left leading-tight">
-              {selected.name}
+        <div className="flex min-w-0 flex-1 items-center gap-1.5">
+          {selected ? (
+            <>
+              <MakerBrandGlyph
+                maker={selected.maker}
+                colored
+                className="h-3.5 w-3.5 shrink-0"
+              />
+              <span className="min-w-0 whitespace-normal text-left leading-tight">
+                {selected.name}
+              </span>
+            </>
+          ) : (
+            <span className="min-w-0 whitespace-normal text-left leading-tight text-muted-foreground">
+              {isLoading
+                ? "Loading models…"
+                : emptyOptionLabel && !value
+                  ? emptyOptionLabel
+                  : placeholder}
             </span>
-          </>
-        ) : (
-          <span className="min-w-0 whitespace-normal text-left leading-tight text-muted-foreground">
-            {isLoading
-              ? "Loading models…"
-              : emptyOptionLabel && !value
-                ? emptyOptionLabel
-                : placeholder}
-          </span>
-        )}
-      </div>
+          )}
+        </div>
       ) : (
         <span className="flex min-w-0 flex-1 items-center gap-1.5">
           {selected ? (
@@ -1873,7 +1872,12 @@ export function ModelListDropdown({
           )}
         </span>
       )}
-      <ChevronDown className={cn("shrink-0 text-muted-foreground/60", triggerVariant === "settings" ? "h-4 w-4" : "h-3 w-3")} />
+      <ChevronDown
+        className={cn(
+          "shrink-0 text-muted-foreground/60",
+          triggerVariant === "settings" ? "h-4 w-4" : "h-3 w-3",
+        )}
+      />
     </button>
   );
 
