@@ -25,13 +25,15 @@
 // state rather than dressing it up as a pass.
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AlertTriangle, Check, Loader2, Play, ShieldAlert, Table2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
 import { getActiveOrgId } from "@/lib/organizations/activeOrg";
 import { getUserOrganizations } from "@/features/organizations/service";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { setOrganization } from "@/lib/redux/slices/appContextSlice";
 import { createClient } from "@/utils/supabase/client";
 
 interface RampConsumer {
@@ -85,6 +87,8 @@ function verdictClass(verdict: string | null): string {
 }
 
 export function UnifiedDataRampScreen() {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
   const [organizationId, setOrganizationId] = useState<string>("");
   const [organizations, setOrganizations] = useState<{ id: string; name: string }[]>([]);
   const [consumers, setConsumers] = useState<RampConsumer[] | null>(null);
@@ -182,10 +186,15 @@ export function UnifiedDataRampScreen() {
           .schema("platform")
           .rpc("unified_data_store_set", { p_organization_id: organizationId, p_on: on });
         if (refused) throw new Error(refused.message);
+        // NAMED, NOT "this organization". The picker at the top of this screen
+        // and the app's own active organization are two different choices, and
+        // on 19 September a person flipped the switch here and opened a
+        // DIFFERENT organization's tables without a word anywhere saying so.
+        // Every sentence this switch says now carries the name it acted on.
         toast.success(
           on
-            ? "This organization is on the unified record store. No consumer moved — every consumer switch below is where you left it."
-            : "This organization is off the unified record store. Its doors take writes only from the role that owns the store.",
+            ? `${nameOf(organizationId)} is on the unified record store. No consumer moved — every consumer switch below is where you left it.`
+            : `${nameOf(organizationId)} is off the unified record store. Its doors take writes only from the role that owns the store.`,
         );
         await load(organizationId);
       } catch (e) {
@@ -196,6 +205,35 @@ export function UnifiedDataRampScreen() {
     },
     [organizationId, load],
   );
+
+  /** The name of the organization this screen is acting on, for every sentence it says. */
+  const nameOf = useCallback(
+    (id: string) => organizations.find((organization) => organization.id === id)?.name ?? "This organization",
+    [organizations],
+  );
+
+  /**
+   * OPEN THE TABLES OF THE ORGANIZATION ON THIS SCREEN — which is what the
+   * button always claimed and never did. It used to be a plain link to
+   * `/data-v2`, and that page reads the app's ACTIVE organization, not the one
+   * picked in the selector above; on 19 September an admin turned the store on
+   * for a brand-new organization, pressed this, and landed in a different
+   * organization's store with nothing on the screen saying which one they were
+   * looking at.
+   *
+   * So the button now MAKES the organization it names the active one — the same
+   * `setOrganization` the sidebar switcher dispatches, which resets the scope,
+   * project, task and conversation selections with it — and says so before it
+   * moves. One organization, everywhere, and the page it lands on is reading
+   * the same choice this screen just made.
+   */
+  const openTables = useCallback(() => {
+    if (!organizationId) return;
+    const name = nameOf(organizationId);
+    dispatch(setOrganization({ id: organizationId, name }));
+    toast.success(`Now working in ${name}. Opening its tables.`);
+    router.push("/data-v2");
+  }, [organizationId, nameOf, dispatch, router]);
 
   const setSwitch = useCallback(
     async (consumer: RampConsumer, on: boolean) => {
@@ -219,8 +257,8 @@ export function UnifiedDataRampScreen() {
         }
         toast.success(
           on
-            ? `${consumer.label} now reads the unified store for this organization.`
-            : `${consumer.label} is back on the old table for this organization.`,
+            ? `${consumer.label} now reads the unified store for ${nameOf(organizationId)}.`
+            : `${consumer.label} is back on the old table for ${nameOf(organizationId)}.`,
         );
         await load(organizationId);
       } catch (e) {
@@ -274,11 +312,13 @@ export function UnifiedDataRampScreen() {
           <div className="flex flex-wrap items-center gap-3">
             <span className="font-medium">The record store itself</span>
             <span className="text-xs text-muted-foreground">
-              Where this organization&apos;s tables, fields and records are kept
+              Where {nameOf(organizationId)}&apos;s tables, fields and records are kept
             </span>
             <div className="ml-auto flex items-center gap-2">
               <span className="text-xs text-muted-foreground">
-                {storeSwitch.switched_on ? "On for this organization" : "Off for this organization"}
+                {storeSwitch.switched_on
+                  ? `On for ${nameOf(organizationId)}`
+                  : `Off for ${nameOf(organizationId)}`}
               </span>
               <Switch
                 checked={storeSwitch.switched_on}
@@ -290,11 +330,9 @@ export function UnifiedDataRampScreen() {
           </div>
           <div className="mt-1 text-muted-foreground">{storeSwitch.why}</div>
           {storeSwitch.switched_on ? (
-            <Button asChild variant="outline" size="sm" className="mt-2">
-              <Link href="/data-v2">
-                <Table2 className="size-4" />
-                Open this organization&apos;s tables
-              </Link>
+            <Button variant="outline" size="sm" className="mt-2" onClick={openTables}>
+              <Table2 className="size-4" />
+              Open {nameOf(organizationId)}&apos;s tables
             </Button>
           ) : null}
         </div>
