@@ -67,7 +67,24 @@ const TOP_SLOTS = 5;
 /** Fixed number of metric tiles. Never derived from the data. */
 interface Tile {
     key: string;
-    label: string;
+    /**
+     * null = the Library's KIND is not known yet, so the WORD is not known
+     * either → a skeleton where the label goes, never a guess.
+     *
+     * 🚨 THE LABEL NEVER FLIPS. Before this, the "total" tile's label came
+     * straight from `vocabulary.item.many`, which defaults to the neutral
+     * "Items" while `library` is still null — so a blog's own metrics header
+     * read "ITEMS" for a moment and then silently became "POSTS" once the row
+     * arrived, and on a build where the row never settled in time the tile was
+     * simply stuck on the wrong word (kottke.org, 2026-09-19: "the 'ITEMS' tile
+     * even changed its own label between loads — 'POSTS' once, 'ITEMS' another
+     * time, on the identical Library"). A number appearing under a moving label
+     * reads as broken even when the number itself is right. So the label is
+     * `null` — not the neutral placeholder — until the Library's row has told
+     * this screen what kind of Source it holds, and a skeleton sits where the
+     * word goes exactly the way one already sits where the number goes.
+     */
+    label: string | null;
     /** null = not known yet → a skeleton of the final size. */
     value: string | null;
     hint: string;
@@ -107,19 +124,21 @@ function buildTiles(
     metrics: LibraryMetrics | null,
     unreadable = false,
     vocabulary: SourceVocabulary = sourceVocabulary(null),
+    kindKnown = false,
 ): Tile[] {
     if (metrics === null && unreadable) {
-        return buildTiles(null, false, vocabulary).map((tile) => ({
+        return buildTiles(null, false, vocabulary, kindKnown).map((tile) => ({
             ...tile,
             value: UNREADABLE,
         }));
     }
-    return buildTilesFromMetrics(metrics, vocabulary);
+    return buildTilesFromMetrics(metrics, vocabulary, kindKnown);
 }
 
 function buildTilesFromMetrics(
     metrics: LibraryMetrics | null,
     vocabulary: SourceVocabulary,
+    kindKnown: boolean,
 ): Tile[] {
     const kinds = metrics?.counts_by_kind;
     const captions = metrics?.caption_coverage;
@@ -128,7 +147,12 @@ function buildTilesFromMetrics(
     return [
         {
             key: "total",
-            label: vocabulary.item.many,
+            // 🚨 NEVER THE NEUTRAL GUESS. This tile has no `applies` gate — it
+            // always renders — so it is the one place the old code showed
+            // "Items" the instant the Library row had not arrived yet, then
+            // silently swapped in "Posts"/"Episodes"/whatever once it had. See
+            // the label skeleton at the top of `Tile`.
+            label: kindKnown ? vocabulary.item.many : null,
             value: metrics ? formatCount(metrics.total) : null,
             hint: "Catalogued in this Library",
         },
@@ -257,8 +281,12 @@ function MetricTile({ tile }: { tile: Tile }): ReactNode {
                 tile.wide && "col-span-2",
             )}
         >
-            <span className="truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                {tile.label}
+            <span className="flex h-3.5 items-center truncate text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                {tile.label === null ? (
+                    <Skeleton className="h-2.5 w-14 rounded" />
+                ) : (
+                    tile.label
+                )}
             </span>
             <span className="flex h-7 items-center text-xl font-semibold tabular-nums text-foreground">
                 {tile.value === null ? (
@@ -284,13 +312,19 @@ function CadenceChart({
     periods,
     loading,
     unreadable = false,
-    title = "Publishing cadence, by month",
+    title = null,
     noun = { one: "item", many: "Items" },
 }: {
     periods: LibraryMetrics["cadence_per_month"];
     loading: boolean;
-    /** The Library's own words — never "videos" over a blog. */
-    title?: string;
+    /**
+     * The Library's own words — never "videos" over a blog. `null` = the
+     * Library's kind is not known yet, so this title is a skeleton rather
+     * than the neutral "Added, by month" that would otherwise flip to the
+     * real word once the kind arrives — same rule as the "total" tile's
+     * label above.
+     */
+    title?: string | null;
     noun?: { one: string; many: string };
     /** The metrics read failed — say so instead of drawing an empty month. */
     unreadable?: boolean;
@@ -321,8 +355,12 @@ function CadenceChart({
     return (
         <section className="flex h-[276px] flex-col rounded-lg border border-border bg-card px-3 py-2">
             <div className="flex h-5 items-center justify-between">
-                <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    {title}
+                <span className="flex h-3.5 items-center text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    {title === null ? (
+                        <Skeleton className="h-2.5 w-32 rounded" />
+                    ) : (
+                        title
+                    )}
                 </span>
                 <span className="text-[11px] text-muted-foreground tabular-nums">
                     {loading || unreadable ? "" : `${formatCount(periods.length)} months`}
@@ -728,6 +766,57 @@ function SyncStrip({
     }
 
     if (library?.sync_status === "syncing") {
+        // 🚨 A SECOND TAB'S "SYNCING" NEEDS THE SAME REMEDY A FAILED RUN GETS.
+        // `library.sync_status` is the server's row, read fresh on every mount —
+        // it is NOT this tab's own stream, so this branch only fires when some
+        // OTHER run (another tab, an earlier session, a crashed worker) is the
+        // one the server remembers. Before this, that state had no way out
+        // except a person manually reloading forever: kottke.org (2026-09-19)
+        // sat here across four separate fresh loads over two-plus minutes with
+        // no timeout, no error, nothing to act on — the exact "hangs forever"
+        // class the TED failed-status fix above already closed for `failed`,
+        // left open here for `syncing`. `updated_at` is bumped every time the
+        // server touches this row, including the write that flips it INTO
+        // "syncing" — so its age is an honest, if approximate, clock on how
+        // long this run has claimed to be going. Past a generous ceiling (no
+        // real catalogue run takes 30 minutes; the largest one measured on this
+        // feature, a 316,969-item mailbox, was well under a minute) the claim
+        // is more likely a stalled write than an enormous Library, and a person
+        // is told that plainly instead of being asked to keep reloading a page
+        // that will never move on its own.
+        const updatedAtMs = library.updated_at ? Date.parse(library.updated_at) : NaN;
+        const stuckForMs = Number.isFinite(updatedAtMs) ? Date.now() - updatedAtMs : null;
+        const STUCK_THRESHOLD_MS = 30 * 60 * 1000;
+
+        if (stuckForMs !== null && stuckForMs > STUCK_THRESHOLD_MS) {
+            return (
+                <div className="flex min-h-[52px] flex-col justify-center gap-1 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2">
+                    <div className="flex items-start gap-2">
+                        <AlertTriangle
+                            className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
+                            aria-hidden="true"
+                        />
+                        <p className="text-sm text-foreground">
+                            {`This Library has been marked "being catalogued" for over ${formatElapsed(
+                                stuckForMs,
+                            )} with no update — far longer than a real run takes. It most likely stalled rather than finished.`}
+                        </p>
+                    </div>
+                    <p className="pl-6 text-xs tabular-nums text-muted-foreground">
+                        {library.item_count != null
+                            ? `This Library still holds ${formatCount(library.item_count)} Sources from before that run.`
+                            : "Nothing was catalogued before that run stalled."}
+                    </p>
+                    <div className="flex h-8 items-center pl-6">
+                        <Button size="sm" variant="outline" onClick={onBringUpToDate}>
+                            <RefreshCw className="mr-1.5 h-3.5 w-3.5" aria-hidden="true" />
+                            Try again
+                        </Button>
+                    </div>
+                </div>
+            );
+        }
+
         return (
             <div className="flex min-h-[52px] items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2">
                 <Loader2
@@ -784,8 +873,16 @@ export function LibraryMetricsHeader(props: {
     const running = sync.phase === "starting" || sync.phase === "listing";
     const disabled = running || props.bringUpToDateDisabled === true;
     const metricsError = metrics === null ? (props.metricsError ?? null) : null;
+    // 🚨 THE KIND IS EITHER KNOWN OR IT ISN'T — there is no third, guessed
+    // state. `library === null` is the only honest signal that the Library's
+    // row, and therefore its adapter, has not arrived yet; `sourceVocabulary`
+    // itself already returns the same neutral shape for "not arrived" and for
+    // "arrived, but this build has no words for that adapter" (§ vocabulary.ts
+    // NEUTRAL), so kindKnown — not the vocabulary object — is what gates
+    // whether the unconditional labels below render or wait.
+    const kindKnown = library !== null;
     const vocabulary = sourceVocabulary(library);
-    const tiles = buildTiles(metrics, metricsError !== null, vocabulary);
+    const tiles = buildTiles(metrics, metricsError !== null, vocabulary, kindKnown);
 
     return (
         <header className="flex w-full flex-col gap-3">
@@ -914,7 +1011,7 @@ export function LibraryMetricsHeader(props: {
                 )}
             >
                 <CadenceChart
-                    title={vocabulary.cadence}
+                    title={kindKnown ? vocabulary.cadence : null}
                     noun={vocabulary.item}
                     periods={metrics?.cadence_per_month ?? []}
                     loading={metrics === null && metricsError === null}
