@@ -91,7 +91,7 @@ import {
   FEATURE_BUCKET_ORDER,
   type FeatureBucket,
 } from "@/features/ai-models/capabilities/feature-map";
-import { isDecisionModelCapability } from "@/features/ai-models/capabilities/types";
+import { modelsForSelectionPurpose } from "@/features/ai-models/capabilities/types";
 import {
   costRatingTier,
   speedRatingLabel,
@@ -1572,14 +1572,10 @@ export function ModelListDropdown({
     const q = query.trim().toLowerCase();
     const hasAvailable = (m: CatalogModel) =>
       (m.admin?.offerings ?? []).some((o) => o.isAvailable);
-    const rows = eligibleModels.filter((m) => {
-      if (effectiveSelectionPurpose === "chat" && isDecisionModelCapability(m))
-        return false;
-      if (
-        effectiveSelectionPurpose === "decision" &&
-        !isDecisionModelCapability(m)
-      )
-        return false;
+    const rows = modelsForSelectionPurpose(
+      eligibleModels,
+      effectiveSelectionPurpose,
+    ).filter((m) => {
       if (tab === "favorites" && !favoriteSet.has(m.id)) return false;
       // Search matches name, maker, branded Service names — and, in the
       // admin variant, real vendor / api / provider_model_id too.

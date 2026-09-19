@@ -154,6 +154,19 @@ export function isDecisionModelCapability(
   return capabilities.interaction === "decision";
 }
 
+/** Catalog visibility never changes the execution contract of a picker. */
+export function modelsForSelectionPurpose<
+  T extends Pick<ModelCapabilities, "interaction">,
+>(models: readonly T[], purpose: "chat" | "decision" | "admin" = "chat"): T[] {
+  return models.filter(
+    (model) =>
+      purpose === "admin" ||
+      (purpose === "decision"
+        ? isDecisionModelCapability(model)
+        : !isDecisionModelCapability(model)),
+  );
+}
+
 /** Chat and agent launchers may select turn/single models only. */
 export function isConversationalModelCapability(
   capabilities: Pick<ModelCapabilities, "interaction">,
