@@ -142,10 +142,13 @@ export interface KindBoundOutputSchema {
  *
  * 🚨 WIRE-IS-BLOCK — THIS PATH IS NO LONGER UNIFORM (measured 2026-08-20).
  *
- * It used to be safe to say "this form carries no `__kind` discriminator
- * (`planKindMigration` emits `emitted_json_schema` with `injectKind: false`),
- * so the model emits none and the caller stamps the kind" — which is what
- * `topic_ideas` does today. That is now true only for TS-owned kinds.
+ * It used to be said that "this form carries no `__kind` discriminator
+ * (`planKindMigration` emitted `emitted_json_schema` with `injectKind: false`),
+ * so the model emits none and the caller stamps the kind". That doctrine is
+ * DEAD: since 2026-09-19 `planKindMigration` emits BOTH columns with
+ * `injectKind: true`, like `scripts/shape/emit-kind-rows.ts` — every schema
+ * declares the marker (KINDS_EVERYWHERE_PLAN §4.2a). Rows written by the old
+ * planner may still lack it until they are re-emitted.
  *
  * New-world kinds published by the aidream kind SDK
  * (`metadata.source = 'kind_sdk'`) are the one-shape doctrine arriving in the

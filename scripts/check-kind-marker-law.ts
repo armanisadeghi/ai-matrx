@@ -45,6 +45,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { execSync } from "node:child_process";
 import path from "node:path";
+import ts from "typescript";
 import { KIND_KEY } from "@ai-matrx/content-ir";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
@@ -96,29 +97,148 @@ const BLESSED: Record<string, string> = {
   "features/content-ir/studio/instance-service.ts":
     "not a reduction — the WRITE path: withRootKindMarker drops any stale marker only to " +
     "re-stamp the row's real kind as the first key.",
+  "features/workflow-runtime/workflow-document-text.ts":
+    "not a door — field-count: `__kind` is identity, not content. workflowDocumentText " +
+    "filters the marker only to COUNT a kindless payload's content fields and decide " +
+    "whether exactly one document field exists; the reduced record never leaves — only " +
+    "a plain string (or null) does.",
+  "features/content-ir/react/loading/infer-loading-slug.ts":
+    "not an instance — a SCHEMA field census: inferLoadingSlug skips the declared `__kind` " +
+    "property when counting a kind SCHEMA's fields to pick a loading skeleton; the marker " +
+    "is identity, never a shape signal, and only a slug leaves.",
+  "features/agents/redux/execution-system/utils/build-tool-injection.ts":
+    "not an instance — door 1 (THE AGENT PROMPT), schema side: the value contract is " +
+    "described as PROSE in a tool description the model reads; the write seam accepts the " +
+    "marker either way. No payload is reduced.",
 };
 
 /**
- * Structural strippers. A DESTRUCTURE is only a strip when it is the left side
- * of an assignment (`const { [KIND_KEY]: _x, ...rest } = value`) — the SAME
- * tokens inside an object literal (`{ [KIND_KEY]: kind, ...value }`) are the
- * opposite act, a STAMP, and the guard must never confuse the fix for the bug.
+ * Structural strippers — read from the TypeScript AST, never from one line of
+ * text. The line-regex version this replaced only knew the LITERAL spelling:
+ * `delete values[KIND_KEY]` (the imported constant as a computed key) walked
+ * straight past it into the mandate test bench, and a destructure split over
+ * several lines was invisible. The AST sees one node whatever the spelling or
+ * the line breaks:
+ *
+ *   • DESTRUCTURE-AWAY — an object BINDING pattern (`const {…} = v`, a
+ *     parameter, a for-of head) that names the marker AND collects a `...rest`.
+ *     The same tokens in an object LITERAL (`{ [KIND_KEY]: kind, ...value }`)
+ *     are the opposite act — a STAMP — and are a different node kind, so the
+ *     guard can never confuse the fix for the bug.
+ *   • DELETE — `delete x[KIND_KEY]`, `delete x["__kind"]`, `delete x.__kind`,
+ *     and `Reflect.deleteProperty(x, KIND_KEY | "__kind")`.
+ *   • FILTER — `k !== KIND_KEY` / `KIND_KEY !== k` / `k != "__kind"`, either
+ *     operand order (the old pattern only caught the constant on the right).
+ *   • A call to a named reducer helper (`REDUCERS`).
+ *
+ * "The marker" is the `KIND_KEY` constant under any local name it was imported
+ * or re-bound as (`import { KIND_KEY as K }`, `const K = KIND_KEY`), or the
+ * string `"__kind"`.
  */
-const DESTRUCTURE_CONTEXT = /(?:const|let|var)\s*\{|\}\s*=/;
-const INLINE_PATTERNS: Array<{ re: RegExp; what: string; needsDestructure?: boolean }> = [
-  {
-    re: /\[\s*KIND_KEY\s*\]\s*:\s*\w+\s*,\s*\.\.\./,
-    what: "destructures KIND_KEY away",
-    needsDestructure: true,
-  },
-  {
-    re: /["']?__kind["']?\s*:\s*\w+\s*,\s*\.\.\./,
-    what: "destructures `__kind` away",
-    needsDestructure: true,
-  },
-  { re: /delete\s+[\w.[\]"']*\[?["']?__kind/, what: "deletes the `__kind` key" },
-  { re: /!==\s*KIND_KEY|key\s*!==\s*["']__kind["']/, what: "filters the marker key out" },
-];
+export interface MarkerViolation {
+  line: number;
+  what: string;
+}
+
+function isMarkerExpr(node: ts.Node | undefined, markerNames: ReadonlySet<string>): boolean {
+  if (!node) return false;
+  while (ts.isParenthesizedExpression(node) || ts.isAsExpression(node) || ts.isNonNullExpression(node)) {
+    node = node.expression;
+  }
+  if (ts.isIdentifier(node)) return markerNames.has(node.text);
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text === KIND_KEY;
+  if (ts.isComputedPropertyName(node)) return isMarkerExpr(node.expression, markerNames);
+  return false;
+}
+
+/** Local identifiers that hold the marker key in this file. */
+function collectMarkerNames(sf: ts.SourceFile): Set<string> {
+  const names = new Set<string>(["KIND_KEY"]);
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportSpecifier(node)) {
+      const imported = (node.propertyName ?? node.name).text;
+      if (imported === "KIND_KEY") names.add(node.name.text);
+    } else if (
+      ts.isVariableDeclaration(node) &&
+      ts.isIdentifier(node.name) &&
+      node.initializer &&
+      isMarkerExpr(node.initializer, names)
+    ) {
+      names.add(node.name.text);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  return names;
+}
+
+const DELETE_WHAT = "deletes the `__kind` key";
+
+/** Scan ONE file's source. Exported so the self-test drives the exact code the CLI runs. */
+export function scanSource(fileName: string, source: string): MarkerViolation[] {
+  const kind = fileName.endsWith(".tsx") ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+  const sf = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true, kind);
+  const markerNames = collectMarkerNames(sf);
+  const out: MarkerViolation[] = [];
+  const seenLines = new Set<number>();
+  const report = (node: ts.Node, what: string): void => {
+    const line = sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1;
+    if (seenLines.has(line)) return;
+    seenLines.add(line);
+    out.push({ line, what });
+  };
+
+  const visit = (node: ts.Node): void => {
+    if (ts.isCallExpression(node)) {
+      const callee = node.expression;
+      const name = ts.isIdentifier(callee)
+        ? callee.text
+        : ts.isPropertyAccessExpression(callee)
+          ? callee.name.text
+          : null;
+      if (name && REDUCERS.includes(name)) {
+        report(node, `\`${name}(…)\` — strips \`__kind\` outside a lawful door`);
+      } else if (
+        ts.isPropertyAccessExpression(callee) &&
+        ts.isIdentifier(callee.expression) &&
+        callee.expression.text === "Reflect" &&
+        callee.name.text === "deleteProperty" &&
+        isMarkerExpr(node.arguments[1], markerNames)
+      ) {
+        report(node, DELETE_WHAT);
+      }
+    } else if (ts.isDeleteExpression(node)) {
+      let target: ts.Expression = node.expression;
+      while (ts.isParenthesizedExpression(target) || ts.isNonNullExpression(target)) {
+        target = target.expression;
+      }
+      if (
+        (ts.isElementAccessExpression(target) && isMarkerExpr(target.argumentExpression, markerNames)) ||
+        (ts.isPropertyAccessExpression(target) && target.name.text === KIND_KEY)
+      ) {
+        report(node, DELETE_WHAT);
+      }
+    } else if (ts.isObjectBindingPattern(node)) {
+      const hasRest = node.elements.some((el) => el.dotDotDotToken);
+      const namesMarker = node.elements.some((el) =>
+        el.propertyName
+          ? isMarkerExpr(el.propertyName, markerNames)
+          : ts.isIdentifier(el.name) && el.name.text === KIND_KEY,
+      );
+      if (hasRest && namesMarker) report(node, "destructures the `__kind` key away");
+    } else if (
+      ts.isBinaryExpression(node) &&
+      (node.operatorToken.kind === ts.SyntaxKind.ExclamationEqualsEqualsToken ||
+        node.operatorToken.kind === ts.SyntaxKind.ExclamationEqualsToken) &&
+      (isMarkerExpr(node.left, markerNames) || isMarkerExpr(node.right, markerNames))
+    ) {
+      report(node, "filters the marker key out");
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  return out;
+}
 
 function scan(): string[] {
   // `--others --exclude-standard` includes files that exist but are not yet
@@ -135,7 +255,6 @@ function scan(): string[] {
     .split("\n")
     .filter(Boolean);
 
-  const callRe = new RegExp(`\\b(${REDUCERS.join("|")})\\s*\\(`);
   const violations: string[] = [];
 
   for (const rel of files) {
@@ -153,23 +272,9 @@ function scan(): string[] {
     const source = readFileSync(sourcePath, "utf8");
     if (!source.includes(KIND_KEY) && !source.includes("KIND_KEY")) continue;
 
-    source.split("\n").forEach((line, i) => {
-      const code = line.replace(/\/\/.*$/, "").replace(/^\s*\*.*$/, "");
-      if (!code.trim()) return;
-
-      const call = callRe.exec(code);
-      if (call) {
-        violations.push(`${rel}:${i + 1}  \`${call[1]}(…)\` — strips \`__kind\` outside a lawful door.`);
-        return;
-      }
-      for (const { re, what, needsDestructure } of INLINE_PATTERNS) {
-        if (needsDestructure && !DESTRUCTURE_CONTEXT.test(code)) continue;
-        if (re.test(code)) {
-          violations.push(`${rel}:${i + 1}  ${what} — \`__kind\` is part of the data.`);
-          return;
-        }
-      }
-    });
+    for (const v of scanSource(rel, source)) {
+      violations.push(`${rel}:${v.line}  ${v.what} — \`__kind\` is part of the data.`);
+    }
   }
   return violations;
 }
@@ -200,4 +305,5 @@ function main(): void {
   exitAfterDrain(1);
 }
 
-main();
+// Imported by the jest self-test — only the CLI entry runs the repo scan.
+if (require.main === module) main();
