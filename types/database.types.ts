@@ -68885,6 +68885,19 @@ export type Database = {
           switched_on: boolean
         }[]
       }
+      unified_data_store_set: {
+        Args: {
+          p_acting_user_id?: string
+          p_note?: string
+          p_on: boolean
+          p_organization_id: string
+        }
+        Returns: Json
+      }
+      unified_data_store_state: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
       upsert_output_feedback: {
         Args: {
           p_corrected_content?: string
@@ -98899,8 +98912,10 @@ export type Database = {
           organization_id: string
           principal_id: string
           principal_type: string
+          request_fingerprint: string | null
           result_field_id: string | null
           result_item_id: string | null
+          result_passkey_id: string | null
           result_value_version: number | null
           target_field_id: string | null
           target_item_id: string | null
@@ -98920,8 +98935,10 @@ export type Database = {
           organization_id: string
           principal_id: string
           principal_type: string
+          request_fingerprint?: string | null
           result_field_id?: string | null
           result_item_id?: string | null
+          result_passkey_id?: string | null
           result_value_version?: number | null
           target_field_id?: string | null
           target_item_id?: string | null
@@ -98941,8 +98958,10 @@ export type Database = {
           organization_id?: string
           principal_id?: string
           principal_type?: string
+          request_fingerprint?: string | null
           result_field_id?: string | null
           result_item_id?: string | null
+          result_passkey_id?: string | null
           result_value_version?: number | null
           target_field_id?: string | null
           target_item_id?: string | null
@@ -99491,6 +99510,96 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
+      }
+      passkey_credentials: {
+        Row: {
+          algorithm: number
+          created_at: string
+          created_by: string | null
+          credential_id: string
+          credential_item_id: string
+          deleted_at: string | null
+          display_name: string | null
+          id: string
+          lifecycle: string
+          metadata: Json
+          organization_id: string
+          public_x: string
+          public_y: string
+          rp_id: string
+          source_field_id: string
+          source_sha256: string
+          source_version: number
+          updated_at: string
+          updated_by: string | null
+          user_handle: string
+          username: string | null
+          version: number
+        }
+        Insert: {
+          algorithm?: number
+          created_at?: string
+          created_by?: string | null
+          credential_id: string
+          credential_item_id: string
+          deleted_at?: string | null
+          display_name?: string | null
+          id?: string
+          lifecycle?: string
+          metadata?: Json
+          organization_id: string
+          public_x: string
+          public_y: string
+          rp_id: string
+          source_field_id: string
+          source_sha256: string
+          source_version?: number
+          updated_at?: string
+          updated_by?: string | null
+          user_handle: string
+          username?: string | null
+          version?: number
+        }
+        Update: {
+          algorithm?: number
+          created_at?: string
+          created_by?: string | null
+          credential_id?: string
+          credential_item_id?: string
+          deleted_at?: string | null
+          display_name?: string | null
+          id?: string
+          lifecycle?: string
+          metadata?: Json
+          organization_id?: string
+          public_x?: string
+          public_y?: string
+          rp_id?: string
+          source_field_id?: string
+          source_sha256?: string
+          source_version?: number
+          updated_at?: string
+          updated_by?: string | null
+          user_handle?: string
+          username?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passkey_credentials_credential_item_id_fkey"
+            columns: ["credential_item_id"]
+            isOneToOne: true
+            referencedRelation: "credential_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passkey_credentials_source_field_id_fkey"
+            columns: ["source_field_id"]
+            isOneToOne: true
+            referencedRelation: "user_secrets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

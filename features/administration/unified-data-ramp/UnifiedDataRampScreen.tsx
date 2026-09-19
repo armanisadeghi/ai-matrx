@@ -50,6 +50,13 @@ interface RampConsumer {
   gate_gained: number | null;
 }
 
+interface StoreSwitch {
+  knob_key: string;
+  switched_on: boolean;
+  has_organization_override: boolean;
+  why: string;
+}
+
 interface DualEngineExit {
   id: string;
   engine_old: string;
@@ -78,6 +85,7 @@ export function UnifiedDataRampScreen() {
   const [organizationId, setOrganizationId] = useState<string>("");
   const [consumers, setConsumers] = useState<RampConsumer[] | null>(null);
   const [exits, setExits] = useState<DualEngineExit[]>([]);
+  const [storeSwitch, setStoreSwitch] = useState<StoreSwitch | null>(null);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -99,8 +107,10 @@ export function UnifiedDataRampScreen() {
       if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
       setConsumers(body.consumers as RampConsumer[]);
       setExits((body.dualEngineExit ?? []) as DualEngineExit[]);
+      setStoreSwitch((body.storeSwitch ?? null) as StoreSwitch | null);
     } catch (e) {
       setConsumers(null);
+      setStoreSwitch(null);
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
@@ -126,6 +136,36 @@ export function UnifiedDataRampScreen() {
         await load(organizationId);
       } catch (e) {
         toast.error(e instanceof Error ? e.message : String(e));
+      } finally {
+        setBusy(null);
+      }
+    },
+    [organizationId, load],
+  );
+
+  // THE STORE'S OWN SWITCH. Not a consumer, and deliberately not gated by Test 1: turning the
+  // store on for an organization moves no data — every consumer knob below is separate and
+  // stays where it is. What it does change is that this organization can reach the store's
+  // doors at all, and can promote a field (defect B1).
+  const setStore = useCallback(
+    async (on: boolean) => {
+      setBusy("__store__");
+      try {
+        const res = await fetch("/api/admin/unified-data-ramp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "store", organizationId, on }),
+        });
+        const body = await res.json();
+        if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+        toast.success(
+          on
+            ? "This organization is on the unified record store. No consumer moved — every consumer switch below is where you left it."
+            : "This organization is off the unified record store. Its doors take writes only from the role that owns the store.",
+        );
+        await load(organizationId);
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : String(e), { duration: 12000 });
       } finally {
         setBusy(null);
       }
@@ -198,6 +238,29 @@ export function UnifiedDataRampScreen() {
           </Button>
         </div>
       </header>
+
+      {storeSwitch && (
+        <div className="rounded-md border border-border p-3 text-sm">
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="font-medium">The record store itself</span>
+            <span className="font-mono text-xs text-muted-foreground">
+              custom/{storeSwitch.knob_key}
+            </span>
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                {storeSwitch.switched_on ? "On for this organization" : "Off for this organization"}
+              </span>
+              <Switch
+                checked={storeSwitch.switched_on}
+                disabled={busy === "__store__" || !organizationId}
+                onCheckedChange={(on: boolean) => void setStore(on)}
+                aria-label="The record store, for this organization"
+              />
+            </div>
+          </div>
+          <div className="mt-1 text-muted-foreground">{storeSwitch.why}</div>
+        </div>
+      )}
 
       {exits.map((exit) => {
         const overdue = exit.status === "open" && new Date(exit.exit_date) < new Date();
