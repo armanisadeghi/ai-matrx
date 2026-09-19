@@ -73,8 +73,12 @@ import {
 } from "@/features/agents/redux/agent-definition/selectors";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { getAgentModeHref } from "@/features/agents/components/shared/AgentModeController";
-import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
-import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
+import {
+  MatrxDataTable,
+  useTableUrlState,
+  type MatrxColumnDef,
+  type MatrxDataTableQueryState,
+} from "@ai-matrx/design-system/data-table";
 import { SurfaceRuntimeProvider } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import type { SurfaceWriteHandlers } from "@/features/surfaces/runtime/SurfaceRuntimeContext";
 import {
@@ -164,7 +168,10 @@ import { useImpactAdvance } from "./impact-advance";
 import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatchWindow";
 import {
   filterMandateConsoleRows,
+  isMandateConsoleDiscovering,
   mandateConsoleSearchText,
+  processMandateConsoleRows,
+  pruneMandateSelectionToVisible,
 } from "./mandate-console-discovery";
 import {
   AdvanceResultsCard,
@@ -361,8 +368,17 @@ export function MandatesConsole() {
   // link lands on the same UI as a new one rather than on a highlighted row.
   const searchParams = useSearchParams();
   const deepLinkKey = searchParams.get("mandate");
-  const tableSearchQuery =
-    searchParams.get(`table.${MANDATES_TABLE_ID}.q`) ?? "";
+  const tableUrlState = useTableUrlState({
+    tableId: MANDATES_TABLE_ID,
+    defaultPageSize: 50,
+  });
+  const hasTableSearch = tableUrlState.state.search.trim().length > 0;
+  const hasTableFilter = isMandateConsoleDiscovering(
+    {
+      ...tableUrlState.state,
+      search: "",
+    },
+  );
   const deepLinkedRef = useRef<string | null>(null);
 
   // Canonical agent listing: the Redux agent-definition slice, filtered to
@@ -720,10 +736,11 @@ export function MandatesConsole() {
       filterMandateConsoleRows(allRows, {
         coverageFilter,
         behindOnly,
-        searchQuery: tableSearchQuery,
+        discovering: false,
       }),
-    [allRows, behindOnly, coverageFilter, tableSearchQuery],
+    [allRows, behindOnly, coverageFilter],
   );
+  const [displayedRows, setDisplayedRows] = useState<ConsoleRow[]>(rows);
 
   // The success measure and the grade counts, over EVERY row (not the view).
   const impactCounts = useMemo(() => {
@@ -803,7 +820,7 @@ export function MandatesConsole() {
     target: HTMLElement | null,
   ): ResolvedContextMenuContext | null => {
     const id = target?.closest?.("[data-row-id]")?.getAttribute("data-row-id");
-    const row = id ? (rows.find((r) => r.id === id) ?? null) : null;
+    const row = id ? (allRows.find((r) => r.id === id) ?? null) : null;
     setMenuRow(row);
     if (!row) return null;
     return {
@@ -921,7 +938,7 @@ export function MandatesConsole() {
   // launched here know every mandate, the health roll-up, and the selected
   // mandate's pin state. Contract: mandates.manifest.ts.
   const getSurfaceScope = () => {
-    const summaries = rows.map(toMandateSummary);
+    const summaries = displayedRows.map(toMandateSummary);
     const health: MandatesHealthSummary = {
       ok: 0,
       behind_latest: 0,
@@ -933,7 +950,7 @@ export function MandatesConsole() {
       code_truth_import_failed: 0,
       no_holder_yet: 0,
     };
-    for (const r of rows) {
+    for (const r of displayedRows) {
       if (r.behindLatest) health.behind_latest += 1;
       if (r.health === "ok") health.ok += 1;
       else if (r.health === "no holder yet") health.no_holder_yet += 1;
@@ -947,7 +964,7 @@ export function MandatesConsole() {
       else health.not_a_system_agent += 1;
     }
     const selectedRow = selectedId
-      ? (rows.find((r) => r.id === selectedId) ?? null)
+      ? (allRows.find((r) => r.id === selectedId) ?? null)
       : null;
     const overrides: MandateOverrideSummary[] | undefined =
       selectedRow && data
@@ -1002,7 +1019,7 @@ export function MandatesConsole() {
         }
       : undefined;
     return createMandatesScope({
-      mandate_count: rows.length,
+      mandate_count: displayedRows.length,
       mandates_summary: summaries,
       health_summary: health,
       unhealthy_mandates: summaries.filter((s) => s.health !== "ok"),
@@ -1039,7 +1056,7 @@ export function MandatesConsole() {
   // Both are reassigned from the wrapper's `ref` callback below — the same
   // live-ref idiom `UserTableViewer` uses, and the only one that stays fresh
   // every render without touching a ref during render.
-  const rowsRef = useRef<ConsoleRow[]>(rows);
+  const rowsRef = useRef<ConsoleRow[]>(allRows);
   // Runs once per distinct ?mandate= value. No row lookup is needed — the page
   // resolves the key itself — so an old link works even before rows load.
   useEffect(() => {
@@ -1108,6 +1125,16 @@ export function MandatesConsole() {
   // Only rows whose DEFAULT rung is advanceable render a checkbox; a blocked
   // row keeps its per-row door and never rides a batch.
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const visibleSelectedIds = pruneMandateSelectionToVisible(
+    selectedIds,
+    displayedRows,
+  );
+  const handleViewChange = (nextRows: ConsoleRow[]) => {
+    setDisplayedRows(nextRows);
+    setSelectedIds((current) =>
+      pruneMandateSelectionToVisible(current, nextRows),
+    );
+  };
 
   /**
    * THE write door (I3, I8) through the one shared hook: consequence dialog
@@ -1522,6 +1549,27 @@ export function MandatesConsole() {
     advanceOneAnyway,
   ]);
 
+  const processConsoleRows = (
+    catalogueRows: ConsoleRow[],
+    state: MatrxDataTableQueryState,
+  ) =>
+    processMandateConsoleRows(catalogueRows, columns, state, {
+      coverageFilter,
+      behindOnly,
+    });
+  const behindLabel = !behindOnly
+    ? "All mandates"
+    : hasTableSearch
+      ? "Searching all mandates"
+      : hasTableFilter
+        ? "Filtering all mandates"
+        : "Behind latest";
+  const behindTitle = !behindOnly
+    ? "Showing every mandate — click to show only those behind latest"
+    : hasTableSearch || hasTableFilter
+      ? "This query is searching the full catalogue. Behind latest remains your saved default when the query is cleared — click to show every mandate by default"
+      : "Showing only mandates not running the newest saved version — click to show every mandate";
+
   // The coverage board's named rows open the mandate PAGE — the same
   // destination as a row click, the right-click menu and `?mandate=`. The
   // board can name a mandate the table has filtered out, and the page resolves
@@ -1541,7 +1589,7 @@ export function MandatesConsole() {
       <div
         ref={(node) => {
           if (!node) return;
-          rowsRef.current = rows;
+          rowsRef.current = allRows;
           selectedIdRef.current = selectedId;
         }}
         className="flex h-full min-h-0 flex-col gap-3 p-4"
@@ -1673,8 +1721,10 @@ export function MandatesConsole() {
           >
             <MatrxDataTable
               urlState={{ id: MANDATES_TABLE_ID }}
-              data={rows}
+              data={allRows}
               columns={columns}
+              processLocalRows={processConsoleRows}
+              onViewChange={handleViewChange}
               getRowId={(r) => r.id}
               searchText={mandateConsoleSearchText}
               isLoading={loading}
@@ -1696,14 +1746,10 @@ export function MandatesConsole() {
                       aria-pressed={behindOnly}
                       className="h-8 gap-1 text-xs"
                       onClick={() => setBehindOnly(!behindOnly)}
-                      title={
-                        behindOnly
-                          ? "Showing only mandates not running the newest saved version — click to show every mandate"
-                          : "Showing every mandate — click to show only those behind latest"
-                      }
+                      title={behindTitle}
                     >
                       <History className="h-3.5 w-3.5" />
-                      {behindOnly ? "Behind latest" : "All mandates"}
+                      {behindLabel}
                     </Button>
                     <ImpactLegend />
                     {/* Declaring a job is admin work, so the New button lives
@@ -1762,7 +1808,7 @@ export function MandatesConsole() {
               }}
               onRowOpen={(r) => openMandatePage(r.mandateKey)}
               selection={{
-                selectedIds,
+                selectedIds: visibleSelectedIds,
                 onSelectedIdsChange: setSelectedIds,
                 noun: "mandate",
                 isRowSelectable: (r) =>

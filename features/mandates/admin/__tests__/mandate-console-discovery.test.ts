@@ -1,7 +1,14 @@
 import {
   filterMandateConsoleRows,
+  isMandateConsoleDiscovering,
   mandateConsoleSearchText,
+  processMandateConsoleRows,
+  pruneMandateSelectionToVisible,
 } from "../mandate-console-discovery";
+import type {
+  MatrxColumnDef,
+  MatrxDataTableQueryState,
+} from "@ai-matrx/design-system/data-table/types";
 import { readFileSync } from "fs";
 import { join } from "path";
 
@@ -29,7 +36,7 @@ describe("admin mandate discovery", () => {
       filterMandateConsoleRows(rows, {
         coverageFilter: null,
         behindOnly: true,
-        searchQuery: "flashcard",
+        discovering: true,
       }).map((row) => row.key),
     ).toEqual([
       "flashcards.generate_cards",
@@ -43,7 +50,7 @@ describe("admin mandate discovery", () => {
       filterMandateConsoleRows(rows, {
         coverageFilter: null,
         behindOnly: true,
-        searchQuery: "   ",
+        discovering: false,
       }).map((row) => row.key),
     ).toEqual(["shortcut.make_flashcards"]);
   });
@@ -53,7 +60,7 @@ describe("admin mandate discovery", () => {
       filterMandateConsoleRows(rows, {
         coverageFilter: "red",
         behindOnly: true,
-        searchQuery: "flashcard",
+        discovering: true,
       }).map((row) => row.key),
     ).toEqual(["flashcards.help_live"]);
   });
@@ -80,7 +87,153 @@ describe("admin mandate discovery", () => {
     }
   });
 
-  it("keeps labels and ordinary row clicks as doors to the management page", () => {
+  it("opens the full catalogue for column and layered discovery while retaining explicit coverage", () => {
+    const state = (overrides: Partial<MatrxDataTableQueryState> = {}) => ({
+      page: 1,
+      pageSize: 50,
+      search: "",
+      anyOf: "",
+      columnFilters: {},
+      sort: null,
+      ...overrides,
+    });
+    expect(isMandateConsoleDiscovering(state())).toBe(false);
+    expect(isMandateConsoleDiscovering(state({ columnFilters: { feature: { kind: "select", value: "education" } } }))).toBe(true);
+    expect(isMandateConsoleDiscovering(state({ layeredFilters: [{ id: "incomplete", field: "feature", operator: "equals", value: "" }] }))).toBe(false);
+    expect(isMandateConsoleDiscovering(state({ layeredFilters: [{ id: "feature-equals", field: "feature", operator: "equals", value: "education" }] }))).toBe(true);
+
+    const catalogue = [
+      {
+        mandateKey: "current.queue",
+        mandateName: "queue",
+        label: "Current queue",
+        feature: "operations",
+        agentName: "Queue agent",
+        goal: null,
+        mandate: { description: null },
+        coverage: "green" as const,
+        behindLatest: true,
+      },
+      {
+        mandateKey: "education.current",
+        mandateName: "current",
+        label: "Education current",
+        feature: "education",
+        agentName: "Education agent",
+        goal: "Teach",
+        mandate: { description: "An up-to-date mandate" },
+        coverage: "green" as const,
+        behindLatest: false,
+      },
+      {
+        mandateKey: "education.red",
+        mandateName: "red",
+        label: "Education red",
+        feature: "education",
+        agentName: "Education agent",
+        goal: "Teach",
+        mandate: { description: "Coverage remains explicit" },
+        coverage: "red" as const,
+        behindLatest: false,
+      },
+    ];
+    const columns: MatrxColumnDef<(typeof catalogue)[number]>[] = [
+      { accessorKey: "feature", header: "Feature", filter: "select" },
+      { accessorKey: "mandateName", header: "Mandate" },
+    ];
+
+    expect(
+      processMandateConsoleRows(catalogue, columns, state({
+        columnFilters: { feature: { kind: "select", value: "education" } },
+      }), { coverageFilter: null, behindOnly: true }).map((row) => row.mandateKey),
+    ).toEqual(["education.current", "education.red"]);
+    expect(
+      processMandateConsoleRows(catalogue, columns, state({
+        columnFilters: { feature: { kind: "select", value: "education" } },
+      }), { coverageFilter: "red", behindOnly: true }).map((row) => row.mandateKey),
+    ).toEqual(["education.red"]);
+    expect(
+      processMandateConsoleRows(catalogue, columns, state(), {
+        coverageFilter: null,
+        behindOnly: true,
+      }).map((row) => row.mandateKey),
+    ).toEqual(["current.queue"]);
+  });
+
+  it("searches non-behind rows, ranks identity matches, sorts, and keeps empty selects empty", () => {
+    const state = (overrides: Partial<MatrxDataTableQueryState> = {}) => ({
+      page: 1,
+      pageSize: 50,
+      search: "",
+      anyOf: "",
+      columnFilters: {},
+      sort: null,
+      ...overrides,
+    });
+    const catalogue = [
+      {
+        mandateKey: "prose.match",
+        mandateName: "other",
+        label: "Flashcards helper",
+        feature: "education",
+        agentName: "Agent",
+        goal: "Create flashcards",
+        mandate: { description: "A flashcards fallback" },
+        coverage: "green" as const,
+        behindLatest: false,
+      },
+      {
+        mandateKey: "flashcards.generate",
+        mandateName: "flashcards",
+        label: "Generate",
+        feature: "education",
+        agentName: "Agent",
+        goal: null,
+        mandate: { description: null },
+        coverage: "red" as const,
+        behindLatest: false,
+      },
+    ];
+    const columns: MatrxColumnDef<(typeof catalogue)[number]>[] = [
+      { accessorKey: "feature", header: "Feature", filter: "select" },
+      { accessorKey: "mandateName", header: "Mandate" },
+    ];
+
+    expect(
+      processMandateConsoleRows(catalogue, columns, state({ search: "flashcards" }), {
+        coverageFilter: null,
+        behindOnly: true,
+      }).map((row) => row.mandateKey),
+    ).toEqual(["flashcards.generate", "prose.match"]);
+    expect(
+      processMandateConsoleRows(catalogue, columns, state({
+        search: "flashcards",
+        sort: { id: "mandateName", direction: "asc" },
+      }), { coverageFilter: null, behindOnly: true }).map((row) => row.mandateKey),
+    ).toEqual(["flashcards.generate", "prose.match"]);
+    expect(
+      processMandateConsoleRows(catalogue, columns, state({
+        columnFilters: { feature: { kind: "select", value: "", values: [] } },
+      }), { coverageFilter: null, behindOnly: true }),
+    ).toEqual([]);
+    expect(
+      processMandateConsoleRows(catalogue, columns, state({ search: "flashcards" }), {
+        coverageFilter: "red",
+        behindOnly: true,
+      }).map((row) => row.mandateKey),
+    ).toEqual(["flashcards.generate"]);
+  });
+
+  it("drops hidden ids before a bulk action can receive them", () => {
+    expect(
+      pruneMandateSelectionToVisible(
+        ["behind", "hidden"],
+        [{ id: "behind" }],
+      ),
+    ).toEqual(["behind"]);
+  });
+
+  it("keeps discovered rows available to the console's identity and action paths", () => {
     const source = readFileSync(
       join(process.cwd(), "features/mandates/admin/MandatesConsole.tsx"),
       "utf8",
@@ -94,5 +247,11 @@ describe("admin mandate discovery", () => {
     expect(source).toContain(
       "onRowOpen={(r) => openMandatePage(r.mandateKey)}",
     );
+    expect(source).toContain("data={allRows}");
+    expect(source).toContain("processLocalRows={processConsoleRows}");
+    expect(source).toContain("onViewChange={handleViewChange}");
+    expect(source).toContain("selectedIds: visibleSelectedIds");
+    expect(source).toContain("allRows.find((r) => r.id === id)");
+    expect(source).toContain("rowsRef.current = allRows");
   });
 });
