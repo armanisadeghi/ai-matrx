@@ -1,15 +1,30 @@
 import { openOverlay } from "@/lib/redux/slices/overlaySlice";
+import { loadConversation } from "@/features/agents/redux/execution-system/thunks/load-conversation.thunk";
 import type { OverlayId } from "@/features/overlays/catalogue";
 import { ALL_WINDOW_STATIC_METADATA } from "../registry/windowRegistryMetadata";
 import { initUrlHydration } from "../url-sync/initUrlHydration";
 import { getHydrator } from "../url-sync/UrlPanelRegistry";
 
-function hydrate(typeKey: string, instanceId: string) {
+jest.mock(
+  "@/features/agents/redux/execution-system/thunks/load-conversation.thunk",
+  () => ({
+    loadConversation: jest.fn((args: { conversationId: string }) => ({
+      type: "test/loadConversation",
+      payload: args,
+    })),
+  }),
+);
+
+function hydrate(
+  typeKey: string,
+  instanceId: string,
+  args: Record<string, string> = {},
+) {
   const dispatch = jest.fn();
   const hydrator = getHydrator(typeKey);
 
   expect(hydrator).toBeDefined();
-  hydrator?.(dispatch, instanceId, {});
+  hydrator?.(dispatch, instanceId, args);
 
   return dispatch;
 }
@@ -28,6 +43,102 @@ describe("URL hydration registry", () => {
     });
 
     expect(missing).toEqual([]);
+  });
+
+  // 🚨 THE REPORTED DEFECT (2026-09-19). This token was in the address bar and
+  // opened NOTHING: the hydrator seeded the conversation's display config and
+  // never opened the shell that config describes, so no window ever registered
+  // and the manager wiped the link back to the bare route.
+  describe("an agent deep link opens the agent", () => {
+    const CONVERSATION_ID = "8b4bead9-a20c-40cc-8b9e-3bc7e4df66f3";
+
+    it("opens the shell the link's display mode names", () => {
+      const dispatch = hydrate("agent", CONVERSATION_ID, {
+        m: "flexible-panel",
+      });
+
+      expect(dispatch).toHaveBeenCalledWith(
+        openOverlay({
+          overlayId: "agentFlexiblePanel",
+          instanceId: CONVERSATION_ID,
+          data: { conversationId: CONVERSATION_ID },
+        }),
+      );
+    });
+
+    it("reads the conversation back out of the database", () => {
+      // A floating panel is not a route: no page owns this conversation, and
+      // the transcript deliberately never self-loads. If the hydrator does not
+      // ask, the restored panel is an empty room that lies.
+      hydrate("agent", CONVERSATION_ID, { m: "flexible-panel" });
+
+      expect(jest.mocked(loadConversation)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          conversationId: CONVERSATION_ID,
+          expectMaterialized: true,
+        }),
+      );
+    });
+
+    it("never auto-runs the agent it reopens, and keeps the link's mode", () => {
+      // Reopening an address is not a decision to spend a paid run. Both ride
+      // in the SAME dispatch that stamps metadata.display, so no render can
+      // see a stored autoRun before the correction lands.
+      hydrate("agent", CONVERSATION_ID, { m: "flexible-panel" });
+
+      expect(jest.mocked(loadConversation)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          displayOverrides: {
+            displayMode: "flexible-panel",
+            autoRun: false,
+          },
+        }),
+      );
+    });
+
+    it("falls back to the floating chat when the link names no mode", () => {
+      expect(hydrate("agent", CONVERSATION_ID)).toHaveBeenCalledWith(
+        openOverlay({
+          overlayId: "agentFloatingChat",
+          instanceId: CONVERSATION_ID,
+          data: { conversationId: CONVERSATION_ID },
+        }),
+      );
+    });
+
+    it("reopens the Chat window as itself, not as a conversation shell", () => {
+      // `agentRunWindow` shares the `agent` key but is a window that HOSTS
+      // conversations; its `m-run` token carries the agent and the open chat.
+      expect(
+        hydrate("agent", "chat-window-1", {
+          m: "run",
+          a: "agent-7",
+          c: "conv-9",
+        }),
+      ).toHaveBeenCalledWith(
+        openOverlay({
+          overlayId: "agentRunWindow",
+          instanceId: "chat-window-1",
+          data: {
+            initialAgentId: "agent-7",
+            initialSelectedConversationId: "conv-9",
+          },
+        }),
+      );
+    });
+
+    it("opens nothing, loudly, for a token that names no conversation", () => {
+      const warn = jest
+        .spyOn(console, "warn")
+        .mockImplementation(() => undefined);
+      const dispatch = jest.fn();
+      getHydrator("agent")?.(dispatch, "default", {});
+      expect(dispatch).not.toHaveBeenCalled();
+      expect(warn).toHaveBeenCalledWith(
+        expect.stringContaining("?panels=agent:default"),
+      );
+      warn.mockRestore();
+    });
   });
 
   it("hydrates Creator Hub with an optional tab", () => {

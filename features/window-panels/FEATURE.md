@@ -135,6 +135,8 @@ side panel) and the `/detail/[type]/[id]` route. Presentation is the person's
 
 - 2026-09-14 — **`impactBatchWindow` carries `posture` and `focusAgentId`** (Agent Change Impact I6): the opener, the controller block, the window's `onCollectData` and the metadata `defaultData`/`preservation.dataKeys` all grew the two keys, so a post-edit panel opened through the per-person read door and scoped to one agent restores as such. Title reads "Change impact — this agent" in that case.
 
+- 2026-09-19 — **Agent deep links open the agent, and no `?panels=` token is ever erased.** Reported live: `/agents/<id>/build?panels=agent:<conversationId>:m-flexible-panel` loaded, cleared itself back to the bare route, and opened nothing. Two defects, one in each half of the system. (1) The `agent` hydrator dispatched `initInstanceUIState` and stopped — it wrote a conversation's display CONFIG and never opened the shell that config describes, never read the conversation back out of the database, and therefore never registered a `urlSync` entry. It now performs the same sequence a click performs: open the shell for the mode through `DISPLAY_MODE_TO_OVERLAY_ID` (extracted to `features/agents/redux/execution-system/display-mode-overlay.ts` so `launchAgentExecution` and the hydrator read ONE map), `loadConversation({ expectMaterialized: true })`, then re-assert the mode the LINK named on top of `metadata.display`. (2) `UrlPanelManager` erased the token: its writer can only describe open windows, so an unregistered token vanished from the bar after a 5 s wait that ALSO froze every other window's URL sync. Tokens the URL arrived with are now preserved verbatim until their key registers (`withUnclaimedTokens`), the wait is gone, and a still-unclaimed token is a `console.error` naming the key and the remedy. Also: `agentRunWindow` mints `m-run` (+ `a`/`c` args) so the Chat window and the conversation shells stop colliding on the shared `agent` key; the duplicate second `topic` hydrator, which silently overwrote the canonical one, is deleted; the legacy `files` alias hydrator (nothing minted it; `cloud_files` is the registry key) is deleted under no-legacy.
+
 - 2026-09-09 — Watchdog failure payloads retain the viewport used for diagnosis, its degenerate/fallback flag, and render acknowledgement kind; missing acknowledgements remain `none`, never an inferred presentation.
 
 - 2026-09-09 — **Alternate mobile surfaces acknowledge visibility without fake geometry.** A registered window may deliberately replace `WindowPanel` on mobile with a purpose-built surface. Settings, Chat Options, and the four flashcard viewers use `useOverlaySurfaceRenderAck` while their drawer, sheet, or fullscreen viewer is active; the silent-render watchdog treats that mount as visibility proof instead of false-screaming `no-window-registered` and offering a useless `revealWindow` action.
@@ -643,6 +645,47 @@ To give a window a deep link, set `urlSync: { key: "..." }` on its registry entr
 Instance id auto-falls-back to `overlayId` for singletons — URL reads like `?panels=notes:notesWindow`.
 
 Every enabled registry `urlSync.key` must have a hydrator in [`url-sync/initUrlHydration.ts`](./url-sync/initUrlHydration.ts). A dev-only assertion logs missing mappings when `UrlPanelManager` mounts.
+
+### 🚨 THE HYDRATOR OPENS THE WINDOW, AND THE ADDRESS IS NEVER ERASED
+
+Two laws, both learned from one report (Arman, 2026-09-19: an agent deep link
+"goes to this and then it clears it and just loads this and the component is
+never loaded"). They are the whole contract between a `?panels=` token and a
+window on screen.
+
+**1. A hydrator OPENS the window.** Seeding a feature's state is not restoring a
+panel. A hydrator dispatches the same open the click dispatches — `openOverlay`
+(or the feature's one opener primitive) — and then fetches whatever the panel
+needs, because a floating panel is not a route and no page owns it. The `agent`
+hydrator dispatched `initInstanceUIState` and nothing else: it wrote how a
+conversation would be displayed and never opened the shell, never read the
+conversation, and so never registered a `urlSync` entry. Every agent deep link
+in the product landed on the bare route with nothing open.
+
+**2. `UrlPanelManager` never deletes a token the URL arrived with.** The
+Redux→URL writer serializes the windows that are open RIGHT NOW, so any token
+whose window has not registered — or cannot — is simply absent from what it
+writes back, and the address is destroyed. That is the "then it clears it" half:
+the one copy of the link is gone from the bar, from history, and from anything
+the person was about to paste, and a refresh cannot even retry it. Tokens the
+URL arrived with are now carried verbatim (`withUnclaimedTokens`) until the key
+they name registers; from that moment the live entries govern, so closing the
+window still clears its token. Matching is by `typeKey`, never the whole
+`typeKey:instanceId`, because a window legitimately registers under an identity
+the link did not carry (a vault link names an ITEM; the vault window registers
+its singleton id). A token still unclaimed after 5 s is a `console.error` naming
+the key and the remedy — it is never silently dropped, and it never freezes the
+other windows' URL sync (the old bounded-wait guard did exactly that).
+
+**Two windows may share one key only if their tokens tell them apart.**
+`agentRunWindow` (the Chat window, which HOSTS conversations) and the
+display-mode shells (`agentFlexiblePanel` and siblings, each of which IS one
+conversation) both claim `agent`. The `m` arg disambiguates: `m-run` is the Chat
+window, addressed by its own instance and carrying the agent and open chat in
+`a`/`c` args ([`windows/agents/agentRunWindowAddress.ts`](./windows/agents/agentRunWindowAddress.ts));
+anything else is a conversation shell, addressed by the conversation id, with
+`m` naming the display mode through the ONE map both the live launch and the
+hydrator read ([`features/agents/redux/execution-system/display-mode-overlay.ts`](../agents/redux/execution-system/display-mode-overlay.ts)).
 
 ### 🚨 A WINDOW WITH NO ADDRESS CANNOT BE REACHED — the address census (R35)
 
