@@ -183,12 +183,28 @@ export function judge(
                     `this code ships to users on any lane's release commit with the switch bypassed.`,
             });
         }
-        if (entry.kind !== "runtime" && gated) {
+        // A RED TWIN is the one non-runtime kind that MAY call the gate: wiring the
+        // gate wrongly on purpose is the whole of what it does. It is held to its
+        // name instead — a file that does not end `.red.test.ts(x)` cannot claim the
+        // word, so "red_twin" can never be used to walk served code past the
+        // `runtime` rule above.
+        if (entry.kind === "red_twin" && !/\.red\.test\.tsx?$/.test(entry.file)) {
+            violations.push({
+                file: entry.file,
+                message:
+                    `${entry.id}: registered "red_twin" but is not named like one. ` +
+                    `A red twin's file must end ".red.test.ts" or ".red.test.tsx" — that ` +
+                    `name is what keeps this kind from becoming a way to ship ungated ` +
+                    `runtime code.`,
+            });
+        }
+        if (entry.kind !== "runtime" && entry.kind !== "red_twin" && gated) {
             violations.push({
                 file: entry.file,
                 message:
                     `${entry.id}: registered "${entry.kind}" but calls the gate. ` +
-                    `Either it is runtime code (change the kind) or the gate does not belong here.`,
+                    `Either it is runtime code (change the kind), or it is a deliberately ` +
+                    `wrong-wired test (kind "red_twin"), or the gate does not belong here.`,
             });
         }
     }
