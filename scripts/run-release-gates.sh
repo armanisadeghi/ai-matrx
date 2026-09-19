@@ -537,6 +537,14 @@ if $STRICT; then
         # No baseline: the tree was brought to zero on adoption (2026-09-10, 200
         # literals across 76 files), so any finding is NEW.
         "Hand-typed mandate keys (vocabulary not adopted)|pnpm check:mandate-keys"
+        # ONE GOOGLE AUTHORIZATION WINDOW PER PERSON (V-23 NEW-3). "One window
+        # at a time" used to be a `useRef` inside ONE component and a `useState`
+        # read from a stale closure, over 19 call sites: two presses opened two
+        # Google consent windows for one intent. The gate is module scope and
+        # `useGoogleAuthorizationWindow` is the one door to it; this fails on any
+        # file outside providers/google-provider/ naming a raw provider
+        # authorization primitive. Static, offline, no credentials.
+        "Google authorization windows (a raw provider call bypassing the one-window gate)|pnpm check:google-auth-gate"
         # THE DISCLOSURE LAW (Arman, 2026-08-25) — a surface that RUNS an agent
         # registers its fixed jobs in the top Agents menu. Advisory: backlog is 40
         # surfaces deep and a release must not stall on someone else's page.
@@ -915,6 +923,14 @@ else
         # No baseline: the tree was brought to zero on adoption (2026-09-10, 200
         # literals across 76 files), so any finding is NEW.
         "Hand-typed mandate keys (vocabulary not adopted)|pnpm check:mandate-keys"
+        # ONE GOOGLE AUTHORIZATION WINDOW PER PERSON (V-23 NEW-3). "One window
+        # at a time" used to be a `useRef` inside ONE component and a `useState`
+        # read from a stale closure, over 19 call sites: two presses opened two
+        # Google consent windows for one intent. The gate is module scope and
+        # `useGoogleAuthorizationWindow` is the one door to it; this fails on any
+        # file outside providers/google-provider/ naming a raw provider
+        # authorization primitive. Static, offline, no credentials.
+        "Google authorization windows (a raw provider call bypassing the one-window gate)|pnpm check:google-auth-gate"
         # THE DISCLOSURE LAW (Arman, 2026-08-25) — a surface that RUNS an agent
         # registers its fixed jobs in the top Agents menu. Advisory: backlog is 40
         # surfaces deep and a release must not stall on someone else's page.

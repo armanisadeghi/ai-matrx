@@ -98,7 +98,28 @@ const BUSY_INIT: RegExp[] = [
 const NULL_LIST_INIT = /useState<[^>]*\[\] \| null>\(null\)/;
 const NULL_PAINTS_BUSY = /animate-spin|isLoading=\{|loading=\{/;
 
-const BOOTSTRAP_READ = "selectOrgBootstrapResolved";
+/**
+ * THE BOOTSTRAP AUTHORITY, in either of its two spellings.
+ *
+ * It was `selectOrgBootstrapResolved` alone until R37 (2026-09-19) showed that
+ * flag is a THREE-state reading of a FOUR-state question:
+ * `setOrgBootstrapFailure` sets it TRUE, so "resolved and still no id" is also
+ * the FAILED read, and every surface derived from it told a member of thirteen
+ * organizations to pick one after a blip. The reading moved to the gate —
+ * `useOrganizationRequired().organizationState` — which reads the same
+ * bootstrap through a pure leaf and names all four answers. Both readings
+ * satisfy THIS guard, which is about the forever skeleton; which of the two a
+ * refusal may be spelled from is `pnpm check:org-three-states` rule 5.
+ */
+const BOOTSTRAP_READS = [
+  "selectOrgBootstrapResolved",
+  "useOrganizationRequired",
+  "organizationState",
+] as const;
+
+function readsTheBootstrap(source: string): boolean {
+  return BOOTSTRAP_READS.some((name) => source.includes(name));
+}
 const HR_GATE = "useHrContext";
 const SETTLED_SENTENCE = "No organization is selected";
 
@@ -122,10 +143,10 @@ describe('"no org yet" is not "still reading"', () => {
   it("every fixed reader still reads the bootstrap authority and names the remedy", () => {
     for (const relative of FIXED_CENSUS) {
       const source = readFileSync(join(REPO_ROOT, relative), "utf8");
-      expect(`${relative}: ${BOOTSTRAP_READ}`).toBe(
-        source.includes(BOOTSTRAP_READ)
-          ? `${relative}: ${BOOTSTRAP_READ}`
-          : `${relative}: MISSING ${BOOTSTRAP_READ}`,
+      expect(`${relative}: reads the bootstrap authority`).toBe(
+        readsTheBootstrap(source)
+          ? `${relative}: reads the bootstrap authority`
+          : `${relative}: MISSING one of ${BOOTSTRAP_READS.join(" / ")}`,
       );
       expect(`${relative}: ${SETTLED_SENTENCE}`).toBe(
         source.includes(SETTLED_SENTENCE)
@@ -141,7 +162,7 @@ describe('"no org yet" is not "still reading"', () => {
       const source = readFileSync(join(REPO_ROOT, relative), "utf8");
       if (!ORG_EARLY_RETURN.test(source)) continue;
       if (!hasBusyInit(source)) continue;
-      if (source.includes(BOOTSTRAP_READ)) continue;
+      if (readsTheBootstrap(source)) continue;
       if (source.includes(HR_GATE)) continue;
       if (relative in LEFT_ALONE) continue;
       offenders.push(relative);

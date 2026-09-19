@@ -24,7 +24,7 @@ import { formatDurationSeconds } from "@ai-matrx/kit/format";
 import { useEffect, useMemo } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
-import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { fetchContextState } from "@/lib/api/context-api";
 import {
   selectContextState,
@@ -98,7 +98,15 @@ export function ModelContextPanel({ conversationId }: ModelContextPanelProps) {
   // back on the same calm lie for the seconds before anyone knows — the defect
   // this comment claims to have fixed. Unresolved renders as reading, never as
   // "nothing measured".
-  const { canLoad, organizationRequired, resolving } = useOrganizationRequired();
+  //
+  // 🚨 AND THE READ ITSELF CAN FAIL — the FOURTH state (R37). The boolean pair
+  // above cannot see it: under a failed organization read `organizationRequired`
+  // is false (the nudge is a claim about memberships nobody read) and `canLoad`
+  // is false, so this panel sat on "Reading this conversation's context…"
+  // forever — a skeleton that never resolves, which is law 4's dead screen.
+  // `organizationState` is the one reading that names all four, and the ONE
+  // notice renders each of them, Try again included.
+  const { canLoad, organizationState } = useOrganizationRequired();
 
   useEffect(() => {
     if (!canLoad) return undefined;
@@ -107,10 +115,15 @@ export function ModelContextPanel({ conversationId }: ModelContextPanelProps) {
     return () => controller.abort();
   }, [canLoad, conversationId, dispatch]);
 
-  if (organizationRequired && !state) {
+  if (
+    !state &&
+    (organizationState === "required" || organizationState === "unavailable")
+  ) {
     return (
-      <OrganizationRequiredNotice
+      <OrganizationContextNotice
         compact
+        state={organizationState}
+        what="Context measurements"
         title="Choose an organization to read context"
         description="Context measurements are read in one organization's context, and none is selected for this session."
       />
@@ -121,7 +134,7 @@ export function ModelContextPanel({ conversationId }: ModelContextPanelProps) {
     return (
       <EmptyStats
         text={
-          resolving
+          organizationState === "resolving"
             ? "Reading this conversation's context…"
             : "No context measurements yet. Fire a turn to populate."
         }

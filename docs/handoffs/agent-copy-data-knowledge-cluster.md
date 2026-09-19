@@ -126,7 +126,7 @@ these surfaces cannot be meaningfully exercised until D128 is fixed.
 | `/cms/[siteId]/pages/[pageId]` | `PageEditor` (7 URL-synced tabs: Preview/Code[HTML·CSS·JS]/Plan/SEO/Measure/Settings/History) | **record/detail** | none | header pair from **LIVE editor state** + `unsaved_changes` diff |
 | `/cms/[siteId]/components` | component CRUD list | list | none | row pair + view copy + `ExportMenu` |
 | `/cms/[siteId]/settings` | `SiteAdvancedSettings`, `SiteDomainSettings` | field group | none | `xs` pairs from live form state |
-| `/cms/admin` | `ActivityFeedPanel`, `ApprovalsQueuePanel`, `SitePageTreePanel`, `AssetsPanel` | **list/table** ×4 | none | row pair + view copy + `ExportMenu` |
+| `/cms/admin` | `ActivityFeedPanel`, the platform `ApprovalQueue` (kind `cms_content_exception`, since 2026-09-19), `SitePageTreePanel`, `AssetsPanel` | **list/table** ×4 | none | row pair + view copy + `ExportMenu` |
 | `/cms/html-pages` | html page list | list | none | row pair + view copy + `ExportMenu` |
 | `PageEditor` Preview / `CmsPageMeasure` | tool | **non-record tool** | none | **SKIP** |
 

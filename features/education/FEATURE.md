@@ -90,6 +90,17 @@ Structure, demos, AND the full marketing/content fanout are shipped + live-verif
 
 ## Change log
 
+- `2026-09-19` — **`/education/notes/new` stops claiming it is creating a note
+  when the organization read FAILED (R37, the fourth state).** The page's only
+  other content is a spinner reading "Creating your note…", and the boolean pair
+  it gated on could not name a failed read: `organizationRequired` false,
+  `canLoad` false — so no note was created and the page said it was creating one,
+  for as long as the tab stayed open. `EduNoteNew` now reads `organizationState`
+  and renders the ONE `OrganizationContextNotice`, which says "we could not
+  check your organization" with Try again. Proof: the new case in
+  `EduNoteNew.test.tsx` (red on the prior bytes). Class guard:
+  `pnpm check:org-three-states` rule 4.
+
 - `2026-09-17` — **A saved study plan names its organization in the payload.** `planService.savePlan` built the plan row through `planPayload(draft, organizationId)`, whose `...(organizationId ? {...} : {})` spread could produce a row with no `organization_id` at all — which `public._stamp_org_default` then files in the writer's personal workspace. `planPayload` no longer takes an organization; the insert states it (`{ ...planPayload(draft), organization_id }`) from `ensureOrgId`, and the re-plan UPDATE still leaves the plan where it is filed. Guard: `pnpm check:organization-context`.
 
 - 2026-09-17 — **Every education write carries the organization, and the refusal is said in English.** Four writes relied on `public._stamp_org_default` to fill a NULL `organization_id` and therefore filed the person's work in their PERSONAL organization no matter which organization they were in: `study/service/planService.ts` (`education.study_plan`, plus `study_plan_day` / `study_plan_block`, which also carry the stamp) and `study/service/studyService.ts` `createSession` (`education.study_session`). The plan row now carries the SELECTED organization and its day/block children carry THE PLAN'S organization — `regeneratePlan` reads it off the parent plan, so a re-plan can never move children into whichever organization happens to be selected now. `assessment_item` is untouched: it carries a real `_inherit_org` trigger that copies the parent assessment (verified live), which IS the parent-record rule. Separately, all four education `fail(...)` helpers (`study/service/serviceError.ts`, `assessment/data/assessmentService.ts`, `media/service.ts`, `engage/data/gameService.ts`) turned an org refusal into `"createResult: Select an organization before sending this request."` plus a `console.error` — a programmer's sentence on a learner's screen. Each now returns the remedy sentence and drops the console noise; the callers that already render `result.error` show it unchanged. Law: `../../common-docs/policies/context-is-carried-never-rebuilt.md`.

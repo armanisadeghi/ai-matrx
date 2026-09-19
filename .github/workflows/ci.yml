@@ -226,6 +226,25 @@ jobs:
         run: pnpm check:signout-scope
       - name: the sign-out scope guard can still fail (self-test)
         run: pnpm check:signout-scope:self-test
+      - name: ONE GOOGLE AUTHORIZATION WINDOW PER PERSON — no raw provider call
+        # V-23 NEW-3: "one window at a time" was true per COMPONENT and covered
+        # 2 of 19 call sites — `useGoogleConsentRunner` held a `useRef`, so two
+        # mounted surfaces each held their own lock, and the other seventeen
+        # sites called the provider primitives behind nothing but a local `busy`
+        # state set inside an async handler. Two presses opened two Google
+        # consent windows for one intent. The gate is module scope (one tab is
+        # one person) and this keeps `useGoogleAuthorizationWindow` the ONE door
+        # to it. The guard shipped with F-103 and ran nowhere until now. Pure
+        # static scan over tracked .ts/.tsx, offline, no credentials.
+        run: pnpm check:google-auth-gate
+      - name: the Google authorization-gate guard can still fail (self-test)
+        # A guard you cannot demonstrate failing is not a guard. The self-test
+        # plants a raw `requestAuthorizationCode` and a raw
+        # `startAuthorizationCodeRedirect` call on a surface and asserts each is
+        # reported, while a call through the one door, the provider directory
+        # that OWNS the primitives, and a provider stand-in inside a test file
+        # are not.
+        run: pnpm check:google-auth-gate:self-test
       - name: NO HAND-TYPED MANDATE KEYS — the vocabulary is the authority
         # @ai-matrx/agents 0.10.0 publishes the declared mandate key set,
         # emitted by THE ONE GENERATOR from aidream's own declared_mandates().

@@ -110,7 +110,6 @@
     "features/window-panels/windows/FeedbackWindow.tsx",
     "features/window-panels/windows/agents/AgentCreateAppWindow.tsx",
     "features/workflow-runtime/builder/RunSurfaceBuilder.tsx",
-    "features/workflow-runtime/discovery/components/WaitingInbox.tsx",
     "features/workflow-runtime/run-failure-explanation.ts",
     "lib/sandbox/explicit-organization.ts",
     "providers/google-provider/oauthRedirect.ts"

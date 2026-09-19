@@ -12,14 +12,37 @@
  * null` would be a dead press — `GoogleTasksImportPanel` already refuses to
  * load without one. This proves the control itself refuses honestly instead:
  * disabled, with its reason, and the opener is never called.
+ *
+ * 🚨 HOW THIS SUITE DRIVES THE ORGANIZATION (2026-09-19). It used to stand the
+ * app-context slice in with a HAND-WRITTEN `selectShouldPromptForOrganization`
+ * over an empty state (`useAppSelector: (selector) => selector({})`) — a second
+ * implementation of a platform rule, living in a test. The day the gate started
+ * reading that rule from its pure leaf (`lib/organizations/
+ * shouldPromptForOrganization.ts`, which nobody mocks, deliberately), the copy
+ * in this file stopped being consulted and the real leaf was handed `{}` — no
+ * `appContext` at all, which it honestly reads as "boot has not answered yet".
+ * The button then said "Checking which organization you are working in…" where
+ * this suite expects the refusal, and the suite was right: with a settled boot
+ * and nothing selected, the refusal is the truth.
+ *
+ * The fix is the shape THE FIXTURE LAW (F-107) asks for everywhere: drive REAL
+ * state through `makeAppContextState` and let the real selectors answer. No
+ * selector is re-implemented here, so the next input the gate learns costs this
+ * file nothing.
  */
 
 import React, { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
-let mockOrganizationId: string | null = "org-9";
-/** Has boot ANSWERED the organization question? The second state, named. */
-let mockBootstrapResolved = true;
+/** THE FIXTURE LAW: the slice builds its own state, and the real selectors read it. */
+const { makeAppContextState } = jest.requireActual<
+  typeof import("@/lib/redux/slices/appContextSlice")
+>("@/lib/redux/slices/appContextSlice");
+
+let appContext = makeAppContextState({
+  organization_id: "org-9",
+  orgBootstrapResolved: true,
+});
 const openGoogleTasksImport = jest.fn();
 
 jest.mock("@ai-matrx/tap-target/buttons", () => ({
@@ -50,14 +73,18 @@ jest.mock("@/features/tasks/redux/taskUiSlice", () => ({
   selectSelectedTaskId: () => null,
 }));
 
-jest.mock("@/lib/redux/slices/appContextSlice", () => ({
-  selectOrganizationId: () => mockOrganizationId,
-  selectShouldPromptForOrganization: () =>
-    mockBootstrapResolved && mockOrganizationId == null,
+jest.mock("@/lib/redux/hooks", () => ({
+  useAppSelector: (selector: (state: unknown) => unknown) =>
+    selector({ appContext }),
+  useAppDispatch: () => jest.fn(),
 }));
 
-jest.mock("@/lib/redux/hooks", () => ({
-  useAppSelector: (selector: (state: unknown) => unknown) => selector({}),
+/** The fourth state's press re-runs the read; nothing here exercises it. */
+jest.mock("@/lib/redux/store-singleton", () => ({
+  getStoreSingleton: () => ({ dispatch: () => {} }),
+}));
+jest.mock("@/lib/redux/thunks/activeOrgBootstrap", () => ({
+  retryActiveOrgBootstrap: () => ({ type: "test/retry-organization-read" }),
 }));
 
 jest.mock("@/features/overlays/openers/googleImportWindows", () => ({
@@ -92,8 +119,10 @@ afterEach(() => {
 
 describe("the Import from Google Tasks control", () => {
   it("opens the import window with the selected organization", () => {
-    mockOrganizationId = "org-9";
-    mockBootstrapResolved = true;
+    appContext = makeAppContextState({
+      organization_id: "org-9",
+      orgBootstrapResolved: true,
+    });
     mount();
 
     const button = importButton();
@@ -111,8 +140,7 @@ describe("the Import from Google Tasks control", () => {
   });
 
   it("refuses honestly and never opens the opener with no organization selected", () => {
-    mockOrganizationId = null;
-    mockBootstrapResolved = true;
+    appContext = makeAppContextState({ orgBootstrapResolved: true });
     mount();
 
     const button = importButton();
@@ -120,6 +148,33 @@ describe("the Import from Google Tasks control", () => {
     expect(button?.disabled).toBe(true);
     expect(button?.title).toBe(
       "Select an organization before importing Google Tasks.",
+    );
+
+    act(() => {
+      button!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+
+    expect(openGoogleTasksImport).not.toHaveBeenCalled();
+  });
+
+  /**
+   * THE FOURTH STATE (R37). With the organization READ itself failed, nobody
+   * looked at this person's memberships, so the refusal above would be a claim
+   * nobody verified — this control stays pressable and the press asks again.
+   * Driving it here costs one fixture field, because the real leaf reads the
+   * real state.
+   */
+  it("stays pressable and never opens the opener when the read FAILED", () => {
+    appContext = makeAppContextState({
+      orgBootstrapResolved: true,
+      orgBootstrapFailure: "the organization read failed: Failed to fetch",
+    });
+    mount();
+
+    const button = importButton();
+    expect(button?.disabled).toBe(false);
+    expect(button?.title).toBe(
+      "We could not check which organization you are working in. Press to try again.",
     );
 
     act(() => {

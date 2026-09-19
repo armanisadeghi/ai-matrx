@@ -299,6 +299,84 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- 2026-09-19 — **RULE 5: `orgBootstrapResolved` IS NOT A "REQUIRED" SIGNAL (R37).** `scripts/check-org-three-states.ts` now refuses any module that pairs `orgBootstrapResolved` (or a local alias of it) with a falsy organization id in one expression — the shape twenty-two modules carried, and the shape that turns one failed read into "choose an organization" because `setOrgBootstrapFailure` sets that flag TRUE. Rule 1 also no longer accepts `selectOrgBootstrapResolved` / `orgBootstrapResolved` as a reading of the states at all (a THREE-state signal in a four-state world; removing it added zero violations). Self-test cases Z–AF prove it fails on the defect and passes on the gate's reading. The twenty-two modules were converted to `useOrganizationRequired().organizationState` + `OrganizationContextNotice` in the same commit; `__tests__/no-org-is-not-loading.test.ts` now accepts the gate as the bootstrap authority.
+- `2026-09-19` — **RULE 5's id-detection now covers every spelling, not just the
+  bare identifier (V-26 NEW-3).** The falsy-id half of rule 5 originally stopped
+  at the first `.` or `(`, so `!appContext.organization_id && orgBootstrapResolved`
+  read clean — the exact defect, spelled through a member-access chain instead of
+  a bare local. The connector class between `!` and the org-id token now allows
+  `.`, `(`, `)`, and `?` (member access, optional chaining, and a wrapping
+  selector call) while still excluding `&&`/`||`/`?`/`:`/comparison operators, so
+  it never crosses a logical or ternary boundary into an unrelated negation.
+  Catches, now proven with planted self-test cases AG–AP: `appContext.organization_id`
+  / `state.appContext.organization_id` (dotted member access, any depth),
+  `useAppSelector(selectOrganizationId)` and `selectOrganizationId(...)` (wrapped
+  or direct selector calls), and a destructured local (`const { organization_id }
+  = appContext`) — already covered as a bare identifier once destructured, now
+  with an explicit test proving it. `pnpm check:org-three-states --self-test`
+  is red on the old regex against these five planted shapes and green after.
+- `2026-09-19` — **A TEST NEVER RE-IMPLEMENTS THE ORGANIZATION RULE (the pure
+  leaf's other half).** Moving `selectShouldPromptForOrganization` into a leaf
+  nobody mocks turned every hand-written copy of it in a slice stand-in into
+  dead code — and the real leaf, handed the `{}` those suites pass their
+  `useAppSelector`, honestly answers "boot has not answered yet". The Tasks
+  import suite caught it: the disabled button said *"Checking which organization
+  you are working in…"* where it expects the refusal, and the suite was right —
+  a settled boot with nothing selected IS the refusal. The leaf is unchanged
+  (defaulting an unknown state to `resolving` rather than to a refusal nobody
+  verified is the whole R37 posture); the eight suites that hand-wrote the rule
+  now drive REAL state through `makeAppContextState` (THE FIXTURE LAW, F-107)
+  and let the real selectors answer: `features/tasks/.../the-import-button-refuses-with-no-organization`
+  (the red one, which also gained the fourth-state case), five
+  `google-workspace/calendar/__tests__` suites and two `connectors/__tests__`
+  suites, all of which were latent — green only because they never tested a
+  no-organization case. Census: those eight were every suite in the repo that
+  stood a `selectShouldPromptForOrganization` in; none is left.
+
+- `2026-09-19` — **THE LEGACY PAIR IS NOT A READING OF FOUR STATES — five surfaces
+  were waiting forever under a failed read, and rule 4 now refuses the shape.**
+  `useOrganizationRequired` still exposes `organizationRequired` and `resolving`
+  for surfaces written before the discriminant, and `resolving` stays TRUE
+  through `unavailable` on purpose so an old reader keeps the checking posture.
+  That is the right default and the wrong ANSWER: a surface whose ONLY reading is
+  that pair can never leave the waiting posture when the organization read fails.
+  Five did — `ModelContextPanel` ("Reading this conversation's context…"),
+  `EncoreRunPage`'s bench panel (`{ status: "loading" }`), `useWaitingRuns` and
+  `useAgenda` (their skeletons) and `EduNoteNew` ("Creating your note…" while no
+  note was being created) — all converted to `organizationState` +
+  `OrganizationContextNotice` / `ORGANIZATION_UNAVAILABLE`, each with a test that
+  is RED on the prior bytes. The census that followed found one more of the same
+  shape, `useRunsList`, fixed the same way. Class guard: **`pnpm
+  check:org-three-states` rule 4** — a module that destructures
+  `organizationRequired` or `resolving` from the gate without `organizationState`
+  fails, and a module reading only `organizationId` / `canLoad` (a call guard,
+  not a screen) is untouched. Proven failing on the five surfaces' prior bytes
+  and passing on these, plus six self-test expectations (T–Y). `WaitingInbox` was
+  struck from the census (113 → 112).
+
+- `2026-09-19` — **THE GATE'S SECOND INPUT BECAME A PURE LEAF TOO (owed from
+  F-102).** F-102 moved `orgBootstrapFailure` out of `appContextSlice` so that a
+  surface test standing that slice in with the two selectors it knew about could
+  not be broken by the gate learning a new input. `selectShouldPromptForOrganization`
+  — the gate's OTHER slice input — was left behind, so the class was half
+  closed: an incomplete stand-in (`{ selectOrganizationId }` alone, which is
+  every stand-in written before the nudge selector existed) still died with
+  `TypeError: selector is not a function` the moment its surface adopted
+  `useOrganizationRequired`. The definition now lives in
+  **`lib/organizations/shouldPromptForOrganization.ts`**, a leaf that imports
+  only the `orgBootstrapFailure` leaf, built with `createSelector` over three
+  one-property readers (resolved / selected id / failure) that each read
+  defensively, because the state a stand-in hands them may predate a field.
+  `appContextSlice` imports it and re-exports it under the same name for
+  ordinary Redux consumers — ONE definition, no twin — and the gate now reads
+  exactly ONE member of the slice, `selectOrganizationId`. Behaviour is
+  unchanged in all four states. Proof:
+  `features/organizations/__tests__/the-gate-survives-an-incomplete-slice-standin.organization-context.test.tsx`
+  renders a consumer over `makeAppContextState` (THE FIXTURE LAW) through a
+  stand-in carrying `selectOrganizationId` alone — 5 tests, all five RED on the
+  prior bytes with `TypeError: selector is not a function`, all five green on
+  these.
+
 - `2026-09-18` — **F-110 (V-24, NEW-3): THE FOURTH STATE'S REMEDY IS THE PRESS —
   a sentence never names a button that is not on the screen.** The `unavailable`
   control title ended "Try again." while the control could not be pressed, and

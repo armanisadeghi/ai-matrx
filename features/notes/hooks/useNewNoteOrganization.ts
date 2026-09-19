@@ -36,6 +36,10 @@ import {
   selectPersonalOrganizationId,
 } from "@/lib/redux/slices/appContextSlice";
 import { selectDefaultOrganizationId } from "@/lib/redux/preferences/userPreferenceSelectors";
+// The pure leaf, deliberately — the fourth organization state is read without
+// adding a member to the app-context slice stand-ins every notes test carries.
+import { selectOrgBootstrapFailure } from "@/lib/organizations/orgBootstrapFailure";
+import { ORGANIZATION_UNAVAILABLE_DESCRIPTION } from "@/features/organizations/useOrganizationRequired";
 import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
 import { pickActiveOrganization } from "@/features/organizations/hooks/useActiveOrganizationAutoSelect";
 import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
@@ -135,9 +139,15 @@ export async function resolveNewNoteOrganization(
         // notice with the picker inside. (Not the modal chooser: its
         // registration is module-global and outlives the surface that mounted
         // it, so a later click could wait forever on a chooser nobody sees.)
+        // 🚨 AND THE FOURTH STATE IS NOT THE REFUSAL (R37). `resolved` is TRUE
+        // when the organization read FAILED too, and then nothing at all is
+        // known about this person's memberships — "choose one" would be a
+        // claim nobody verified. Say what actually happened instead.
         throw new OrganizationContextError(
           "organization_context_required",
-          "Choose the organization this note belongs to.",
+          selectOrgBootstrapFailure(state)
+            ? ORGANIZATION_UNAVAILABLE_DESCRIPTION
+            : "Choose the organization this note belongs to.",
         );
       }
     }
