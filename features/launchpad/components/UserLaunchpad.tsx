@@ -66,8 +66,6 @@ export default function UserLaunchpad() {
 
   return (
     <div className="h-full overflow-y-auto bg-textured text-foreground">
-      <span className="shell-hide-sidebar" aria-hidden="true" />
-
       <div className="mx-auto w-full max-w-[1680px] px-3 pb-10 pt-[calc(var(--shell-header-h)+1rem)] sm:px-5 lg:px-7">
         <section className="mb-4 flex flex-col gap-3 rounded-2xl border border-border bg-card-textured p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div className="min-w-0">
@@ -132,22 +130,16 @@ export default function UserLaunchpad() {
             <PinnedSection openInNewTab />
 
             <section className="space-y-3">
-              <div className="flex items-end justify-between gap-3">
-                <div>
-                  <h2 className="text-sm font-semibold text-foreground">
-                    Browse AI Matrx
-                  </h2>
-                  <p className="text-xs text-muted-foreground">
-                    Open an area now, or reveal its destinations without leaving
-                    the Launchpad.
-                  </p>
-                </div>
+              <div className="flex items-center justify-between gap-3">
+                <h2 className="text-sm font-semibold text-foreground">
+                  Browse AI Matrx
+                </h2>
                 <span className="shrink-0 text-xs text-muted-foreground">
                   {USER_LAUNCHPAD_GROUPS.length} areas
                 </span>
               </div>
 
-              <div className="columns-1 gap-3 md:columns-2 xl:columns-3 2xl:columns-4">
+              <div className="grid grid-cols-1 items-stretch gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {USER_LAUNCHPAD_GROUPS.map((group) => (
                   <LaunchpadGroupCard
                     key={group.id}
@@ -233,12 +225,12 @@ function LaunchpadGroupCard({
     group.destinations.length - 1 - previewDestinations.length;
 
   return (
-    <article className="mb-3 inline-block w-full break-inside-avoid overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-      <div className="flex items-start gap-2 border-b border-border p-3">
+    <article className="flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="flex items-center gap-2 border-b border-border p-3">
         <LaunchpadAnchor
           href={group.href}
           external={group.external}
-          className="group/link flex min-w-0 flex-1 items-start gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="group/link flex min-w-0 flex-1 items-center gap-3 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <span
             className={cn(
@@ -254,7 +246,7 @@ function LaunchpadGroupCard({
               <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-colors group-hover/link:text-primary" />
             </span>
             {group.description ? (
-              <span className="mt-0.5 block line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+              <span className="mt-0.5 block truncate whitespace-nowrap text-xs text-muted-foreground">
                 {group.description}
               </span>
             ) : null}
@@ -275,7 +267,7 @@ function LaunchpadGroupCard({
       </div>
 
       {previewDestinations.length > 0 ? (
-        <div className="p-1.5">
+        <div className="flex-1 p-1.5">
           {previewDestinations.map((destination) => (
             <LaunchpadAnchor
               key={destination.href}

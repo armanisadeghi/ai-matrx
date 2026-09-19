@@ -2,7 +2,7 @@
 
 **Status:** `active`
 **Tier:** `2`
-**Last updated:** `2026-08-20`
+**Last updated:** `2026-09-19`
 
 ## Purpose
 
@@ -33,7 +33,7 @@ destinations derive from the shell navigation registry.
 ## Key flows
 
 1. A signed-in user opens `/launchpad` from the shell. The shell link itself opens a new tab so their current workspace is preserved.
-2. The page hides the normal sidebar and presents the canonical AppShell header plus a compact, sticky search control.
+2. The page uses the canonical AppShell sidebar and header plus a compact, sticky search control.
 3. With no query, the page shows the dashboard's real start actions, the user's real favorites, and compact top-level area cards.
 4. Search ranks every discoverable registry destination plus start actions and matching favorites. Every result is a real new-tab anchor.
 5. Area cards show at most three direct child destinations. Their `View all N destinations` control is a real count-door: it searches that area and reveals the complete matching set.
@@ -47,14 +47,15 @@ destinations derive from the shell navigation registry.
 - The Launchpad is authenticated and hidden from guests.
 - `/dashboard` stays a hub. Do not move its metrics or rotating discovery content here.
 - The default browse state stays compact. Full destination density appears only after a search or an explicit `View all` action.
-- The route uses the canonical `(core)` AppShell header and full-height body rules.
+- The route uses the canonical `(core)` AppShell sidebar, header, and full-height body rules.
+- Browse cards sit on a CSS grid so cards share a row top-edge even when some areas have more destinations.
+- Area-card descriptions stay on one line. The catalog shortens long nav copy for the card; search still ranks the full nav description.
 
 ## Doctrine compliance
 
 **Reused:** `primaryNavItems`, `settingsItem`, dashboard `QUICK_ACTIONS`,
 `QuickActions`, `PinnedSection`, `usePinned`, `PinButton`, `SearchInput`,
-`filterAndSortBySearch`, `ShellIcon`, and the shell's `shell-hide-sidebar`
-sentinel.
+`filterAndSortBySearch`, and `ShellIcon`.
 
 **Extended:** `QuickActions` accepts an opt-in compact grid and new-tab mode,
 while `PinnedSection` accepts an opt-in new-tab mode;
@@ -67,4 +68,5 @@ and favorites into an always-open launcher.
 
 ## Change log
 
+- `2026-09-19` — Cursor: restored the left shell sidebar, replaced masonry columns with a snapping CSS grid, forced one-line area-card descriptions, and removed the unused browse helper sentence.
 - `2026-08-20` — Codex: created the authenticated user Launchpad, registry-backed search and browse cards, shared new-tab quick starts and favorites, the persistent shell door, unique route identity, and shared visibility-aware stale-page refresh.

@@ -1,4 +1,9 @@
-import { buildUserLaunchpadCatalog, searchUserLaunchpad } from "./catalog";
+import {
+  buildUserLaunchpadCatalog,
+  LAUNCHPAD_CARD_DESCRIPTION_MAX_LENGTH,
+  searchUserLaunchpad,
+  USER_LAUNCHPAD_GROUPS,
+} from "./catalog";
 import type { ShellNavItem } from "@/features/shell/constants/nav-data";
 
 const baseItem = {
@@ -61,6 +66,27 @@ describe("user Launchpad catalog", () => {
     ]);
   });
 
+  it("uses the one-line card subtitle for a long area description", () => {
+    const groups = buildUserLaunchpadCatalog(
+      [
+        {
+          ...baseItem,
+          label: "AI Work",
+          href: "/work",
+          description:
+            "Conversations and connected work across AI Matrx and coding platforms",
+        },
+      ],
+      {
+        ...baseItem,
+        label: "Settings",
+        href: "/settings",
+      },
+    );
+
+    expect(groups[0]?.description).toBe("Chats and connected work");
+  });
+
   it("ranks title matches above group and description matches", () => {
     const results = searchUserLaunchpad("research", [
       {
@@ -82,5 +108,17 @@ describe("user Launchpad catalog", () => {
     ]);
 
     expect(results.map((item) => item.href)).toEqual(["/two", "/one"]);
+  });
+
+  it("keeps every area-card description on one line", () => {
+    const offenders = USER_LAUNCHPAD_GROUPS.filter((group) => {
+      const description = group.description ?? "";
+      return (
+        description.includes("\n") ||
+        description.length > LAUNCHPAD_CARD_DESCRIPTION_MAX_LENGTH
+      );
+    }).map((group) => `${group.label}: "${group.description ?? ""}"`);
+
+    expect(offenders).toEqual([]);
   });
 });
