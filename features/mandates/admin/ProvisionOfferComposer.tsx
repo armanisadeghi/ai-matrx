@@ -28,7 +28,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { Badge } from "@/components/ui/badge";
 import { isJsonObject, type JsonObject, type JsonValue } from "@/types/json";
-import { KIND_KEY } from "@ai-matrx/content-ir";
 import { getKindInputContractBySlug } from "@/features/content-ir/registry/schema-source-kind-tables";
 import {
   SCALAR_VALUE_KINDS,
@@ -170,9 +169,13 @@ export function ProvisionOfferComposer({
               );
               return;
             }
-            const values = { ...instance };
-            delete values[KIND_KEY];
-            onApply(values);
+            // The instance keeps its `__kind` marker (KINDS_EVERYWHERE_PLAN
+            // §4.2a) — it is part of the data. Every downstream consumer
+            // accepts-and-ignores it: the server's consumption pipeline treats
+            // it as an unconsumed name, agent substitution only replaces
+            // declared `{{placeholders}}`, and a workflow surface lands only
+            // the names it declares.
+            onApply(instance);
           }}
         />
       </div>
