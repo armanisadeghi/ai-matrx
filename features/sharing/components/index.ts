@@ -7,6 +7,9 @@
 
 export { ShareButton } from './ShareButton';
 export { ShareModal } from './ShareModal';
+export { AccessSummaryPanel } from './AccessSummaryPanel';
+/** The `share` port binding @ai-matrx/records-ui asks its host for. */
+export { recordStoreShare } from './RecordStoreShareSurface';
 export { PermissionsList } from './PermissionsList';
 export { PermissionBadge, PublicBadge, PermissionLevelDescription } from './PermissionBadge';
 

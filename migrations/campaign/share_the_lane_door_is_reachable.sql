@@ -1,0 +1,2 @@
+-- chair-step: one GRANT, which the additive allow-list refuses by name. `public.store_door_lane` is declared as a signed-in door, but the DDL guard that fires on CREATE takes PUBLIC's default EXECUTE back from every new SECURITY DEFINER function before the door row exists a few statements later — so the door was declared and shut. This re-issues exactly what that row declares, for `authenticated` only.
+grant execute on function public.store_door_lane(text, uuid) to authenticated;

@@ -59,7 +59,7 @@ describe("the chair-step confirmation", () => {
         encoding: "utf8",
         stdio: ["ignore", "pipe", "pipe"],
         // No database credential may be needed to be refused: prove it by withholding them.
-        env: { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "" },
+        env: { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "", NODE_ENV: process.env.NODE_ENV ?? "test" },
         timeout: 120_000,
       });
       const out = `${res.stdout}\n${res.stderr}`;

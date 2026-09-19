@@ -6,6 +6,8 @@
 //   POST { action: "gate",  consumerId, organizationId }  → run Test 1 now
 //   POST { action: "set",   consumerId, organizationId, on, userId?, note? }
 //                                               → THE SWITCH
+//   POST { action: "store", organizationId, on, note? }
+//                                               → THE STORE'S OWN SWITCH
 //
 // WHY AN API ROUTE AT ALL, when this repo's law is that reads and writes go
 // straight to Supabase. The three ramp doors are SECURITY DEFINER functions
@@ -64,17 +66,30 @@ export async function GET(request: NextRequest) {
     // TWO RPCs, NOT A TABLE READ. campaign_watch is not in pgrst.db_schemas and
     // must not be — the dual-engine exit comes back through its own door, like
     // everything else here.
-    const [{ data: consumers, error }, exit] = await Promise.all([
+    const [{ data: consumers, error }, exit, store] = await Promise.all([
       admin.schema("platform").rpc("unified_data_ramp_state", {
         p_organization_id: organizationId,
       }),
       admin.schema("platform").rpc("unified_data_ramp_exit"),
+      // THE STORE'S OWN SWITCH (custom/system_enabled). It is not a consumer and is not
+      // gated by Test 1 — it moves no data — but until it is on, this organization reaches
+      // none of the store's doors and cannot promote a field (defect B1), so the screen
+      // that ramps the consumers is the screen that has to be able to turn it on.
+      admin.schema("platform").rpc("unified_data_store_state", {
+        p_organization_id: organizationId,
+      }),
     ]);
     if (error) throw new Error(error.message);
     if (exit.error) throw new Error(exit.error.message);
+    if (store.error) throw new Error(store.error.message);
 
     return NextResponse.json(
-      { organizationId, consumers: consumers ?? [], dualEngineExit: exit.data ?? [] },
+      {
+        organizationId,
+        consumers: consumers ?? [],
+        dualEngineExit: exit.data ?? [],
+        storeSwitch: store.data ?? null,
+      },
       { headers: NO_CACHE },
     );
   } catch (error) {
@@ -95,6 +110,35 @@ export async function POST(request: NextRequest) {
     };
 
     const { action, consumerId, organizationId } = body;
+
+    // THE STORE'S OWN SWITCH takes no consumer: it is the organization, not a reader.
+    if (action === "store") {
+      if (!organizationId) {
+        return NextResponse.json(
+          { error: "The store switch is per organization — name the organization." },
+          { status: 400, headers: NO_CACHE },
+        );
+      }
+      if (typeof body.on !== "boolean") {
+        return NextResponse.json(
+          { error: 'The "store" action needs on: true or on: false.' },
+          { status: 400, headers: NO_CACHE },
+        );
+      }
+      const { data, error } = await createAdminClient()
+        .schema("platform")
+        .rpc("unified_data_store_set", {
+          p_organization_id: organizationId,
+          p_on: body.on,
+          p_acting_user_id: actingUserId,
+          p_note: body.note ?? undefined,
+        });
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 409, headers: NO_CACHE });
+      }
+      return NextResponse.json({ storeSwitch: data }, { headers: NO_CACHE });
+    }
+
     if (!consumerId || !organizationId) {
       return NextResponse.json(
         { error: "Both consumerId and organizationId are required." },

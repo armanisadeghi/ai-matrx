@@ -19,9 +19,11 @@ import { useAppSelector } from "@/lib/redux/hooks";
 import { createClient } from "@/utils/supabase/client";
 import {
   downloadVaultLoginCsv,
+  confirmVaultPasswordIdentity,
   getVaultExportActor,
   previewVaultLoginCsv,
   VaultLoginExportTransportError,
+  VaultIdentityConfirmationError,
   type VaultLoginCsvPreviewResponse,
   type VaultVerifiedExportActor,
 } from "../vault-service";
@@ -38,25 +40,6 @@ function sameActor(
     left.userId === right.userId &&
     left.organizationId === right.organizationId
   );
-}
-
-function hasFreshPasswordAmr(claims: unknown): boolean {
-  if (!claims || typeof claims !== "object" || !("amr" in claims)) return false;
-  const { amr } = claims;
-  if (!Array.isArray(amr)) return false;
-  const now = Math.floor(Date.now() / 1_000);
-  return amr.some((entry) => {
-    if (!entry || typeof entry !== "object") return false;
-    const value = entry as Record<string, unknown>;
-    return (
-      value.method === "password" &&
-      typeof value.timestamp === "number" &&
-      Number.isFinite(value.timestamp) &&
-      value.timestamp > 0 &&
-      value.timestamp <= now &&
-      now - value.timestamp <= 900
-    );
-  });
 }
 
 function omissionsText(omissions: Record<string, number> | undefined): string | null {
@@ -234,43 +217,33 @@ export function VaultLoginExportDialog({
     setRunning(true);
     setError(null);
     try {
-      const beforeConfirmation = await getVaultExportActor();
-      if (!isCurrent(operation)) return;
-      if (!sameActor(beforeConfirmation, actor)) {
-        invalidate("Your account or organization changed. Start the export again from the current Vault.");
-        return;
-      }
-      const supabase = createClient();
-      const { data, error: signInError } = await supabase.auth.signInWithPassword({
-        email: actor.email,
+      const actual = await confirmVaultPasswordIdentity(
+        actor,
         password,
-      });
-      if (signInError || !data.user || !data.session) {
-        if (isCurrent(operation)) {
-          setError("That password could not confirm your identity. Try again.");
-        }
-        return;
-      }
-      const { data: claimData, error: claimsError } = await supabase.auth.getClaims(
-        data.session.access_token,
+        getVaultExportActor,
       );
-      const actual = await getVaultExportActor();
       if (!isCurrent(operation)) return;
-      if (
-        claimsError ||
-        data.user.id !== actor.userId ||
-        !sameActor(actual, actor) ||
-        !hasFreshPasswordAmr(claimData?.claims)
-      ) {
-        invalidate("Identity confirmation could not be verified for this Vault. Start the export again.");
-        return;
-      }
       expectedActor.current = actual;
       setIdentityConfirmation(null);
       setError(null);
-    } catch {
-      if (isCurrent(operation)) {
-        setError("Identity confirmation is unavailable. Try again.");
+    } catch (cause) {
+      if (!isCurrent(operation)) return;
+      if (cause instanceof VaultIdentityConfirmationError) {
+        if (cause.code === "credentials_rejected") {
+          setError("That password could not confirm your identity. Try again.");
+        } else if (cause.code === "context_changed") {
+          invalidate(
+            "Your account or organization changed. Start the export again from the current Vault.",
+          );
+        } else {
+          invalidate(
+            "We could not verify your identity. Start the export again from the current Vault.",
+          );
+        }
+      } else {
+        invalidate(
+          "We could not verify your identity. Start the export again from the current Vault.",
+        );
       }
     } finally {
       passwordInput.current && (passwordInput.current.value = "");

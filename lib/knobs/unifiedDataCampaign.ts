@@ -116,6 +116,7 @@ export const UNIFIED_DATA_CAMPAIGN = {
 
 import { useEffect, useState } from "react";
 import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 
 export interface UnifiedDataCampaignGate {
   /** `null` until both halves have answered. A screen shows nothing yet, not "off". */
@@ -132,10 +133,11 @@ export interface UnifiedDataCampaignGate {
  */
 export function useUnifiedDataCampaign(args: {
   organizationId: string | null | undefined;
+  organizationState?: OrganizationState;
   userId: string | null | undefined;
   platformDefault: () => Promise<boolean>;
 }): UnifiedDataCampaignGate {
-  const { organizationId, userId, platformDefault } = args;
+  const { organizationId, organizationState, userId, platformDefault } = args;
   const [fallback, setFallback] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -153,6 +155,9 @@ export function useUnifiedDataCampaign(args: {
 
   const resolved = useEffectiveKnob(organizationId, userId, UNIFIED_DATA_CAMPAIGN_KNOB);
 
+  if (organizationState && organizationState !== "ready") {
+    return { on: null, because: "Waiting for organization context." };
+  }
   if (!organizationId) {
     return {
       on: fallback,

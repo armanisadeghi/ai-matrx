@@ -1080,6 +1080,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ai/decisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Decision */
+        post: operations["create_decision_ai_decisions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ai/decisions/{execution_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Decision */
+        get: operations["read_decision_ai_decisions__execution_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ai/agent-assignments": {
         parameters: {
             query?: never;
@@ -4580,6 +4614,23 @@ export interface paths {
         patch: operations["update_item_vault_items__item_id__patch"];
         trace?: never;
     };
+    "/vault/items/{item_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Item */
+        post: operations["restore_item_vault_items__item_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    }
     "/vault/items/{item_id}/fields": {
         parameters: {
             query?: never;
@@ -43984,6 +44035,7 @@ export interface components {
             /** Status */
             status?: string | null;
         };
+        Answer: components["schemas"]["NoulAnswer"] | components["schemas"]["ChoiceAnswer"] | components["schemas"]["ScoreAnswer"];
         /**
          * AnthropicCountTokensResponse
          * @description Typed success wire returned by Anthropic's count-tokens endpoint.
@@ -54005,6 +54057,35 @@ export interface components {
             /** Operational */
             operational: boolean;
         };
+        /** ChoiceAnswer */
+        ChoiceAnswer: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "choice";
+            /** Choice */
+            choice: string;
+            /** Probabilities */
+            probabilities: {
+                [key: string]: number;
+            };
+            /** Confidence */
+            confidence: number;
+        };
+        /** ChoiceQuestion */
+        ChoiceQuestion: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "choice";
+            instructions: components["schemas"]["SystemOneEntry"];
+            /** Criteria */
+            criteria: {
+                [key: string]: components["schemas"]["SystemOneEntry"];
+            };
+        };
         /** ChunkDetail */
         ChunkDetail: {
             /** Chunk Id */
@@ -61665,6 +61746,71 @@ export interface components {
             pages?: string | null;
             /** Record Page */
             record_page: string;
+        };
+        /** DecisionResultPayload */
+        DecisionResultPayload: {
+            /**
+             * Type
+             * @default decision_result
+             * @constant
+             */
+            type?: "decision_result";
+            /** Execution Id */
+            execution_id: string;
+            /** Request Id */
+            request_id: string;
+            /** Provider Request Id */
+            provider_request_id?: string | null;
+            /** Model */
+            model: string;
+            /** Answers */
+            answers: {
+                [key: string]: components["schemas"]["Answer"];
+            };
+            usage: components["schemas"]["DecisionUsage"];
+            /** Cost Usd */
+            cost_usd: number;
+            /** Offering Id */
+            offering_id: string;
+            /** Route */
+            route: string;
+        };
+        /**
+         * DecisionRunRequest
+         * @description HTTP/service input; native runner validates the provider discriminated body.
+         */
+        DecisionRunRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
+            /** Model */
+            model: string;
+            /** Offering Id */
+            offering_id?: string | null;
+            state: components["schemas"]["SystemOneState"];
+            /** Questions */
+            questions: {
+                [key: string]: components["schemas"]["Question"];
+            };
+        };
+        /** DecisionUsage */
+        DecisionUsage: {
+            /** Input Tokens */
+            input_tokens: number;
+            /** Output Tokens */
+            output_tokens: number;
         };
         /** DeclarePanelBody */
         DeclarePanelBody: {
@@ -87617,6 +87763,29 @@ export interface components {
             /** Published At */
             published_at: string;
         };
+        /** NoulAnswer */
+        NoulAnswer: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "noul";
+            /** Noul */
+            noul: number;
+        };
+        /** NoulQuestion */
+        NoulQuestion: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "noul";
+            instructions: components["schemas"]["SystemOneEntry"];
+            /** Criteria */
+            criteria?: {
+                [key: string]: components["schemas"]["SystemOneEntry"];
+            } | null;
+        };
         /**
          * NounDirectives
          * @description One row of the grid — a noun (Dimension 2) and its state for every class.
@@ -98044,6 +98213,7 @@ export interface components {
          * @enum {string}
          */
         QueryVariant: "advanced_operator" | "hot_off_press" | "keyword" | "listicle" | "resource_page";
+        Question: components["schemas"]["NoulQuestion"] | components["schemas"]["ChoiceQuestion"] | components["schemas"]["ScoreQuestion"];
         /** QueueRefreshResult */
         QueueRefreshResult: {
             /**
@@ -104423,6 +104593,37 @@ export interface components {
             /** Task Id */
             task_id?: string | null;
         };
+        /** ScoreAnswer */
+        ScoreAnswer: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "score";
+            /** Score */
+            score: number;
+            /** Probabilities */
+            probabilities: {
+                [key: string]: number;
+            };
+            /** Confidence */
+            confidence: number;
+            /** Legend */
+            legend: {
+                [key: string]: components["schemas"]["JsonValue"];
+            };
+        };
+        /** ScoreQuestion */
+        ScoreQuestion: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "score";
+            instructions: components["schemas"]["SystemOneEntry"];
+            /** Criteria */
+            criteria: components["schemas"]["SystemOneEntry"][];
+        };
         /**
          * ScoreSourcesRequest
          * @description Trigger the config-driven PRE-READ scoring over a topic's sources.
@@ -105208,6 +105409,10 @@ export interface components {
             max_duration_seconds?: number | null;
             /** Q */
             q?: string | null;
+            /** Action Key */
+            action_key?: string | null;
+            /** Action Status */
+            action_status?: ("failed" | "ready" | "running" | "skipped")[] | null;
         };
         /**
          * SemanticScholarPaperResult
@@ -112514,6 +112719,12 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
+        SystemOneEntry: string | {
+            [key: string]: components["schemas"]["JsonValue"];
+        } | components["schemas"]["JsonValue"][] | null;
+        SystemOneState: string | {
+            [key: string]: components["schemas"]["JsonValue"];
+        } | components["schemas"]["JsonValue"][];
         /** SystemTaskItem */
         SystemTaskItem: {
             /** Id */
@@ -119725,6 +119936,35 @@ export interface components {
                 [key: string]: string;
             };
         };
+        /** VaultRestoreRequest */
+        VaultRestoreRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /**
+             * Deletion Id
+             * Format: uuid
+             */
+            deletion_id: string;
+        }
+        /** VaultRestoreResponse */
+        VaultRestoreResponse: {
+            item: components["schemas"]["VaultItemOut"];
+            /** Restored Fields */
+            restored_fields: number;
+            /** Restored Attachments */
+            restored_attachments: number;
+            /** Already Restored */
+            already_restored: boolean;
+            /** Notice */
+            notice: "sharing_and_automatic_use_off";
+        }
         /** VaultRevealRequest */
         VaultRevealRequest: {
             /**
@@ -127772,6 +128012,70 @@ export interface operations {
             };
         };
     };
+    create_decision_ai_decisions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DecisionRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_decision_ai_decisions__execution_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                execution_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DecisionResultPayload"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     run_assignments_ai_agent_assignments_post: {
         parameters: {
             query?: never;
@@ -133951,6 +134255,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VaultItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_item_vault_items__item_id__restore_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultRestoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultRestoreResponse"];
                 };
             };
             /** @description Validation Error */
@@ -181454,6 +181795,8 @@ export interface operations {
                 min_duration_seconds?: number | null;
                 max_duration_seconds?: number | null;
                 q?: string | null;
+                action_key?: string | null;
+                action_status?: string | null;
                 order?: ("duration_seconds" | "published_at" | "title" | "view_count") | null;
                 direction?: "asc" | "desc";
             };
@@ -186990,6 +187333,8 @@ export interface operations {
                 since?: string | null;
                 /** @description Only rows with failed_at < this instant (ISO-8601). */
                 until?: string | null;
+                /** @description JSON-encoded dashboard filters for table_target, op_type, error_text, user_id, and request_id. */
+                column_filters?: string | null;
                 limit?: number;
                 offset?: number;
             };
@@ -187214,6 +187559,8 @@ export interface operations {
                 since?: string | null;
                 /** @description Only rows with occurred_at < this instant (ISO-8601). */
                 until?: string | null;
+                /** @description JSON-encoded dashboard filters for kind, route, error_text, user_id, and request_id. */
+                column_filters?: string | null;
                 limit?: number;
                 offset?: number;
             };

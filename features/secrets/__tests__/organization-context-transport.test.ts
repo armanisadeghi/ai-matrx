@@ -1,6 +1,6 @@
 import { setStoreSingleton } from "@/lib/redux/store-singleton";
 import { fetchAuthenticators } from "../authenticator-service";
-import { checkVaultDestination, createVaultItem, previewVaultLoginCsv } from "../vault-service";
+import { checkVaultDestination, createVaultItem, previewVaultLoginCsv, restoreVaultItem } from "../vault-service";
 import { VaultImportTransportError } from "../vault-service";
 import { uploadVaultAttachment } from "@/features/files/vault/vaultAttachmentTransport";
 
@@ -83,6 +83,26 @@ describe("Vault and Authenticator organization transport", () => {
     expect(mockGetUser).toHaveBeenCalledWith(ACCESS_TOKEN);
     expect(mockGetUser.mock.calls.every((args) => args[0] === ACCESS_TOKEN)).toBe(true);
     expect(fetchMock.mock.calls[0]?.[1]?.headers).toMatchObject({ Authorization: `Bearer ${ACCESS_TOKEN}`, "X-Organization-Id": ORGANIZATION_ID });
+  });
+
+  test("restore sends the frozen actor and recognizes only the root fresh-auth envelope", async () => {
+    fetchMock.mockResolvedValueOnce({ ...errorResponse(403), json: async () => ({ code: "recent_auth_required" }) } as Response);
+    await expect(restoreVaultItem("item-1", "00000000-0000-4000-8000-000000000001", { userId: "user-1", organizationId: ORGANIZATION_ID })).rejects.toMatchObject({ code: "recent_auth_required" });
+    expect(fetchMock.mock.calls[0]?.[1]).toMatchObject({
+      method: "POST",
+      body: JSON.stringify({ deletion_id: "00000000-0000-4000-8000-000000000001" }),
+      headers: expect.objectContaining({ "X-Organization-Id": ORGANIZATION_ID }),
+    });
+  });
+
+  test("restore refuses a source-route nested error envelope", async () => {
+    fetchMock.mockResolvedValueOnce({ ...errorResponse(403), json: async () => ({ detail: { code: "recent_auth_required" } }) } as Response);
+    await expect(restoreVaultItem("item-1", "00000000-0000-4000-8000-000000000001", { userId: "user-1", organizationId: ORGANIZATION_ID })).rejects.toMatchObject({ code: "request_rejected" });
+  });
+
+  test("restore rejects a malformed success payload at ingress", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ restored_fields: 1 }));
+    await expect(restoreVaultItem("item-1", "00000000-0000-4000-8000-000000000001", { userId: "user-1", organizationId: ORGANIZATION_ID })).rejects.toMatchObject({ code: "request_rejected" });
   });
 
   test.each([
