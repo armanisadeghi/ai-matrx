@@ -65,7 +65,22 @@ export const MASTERWORK_RUN_WIRE: DurableRunWire = {
   // A deploy releases the run mid-stream rather than killing it silently —
   // the recovery sweep re-queues the row, so this is a fact to relay, never a
   // failure. See `RESUMING_AFTER_RESTART_MESSAGE`.
-  drainingEvent: "masterwork_run_draining",
+  //
+  // 🚨 THIS NAME MUST MATCH `masterwork_runs.py`'s `publish_event` call
+  // EXACTLY — it never did. `run_durable_masterwork`'s `MasterworkRunDraining`
+  // handler (aidream f22ae67a15) publishes `"masterwork_run_continuing"`;
+  // `"masterwork_run_draining"` has never existed on the wire (verified
+  // against every commit that ever touched aidream's masterwork services —
+  // `git log -S"masterwork_run_draining"` returns nothing). So
+  // `useDurableRun`'s `name === wire.drainingEvent` check never matched a real
+  // event, and the ONE compact `DurableRunInterruption` line every dump/ingest
+  // dialog already renders next to `RunStages` only ever lit up on a RELOAD
+  // (the rejoin snapshot's `metadata._drain`/`_recovery`) — never while a
+  // person was watching live through the exact deploy that moved their run,
+  // which is the moment the reassurance matters most. The per-resource detail
+  // text `dump_ingest.py`'s `_replayed_message` puts on the first replayed row
+  // was carrying the whole burden of that sentence alone.
+  drainingEvent: "masterwork_run_continuing",
   rejoinPath: "/masterworks/runs/{run_id}/rejoin" satisfies keyof paths,
   // Cancel MEANS cancel here (aidream `POST /masterworks/runs/{run_id}/cancel`):
   // the durable row goes terminal with the person's reason and the worker stops

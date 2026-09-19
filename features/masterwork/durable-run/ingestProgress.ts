@@ -130,9 +130,21 @@ export function reduceIngestProgress(
 
   if (name === "masterwork_dump_progress") {
     const step = str(data.step);
-    const status = step ? RESOURCE_STEPS[step] : undefined;
     const index = num(data.resource_index);
-    if (!status || index === null) return state;
+    // No resource to key a row off — genuinely nothing to render.
+    if (index === null) return state;
+    // 🚨 NARROW BY NAME, NEVER BY IGNORANCE. This branch already knows the
+    // event is `masterwork_dump_progress` — a resource-shaped event this file
+    // is explicitly built to render — so a `step` outside `RESOURCE_STEPS`
+    // (a future recovery step, a lane addition nobody taught this table yet)
+    // is shown with its RAW label rather than folded away. The 7,412-raw-
+    // model-token defect this reducer exists to fix was events this file was
+    // never told to render at all; a named resource event it doesn't
+    // recognize is a different failure and "nothing fails silently" applies
+    // to it too — a person must never see a run's resource list skip a row
+    // with no explanation (VERIFICATION.md §19).
+    const known = step ? RESOURCE_STEPS[step] : undefined;
+    const status = known ?? "waiting";
     const count = num(data.resource_count);
     const resources = state.resources.slice();
     // Every resource the server numbered exists on screen from the first
@@ -155,7 +167,13 @@ export function reduceIngestProgress(
       });
     }
     const detail =
-      status === "running" ? undefined : (str(data.message) ?? undefined);
+      status === "running"
+        ? undefined
+        : // The server's own sentence wins when it sent one. An unrecognized
+          // step with NO message still gets a line — the raw step name — so
+          // the row never renders with a state and nothing beside it, which
+          // reads as silence about what happened.
+          (str(data.message) ?? (known ? undefined : step ?? undefined));
     resources[index] = {
       id: `resource-${index}`,
       label: labelFor(data, index, count),
