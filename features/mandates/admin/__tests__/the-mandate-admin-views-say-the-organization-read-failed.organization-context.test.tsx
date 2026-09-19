@@ -98,7 +98,7 @@ const SURFACES: readonly [string, () => React.ReactElement][] = [
     () => (
       <MandateSourceUsage
         mandateKey="test.key"
-        fallback={{ declaration: null, repos: [] }}
+        fallback={{ declaration: null, importFailed: false }}
       />
     ),
   ],
