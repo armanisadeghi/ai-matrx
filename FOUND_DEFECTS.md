@@ -15,6 +15,24 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D339 — A window's LAYOUT comes back on refresh for 13 windows out of 195 (2026-09-19)
+
+Two systems restore a window panel and only one of them is general. `?panels=` (URL) now opens
+and reloads every addressed window — fixed 2026-09-19, see `features/window-panels/FEATURE.md`.
+The OTHER path, `WindowPersistenceCore` (the local workspace: which windows were open, where,
+how big, with what body state), is opt-in per registry row: `preservation:` appears on **13 of
+195 `overlayId` rows** in `features/window-panels/registry/windowRegistryMetadata.ts`, and
+`WindowPanel.tsx:451` additionally refuses it for any `ephemeral: true` row — which is every
+agent widget shell. So a person who arranges four windows and presses reload gets back only the
+ones whose address happens to be in the URL, at default geometry. Arman's report of 2026-09-19
+("I'm having this issue everywhere… never worked to make sure we bring all of our window panels
+back on refresh") covers this half too; the URL fix does not close it.
+
+**Why it is filed, not fixed:** each row needs a considered `preservation` data contract (what of
+the body is safe to persist, what must be re-read) plus an `overlayInstanceId` for multi-instance
+windows — 180 judgement calls, not a sweep. The `ephemeral` flag on the agent shells is a separate
+ruling: it is what makes a restored agent panel's geometry impossible today.
+
 ### D338 — A ledgered index rebuild on `workbench.note_folders` was undone by something that left no ledger row (2026-09-18)
 
 `chair_step_2026_09_18_db_guard_findings_non_additive.sql` (ledgered 15:22:24Z) rebuilt `note_folders_organization_created_by_name_unique` as `where deleted_at is null`, and its same-transaction proof asserts the predicate — so it WAS partial at 15:22Z. At ~19:30Z the live index was a full index again (`indpred IS NULL`). No `_schema_migrations` row between the two names it, and nothing in matrx-frontend, aidream, matrx-local or common-docs creates it outside `notes_n01_…` (`CREATE … IF NOT EXISTS`, which cannot replace an existing index). Meaning: some path executes DDL on production without the ledger — exactly what `pnpm db:apply` exists to prevent. Consequences seen: `check:soft-delete-unique` reports green for a shape the database does not have. `chair_step_2026_09_18a_note_folders_org_blind_name_key.sql` rebuilds it again; **if it reverts a second time the actor is still running.** Not investigated further: needs Postgres logs (`query_logs` for `CREATE UNIQUE INDEX note_folders_organization`) from an owner of the hunt.
