@@ -4644,3 +4644,19 @@ verification, not a side effect of the list-change-proposals feature.
 "This DELETES the row … outright — it is gone from <list>, not archived, and this cannot be
 undone" — rather than a generic warning that implies recovery. Found by building
 `features/list-change-proposals/`.
+
+## hr.capability asked without a tenant — 11 three-argument call sites (2026-09-19, scfg_91)
+
+`hr.capability(user, capability, subject)` derives the authoritative organization from the
+SUBJECT employment. When that subject is NULL and no organization is passed, the tenant clause
+goes vacuously true AND `population_contains` is skipped, so the question becomes "does this
+caller hold this capability anywhere, over anybody". That is the class closed at hr_l1_59 and
+hr_l1_64; `hr.reveal_ssn` was still carrying it and is fixed in scfg_91 (latent, not exploitable
+— zero live employees lack an employment row).
+
+The remaining call sites are listed live by `hr.capability_asked_without_a_tenant`: 11 rows, of
+which 2 pass a LITERAL null subject (both `hr.wf_inbox`, `workflow.view_queue`). The rest pass an
+id read from a row and are safe only if that id can never be null — which has to be read per
+body, across the authority, workflow and records doors. Not fixed here: each needs its own null
+story established and its own verification, the way the eleven doors in the scfg_79..91 sweep did.
+Owner: unassigned. Detector is live, so the count cannot grow unnoticed.
