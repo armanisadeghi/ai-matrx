@@ -110,7 +110,7 @@ test("a healthy two-turn transcript reports no anomalies", () => {
       [row("u0", "user", 0), row("a1", "assistant", 1)],
       { oldestPosition: 0 },
       {
-        status: "completed",
+        status: "complete",
         startedAt: "2026-09-18T10:00:00.000Z",
         completedAt: "2026-09-18T10:00:10.000Z",
       },
@@ -154,9 +154,40 @@ test("names an optimistic row the server never acknowledged", () => {
       ],
       {},
       {
-        status: "completed",
+        status: "complete",
         startedAt: "2026-09-18T10:00:00.000Z",
         completedAt: "2026-09-18T10:00:10.000Z",
+      },
+    ),
+    ARGS,
+  );
+  expect(report.anomalies.join("\n")).toMatch(/never acknowledged/);
+});
+
+test("names a pending row the instant its request completes, even if it isn't stale yet", () => {
+  // Regression guard for the `requestSettled` branch: it compared
+  // `activeRequest.status` against the string "completed", but the real
+  // RequestStatus enum only ever produces "complete" — so this branch never
+  // fired and a freshly-completed request with an un-promoted pending row
+  // stayed silent until the unrelated staleness timer caught up 20s later.
+  const report = buildTranscriptIntegrityReport(
+    stateWith(
+      [
+        // Created 1s before "now" — well under the 20s staleness window, so
+        // only the requestSettled branch (not the age fallback) can explain
+        // an anomaly here.
+        row("temp", "user", 0, {
+          source: "client",
+          _clientStatus: "pending",
+          createdAt: "2026-09-18T10:04:59.000Z",
+        }),
+        row("a1", "assistant", 1),
+      ],
+      {},
+      {
+        status: "complete",
+        startedAt: "2026-09-18T10:00:00.000Z",
+        completedAt: "2026-09-18T10:04:59.000Z",
       },
     ),
     ARGS,

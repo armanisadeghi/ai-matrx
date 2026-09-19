@@ -37,8 +37,9 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 
 function fail(message: string): never {
   console.error(`[FAIL] ${message}`);
+  // exitAfterDrain's return type is `never` (it always calls process.exit), so a
+  // trailing statement here can never run — that made TS7027 flag it as dead code.
   exitAfterDrain(1);
-  throw new Error("unreachable");
 }
 
 /**
@@ -173,8 +174,9 @@ async function main(): Promise<void> {
           "  anonymous doors decide with custom.anon_token_verify. Adding a door is adding one of\n" +
           "  those lines; there is no door that decides nothing.\n",
       );
+      // exitAfterDrain returns `never` (it always calls process.exit), so the `return`
+      // that used to follow it here was unreachable — TS7027 caught it as dead code.
       exitAfterDrain(1);
-      return;
     }
     console.log("\nEvery client door into the record store decides the caller and the row.");
   } finally {
