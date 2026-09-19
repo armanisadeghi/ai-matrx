@@ -59,6 +59,12 @@ export const CAMPAIGN_MODULES: readonly string[] = [
     "lib/knobs/unifiedDataCampaign",
     "scripts/lib/migration-target",
     "scripts/gate-corpus/",
+    // The campaign's two packages. A file that imports either one is reaching
+    // the unified record store — the store client and the canonical screens —
+    // exactly as surely as a `.from("custom_record")`, so it is reach and it
+    // must be registered. Bare specifiers, matched by name.
+    "@ai-matrx/records",
+    "@ai-matrx/records-ui",
 ];
 
 /** The campaign's new store. A `.from("…")` on any of these is reach. */
@@ -72,15 +78,14 @@ export const CAMPAIGN_STORE_TABLES: readonly string[] = [
 /**
  * THE REGISTER — census taken 2026-09-15 against the working tree.
  *
- * READ THIS BEFORE YOU READ THE LIST: there are ZERO `runtime` entries. Not one
- * line of campaign code is served to a user by this repo today, so the switch
- * above currently guards nothing — and that is the honest state, not an
- * oversight. The list is NOT empty, because the campaign does already own
- * developer tooling and does already sit beside live pre-campaign readers, and
- * a register that showed nothing at all would read as "nothing to check" when
- * the guard has real files to police. The FIRST campaign UI route, nav entry,
- * server action or hook a lane writes is a `runtime` entry, and the guard fails
- * until it is both registered here and calling `UNIFIED_DATA_CAMPAIGN.enabled()`.
+ * READ THIS BEFORE YOU READ THE LIST: the first three `runtime` entries landed
+ * on 2026-09-18 — the two `/data-v2` route files and the CRM record page's
+ * custom-fields section. Every one of them is served to users on any lane's
+ * `release*:` commit, so every one of them reads the switch: the guard fails
+ * unless a `runtime` file both appears here and calls
+ * `UNIFIED_DATA_CAMPAIGN.enabled()`. The rest of the list is developer tooling
+ * and the live pre-campaign readers the guard must be able to tell apart from
+ * campaign code.
  *
  * Files deliberately NOT registered, and why (the other half of the census):
  *   · `types/database.types.ts`, `features/matrx-envelope/catalog-nouns.generated.ts`,
@@ -98,6 +103,36 @@ export const CAMPAIGN_STORE_TABLES: readonly string[] = [
  *     guarding.
  */
 export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
+    {
+        id: "data-v2-tables",
+        file: "app/(core)/data-v2/page.tsx",
+        kind: "runtime",
+        why: "THE unified data page: a person's tables from the new record store, in four lanes, with create and import. Served to users, so it reads the switch and shows the off sentence when it is off.",
+    },
+    {
+        id: "data-v2-table",
+        file: "app/(core)/data-v2/[tableId]/page.tsx",
+        kind: "runtime",
+        why: "THE unified table page: views, the four layouts, peek with history and comments, settings, the action inbox, import and export. Served to users, so it reads the switch.",
+    },
+    {
+        id: "crm-party-custom-fields",
+        file: "features/crm/components/record/PartyRecordPage.tsx",
+        kind: "runtime",
+        why: "The first standard entity page to grow its organization's own fields from the new store (SCR-12). The live CRM record page, so the section is behind the switch and renders nothing at all when it is off.",
+    },
+    {
+        id: "list-change-proposal-record-table",
+        file: "features/list-change-proposals/applyListChange.ts",
+        kind: "runtime",
+        why: "The `kind:\"table\"` target of the list-change-proposal primitive reads and writes a Table homed in a Record through `@ai-matrx/records/core`'s `record_write`/`record_update`/`record_delete`/`read_records` doors. Served to users from live chat messages, so it reads the switch first and refuses with the off sentence when it is off.",
+    },
+    {
+        id: "list-change-proposal-record-table-live-test",
+        file: "features/list-change-proposals/__tests__/applyListChange.table.live.test.ts",
+        kind: "tooling",
+        why: "Exercises the `kind:\"table\"` branch above against the live main database as admin@admin.com, whose personal organization carries a standing per-user switch override. A test run by a developer/CI, never served to a user, so it must not call the gate itself.",
+    },
     {
         id: "migration-target",
         file: "scripts/lib/migration-target.ts",
@@ -241,6 +276,18 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         file: "scripts/__tests__/gate-corpus-refuses-production-identity.test.ts",
         kind: "tooling",
         why: "Jest proof that both gate-corpus runners refuse a connection whose pg_control_system().system_identifier is production's (ATTACK-9 finding 34). Reads plan/BRANCH-REF and two source files; opens no socket, holds no credential, never part of a served request.",
+    },
+    {
+        id: "unified-data-campaign-ramp",
+        file: "lib/knobs/unifiedDataCampaignRamp.ts",
+        kind: "runtime",
+        why: "THE RAMP — CUT-3's per-consumer, per-organization half of the switch. It is served code and it reads the kill switch itself (`UNIFIED_DATA_CAMPAIGN.enabled()`) before it looks at any consumer knob, so a consumer switched on for an organization still reads the old table while the campaign is off.",
+    },
+    {
+        id: "unified-data-campaign-ramp-register",
+        file: "lib/knobs/unifiedDataCampaignRamp.register.ts",
+        kind: "tooling",
+        why: "The eight consumer ids and the id-to-knob-key rule, split out for the same reason as this file: pure, import-free, readable by a guard in a bare checkout. It reads no knob and must not be gated.",
     },
 ];
 

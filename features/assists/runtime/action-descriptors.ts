@@ -39,6 +39,13 @@ export function describeAssistAction(
         receipt: `Opened ${name} with the prepared brief — review and send when ready.`,
       };
     }
+    case "open_in_own_browser":
+      return {
+        verb: "Open in my browser",
+        explainer:
+          "Your own Chrome opens these pages in the background, reads what our servers are locked out of, and files the text in your library — you never have to visit them yourself.",
+        receipt: "Handed over — your browser is reading them now.",
+      };
     case "navigate":
       return {
         verb: action.label ?? "Take me there",

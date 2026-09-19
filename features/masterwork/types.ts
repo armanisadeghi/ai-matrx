@@ -49,6 +49,18 @@ export interface RuleSourceRef {
    */
   time_range?: { start: number; end?: number | null; granularity?: "segment" | "chunk" };
   /**
+   * The container's OWN chapter division at `time_range.start` (aidream
+   * `services/distillation/distill.py::chapter_for_time`, board row B4c). An
+   * audiobook, a podcast with markers, a recorded lecture exported with
+   * sections: "Chapter 7, at 4:41" is something an Expert can check —
+   * "at 16,862 seconds" is not. `index` is 1-based, in the container's own
+   * order; `title` is the container's own label, when it declared one.
+   * Absent whenever the source carried no chapter markers, or the rule's
+   * moment fell outside every declared chapter — never invented, never the
+   * nearest chapter guessed at. Additive; older rules lack it.
+   */
+  chapter?: { index?: number | null; title?: string | null; start: number; end?: number | null };
+  /**
    * The monologue distiller's read on how plainly the expert stated the
    * rule — "low" means an inference from an aside the Expert should confirm.
    */

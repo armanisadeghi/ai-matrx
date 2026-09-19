@@ -16,6 +16,10 @@
  * handler can't smuggle in capability.
  */
 
+import type {
+  HandToOwnBrowserOutcome,
+  HandToOwnBrowserRequest,
+} from "@/lib/extension-bridge/handToOwnBrowser";
 import type { OpenAgentRunWindowOptions } from "@/features/overlays/openers/agentRunWindow";
 import type { SourceFeature } from "@/types/python-generated/source-attribution";
 import type { Assist } from "../types";
@@ -42,6 +46,18 @@ export interface AssistActionContext {
   }) => Promise<AssistActionResult>;
   /** Client-side navigation. */
   navigate: (href: string) => void;
+  /**
+   * Hand a workspace's queued capture pages to the person's own Chrome
+   * through the Matrx extension.
+   *
+   * A capability rather than a direct import in the handler because talking to
+   * another extension IS host reach — the same reason `callServer` is bound
+   * here rather than handed to handlers as a bare `fetch`. It never throws:
+   * "you do not have the extension" is an outcome with a remedy, not an error.
+   */
+  handToOwnBrowser: (
+    request: HandToOwnBrowserRequest,
+  ) => Promise<HandToOwnBrowserOutcome>;
   /**
    * POST an aidream endpoint and return its parsed response.
    *

@@ -38,7 +38,19 @@ export function isSourceSuppressedUntil(value: string | null): boolean {
   return value === SOURCE_SUPPRESSED_UNTIL;
 }
 
+/**
+ * Source keys are written for code, and title-casing one produces sentences no
+ * person would say: "Quiet every Capture Ladder Needs Your Browser assist for…".
+ * A source whose derived label reads badly names itself here instead. The
+ * derivation stays the default — this is an override list, not a registry.
+ */
+const SOURCE_LABELS: Readonly<Record<string, string>> = {
+  "capture_ladder.needs_your_browser": "pages waiting for your browser",
+};
+
 export function formatAssistSourceLabel(sourceKey: string): string {
+  const named = SOURCE_LABELS[sourceKey];
+  if (named) return named;
   return formatText(sourceKey.replaceAll(".", " ")).replace(/\bSeo\b/g, "SEO");
 }
 

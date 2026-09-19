@@ -79,3 +79,91 @@ export const UNIFIED_DATA_CAMPAIGN = {
     CAMPAIGN_STORE_TABLES,
     enabled,
 } as const;
+
+// ── THE PER-PERSON HALF OF THE SWITCH ────────────────────────────────────────
+//
+// `enabled()` above reads the PLATFORM DEFAULT of `custom.code_paths_enabled`
+// — one row, one answer for everybody. That is the right shape for a kill
+// switch and the wrong shape for a rollout: the campaign's first screens have
+// to be usable by the person building them while the default stays `false` for
+// everyone else.
+//
+// The knob register already answers that, and this repo already has the ladder:
+// the row is declared `overridable_by {user}`, and `platform.knob_resolve`
+// (through `lib/scoped-config`) returns the nearest rung's value — a user
+// override, then an organization override, then the platform default. So the
+// per-person answer is not a second switch invented here; it is the SAME row,
+// resolved properly.
+//
+// WHY THE PLATFORM DEFAULT IS STILL READ. `knob_resolve` needs an organization
+// to resolve for, and a person who has not picked one yet has none. In that
+// window the kill switch's own answer is the answer — it can only be `false`
+// or an announced failure, never an accidental `true`.
+
+import { useEffect, useState } from "react";
+import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
+
+export interface UnifiedDataCampaignGate {
+  /** `null` until both halves have answered. A screen shows nothing yet, not "off". */
+  on: boolean | null;
+  /** Which rung answered, so a screen can say why it is on or off. */
+  because: string;
+}
+
+/**
+ * THE gate a campaign route mounts. The route passes the platform default
+ * reader itself (`UNIFIED_DATA_CAMPAIGN.enabled`), which is how the release
+ * guard `pnpm check:campaign-entry-points` can see, in the route's own source,
+ * that the kill switch is read there.
+ */
+export function useUnifiedDataCampaign(args: {
+  organizationId: string | null | undefined;
+  userId: string | null | undefined;
+  platformDefault: () => Promise<boolean>;
+}): UnifiedDataCampaignGate {
+  const { organizationId, userId, platformDefault } = args;
+  const [fallback, setFallback] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    void platformDefault().then((value) => {
+      if (!cancelled) setFallback(value);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // The reader is the module's own function; re-running on identity would
+    // re-read the knob on every render for no new fact.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const resolved = useEffectiveKnob(organizationId, userId, {
+    feature: UNIFIED_DATA_CAMPAIGN_FEATURE,
+    key: UNIFIED_DATA_CAMPAIGN_KEY,
+  });
+
+  if (!organizationId) {
+    return {
+      on: fallback,
+      because:
+        "No organization is picked yet, so the platform default of " +
+        `"${UNIFIED_DATA_CAMPAIGN_FEATURE}.${UNIFIED_DATA_CAMPAIGN_KEY}" is the answer. ` +
+        "Pick an organization and your own override applies.",
+    };
+  }
+  if (resolved === undefined) return { on: null, because: "Reading the switch." };
+  return {
+    on: resolved === true || resolved === "true",
+    because:
+      `Resolved from "${UNIFIED_DATA_CAMPAIGN_FEATURE}.${UNIFIED_DATA_CAMPAIGN_KEY}" for this ` +
+      "person in this organization — a person-level override beats the organization, which beats " +
+      "the platform default.",
+  };
+}
+
+/** What a campaign route says when the switch is off. Never a blank screen. */
+export const UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE =
+  "The unified data pages are switched off for you. They are behind " +
+  `"${UNIFIED_DATA_CAMPAIGN_FEATURE}.${UNIFIED_DATA_CAMPAIGN_KEY}", which is off by default while the ` +
+  "campaign is built. An administrator turns it on for a person, an organization or the whole " +
+  "platform in Settings → Configuration. The existing data pages at /data are unaffected.";

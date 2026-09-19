@@ -231,3 +231,124 @@ export async function fetchNeedsYouHandoffs(
   const { handoffs, dropped } = parseCaptureHandoffs(data ?? []);
   return { kind: "ok", handoffs, dropped };
 }
+
+/** One of the person's OTHER workspaces, and how many pages wait in it. */
+export interface NeedsYouElsewhere {
+  organizationId: string;
+  organizationName: string;
+  count: number;
+}
+
+export type NeedsYouElsewhereResult =
+  | { kind: "ok"; workspaces: NeedsYouElsewhere[] }
+  /** We could not look. Said out loud; never rendered as "none elsewhere". */
+  | { kind: "unknown"; sentence: string };
+
+/**
+ * Where ELSE this person has pages waiting.
+ *
+ * 🚨 THIS EXISTS BECAUSE OF A REAL DEFECT (2026-09-18). One person's waiting
+ * rows were spread across three of his workspaces. Every surface read exactly
+ * one of them, none of them said which, and the ones looking at an empty
+ * workspace rendered a calm "Nothing needs your browser" — a sentence about his
+ * data that the database had never said. An empty queue must be able to say
+ * where it looked, or it is guessing on the person's behalf.
+ *
+ * This is NOT cross-org reach (CONTRACT.md §9). Every workspace counted here is
+ * one this person is an active member of — RLS is what allows the read, the
+ * same RLS that governs the active-workspace list. Nothing from another
+ * workspace is rendered as a row or acted upon: the person sees a count and a
+ * door, and the rows themselves only ever load after they have switched.
+ */
+export async function countNeedsYouElsewhere(
+  activeOrganizationId: string | null,
+): Promise<NeedsYouElsewhereResult> {
+  const { membershipsService } = await import(
+    "@/features/organizations/service/membershipsService"
+  );
+  const memberships = await membershipsService.forUser("organization");
+  if (!memberships.ok) {
+    return {
+      kind: "unknown",
+      sentence:
+        "We could not check your other workspaces, so this list is only about this one.",
+    };
+  }
+
+  const otherIds = [
+    ...new Set(
+      memberships.data.memberships
+        .map((row) => row.containerId)
+        .filter(
+          (id) =>
+            typeof id === "string" &&
+            id.length > 0 &&
+            id !== activeOrganizationId,
+        ),
+    ),
+  ];
+  if (otherIds.length === 0) return { kind: "ok", workspaces: [] };
+
+  const { data, error } = await captureHandoffTable()
+    .select("organization_id")
+    .in("organization_id", otherIds)
+    .in("status", NEEDS_YOU_STATUSES as readonly string[])
+    .is("deleted_at", null);
+
+  if (error) {
+    return {
+      kind: "unknown",
+      sentence: `We could not check your other workspaces: ${error.message}`,
+    };
+  }
+
+  const counts = new Map<string, number>();
+  for (const row of data ?? []) {
+    const id = (row as { organization_id?: unknown }).organization_id;
+    if (typeof id !== "string") continue;
+    counts.set(id, (counts.get(id) ?? 0) + 1);
+  }
+  if (counts.size === 0) return { kind: "ok", workspaces: [] };
+
+  const client = createClient() as unknown as SupabaseClient;
+  const { data: orgRows } = await client
+    .schema("iam")
+    .from("organizations")
+    .select("id,name")
+    .in("id", [...counts.keys()]);
+  const names = new Map<string, string>();
+  for (const row of orgRows ?? []) {
+    const id = (row as { id?: unknown }).id;
+    const name = (row as { name?: unknown }).name;
+    if (typeof id === "string") {
+      names.set(id, typeof name === "string" && name ? name : "another workspace");
+    }
+  }
+
+  return {
+    kind: "ok",
+    workspaces: [...counts.entries()]
+      .map(([organizationId, count]) => ({
+        organizationId,
+        organizationName: names.get(organizationId) ?? "another workspace",
+        count,
+      }))
+      .sort((a, b) => b.count - a.count),
+  };
+}
+
+/** The elsewhere count as ONE sentence, or `null` when there is nothing to say. */
+export function elsewhereSentence(result: NeedsYouElsewhereResult): string | null {
+  if (result.kind === "unknown") return result.sentence;
+  if (result.workspaces.length === 0) return null;
+  const total = result.workspaces.reduce((sum, row) => sum + row.count, 0);
+  const named = result.workspaces
+    .slice(0, 2)
+    .map((row) => `${row.count} in ${row.organizationName}`)
+    .join(", ");
+  const rest = result.workspaces.length - Math.min(2, result.workspaces.length);
+  const tail = rest > 0 ? `, and more in ${rest} other workspace${rest === 1 ? "" : "s"}` : "";
+  return total === 1
+    ? `One more page is waiting in another of your workspaces — ${named}${tail}. Switch workspace to reach it.`
+    : `${total} more pages are waiting in your other workspaces — ${named}${tail}. Switch workspace to reach them.`;
+}

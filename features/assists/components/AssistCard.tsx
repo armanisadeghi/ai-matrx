@@ -161,7 +161,18 @@ export function AssistCard({
     try {
       const outcome = await acceptAssist({ ...assist, action: actionToRun });
       if (outcome.ok) {
-        if (descriptor) toast.success(descriptor.receipt);
+        // A handler that knows something the static receipt cannot — which
+        // workspace it landed in, whether the panel actually opened, the one
+        // step still left — says so itself. The descriptor's line is the
+        // fallback, never a sentence that overrides what really happened.
+        const said =
+          outcome.result &&
+          typeof outcome.result === "object" &&
+          "sentence" in outcome.result &&
+          typeof (outcome.result as { sentence?: unknown }).sentence === "string"
+            ? ((outcome.result as { sentence: string }).sentence)
+            : descriptor?.receipt;
+        if (said) toast.success(said);
         onClose();
       }
       // Failures already toast + capture inside the runner; keep the card
@@ -334,12 +345,17 @@ export function AssistCard({
             app.
           </p>
         )}
-        <div className="grid grid-cols-4 items-center gap-1 md:flex md:flex-wrap md:gap-x-2 md:gap-y-1">
+        {/* On a phone the primary action takes its own full-width row. At
+            grid-cols-4 every verb longer than about ten characters truncated —
+            "Add the ext…" — and a primary button that cannot say what it does
+            is the 2001 text link wearing a button's clothes. Desktop is
+            unchanged. */}
+        <div className="grid grid-cols-3 items-center gap-1 md:flex md:flex-wrap md:gap-x-2 md:gap-y-1">
           <Button
             size="sm"
             onClick={run}
             disabled={!descriptor || busy !== null || Boolean(actionValidation)}
-            className="min-h-11 min-w-0 gap-1 px-1 text-[11px] md:h-7 md:min-h-0 md:px-3 md:text-xs"
+            className="col-span-3 min-h-11 min-w-0 gap-1 px-2 text-xs md:col-span-1 md:h-7 md:min-h-0 md:px-3"
             title={
               actionEditor && !actionReviewed
                 ? "Edit or review the guidelines before approving"

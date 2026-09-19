@@ -253,6 +253,23 @@ const NARROW_UNSTAMPED_RANGE_SECONDS = 90;
  * "chunk" is honest about being a whole ingestion chunk, not a moment —
  * "somewhere in 0:00–34:38".
  */
+/**
+ * The container's own chapter label — "Chapter 4" from `index` when the
+ * source declared no title of its own, or the title verbatim when it did.
+ * Per-row safe: a chapter object missing BOTH `title` and `index` (a shape
+ * the server never emits, but jsonb makes no promises) renders as nothing
+ * rather than a bare "Chapter" — the row keeps every other field it has.
+ */
+export function formatChapterLabel(
+  chapter: NonNullable<RuleSourceRef["chapter"]>,
+): string | null {
+  if (chapter.title) return chapter.title;
+  if (typeof chapter.index === "number" && Number.isFinite(chapter.index)) {
+    return `Chapter ${chapter.index}`;
+  }
+  return null;
+}
+
 export function formatTimeAnchor(timeRange: NonNullable<RuleSourceRef["time_range"]>): string {
   const startLabel = formatClock(timeRange.start);
   if (timeRange.end == null) {
@@ -282,10 +299,14 @@ export function formatTimeAnchor(timeRange: NonNullable<RuleSourceRef["time_rang
 export function RuleProvenanceMoment({ rule }: { rule: RulebookRule }) {
   const sourceRef = rule.source_ref;
   if (!sourceRef) return null;
-  const time =
+  const rawTime =
     sourceRef.time_range && Number.isFinite(sourceRef.time_range.start)
       ? formatTimeAnchor(sourceRef.time_range)
       : null;
+  // The audiobook lane's chapter anchor (B4c) rides the SAME time text —
+  // "Chapter 4 · at 2:54–3:30" — never a second, competing provenance line.
+  const chapterLabel = sourceRef.chapter ? formatChapterLabel(sourceRef.chapter) : null;
+  const time = chapterLabel && rawTime ? `${chapterLabel} · ${rawTime}` : (chapterLabel ?? rawTime);
   // A meeting rule's moment is WHO plus WHEN: "Dana Whitfield, at 4:12". The
   // clock alone cannot answer the only question the Expert is being asked —
   // was that me? — because a meeting has several people in it.
@@ -330,6 +351,9 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
     sourceRef.time_range && Number.isFinite(sourceRef.time_range.start)
       ? formatTimeAnchor(sourceRef.time_range)
       : null;
+  // The container's own chapter division at that moment (B4c) — "Chapter 4",
+  // right beside the time it names, never a separate provenance line.
+  const chapterLabel = sourceRef.chapter ? formatChapterLabel(sourceRef.chapter) : null;
   const label =
     sourceRef.note ?? (sourceRef.interview ? "your interview" : "ingested");
 
@@ -393,6 +417,7 @@ function RuleProvenance({ sourceRef }: { sourceRef: RuleSourceRef }) {
         )}
         {pages ? <span>· {pages}</span> : null}
         {sourceRef.speaker ? <span>· said by {sourceRef.speaker}</span> : null}
+        {chapterLabel ? <span>· {chapterLabel}</span> : null}
         {time ? <span>· {time}</span> : null}
         {sourceRef.exemplar ? <span>· worked out from an example</span> : null}
         {sourceRef.approach ? (

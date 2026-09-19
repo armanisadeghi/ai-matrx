@@ -4,7 +4,11 @@ import {
   isAssistPresentationCycleCurrent,
   presentedAssists,
 } from "./presentation-cycle";
-import type { Assist } from "./types";
+import { assistPriority, type Assist } from "./types";
+
+function urgent(id: string, sourceKey: string): Assist {
+  return { ...assist(id, sourceKey), priority: assistPriority("urgent") };
+}
 
 function assist(id: string, sourceKey: string): Assist {
   return {
@@ -82,6 +86,77 @@ describe("Assist presentation cycles", () => {
       new Date("2026-08-20T12:00:00.000Z"),
     );
     expect(cycle.assistIds).toEqual(["new-c", "new-d", "old-a"]);
+  });
+
+  // 🚨 THE BLOCKER GUARD. Rotation is for treats. An urgent assist is, by the
+  // platform's own definition, something blocked that only this person can
+  // unblock — hiding one for up to three hours behind three suggestions is the
+  // silent failure this feature exists to avoid. Remove the pin in
+  // `presentedAssists` and all three of these fail.
+  describe("the urgent band is pinned, never rotated", () => {
+    it("shows an urgent assist the previous cycle displaced", () => {
+      const previous = {
+        startedAt: "2026-08-20T12:00:00.000Z",
+        assistIds: ["treat-a", "treat-b", "treat-c"],
+      };
+      const candidates = [
+        urgent("blocked", "capture_ladder.needs_your_browser"),
+        assist("treat-a", "a.one"),
+        assist("treat-b", "b.one"),
+        assist("treat-c", "c.one"),
+      ];
+      expect(presentedAssists(candidates, previous).map((a) => a.id)).toEqual([
+        "blocked",
+        "treat-a",
+        "treat-b",
+        "treat-c",
+      ]);
+    });
+
+    it("shows an urgent assist that arrives mid-cycle, without waiting for the next one", () => {
+      const cycle = {
+        startedAt: "2026-08-20T12:00:00.000Z",
+        assistIds: ["treat-a"],
+      };
+      const candidates = [
+        urgent("arrived-just-now", "capture_ladder.needs_your_browser"),
+        assist("treat-a", "a.one"),
+      ];
+      expect(presentedAssists(candidates, cycle).map((a) => a.id)).toEqual([
+        "arrived-just-now",
+        "treat-a",
+      ]);
+    });
+
+    it("never spends a rotated slot on a row that is pinned anyway", () => {
+      const cycle = chooseAssistPresentationCycle(
+        [
+          urgent("blocked", "capture_ladder.needs_your_browser"),
+          assist("treat-a", "a.one"),
+          assist("treat-b", "b.one"),
+          assist("treat-c", "c.one"),
+          assist("treat-d", "d.one"),
+        ],
+        null,
+        new Date("2026-08-20T12:00:00.000Z"),
+      );
+      expect(cycle.assistIds).toEqual(["treat-a", "treat-b", "treat-c"]);
+    });
+
+    it("still bounds a storm — the overflow stays behind the dock's door", () => {
+      const candidates = [
+        urgent("u1", "a.one"),
+        urgent("u2", "b.one"),
+        urgent("u3", "c.one"),
+        urgent("u4", "d.one"),
+        urgent("u5", "e.one"),
+      ];
+      expect(presentedAssists(candidates, null).map((a) => a.id)).toEqual([
+        "u1",
+        "u2",
+        "u3",
+      ]);
+    });
   });
 
   it("expires only after the full cycle window", () => {
