@@ -59,6 +59,12 @@ export const CAMPAIGN_MODULES: readonly string[] = [
     "lib/knobs/unifiedDataCampaign",
     "scripts/lib/migration-target",
     "scripts/gate-corpus/",
+    // The campaign's two packages. A file that imports either one is reaching
+    // the unified record store — the store client and the canonical screens —
+    // exactly as surely as a `.from("custom_record")`, so it is reach and it
+    // must be registered. Bare specifiers, matched by name.
+    "@ai-matrx/records",
+    "@ai-matrx/records-ui",
 ];
 
 /** The campaign's new store. A `.from("…")` on any of these is reach. */
@@ -72,15 +78,14 @@ export const CAMPAIGN_STORE_TABLES: readonly string[] = [
 /**
  * THE REGISTER — census taken 2026-09-15 against the working tree.
  *
- * READ THIS BEFORE YOU READ THE LIST: there are ZERO `runtime` entries. Not one
- * line of campaign code is served to a user by this repo today, so the switch
- * above currently guards nothing — and that is the honest state, not an
- * oversight. The list is NOT empty, because the campaign does already own
- * developer tooling and does already sit beside live pre-campaign readers, and
- * a register that showed nothing at all would read as "nothing to check" when
- * the guard has real files to police. The FIRST campaign UI route, nav entry,
- * server action or hook a lane writes is a `runtime` entry, and the guard fails
- * until it is both registered here and calling `UNIFIED_DATA_CAMPAIGN.enabled()`.
+ * READ THIS BEFORE YOU READ THE LIST: the first three `runtime` entries landed
+ * on 2026-09-18 — the two `/data-v2` route files and the CRM record page's
+ * custom-fields section. Every one of them is served to users on any lane's
+ * `release*:` commit, so every one of them reads the switch: the guard fails
+ * unless a `runtime` file both appears here and calls
+ * `UNIFIED_DATA_CAMPAIGN.enabled()`. The rest of the list is developer tooling
+ * and the live pre-campaign readers the guard must be able to tell apart from
+ * campaign code.
  *
  * Files deliberately NOT registered, and why (the other half of the census):
  *   · `types/database.types.ts`, `features/matrx-envelope/catalog-nouns.generated.ts`,
@@ -98,6 +103,24 @@ export const CAMPAIGN_STORE_TABLES: readonly string[] = [
  *     guarding.
  */
 export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
+    {
+        id: "data-v2-tables",
+        file: "app/(core)/data-v2/page.tsx",
+        kind: "runtime",
+        why: "THE unified data page: a person's tables from the new record store, in four lanes, with create and import. Served to users, so it reads the switch and shows the off sentence when it is off.",
+    },
+    {
+        id: "data-v2-table",
+        file: "app/(core)/data-v2/[tableId]/page.tsx",
+        kind: "runtime",
+        why: "THE unified table page: views, the four layouts, peek with history and comments, settings, the action inbox, import and export. Served to users, so it reads the switch.",
+    },
+    {
+        id: "crm-party-custom-fields",
+        file: "features/crm/components/record/PartyRecordPage.tsx",
+        kind: "runtime",
+        why: "The first standard entity page to grow its organization's own fields from the new store (SCR-12). The live CRM record page, so the section is behind the switch and renders nothing at all when it is off.",
+    },
     {
         id: "migration-target",
         file: "scripts/lib/migration-target.ts",
