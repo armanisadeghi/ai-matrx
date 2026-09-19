@@ -380,6 +380,16 @@ export type SyncEvent =
            */
           skipped_by_reason: Record<string, number>;
           skipped_total: number;
+          /**
+           * True when a full sync would have retired half or more of the
+           * Sources it just persisted — a shape that looks like a
+           * reconciliation bug rather than a real provider change — and the
+           * server refused the retirement rather than deleting the
+           * catalogue out from under a person. `removed_count` stays 0 in
+           * that case; this is the only field that says "0 removed" means
+           * "refused" rather than "nothing was gone".
+           */
+          retire_refused: boolean;
       })
     | (SyncEventBase & {
           type: "library.sync.unavailable";

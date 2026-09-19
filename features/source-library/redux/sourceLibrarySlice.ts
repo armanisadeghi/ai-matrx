@@ -38,6 +38,16 @@ export interface SyncState {
     /** How many pages the walk discarded, and why. See the "done" banner. */
     skippedTotal: number;
     skippedByReason: Record<string, number>;
+    /** How many Sources this run actually retired. See the "done" banner. */
+    removedCount: number;
+    /**
+     * True when a full sync would have retired ≥50% of what it just
+     * persisted and the server refused rather than removing anything — the
+     * Library kept every Source it had. `removedCount` reads 0 either way,
+     * so this is the only thing that tells the "done" banner which one
+     * happened.
+     */
+    retireRefused: boolean;
     expectedTotal: number | null;
     pagesReceived: number;
     operationId: string | null;
@@ -64,6 +74,8 @@ const EMPTY_SYNC: SyncState = {
     listed: 0,
     skippedTotal: 0,
     skippedByReason: {},
+    removedCount: 0,
+    retireRefused: false,
     expectedTotal: null,
     pagesReceived: 0,
     operationId: null,
@@ -266,6 +278,8 @@ const sourceLibrarySlice = createSlice({
                     sync.quotaUnitsSpent = event.quota_units_spent;
                     sync.skippedTotal = event.skipped_total;
                     sync.skippedByReason = event.skipped_by_reason;
+                    sync.removedCount = event.removed_count;
+                    sync.retireRefused = event.retire_refused;
                     entry.metrics = event.metrics;
                     if (entry.library) {
                         entry.library.sync_status = "idle";
