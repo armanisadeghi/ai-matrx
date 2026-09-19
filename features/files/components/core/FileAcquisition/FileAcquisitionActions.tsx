@@ -13,13 +13,16 @@ import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleCo
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectAllFoldersMap } from "@/features/files/redux/selectors";
 import { attachChildToFolder, upsertFiles } from "@/features/files/redux/slice";
-import type { CanonicalStorageImport } from "@/features/google-workspace/import/storageSourceImport";
+import type { CanonicalStorageImport } from "@/features/files/storage-sources/types";
+import { useOpenStorageSourcePicker } from "@/features/overlays/openers/storageSourcePicker";
+import { matchStorageAccept, enforceStorageSelectionMode } from "@/features/files/storage-sources/accept";
+import { validateStorageDestinationFolderPath } from "@/features/files/storage-sources/service";
 
 export type FileAcquisitionPresentation =
   "menu" | "buttons" | "inline" | "icons";
 
 type FileAcquisitionActionKey =
-  "files" | "folder" | "existing" | "google-drive";
+  "files" | "folder" | "existing" | "google-drive" | "cloud-storage";
 
 type FileAcquisitionAction = {
   key: FileAcquisitionActionKey;
@@ -39,12 +42,13 @@ export interface FileAcquisitionActionsProps {
   enableLocalFolder?: boolean;
   enableExistingFiles?: boolean;
   enableGoogleDrive?: boolean;
+  enableStorageProviders?: boolean;
   /** Existing Files destination. `null` means the Files root. */
-  googleImportParentFolderId?: string | null;
+  storageImportParentFolderId?: string | null;
   /** Explicit destination for non-Files consumers such as chat attachments. */
-  googleImportFolderPath?: string;
+  storageImportFolderPath?: string;
   /** Receives already-persisted canonical files; no browser re-upload occurs. */
-  onGoogleImported?: (files: CanonicalStorageImport[]) => void | Promise<void>;
+  onStorageImported?: (files: CanonicalStorageImport[]) => void | Promise<void>;
   disabled?: boolean;
   className?: string;
 }
@@ -67,9 +71,10 @@ export function FileAcquisitionActions({
   enableLocalFolder = true,
   enableExistingFiles = Boolean(onChooseExisting),
   enableGoogleDrive = true,
-  googleImportParentFolderId,
-  googleImportFolderPath,
-  onGoogleImported,
+  enableStorageProviders = true,
+  storageImportParentFolderId,
+  storageImportFolderPath,
+  onStorageImported,
   disabled = false,
   className,
 }: FileAcquisitionActionsProps) {
@@ -77,16 +82,17 @@ export function FileAcquisitionActions({
   const folderInputRef = useRef<HTMLInputElement>(null);
   const inventory = useGoogleConnectionInventory();
   const openGoogle = useOpenGoogleConnectWindow();
+  const openStorageSource = useOpenStorageSourcePicker();
   const dispatch = useAppDispatch();
   const foldersById = useAppSelector(selectAllFoldersMap);
   const [googleBusy, setGoogleBusy] = useState(false);
 
   const importDestinationFolderPath: string | null =
-    googleImportFolderPath ??
-    (googleImportParentFolderId === null
+    storageImportFolderPath ??
+    (storageImportParentFolderId === null
       ? ""
-      : googleImportParentFolderId
-        ? (foldersById[googleImportParentFolderId]?.folderPath ?? null)
+      : storageImportParentFolderId
+        ? (foldersById[storageImportParentFolderId]?.folderPath ?? null)
         : "My Files/Imports");
 
   const googleConnected = useMemo(
@@ -126,11 +132,20 @@ export function FileAcquisitionActions({
       );
       return;
     }
+    const destinationError = validateStorageDestinationFolderPath(
+      importDestinationFolderPath,
+    );
+    if (destinationError) {
+      reportError(destinationError);
+      return;
+    }
     setGoogleBusy(true);
     openGoogle({
       mode: "drive-import",
       reason: "to import selected Drive files into AI Matrx",
       importDestinationFolderPath,
+      accept,
+      multiple,
       onDriveImported: async (event) => {
         const canonicalFiles = event.files.map((imported) => imported.file);
         dispatch(upsertFiles(canonicalFiles));
@@ -143,7 +158,7 @@ export function FileAcquisitionActions({
             }),
           );
         }
-        await onGoogleImported?.(event.files);
+        await onStorageImported?.(event.files);
         if (event.failures.length) reportError(errorText(event.failures));
         setGoogleBusy(false);
       },
@@ -151,19 +166,68 @@ export function FileAcquisitionActions({
     });
   }, [
     dispatch,
+    accept,
     importDestinationFolderPath,
-    onGoogleImported,
+    multiple,
+    onStorageImported,
     openGoogle,
+    reportError,
+  ]);
+
+  const openStorage = useCallback(() => {
+    if (importDestinationFolderPath === null) {
+      reportError(
+        "This destination folder is not available yet. Refresh Files and try again.",
+      );
+      return;
+    }
+    const destinationError = validateStorageDestinationFolderPath(
+      importDestinationFolderPath,
+    );
+    if (destinationError) {
+      reportError(destinationError);
+      return;
+    }
+    openStorageSource({
+      destinationFolderPath: importDestinationFolderPath,
+      accept,
+      multiple,
+      onImported: async (files) => {
+        await onStorageImported?.(files);
+      },
+    });
+  }, [
+    accept,
+    importDestinationFolderPath,
+    multiple,
+    onStorageImported,
+    openStorageSource,
     reportError,
   ]);
 
   const onInputChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
-      deliverFiles(Array.from(event.target.files ?? []));
+      const candidates = Array.from(event.target.files ?? []);
+      const mode = enforceStorageSelectionMode(candidates, multiple);
+      if (!mode.accepted) {
+        reportError(mode.reason);
+      } else {
+        const rejected = mode.values.find(
+          (file) => !matchStorageAccept(file.name, file.type, accept).accepted,
+        );
+        if (rejected) {
+          reportError(
+            matchStorageAccept(rejected.name, rejected.type, accept).reason ??
+              `${rejected.name} cannot be selected here.`,
+          );
+        } else {
+          deliverFiles(mode.values);
+        }
+      }
       onLocalSelectionComplete?.();
       event.target.value = "";
     },
-    [deliverFiles, onLocalSelectionComplete],
+    [accept, deliverFiles, multiple, onLocalSelectionComplete, reportError],
   );
   const runAction = useCallback(
     (key: FileAcquisitionActionKey) => {
@@ -171,8 +235,9 @@ export function FileAcquisitionActions({
       if (key === "folder") folderInputRef.current?.click();
       if (key === "existing") onChooseExisting?.();
       if (key === "google-drive") openDrive();
+      if (key === "cloud-storage") openStorage();
     },
-    [onChooseExisting, openDrive],
+    [onChooseExisting, openDrive, openStorage],
   );
 
   const googleLabel = inventory.isLoading
@@ -268,6 +333,15 @@ export function FileAcquisitionActions({
             {googleLabel}
           </DropdownMenuItem>
         ) : null}
+        {enableStorageProviders ? (
+          <DropdownMenuItem
+            disabled={disabled}
+            onSelect={() => runAction("cloud-storage")}
+          >
+            <Cloud className="mr-2 h-4 w-4" />
+            OneDrive, Dropbox or Box
+          </DropdownMenuItem>
+        ) : null}
         {hiddenInputs}
       </>
     );
@@ -303,12 +377,19 @@ export function FileAcquisitionActions({
             icon: googleIcon,
           }
         : null,
+      enableStorageProviders
+        ? {
+            key: "cloud-storage",
+            label: "OneDrive, Dropbox or Box",
+            icon: Cloud,
+          }
+        : null,
     ] satisfies Array<FileAcquisitionAction | null>
   ).filter((action): action is FileAcquisitionAction => action !== null);
 
   if (presentation === "inline") {
     return (
-      <div className={cn("grid w-full grid-cols-3 gap-1.5", className)}>
+      <div className={cn("grid w-full grid-cols-2 gap-1.5 sm:grid-cols-4", className)}>
         {actions.map((action) => {
           const Icon = action.icon;
           const busy = action.key === "google-drive" && googleBusy;
@@ -319,6 +400,8 @@ export function FileAcquisitionActions({
                 ? "Upload Folder"
                 : action.key === "google-drive"
                   ? "Google Drive"
+                  : action.key === "cloud-storage"
+                    ? "Cloud Storage"
                   : action.label;
           return (
             <button

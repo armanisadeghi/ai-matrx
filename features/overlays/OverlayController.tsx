@@ -220,6 +220,10 @@ const AgentCreateAppWindow = lazyOverlay(
 const GoogleConnectWindow = lazyOverlay(
   () => import("@/features/window-panels/windows/google/GoogleConnectWindow"),
 );
+const StorageSourcePickerWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/files/StorageSourcePickerWindow"),
+);
 const LiveIntegrationsWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/connectors/LiveIntegrationsWindow"),
@@ -1281,6 +1285,9 @@ export default function OverlayController() {
     googleConnectWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "googleConnectWindow"),
     ),
+    storageSourcePicker: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "storageSourcePicker"),
+    ),
     liveIntegrationsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "liveIntegrationsWindow"),
     ),
@@ -1703,6 +1710,9 @@ export default function OverlayController() {
     ),
     googleConnectWindow: useAppSelector((s) =>
       selectOverlayData(s, "googleConnectWindow"),
+    ) as Record<string, unknown> | null,
+    storageSourcePicker: useAppSelector((s) =>
+      selectOverlayData(s, "storageSourcePicker"),
     ) as Record<string, unknown> | null,
     sandboxManagementWindow: useAppSelector((s) =>
       selectOverlayData(s, "sandboxManagementWindow"),
@@ -2718,6 +2728,31 @@ export default function OverlayController() {
                 ? data.importDestinationFolderPath
                 : null
             }
+            accept={typeof data?.accept === "string" ? data.accept : null}
+            multiple={data?.multiple !== false}
+          />
+        );
+      })()}
+
+      {/* storageSourcePicker */}
+      {(() => {
+        const isOpen = isOpenById.storageSourcePicker;
+        const data = dataById.storageSourcePicker as
+          | Record<string, unknown>
+          | null
+          | undefined;
+        if (!isOpen || typeof data?.callbackGroupId !== "string") return null;
+        if (typeof data.destinationFolderPath !== "string") return null;
+        return (
+          <StorageSourcePickerWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "storageSourcePicker" }))
+            }
+            callbackGroupId={data.callbackGroupId}
+            destinationFolderPath={data.destinationFolderPath}
+            accept={typeof data.accept === "string" ? data.accept : null}
+            multiple={data.multiple !== false}
           />
         );
       })()}

@@ -43,7 +43,7 @@ import {
 } from "@/lib/googlePicker";
 import type { SelectedGoogleFile } from "@/features/google-workspace/types";
 import { extractErrorMessage } from "@/utils/errors";
-import { importGoogleDriveFiles } from "@/features/google-workspace/import/storageSourceImport";
+import { importGoogleDriveFiles } from "@/features/files/storage-sources/service";
 import { getGoogleDrivePickerToken } from "@/features/google-workspace/drivePickerToken";
 import { emitGoogleConnectEvent } from "@/features/overlays/callbacks/googleConnectWindow";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -51,6 +51,7 @@ import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { isGoogleAuthorizationActionDisabled } from "./authorizationReadiness";
 import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
+import { enforceStorageSelectionMode, matchStorageAccept } from "@/features/files/storage-sources/accept";
 
 export interface GoogleWorkspaceConnectBodyProps {
   onClose: () => void;
@@ -63,6 +64,8 @@ export interface GoogleWorkspaceConnectBodyProps {
   initialConnectionId?: string | null;
   /** Logical Matrx Files folder selected by the invoking acquisition surface. */
   importDestinationFolderPath?: string | null;
+  accept?: string | null;
+  multiple?: boolean;
 }
 
 /** Preserve the overlay's close notification for any WindowPanel composition. */
@@ -97,6 +100,8 @@ function GoogleWorkspaceConnectBodyContent({
   callbackGroupId,
   initialConnectionId,
   importDestinationFolderPath,
+  accept,
+  multiple = true,
 }: GoogleWorkspaceConnectBodyProps) {
   const google = useGoogleAPI();
   // 🚨 ONE Google authorization window per PERSON — never a per-component
@@ -259,11 +264,22 @@ function GoogleWorkspaceConnectBodyContent({
       if (!connection) return;
       const accessToken = await getGoogleDrivePickerToken(connection);
       if (mode === "drive-import") {
-        const picked = await pickGoogleDriveFiles(accessToken);
+        const picked = await pickGoogleDriveFiles(accessToken, { multiple });
         if (!picked?.length) return;
+        const selection = enforceStorageSelectionMode(picked, multiple);
+        if (!selection.accepted) throw new Error(selection.reason);
+        const rejected = selection.values.find(
+          (file) => !matchStorageAccept(file.name, file.mimeType, accept ?? undefined).accepted,
+        );
+        if (rejected) {
+          throw new Error(
+            matchStorageAccept(rejected.name, rejected.mimeType, accept ?? undefined).reason ??
+              `${rejected.name} cannot be selected here.`,
+          );
+        }
         const result = await importGoogleDriveFiles(
           connection.id,
-          picked,
+          selection.values,
           importDestinationFolderPath ?? undefined,
         );
         if (!result.files.length) {
