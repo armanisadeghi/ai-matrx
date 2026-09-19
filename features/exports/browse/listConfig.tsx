@@ -50,6 +50,15 @@ export function createExportItemsListConfig(
     return match?.label ?? key;
   };
 
+  // The container facet's filter VALUE is `container_key()` (an opaque thread
+  // id for most adapters), so the checkbox needs this the same way the
+  // correspondent facet needs `correspondentLabel` — to show "Priya Raman"
+  // rather than "priyaraman_10000000000".
+  const containerLabel = (key: string): string => {
+    const match = deps.getSummary()?.top_containers.find((c) => c.key === key);
+    return match?.label ?? key;
+  };
+
   return {
     surfaceKey: "exports-library-items",
     entityLabel: { singular: "item", plural: "items" },
@@ -141,6 +150,7 @@ export function createExportItemsListConfig(
         label: "Thread / channel",
         noneLabel: "No thread",
         searchPlaceholder: "Find a thread or channel",
+        formatValue: containerLabel,
       },
       {
         facet: "labels",

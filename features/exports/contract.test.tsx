@@ -212,7 +212,7 @@ describe("a finished export is recognised as finished", () => {
     counts_by_kind: { message: 10000 },
     counts_by_direction: { outbound: 3941, inbound: 6059 },
     counts_by_label: {},
-    counts_by_container: {},
+    top_containers: [],
     date_range: { earliest: "2021-01-01", latest: "2021-11-12", span_days: 315 },
     top_correspondents: [{ key: "dana", label: "Dana Okafor", count: 812 }],
     total_chars: 1200000,

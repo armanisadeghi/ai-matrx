@@ -40,9 +40,19 @@ import { hasField } from "@/features/agents/redux/shared/field-flags";
 
 interface AgentToolsModalProps {
   agentId: string;
+  /**
+   * An alternative way in. The default is the wrench icon beside the model name;
+   * the builder's labelled Tools row (AgentToolsRow) passes a worded "Add"
+   * button instead, because an unlabelled icon is what made a whole verification
+   * pass report that the builder had no tools picker at all (2026-09-19).
+   */
+  renderTrigger?: (open: () => void) => React.ReactNode;
 }
 
-export function AgentToolsModal({ agentId }: AgentToolsModalProps) {
+export function AgentToolsModal({
+  agentId,
+  renderTrigger,
+}: AgentToolsModalProps) {
   const [open, setOpen] = useState(false);
   const dispatch = useAppDispatch();
   const isMobile = useIsMobile();
@@ -197,7 +207,7 @@ export function AgentToolsModal({ agentId }: AgentToolsModalProps) {
     </div>
   );
 
-  const trigger = (
+  const defaultTrigger = (
     <Button
       variant="ghost"
       size="icon"
@@ -213,6 +223,8 @@ export function AgentToolsModal({ agentId }: AgentToolsModalProps) {
       )}
     </Button>
   );
+
+  const trigger = renderTrigger ? renderTrigger(handleOpen) : defaultTrigger;
 
   if (isMobile) {
     return (

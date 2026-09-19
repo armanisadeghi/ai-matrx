@@ -88,6 +88,31 @@ export interface ShareableResourceEntry {
  * not hand-tune individual fields.
  */
 export const SHAREABLE_RESOURCE_REGISTRY = {
+  /**
+   * The unified record store (lane W3-HIST added the DB row 2026-09-18; this
+   * mirror followed on 2026-09-19 with lane SHARE, which is what made the one
+   * share dialog reach a record at all — until then `getShareableResource`
+   * answered undefined and the dialog rendered its "not a registered shareable
+   * resource" refusal).
+   *
+   * A TABLE IS A RECORD HERE: `custom.record` holds both, so one token covers
+   * the record screen and the table screen. `rlsUsesHasPermission` is false on
+   * purpose — schema `custom` is read through its own doors (W4-DOOR), never
+   * through the generic has_permission arm. `urlPathTemplate` stays empty: a
+   * record's page is /data-v2/{tableId} plus the record, which this one-id
+   * template cannot express, and an honest "no link" beats a broken one.
+   */
+  record: {
+    resourceType: "record",
+    tableName: "record",
+    schemaName: "custom",
+    idColumn: "id",
+    ownerColumn: "created_by",
+    isPublicColumn: null,
+    displayLabel: "Record",
+    urlPathTemplate: "",
+    rlsUsesHasPermission: false,
+  },
   browser_profile: {
     resourceType: "browser_profile",
     tableName: "profile",

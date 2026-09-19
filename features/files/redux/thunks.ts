@@ -1198,6 +1198,7 @@ export const uploadFiles = createAsyncThunk<
           fileName: targetName,
           fileSize: file.size,
           parentFolderId: arg.parentFolderId ?? null,
+          folderPath: arg.folderPath ?? null,
         }),
       );
       registerRequest({

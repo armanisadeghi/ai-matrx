@@ -563,7 +563,7 @@ export const DOWNGRADE_RULES: DowngradeRule[] = [
     id: "assists-dedupe-race",
     tier: "yellow",
     reason:
-      "The assists producer is idempotent by design and races itself: it checks for a live pending row, then inserts, and `assists_dedupe_pending_key` is the partial unique index that settles the tie. `features/assists/service.ts` ALREADY treats 23505 as success (a concurrent producer won). The insert is captured by the generic PostgREST chokepoint before that happens, so a designed no-op was arriving red. The index cannot be an upsert target — it is partial (status='pending' AND deleted_at IS NULL) and PostgREST cannot express that inference — so catching it is the correct shape and this rule fixes the reporting, not the behaviour.",
+      "Browser assist writes go through `platform.emit_pending_assist`, which swallows `assists_dedupe_pending_key` inside the function so a lost race never becomes HTTP 409. This rule is the backstop if any leftover `.from('assists').insert` still hits that partial unique index: the index cannot be a PostgREST upsert target (status='pending' AND deleted_at IS NULL), so a direct insert can still 409 and the generic capture records it before app code runs.",
     addedAt: "2026-08-13",
     match: {
       source: "supabase-postgrest",

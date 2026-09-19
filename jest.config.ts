@@ -137,6 +137,16 @@ const config: Config = {
         // Chromium; under Jest its `@playwright/test` import dies with
         // "Class extends value undefined" before a single test runs.
         "/features/shell/layout-gate/",
+        // Same class: the mobile rule-row-squeeze gate
+        // (`pnpm test:rule-row-squeeze`, playwright.rule-row-squeeze.config.ts)
+        // measures real rendered layout in Chromium via its own Playwright
+        // config and `globalSetup`; Jest must not load its `.spec.ts` either.
+        "/features/masterwork/components/detail/__tests__/rule-row-squeeze/",
+        // RED TWINS. A `*.red.test.tsx` is a suite that MUST fail: it runs the
+        // same assertions against the defect, so a green suite cannot be green
+        // on the mere fact that something rendered. They are run BY NAME
+        // (`npx jest <path>`) and would otherwise make `pnpm test` red for ever.
+        "\\.red\\.test\\.tsx?$",
     ],
     // Restrict to *.test.ts(x) / *.spec.ts(x). Jest's default `testMatch`
     // also globs everything under `**/__tests__/**`, which picked up our

@@ -36,7 +36,24 @@
  *                     a shipped feature. It is registered so the guard can tell
  *                     it apart from new campaign code, never to be switched.
  */
-export type CampaignEntryPointKind = "runtime" | "tooling" | "preexisting";
+export type CampaignEntryPointKind =
+    | "runtime"
+    | "tooling"
+    | "preexisting"
+    /**
+     * A RED TWIN: a test that wires the campaign's own gate the WRONG way on
+     * purpose, asserts the world before its lane's fix, and is SUPPOSED to fail.
+     * It is the only kind other than `runtime` allowed to call the gate — a red
+     * twin that could not call it could not be a twin of anything.
+     *
+     * The guard holds it to its name: the file must end `.red.test.ts(x)`, so the
+     * word cannot be used to walk served code past the `runtime` rule. Registered
+     * because lane APPROVAL-KNOB found `check:campaign-entry-points` exiting 1 on
+     * origin/main: NAV-FIX had added the first red twin in this repo and the
+     * register had no word for one, so the only ways to green were to mis-declare
+     * it or to delete somebody's guard.
+     */
+    | "red_twin";
 
 export interface CampaignEntryPoint {
     /** Stable id, for the guard's failure message. */
@@ -114,6 +131,18 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         file: "app/(core)/data-v2/[tableId]/page.tsx",
         kind: "runtime",
         why: "THE unified table page: views, the four layouts, peek with history and comments, settings, the action inbox, import and export. Served to users, so it reads the switch.",
+    },
+    {
+        id: "shell-nav-gates",
+        file: "features/shell/navigation/useShellNavGates.ts",
+        kind: "runtime",
+        why: "The sidebar's Data group carries a `Records` child pointing at /data-v2, and it appears only where this campaign's switch is on. This hook is the one place the sidebar resolves that switch, for this person in this organization, so a gated destination is dropped everywhere the nav is drawn. Served to every signed-in user on every page, so an unanswered switch counts as OFF and the child simply is not there.",
+    },
+    {
+        id: "shell-nav-gates-red-twin",
+        file: "features/shell/navigation/useShellNavGates.red.test.tsx",
+        kind: "red_twin",
+        why: "Lane NAV-FIX's RED TWIN for the sidebar gate: it wires the gate the OLD way (a synchronous Redux read inside useEffect(…, [])) and FAILS, which is what proves the real hook's four green clauses are load-bearing. It is excluded from `pnpm test` by jest.config.ts and serves no request, so it is tooling and must not be gated — a red twin held behind the campaign switch would go quiet exactly when the campaign is off, which is when a regression would land unseen. Registered by lane APPROVAL-KNOB, which found `check:campaign-entry-points` exiting 1 on origin/main for this one unregistered file.",
     },
     {
         id: "crm-party-custom-fields",

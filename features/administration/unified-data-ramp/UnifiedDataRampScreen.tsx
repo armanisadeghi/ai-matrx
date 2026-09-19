@@ -25,11 +25,16 @@
 // state rather than dressing it up as a pass.
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertTriangle, Check, Loader2, Play, ShieldAlert, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AlertTriangle, Check, Loader2, Play, ShieldAlert, Table2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
 import { getActiveOrgId } from "@/lib/organizations/activeOrg";
+import { getUserOrganizations } from "@/features/organizations/service";
+import { useAppDispatch } from "@/lib/redux/hooks";
+import { setOrganization } from "@/lib/redux/slices/appContextSlice";
+import { createClient } from "@/utils/supabase/client";
 
 interface RampConsumer {
   consumer_id: string;
@@ -82,7 +87,10 @@ function verdictClass(verdict: string | null): string {
 }
 
 export function UnifiedDataRampScreen() {
+  const router = useRouter();
+  const dispatch = useAppDispatch();
   const [organizationId, setOrganizationId] = useState<string>("");
+  const [organizations, setOrganizations] = useState<{ id: string; name: string }[]>([]);
   const [consumers, setConsumers] = useState<RampConsumer[] | null>(null);
   const [exits, setExits] = useState<DualEngineExit[]>([]);
   const [storeSwitch, setStoreSwitch] = useState<StoreSwitch | null>(null);
@@ -93,6 +101,15 @@ export function UnifiedDataRampScreen() {
   useEffect(() => {
     const active = getActiveOrgId();
     if (active) setOrganizationId(active);
+    // THE ORGANIZATION, BY NAME. This screen used to ask a person to paste an
+    // organization id by hand, which is a machine identifier at the user and
+    // also the only way to reach the switch every refusal in the product names.
+    void getUserOrganizations()
+      .then((rows) => {
+        setOrganizations(rows.map((row) => ({ id: row.id, name: row.name })));
+        if (!active && rows[0]) setOrganizationId(rows[0].id);
+      })
+      .catch(() => setOrganizations([]));
   }, []);
 
   const load = useCallback(async (orgId: string) => {
@@ -100,14 +117,26 @@ export function UnifiedDataRampScreen() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(
-        `/api/admin/unified-data-ramp?organizationId=${encodeURIComponent(orgId)}`,
-      );
-      const body = await res.json();
-      if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
-      setConsumers(body.consumers as RampConsumer[]);
-      setExits((body.dualEngineExit ?? []) as DualEngineExit[]);
-      setStoreSwitch((body.storeSwitch ?? null) as StoreSwitch | null);
+      // THE DOORS, FROM THIS PERSON'S OWN SESSION. Until 19 September this
+      // screen read everything through an admin API route holding the service
+      // key, and four of the seven ramp functions had no grant on that lane
+      // either — so the screen answered `permission denied for function
+      // unified_data_ramp_exit` and nobody could turn the store on from the
+      // product at all. The three reads are now declared client doors that
+      // decide `iam.has_org_admin` before they read anything, which is the
+      // ladder the rest of the platform uses.
+      const supabase = createClient().schema("platform");
+      const [ramp, store, exit] = await Promise.all([
+        supabase.rpc("unified_data_ramp_state", { p_organization_id: orgId }),
+        supabase.rpc("unified_data_store_state", { p_organization_id: orgId }),
+        supabase.rpc("unified_data_ramp_exit", { p_organization_id: orgId }),
+      ]);
+      if (ramp.error) throw new Error(ramp.error.message);
+      if (store.error) throw new Error(store.error.message);
+      if (exit.error) throw new Error(exit.error.message);
+      setConsumers((ramp.data ?? []) as RampConsumer[]);
+      setStoreSwitch((store.data ?? null) as StoreSwitch | null);
+      setExits((exit.data ?? []) as DualEngineExit[]);
     } catch (e) {
       setConsumers(null);
       setStoreSwitch(null);
@@ -151,17 +180,21 @@ export function UnifiedDataRampScreen() {
     async (on: boolean) => {
       setBusy("__store__");
       try {
-        const res = await fetch("/api/admin/unified-data-ramp", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ action: "store", organizationId, on }),
-        });
-        const body = await res.json();
-        if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+        // The same door, from this person's session, so `auth.uid()` is a real
+        // person and the override is stamped with the person who made it.
+        const { error: refused } = await createClient()
+          .schema("platform")
+          .rpc("unified_data_store_set", { p_organization_id: organizationId, p_on: on });
+        if (refused) throw new Error(refused.message);
+        // NAMED, NOT "this organization". The picker at the top of this screen
+        // and the app's own active organization are two different choices, and
+        // on 19 September a person flipped the switch here and opened a
+        // DIFFERENT organization's tables without a word anywhere saying so.
+        // Every sentence this switch says now carries the name it acted on.
         toast.success(
           on
-            ? "This organization is on the unified record store. No consumer moved — every consumer switch below is where you left it."
-            : "This organization is off the unified record store. Its doors take writes only from the role that owns the store.",
+            ? `${nameOf(organizationId)} is on the unified record store. No consumer moved — every consumer switch below is where you left it.`
+            : `${nameOf(organizationId)} is off the unified record store. Its doors take writes only from the role that owns the store.`,
         );
         await load(organizationId);
       } catch (e) {
@@ -172,6 +205,35 @@ export function UnifiedDataRampScreen() {
     },
     [organizationId, load],
   );
+
+  /** The name of the organization this screen is acting on, for every sentence it says. */
+  const nameOf = useCallback(
+    (id: string) => organizations.find((organization) => organization.id === id)?.name ?? "This organization",
+    [organizations],
+  );
+
+  /**
+   * OPEN THE TABLES OF THE ORGANIZATION ON THIS SCREEN — which is what the
+   * button always claimed and never did. It used to be a plain link to
+   * `/data-v2`, and that page reads the app's ACTIVE organization, not the one
+   * picked in the selector above; on 19 September an admin turned the store on
+   * for a brand-new organization, pressed this, and landed in a different
+   * organization's store with nothing on the screen saying which one they were
+   * looking at.
+   *
+   * So the button now MAKES the organization it names the active one — the same
+   * `setOrganization` the sidebar switcher dispatches, which resets the scope,
+   * project, task and conversation selections with it — and says so before it
+   * moves. One organization, everywhere, and the page it lands on is reading
+   * the same choice this screen just made.
+   */
+  const openTables = useCallback(() => {
+    if (!organizationId) return;
+    const name = nameOf(organizationId);
+    dispatch(setOrganization({ id: organizationId, name }));
+    toast.success(`Now working in ${name}. Opening its tables.`);
+    router.push("/data-v2");
+  }, [organizationId, nameOf, dispatch, router]);
 
   const setSwitch = useCallback(
     async (consumer: RampConsumer, on: boolean) => {
@@ -195,8 +257,8 @@ export function UnifiedDataRampScreen() {
         }
         toast.success(
           on
-            ? `${consumer.label} now reads the unified store for this organization.`
-            : `${consumer.label} is back on the old table for this organization.`,
+            ? `${consumer.label} now reads the unified store for ${nameOf(organizationId)}.`
+            : `${consumer.label} is back on the old table for ${nameOf(organizationId)}.`,
         );
         await load(organizationId);
       } catch (e) {
@@ -219,15 +281,21 @@ export function UnifiedDataRampScreen() {
           <label className="text-sm text-muted-foreground" htmlFor="ramp-org">
             Organization
           </label>
-          <input
+          <select
             id="ramp-org"
             value={organizationId}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-              setOrganizationId(e.target.value.trim())
-            }
-            placeholder="organization id"
-            className="w-[22rem] rounded-md border border-border bg-background px-2 py-1 font-mono text-base text-foreground md:text-xs"
-          />
+            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setOrganizationId(e.target.value)}
+            className="w-[22rem] rounded-md border border-border bg-background px-2 py-1 text-base text-foreground md:text-sm"
+          >
+            {organizations.length === 0 ? (
+              <option value="">Looking for the organizations you are in…</option>
+            ) : null}
+            {organizations.map((organization) => (
+              <option key={organization.id} value={organization.id}>
+                {organization.name}
+              </option>
+            ))}
+          </select>
           <Button
             variant="outline"
             size="sm"
@@ -243,12 +311,14 @@ export function UnifiedDataRampScreen() {
         <div className="rounded-md border border-border p-3 text-sm">
           <div className="flex flex-wrap items-center gap-3">
             <span className="font-medium">The record store itself</span>
-            <span className="font-mono text-xs text-muted-foreground">
-              custom/{storeSwitch.knob_key}
+            <span className="text-xs text-muted-foreground">
+              Where {nameOf(organizationId)}&apos;s tables, fields and records are kept
             </span>
             <div className="ml-auto flex items-center gap-2">
               <span className="text-xs text-muted-foreground">
-                {storeSwitch.switched_on ? "On for this organization" : "Off for this organization"}
+                {storeSwitch.switched_on
+                  ? `On for ${nameOf(organizationId)}`
+                  : `Off for ${nameOf(organizationId)}`}
               </span>
               <Switch
                 checked={storeSwitch.switched_on}
@@ -259,6 +329,12 @@ export function UnifiedDataRampScreen() {
             </div>
           </div>
           <div className="mt-1 text-muted-foreground">{storeSwitch.why}</div>
+          {storeSwitch.switched_on ? (
+            <Button variant="outline" size="sm" className="mt-2" onClick={openTables}>
+              <Table2 className="size-4" />
+              Open {nameOf(organizationId)}&apos;s tables
+            </Button>
+          ) : null}
         </div>
       )}
 
@@ -296,8 +372,8 @@ export function UnifiedDataRampScreen() {
 
       {!organizationId && (
         <div className="rounded-md border border-border p-3 text-sm text-muted-foreground">
-          The ramp is set per organization, so there is nothing to show until one is named. Paste
-          an organization id above.
+          The ramp is set per organization, so there is nothing to show until one is chosen.
+          Pick the organization above.
         </div>
       )}
 

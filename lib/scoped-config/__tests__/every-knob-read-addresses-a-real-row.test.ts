@@ -83,7 +83,23 @@ function declaredPairs(): { pairs: Set<string>; files: number } {
     // `{ feature: X.FEATURE, key: X.KEY }` the address reader cannot follow.
     // Two blind spots cancelling out is not a green guard.
     for (const file of sqlFiles(dir)) {
-      const text = readFileSync(file, "utf8");
+      // 🚨 RACE-SAFE READ. `migrations/inverse/` is also where
+      // `scripts/__tests__/chair-step-confirmation.test.ts` writes and removes a
+      // throwaway probe file (`zz_chair_step_probe_<pid>.sql`) while its own suite
+      // runs — a real chair step lives there too, so that is the correct place for
+      // the probe, not a thing this census gets to move. Under the full battery's
+      // parallel workers, `sqlFiles` can list that probe and then lose the race to
+      // its `finally { rmSync(...) }` before this read runs (ENOENT). A file that
+      // vanished between listing and reading was never a durable declaration, so
+      // skipping it can only make this census MORE permissive, never less — it
+      // still fails BY NAME on every seed file that is actually present.
+      let text: string;
+      try {
+        text = readFileSync(file, "utf8");
+      } catch (err) {
+        if ((err as NodeJS.ErrnoException).code === "ENOENT") continue;
+        throw err;
+      }
       if (!/platform\.feature_knob/i.test(text)) continue;
       files += 1;
       re.lastIndex = 0;
@@ -262,6 +278,10 @@ const COMPUTED_REFS: Record<string, string> = {
     "one local `read(key)` helper over its own declared KNOB_* constants",
   "features/window-panels/detail/DetailHost.tsx":
     "forwards its own KNOB constants through a local helper",
+  "lib/knobs/toolKnobGating.ts":
+    "reads each pair straight out of its own declared TOOL_ORG_KNOBS table via " +
+    "refs.map((ref) => ensureEffectiveKnob(...)) — a member access on a local " +
+    "declaration, the same shape as the other three entries above",
 };
 
 describe("the knob address", () => {

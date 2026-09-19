@@ -512,7 +512,16 @@ export function RuleRow({
             : "border-border"
       }`}
     >
-      <div className="flex w-full items-start gap-2 px-3 py-2">
+      {/* MOBILE: at 390px the row's own action buttons (Approve / Improve /
+          Reject / Edit, `shrink-0 flex-nowrap`) refused to shrink or wrap,
+          squeezing the sibling min-w-0 text column toward zero width — the
+          browser then wrapped "Chapter 1. Accepting a Load at the Gate · at
+          0:02–0:08" one character per line (reproduced on Rulebook
+          950b80c1-7dc5-4542-b776-d977eed7d3d5, 2026-09-19). Same fix as the
+          Rulebook header two-hundred lines below: `flex-wrap` on the row lets
+          a `w-full`-below-`sm` actions block drop to its own line instead of
+          fighting the title/badges/statement/provenance column for space. */}
+      <div className="flex w-full flex-wrap items-start gap-2 px-3 py-2">
         {canEdit ? (
           // 16px is the right SIZE for a tick box and the wrong TAP TARGET on a
           // phone (measured 16×16 at 390px, 2026-09-17). The subtree touch
@@ -616,7 +625,13 @@ export function RuleRow({
           // (features/masterwork/review/RuleDecisionActions) — Approve /
           // Improve / Reject / Edit, never redeclared per surface.
           <RuleDecisionActions
-            className="shrink-0 flex-nowrap gap-1"
+            // MOBILE: even on its own full-width line, the ownership
+            // vocabulary's FIVE verbs (Mine / Mine but wrong / Improve / Not
+            // mine / Edit) still don't fit unbroken at 390px — `flex-nowrap`
+            // squeezed the buttons into each other instead of the provenance
+            // text this time. Wrap onto a second line below `sm`; `sm:` and up
+            // keeps the original single-line row where the width is there.
+            className="w-full shrink-0 flex-wrap justify-end gap-1 sm:w-auto sm:flex-nowrap sm:justify-start"
             size="sm"
             vocabulary={vocabulary}
             onApprove={onApprove}
@@ -633,7 +648,7 @@ export function RuleRow({
           <Button
             size="sm"
             variant="outline"
-            className="h-7 shrink-0"
+            className="h-7 w-full shrink-0 justify-center sm:w-auto"
             onClick={onReconsider}
             title="Take it back from the interviewer and review it yourself again."
           >

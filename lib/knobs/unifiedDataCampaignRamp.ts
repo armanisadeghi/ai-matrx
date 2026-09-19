@@ -3,18 +3,18 @@
 // THE RAMP — the one place a consumer of the unified data store asks whether it
 // may read the unified store yet, for this organization and this person.
 //
-// WHY THIS IS NOT `unifiedDataCampaign.ts`. That module is the campaign's KILL
-// SWITCH: one row, `custom/code_paths_enabled`, one answer for the whole
-// platform, false. Its job is that campaign code shipped to production by any
-// other lane's release is inert. This module is the RAMP: CUT-3's law that
-// existing data moves CONSUMER BY CONSUMER and that Test 1 gates each
-// consumer's switch. Those are different questions and they compose:
+// WHY THIS IS NOT `unifiedDataCampaign.ts`. That module is THE SWITCH: does
+// this ORGANIZATION keep its data in the unified record store at all
+// (`custom/system_enabled`, set once on the unified data ramp screen)? This
+// module is the RAMP: CUT-3's law that existing data moves CONSUMER BY CONSUMER
+// and that Test 1 gates each consumer's switch. Those are different questions
+// and they compose:
 //
-//     a consumer reads the unified store  ⟺  the kill switch is ON
+//     a consumer reads the unified store  ⟺  the organization is on the store
 //                                          ∧  that consumer's knob resolves true
 //                                             for this organization / person
 //
-// The AND is the point. Turning the kill switch on does not move anybody; every
+// The AND is the point. Turning the store on does not move anybody; every
 // consumer knob still resolves false, so every path keeps reading its old table
 // until someone switches that one consumer for that one organization.
 //
@@ -60,8 +60,9 @@ export interface ConsumerStoreDecision {
 }
 
 const OFF_BECAUSE_KILL_SWITCH =
-  'The unified data campaign\'s code paths are switched off platform-wide ("custom.code_paths_enabled" ' +
-  "is false), so no consumer reads the unified store, whatever its own knob says. Reading the old table.";
+  "This organization does not keep its data in the unified record store, so no consumer of it reads " +
+  "the unified store, whatever that consumer's own knob says. An owner or an administrator turns the " +
+  "store on for the organization on the unified data ramp screen. Reading the old table.";
 
 /**
  * THE ONE CALL every client and server read path makes.
@@ -84,7 +85,11 @@ export async function resolveConsumerStore(args: {
 }): Promise<ConsumerStoreDecision> {
   const { consumerId, organizationId, userId = null, resolveKnob } = args;
 
-  if (!(await UNIFIED_DATA_CAMPAIGN.enabled())) {
+  // THE ONE SWITCH, asked FIRST: does this organization keep its data in the
+  // record store at all? Until 19 September this asked a platform-wide kill
+  // switch with a per-person rung on it (lane NAV-FIX); one organization, one
+  // answer, and a consumer knob only ever narrows it further.
+  if (!(await UNIFIED_DATA_CAMPAIGN.enabled(organizationId))) {
     return { store: "legacy", because: OFF_BECAUSE_KILL_SWITCH };
   }
 
