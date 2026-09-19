@@ -25,7 +25,7 @@
 -- video against a chosen keyword, and vidIQ's scorecard does the same — neither
 -- prints a score with no keyword, because half the checks would silently not be
 -- measured and the number would read as a verdict on the whole video. A scored
--- checklist that quietly drops four of its eight rows is exactly the "screen
+-- checklist that quietly drops three of its seven rows is exactly the "screen
 -- that lies" law 4 forbids, so the default is the honest one and the looser
 -- posture is one switch away.
 --
@@ -58,7 +58,7 @@ VALUES
    'Require a target keyword before scoring a video',
    'The pre-upload check grades a video''s title, description, tags and thumbnail before you publish it. With this on, it asks for the keyword you want the video to rank for first, and grades nothing until it has one. With it off, it grades what it can and says on every keyword row that it was not measured.',
    'agent',
-   'TubeBuddy and vidIQ both grade a video against a chosen keyword and neither prints a score without one — four of the eight checks are keyword-dependent, so a score computed without it would silently drop half its rows and still read as a verdict.',
+   'TubeBuddy and vidIQ both grade a video against a chosen keyword and neither prints a score without one — three of the seven checks are keyword-dependent, so a score computed without it would silently drop them and still read as a verdict.',
    DATE '2026-10-31',
    ARRAY['organization'], 'any')
 ON CONFLICT (feature, key) DO UPDATE SET
