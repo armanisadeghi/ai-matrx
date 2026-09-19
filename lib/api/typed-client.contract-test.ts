@@ -49,6 +49,15 @@ async function _proofs() {
     variants: [spec],
   });
 
+  // A generated no-body POST accepts exactly `undefined`.
+  await apiPost(
+    buildPath("/storage-oauth/{provider}/authorize", { provider: "box" }),
+    undefined,
+  );
+
+  // @ts-expect-error — body-bearing operations still require their body.
+  await apiPost("/assets/preview", undefined);
+
   // --- Response is DERIVED, not asserted ---------------------------------
   const form = new FormData();
   const { data } = await apiMultipart("/assets/preview/multipart", form);
