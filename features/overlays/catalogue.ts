@@ -897,6 +897,20 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  // U-M3 — one client's owned YouTube channel, beside whatever the reader was
+  // already looking at. Wraps the canonical `BrandChannelPanel`.
+  brandChannelWindow: {
+    label: "YouTube channel",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
+  // U-M2 — one site's Tag Manager tracking, wrapping the canonical
+  // `SiteTrackingPanel` (google-native PLAN §4.10 Plane A).
+  siteTrackingWindow: {
+    label: "Tracking",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   // F-87 — one site's Quick view, opened from nothing but its id (the ONE
   // in-place door for the `web_site` record).
   siteQuickViewWindow: {

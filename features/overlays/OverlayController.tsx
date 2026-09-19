@@ -759,6 +759,16 @@ const SiteAnalyticsWindow = lazyOverlay(
     import("@/features/window-panels/windows/marketing/SiteAnalyticsWindow"),
   { ssr: false },
 );
+const BrandChannelWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/marketing/BrandChannelWindow"),
+  { ssr: false },
+);
+const SiteTrackingWindow = lazyOverlay(
+  () =>
+    import("@/features/window-panels/windows/marketing/SiteTrackingWindow"),
+  { ssr: false },
+);
 const SiteQuickViewWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/marketing/SiteQuickViewWindow"),
@@ -1551,6 +1561,12 @@ export default function OverlayController() {
     siteAnalyticsWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "siteAnalyticsWindow"),
     ),
+    brandChannelWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "brandChannelWindow"),
+    ),
+    siteTrackingWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "siteTrackingWindow"),
+    ),
     siteDiscoveryWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "siteDiscoveryWindow"),
     ),
@@ -1998,6 +2014,12 @@ export default function OverlayController() {
     ),
     siteAnalyticsWindow: useAppSelector((s) =>
       selectOverlayData(s, "siteAnalyticsWindow"),
+    ) as Record<string, unknown> | null,
+    brandChannelWindow: useAppSelector((s) =>
+      selectOverlayData(s, "brandChannelWindow"),
+    ) as Record<string, unknown> | null,
+    siteTrackingWindow: useAppSelector((s) =>
+      selectOverlayData(s, "siteTrackingWindow"),
     ) as Record<string, unknown> | null,
     siteDiscoveryWindow: useAppSelector((s) =>
       selectOverlayData(s, "siteDiscoveryWindow"),
@@ -5455,6 +5477,56 @@ export default function OverlayController() {
             isOpen
             onClose={() =>
               dispatch(closeOverlay({ overlayId: "siteAnalyticsWindow" }))
+            }
+            siteId={siteId}
+            siteLabel={str("siteLabel")}
+          />
+        );
+      })()}
+
+      {/* brandChannelWindow */}
+      {(() => {
+        const isOpen = isOpenById.brandChannelWindow;
+        const data = dataById.brandChannelWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const str = (key: string): string | null =>
+          typeof data?.[key] === "string" && data[key]
+            ? (data[key] as string)
+            : null;
+        const brandId = str("brandId");
+        // The panel's whole subject is one client's channel.
+        if (!brandId) return null;
+        return (
+          <BrandChannelWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "brandChannelWindow" }))
+            }
+            brandId={brandId}
+            brandLabel={str("brandLabel")}
+          />
+        );
+      })()}
+
+      {/* siteTrackingWindow */}
+      {(() => {
+        const isOpen = isOpenById.siteTrackingWindow;
+        const data = dataById.siteTrackingWindow as
+          Record<string, unknown> | null | undefined;
+        if (!isOpen) return null;
+        const str = (key: string): string | null =>
+          typeof data?.[key] === "string" && data[key]
+            ? (data[key] as string)
+            : null;
+        const siteId = str("siteId");
+        // The panel's whole subject is one site.
+        if (!siteId) return null;
+        return (
+          <SiteTrackingWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "siteTrackingWindow" }))
             }
             siteId={siteId}
             siteLabel={str("siteLabel")}

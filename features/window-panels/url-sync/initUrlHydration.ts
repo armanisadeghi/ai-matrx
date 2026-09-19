@@ -539,6 +539,25 @@ export function initUrlHydration() {
     );
   });
 
+  // Site tracking — `?panels=site_tracking:<siteId>`. The window's whole subject is one site, so
+  // a token with no id opens nothing rather than an empty frame (the render site already refuses
+  // a missing `siteId`).
+  registerPanelHydrator("site_tracking", (dispatch, id) => {
+    const siteId = getRestorableResourceId(id, "siteTrackingWindow");
+    if (!siteId) {
+      console.warn(
+        `[UrlPanelManager] ?panels=site_tracking:${id} names no site — expected site_tracking:<siteId>.`,
+      );
+      return;
+    }
+    dispatch(
+      openOverlay({
+        overlayId: "siteTrackingWindow",
+        data: { siteId, siteLabel: null },
+      }),
+    );
+  });
+
   // ── Dev-only integrity check ─────────────────────────────────────────────
   // Every registry entry that declares `urlSync.key` must have a hydrator
   // registered above. Drift here is silent: `?panels=<key>` would just

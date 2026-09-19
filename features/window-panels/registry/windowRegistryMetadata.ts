@@ -1856,6 +1856,28 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
     urlSync: { key: "site_quick_view" },
   },
 
+  // One site's Tag Manager tracking (U-M2, google-native PLAN §4.10 Plane A): the canonical
+  // `SiteTrackingPanel` — the graded checks, the container-versus-live-page reconciliation and
+  // the container inventory — beside whatever the reader is looking at. Preserved: the subject
+  // is one site id and everything on screen is a fresh read of it.
+  {
+    slug: "site-tracking-window",
+    overlayId: "siteTrackingWindow",
+    kind: "window",
+    label: "Tracking",
+    defaultData: { siteId: "", siteLabel: "" },
+    mobilePresentation: "drawer",
+    instanceMode: "singleton",
+    preservation: {
+      dataKeys: ["siteId", "siteLabel"],
+      // A restored tracking panel with no site is an empty frame, not a window.
+      requiredDataKeys: ["siteId"],
+    },
+    // R35 — every identity the platform names has a durable address AND an in-place door:
+    // `?panels=site_tracking:<siteId>`.
+    urlSync: { key: "site_tracking" },
+  },
+
   // The site discovery panel (KI-040): the canonical `DiscoveryWorkspace` —
   // the Business Discovery Ladder, its proposals queue and the setup doors —
   // beside whatever the person is looking at. Preserved: the ladder's truth is
