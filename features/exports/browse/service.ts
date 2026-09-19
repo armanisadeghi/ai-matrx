@@ -137,7 +137,15 @@ export function createExportItemsService(
           // section with no options would be a declared narrowing the page
           // silently never offers.
           labels: countsToFacetValues(summary?.counts_by_label),
-          container_label: countsToFacetValues(summary?.counts_by_container),
+          // 🚨 `value` here MUST be `c.key` (`ExportItem.container_key()`),
+          // never `c.label` — the display text ("Priya Raman"). `itemQuery`
+          // sends this value straight through as the `container_id` filter,
+          // and the server only ever matches `container_id` — the round-9
+          // defect was this facet reporting the label as if it were the id.
+          container_label: (summary?.top_containers ?? []).map((c) => ({
+            value: c.key,
+            count: c.count,
+          })),
           author: (summary?.top_correspondents ?? []).map((c) => ({
             value: c.key,
             count: c.count,
