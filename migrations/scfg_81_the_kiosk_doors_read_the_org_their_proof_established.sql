@@ -1,0 +1,41 @@
+-- scfg_81_the_kiosk_doors_read_the_org_their_proof_established.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- The first two doors in this sweep where the organization is NOT an argument and the
+-- authorization is NOT a user identity. Both are deliberately reachable by `anon`, and their
+-- declarations say so with a purpose, because a shared-tablet punch clock has no user session
+-- by design — the actor is a paired DEVICE.
+--
+-- public.hr_kiosk_authenticate(p_device_id, p_device_secret) — kiosk_session_ttl_hours
+--   p_device_id alone proves NOTHING. An unknown device, an unpaired placeholder, a malformed
+--   hash and a wrong secret all return the same `device_not_authenticated`, so a caller who
+--   cannot prove possession does not even learn whether the device id exists. The organization
+--   is reached only after the bcrypt comparison matches AND trust_state is 'trusted', and
+--   d.organization_id is then a fact read from the proven row.
+--   🚨 Like hr_org_chart, this door ALREADY resolved kiosk_pending_recheck_seconds with
+--   d.organization_id, a few lines above the read that ignored it. That is now three functions
+--   in this sweep carrying the scoped call and the blind one side by side.
+--
+-- public.hr_kiosk_pin_reset(p_session_token, p_new_pin) — kiosk_pin_length
+--   The session token is the proof and the employment is read FROM it, never from an argument —
+--   the body says so in a comment and explains why: taking an employment id from the caller
+--   would let any tablet reset any employee's PIN. The token is sha256-hashed and matched
+--   against a live session that is unended, undeleted, unexpired and person-bound, and a
+--   person-bound session exists only because the PIN was accepted moments earlier.
+--   v_org := s.organization_id is assigned on the line IMMEDIATELY ABOVE the org-blind read.
+--
+-- WHY THE ANONYMOUS GRANT IS NOT A HOLE, stated rather than assumed: neither door trusts an
+-- identifier. One requires the device secret issued at pairing, the other a session token that
+-- only exists because a PIN was verified. Removing the anon grant would mean no tablet could
+-- ever start a session, which is the documented design of the kiosk surface.
+--
+-- VERIFIED AFTER: census 23 → 21, no hr_kiosk_* row remains in
+-- platform.knob_org_blind_reader; both door rows carry anonymous_callers with a purpose; both
+-- are still anon-callable, so nothing was revoked inside the change; and both still refuse a
+-- caller who proves nothing, disclosing nothing — `device_not_authenticated` for a fabricated
+-- device id, `session_not_valid` for a fabricated token. Those two probes are safe by
+-- construction: each returns before hr.arm_write(), so unlike the wf_tick mistake recorded in
+-- scfg_78 they wrote nothing.
