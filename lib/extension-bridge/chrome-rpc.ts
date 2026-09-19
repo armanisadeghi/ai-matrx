@@ -144,16 +144,60 @@ export async function sendChromeRpc<T = unknown>(
   });
 }
 
+/**
+ * The install this page last got an answer from.
+ *
+ * 🚨 THIS EXISTS FOR A USER GESTURE, NOT FOR SPEED. Chrome gives a page about
+ * five seconds of transient activation after a click; the extension can only
+ * open its own side panel while that activation is still alive (measured in
+ * matrx-extend `tests/browser/side-panel-gesture-spike.mjs`: a 2s pause still
+ * opened the panel, a 6s pause did not). `detectExtensionId` costs a round
+ * trip per candidate and, when the Store build is the one installed, a full
+ * timeout on the unpacked id first — so probing inside a click handler could
+ * spend the whole window before the real message was ever sent, and the person
+ * would press a button that quietly did not open anything.
+ *
+ * So a successful probe is REMEMBERED, and the click path reads it
+ * synchronously. This is never treated as proof the extension is still there:
+ * the very next call is a real message, and if the install has gone away that
+ * call fails and the caller says so. A remembered id can only make us talk to
+ * the right install faster — never claim one exists.
+ */
+let rememberedExtensionId: string | null = null;
+
+/** The id a probe last confirmed, without asking again. Null when none has. */
+export function getRememberedExtensionId(): string | null {
+  return rememberedExtensionId;
+}
+
+/** Forget it — an install that stopped answering must be probed for again. */
+export function forgetRememberedExtensionId(): void {
+  rememberedExtensionId = null;
+}
+
 export async function detectExtensionId(
   candidates: ReadonlyArray<string> = MATRX_EXTEND_EXTENSION_IDS,
   options: SendOptions = {},
 ): Promise<{ id: string; latencyMs?: number } | null> {
   if (!isChromeRpcAvailable()) return null;
-  for (const id of candidates) {
-    const reply = await sendChromeRpc(id, "ping", {}, {
-      timeoutMs: options.timeoutMs ?? 1_500,
-    });
-    if (reply.ok) return { id, latencyMs: reply.latencyMs };
+  // Asked of every candidate AT ONCE. Serially, a browser running the Store
+  // build waited out the unpacked id's full timeout first — 1.5s of a 5s
+  // gesture window spent learning nothing.
+  const replies = await Promise.all(
+    candidates.map(async (id) => ({
+      id,
+      reply: await sendChromeRpc(id, "ping", {}, {
+        timeoutMs: options.timeoutMs ?? 1_500,
+      }),
+    })),
+  );
+  // Candidate order is the preference order, so the first that answered wins
+  // however fast the others were.
+  for (const { id, reply } of replies) {
+    if (reply.ok) {
+      rememberedExtensionId = id;
+      return { id, latencyMs: reply.latencyMs };
+    }
   }
   return null;
 }
