@@ -190,7 +190,15 @@ export function NeedsYouPage() {
           />
         }
       />
-      <div className="h-full overflow-hidden">
+      {/* 🚨 `pt-[var(--shell-header-h)]` is the RouteHeader contract, not decoration:
+          the shell header is TRANSPARENT and the body flows under it, so a page
+          without this padding renders its first ~48px behind the header. This
+          route shipped without it and the cost was recorded as cosmetic ("the
+          tray's intro line scrolls out of view at 1440", STATE.md) — until the
+          page grew a primary button, which then sat half-hidden behind the
+          header. Nothing else on this screen matters if the button is the thing
+          that disappears. */}
+      <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
         <div className="h-full overflow-y-auto px-3 py-4">
           <div className="mx-auto flex max-w-3xl flex-col gap-3">
             {handoffs.length > 0 && (
