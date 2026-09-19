@@ -300,6 +300,21 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 ## Change log
 
 - 2026-09-19 — **RULE 5: `orgBootstrapResolved` IS NOT A "REQUIRED" SIGNAL (R37).** `scripts/check-org-three-states.ts` now refuses any module that pairs `orgBootstrapResolved` (or a local alias of it) with a falsy organization id in one expression — the shape twenty-two modules carried, and the shape that turns one failed read into "choose an organization" because `setOrgBootstrapFailure` sets that flag TRUE. Rule 1 also no longer accepts `selectOrgBootstrapResolved` / `orgBootstrapResolved` as a reading of the states at all (a THREE-state signal in a four-state world; removing it added zero violations). Self-test cases Z–AF prove it fails on the defect and passes on the gate's reading. The twenty-two modules were converted to `useOrganizationRequired().organizationState` + `OrganizationContextNotice` in the same commit; `__tests__/no-org-is-not-loading.test.ts` now accepts the gate as the bootstrap authority.
+- `2026-09-19` — **RULE 5's id-detection now covers every spelling, not just the
+  bare identifier (V-26 NEW-3).** The falsy-id half of rule 5 originally stopped
+  at the first `.` or `(`, so `!appContext.organization_id && orgBootstrapResolved`
+  read clean — the exact defect, spelled through a member-access chain instead of
+  a bare local. The connector class between `!` and the org-id token now allows
+  `.`, `(`, `)`, and `?` (member access, optional chaining, and a wrapping
+  selector call) while still excluding `&&`/`||`/`?`/`:`/comparison operators, so
+  it never crosses a logical or ternary boundary into an unrelated negation.
+  Catches, now proven with planted self-test cases AG–AP: `appContext.organization_id`
+  / `state.appContext.organization_id` (dotted member access, any depth),
+  `useAppSelector(selectOrganizationId)` and `selectOrganizationId(...)` (wrapped
+  or direct selector calls), and a destructured local (`const { organization_id }
+  = appContext`) — already covered as a bare identifier once destructured, now
+  with an explicit test proving it. `pnpm check:org-three-states --self-test`
+  is red on the old regex against these five planted shapes and green after.
 - `2026-09-19` — **A TEST NEVER RE-IMPLEMENTS THE ORGANIZATION RULE (the pure
   leaf's other half).** Moving `selectShouldPromptForOrganization` into a leaf
   nobody mocks turned every hand-written copy of it in a slice stand-in into

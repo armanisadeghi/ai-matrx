@@ -382,10 +382,23 @@ export function readsTheLegacyPairOnly(rawSource: string): boolean {
  * is caught. The resolved side is matched by NAME, including a local alias
  * assigned from the selector, because that is how most of the population spells
  * it (`const orgResolved = useAppSelector(selectOrgBootstrapResolved);`).
+ *
+ * The id side is matched by SHAPE, not by one spelling: `organizationId`,
+ * `organization_id`, a `selectOrganizationId(...)` call, and any of those
+ * reached through a member-access chain (`appContext.organization_id`,
+ * `state.appContext.organization_id`) or wrapped in a selector call
+ * (`useAppSelector(selectOrganizationId)`) all trip it — the class this rule
+ * closed on 2026-09-19 was id-detection that stopped at the first `.` or `(`,
+ * so `!appContext.organization_id && orgBootstrapResolved` read clean while
+ * spelling the exact defect. The connector class between `!` and the token
+ * (`[\w$.()?]`) deliberately excludes `&&`/`||`/`?`/`:`/comparison operators —
+ * it may cross a member-access chain or a wrapping call, never a logical or
+ * ternary boundary, so `!isLoading && orgBootstrapResolved && organizationId`
+ * (an unrelated negation nowhere near the id) is still untouched.
  */
 const RESOLVED_NAMES = /\b(?:selectOrgBootstrapResolved\s*\(|orgBootstrapResolved|orgResolved|bootstrapResolved|isOrgBootstrapResolved\s*\()/;
 const FALSY_ORG_ID =
-  /![\w$]*(?:[Oo]rganization|[Oo]rg)[\w$]*(?:Id|ID|id)\b|[\w$]*(?:[Oo]rganization|[Oo]rg)[\w$]*(?:Id|ID|id)\s*(?:===?)\s*null/;
+  /![\w$.()?]*(?:[Oo]rganization|[Oo]rg)[\w$]*(?:Id|ID|id)\b|[\w$.()?]*(?:[Oo]rganization|[Oo]rg)[\w$]*(?:Id|ID|id)\s*(?:===?)\s*null/;
 
 export function pairsResolvedWithAFalsyOrgId(rawSource: string): boolean {
   const source = stripComments(rawSource);
@@ -831,6 +844,96 @@ export function Planted() {
   check("AD. planted resolved-pair flagged      ", pairFlagged, true);
   check("AE. the repaired module is cleared     ", pairRepairedFlagged, false);
   check("AF. the census does not forgive rule 5 ", pairForgiven, false);
+
+  // RULE 5 EXTENSION (V-26 NEW-3) — the id side reached through a member-access
+  // chain or wrapped in a selector call, which the original id-detection could
+  // not see because it stopped at the first `.` or `(`.
+  const dottedPair = `"use client";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrgBootstrapResolved } from "@/lib/redux/slices/appContextSlice";
+export function Planted({ appContext }) {
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  if (!appContext.organization_id && orgBootstrapResolved) return <Refusal />;
+  return <Body />;
+}
+`;
+  const doubleDottedPair = dottedPair.replace(
+    "!appContext.organization_id",
+    "!state.appContext.organization_id",
+  );
+  const wrappedSelectorPair = `"use client";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId, selectOrgBootstrapResolved } from "@/lib/redux/slices/appContextSlice";
+export function Planted() {
+  const orgResolved = useAppSelector(selectOrgBootstrapResolved);
+  if (orgResolved && !useAppSelector(selectOrganizationId)) return <Refusal />;
+  return <Body />;
+}
+`;
+  const destructuredLocalPair = `"use client";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrgBootstrapResolved } from "@/lib/redux/slices/appContextSlice";
+export function Planted({ appContext }) {
+  const { organization_id } = appContext;
+  const orgResolved = useAppSelector(selectOrgBootstrapResolved);
+  if (orgResolved && !organization_id) return <Refusal />;
+  return <Body />;
+}
+`;
+  const unrelatedNegationUntouched = `"use client";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId, selectOrgBootstrapResolved } from "@/lib/redux/slices/appContextSlice";
+export function Planted() {
+  const isLoading = useAppSelector(selectIsLoading);
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  const organizationId = useAppSelector(selectOrganizationId);
+  if (!isLoading && orgBootstrapResolved && organizationId) return <Body />;
+  return <Skeleton />;
+}
+`;
+  check("AG. dotted member-access id is seen    ", pairsResolvedWithAFalsyOrgId(dottedPair), true);
+  check("AH. a two-level dotted chain is seen   ", pairsResolvedWithAFalsyOrgId(doubleDottedPair), true);
+  check("AI. a wrapped selector() call is seen  ", pairsResolvedWithAFalsyOrgId(wrappedSelectorPair), true);
+  check("AJ. a destructured local is seen       ", pairsResolvedWithAFalsyOrgId(destructuredLocalPair), true);
+  check("AK. an unrelated negation is untouched ", pairsResolvedWithAFalsyOrgId(unrelatedNegationUntouched), false);
+
+  let dottedFlagged = false;
+  let doubleDottedFlagged = false;
+  let wrappedSelectorFlagged = false;
+  let destructuredLocalFlagged = false;
+  let unrelatedNegationFlagged = true;
+  for (const [label, source, expectFlagged, target] of [
+    ["dottedFlagged", dottedPair, true, "dottedFlagged"],
+    ["doubleDottedFlagged", doubleDottedPair, true, "doubleDottedFlagged"],
+    ["wrappedSelectorFlagged", wrappedSelectorPair, true, "wrappedSelectorFlagged"],
+    ["destructuredLocalFlagged", destructuredLocalPair, true, "destructuredLocalFlagged"],
+    ["unrelatedNegationFlagged", unrelatedNegationUntouched, false, "unrelatedNegationFlagged"],
+  ] as const) {
+    try {
+      writeFileSync(PLANTED, source, "utf8");
+      const flagged = scan({ useCensus: false }).some(
+        (v) =>
+          v.file.includes("__self_test_planted__") &&
+          v.why.includes("orgBootstrapResolved paired"),
+      );
+      if (label === "dottedFlagged") dottedFlagged = flagged;
+      if (label === "doubleDottedFlagged") doubleDottedFlagged = flagged;
+      if (label === "wrappedSelectorFlagged") wrappedSelectorFlagged = flagged;
+      if (label === "destructuredLocalFlagged") destructuredLocalFlagged = flagged;
+      if (label === "unrelatedNegationFlagged") unrelatedNegationFlagged = flagged;
+    } finally {
+      try {
+        unlinkSync(PLANTED);
+      } catch {
+        /* already gone */
+      }
+    }
+  }
+  check("AL. planted dotted-id module flagged   ", dottedFlagged, true);
+  check("AM. planted double-dotted module flagged", doubleDottedFlagged, true);
+  check("AN. planted wrapped-selector flagged   ", wrappedSelectorFlagged, true);
+  check("AO. planted destructured-local flagged ", destructuredLocalFlagged, true);
+  check("AP. unrelated negation module cleared  ", unrelatedNegationFlagged, false);
 
   if (failed > 0) {
     console.error(`SELF-TEST FAILED: ${failed} expectation(s) did not hold.`);
