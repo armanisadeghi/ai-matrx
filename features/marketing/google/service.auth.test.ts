@@ -130,7 +130,7 @@ describe("listGoogleConnectionInventory auth boundary", () => {
     expect(from).not.toHaveBeenCalled();
   });
 
-  it("reads only the client-safe credential health projection", async () => {
+  it("reads only the client-safe connection health projection", async () => {
     const connections = pagedRelation([connectionRow()]);
     const resources = pagedRelation([]);
     mockSupabase({
@@ -143,6 +143,7 @@ describe("listGoogleConnectionInventory auth boundary", () => {
     const projection = connections.select.mock.calls[0]![0];
     expect(projection).toContain("credential_present");
     expect(projection).toContain("credential_stable");
+    expect(projection).toContain("capability_health");
     expect(projection).not.toContain("credential_item_id");
     expect(projection).not.toContain("vault_secret_key");
     expect(result.connections[0]).toMatchObject({
