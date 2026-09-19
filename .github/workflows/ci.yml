@@ -1070,3 +1070,46 @@ jobs:
       - name: Administration route registry matches the filesystem
         if: always() && steps.content_ir.outcome != 'cancelled'
         run: pnpm check:admin-catalog:strict
+
+  # ---------------------------------------------------------------------------
+  # jest-health — THE NUMBER, PRINTED. A SIGNAL, NEVER A GATE.
+  #
+  # `package.json`'s `"test"` is invoked by exactly one thing: the release-gate
+  # list, which `scripts/release.sh` runs as `--advisory || true`. The four jest
+  # jobs above are hand-picked scopes. So the count of red suites repo-wide has
+  # been a number nobody holds: 32 on 2026-09-08, 0 on 2026-09-09, 31 on
+  # 2026-09-18, 12 on 2026-09-19 — and every census found the last one's list had
+  # already churned, because nothing printed it in between.
+  #
+  # This job runs the WHOLE battery and prints the failing suites grouped by the
+  # class that causes them (contract-change / harness / time-bomb / flaky / env /
+  # unclassified), with the first error line of each. It exits 0 whatever it
+  # finds: a CI job that goes red on a standing number gets switched off, and
+  # this repo has already ruled that CI is a signal and never a gate. The gate
+  # that can block is the strict release-gate list; this is the thing anyone can
+  # read on any push without running 2,200 suites on their laptop.
+  #
+  # `--self-test` runs first and IS allowed to fail the job: a classifier that
+  # has stopped classifying would print "0 unclassified" and look like health.
+  # ---------------------------------------------------------------------------
+  jest-health:
+    name: jest health census (signal, never a gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: The classifier still classifies
+        run: pnpm jest-health:self-test
+
+      - name: Failing suites by class
+        # Never `continue-on-error`: the script's own exit code is 0 by design,
+        # and a red X here would mean the script itself broke — which IS worth
+        # seeing.
+        run: pnpm jest-health

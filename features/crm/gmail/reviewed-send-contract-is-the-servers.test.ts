@@ -58,7 +58,7 @@ function sourceFileFor(className: string): string | null {
  * and a field is an indented `name: <annotation>`. Comment lines (`#:`) and
  * continuation lines are not fields, so both are excluded by the anchor.
  */
-function fieldsOf(className: string, path: string): string[] {
+function blockOf(className: string, path: string): string {
   const source = readFileSync(path, "utf8");
   const start = source.search(new RegExp(`^class ${className}\\(`, "m"));
   if (start < 0) {
@@ -66,7 +66,11 @@ function fieldsOf(className: string, path: string): string[] {
   }
   const rest = source.slice(start);
   const end = rest.slice(1).search(/^(class |@|def |# ─)/m);
-  const block = end < 0 ? rest : rest.slice(0, end + 1);
+  return end < 0 ? rest : rest.slice(0, end + 1);
+}
+
+function fieldsOf(className: string, path: string): string[] {
+  const block = blockOf(className, path);
   const fields = [
     ...block.matchAll(/^ {4}([a-z_][a-z0-9_]*)\s*:\s*\S/gm),
   ].map((match) => match[1]!);
@@ -98,8 +102,16 @@ const measurable = Boolean(requestFile && responseFile && ccFile);
     it("sends organization_id, which the server now REQUIRES", () => {
       // Required means: declared with no default. `organization_id: str = Field(
       // min_length=1)` has no `default=`, unlike every optional field below it.
-      const source = readFileSync(requestFile!, "utf8");
-      const declaration = /^ {4}organization_id\s*:\s*(.+)$/m.exec(source);
+      // Read the DECLARATION OUT OF THIS CLASS'S BLOCK, never out of the whole
+      // module: aidream's `_ORGANIZATION_FIELD` (an optional `organization_id`
+      // shared by RegisterSelectedFileRequest / CreateDocumentRequest /
+      // CreateSheetRequest) is declared ~85 lines ABOVE ReviewedGmailRequest, so
+      // a whole-file `.exec` matched THAT line — `str | None = _ORGANIZATION_FIELD`
+      // — and reported the reviewed-send field as optional while the server has
+      // required it all along. A census that reads the wrong class is worse than
+      // none.
+      const block = blockOf("ReviewedGmailRequest", requestFile!);
+      const declaration = /^ {4}organization_id\s*:\s*(.+)$/m.exec(block);
       expect(declaration).not.toBeNull();
       expect(declaration![1]).not.toMatch(/default|\|\s*None/);
       // And the client always puts it on the wire.

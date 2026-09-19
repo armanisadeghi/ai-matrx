@@ -37,6 +37,7 @@ import { openOverlay } from "@/lib/redux/slices/overlaySlice";
 import { selectAgentVariableDefinitions } from "@/features/agents/redux/agent-definition/selectors";
 import { setAgentVariableDefinitions } from "@/features/agents/redux/agent-definition/slice";
 import { AgentVariableEditor } from "./AgentVariableEditor";
+import { variableEditorInstanceId } from "./variableEditorAddress";
 
 const OVERLAY_ID = "agentVariableEditorWindow" as const;
 
@@ -123,6 +124,10 @@ export default function AgentVariableEditorWindow({
     <WindowPanel
       id="agent-variable-editor-window"
       overlayId={OVERLAY_ID}
+      // R35 — the link someone copies from this window names the variable it is
+      // showing, not just "an editor is open" (`url-sync/initUrlHydration.ts`
+      // hydrates the pair back).
+      urlSyncId={variableEditorInstanceId({ agentId, variableName })}
       title={title}
       onClose={onClose}
       width={520}

@@ -10,9 +10,27 @@
  * live table by `pnpm db-types`, so a column the server adds, renames or makes
  * non-null fails these files at the type gate. Every value below is also what
  * aidream's `DocumentRecordResponse` reports for the same record.
+ *
+ * 🚨 EVERY TIME IN HERE IS RELATIVE TO NOW. `GoogleDocumentPanel` refreshes on
+ * open when `synced_at` is older than `google.refresh.on_open_min_age_seconds`,
+ * measured against `new Date()`. With the absolute `2026-09-18T14:30:00Z` this
+ * fixture shipped with, every suite that mounted the panel spent a real refresh
+ * call from the morning of 2026-09-19 onward — `the-last-two-actions-are-real`
+ * then read that call as the one its confirm dialog had just made and failed on
+ * all three of its action assertions. A test that only passes on one calendar
+ * day is not a test. A suite that WANTS a stale record overrides `synced_at` by
+ * name. Guard: `google-workspace/__tests__/the-fixtures-are-not-time-bombs.test.ts`.
  */
 
 import type { GoogleDocumentRow } from "../types";
+
+/** Minutes/hours/days from now, as the ISO string a row column holds. */
+function fromNow(ms: number): string {
+  return new Date(Date.now() + ms).toISOString();
+}
+const MINUTE = 60_000;
+const HOUR = 60 * MINUTE;
+const DAY = 24 * HOUR;
 
 export const DOC_ID = "11111111-2222-3333-4444-555555555555";
 export const RESOURCE_ID = "22222222-3333-4444-5555-666666666666";
@@ -31,17 +49,18 @@ export function googleDocumentRow(
     title: "Q3 Plan",
     mime_kind: "document",
     owner_email: "arman@titaniumsuccess.com",
-    external_modified_at: "2026-09-17T18:22:00Z",
+    external_modified_at: fromNow(-DAY),
     body_text: "Goals for Q3\n\nShip the connector.",
-    synced_at: "2026-09-18T14:30:00Z",
+    // FRESH, so refresh-on-open does NOT fire unless a suite asks for it.
+    synced_at: fromNow(-MINUTE),
     synced_via_connection_id: CONNECTION_ID,
     sync_status: "available",
     sync_status_reason: null,
     organization_id: ORG_ID,
     created_by: null,
     updated_by: null,
-    created_at: "2026-09-17T18:25:00Z",
-    updated_at: "2026-09-18T14:30:00Z",
+    created_at: fromNow(-2 * DAY),
+    updated_at: fromNow(-MINUTE),
     deleted_at: null,
     version: 3,
     metadata: {},

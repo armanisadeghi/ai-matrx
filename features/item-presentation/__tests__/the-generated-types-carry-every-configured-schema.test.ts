@@ -159,13 +159,23 @@ describe("the synced-table census is the live truth minus what is declared missi
     expect(generatedSyncedTables()).toEqual(visible);
   });
 
-  it("names the live synced table the census still cannot see, and why", () => {
+  it("names every live synced table the census still cannot see, and why", () => {
     // Not decoration: this is the list a person reads to know what the green
-    // guards above are NOT measuring.
+    // guards above are NOT measuring. It was `["media.source_library"]` until the
+    // regeneration landed (`30e05dbd80`, 2026-09-18) and is EMPTY now — pinned
+    // generically rather than to that one name, so the next schema that has to be
+    // declared is covered by this guard on the day it is declared, and a
+    // declaration with no reason attached cannot be added silently.
     const hidden = LIVE_SYNCED_TABLES.filter(
       (table) => !visible.includes(table),
     );
-    expect(hidden).toEqual(["media.source_library"]);
-    expect(SCHEMAS_AWAITING_REGENERATION.media).toContain("SIXTH synced table");
+    const hiddenSchemas = [...new Set(hidden.map((t) => t.slice(0, t.indexOf("."))))];
+    expect(hiddenSchemas.filter((schema) => !DECLARED_MISSING.includes(schema))).toEqual([]);
+    for (const schema of hiddenSchemas) {
+      expect(SCHEMAS_AWAITING_REGENERATION[schema]).toEqual(expect.any(String));
+    }
+    // Nothing is hidden today, and the assertion says so by name rather than by
+    // an empty loop above that would pass on any list at all.
+    expect(hidden).toEqual([]);
   });
 });

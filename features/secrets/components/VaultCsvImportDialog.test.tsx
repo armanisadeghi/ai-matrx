@@ -91,7 +91,18 @@ jest.mock("../csv-import-limits", () => ({
     maxPlaintextFieldBytes: 1_000,
     maxRequestBodyBytes: 10_000,
     maxJsonDepth: 64,
-    jsonWorkerTimeoutMs: 50,
+    // 🚨 GENEROUS ON PURPOSE. This is the worker's real wall-clock deadline: the
+    // dialog arms `setTimeout(settle(timeoutError), jsonWorkerTimeoutMs)` the
+    // moment it posts the parse, and when it fires it TERMINATES the worker and
+    // clears `cancelJsonParse`. With the 50ms this mock used to return, every
+    // test that posted a parse and then drove the UI had 50 real milliseconds to
+    // finish before the thing it was about to assert on destroyed itself — and
+    // under the full battery's 40 workers it did not: "cancels a 1PUX worker when
+    // the source changes" and its KeePass twin failed in the 2026-09-19 whole-suite
+    // run and passed alone. A deadline is a real behaviour and gets its own test
+    // (below, "does not resurrect a timed-out or errored JSON parse"), which sets
+    // its own 50ms. It must not be an ambient race under every other assertion.
+    jsonWorkerTimeoutMs: 30_000,
   })),
 }));
 
@@ -221,6 +232,29 @@ const fetchCsvImportLimitsMock = jest.mocked(fetchCsvImportLimits);
 const fetchBitwardenJsonImportLimitsMock = jest.mocked(
   fetchBitwardenJsonImportLimits,
 );
+
+/**
+ * Drain the dialog's pending promise chain after a file-input change.
+ *
+ * 🚨 NEVER A WALL-CLOCK SLEEP. Every one of these sites used to be
+ * `await new Promise((r) => setTimeout(r, 10))`, which is not a wait for the
+ * work — it is a bet that 10 real milliseconds is longer than a limits fetch
+ * plus a worker spawn. On an idle machine it is; under the whole battery's 40
+ * workers it is not, and "cancels a 1PUX worker when the source changes" failed
+ * in the full run on 2026-09-19 while passing on its own. Yielding a fixed
+ * number of macrotask turns drains the same chain and does not care how loaded
+ * the machine is.
+ *
+ * The turn count is deliberately SMALL. Each turn is a macrotask, and the work
+ * being drained is two awaits (the limits fetch, then `loadWorker()`); a large
+ * count would spend real milliseconds for nothing and walk into the worker's own
+ * deadline — which is the very race this replaced.
+ */
+async function settle(turns = 6): Promise<void> {
+  for (let i = 0; i < turns; i += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+}
 
 function csvFile(text: string): File {
   const file = new File([text], "passwords.csv", { type: "text/csv" });
@@ -617,7 +651,7 @@ describe("VaultCsvImportDialog", () => {
     });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await settle();
     });
     expect(fetchBitwardenJsonImportLimitsMock).toHaveBeenCalled();
     expect(file.arrayBuffer).not.toHaveBeenCalled();
@@ -656,7 +690,7 @@ describe("VaultCsvImportDialog", () => {
     });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await settle();
     });
     if (!mockAuthStateListener) throw new Error("auth listener missing");
     await act(async () =>
@@ -741,7 +775,7 @@ describe("VaultCsvImportDialog", () => {
     });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await settle();
     });
     expect(file.arrayBuffer).not.toHaveBeenCalled();
     expect(document.body.textContent).toContain("exceeds");
@@ -767,7 +801,7 @@ describe("VaultCsvImportDialog", () => {
     });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await settle();
     });
     Object.defineProperty(input, "files", {
       configurable: true,
@@ -775,7 +809,7 @@ describe("VaultCsvImportDialog", () => {
     });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await settle();
     });
     expect(workers).toHaveLength(2);
     expect(workers[0]?.terminate).toHaveBeenCalled();
@@ -821,7 +855,7 @@ describe("VaultCsvImportDialog", () => {
     });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await settle();
     });
     await act(async () =>
       root.render(
@@ -854,7 +888,7 @@ describe("VaultCsvImportDialog", () => {
     });
     await act(async () => {
       freshInput.dispatchEvent(new Event("change", { bubbles: true }));
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await settle();
     });
     mockOrganizationId = "22222222-2222-4222-8222-222222222222";
     await act(async () =>
@@ -884,6 +918,24 @@ describe("VaultCsvImportDialog", () => {
   });
 
   it("does not resurrect a timed-out or errored JSON parse after worker cleanup", async () => {
+    // THE DEADLINE IS WHAT THIS TEST IS ABOUT, so it — and only it — asks for a
+    // short one. `…Once` per parse (this test posts two) rather than a standing
+    // `mockResolvedValue`: this mock is NOT reset in `beforeEach`, so a standing
+    // override would hand the 50ms race back to every test that runs after it.
+    const shortDeadline = {
+      maxFileBytes: 10_000,
+      maxRecords: 20,
+      maxColumns: 20,
+      maxCellBytes: 1_000,
+      maxFields: 202,
+      maxPlaintextFieldBytes: 1_000,
+      maxRequestBodyBytes: 10_000,
+      maxJsonDepth: 64,
+      jsonWorkerTimeoutMs: 50,
+    };
+    fetchBitwardenJsonImportLimitsMock
+      .mockResolvedValueOnce(shortDeadline)
+      .mockResolvedValueOnce(shortDeadline);
     await act(async () =>
       root.render(
         <VaultCsvImportDialog
@@ -902,7 +954,7 @@ describe("VaultCsvImportDialog", () => {
     });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await settle();
     });
     const first = workers[0];
     if (!first) throw new Error("worker missing");
@@ -935,7 +987,7 @@ describe("VaultCsvImportDialog", () => {
     });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await settle();
     });
     const second = workers[1];
     if (!second) throw new Error("replacement worker missing");
@@ -978,7 +1030,7 @@ describe("VaultCsvImportDialog", () => {
     });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await settle();
     });
     await act(async () =>
       workers[0]?.onmessage?.({
@@ -1086,7 +1138,7 @@ describe("VaultCsvImportDialog", () => {
     });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await settle();
     });
     await act(async () =>
       workers[0]?.onmessage?.({
@@ -1167,7 +1219,7 @@ describe("VaultCsvImportDialog", () => {
     });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await settle();
     });
     const worker = onePuxWorkers[0];
     if (!worker) throw new Error("1PUX worker missing");
@@ -1220,7 +1272,7 @@ describe("VaultCsvImportDialog", () => {
     });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await settle();
     });
     const worker = onePuxWorkers[0];
     if (!worker) throw new Error("1PUX worker missing");
@@ -1278,7 +1330,7 @@ describe("VaultCsvImportDialog", () => {
     });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await settle();
     });
     const worker = onePuxWorkers[0];
     if (!worker) throw new Error("1PUX worker missing");
@@ -1321,7 +1373,7 @@ describe("VaultCsvImportDialog", () => {
     await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
     const input = await chooseOnePux();
     Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("zip", 3)] });
-    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
+    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await settle(); });
     const worker = onePuxWorkers[0]; if (!worker) throw new Error("1PUX worker missing");
     const requestId = (worker.postMessage.mock.calls[0]?.[0] as { requestId: string }).requestId;
     await act(async () => worker.onmessage?.({ data: { ok: true, requestId, records: [jsonRecord({ sourceState: "archived" })], fileNotices: [] } } as MessageEvent));
@@ -1337,7 +1389,7 @@ describe("VaultCsvImportDialog", () => {
   it("shows no lifecycle controls for active-only 1PUX records", async () => {
     await act(async () => root.render(<VaultCsvImportDialog open onOpenChange={jest.fn()} principal={{ type: "user" }} existingItems={[]} onCommitted={async () => undefined} />));
     const input = await chooseOnePux(); Object.defineProperty(input, "files", { configurable: true, value: [jsonFile("zip", 3)] });
-    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await new Promise((resolve) => setTimeout(resolve, 10)); });
+    await act(async () => { input.dispatchEvent(new Event("change", { bubbles: true })); await settle(); });
     const worker = onePuxWorkers[0]; if (!worker) throw new Error("1PUX worker missing"); const requestId = (worker.postMessage.mock.calls[0]?.[0] as { requestId: string }).requestId;
     await act(async () => worker.onmessage?.({ data: { ok: true, requestId, records: [jsonRecord({ sourceState: "active" })], fileNotices: [] } } as MessageEvent));
     expect(document.body.textContent).not.toContain("Include deleted source items"); expect(document.body.textContent).not.toContain("Include archived source items");
@@ -1362,7 +1414,7 @@ describe("VaultCsvImportDialog", () => {
     });
     await act(async () => {
       input.dispatchEvent(new Event("change", { bubbles: true }));
-      await new Promise((resolve) => setTimeout(resolve, 10));
+      await settle();
     });
     const worker = keePassWorkers[0];
     if (!worker) throw new Error("KeePass worker missing");

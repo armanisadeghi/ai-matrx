@@ -14,6 +14,7 @@ import {
   detailListFromUrlArgs,
 } from "@/lib/detail/presentation";
 import { openDetailSingleton } from "@/features/window-panels/detail/openDetailSingleton";
+import { parseVariableEditorInstanceId } from "@/features/agents/components/variables-management/variableEditorAddress";
 import { dispatchThunk } from "@/lib/redux/hooks";
 
 /**
@@ -123,6 +124,32 @@ export function initUrlHydration() {
         overlayId: "topicalMapTopicPanel",
         instanceId: topicPanelInstanceId(identity),
         data: { stackIndex: 0, ...identity, siteId: null },
+      }),
+    );
+  });
+
+  // Agent variable editor — `?panels=agent_variable:<agentId>|<variableName>`
+  // reopens the editor on the exact variable the link was made from. The window
+  // is a singleton (one editor at a time), so the subject rides in the URL's
+  // instance slot while the overlay itself stays on `default` — the same shape
+  // the vault below uses for its selected item.
+  registerPanelHydrator("agent_variable", (dispatch, id) => {
+    const address = parseVariableEditorInstanceId(id);
+    if (!address) {
+      // Nothing fails silently: half an identity has no variable to edit, and
+      // an empty editor would be worse than not restoring at all.
+      console.warn(
+        `[initUrlHydration] Ignoring "?panels=agent_variable:${id}": the variable ` +
+          `editor is addressed as "<agentId>|<variableName>". Re-copy the link ` +
+          "from the editor's own window controls.",
+      );
+      return;
+    }
+    dispatch(
+      openOverlay({
+        overlayId: "agentVariableEditorWindow",
+        instanceId: "default",
+        data: { ...address, justCreated: false },
       }),
     );
   });
