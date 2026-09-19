@@ -40,6 +40,8 @@ import { getUserMessage } from "@/lib/api/errors";
 import { importGoogleTasks, listGoogleTasks } from "./service";
 import { GoogleImportReadFailureNotice } from "./GoogleImportReadFailureNotice";
 import {
+  googleImportReadState,
+  googleImportSelectionControls,
   readGoogleImportFailure,
   type GoogleImportReadFailure,
 } from "./read-failure";
@@ -156,6 +158,21 @@ export function GoogleTasksImportPanel({
 
   const chosen = active ? (selected[active.task_list_id] ?? []) : [];
   const chosenSet = useMemo(() => new Set(chosen), [chosen]);
+  // 🚨 NO CONTROLS OVER A LIST NOBODY READ — the ONE rule, from the shared
+  // piece both import panels render their failure with (`./read-failure.ts`,
+  // F-115). This panel already hid its footer when it held no list; going
+  // through the helper is what keeps the two panels ONE rule rather than two
+  // ideas of it, and it also drops any id the current listing no longer holds.
+  const selectionControls = googleImportSelectionControls({
+    state: googleImportReadState({
+      loading,
+      failure: readFailure,
+      settled: listing !== null,
+      rowCount: active?.tasks.length ?? 0,
+    }),
+    provenIds: (active?.tasks ?? []).map((task) => task.task_id),
+    selected: chosen,
+  });
 
   const toggle = (taskId: string) => {
     if (!active) return;
@@ -199,7 +216,8 @@ export function GoogleTasksImportPanel({
   };
 
   const run = async () => {
-    if (!effectiveOrganizationId || !active || chosen.length === 0) return;
+    const ids = selectionControls.ids;
+    if (!effectiveOrganizationId || !active || ids.length === 0) return;
     setBusy(true);
     setError(null);
     try {
@@ -207,7 +225,7 @@ export function GoogleTasksImportPanel({
         organizationId: effectiveOrganizationId,
         googleAccount,
         taskListId: active.task_list_id,
-        taskIds: chosen,
+        taskIds: ids,
         projectId,
         dryRun: false,
       });
@@ -532,7 +550,7 @@ export function GoogleTasksImportPanel({
           "Select the 0 not here yet" and "Import 0" as disabled buttons: a
           screen that looks like a broken version of itself instead of simply
           not offering what it cannot do. Absent or honest, never dead. */}
-      {active ? (
+      {active && selectionControls.offered ? (
       <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-2">
         <Button
           size="sm"
@@ -558,14 +576,14 @@ export function GoogleTasksImportPanel({
           size="sm"
           className="ml-auto"
           onClick={run}
-          disabled={busy || chosen.length === 0}
+          disabled={busy || selectionControls.ids.length === 0}
         >
           {busy ? (
             <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
           ) : (
             <CheckSquare className="mr-1 h-3.5 w-3.5" />
           )}
-          Import {chosen.length}
+          Import {selectionControls.ids.length}
         </Button>
       </div>
       ) : null}

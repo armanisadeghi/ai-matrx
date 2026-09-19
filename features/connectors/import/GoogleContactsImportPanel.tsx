@@ -40,6 +40,8 @@ import {
 } from "./service";
 import { GoogleImportReadFailureNotice } from "./GoogleImportReadFailureNotice";
 import {
+  googleImportReadState,
+  googleImportSelectionControls,
   readGoogleImportFailure,
   type GoogleImportReadFailure,
 } from "./read-failure";
@@ -73,6 +75,13 @@ export interface GoogleContactsImportPanelProps {
 }
 
 type Step = "pick" | "review";
+
+/**
+ * Whether the ONE read that can prove a contact's absence — the unfiltered,
+ * empty-query read — is owed, running, or has settled. State, never a ref:
+ * see the block at its `useState` for the defect a latching ref caused (F-115).
+ */
+type ProofReadState = "owed" | "running" | "settled";
 
 interface FieldEdit {
   include: boolean;
@@ -299,6 +308,9 @@ export function GoogleContactsImportPanel({
   // ids, so Review could fire them at the new one).
   useEffect(() => {
     dispatchSelection({ type: "reset", requestedExternalId: initialExternalId });
+    // …and the ONE read that can prove absence is owed again: the previous
+    // account's proof says nothing about this one (F-115).
+    setProofRead("owed");
     // `initialExternalId` is the window's own address and does not change for a
     // mounted panel; the reset is keyed on the organization — and, for the same
     // reason, on the chosen Google account: picking a different account is
@@ -365,33 +377,53 @@ export function GoogleContactsImportPanel({
     [effectiveOrganizationId, googleAccount],
   );
 
-  // ONE read on mount, debounced only on later keystrokes. Two effects both
-  // firing for the empty query meant the debounced one ABORTED the first — a
-  // wasted Google Contacts request and a slower first paint. Clearing the box
-  // back to "" re-enters this same branch's `load("")` — which is how a
-  // never-completed unfiltered read (aborted only by ANOTHER unfiltered call,
-  // never by a typed one) gets re-run without any special-casing.
+  // 🚨 THE PROOF READ IS OWED, AND OWING IS STATE — NEVER A REF THAT LATCHES
+  // (F-115, VERIFY-R11-FIX-WAVE NEW-2, 2026-09-19). This used to be
+  // `typedRef`: set on the first keystroke and never cleared, with the read
+  // effect branching `if (!typedRef.current) load("") else <debounced>
+  // load(query)`. So from the first keystroke onward EVERY later re-run of
+  // that effect — choosing a Google account after a 409, an organization
+  // change, a retry — fired the typed read only. The account reset clears
+  // `unfilteredSearch`, nothing ever refilled it, and "Still looking for the
+  // contact this link named…" printed beside a settled read forever, clearing
+  // only if the person happened to empty the search box by hand.
   //
-  // 🚨 THIS BRANCH'S CLEANUP OWNS THE TIMER, NEVER THE PROOF READ (F-114
-  // NEW-1, VERIFY-R10-FIX-WAVE). It used to return
-  // `() => unfilteredAbortRef.current?.abort()`, and this effect re-runs on
-  // every `query` change — so the FIRST keystroke aborted the unfiltered read
-  // that had just been fired on mount. `unfilteredSearch` then stayed null for
-  // the life of the panel: a deep-linked contact was never promoted and "Still
-  // looking for the contact this link named…" never resolved into either
-  // answer. The unfiltered read is superseded by ANOTHER unfiltered read and
-  // by nothing else (`load` aborts the previous one through
-  // `unfilteredAbortRef`), and unmount is owned by the effect below — so a
-  // keystroke has nothing of its own to clean up here.
-  const typedRef = useRef(false);
+  // So the question "is the unfiltered (proof) read owed?" is held as state
+  // with THREE values, and every precondition that invalidates the previous
+  // proof puts it back to `owed`: mount, an organization change, a chosen
+  // Google account (both through the reset effect above), a retry/Refresh,
+  // and the query being cleared back to "". `running` is what lets the screen
+  // say "still looking" honestly — the line renders only while a proof read is
+  // genuinely in flight or owed, never once one has settled.
+  const [proofRead, setProofRead] = useState<ProofReadState>("owed");
+  const proofSeqRef = useRef(0);
   useEffect(() => {
-    if (!typedRef.current) {
-      void load("");
-      return;
-    }
+    if (proofRead !== "owed" || !effectiveOrganizationId) return;
+    const seq = ++proofSeqRef.current;
+    setProofRead("running");
+    void load("").finally(() => {
+      // A proof read superseded by a NEWER one must not report ITS settlement:
+      // that would hide the still-looking line while a read is in flight.
+      if (proofSeqRef.current === seq) setProofRead("settled");
+    });
+  }, [proofRead, effectiveOrganizationId, load]);
+
+  // Clearing the box back to "" is the person asking the whole-account
+  // question again — the one read that can prove absence is owed afresh.
+  useEffect(() => {
+    if (query !== "") return;
+    setProofRead((current) => (current === "settled" ? "owed" : current));
+  }, [query]);
+
+  // The TYPED read, debounced, and nothing else: the empty query is the proof
+  // read's own question, answered by the effect above. Two effects both firing
+  // for "" is what used to make the debounced one ABORT the first.
+  useEffect(() => {
+    if (query === "") return;
     const handle = window.setTimeout(() => void load(query), 250);
     return () => window.clearTimeout(handle);
-    // `load` is stable per organization; re-running per keystroke is the point.
+    // `load` is stable per organization and account; re-running per keystroke
+    // is the point.
   }, [query, load]);
   useEffect(
     () => () => {
@@ -428,9 +460,31 @@ export function GoogleContactsImportPanel({
   // or the person is mid-keystroke before it fires) and the contact has not
   // turned up anywhere else either — say so, rather than showing nothing
   // while `selected` truthfully sits at zero.
+  // 🚨 …AND ONLY WHILE ONE IS GENUINELY OWED OR IN FLIGHT (F-115): a settled
+  // proof read that returned nothing about this contact is answered by the two
+  // sentences above, never by a spinner that never stops.
   const requestedStillLooking = Boolean(
-    requestedExternalId && !unfilteredSearch && !requestedFound,
+    requestedExternalId &&
+      !unfilteredSearch &&
+      !requestedFound &&
+      proofRead !== "settled" &&
+      effectiveOrganizationId,
   );
+
+  // 🚨 NO CONTROLS OVER ROWS NOBODY READ — the ONE rule, the shared piece,
+  // both panels (`./read-failure.ts`, F-115). Under a failed read the footer
+  // is ABSENT rather than dead, and the ids it can act on are only those a
+  // read of THIS account has returned.
+  const selectionControls = googleImportSelectionControls({
+    state: googleImportReadState({
+      loading,
+      failure: readFailure,
+      settled: search !== null,
+      rowCount: contacts.length,
+    }),
+    provenIds: seenIds,
+    selected: selection.selected,
+  });
 
   const toggle = (externalId: string) => {
     dispatchSelection({ type: "toggle", externalId });
@@ -448,7 +502,15 @@ export function GoogleContactsImportPanel({
     setReadFailure(null);
   };
 
-  const review = async (ids: string[] = selection.selected) => {
+  // ONE retry path for Refresh and for the failure notice's "Try again": the
+  // proof read is owed again (the effect above runs it), and a typed query is
+  // re-run beside it. Both reads are independent questions — see `load`.
+  const retryRead = () => {
+    setProofRead("owed");
+    if (query !== "") void load(query);
+  };
+
+  const review = async (ids: string[] = selectionControls.ids) => {
     if (!effectiveOrganizationId || ids.length === 0) return;
     dispatchSelection({ type: "setSelected", ids });
     setBusy(true);
@@ -847,10 +909,7 @@ export function GoogleContactsImportPanel({
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={query}
-            onChange={(event) => {
-              typedRef.current = true;
-              setQuery(event.target.value);
-            }}
+            onChange={(event) => setQuery(event.target.value)}
             placeholder="Search your Google contacts"
             className="h-9 pl-7 text-base sm:text-sm"
           />
@@ -879,7 +938,7 @@ export function GoogleContactsImportPanel({
             size="sm"
             variant="ghost"
             className="ml-auto h-7 gap-1 px-2 text-xs"
-            onClick={() => void load(query)}
+            onClick={retryRead}
             disabled={loading || readFailure?.kind === "several_accounts"}
             title={
               readFailure?.kind === "several_accounts"
@@ -905,7 +964,7 @@ export function GoogleContactsImportPanel({
           failure={readFailure}
           chosenAccount={googleAccount}
           onChooseAccount={chooseAccount}
-          onRetry={() => void load(query)}
+          onRetry={retryRead}
           busy={loading}
         />
       ) : null}
@@ -1044,20 +1103,27 @@ export function GoogleContactsImportPanel({
           ))}
         </ul>
       </div>
+      {/* 🚨 NO CONTROLS OVER ROWS NOBODY READ (F-115, V-26 NEW-1). Under a
+          failed read the rows are gone, so "N selected" and an ENABLED Review
+          were an offer to preview an import of contacts this account had just
+          refused to hand over. Absent or honest, never dead — the same shape
+          the Tasks sibling has, now from the one shared piece. */}
+      {selectionControls.offered ? (
       <div className="flex items-center gap-2 border-t border-border px-4 py-2">
         <span className="text-xs text-muted-foreground">
-          {selection.selected.length} selected
+          {selectionControls.ids.length} selected
         </span>
         <Button
           size="sm"
           className="ml-auto"
           onClick={() => void review()}
-          disabled={busy || selection.selected.length === 0}
+          disabled={busy || selectionControls.ids.length === 0}
         >
           {busy ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
           Review the field map
         </Button>
       </div>
+      ) : null}
     </div>
   );
 }

@@ -405,4 +405,147 @@ describe("a failed Google read never speaks as an empty one", () => {
     expect(text).toContain("Write the brief");
     expect(text).not.toContain(SEVERAL_ACCOUNTS_SENTENCE);
   });
+  it("CONTACTS: a failed read takes the footer with it — no Review over rows nobody read (F-115 / V-26 NEW-1)", async () => {
+    // THE VERIFIER'S REPRO (VERIFY-R11-FIX-WAVE NEW-1): a first read succeeds,
+    // the person ticks a contact, and the NEXT read fails. `setSearch(null)`
+    // dropped the rows but `selection.selected` survived, so the footer kept
+    // reading "1 selected" with *Review the field map* ENABLED over an empty
+    // list — and pressing it fired an import preview for contacts this account
+    // was at that moment refusing to read at all.
+    let failing = false;
+    mockSearch.mockImplementation(async () => {
+      if (failing) {
+        throw new BackendApiError({
+          code: "internal_error",
+          detail: "boom",
+          userMessage: "Google could not be reached just now.",
+          status: 502,
+        });
+      }
+      return {
+        provider_key: "google_contacts",
+        google_account: "me@example.com",
+        contacts: [ADA],
+        count: 1,
+        total_read: 1,
+        already_imported: 0,
+        truncated: false,
+        warnings: [],
+      };
+    });
+
+    await act(async () => {
+      root.render(<GoogleContactsImportPanel organizationId="org-1" />);
+    });
+    await settle();
+
+    const box = [...container.querySelectorAll("[aria-label]")].find(
+      (candidate) =>
+        candidate.getAttribute("aria-label") === "Select Ada Lovelace",
+    );
+    await act(async () => {
+      box!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await settle();
+    expect(container.textContent ?? "").toContain("1 selected");
+
+    // Now the server refuses, and the person presses Refresh.
+    failing = true;
+    await act(async () => {
+      findButton("Refresh").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+    });
+    await settle();
+
+    const text = container.textContent ?? "";
+    expect(text).toContain("Google could not be reached just now.");
+    // 🚨 NO CONTROLS OVER A LIST NOBODY READ — the same rule the Tasks sibling
+    // already follows. Absent or honest, never dead.
+    expect(text).not.toContain("1 selected");
+    expect(
+      [...container.querySelectorAll("button")].some((candidate) =>
+        (candidate.textContent ?? "").includes("Review the field map"),
+      ),
+    ).toBe(false);
+    // And nothing was fired at the server for rows nobody read.
+    expect(mockImport).not.toHaveBeenCalled();
+  });
+
+  it("TASKS: the same rule, the same shared piece — a selection under a failed read is not actionable", async () => {
+    const LISTING = (account: string) => ({
+      google_account: account,
+      task_lists: [
+        {
+          task_list_id: "list-1",
+          title: "My Tasks",
+          tasks: [
+            {
+              task_id: "t1",
+              title: "Write the brief",
+              notes: null,
+              due_at: null,
+              status: "needsAction",
+              completed_at: null,
+              source_updated_at: null,
+              already_imported: false,
+              matrx_task_id: null,
+              imported_at: null,
+              changes: [],
+              kept_local: [],
+            },
+          ],
+          total: 1,
+          already_imported: 0,
+          importable: 1,
+          has_more: false,
+          count_line: "1 task in My Tasks",
+        },
+      ],
+      total: 1,
+      already_imported: 0,
+      importable: 1,
+      warnings: [],
+    });
+    let failing = false;
+    mockTaskList.mockImplementation(async () => {
+      if (failing) {
+        throw new BackendApiError({
+          code: "internal_error",
+          detail: "boom",
+          userMessage: "Google could not be reached just now.",
+          status: 502,
+        });
+      }
+      return LISTING("me@example.com");
+    });
+
+    await act(async () => {
+      root.render(<GoogleTasksImportPanel organizationId="org-1" />);
+    });
+    await settle();
+
+    const box = [...container.querySelectorAll("[aria-label]")].find(
+      (candidate) =>
+        (candidate.getAttribute("aria-label") ?? "").includes("Write the brief"),
+    );
+    await act(async () => {
+      box!.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
+    await settle();
+    expect(container.textContent ?? "").toContain("Import 1");
+
+    failing = true;
+    await act(async () => {
+      findButton("Refresh").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+    });
+    await settle();
+
+    const text = container.textContent ?? "";
+    expect(text).toContain("Google could not be reached just now.");
+    expect(text).not.toContain("Import 1");
+    expect(mockTaskImport).not.toHaveBeenCalled();
+  });
 });

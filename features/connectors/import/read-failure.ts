@@ -168,3 +168,37 @@ export function googleImportReadState(input: {
   if (input.loading || !input.settled) return "pending";
   return input.rowCount > 0 ? "rows" : "empty";
 }
+
+/**
+ * 🚨 A SELECTION IS ONLY ACTIONABLE OVER ROWS A READ ACTUALLY RETURNED
+ * (F-115, `VERIFY-R11-FIX-WAVE.md` NEW-1, 2026-09-19).
+ *
+ * THE DEFECT: under a FAILED contacts read the panel dropped the rows and kept
+ * the selection, so the footer read "1 selected · Review the field map" with
+ * the button ENABLED over an empty list — and pressing it fired an import
+ * preview for contacts the account had just refused to hand over, under
+ * whatever account the failed read was refusing. The Tasks sibling already
+ * says the rule out loud ("NO CONTROLS OVER A LIST NOBODY READ") by hiding its
+ * footer when it holds no list; this is that rule, once, for both panels.
+ *
+ * `offered` is the footer itself: in the `failed` state nothing selectable is
+ * on screen, so the controls over a selection are ABSENT rather than dead —
+ * the same posture the read failure notice above it already takes. `ids` is
+ * the part of the selection some read of the CURRENT account has proven to
+ * exist (`seenIds` in the contacts panel, the active list's tasks in the Tasks
+ * one), so an id no read ever returned can never reach an import call.
+ */
+export function googleImportSelectionControls(input: {
+  state: GoogleImportReadState;
+  /** Ids a read of the current account has returned. Never a wish list. */
+  provenIds: Iterable<string>;
+  selected: readonly string[];
+}): { offered: boolean; ids: string[] } {
+  const proven = input.provenIds instanceof Set
+    ? (input.provenIds as ReadonlySet<string>)
+    : new Set(input.provenIds);
+  return {
+    offered: input.state !== "failed",
+    ids: input.selected.filter((id) => proven.has(id)),
+  };
+}

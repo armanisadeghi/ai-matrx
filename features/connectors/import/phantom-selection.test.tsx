@@ -34,6 +34,8 @@ import * as React from "react";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
+import { BackendApiError } from "@/lib/api/errors";
+
 const mockImport = jest.fn();
 const mockSearch = jest.fn();
 const mockFields = jest.fn();
@@ -683,5 +685,76 @@ describe("the proof read survives a keystroke, and a promotion happens exactly o
 
     expect(container.textContent ?? "").toContain("0 selected");
     expect(findButton("Review the field map").disabled).toBe(true);
+  });
+  it("the proof read is re-run after a recovery, so the still-looking line does not outlive it (F-115 / V-26 NEW-2)", async () => {
+    // THE VERIFIER'S EXACT PATH (VERIFY-R11-FIX-WAVE NEW-2): the server
+    // refuses with 409 until an account is named, the person TYPES, and only
+    // then presses an account. `typedRef` was sticky, so from the first
+    // keystroke on, every later re-run of the read effect fired the TYPED
+    // read only — the unfiltered proof read never ran again, `unfilteredSearch`
+    // stayed null after the account reset, and "Still looking for the contact
+    // this link named…" printed beside a settled read forever.
+    const BOB = { ...ADA, external_id: "people/2", display_name: "Bob", already_imported: false, person_id: null, person_name: null, imported_at: null };
+    // The contact the LINK named: it is not what the person typed, so only the
+    // unfiltered proof read can ever settle whether it is in this account.
+    const CAROL = { ...BOB, external_id: "people/9", display_name: "Carol" };
+    const ambiguous = () =>
+      new BackendApiError({
+        code: "several_google_accounts",
+        detail: "2 connected Google accounts can read Contacts: one@x.com, two@x.com.",
+        userMessage: "2 connected Google accounts can read Contacts: one@x.com, two@x.com.",
+        details: { candidate_accounts: ["one@x.com", "two@x.com"] },
+        status: 409,
+      });
+    mockSearch.mockImplementation(
+      async (args: { query?: string; googleAccount?: string | null }) => {
+        if (!args.googleAccount) throw ambiguous();
+        return {
+          ...read(args.query ? [BOB] : [BOB, CAROL]),
+          google_account: args.googleAccount,
+        };
+      },
+    );
+
+    await act(async () => {
+      root.render(
+        <GoogleContactsImportPanel
+          organizationId="org-1"
+          initialExternalId="people/9"
+        />,
+      );
+    });
+    await settle();
+
+    // The person types while the server is still refusing.
+    await typeQuery("bob");
+    // …then takes the remedy the panel offers: an account.
+    await act(async () => {
+      findButton("one@x.com").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+    });
+    await settle();
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+    await settle();
+
+    // 🚨 THE SYMPTOM THE VERIFIER READ OFF THE DOM: a settled read on screen
+    // with the still-looking line beside it, forever.
+    const text = container.textContent ?? "";
+    expect(text).toContain("Bob");
+    expect(text).not.toContain("Still looking for the contact this link named");
+    // The proof read settled and ANSWERED the link: Carol is in this account.
+    expect(text).toContain("1 selected");
+
+    // …and its cause: the unfiltered proof read must RUN AGAIN under the
+    // chosen account. It is owed by the account identity, never by whether
+    // anyone has ever typed.
+    const proofReads = mockSearch.mock.calls.filter(
+      (call: [{ query?: string; googleAccount?: string | null }]) =>
+        call[0].query === "" && call[0].googleAccount === "one@x.com",
+    );
+    expect(proofReads.length).toBeGreaterThan(0);
   });
 });
