@@ -68252,6 +68252,26 @@ export type Database = {
         Returns: Json
       }
       door_split_args: { Args: { p_args: string }; Returns: string[] }
+      emit_pending_assist: {
+        Args: {
+          p_action: Json
+          p_body: string
+          p_confidence: number
+          p_dedupe_key: string
+          p_entity_id: string
+          p_entity_type: string
+          p_evidence: Json
+          p_expires_at: string
+          p_organization_id: string
+          p_priority: number
+          p_reasoning: string
+          p_source_key: string
+          p_source_kind: string
+          p_surface_name: string
+          p_title: string
+        }
+        Returns: string
+      }
       enforce_definer_client_grants_impl: {
         Args: { p_grant: boolean; p_objids: unknown[]; p_tag: string }
         Returns: undefined
