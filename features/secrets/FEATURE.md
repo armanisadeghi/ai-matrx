@@ -1,6 +1,6 @@
 # Secrets — Unified Credential Vault
 
-> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-09-12
+> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-09-19
 
 > Cross-repo implementation authority: `/Users/armanisadeghi/code/common-docs/projects/unified-credential-vault/PLAN.md` — read it before expanding this feature in ANY repository.
 >
@@ -322,6 +322,8 @@ the sealed setup seed has no reveal path at any privilege.
 9. **Password-manager imports stay local until per-row confirmation.** `VaultCsvImportDialog` uses Papa Parse for CSV and bounded dedicated workers for plain Bitwarden JSON and 1Password 1PUX. Each JSON worker receives the selected file and returns a required request ID; the UI accepts only its matching response. A source/principal/request-org change, deadline, error, close, or unmount sends matching cancellation, terminates the worker, and prevents late replies from reviving the draft. Bitwarden worker failures use a fixed source-free public error. JSON shows one selected destination origin, skips possible duplicates by default, and separately accounts for selected, skipped, invalid, unsupported, deleted, and archived records before and after import. Every frozen row calls canonical `POST /items` with `source=system_import`, its UUID idempotency key, explicit principal and a fresh expected actor/request-org check; retry reuses only the unresolved command and UUID. Source cells remain in encrypted `import_source_record`; raw files never enter network, global state, or storage. Import never enters `useVault.run()` organization replay.
 10. **Login CSV export never escapes its function scope.** `VaultLoginExportDialog` holds only value-free selection/preview metadata; the Blob becomes a private object URL, clicks once, and is revoked. Account, organization, close, and cancellation invalidate preview/download state; reauthentication never auto-resumes an export.
 
+11. **Vault Trash recovery is aggregate-only.** `credential_item` previews `vault_recovery_preview` directly without lifecycle JSON or values, then restores through `POST /vault/items/{id}/restore`; generic undelete and bulk Keep never handle Vault tokens. A restored item stays disabled with its fields inactive and sharing, browser fill, authenticators, sandbox, agent and integration use off until separately reenabled. Account, organization, close, unmount and an unknown response keep the deletion ID fenced for an honest exact retry.
+
 ## MCP connections (Phase 4 cutover, 2026-07-23)
 
 MCP is a vault consumer, not a token store. `tool.mcp_user_conn` is a
@@ -349,6 +351,8 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
   connection AND soft-deletes the owned vault item.
 
 ## Change Log
+
+- `2026-09-19` — Added ordinary Vault aggregate recovery to the existing Trash inventory: metadata-only preview, explicit disabled/quarantine confirmation, current-password retry, actor/request-organization cancellation, and generic bulk-Keep refusal for Vault tokens.
 
 
 - `2026-09-17` — **An empty authenticator list is no longer a calm lie.** `useAuthenticator` cleared the error and stopped loading once the org bootstrap settled with nothing selected, so the list rendered as "you have no authenticator codes" to a person who has several. It now says which organization is missing and where to choose one. Guard: `pnpm check:org-refusal-honesty`.

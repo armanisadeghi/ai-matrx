@@ -62668,6 +62668,7 @@ export type Database = {
           default_needs_approval: boolean
           default_scopeable: boolean
           default_visibility: Database["platform"]["Enums"]["visibility"] | null
+          feature_owned_restore: boolean
           governed_columns: string[] | null
           has_soft_delete: boolean
           id: string
@@ -62727,6 +62728,7 @@ export type Database = {
           default_visibility?:
             | Database["platform"]["Enums"]["visibility"]
             | null
+          feature_owned_restore?: boolean
           governed_columns?: string[] | null
           has_soft_delete?: boolean
           id?: string
@@ -62786,6 +62788,7 @@ export type Database = {
           default_visibility?:
             | Database["platform"]["Enums"]["visibility"]
             | null
+          feature_owned_restore?: boolean
           governed_columns?: string[] | null
           has_soft_delete?: boolean
           id?: string
@@ -79459,6 +79462,7 @@ export type Database = {
           slug: string
         }[]
       }
+      vault_recovery_preview: { Args: { p_id: string }; Returns: Json }
       version_current: {
         Args: { p_id: string; p_token: string }
         Returns: Json

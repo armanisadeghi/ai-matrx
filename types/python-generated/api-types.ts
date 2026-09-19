@@ -4614,6 +4614,23 @@ export interface paths {
         patch: operations["update_item_vault_items__item_id__patch"];
         trace?: never;
     };
+    "/vault/items/{item_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Item */
+        post: operations["restore_item_vault_items__item_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    }
     "/vault/items/{item_id}/fields": {
         parameters: {
             query?: never;
@@ -119919,6 +119936,35 @@ export interface components {
                 [key: string]: string;
             };
         };
+        /** VaultRestoreRequest */
+        VaultRestoreRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** Task Id */
+            task_id?: string | null;
+            /**
+             * Deletion Id
+             * Format: uuid
+             */
+            deletion_id: string;
+        }
+        /** VaultRestoreResponse */
+        VaultRestoreResponse: {
+            item: components["schemas"]["VaultItemOut"];
+            /** Restored Fields */
+            restored_fields: number;
+            /** Restored Attachments */
+            restored_attachments: number;
+            /** Already Restored */
+            already_restored: boolean;
+            /** Notice */
+            notice: "sharing_and_automatic_use_off";
+        }
         /** VaultRevealRequest */
         VaultRevealRequest: {
             /**
@@ -134209,6 +134255,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VaultItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_item_vault_items__item_id__restore_post: {
+        parameters: {
+            query?: never;
+            header: {
+                "X-Organization-Id": string;
+            };
+            path: {
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VaultRestoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaultRestoreResponse"];
                 };
             };
             /** @description Validation Error */
