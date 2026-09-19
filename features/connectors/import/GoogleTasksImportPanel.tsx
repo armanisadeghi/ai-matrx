@@ -112,11 +112,8 @@ export function GoogleTasksImportPanel({
   const abortRef = useRef<AbortController | null>(null);
 
   const load = useCallback(
-    async (accountOverride?: string | null) => {
+    async () => {
       if (!effectiveOrganizationId) return;
-      // The override exists so choosing an account reads with it in the same
-      // beat, without waiting a render for the state to land.
-      const account = accountOverride ?? googleAccount;
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
@@ -125,7 +122,7 @@ export function GoogleTasksImportPanel({
       try {
         const result = await listGoogleTasks({
           organizationId: effectiveOrganizationId,
-          googleAccount: account,
+          googleAccount,
           signal: controller.signal,
         });
         setReadFailure(null);
@@ -177,10 +174,11 @@ export function GoogleTasksImportPanel({
   };
 
   // THE REMEDY IS THE PRESS: the accounts the server named are the choice.
+  // ONE read per press — `load` is keyed on the account, and the effect below
+  // re-runs it; calling it here too would fire two Google reads for one press.
   const chooseAccount = (account: string) => {
     setGoogleAccount(account);
     setReadFailure(null);
-    void load(account);
   };
 
   const selectNotHere = () => {

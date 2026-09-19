@@ -323,11 +323,8 @@ export function GoogleContactsImportPanel({
   const callSeqRef = useRef(0);
 
   const load = useCallback(
-    async (text: string, accountOverride?: string | null) => {
+    async (text: string) => {
       if (!effectiveOrganizationId) return;
-      // The override exists so choosing an account can read with it in the same
-      // beat, without waiting a render for the state to land.
-      const account = accountOverride ?? googleAccount;
       const unfiltered = text === "";
       const ref = unfiltered ? unfilteredAbortRef : typedAbortRef;
       ref.current?.abort();
@@ -340,7 +337,7 @@ export function GoogleContactsImportPanel({
         const result = await searchGoogleContacts({
           organizationId: effectiveOrganizationId,
           query: text,
-          googleAccount: account,
+          googleAccount,
           signal: controller.signal,
         });
         if (callSeqRef.current === seq) setReadFailure(null);
@@ -442,10 +439,13 @@ export function GoogleContactsImportPanel({
   // THE REMEDY IS THE PRESS: the accounts the server named are the choice, and
   // pressing one re-reads with it rather than telling a person to set a
   // parameter they have nowhere to set (F-113 NEW-2).
+  // ONE read per press, and it is the effect's: `load` is keyed on the chosen
+  // account, so setting it re-runs the read through the SAME path an
+  // organization change already uses. Calling `load` here as well would fire
+  // two Google reads for one press, the second aborting the first.
   const chooseAccount = (account: string) => {
     setGoogleAccount(account);
     setReadFailure(null);
-    void load(query, account);
   };
 
   const review = async (ids: string[] = selection.selected) => {

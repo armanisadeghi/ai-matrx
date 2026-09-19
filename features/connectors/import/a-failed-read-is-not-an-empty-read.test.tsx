@@ -229,12 +229,14 @@ describe("a failed Google read never speaks as an empty one", () => {
     // Refresh cannot silently re-run the same failing request.
     expect(findButton("Refresh").disabled).toBe(true);
 
-    // Pressing an account re-runs the read against it.
+    // Pressing an account re-runs the read against it — ONCE, not twice.
+    const readsBefore = mockSearch.mock.calls.length;
     await act(async () => {
       choice.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
     await settle();
 
+    expect(mockSearch.mock.calls.length).toBe(readsBefore + 1);
     expect(mockSearch).toHaveBeenLastCalledWith(
       expect.objectContaining({ googleAccount: "arman@armansadeghi.com" }),
     );
@@ -338,6 +340,7 @@ describe("a failed Google read never speaks as an empty one", () => {
     expect(text).not.toContain("Select the 0 not here yet");
     expect(text).not.toContain("Import 0");
 
+    const listsBefore = mockTaskList.mock.calls.length;
     await act(async () => {
       findButton("arman@armansadeghi.com").dispatchEvent(
         new MouseEvent("click", { bubbles: true }),
@@ -345,6 +348,7 @@ describe("a failed Google read never speaks as an empty one", () => {
     });
     await settle();
 
+    expect(mockTaskList.mock.calls.length).toBe(listsBefore + 1);
     expect(mockTaskList).toHaveBeenLastCalledWith(
       expect.objectContaining({ googleAccount: "arman@armansadeghi.com" }),
     );
