@@ -1146,6 +1146,16 @@ export function parseSyncEvent(payload: unknown, standIns: string[]): EventRead<
                             `${type}.skipped_by_reason`,
                         ),
                         skipped_total: number(row.skipped_total, `${type}.skipped_total`),
+                        // A server build older than this one sends neither
+                        // field. Absent is read as "nothing was refused"
+                        // rather than refused, matching `skipped_by_reason`
+                        // above — a missing account of a refusal must never
+                        // read as a quiet, ordinary completion either way.
+                        retire_refused: optBool(
+                            row.retire_refused,
+                            `${type}.retire_refused`,
+                            false,
+                        ),
                         metrics: parseLibraryMetrics(row.metrics, `${type}.metrics`, standIns),
                     },
                 };

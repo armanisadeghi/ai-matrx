@@ -175,6 +175,8 @@ const IDLE_SYNC: SyncState = {
     phase: "idle",
     skippedTotal: 0,
     skippedByReason: {},
+    removedCount: 0,
+    retireRefused: false,
     startedAt: null,
     finishedElapsedMs: null,
     listed: 0,

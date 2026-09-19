@@ -622,34 +622,69 @@ function SyncStrip({
 
     if (sync.phase === "done") {
         return (
-            <div className="flex min-h-[52px] items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-2">
-                <Clock className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
-                <p className="text-sm tabular-nums text-foreground">
-                    {`Up to date — ${formatCount(sync.listed)} Sources listed in ${formatElapsed(
-                        sync.finishedElapsedMs,
-                    )}.`}
-                    {/* 🚨 A CATALOGUE SAYS WHAT IT LEFT OUT. The blog crawl reaches
-                        taxonomy pages, pagination, nav widgets and assets, and
-                        discards them — waitbutwhy.com went from 346 "Posts" to its
-                        own sitemap's 202 that way. A number that quietly drops 23
-                        pages is the same kind of claim as one that quietly adds
-                        them, so the count that was NOT kept is said out loud, with
-                        the reasons a person can hover. Nothing skipped, nothing
-                        said. */}
-                    {sync.skippedTotal > 0 && (
-                        <span
-                            className="text-muted-foreground"
-                            title={Object.entries(sync.skippedByReason)
-                                .sort(([, a], [, b]) => b - a)
-                                .map(([reason, count]) => `${count} ${reason.replace(/_/g, " ")}`)
-                                .join(", ")}
-                        >
-                            {` ${formatCount(sync.skippedTotal)} other ${
-                                sync.skippedTotal === 1 ? "page" : "pages"
-                            } skipped.`}
+            <div className="flex min-h-[52px] flex-col justify-center gap-1 rounded-lg border border-border bg-muted/40 px-3 py-2">
+                <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+                    <p className="text-sm tabular-nums text-foreground">
+                        {`Up to date — ${formatCount(sync.listed)} Sources listed in ${formatElapsed(
+                            sync.finishedElapsedMs,
+                        )}.`}
+                        {/* 🚨 A CATALOGUE SAYS WHAT IT LEFT OUT. The blog crawl reaches
+                            taxonomy pages, pagination, nav widgets and assets, and
+                            discards them — waitbutwhy.com went from 346 "Posts" to its
+                            own sitemap's 202 that way. A number that quietly drops 23
+                            pages is the same kind of claim as one that quietly adds
+                            them, so the count that was NOT kept is said out loud, with
+                            the reasons a person can hover. Nothing skipped, nothing
+                            said. */}
+                        {sync.skippedTotal > 0 && (
+                            <span
+                                className="text-muted-foreground"
+                                title={Object.entries(sync.skippedByReason)
+                                    .sort(([, a], [, b]) => b - a)
+                                    .map(
+                                        ([reason, count]) =>
+                                            `${count} ${reason.replace(/_/g, " ")}`,
+                                    )
+                                    .join(", ")}
+                            >
+                                {` ${formatCount(sync.skippedTotal)} other ${
+                                    sync.skippedTotal === 1 ? "page" : "pages"
+                                } skipped.`}
+                            </span>
+                        )}
+                        {/* A full sync RETIRES what it no longer finds — say so,
+                            the same way a skip is said, rather than leaving a
+                            number that quietly shrank unexplained. */}
+                        {!sync.retireRefused && sync.removedCount > 0 && (
+                            <span className="text-muted-foreground">
+                                {` ${formatCount(sync.removedCount)} ${
+                                    sync.removedCount === 1 ? "Source" : "Sources"
+                                } retired.`}
+                            </span>
+                        )}
+                    </p>
+                </div>
+                {/* 🚨 NOTHING FAILS SILENTLY. A candidate retirement that looked
+                    like a reconciliation bug (≥50% of what this run just
+                    persisted) was refused rather than applied — the Library
+                    kept every Source it had. Reporting `removed_count: 0` here
+                    with no sentence would read as an ordinary, uneventful
+                    completion; it was not. */}
+                {sync.retireRefused && (
+                    <p className="flex items-start gap-2 pl-6 text-xs text-amber-700 dark:text-amber-400">
+                        <AlertTriangle
+                            className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                            aria-hidden="true"
+                        />
+                        <span>
+                            This Library kept every Source it had — the provider
+                            listing looked incomplete, so nothing was retired. Run
+                            the catalogue again later to try the retirement once
+                            more.
                         </span>
-                    )}
-                </p>
+                    </p>
+                )}
             </div>
         );
     }
