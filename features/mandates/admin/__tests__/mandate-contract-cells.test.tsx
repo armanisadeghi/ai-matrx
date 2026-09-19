@@ -1,10 +1,14 @@
-import { renderToStaticMarkup } from "react-dom/server";
+import type { ReactNode } from "react";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
 import type { MandateDefinitionRow } from "@/lib/supabase/mandateStorage";
 import {
   MandateInputsCell,
   MandateOutputCell,
 } from "../mandate-contract-cells";
 import type { MandateRow } from "../mandate-health";
+
+const renderToStaticMarkup = (children: ReactNode) => renderMarkup(<TooltipProvider>{children}</TooltipProvider>);
 
 const LONG_OUTPUT_KIND =
   "resale_intelligence_report_with_an_exceptionally_long_variant";
@@ -202,5 +206,28 @@ describe("input summary overflow", () => {
     expect(html).toContain("+1 additional");
     expect(html).not.toContain("+ user text");
     expect(html).not.toContain(">User text<");
+  });
+});
+
+describe("compact table contract cells", () => {
+  it("retains every offered input and user text without stacked badges", () => {
+    const markup = renderToStaticMarkup(
+      <MandateInputsCell compact row={{ ...row, provisionKey: "test.offer" }} offeredValues={["first_value", "second_value", "third_value", "fourth_value", "fifth_value"]} />,
+    );
+    for (const value of ["first_value", "second_value", "third_value", "fourth_value", "fifth_value", "User text"]) expect(markup).toContain(value);
+    expect(markup).toContain("truncate");
+    expect(markup).not.toContain("flex-wrap");
+  });
+  it("retains the output kind destination and full identity in compact mode", () => {
+    const markup = renderToStaticMarkup(<MandateOutputCell compact row={row} />);
+    expect(markup).toContain(`/administration/utilities/kind-registry/${LONG_OUTPUT_KIND}`);
+    expect(markup).toContain('target="_blank"');
+    expect(markup).toContain("truncate");
+    expect(markup).not.toContain("whitespace-normal");
+  });
+  it("keeps every required output key in the compact summary", () => {
+    const markup = renderToStaticMarkup(<MandateOutputCell compact row={{ ...row, mandate: { ...mandate, output_kind: null }, requiredOutputKeys: ["one", "two", "three", "four", "five"] }} />);
+    expect(markup).toContain("one, two, three, four, five");
+    expect(markup).not.toContain("flex-wrap");
   });
 });

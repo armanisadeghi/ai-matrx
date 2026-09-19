@@ -280,7 +280,16 @@ export function LibrarySummary({
 
                 <ChipRow
                   title="Threads and channels"
-                  entries={topCounts(summary.counts_by_container, 30)}
+                  // 🚨 `value` MUST be `c.key` (`container_key()`), never
+                  // `c.label` — the round-9 defect was this chip row sending
+                  // the display label ("Priya Raman") to `onNarrow`, which
+                  // itemQuery forwards straight through as the `container_id`
+                  // filter; the server only ever matches `container_id`.
+                  entries={summary.top_containers.slice(0, 30).map((c) => ({
+                    value: c.key,
+                    count: c.count,
+                    label: c.label,
+                  }))}
                   onPick={(value) => {
                     onNarrow("container_label", value);
                     setDetailsOpen(false);

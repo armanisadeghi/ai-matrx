@@ -98,6 +98,24 @@ export interface ExportCorrespondent {
   count: number;
 }
 
+/**
+ * One thread/channel facet value. Same key/label split as `ExportCorrespondent`,
+ * for the same reason: `key` is what the item filter's `container_id` matches
+ * on (the server's `ExportItem.container_key()` — a real thread id when one
+ * exists, its label otherwise), `label` is what a person reads ("Priya Raman"
+ * rather than "priyaraman_10000000000").
+ *
+ * 🚨 Before this existed, the facet was a bare `{ label: count }` map
+ * (`counts_by_container`) and every consumer sent the LABEL to the server as
+ * `container_id` — a value nothing has, so ticking "Priya Raman" in the
+ * "Thread / channel" filter always returned zero rows (round 9, 2026-09-19).
+ */
+export interface ExportContainer {
+  key: string;
+  label: string;
+  count: number;
+}
+
 export interface ExportDateRange {
   earliest: string | null;
   latest: string | null;
@@ -114,7 +132,8 @@ export interface ExportSummary {
   counts_by_kind: CountMap;
   counts_by_direction: CountMap;
   counts_by_label: CountMap;
-  counts_by_container: CountMap;
+  /** Keyed by `ExportContainer.key` — see its doc comment. */
+  top_containers: ExportContainer[];
   date_range: ExportDateRange;
   top_correspondents: ExportCorrespondent[];
   total_chars: number;

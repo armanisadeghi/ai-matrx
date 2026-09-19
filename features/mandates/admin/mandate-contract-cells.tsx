@@ -12,12 +12,24 @@
  * verdict, a classification IN text, and the mandate should say which.
  */
 
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import type { MandateRow } from "./mandate-health";
 
 const KIND_REGISTRY_BASE = "/administration/utilities/kind-registry";
 const CONTRACT_BADGE_CLASS =
   "h-auto min-h-5 max-w-full whitespace-normal break-words [overflow-wrap:anywhere] px-1.5 py-0.5 text-left text-[10px] leading-tight";
+
+export function CompactMandateText({ text, description = text }: { text: string; description?: string }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span tabIndex={0} className="block min-w-0 max-w-full truncate text-xs">{text}</span>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-md whitespace-pre-wrap break-words">{description}</TooltipContent>
+    </Tooltip>
+  );
+}
 
 /**
  * The mandate's declared inputs as chips, plus the ever-present free-text
@@ -45,13 +57,16 @@ function ChipRow({
   maxChips,
   title,
   mono = true,
+  compact = false,
 }: {
   items: readonly string[];
   maxChips: number;
   title: string;
   mono?: boolean;
+  compact?: boolean;
 }) {
   const inputs = [...items, "User text"];
+  if (compact) return <CompactMandateText text={inputs.join(", ")} description={title} />;
   const shown = inputs.slice(0, maxChips);
   const hidden = inputs.length - shown.length;
   return (
@@ -80,11 +95,13 @@ export function MandateInputsCell({
   row,
   maxChips = 4,
   offeredValues,
+  compact = false,
 }: {
   row: MandateRow;
   maxChips?: number;
   /** The offered value names of `row.provisionKey`, when they have loaded. */
   offeredValues?: readonly string[];
+  compact?: boolean;
 }) {
   const fromProvision = Boolean(row.provisionKey);
   const variables =
@@ -111,6 +128,7 @@ export function MandateInputsCell({
       return (
         <ChipRow
           items={row.draftInputDescriptions}
+          compact={compact}
           maxChips={maxChips}
           mono={false}
           title={`This job's own described inputs: ${row.draftInputDescriptions.join(", ")} — described, not yet formalized as typed values.`}
@@ -121,6 +139,7 @@ export function MandateInputsCell({
       return (
         <ChipRow
           items={row.holderDeclarations}
+          compact={compact}
           maxChips={maxChips}
           title={`Declared by ${row.agentName}, the agent that fulfils this job: ${row.holderDeclarations.join(", ")}.`}
         />
@@ -138,7 +157,7 @@ export function MandateInputsCell({
   const label = fromProvision
     ? `Offered by ${row.provisionKey}: ${variables.join(", ")}; User text (optional).`
     : `Required variables: ${variables.join(", ")}; User text (optional).`;
-  return <ChipRow items={variables} maxChips={maxChips} title={label} />;
+  return <ChipRow items={variables} maxChips={maxChips} title={label} compact={compact} />;
 }
 
 /** The output promise: a registered kind (a door), the required output keys,
@@ -146,9 +165,11 @@ export function MandateInputsCell({
 export function MandateOutputCell({
   row,
   maxChips = 4,
+  compact = false,
 }: {
   row: MandateRow;
   maxChips?: number;
+  compact?: boolean;
 }) {
   const kind = row.mandate.output_kind;
   if (kind) {
@@ -163,7 +184,7 @@ export function MandateOutputCell({
       >
         <Badge
           variant="secondary"
-          className={`${CONTRACT_BADGE_CLASS} font-mono hover:bg-secondary/80 hover:text-secondary-foreground`}
+          className={`${compact ? "max-w-full truncate whitespace-nowrap px-1.5 py-0.5 text-[10px]" : CONTRACT_BADGE_CLASS} font-mono hover:bg-secondary/80 hover:text-secondary-foreground`}
         >
           {kind}
         </Badge>
@@ -172,6 +193,7 @@ export function MandateOutputCell({
   }
   const keys = row.requiredOutputKeys;
   if (keys.length > 0) {
+    if (compact) return <CompactMandateText text={keys.join(", ")} description={`No registered kind, but the contract requires these output keys: ${keys.join(", ")}.`} />;
     const shown = keys.slice(0, maxChips);
     const hidden = keys.length - shown.length;
     return (
