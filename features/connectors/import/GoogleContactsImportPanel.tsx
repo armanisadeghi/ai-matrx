@@ -38,6 +38,11 @@ import {
   importGoogleContacts,
   searchGoogleContacts,
 } from "./service";
+import { GoogleImportReadFailureNotice } from "./GoogleImportReadFailureNotice";
+import {
+  readGoogleImportFailure,
+  type GoogleImportReadFailure,
+} from "./read-failure";
 import {
   IMPORT_PROVENANCE_UNRECORDED,
   importDateText,
@@ -243,6 +248,23 @@ export function GoogleContactsImportPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("pick");
+  /**
+   * 🚨 THE READ'S FOURTH STATE (F-113 — `./read-failure.ts` carries the law).
+   * A refusal is held as its own TYPED thing, never folded into the `error`
+   * string the review and the apply use: under a failed read this panel used
+   * to print the server's failure, "Still looking for the contact this link
+   * named…" and "This Google account has no contacts we can read." all at
+   * once. Nothing derived from rows may render while this is set.
+   */
+  const [readFailure, setReadFailure] = useState<GoogleImportReadFailure | null>(
+    null,
+  );
+  /**
+   * The Google account the person chose when the server said several could
+   * answer. It rides every later call — the read AND the import — so the
+   * preview and the save can never resolve to two different accounts.
+   */
+  const [googleAccount, setGoogleAccount] = useState<string | null>(null);
   const [plans, setPlans] = useState<ContactImportOutcomePending[]>([]);
   const [edits, setEdits] = useState<EditMap>({});
   const [busy, setBusy] = useState(false);
@@ -277,9 +299,12 @@ export function GoogleContactsImportPanel({
   // ids, so Review could fire them at the new one).
   useEffect(() => {
     dispatchSelection({ type: "reset", requestedExternalId: initialExternalId });
-    // `initialExternalId` is the window's own address and does not change
-    // for a mounted panel; the reset is keyed on the organization only.
-  }, [effectiveOrganizationId]);
+    // `initialExternalId` is the window's own address and does not change for a
+    // mounted panel; the reset is keyed on the organization — and, for the same
+    // reason, on the chosen Google account: picking a different account is
+    // literally a different account's contacts, so nothing the previous one
+    // proved may survive the switch.
+  }, [effectiveOrganizationId, googleAccount]);
 
   // 🚨 TWO ABORT CONTROLLERS, NEVER ONE (Bugbot on `8e612aa2`: a keystroke
   // before the mount's unfiltered read resolves aborted the ONE read that can
@@ -298,8 +323,11 @@ export function GoogleContactsImportPanel({
   const callSeqRef = useRef(0);
 
   const load = useCallback(
-    async (text: string) => {
+    async (text: string, accountOverride?: string | null) => {
       if (!effectiveOrganizationId) return;
+      // The override exists so choosing an account can read with it in the same
+      // beat, without waiting a render for the state to land.
+      const account = accountOverride ?? googleAccount;
       const unfiltered = text === "";
       const ref = unfiltered ? unfilteredAbortRef : typedAbortRef;
       ref.current?.abort();
@@ -312,8 +340,10 @@ export function GoogleContactsImportPanel({
         const result = await searchGoogleContacts({
           organizationId: effectiveOrganizationId,
           query: text,
+          googleAccount: account,
           signal: controller.signal,
         });
+        if (callSeqRef.current === seq) setReadFailure(null);
         // Only the most recently STARTED call may paint the visible list —
         // an unfiltered read that resolves after a later typed one must not
         // overwrite what the person is currently looking at.
@@ -324,12 +354,18 @@ export function GoogleContactsImportPanel({
         dispatchSelection({ type: "read", contacts: result.contacts, unfiltered, result });
       } catch (cause) {
         if (controller.signal.aborted) return;
-        if (callSeqRef.current === seq) setError(getUserMessage(cause));
+        if (callSeqRef.current !== seq) return;
+        // 🚨 A FAILED READ IS NOT AN EMPTY READ. The refusal gets its own
+        // posture, and the rows of a SUPERSEDED read are dropped with it — a
+        // list left on screen under a failure is an answer to a question
+        // nobody asked (F-113).
+        setReadFailure(readGoogleImportFailure(cause));
+        setSearch(null);
       } finally {
         if (!controller.signal.aborted && callSeqRef.current === seq) setLoading(false);
       }
     },
-    [effectiveOrganizationId],
+    [effectiveOrganizationId, googleAccount],
   );
 
   // ONE read on mount, debounced only on later keystrokes. Two effects both
@@ -403,6 +439,15 @@ export function GoogleContactsImportPanel({
     dispatchSelection({ type: "toggle", externalId });
   };
 
+  // THE REMEDY IS THE PRESS: the accounts the server named are the choice, and
+  // pressing one re-reads with it rather than telling a person to set a
+  // parameter they have nowhere to set (F-113 NEW-2).
+  const chooseAccount = (account: string) => {
+    setGoogleAccount(account);
+    setReadFailure(null);
+    void load(query, account);
+  };
+
   const review = async (ids: string[] = selection.selected) => {
     if (!effectiveOrganizationId || ids.length === 0) return;
     dispatchSelection({ type: "setSelected", ids });
@@ -411,6 +456,7 @@ export function GoogleContactsImportPanel({
     try {
       const result = await importGoogleContacts({
         organizationId: effectiveOrganizationId,
+        googleAccount,
         contacts: ids.map((externalId) => ({ externalId })),
         dryRun: true,
       });
@@ -432,6 +478,7 @@ export function GoogleContactsImportPanel({
     try {
       const result = await importGoogleContacts({
         organizationId: effectiveOrganizationId,
+        googleAccount,
         dryRun: false,
         contacts: plans.map((plan) => ({
           externalId: plan.external_id,
@@ -823,12 +870,22 @@ export function GoogleContactsImportPanel({
               .
             </span>
           ) : null}
+          {/* 🚨 REFRESH NEVER SILENTLY RE-RUNS A REQUEST WE KNOW WILL FAIL
+              (F-113 NEW-2): while the server is waiting to be told WHICH
+              Google account to read, the same read is the same refusal. The
+              choice is right below, and this says so rather than looking
+              pressable and changing nothing. */}
           <Button
             size="sm"
             variant="ghost"
             className="ml-auto h-7 gap-1 px-2 text-xs"
             onClick={() => void load(query)}
-            disabled={loading}
+            disabled={loading || readFailure?.kind === "several_accounts"}
+            title={
+              readFailure?.kind === "several_accounts"
+                ? "Choose which Google account to read from first."
+                : undefined
+            }
           >
             <RefreshCw className="h-3 w-3" />
             Refresh
@@ -840,6 +897,17 @@ export function GoogleContactsImportPanel({
           <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           {error}
         </p>
+      ) : null}
+      {/* THE FOURTH STATE. One posture, both import panels
+          (`./GoogleImportReadFailureNotice.tsx`). */}
+      {readFailure ? (
+        <GoogleImportReadFailureNotice
+          failure={readFailure}
+          chosenAccount={googleAccount}
+          onChooseAccount={chooseAccount}
+          onRetry={() => void load(query)}
+          busy={loading}
+        />
       ) : null}
       {search?.warnings.map((warning) => (
         <p
@@ -853,7 +921,7 @@ export function GoogleContactsImportPanel({
           name, not folded into "no contacts" (V-24). This is the honest
           reason a link opened here to nothing: never confused with an empty
           account or a search with no hits. */}
-      {requestedContactMissing ? (
+      {readFailure ? null : requestedContactMissing ? (
         <p className="flex items-start gap-2 border-b border-border bg-amber-500/10 px-4 py-2 text-xs text-amber-600 dark:text-amber-400">
           <CircleAlert className="mt-0.5 h-3.5 w-3.5 shrink-0" />
           The contact this link named is not in this account&apos;s readable
@@ -884,7 +952,10 @@ export function GoogleContactsImportPanel({
         </p>
       ) : null}
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {!loading && contacts.length === 0 ? (
+        {/* 🚨 ONLY A READ THAT HAPPENED MAY SAY THE ACCOUNT IS EMPTY (F-113).
+            `readFailure` means no contact was ever read, so neither of these
+            sentences is a fact — the posture above is the whole answer. */}
+        {!loading && !readFailure && contacts.length === 0 ? (
           <p className="p-6 text-center text-sm text-muted-foreground">
             {query
               ? `No Google contact matches “${query}”.`
