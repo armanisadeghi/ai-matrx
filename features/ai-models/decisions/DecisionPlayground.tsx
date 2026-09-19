@@ -343,7 +343,7 @@ function AnswerCard({
       ? `Choice: ${answer.choice} · confidence ${(answer.confidence * 100).toFixed(0)}%`
       : answer.type === "score"
         ? `Score: ${answer.score} · confidence ${(answer.confidence * 100).toFixed(0)}%`
-        : `Noul: ${answer.noul}`;
+        : `Noul degree: ${(answer.noul * 100).toFixed(0)}% true`;
   const detail = answer.type === "noul" ? null : answer.probabilities;
   return (
     <article className="rounded-lg border border-border bg-muted/30 p-3">
@@ -359,7 +359,17 @@ function AnswerCard({
               key={label}
               className="grid grid-cols-[minmax(0,1fr)_3rem] items-center gap-2"
             >
-              <span className="truncate">{label}</span>
+              <div className="min-w-0">
+                <span className="truncate">{label}</span>
+                <div className="mt-1 h-1.5 overflow-hidden rounded bg-muted">
+                  <div
+                    className="h-full bg-primary"
+                    style={{
+                      width: `${Math.max(0, Math.min(100, probability * 100))}%`,
+                    }}
+                  />
+                </div>
+              </div>
               <span className="text-right tabular-nums">
                 {(probability * 100).toFixed(1)}%
               </span>
@@ -378,6 +388,18 @@ function AnswerCard({
           ))}
         </div>
       )}
+      {answer.type === "noul" && (
+        <p className="mt-2 text-xs text-muted-foreground">
+          Degree of the true criterion; the false degree is{" "}
+          {((1 - answer.noul) * 100).toFixed(0)}%.
+        </p>
+      )}
+      <details className="mt-2 text-xs text-muted-foreground">
+        <summary className="cursor-pointer">Raw result details</summary>
+        <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap">
+          {JSON.stringify(answer, null, 2)}
+        </pre>
+      </details>
     </article>
   );
 }
