@@ -79,8 +79,8 @@ importers:
         specifier: file:vendor/ai-matrx-records-0.3.0.tgz
         version: file:vendor/ai-matrx-records-0.3.0.tgz(react@19.3.0)
       '@ai-matrx/records-ui':
-        specifier: file:vendor/ai-matrx-records-ui-0.4.0.tgz
-        version: file:vendor/ai-matrx-records-ui-0.4.0.tgz(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+        specifier: file:vendor/ai-matrx-records-ui-0.4.2.tgz
+        version: file:vendor/ai-matrx-records-ui-0.4.2.tgz(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/tap-target':
         specifier: latest
         version: 0.2.13(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -1041,9 +1041,9 @@ packages:
       react-native:
         optional: true
 
-  '@ai-matrx/records-ui@file:vendor/ai-matrx-records-ui-0.4.0.tgz':
-    resolution: {integrity: sha512-JdIrHeJ62wqY8e4x/z5wxzkxSv5lNwJ8Byqys9qZGTIB2A12M1cNFgef+d2G1i3ZG7FXskoyunCj87nGAeeUxg==, tarball: file:vendor/ai-matrx-records-ui-0.4.0.tgz}
-    version: 0.4.0
+  '@ai-matrx/records-ui@file:vendor/ai-matrx-records-ui-0.4.2.tgz':
+    resolution: {integrity: sha512-t6bYZ0ydCmgg9xCYKapQH/teKq78lp0OQDbOpPS6Fb6GQnkoUi7puMntpJUajIIZsfjpbDhI/2simV4y7wAIBw==, tarball: file:vendor/ai-matrx-records-ui-0.4.2.tgz}
+    version: 0.4.2
     engines: {node: '>=20'}
     peerDependencies:
       react: '>=18.0.0'
@@ -13116,7 +13116,7 @@ snapshots:
     optionalDependencies:
       react: 19.3.0
 
-  '@ai-matrx/records-ui@file:vendor/ai-matrx-records-ui-0.4.0.tgz(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
+  '@ai-matrx/records-ui@file:vendor/ai-matrx-records-ui-0.4.2.tgz(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@ai-matrx/alchemy': 0.3.5(@supabase/supabase-js@2.116.0(@opentelemetry/api@1.9.0))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ai-matrx/design-system': 0.21.8(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
