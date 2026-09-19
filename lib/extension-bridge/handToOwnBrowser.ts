@@ -40,6 +40,8 @@
 
 import {
   detectExtensionId,
+  forgetRememberedExtensionId,
+  getRememberedExtensionId,
   isChromeRpcAvailable,
   sendChromeRpc,
 } from "@/lib/extension-bridge/chrome-rpc";
@@ -123,7 +125,15 @@ export async function handToOwnBrowser(
     };
   }
 
-  const extensionId = await findOwnBrowserExtension();
+  // 🚨 GESTURE-CRITICAL. A probe here would cost up to two round trips out of
+  // the ~5 seconds of transient activation this click has, and that activation
+  // is the only reason the extension is allowed to open its side panel at all
+  // (matrx-extend `src/lib/frontend-bridge/panel-gesture.ts`). Every surface
+  // that offers this button has already asked `hasOwnBrowserExtension()` to
+  // decide whether to offer it, so the id is normally already remembered and
+  // this costs nothing. Only a caller that never asked pays for the probe —
+  // and it is still better to send late than not to send.
+  const extensionId = getRememberedExtensionId() ?? (await findOwnBrowserExtension());
   if (!extensionId) {
     return { kind: "no_extension", sentence: NO_EXTENSION_SENTENCE };
   }
@@ -139,10 +149,14 @@ export async function handToOwnBrowser(
   );
 
   if (!reply.ok) {
-    // The extension answered `ping` a moment ago, so this is a real refusal
-    // (not signed in there, not a member of this workspace) or it went away
-    // mid-call. Its sentence is written for a person; pass it through rather
-    // than replacing it with one of ours that knows less.
+    // A remembered id is never proof the install is still there, so this is
+    // where an uninstalled or disabled extension actually shows up. Forget it
+    // so the next attempt probes for real instead of talking to a ghost.
+    forgetRememberedExtensionId();
+    // Otherwise this is a real refusal (not signed in there, not a member of
+    // this workspace) or it went away mid-call. Its sentence is written for a
+    // person; pass it through rather than replacing it with one of ours that
+    // knows less.
     return {
       kind: "refused",
       sentence:
@@ -179,13 +193,18 @@ export async function handToOwnBrowser(
 /**
  * The receipt, in one sentence.
  *
- * 🚨 `panelOpened: false` is the case worth caring about. Chrome only lets an
- * extension open its side panel in response to a user gesture, and a message
- * from another extension does not count as one — so the panel genuinely may
- * not open, on a click that otherwise worked perfectly. When that happens the
- * sentence says the ONE thing left to do (click the toolbar icon) instead of
- * claiming success and leaving the person looking at nothing. The hand-off
- * itself already happened either way; the browser is reading.
+ * 🚨 THE PANEL NORMALLY OPENS BY ITSELF NOW (2026-09-19). Chrome only lets an
+ * extension open its side panel in response to a user gesture, and it was
+ * written down here that a message from a web page is not one. That was wrong:
+ * the message does carry the gesture, and what used to lose it was the
+ * extension's own handler doing its reads before it called `open()`. Measured
+ * sixteen ways in matrx-extend `tests/browser/side-panel-gesture-spike.mjs`.
+ *
+ * `panelOpened: false` is still a real state — a browser where the panel is
+ * unavailable, a click whose activation had already expired, or any refusal
+ * Chrome invents later. When it happens the sentence says the ONE thing left to
+ * do (click the toolbar icon) instead of claiming a panel that is not there.
+ * The hand-off itself already happened either way; the browser is reading.
  */
 export function handedOverSentence(args: {
   organizationName: string;
@@ -201,7 +220,7 @@ export function handedOverSentence(args: {
     ? ` Your extension is now on ${organizationName}.`
     : "";
   if (panelOpened) {
-    return `Your browser is reading ${pages} now — the Matrx panel is open so you can watch.${where}`;
+    return `The Matrx panel just opened on the right — your browser is reading ${pages} now, and you can watch the count go down.${where}`;
   }
   return `Your browser is reading ${pages} now. Click the Matrx icon in your Chrome toolbar to watch it happen.${where}`;
 }

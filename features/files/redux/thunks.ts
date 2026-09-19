@@ -971,6 +971,55 @@ export const ensureFolderPath = createAsyncThunk<
 // Writes — uploads (multi-file with progress)
 // ---------------------------------------------------------------------------
 
+/**
+ * Say, on the screen the person is actually looking at, that an upload failed —
+ * in the SERVER'S words.
+ *
+ * 🚨 THE 2026-09-19 SILENT FAILURE (`common-docs/projects/acquisition-frontier/
+ * own-files/VERIFICATION.md` §15/§16). A 21-file drop on a fresh Rulebook fired
+ * 21 uploads and every one came back `400 matrx-files: this write carries no
+ * organization`. Every sentence was captured correctly — into
+ * `failed[].error` and into the upload slice — and then shown NOWHERE, because:
+ *
+ *   - `mutation-toast-middleware` deliberately skips `uploadFiles`, on the
+ *     reasoning that "uploads surface per-file errors inline in the
+ *     UploadProgressList". That is true on the Files surface and FALSE
+ *     everywhere else — the Rulebook sources panel never renders that list.
+ *   - the capture toolbar that started the drop collapses N failures into
+ *     "Failed to upload N files", dropping every reason.
+ *
+ * So the person saw a card that still read "Nothing attached yet" and no reason
+ * anywhere. An upload that failed must never be indistinguishable from an
+ * upload nobody started.
+ *
+ * This announces from the THUNK, which every caller shares, so no surface can
+ * forget. Reasons are deduped (21 identical 400s are one sentence, not 21
+ * toasts), and the toast carries a stable id so the surrounding UploadProgressList
+ * or capture toolbar cannot stack a second copy of the same news.
+ */
+export function announceUploadFailures(
+  failed: ReadonlyArray<{ name: string; error: string }>,
+): void {
+  if (failed.length === 0) return;
+  const reasons = Array.from(
+    new Set(failed.map((f) => f.error).filter((e) => e && e.trim().length > 0)),
+  );
+  const title =
+    failed.length === 1
+      ? `Couldn't upload ${failed[0].name}`
+      : `Couldn't upload ${failed.length} files`;
+  toast.error(title, {
+    // The server's own sentence, never a sentence of ours. When several
+    // distinct things went wrong, each one gets said.
+    description:
+      reasons.length > 0
+        ? reasons.join(" · ")
+        : "The server refused the upload and gave no reason.",
+    id: `upload-failed:${failed.map((f) => f.name).join("|")}`,
+    duration: 12000,
+  });
+}
+
 export const uploadFiles = createAsyncThunk<
   { uploaded: string[]; failed: Array<{ name: string; error: string }> },
   UploadFilesArg,
@@ -1267,6 +1316,7 @@ export const uploadFiles = createAsyncThunk<
     ),
   );
 
+  announceUploadFailures(failed);
   return { uploaded, failed };
 });
 
