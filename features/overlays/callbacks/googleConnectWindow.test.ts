@@ -53,6 +53,19 @@ const imported: GoogleDriveImportedEvent = {
   failures: [],
 };
 describe("Google connect command bridge", () => {
+  it("keeps successful incremental deliveries available until explicit disposal", async () => {
+    const handler = jest.fn().mockResolvedValue(undefined);
+    const callbacks = createGoogleConnectCallbackGroup({
+      onDriveImported: handler,
+    });
+
+    await emitGoogleConnectEvent(callbacks.callbackGroupId, imported);
+    await emitGoogleConnectEvent(callbacks.callbackGroupId, imported);
+
+    expect(handler).toHaveBeenCalledTimes(2);
+    callbacks.dispose();
+  });
+
   it("awaits the consumer and retains a rejected command for retry", async () => {
     const handler = jest
       .fn<Promise<void>, [GoogleDriveImportedEvent]>()

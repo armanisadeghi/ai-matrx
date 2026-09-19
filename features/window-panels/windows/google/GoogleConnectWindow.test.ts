@@ -31,7 +31,7 @@ describe("GoogleConnectWindow authorization readiness", () => {
     expect(calls).toEqual(["event", "close"]);
   });
 
-  it("closes after a successful import without emitting a second cancellation command", async () => {
+  it("retains an acknowledged import callback until the explicit terminal close", async () => {
     const onDriveImported = jest.fn();
     const onWindowClose = jest.fn();
     const onClose = jest.fn();
@@ -52,7 +52,7 @@ describe("GoogleConnectWindow authorization readiness", () => {
     ).resolves.toBeUndefined();
 
     expect(onDriveImported).toHaveBeenCalledTimes(1);
-    expect(onWindowClose).not.toHaveBeenCalled();
+    expect(onWindowClose).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
