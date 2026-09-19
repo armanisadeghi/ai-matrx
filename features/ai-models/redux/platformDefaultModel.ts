@@ -18,6 +18,7 @@
 
 import { createSelector } from "@reduxjs/toolkit";
 import { parseCapabilities } from "@/features/ai-models/capabilities/parse";
+import { isConversationalModelCapability } from "@/features/ai-models/capabilities/types";
 import {
   selectActiveModels,
   selectActiveModelsReady,
@@ -48,7 +49,7 @@ export function resolvePlatformDefaultModel(
       modelId: m.id,
       modelName: m.name,
     });
-    return caps.output.includes(modality);
+    return caps.output.includes(modality) && isConversationalModelCapability(caps);
   });
   if (!match) {
     if (catalogReady && !warnedMissingPrimary.has(modality)) {

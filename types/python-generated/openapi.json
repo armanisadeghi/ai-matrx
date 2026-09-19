@@ -2105,6 +2105,87 @@
         }
       }
     },
+    "/ai/decisions": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Create Decision",
+        "operationId": "create_decision_ai_decisions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/decisions/{execution_id}": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Read Decision",
+        "operationId": "read_decision_ai_decisions__execution_id__get",
+        "parameters": [
+          {
+            "name": "execution_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Execution Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionResultPayload"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/agent-assignments": {
       "post": {
         "tags": [
@@ -77629,6 +77710,38 @@
             }
           },
           {
+            "name": "action_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action Key"
+            }
+          },
+          {
+            "name": "action_status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action Status"
+            }
+          },
+          {
             "name": "order",
             "in": "query",
             "required": false,
@@ -86489,6 +86602,24 @@
             "description": "Only rows with failed_at < this instant (ISO-8601)."
           },
           {
+            "name": "column_filters",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "JSON-encoded dashboard filters for table_target, op_type, error_text, user_id, and request_id.",
+              "title": "Column Filters"
+            },
+            "description": "JSON-encoded dashboard filters for table_target, op_type, error_text, user_id, and request_id."
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -86951,6 +87082,24 @@
               "title": "Until"
             },
             "description": "Only rows with occurred_at < this instant (ISO-8601)."
+          },
+          {
+            "name": "column_filters",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "JSON-encoded dashboard filters for kind, route, error_text, user_id, and request_id.",
+              "title": "Column Filters"
+            },
+            "description": "JSON-encoded dashboard filters for kind, route, error_text, user_id, and request_id."
           },
           {
             "name": "limit",
@@ -99416,6 +99565,27 @@
         },
         "type": "object",
         "title": "AnnotationUpdateBody"
+      },
+      "Answer": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NoulAnswer"
+          },
+          {
+            "$ref": "#/components/schemas/ChoiceAnswer"
+          },
+          {
+            "$ref": "#/components/schemas/ScoreAnswer"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "choice": "#/components/schemas/ChoiceAnswer",
+            "noul": "#/components/schemas/NoulAnswer",
+            "score": "#/components/schemas/ScoreAnswer"
+          }
+        }
       },
       "AnthropicCountTokensResponse": {
         "properties": {
@@ -121716,6 +121886,71 @@
         "title": "ChiliPiperStatusResult",
         "description": "Safe projection of Chili Piper's high-level service status."
       },
+      "ChoiceAnswer": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "choice",
+            "title": "Type",
+            "default": "choice"
+          },
+          "choice": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Choice"
+          },
+          "probabilities": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Probabilities"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Confidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "choice",
+          "probabilities",
+          "confidence"
+        ],
+        "title": "ChoiceAnswer"
+      },
+      "ChoiceQuestion": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "choice",
+            "title": "Type",
+            "default": "choice"
+          },
+          "instructions": {
+            "$ref": "#/components/schemas/SystemOneEntry"
+          },
+          "criteria": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SystemOneEntry"
+            },
+            "type": "object",
+            "minProperties": 2,
+            "title": "Criteria"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instructions",
+          "criteria"
+        ],
+        "title": "ChoiceQuestion"
+      },
       "ChunkDetail": {
         "properties": {
           "chunk_id": {
@@ -140290,6 +140525,132 @@
         ],
         "title": "DblpPublicPublication",
         "description": "Safe bounded projection of one public DBLP publication."
+      },
+      "DecisionResultPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "decision_result",
+            "title": "Type",
+            "default": "decision_result"
+          },
+          "execution_id": {
+            "type": "string",
+            "title": "Execution Id"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "provider_request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Request Id"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "answers": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Answer"
+            },
+            "type": "object",
+            "title": "Answers"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/DecisionUsage"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd"
+          },
+          "offering_id": {
+            "type": "string",
+            "title": "Offering Id"
+          },
+          "route": {
+            "type": "string",
+            "title": "Route"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "execution_id",
+          "request_id",
+          "model",
+          "answers",
+          "usage",
+          "cost_usd",
+          "offering_id",
+          "route"
+        ],
+        "title": "DecisionResultPayload"
+      },
+      "DecisionRunRequest": {
+        "properties": {
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Model"
+          },
+          "offering_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offering Id"
+          },
+          "state": {
+            "$ref": "#/components/schemas/SystemOneState"
+          },
+          "questions": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Question"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Questions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "model",
+          "state",
+          "questions"
+        ],
+        "title": "DecisionRunRequest",
+        "description": "HTTP/service input; native runner validates the provider discriminated body."
+      },
+      "DecisionUsage": {
+        "properties": {
+          "input_tokens": {
+            "type": "integer",
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "type": "integer",
+            "title": "Output Tokens"
+          }
+        },
+        "type": "object",
+        "required": [
+          "input_tokens",
+          "output_tokens"
+        ],
+        "title": "DecisionUsage"
       },
       "DeclarePanelBody": {
         "properties": {
@@ -197319,6 +197680,67 @@
         ],
         "title": "NotesnookPublicRelease"
       },
+      "NoulAnswer": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "noul",
+            "title": "Type",
+            "default": "noul"
+          },
+          "noul": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Noul"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "noul"
+        ],
+        "title": "NoulAnswer"
+      },
+      "NoulQuestion": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "noul",
+            "title": "Type",
+            "default": "noul"
+          },
+          "instructions": {
+            "$ref": "#/components/schemas/SystemOneEntry"
+          },
+          "criteria": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/SystemOneEntry"
+                },
+                "propertyNames": {
+                  "enum": [
+                    "false",
+                    "true"
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criteria"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instructions"
+        ],
+        "title": "NoulQuestion"
+      },
       "NounDirectives": {
         "properties": {
           "noun": {
@@ -220113,6 +220535,27 @@
         ],
         "title": "QueryVariant"
       },
+      "Question": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NoulQuestion"
+          },
+          {
+            "$ref": "#/components/schemas/ChoiceQuestion"
+          },
+          {
+            "$ref": "#/components/schemas/ScoreQuestion"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "choice": "#/components/schemas/ChoiceQuestion",
+            "noul": "#/components/schemas/NoulQuestion",
+            "score": "#/components/schemas/ScoreQuestion"
+          }
+        }
+      },
       "QueueRefreshResult": {
         "properties": {
           "scanned": {
@@ -234826,6 +235269,79 @@
         "title": "ScopedBody",
         "description": "Base for every body on this router.\n\nThe FE's `callApi` injects the ambient scope (organization_id / project_id /\ntask_id) into EVERY request body. A bare `extra=\"forbid\"` model therefore\n422s the moment the user has an active org selected — these fields must be\nACCEPTED and ignored (scope here comes from the path + the request's user\ncontext, never the body). `extra=\"forbid\"` stays, so real typos still fail\nloudly."
       },
+      "ScoreAnswer": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "score",
+            "title": "Type",
+            "default": "score"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "probabilities": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Probabilities"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Confidence"
+          },
+          "legend": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Legend"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "score",
+          "probabilities",
+          "confidence",
+          "legend"
+        ],
+        "title": "ScoreAnswer"
+      },
+      "ScoreQuestion": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "score",
+            "title": "Type",
+            "default": "score"
+          },
+          "instructions": {
+            "$ref": "#/components/schemas/SystemOneEntry"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/SystemOneEntry"
+            },
+            "type": "array",
+            "minItems": 2,
+            "title": "Criteria"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instructions",
+          "criteria"
+        ],
+        "title": "ScoreQuestion"
+      },
       "ScoreSourcesRequest": {
         "properties": {
           "source_ids": {
@@ -236440,6 +236956,37 @@
               }
             ],
             "title": "Q"
+          },
+          "action_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Key"
+          },
+          "action_status": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "failed",
+                    "ready",
+                    "running",
+                    "skipped"
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Status"
           }
         },
         "type": "object",
@@ -252469,6 +253016,47 @@
         "type": "object",
         "title": "SystemInstructionInput",
         "description": "Structured system prompt on the chat/manual wire.\n\nMirrors ``SystemInstruction.from_value`` dict parsing — callers may send\neither a plain string or this object (agent-builder uses ``content`` +\n``include_date`` + ``intro`` / ``outro``). Downstream ``UnifiedConfig``\nnormalizes both shapes to ``SystemInstruction``."
+      },
+      "SystemOneEntry": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object"
+          },
+          {
+            "items": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "SystemOneState": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object"
+          },
+          {
+            "items": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "array"
+          }
+        ]
       },
       "SystemTaskItem": {
         "properties": {

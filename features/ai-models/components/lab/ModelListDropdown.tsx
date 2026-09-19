@@ -51,6 +51,7 @@ import {
   Boxes,
   FileText,
   Layers,
+  Scale,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -90,6 +91,7 @@ import {
   FEATURE_BUCKET_ORDER,
   type FeatureBucket,
 } from "@/features/ai-models/capabilities/feature-map";
+import { isDecisionModelCapability } from "@/features/ai-models/capabilities/types";
 import {
   costRatingTier,
   speedRatingLabel,
@@ -158,6 +160,7 @@ const MODALITY_ICON: Record<Modality, typeof Type> = {
   document: FileText,
   entities: Boxes,
   embedding: Layers,
+  decision: Scale,
 };
 
 const INTERACTION_LABEL: Record<Interaction, string> = {
@@ -167,6 +170,7 @@ const INTERACTION_LABEL: Record<Interaction, string> = {
   realtime: "Realtime",
   embedding: "Embedding",
   agent: "Background agent",
+  decision: "Decision",
 };
 
 interface ModelListDropdownProps {
@@ -176,6 +180,8 @@ interface ModelListDropdownProps {
   inputModalities: Modality[];
   /** Optional — output modalities the model must produce (seeds the filter). */
   outputModalities?: Modality[];
+  /** The execution contract this picker selects for. */
+  selectionPurpose?: "chat" | "decision" | "admin";
   /**
    * Optional catalog constraint for specialized surfaces (for example a
    * user's active-model preference or a replacement-model allowlist). The
@@ -1417,6 +1423,7 @@ export function ModelListDropdown({
   onValueChange,
   inputModalities,
   outputModalities,
+  selectionPurpose,
   allowedModelIds,
   catalogVariant,
   emptyOptionLabel,
@@ -1444,6 +1451,8 @@ export function ModelListDropdown({
   const [adminMode, setAdminMode] = useState(false);
   const variant: ModelCatalogVariant =
     catalogVariant ?? (adminMode && isSuperAdmin ? "admin" : "user");
+  const effectiveSelectionPurpose =
+    selectionPurpose ?? (variant === "admin" ? "admin" : "chat");
   const { models, isLoading, error } = useModelCatalog(variant);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -1571,6 +1580,16 @@ export function ModelListDropdown({
     const hasAvailable = (m: CatalogModel) =>
       (m.admin?.offerings ?? []).some((o) => o.isAvailable);
     const rows = eligibleModels.filter((m) => {
+      if (
+        effectiveSelectionPurpose === "chat" &&
+        isDecisionModelCapability(m)
+      )
+        return false;
+      if (
+        effectiveSelectionPurpose === "decision" &&
+        !isDecisionModelCapability(m)
+      )
+        return false;
       if (tab === "favorites" && !favoriteSet.has(m.id)) return false;
       // Search matches name, maker, branded Service names — and, in the
       // admin variant, real vendor / api / provider_model_id too.
@@ -1707,7 +1726,7 @@ export function ModelListDropdown({
       return [...prioritize(favs), ...prioritize(rest)];
     }
     return prioritize(sorted);
-  }, [eligibleModels, query, filters, tab, favoriteSet, variant, priorityModelSet]);
+  }, [eligibleModels, query, filters, tab, favoriteSet, variant, priorityModelSet, effectiveSelectionPurpose]);
 
   const activeFilterCount =
     filters.input.size +
