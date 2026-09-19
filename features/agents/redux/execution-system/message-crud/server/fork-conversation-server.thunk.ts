@@ -42,6 +42,11 @@ interface ForkConversationServerArgs {
   title?: string;
   /** If set, the conversation focus jumps to the new fork on success. */
   surfaceKey?: string;
+  /**
+   * Return the durable fork id even when its first bundle hydration fails.
+   * Recovery surfaces can then show the committed fork and offer a retry.
+   */
+  retainForkOnHydrationFailure?: boolean;
 }
 
 interface ForkConversationServerResult {
@@ -49,6 +54,7 @@ interface ForkConversationServerResult {
   forkedFromId: string;
   forkedAtPosition: number | null;
   messageCount: number;
+  hydrationError?: string;
 }
 
 interface ThunkApi {
@@ -64,7 +70,13 @@ export const forkConversationServer = createAsyncThunk<
 >(
   "conversations/forkServer",
   async (
-    { conversationId, selector, title, surfaceKey },
+    {
+      conversationId,
+      selector,
+      title,
+      surfaceKey,
+      retainForkOnHydrationFailure = false,
+    },
     { dispatch, rejectWithValue },
   ) => {
     const body: ConversationForkBody = {
@@ -96,21 +108,25 @@ export const forkConversationServer = createAsyncThunk<
     // observability, variables, overrides, UI state) ends up in the same
     // shape as a normal page open. Cheaper than mirroring the DB rows
     // manually and we know it works.
+    let hydrationError: string | undefined;
     try {
       await dispatch(
-        loadConversation({ conversationId: data.conversation_id }),
+        loadConversation({
+          conversationId: data.conversation_id,
+          expectMaterialized: true,
+        }),
       ).unwrap();
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.error(
         "[forkConversationServer] loadConversation after fork failed",
         err,
       );
-      return rejectWithValue({
-        message: `Fork succeeded but rehydration failed: ${
-          err instanceof Error ? err.message : String(err)
-        }`,
-      });
+      hydrationError = `Fork succeeded but rehydration failed: ${
+        err instanceof Error ? err.message : String(err)
+      }`;
+      if (!retainForkOnHydrationFailure) {
+        return rejectWithValue({ message: hydrationError });
+      }
     }
 
     if (surfaceKey) {
@@ -141,6 +157,7 @@ export const forkConversationServer = createAsyncThunk<
       forkedFromId: data.forked_from_id,
       forkedAtPosition: data.forked_at_position ?? null,
       messageCount: data.message_count,
+      hydrationError,
     };
   },
 );

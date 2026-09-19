@@ -8,6 +8,21 @@ Run unlimited agents (or versions of the same agent) in parallel columns,
 hit "Submit All", and persist the result as a **comparison set** for
 later review or judging.
 
+## Conversation Battle
+
+`/agents/battle/conversation` starts from one existing conversation and creates
+each contender with the canonical server-backed conversation fork. The source
+conversation is never used as a battle column and remains untouched. Every fork
+is loaded through the normal conversation bundle and rendered with `BoundColumn`
+without `hideInput`, so each column gets the canonical chat composer and may
+diverge through its own message text, attachments, resources, variables,
+context, voice input, and later turns.
+
+Removing a column or starting a new battle only clears the local battle view;
+the durable fork remains available in chat history. The source picker is the
+same conversation-history surface used elsewhere in the product, and every
+source/fork header retains the canonical conversation doors.
+
 ---
 
 ## Status
