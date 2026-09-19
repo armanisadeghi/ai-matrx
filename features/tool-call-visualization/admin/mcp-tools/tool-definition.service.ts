@@ -3,11 +3,10 @@
 /**
  * The client-side door onto `tool.definition` writes.
  *
- * `tool.definition` has RLS with a SELECT-only policy and NO write policy, so
- * a browser client CANNOT write it directly — every update has to go through
- * `PUT /api/admin/tools/[id]`, which gates on `requireAdmin()` and then writes
- * with the service-role admin client. That route is the canonical write path;
- * this module is the single typed wrapper over it so callers (the detail
+ * Every update goes through `PUT /api/admin/tools/[id]`, which gates on
+ * `requireAdmin()` and then writes through the same cookie-backed Supabase
+ * client. The database derives human provenance from the verified user's JWT.
+ * This module is the single typed wrapper over that route so callers (the detail
  * page's Active toggle, the surface write handlers) share one door instead of
  * each hand-rolling a `fetch`.
  *
@@ -33,6 +32,20 @@ export type ToolDefinitionPatch = {
   is_active?: boolean;
 };
 
+export async function toolApiErrorMessage(
+  response: Response,
+  fallback: string,
+): Promise<string> {
+  const body = (await response.json().catch(() => null)) as {
+    error?: string;
+    details?: string;
+  } | null;
+  const serverMessage = [body?.error, body?.details]
+    .filter((value): value is string => Boolean(value))
+    .join(": ");
+  return serverMessage || `${fallback} (HTTP ${response.status}).`;
+}
+
 export async function updateToolDefinition(
   toolId: string,
   patch: ToolDefinitionPatch,
@@ -44,12 +57,7 @@ export async function updateToolDefinition(
   });
 
   if (!response.ok) {
-    const body = (await response.json().catch(() => null)) as {
-      error?: string;
-    } | null;
-    throw new Error(
-      body?.error ?? `Failed to update tool (HTTP ${response.status}).`,
-    );
+    throw new Error(await toolApiErrorMessage(response, "Failed to update tool"));
   }
 
   const body = (await response.json()) as { tool: ToolRow };
