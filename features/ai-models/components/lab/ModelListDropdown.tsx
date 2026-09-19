@@ -1328,6 +1328,7 @@ function ModelRow({
         }
       }}
       onMouseEnter={onHover}
+      onFocus={onHover}
       className={cn(
         "grid w-full grid-cols-[auto_auto_minmax(0,1fr)_auto_auto_auto] items-center gap-2 rounded px-2 py-1 transition-colors",
         retired

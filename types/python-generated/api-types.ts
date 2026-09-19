@@ -61763,6 +61763,21 @@ export interface components {
          * @description HTTP/service input; native runner validates the provider discriminated body.
          */
         DecisionRunRequest: {
+            /**
+             * Organization Id
+             * @description Organization context for the request; omitted to use the authenticated context.
+             */
+            organization_id?: string | null;
+            /**
+             * Project Id
+             * @description Optional associated project selected by the caller.
+             */
+            project_id?: string | null;
+            /**
+             * Task Id
+             * @description Optional associated task selected by the caller.
+             */
+            task_id?: string | null;
             /** Model */
             model: string;
             /** Offering Id */

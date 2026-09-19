@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ProTextarea } from "@/components/official/ProTextarea";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { DecisionQuestionEditor } from "./DecisionQuestionEditor";
 import {
@@ -20,6 +22,7 @@ import type { DecisionResultView } from "./decision-result";
 
 export function DecisionPlayground() {
   const dispatch = useAppDispatch();
+  const { organizationState, retry } = useOrganizationRequired();
   const params = useSearchParams();
   const [model, setModel] = useState<string | null>(null);
   const [offeringId, setOfferingId] = useState<string | undefined>();
@@ -31,13 +34,15 @@ export function DecisionPlayground() {
   const [result, setResult] = useState<DecisionResultView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [recovering, setRecovering] = useState(false);
   const executionId = params.get("execution_id");
 
   useEffect(() => {
-    if (!executionId) return;
+    if (!executionId || organizationState !== "ready") return;
     let active = true;
     const recover = async () => {
       setBusy(true);
+      setRecovering(true);
       setError(null);
       try {
         const savedResult = await loadDecision(dispatch, executionId);
@@ -50,14 +55,17 @@ export function DecisionPlayground() {
               : "This saved decision could not be loaded.",
           );
       } finally {
-        if (active) setBusy(false);
+        if (active) {
+          setBusy(false);
+          setRecovering(false);
+        }
       }
     };
     void recover();
     return () => {
       active = false;
     };
-  }, [dispatch, executionId]);
+  }, [dispatch, executionId, organizationState]);
 
   const parsedState = parseDecisionValue(state, stateMode, "State");
   const validationErrors = [
@@ -69,6 +77,7 @@ export function DecisionPlayground() {
   const run = () => {
     if (
       busy ||
+      organizationState !== "ready" ||
       parsedState.value === undefined ||
       validationErrors.length > 0 ||
       !model
@@ -210,7 +219,11 @@ export function DecisionPlayground() {
             type="button"
             size="lg"
             onClick={run}
-            disabled={busy || validationErrors.length > 0}
+            disabled={
+              busy ||
+              organizationState !== "ready" ||
+              validationErrors.length > 0
+            }
             className="w-full sm:w-auto"
           >
             {busy ? (
@@ -222,10 +235,13 @@ export function DecisionPlayground() {
           </Button>
         </main>
         <aside className="min-w-0">
-          <DecisionResultCard
-            result={result}
-            loading={busy && Boolean(executionId)}
+          <OrganizationContextNotice
+            state={organizationState}
+            what="Decisions"
+            onRetry={retry}
+            compact
           />
+          <DecisionResultCard result={result} loading={recovering} />
         </aside>
       </div>
     </div>
