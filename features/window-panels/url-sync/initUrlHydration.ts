@@ -558,6 +558,25 @@ export function initUrlHydration() {
     );
   });
 
+  // Brand channel — `?panels=brand_channel:<brandId>`. The window's whole subject is one brand,
+  // so a token with no id opens nothing rather than an empty frame (the render site already
+  // refuses a missing `brandId`).
+  registerPanelHydrator("brand_channel", (dispatch, id) => {
+    const brandId = getRestorableResourceId(id, "brandChannelWindow");
+    if (!brandId) {
+      console.warn(
+        `[UrlPanelManager] ?panels=brand_channel:${id} names no brand — expected brand_channel:<brandId>.`,
+      );
+      return;
+    }
+    dispatch(
+      openOverlay({
+        overlayId: "brandChannelWindow",
+        data: { brandId, brandLabel: null },
+      }),
+    );
+  });
+
   // ── Dev-only integrity check ─────────────────────────────────────────────
   // Every registry entry that declares `urlSync.key` must have a hydrator
   // registered above. Drift here is silent: `?panels=<key>` would just

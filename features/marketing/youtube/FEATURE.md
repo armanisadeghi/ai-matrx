@@ -94,3 +94,13 @@ binding's three answers, and the panel in every state.
   registration handover from the item-presentation registry's inline entry
   (V-22 NEW-6), the brand binding, the knob and the migration file. Neither
   migration is applied — the chair applies both.
+- 2026-09-19 — `brandChannelWindow` (registered in `features/overlays/catalogue.ts` /
+  `OverlayController.tsx` / `openers/brandChannelWindow.tsx` /
+  `features/window-panels/windows/marketing/BrandChannelWindow.tsx`) got its
+  missing address: a row in `features/window-panels/registry/windowRegistryMetadata.ts`
+  (`urlSync: { key: "brand_channel" }`, singleton, `preservation.requiredDataKeys:
+  ["brandId"]` — same shape as `siteTrackingWindow`, since the window is meaningless
+  without its brand) and a hydrator in
+  `features/window-panels/url-sync/initUrlHydration.ts` reopening it from
+  `?panels=brand_channel:<brandId>`. The `everyWindowHasAnAddress` (R35) guard
+  was red on `brandChannelWindow` before this and is green after.
