@@ -26,11 +26,10 @@ import { useVisibilityAwarePageRefresh } from "../hooks/useVisibilityAwarePageRe
 const PREVIEW_DESTINATION_COUNT = 3;
 
 /**
- * One 32px-step height per preview density. Cards never stretch to the
- * tallest sibling in the row — empty space under a shorter card is the grid.
+ * Folder-card heights only. Areas with no children are a destination tile,
+ * not an empty folder. Cards never stretch to the tallest sibling.
  */
 const LAUNCHPAD_CARD_HEIGHT = {
-  compact: "h-24",
   one: "h-32",
   two: "h-40",
   three: "h-48",
@@ -41,8 +40,7 @@ function launchpadCardHeightClass(
   previewCount: number,
   hasMoreDestinations: boolean,
 ): string {
-  if (previewCount <= 0) return LAUNCHPAD_CARD_HEIGHT.compact;
-  if (previewCount === 1) return LAUNCHPAD_CARD_HEIGHT.one;
+  if (previewCount <= 1) return LAUNCHPAD_CARD_HEIGHT.one;
   if (previewCount === 2) return LAUNCHPAD_CARD_HEIGHT.two;
   if (hasMoreDestinations) return LAUNCHPAD_CARD_HEIGHT.more;
   return LAUNCHPAD_CARD_HEIGHT.three;
@@ -246,6 +244,25 @@ function LaunchpadGroupCard({
     .slice(0, PREVIEW_DESTINATION_COUNT);
   const remainingCount =
     group.destinations.length - 1 - previewDestinations.length;
+
+  if (previewDestinations.length === 0) {
+    return (
+      <LaunchpadDestinationCard
+        destination={{
+          id: group.id,
+          label: group.label,
+          href: group.href,
+          description: group.description,
+          iconName: group.iconName,
+          color: group.color,
+          groupLabel: group.description ?? group.label,
+          external: group.external,
+          kind: "area",
+        }}
+      />
+    );
+  }
+
   const heightClass = launchpadCardHeightClass(
     previewDestinations.length,
     remainingCount > 0,
