@@ -296,15 +296,12 @@ function viewFromVerdict(
       "no organization (a platform default, not a workspace answer)";
 
   const agent = data.agentsById[verdict.agentId] ?? null;
-  // A verdict that reached this screen is FLOATING by construction: the client
-  // door refuses a version-pinned winner (it has no channel to run one), so the
-  // refusal branch above owns that case and there is no pin to drift from here.
   return {
     rung: verdict.provenance,
     sentence: verdictSentence(verdict.provenance, activeOrgLabel),
     agent,
     agentId: verdict.agentId,
-    useLatest: true,
+    useLatest: !verdict.isVersion,
     pinned: null,
     drift: null,
     loading: false,
