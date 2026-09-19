@@ -299,6 +299,27 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-09-19` — **THE LEGACY PAIR IS NOT A READING OF FOUR STATES — five surfaces
+  were waiting forever under a failed read, and rule 4 now refuses the shape.**
+  `useOrganizationRequired` still exposes `organizationRequired` and `resolving`
+  for surfaces written before the discriminant, and `resolving` stays TRUE
+  through `unavailable` on purpose so an old reader keeps the checking posture.
+  That is the right default and the wrong ANSWER: a surface whose ONLY reading is
+  that pair can never leave the waiting posture when the organization read fails.
+  Five did — `ModelContextPanel` ("Reading this conversation's context…"),
+  `EncoreRunPage`'s bench panel (`{ status: "loading" }`), `useWaitingRuns` and
+  `useAgenda` (their skeletons) and `EduNoteNew` ("Creating your note…" while no
+  note was being created) — all converted to `organizationState` +
+  `OrganizationContextNotice` / `ORGANIZATION_UNAVAILABLE`, each with a test that
+  is RED on the prior bytes. The census that followed found one more of the same
+  shape, `useRunsList`, fixed the same way. Class guard: **`pnpm
+  check:org-three-states` rule 4** — a module that destructures
+  `organizationRequired` or `resolving` from the gate without `organizationState`
+  fails, and a module reading only `organizationId` / `canLoad` (a call guard,
+  not a screen) is untouched. Proven failing on the five surfaces' prior bytes
+  and passing on these, plus six self-test expectations (T–Y). `WaitingInbox` was
+  struck from the census (113 → 112).
+
 - `2026-09-19` — **THE GATE'S SECOND INPUT BECAME A PURE LEAF TOO (owed from
   F-102).** F-102 moved `orgBootstrapFailure` out of `appContextSlice` so that a
   surface test standing that slice in with the two selectors it knew about could

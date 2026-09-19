@@ -28,6 +28,7 @@ import { AuditionProof } from "./AuditionProof";
 import {
   getBenchProof,
   ORGANIZATION_REQUIRED,
+  ORGANIZATION_UNAVAILABLE,
   UNAVAILABLE,
   type BenchProofState,
 } from "./benchProof";
@@ -106,8 +107,15 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
   // platform's one reading of that state: hold the skeleton while it resolves,
   // ask only once a request can actually be sent, and say the honest thing when
   // boot settles with no organization at all.
+  //
+  // 🚨 AND THE READ ITSELF CAN FAIL — the FOURTH state (R37). The boolean pair
+  // could not see it: under a failed organization read `organizationRequired`
+  // is false and `canLoad` is false, so this panel held `{ status: "loading" }`
+  // forever — the admin reloading mid-trial watched a skeleton that would never
+  // resolve. `organizationState` names all four, and the fourth gets its own
+  // sentence (`ORGANIZATION_UNAVAILABLE`), never the refusal.
   const rulebookId = masterwork?.rulebook?.id ?? null;
-  const { canLoad, organizationRequired, resolving } = useOrganizationRequired();
+  const { canLoad, organizationState } = useOrganizationRequired();
   const refreshBench = useCallback(() => {
     if (!rulebookId || !canLoad) return;
     void getBenchProof(rulebookId).then(setBench);
@@ -118,19 +126,23 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
       setBench(UNAVAILABLE);
       return;
     }
-    if (organizationRequired) {
+    if (organizationState === "required") {
       setBench(ORGANIZATION_REQUIRED);
       return;
     }
+    if (organizationState === "unavailable") {
+      setBench(ORGANIZATION_UNAVAILABLE);
+      return;
+    }
     setBench({ status: "loading" });
-    if (resolving) return; // still booting — the skeleton is the honest screen
+    if (organizationState === "resolving") return; // still booting — the skeleton is honest here
     void getBenchProof(rulebookId).then((state) => {
       if (!cancelled) setBench(state);
     });
     return () => {
       cancelled = true;
     };
-  }, [rulebookId, organizationRequired, resolving]);
+  }, [rulebookId, organizationState]);
 
   const releaseThis = async () => {
     if (!masterwork) return;

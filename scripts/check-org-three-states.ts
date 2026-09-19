@@ -88,6 +88,30 @@
  * the census nor rule 2's shape forgives this one; a genuine exception is the
  * allowlist, with a reason.
  *
+ * THE FOURTH RULE — THE LEGACY PAIR IS NOT A READING OF FOUR STATES
+ * -----------------------------------------------------------------
+ * `useOrganizationRequired` still exposes `organizationRequired` and
+ * `resolving` for the surfaces written before the discriminant existed, and
+ * `resolving` is documented to stay TRUE through `unavailable` on purpose, so
+ * an old reader keeps the checking posture instead of falling through to a
+ * refusal. That is the right default and the wrong ANSWER: a surface whose only
+ * reading is that pair can never leave the waiting posture when the
+ * organization read fails, because `organizationRequired` is false (the nudge
+ * is a claim about memberships nobody read) and `resolving` is true. It shows a
+ * skeleton, a spinner or a "loading" state for as long as the tab stays open —
+ * law 4's dead screen, arrived at from the opposite direction to rule 2.
+ *
+ * Seat-proven in five surfaces at once (2026-09-19): `ModelContextPanel` sat on
+ * "Reading this conversation's context…", `EncoreRunPage`'s bench panel on
+ * `{ status: "loading" }`, `useWaitingRuns` and `useRunsList` on their list
+ * skeletons, `useAgenda` on the agenda skeleton, and `EduNoteNew` on "Creating
+ * your note…" while no note was being created.
+ *
+ * So: a module that reads `organizationRequired` or `resolving` OFF THE GATE
+ * must also read `organizationState`. A module that reads only `organizationId`
+ * / `canLoad` is a call guard, not a screen, and is untouched. Neither the
+ * census nor the allowlist is the normal answer here — the fix is one word.
+ *
  * Run:  pnpm check:org-three-states
  *       pnpm check:org-three-states --self-test   (proves it can FAIL)
  * Exit 1 on any unallowlisted violation; exit 2 on unexpected errors.
@@ -293,6 +317,28 @@ export function wiresTheRemedy(rawSource: string): boolean {
   return WIRES_THE_REMEDY.some((pattern) => pattern.test(source));
 }
 
+/**
+ * RULE 4 — does this module read the gate's LEGACY BOOLEAN PAIR? Destructuring
+ * `organizationRequired` or `resolving` from a `useOrganizationRequired()` call
+ * is the shape; a local `const [resolving, setResolving] = useState()` is not,
+ * which is why the match is anchored to the call's own destructuring.
+ */
+const GATE_CALL =
+  /(?:const|let)\s*\{([^}]*)\}\s*=\s*useOrganizationRequired\s*\(/g;
+
+export function readsTheLegacyPairOnly(rawSource: string): boolean {
+  const source = stripComments(rawSource);
+  GATE_CALL.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = GATE_CALL.exec(source)) !== null) {
+    const destructured = match[1];
+    const legacy = /\borganizationRequired\b|\bresolving\b/.test(destructured);
+    const discriminant = /\borganizationState\b/.test(destructured);
+    if (legacy && !discriminant) return true;
+  }
+  return false;
+}
+
 /** Does it name the FOURTH state? */
 export function handlesUnavailable(rawSource: string): boolean {
   return /["']unavailable["']/.test(stripComments(rawSource));
@@ -348,6 +394,23 @@ export function scan(
             'organization you are working in. Press to try again.") but wires no press that ' +
             "re-runs the read — the sentence names a remedy this screen does not offer. " +
             "Render the gate's own handler: onClick={gate.press((organizationId) => …)}.",
+        });
+        continue;
+      }
+      // RULE 4: the legacy pair cannot leave the waiting posture when the
+      // organization read FAILS — `organizationRequired` is false and
+      // `resolving` is true by design, so the surface shows its skeleton
+      // forever. Never census debt: the discriminant post-dates the census, and
+      // the fix is reading it.
+      if (readsTheLegacyPairOnly(raw)) {
+        violations.push({
+          file: rel,
+          why:
+            "reads useOrganizationRequired's LEGACY BOOLEANS (organizationRequired / " +
+            "resolving) without organizationState — under a FAILED organization read " +
+            "both point at \"keep waiting\", so this surface holds its skeleton, spinner " +
+            "or loading state forever. Read organizationState and render the four " +
+            "states (R37).",
         });
         continue;
       }
@@ -571,6 +634,60 @@ export function Planted() {
   check("Q. planted remedy-less control flagged ", noRemedyFlagged, true);
   check("R. the wired control is cleared        ", withRemedyFlagged, false);
   check("S. the census does not forgive rule 3  ", noRemedyForgiven, false);
+
+  // RULE 4 — the legacy pair alone cannot name the fourth state, so a surface
+  // reading only it waits forever under a failed read (the five surfaces of
+  // 2026-09-19).
+  const legacyPair = `"use client";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+export function Planted() {
+  const { canLoad, organizationRequired, resolving } = useOrganizationRequired();
+  if (organizationRequired) return <Refusal />;
+  if (resolving) return <Skeleton />;
+  return <Body canLoad={canLoad} />;
+}
+`;
+  const withDiscriminant = legacyPair.replace(
+    "const { canLoad, organizationRequired, resolving } = useOrganizationRequired();",
+    "const { canLoad, organizationState } = useOrganizationRequired();",
+  );
+  const callGuardOnly = `"use client";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+export function Planted() {
+  const { organizationId, canLoad } = useOrganizationRequired();
+  useEffect(() => { if (!canLoad) return; void load(organizationId); }, [canLoad]);
+  return <Body />;
+}
+`;
+  check("T. the legacy pair alone is seen      ", readsTheLegacyPairOnly(legacyPair), true);
+  check("U. the discriminant clears it         ", readsTheLegacyPairOnly(withDiscriminant), false);
+  check("V. a call guard is untouched          ", readsTheLegacyPairOnly(callGuardOnly), false);
+
+  let legacyFlagged = false;
+  let discriminantFlagged = true;
+  let legacyForgiven = true;
+  try {
+    writeFileSync(PLANTED, legacyPair, "utf8");
+    legacyFlagged = scan({ useCensus: false }).some(
+      (v) => v.file.includes("__self_test_planted__") && v.why.includes("LEGACY BOOLEANS"),
+    );
+    legacyForgiven = !scan({
+      census: new Set([relative(ROOT, PLANTED)]),
+    }).some((v) => v.file.includes("__self_test_planted__"));
+    writeFileSync(PLANTED, withDiscriminant, "utf8");
+    discriminantFlagged = scan({ useCensus: false }).some((v) =>
+      v.file.includes("__self_test_planted__"),
+    );
+  } finally {
+    try {
+      unlinkSync(PLANTED);
+    } catch {
+      /* already gone */
+    }
+  }
+  check("W. planted legacy-pair module flagged ", legacyFlagged, true);
+  check("X. the repaired module is cleared     ", discriminantFlagged, false);
+  check("Y. the census does not forgive rule 4 ", legacyForgiven, false);
 
   if (failed > 0) {
     console.error(`SELF-TEST FAILED: ${failed} expectation(s) did not hold.`);

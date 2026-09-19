@@ -325,6 +325,33 @@ export const ORGANIZATION_REQUIRED: BenchProofState = {
   running: null,
 };
 
+export const ORG_UNAVAILABLE_HEADLINE =
+  "Bench proof: we could not check your organization";
+
+/**
+ * 🚨 THE FOURTH STATE — THE ORGANIZATION READ ITSELF FAILED (R37, 2026-09-18).
+ * `ORGANIZATION_REQUIRED` above is a claim about this person's memberships, and
+ * it may only be made once they have been READ. When the read failed — an
+ * aborted fetch, a thrown membership read, a degraded `current_personal_org_id()`
+ * — nobody looked, so telling the admin mid-trial to pick an organization is a
+ * claim nobody verified, and leaving the panel on `{ status: "loading" }` is a
+ * skeleton that never resolves. This is the sentence for that state: it says
+ * what happened, says plainly that picking is NOT the remedy, and names the one
+ * remedy this panel does offer.
+ */
+export const ORGANIZATION_UNAVAILABLE: BenchProofState = {
+  status: "unavailable",
+  headline: ORG_UNAVAILABLE_HEADLINE,
+  reason:
+    "Something went wrong while reading which organization you are working in, " +
+    "so the bench proof was not checked. This does not mean you need to pick " +
+    "one — we simply could not check. Reload to try again.",
+  canRunHere: false,
+  form: null,
+  howToRun: "",
+  running: null,
+};
+
 /**
  * 🚨 A FAILED READ IS NOT A DENIED ONE (production walk 4, wall W3).
  * This function used to be one line — every error became `UNAVAILABLE`, whose

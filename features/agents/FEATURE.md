@@ -403,6 +403,19 @@ model overrides.
 
 ## Change Log
 
+- `2026-09-19` — **The Model Context panel says when the ORGANIZATION read
+  failed, instead of "Reading this conversation's context…" forever (R37, the
+  fourth state).** `ModelContextPanel` gated on `canLoad` /
+  `organizationRequired` / the legacy `resolving`; under a failed organization
+  read all three point at "keep waiting", so `fetchContextState` was never
+  dispatched and the checking sentence stayed on screen for as long as the tab
+  was open — in the very file whose comment block is about not showing the calm
+  lie. It now reads `organizationState` and renders the ONE
+  `OrganizationContextNotice` for both terminal answers; the resolving posture
+  is unchanged. Proof:
+  `components/run-controls/panels/__tests__/the-context-panel-says-the-organization-read-failed.organization-context.test.tsx`
+  (red on the prior bytes). Class guard: `pnpm check:org-three-states` rule 4.
+
 - `2026-09-18` — claude: **A past conversation can be picked up on any page, with that page's context.** New imperative thunk `resumeConversation` (`redux/execution-system/thunks/resume-conversation.thunk.ts`) — the click-driven twin of `useConversationResume`, same five steps in the same order, plus an optional `surfaceName` stamp (`null` clears it). A conversation stamped with a surface gets that surface's live values re-resolved on every send by the existing `refreshSurfaceScope`, so no second context path exists. Consumers: the header Agents menu's new **Past conversations** section (`features/surfaces/components/chrome/SurfaceConversationsSection.tsx` — two most recent from the page's product area, then "All conversations" with search; opens in `agentFlexiblePanel`), and Quick Chat, whose history reopen now goes through the thunk and which gained an **Include page context** toggle (stamps / clears the conversation in the panel; off also clears the surface-owned variable and context tiers; the conversation is still launched `surfaceName: null`, the stamp is applied after). Which surface is "this page" is answered once by `features/surfaces/runtime/useActivePageSurface.ts` (extracted from the Agents panel). **Known limit:** `chat.conversation` records the product area (`source_feature`), not the exact surface, so "recent from here" is area-wide (all CMS surfaces share `cms`). Verified on localhost as admin@admin.com on `/notes`: reopened conversation answered with the open note's keys; with no note open the refresh logs `no live provider` and the agent honestly reports no context; Quick Chat on → note title, off → "No".
 
 - `2026-09-18` — **The variable editor is a REGISTERED overlay window (`agentVariableEditorWindow`), because page-local open state died on every phone rotate.** `AgentBuilderClient` swaps to `AgentBuilderMobile` below 768px, unmounting `AgentVariablesManager` — and with it the `useState` that said "this editor is open", so crossing the breakpoint with the editor open made it vanish with no notice (found by the plan attack, reproduced on production and locally; the old Dialog died the same way). The open state now lives in the overlay slice, rendered by `OverlayController` above any layout swap; ONE `WindowPanel` owns both presentations (floating / the registry's `drawer`), the hand-rolled Drawer branch is deleted, and no callback crosses the overlay boundary (Discard and rename dispatch the slice actions directly). Opener: `features/overlays/openers/agentVariableEditorWindow.tsx`. Verified live as `admin@admin.com`: open at 1280 → 375 (drawer, editor intact) → 1280 (floating, intact). **Residual, owned by the window system:** `WindowPanel` re-mounts its body when it changes presentation, so a keystroke not yet committed to Redux is still lost in the swap — a contract line for the lightweight window (campaign `common-docs/projects/every-picker-takes-new-input`, C1).

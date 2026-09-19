@@ -31,7 +31,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@ai-matrx/design-system";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { ConnectorPromptHost } from "@/features/connectors/ConnectorPromptHost";
-import { OrganizationRequiredNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useOpenDetail } from "@/lib/detail/useOpenDetail";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { extractErrorMessage } from "@/utils/errors";
@@ -148,8 +148,22 @@ function AgendaBody({
   // branch below, which would otherwise read the empty/never-fetched state as
   // "your calendar is connected and there is nothing on it", a confident and
   // wrong claim for a person who has not picked an organization at all.
-  if (agenda.organizationRequired) {
-    return <OrganizationRequiredNotice compact what="Your agenda" />;
+  // ALL FOUR states go to the ONE notice — including `unavailable`, where the
+  // organization read FAILED and the honest screen is "we could not check",
+  // with Try again, never a request to pick an organization nobody looked for
+  // (R37). The pair this replaced left that state on the agenda skeleton
+  // forever.
+  if (
+    agenda.organizationState === "required" ||
+    agenda.organizationState === "unavailable"
+  ) {
+    return (
+      <OrganizationContextNotice
+        compact
+        state={agenda.organizationState}
+        what="Your agenda"
+      />
+    );
   }
 
   return (

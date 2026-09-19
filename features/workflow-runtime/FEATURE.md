@@ -176,6 +176,22 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-09-19 — **A FAILED organization read no longer holds the run lists on a
+  skeleton forever (R37, the fourth state).** `useWaitingRuns` and `useRunsList`
+  both gated on the legacy boolean pair, and under a failed organization read
+  BOTH readings point at "keep waiting": `organizationRequired` is false (the
+  nudge is a claim about memberships nobody read) and `canLoad` is false, so
+  neither hook ever called `setLoading(false)` and `WaitingInbox` / `RunsList`
+  held their skeletons for as long as the tab stayed open. Both hooks now
+  forward `organizationState` from `useOrganizationRequired`, stop loading in
+  BOTH terminal states, and their components render the ONE
+  `OrganizationContextNotice` with it — "we could not check", with Try again,
+  never a request to pick an organization nobody looked for. `useRunsList` also
+  moved off the bare `selectOrganizationId` read onto the gate. Proof:
+  `discovery/__tests__/the-inbox-says-the-organization-read-failed.organization-context.test.tsx`
+  and `.../the-runs-list-stops-the-skeleton-when-the-organization-read-failed.organization-context.test.tsx`,
+  both red on the prior bytes. Class guard: `pnpm check:org-three-states` rule 4.
+
 - 2026-09-18 — **Workflow documents use the platform document-action system.** Static
   readouts render through `RichDocument`; persisted kind and emission renderers keep their one
   canonical kind component and mount `RichDocumentActionProvider` plus its shared mini action
