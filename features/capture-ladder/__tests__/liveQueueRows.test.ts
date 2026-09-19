@@ -30,7 +30,10 @@ import {
   describeWhoActs,
   describeEstimate,
 } from "@/features/capture-ladder/types";
-import { trayLabel } from "@/features/capture-ladder/NeedsYouTray";
+import {
+  needsYouBody,
+  needsYouTitle,
+} from "@/features/capture-ladder/needsYouAssist";
 
 /** Verbatim from the live table. Do not tidy: the blanks are the evidence. */
 const LIVE_ROWS: unknown[] = [
@@ -189,10 +192,22 @@ describe("the real queue rows survive the tray's ingress parse", () => {
     }
   });
 
-  it("the tray's sentence for this exact queue reads like English", () => {
-    const needsDrive = handoffs.filter((h) => h.status === "needs_drive").length;
-    expect(trayLabel(handoffs.length, needsDrive)).toBe(
-      "2 pages need your browser — open extension",
+  it("the assist's title and body for this exact queue read like English", () => {
+    expect(needsYouTitle(handoffs.length)).toBe(
+      "2 pages are waiting for your browser",
+    );
+    // The body names WHAT is waiting and nothing else. What the button does is
+    // said once, by the action descriptor, one line above the button — saying
+    // it again here is what made the old tray a novel (Arman, 2026-09-18).
+    expect(needsYouBody(handoffs, { extensionInstalled: true })).toBe(
+      "instagram.com and nytimes.com — these only open for someone who is signed in, and our servers are not.",
+    );
+  });
+
+  it("says the extension is missing rather than offering a button that cannot work", () => {
+    expect(needsYouBody(handoffs, { extensionInstalled: false })).toBe(
+      "instagram.com and nytimes.com — these only open for someone who is signed in, and our servers are not. " +
+        "Your own Chrome could read them, but the Matrx extension is not installed in this browser yet.",
     );
   });
 });

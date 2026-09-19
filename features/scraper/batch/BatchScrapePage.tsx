@@ -95,7 +95,7 @@ import {
   type LadderCandidate,
 } from "@/features/capture-ladder/ladderOutcome";
 import { sendUrlsToOwnBrowser } from "@/features/capture-ladder/sendToOwnBrowser";
-import { NEEDS_YOU_ROUTE } from "@/features/capture-ladder/NeedsYouTray";
+import { NEEDS_YOU_ROUTE } from "@/features/capture-ladder/route";
 
 type RowStatus = "pending" | "success" | "failed";
 

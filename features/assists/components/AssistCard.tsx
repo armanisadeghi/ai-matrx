@@ -161,7 +161,18 @@ export function AssistCard({
     try {
       const outcome = await acceptAssist({ ...assist, action: actionToRun });
       if (outcome.ok) {
-        if (descriptor) toast.success(descriptor.receipt);
+        // A handler that knows something the static receipt cannot — which
+        // workspace it landed in, whether the panel actually opened, the one
+        // step still left — says so itself. The descriptor's line is the
+        // fallback, never a sentence that overrides what really happened.
+        const said =
+          outcome.result &&
+          typeof outcome.result === "object" &&
+          "sentence" in outcome.result &&
+          typeof (outcome.result as { sentence?: unknown }).sentence === "string"
+            ? ((outcome.result as { sentence: string }).sentence)
+            : descriptor?.receipt;
+        if (said) toast.success(said);
         onClose();
       }
       // Failures already toast + capture inside the runner; keep the card
