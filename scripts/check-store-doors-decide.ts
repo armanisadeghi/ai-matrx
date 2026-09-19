@@ -38,7 +38,6 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 function fail(message: string): never {
   console.error(`[FAIL] ${message}`);
   exitAfterDrain(1);
-  throw new Error("unreachable");
 }
 
 /**
@@ -232,7 +231,6 @@ async function main(): Promise<void> {
           "  those lines; there is no door that decides nothing.\n",
       );
       exitAfterDrain(1);
-      return;
     }
     console.log("\nEvery client door into the record store decides the caller and the row.");
   } finally {

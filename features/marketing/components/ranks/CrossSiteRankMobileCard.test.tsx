@@ -43,6 +43,7 @@ const controls: MatrxDataTableMobileCardControls = {
   onSelectedChange: jest.fn(),
   renderCell: () => null,
   actions: <button type="button">Copy and actions</button>,
+  expandedDetail: null,
 };
 
 describe("CrossSiteRankMobileCard", () => {

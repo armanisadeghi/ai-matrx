@@ -57,6 +57,7 @@ const controls: MatrxDataTableMobileCardControls = {
   onSelectedChange: jest.fn(),
   renderCell: () => null,
   actions: <button type="button">Canonical site actions</button>,
+  expandedDetail: null,
 };
 
 describe("site list presentation", () => {
