@@ -489,3 +489,199 @@ describe("the address's externalId is reconciled against what the read returns",
     expect(findButton("Review the field map").disabled).toBe(true);
   });
 });
+
+/**
+ * F-114 — TWO WAYS THE PROOF READ AND THE ADDRESS'S REQUEST STILL LIED
+ * (VERIFY-R10-FIX-WAVE NEW findings, 2026-09-18).
+ *
+ * (1) The mount branch of the read effect returned
+ *     `() => unfilteredAbortRef.current?.abort()` as its CLEANUP, and the
+ *     effect re-runs on every `query` change — so the FIRST keystroke aborted
+ *     the one read that can prove the address's contact exists. Every test
+ *     above missed it because the mock resolves whatever the signal says; the
+ *     tests below honour the signal, exactly as `fetch` does.
+ *
+ * (2) `requestedExternalId` survived its own promotion, so a person who
+ *     un-ticked the deep-linked contact had it ticked again by the next
+ *     Refresh, debounced search, or post-save reload. Promotion happens
+ *     ONCE — after it, the address has been answered and holds nothing.
+ */
+describe("the proof read survives a keystroke, and a promotion happens exactly once", () => {
+  let container: HTMLDivElement;
+  let root: Root;
+
+  beforeAll(() => {
+    (
+      globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+    ).IS_REACT_ACT_ENVIRONMENT = true;
+  });
+
+  beforeEach(() => {
+    container = document.createElement("div");
+    document.body.appendChild(container);
+    root = createRoot(container);
+    mockFields.mockResolvedValue([]);
+  });
+
+  afterEach(() => {
+    act(() => root.unmount());
+    container.remove();
+    mockImport.mockReset();
+    mockSearch.mockReset();
+    mockFields.mockReset();
+  });
+
+  async function settle(times = 10) {
+    for (let attempt = 0; attempt < times; attempt += 1) {
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+      });
+    }
+  }
+
+  const ADA = {
+    external_id: "people/1",
+    resource_name: "people/1",
+    display_name: "Ada Lovelace",
+    given_name: "Ada",
+    family_name: "Lovelace",
+    job_title: "Head of Data",
+    company: "Example Ltd",
+    emails: ["ada@example.com"],
+    phones: [],
+    source_updated_at: null,
+    already_imported: true,
+    person_id: "p1",
+    person_name: "Ada Lovelace",
+    imported_at: "2026-09-16T00:00:00Z",
+  };
+
+  const read = (contacts: unknown[]) => ({
+    provider_key: "google_contacts",
+    google_account: "me@example.com",
+    contacts,
+    count: contacts.length,
+    total_read: contacts.length,
+    already_imported: contacts.length,
+    truncated: false,
+    warnings: [],
+  });
+
+  function findButton(label: string): HTMLButtonElement {
+    const button = [...container.querySelectorAll("button")].find((candidate) =>
+      (candidate.textContent ?? "").includes(label),
+    );
+    if (!button) throw new Error(`no button matching ${label}`);
+    return button as HTMLButtonElement;
+  }
+
+  function clickByAriaLabel(label: string) {
+    const el = [...container.querySelectorAll("[aria-label]")].find(
+      (candidate) => candidate.getAttribute("aria-label") === label,
+    );
+    if (!el) throw new Error(`no control with aria-label ${label}`);
+    el.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+  }
+
+  async function typeQuery(text: string) {
+    const input = container.querySelector("input") as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      "value",
+    )!.set!;
+    await act(async () => {
+      setter.call(input, text);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 300));
+    });
+    await settle();
+  }
+
+  it("a keystroke does not abort the unfiltered proof read (F-114 NEW-1)", async () => {
+    // The mock behaves like `fetch`: an aborted signal REJECTS, it does not
+    // hand back a result. That is the only difference from the suite above,
+    // and it is the whole defect.
+    let unfilteredSignal: AbortSignal | null = null;
+    let releaseUnfiltered: (() => void) | null = null;
+    mockSearch.mockImplementation(
+      (args: { query?: string | null; signal?: AbortSignal }) =>
+        new Promise((resolve, reject) => {
+          if (args.query) {
+            resolve(read([]));
+            return;
+          }
+          unfilteredSignal = args.signal ?? null;
+          releaseUnfiltered = () => resolve(read([ADA]));
+          args.signal?.addEventListener("abort", () => {
+            const error = new Error("Aborted");
+            error.name = "AbortError";
+            reject(error);
+          });
+        }),
+    );
+
+    await act(async () => {
+      root.render(
+        <GoogleContactsImportPanel
+          organizationId="org-1"
+          initialExternalId="people/1"
+        />,
+      );
+    });
+    await settle();
+
+    // The person types before the mount's unfiltered read has answered.
+    await typeQuery("Ada");
+
+    // 🚨 THE DEFECT: the mount branch's cleanup fired on the keystroke and
+    // aborted the ONE read that can prove this contact exists.
+    expect(unfilteredSignal).toBeTruthy();
+    expect((unfilteredSignal as unknown as AbortSignal).aborted).toBe(false);
+
+    // And when it answers, it still promotes the address's contact.
+    await act(async () => {
+      releaseUnfiltered!();
+    });
+    await settle();
+
+    const text = container.textContent ?? "";
+    expect(text).toContain("1 selected");
+    expect(text).not.toContain("Still looking for the contact this link named");
+  });
+
+  it("un-ticking the deep-linked contact survives a Refresh (F-114 NEW-2)", async () => {
+    mockSearch.mockResolvedValue(read([ADA]));
+
+    await act(async () => {
+      root.render(
+        <GoogleContactsImportPanel
+          organizationId="org-1"
+          initialExternalId="people/1"
+        />,
+      );
+    });
+    await settle();
+    expect(container.textContent ?? "").toContain("1 selected");
+
+    // The person looks at it and decides not to import it after all.
+    await act(async () => {
+      clickByAriaLabel("Select Ada Lovelace");
+    });
+    await settle();
+    expect(container.textContent ?? "").toContain("0 selected");
+
+    // 🚨 THE DEFECT: `requestedExternalId` outlived its own promotion, so the
+    // next read ticked the box again behind the person's back.
+    await act(async () => {
+      findButton("Refresh").dispatchEvent(
+        new MouseEvent("click", { bubbles: true }),
+      );
+    });
+    await settle();
+
+    expect(container.textContent ?? "").toContain("0 selected");
+    expect(findButton("Review the field map").disabled).toBe(true);
+  });
+});

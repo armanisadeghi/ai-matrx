@@ -181,18 +181,31 @@ function contactSelectionReducer(
       const seenIds = new Set(state.seenIds);
       for (const contact of action.contacts) seenIds.add(contact.external_id);
       // The FIRST read that proves the address's contact exists promotes it
-      // from a request to a real selection, exactly once — never re-added if
-      // the person un-ticks it afterward.
+      // from a request to a real selection — and the request is ANSWERED by
+      // that promotion, so it is cleared in the same step.
+      //
+      // 🚨 PROMOTION HAPPENS EXACTLY ONCE (F-114 NEW-2, VERIFY-R10-FIX-WAVE):
+      // the request used to survive its own promotion, and every later read —
+      // Refresh, the debounced search, the reload after a save — re-ran the
+      // same promotion against a `selected` the person had since un-ticked.
+      // Un-ticking the contact a link named was reversed behind their back,
+      // and "0 selected" became "1 selected" with nobody touching the box.
+      // Clearing it here is also what keeps the banners honest: they all read
+      // `requestedExternalId`, and an answered request has nothing left to say.
+      const promoted = Boolean(
+        state.requestedExternalId && seenIds.has(state.requestedExternalId),
+      );
       const selected =
+        promoted &&
         state.requestedExternalId &&
-        !state.selected.includes(state.requestedExternalId) &&
-        seenIds.has(state.requestedExternalId)
+        !state.selected.includes(state.requestedExternalId)
           ? [...state.selected, state.requestedExternalId]
           : state.selected;
       return {
         ...state,
         seenIds,
         selected,
+        requestedExternalId: promoted ? null : state.requestedExternalId,
         unfilteredSearch: action.unfiltered ? action.result : state.unfilteredSearch,
       };
     }
@@ -325,11 +338,23 @@ export function GoogleContactsImportPanel({
   // back to "" re-enters this same branch's `load("")` — which is how a
   // never-completed unfiltered read (aborted only by ANOTHER unfiltered call,
   // never by a typed one) gets re-run without any special-casing.
+  //
+  // 🚨 THIS BRANCH'S CLEANUP OWNS THE TIMER, NEVER THE PROOF READ (F-114
+  // NEW-1, VERIFY-R10-FIX-WAVE). It used to return
+  // `() => unfilteredAbortRef.current?.abort()`, and this effect re-runs on
+  // every `query` change — so the FIRST keystroke aborted the unfiltered read
+  // that had just been fired on mount. `unfilteredSearch` then stayed null for
+  // the life of the panel: a deep-linked contact was never promoted and "Still
+  // looking for the contact this link named…" never resolved into either
+  // answer. The unfiltered read is superseded by ANOTHER unfiltered read and
+  // by nothing else (`load` aborts the previous one through
+  // `unfilteredAbortRef`), and unmount is owned by the effect below — so a
+  // keystroke has nothing of its own to clean up here.
   const typedRef = useRef(false);
   useEffect(() => {
     if (!typedRef.current) {
       void load("");
-      return () => unfilteredAbortRef.current?.abort();
+      return;
     }
     const handle = window.setTimeout(() => void load(query), 250);
     return () => window.clearTimeout(handle);
