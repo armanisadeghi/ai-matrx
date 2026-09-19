@@ -14,6 +14,8 @@ import {
   Archive,
   ArrowDownToLine,
   BadgeCheck,
+  ChevronDown,
+  ChevronRight,
   ExternalLink,
   Library,
   Loader2,
@@ -39,12 +41,16 @@ import {
   setAgentSampleStatus,
   type AgentContractHead,
   type AgentSampleRow,
+  type AgentVariableDeclaration,
   type CandidateRun,
   type SampleFreshness,
 } from "@/features/agents/samples/service";
-import { AgentUserMessageContent } from "@/features/agents/components/messages-display/user/AgentUserMessage";
 import { isAttachmentMessagePart } from "@/features/agents/components/context-items/normalize";
 import { isJsonObject } from "@/types/json";
+import {
+  buildTestCaseParts,
+  TestCaseInputs,
+} from "@/features/agents/components/samples/TestCaseInputs";
 import { LoadFromLibraryDialog } from "@/features/agents/components/samples/LoadFromLibraryDialog";
 import { SampleOriginLine } from "@/features/agents/components/samples/SampleOriginLine";
 
@@ -96,6 +102,35 @@ function FreshnessBadge({ freshness }: { freshness: SampleFreshness }) {
   );
 }
 
+/**
+ * The one-line "what is in here" a person reads BEFORE deciding to open a case.
+ * Counting is the whole point: a closed card must still say whether this run
+ * carried five variables and an attachment or nothing at all, or the collapse
+ * that made the list usable would have hidden the list's only information.
+ */
+function summarizeInputs(input: {
+  variables: Record<string, unknown>;
+  attachmentCount: number;
+  userInput: string;
+}): string {
+  const parts: string[] = [];
+  const variableCount = buildTestCaseParts({
+    variables: input.variables,
+    userInput: "",
+    declarations: [],
+  }).length;
+  if (variableCount > 0) {
+    parts.push(`${variableCount} variable${variableCount === 1 ? "" : "s"}`);
+  }
+  if (input.attachmentCount > 0) {
+    parts.push(
+      `${input.attachmentCount} attachment${input.attachmentCount === 1 ? "" : "s"}`,
+    );
+  }
+  if (input.userInput.trim()) parts.push("user input");
+  return parts.length > 0 ? parts.join(" · ") : "No inputs";
+}
+
 export interface AgentSamplesManagerProps {
   agentId: string;
   /** Called with the chosen sample when a host offers "use this sample now". */
@@ -112,6 +147,14 @@ export function AgentSamplesManager({
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AgentSampleRow | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
+  /**
+   * `undefined` means "nobody has chosen yet" — the first case in the list then
+   * opens on its own. `null` means the person closed it, which must STICK:
+   * re-deriving the default on every render would reopen what they just shut.
+   */
+  const [expandedId, setExpandedId] = useState<string | null | undefined>(
+    undefined,
+  );
 
   const reload = useCallback(async () => {
     try {
@@ -157,6 +200,11 @@ export function AgentSamplesManager({
     [samples],
   );
 
+  // Approved cases lead the list, so the first of them is the one that opens.
+  const firstSampleId = (approved[0] ?? candidates[0])?.id ?? null;
+  const expandedSampleId = expandedId === undefined ? firstSampleId : expandedId;
+  const setExpandedSampleId = setExpandedId;
+
   if (loading) {
     return (
       <div
@@ -176,26 +224,58 @@ export function AgentSamplesManager({
     const sampleVariables = isJsonObject(sample.variables)
       ? sample.variables
       : {};
+    const userInput = sampleInputText(sample);
+    const expanded = expandedSampleId === sample.id;
+
     return (
       <div
         key={sample.id}
-        className="rounded-md border border-border bg-card p-2.5 space-y-1.5"
+        className="overflow-hidden rounded-md border border-border bg-card"
       >
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="truncate text-sm font-medium">
-                {sample.label}
+        <div className="flex items-start gap-1 px-1 py-1 pr-1.5">
+          {/* The whole identity line is the disclosure: a test case is routinely
+              pages long, so it opens on purpose and never on arrival. */}
+          <button
+            type="button"
+            onClick={() => setExpandedSampleId(expanded ? null : sample.id)}
+            aria-expanded={expanded}
+            className="flex min-w-0 flex-1 items-start gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-accent/40"
+          >
+            {expanded ? (
+              <ChevronDown className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            ) : (
+              <ChevronRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            )}
+            <span className="min-w-0 flex-1">
+              {/* The title SHRINKS and the badges do not: a long label must
+                  ellipsize, never push its own status badge onto a second
+                  line and cost the card a row of height. */}
+              <span className="flex items-center gap-1.5">
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                  {sample.label}
+                </span>
+                <span className="shrink-0">
+                  <FreshnessBadge freshness={freshness} />
+                </span>
+                {sample.status === "approved" ? (
+                  <Badge
+                    className="shrink-0 bg-primary/10 text-primary"
+                    variant="outline"
+                  >
+                    Approved
+                  </Badge>
+                ) : null}
               </span>
-              <FreshnessBadge freshness={freshness} />
-              {sample.status === "approved" ? (
-                <Badge className="bg-primary/10 text-primary" variant="outline">
-                  Approved
-                </Badge>
-              ) : null}
-            </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
+              <span className="block truncate text-[11px] text-muted-foreground">
+                {summarizeInputs({
+                  variables: sampleVariables,
+                  attachmentCount: attachmentParts.length,
+                  userInput,
+                })}
+              </span>
+            </span>
+          </button>
+          <div className="flex shrink-0 items-center gap-1 pt-0.5">
             {onUseSample ? (
               <Button
                 size="sm"
@@ -266,18 +346,21 @@ export function AgentSamplesManager({
             </Button>
           </div>
         </div>
-        <SampleOriginLine sample={sample} />
-        <AgentUserMessageContent
-          conversationId={
-            sample.source_conversation_id ?? `sample:${sample.id}`
-          }
-          text={sampleInputText(sample)}
-          attachmentParts={attachmentParts}
-          variables={sampleVariables}
-        />
-        {inputContent.length === 0 &&
-        Object.keys(sampleVariables).length === 0 ? (
-          <p className="text-xs text-muted-foreground">No input</p>
+        {expanded ? (
+          <div className="border-t border-border/60">
+            <div className="px-2.5 pt-1.5">
+              <SampleOriginLine sample={sample} />
+            </div>
+            <TestCaseInputs
+              conversationId={
+                sample.source_conversation_id ?? `sample:${sample.id}`
+              }
+              userInput={userInput}
+              inputContent={inputContent}
+              variables={sampleVariables}
+              declarations={head?.variableDeclarations ?? []}
+            />
+          </div>
         ) : null}
       </div>
     );
@@ -329,7 +412,11 @@ export function AgentSamplesManager({
         )}
       </section>
 
-      <BorrowFromRunsSection agentId={agentId} onBorrowed={reload} />
+      <BorrowFromRunsSection
+        agentId={agentId}
+        declarations={head?.variableDeclarations ?? []}
+        onBorrowed={reload}
+      />
 
       <LoadFromLibraryDialog
         agentId={agentId}
@@ -367,9 +454,11 @@ export function AgentSamplesManager({
 
 function BorrowFromRunsSection({
   agentId,
+  declarations,
   onBorrowed,
 }: {
   agentId: string;
+  declarations: readonly AgentVariableDeclaration[];
   onBorrowed: () => Promise<void> | void;
 }) {
   const [open, setOpen] = useState(false);
@@ -441,21 +530,35 @@ function BorrowFromRunsSection({
             return (
               <div
                 key={run.conversationId}
-                className="rounded-md border border-border bg-card p-2.5"
+                className="overflow-hidden rounded-md border border-border bg-card"
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-1 px-1 py-1 pr-1.5">
                   <button
                     type="button"
-                    className="min-w-0 flex-1 text-left"
+                    aria-expanded={expanded}
+                    className="flex min-w-0 flex-1 items-start gap-1.5 rounded px-1 py-0.5 text-left transition-colors hover:bg-accent/40"
                     onClick={() => void toggleExpand(run)}
                   >
-                    <div className="truncate text-sm">
-                      {run.title || "Untitled run"}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(run.createdAt).toLocaleString()}
-                      {run.sourceFeature ? ` · ${run.sourceFeature}` : ""}
-                    </div>
+                    {expanded ? (
+                      <ChevronDown className="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-sm">
+                        {run.title || "Untitled run"}
+                      </span>
+                      <span className="block truncate text-[11px] text-muted-foreground">
+                        {new Date(run.createdAt).toLocaleString()}
+                        {run.sourceFeature ? ` · ${run.sourceFeature}` : ""}
+                        {" · "}
+                        {summarizeInputs({
+                          variables: run.variables,
+                          attachmentCount: attachmentParts.length,
+                          userInput: run.userInput ?? "",
+                        })}
+                      </span>
+                    </span>
                   </button>
                   <div className="flex shrink-0 items-center gap-1">
                     <Button
@@ -507,31 +610,31 @@ function BorrowFromRunsSection({
                     </Button>
                   </div>
                 </div>
-                <div className="mt-2">
-                  <AgentUserMessageContent
-                    conversationId={run.conversationId}
-                    text={run.userInput ?? ""}
-                    attachmentParts={attachmentParts}
-                    variables={run.variables}
-                  />
-                  {run.inputContent.length === 0 &&
-                  Object.keys(run.variables).length === 0 ? (
-                    <p className="text-xs text-muted-foreground">No input</p>
-                  ) : null}
-                </div>
                 {expanded ? (
-                  <div className="mt-2 rounded bg-muted/50 p-2">
-                    {final === undefined ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    ) : final ? (
-                      <p className="max-h-48 overflow-y-auto whitespace-pre-wrap text-xs">
-                        {final}
-                      </p>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">
-                        No response
-                      </p>
-                    )}
+                  <div className="border-t border-border/60">
+                    <TestCaseInputs
+                      conversationId={run.conversationId}
+                      userInput={run.userInput ?? ""}
+                      inputContent={run.inputContent}
+                      variables={run.variables}
+                      declarations={declarations}
+                    />
+                    <div className="border-t border-border/40 px-2.5 py-1.5">
+                      <div className="pb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+                        What the agent answered
+                      </div>
+                      {final === undefined ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      ) : final ? (
+                        <p className="max-h-48 overflow-y-auto whitespace-pre-wrap rounded bg-muted/60 p-2 text-[11px] leading-relaxed scrollbar-thin">
+                          {final}
+                        </p>
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground">
+                          No response
+                        </p>
+                      )}
+                    </div>
                   </div>
                 ) : null}
               </div>
