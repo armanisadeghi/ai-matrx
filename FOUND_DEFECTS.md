@@ -15,6 +15,14 @@ The ledger of found bugs and gaps on the frontend. Twin of aidream's `FOUND_DEFE
 
 ## OPEN
 
+### D338 — A ledgered index rebuild on `workbench.note_folders` was undone by something that left no ledger row (2026-09-18)
+
+`chair_step_2026_09_18_db_guard_findings_non_additive.sql` (ledgered 15:22:24Z) rebuilt `note_folders_organization_created_by_name_unique` as `where deleted_at is null`, and its same-transaction proof asserts the predicate — so it WAS partial at 15:22Z. At ~19:30Z the live index was a full index again (`indpred IS NULL`). No `_schema_migrations` row between the two names it, and nothing in matrx-frontend, aidream, matrx-local or common-docs creates it outside `notes_n01_…` (`CREATE … IF NOT EXISTS`, which cannot replace an existing index). Meaning: some path executes DDL on production without the ledger — exactly what `pnpm db:apply` exists to prevent. Consequences seen: `check:soft-delete-unique` reports green for a shape the database does not have. `chair_step_2026_09_18a_note_folders_org_blind_name_key.sql` rebuilds it again; **if it reverts a second time the actor is still running.** Not investigated further: needs Postgres logs (`query_logs` for `CREATE UNIQUE INDEX note_folders_organization`) from an owner of the hunt.
+
+### D337 — Every launcher in `node_modules/.bin` is rewritten with a path one directory too high, repeatedly (2026-09-18)
+
+Twice today (11:56 and 12:13 local) all 115 shims were regenerated pointing at `$basedir/../../../../../Users/armanisadeghi/code/matrx-frontend/node_modules/…`, which resolves to `/Users/Users/…` — so `pnpm type-check`, `pnpm db:apply`, `pnpm db-types` and every `tsx` script die with `MODULE_NOT_FOUND`. The off-by-one means an install computed the relative path from a directory one level DEEPER than the checkout while writing into this checkout's `node_modules` — the shape of an install run inside a worktree whose `node_modules` is a symlink or hard-link copy of the primary's (see `docs/official/browser-testing.md` § From a private worktree). Repaired in place both times with a `sed` over the shims; the writer is still out there. Workaround that does not depend on the shims: `node node_modules/tsx/dist/cli.mjs <script>` and `node node_modules/typescript/bin/tsc --noEmit -p tsconfig.typecheck.json`.
+
 ### D336 — `content_ir.kind_component` advertises three renderers that exist only on the unmerged, CONFLICTING PR 228 branch (2026-09-18)
 
 `pnpm check:shapes:components` names three ACTIVE bundled `kind_component` rows —
@@ -4614,3 +4622,25 @@ What still stops a regeneration on a box without credentials: step 1 (`pnpm db-t
 `SUPABASE_MATRIX_*` variables. Run `pnpm sync-types` on a credentialed machine; until then the
 topical map's three run clients (`map-pages.ts`, `map-regions.ts`, `map-intents.ts`) carry
 transcribed bodies with a red test naming the remedy. Found by the topical-map UI build (P0-A).
+
+## 2026-09-18 — `udt_bulk_write`'s delete op HARD-DELETES a soft-deletable row
+
+`public.udt_bulk_write`'s `{op:"delete"}` runs `DELETE FROM workbench.udt_dataset_rows WHERE
+id = … AND table_id = …` — a real destroy — even though the table carries `deleted_at`. That is
+the DD-119 class ("a registered entity carrying `deleted_at` is REMOVED, never destroyed, from a
+client"), one layer further in: `pnpm check:client-hard-delete` scans for supabase-js `.delete()`
+calls, so an RPC that destroys on the client's behalf is invisible to it. Every dataset-row
+delete in the product goes through this op (`features/data-tables/bulk-row-actions.ts`, the grid's
+row menu, `replaceTable`'s delete-all, and now an accepted `remove` proposal), so a deleted row is
+unrecoverable and `udt_dataset_row_versions` keeps only the versions, not the row.
+
+**Not fixed here** because flipping the op to a soft delete changes behaviour for every existing
+caller at once — the readers (`get_user_table_complete`, `get_full_table`, `udt_column_facets`,
+the realtime subscription) would each need a `deleted_at is null` filter in the same change, and
+`udt_datasets`' own delete path has the same shape. That is a data-tables repair with its own
+verification, not a side effect of the list-change-proposals feature.
+
+**What this lane did instead:** the proposal reviewer's confirm dialog says exactly what happens —
+"This DELETES the row … outright — it is gone from <list>, not archived, and this cannot be
+undone" — rather than a generic warning that implies recovery. Found by building
+`features/list-change-proposals/`.

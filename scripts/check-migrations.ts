@@ -854,8 +854,20 @@ async function main(): Promise<number> {
       `${TAG.fail}Migrations: ${pending.length} unapplied — never ran on the DB. ` +
         `${strict ? "(--strict: blocking)" : "(non-blocking)"}`,
     );
-    for (const f of pending)
+    for (const f of pending) {
       console.log(`  ${C.white}- ${f}${C.reset} ${C.red}[UNAPPLIED]${C.reset}`);
+      // A chair step left in the SWEPT directory is what halted every unattended release on
+      // 2026-09-18. It is never the sweep's job: say where it belongs and how it runs.
+      let chairStep = false;
+      try {
+        chairStep = /^--\s*chair-step:/m.test(readFileSync(resolve(MIGRATIONS_DIR, f), "utf8").slice(0, 4000));
+      } catch { /* an unreadable file is reported by the checks above */ }
+      if (chairStep)
+        console.log(
+          `      ${C.yellow}this is a CHAIR STEP in the swept directory. Move it to migrations/inverse/ and run it NAMED:${C.reset}\n` +
+            `      ${C.dim}pnpm db:apply migrations/inverse/${f} --confirm-chair-step ${f}   (the senior session that owns it; never Arman)${C.reset}`,
+        );
+    }
     for (const f of drifted)
       console.log(
         `  ${C.white}- ${f}${C.reset} ${C.yellow}[DRIFTED]${C.reset}`,

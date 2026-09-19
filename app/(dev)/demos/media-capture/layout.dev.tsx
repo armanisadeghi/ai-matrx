@@ -5,7 +5,7 @@ export const metadata = createRouteMetadata("/demos/media-capture", {
   title: "Demo",
   description:
     "Exercise the production media-capture primitives: framing modes, quality profiles, device switching, error states.",
-  letter: "MC",
+  letter: "MDC",
 });
 
 export default function MediaCaptureDemoLayout({

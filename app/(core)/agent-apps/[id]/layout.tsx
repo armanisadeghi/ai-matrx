@@ -22,7 +22,7 @@ export async function generateMetadata({
   return createDynamicRouteMetadata("/agent-apps", {
     title: name,
     description,
-    letter: "A",
+    letter: "APD",
   });
 }
 

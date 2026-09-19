@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/scopes", {
   titlePrefix: "Templates",
   title: "Scopes",
   description: "Browse and apply scope type templates.",
-  letter: "S",
+  letter: "SPT",
 });
 
 export default function ScopeTemplatesLayout({

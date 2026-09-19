@@ -7,7 +7,7 @@
 // Verify:      pnpm check:kind-types   (CI-blocking freshness gate)
 // Twin guard:  pnpm check:kind-type-twins
 //
-// 529 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
+// 530 active kinds. THESE ARE THE ONLY KIND PAYLOAD TYPES IN THE REPO.
 // A hand-written interface mirroring a registered kind is a defect — derive
 // (Pick/Omit) from the type here instead, and never re-declare it.
 //
@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 /** Structural fingerprint of the registry rows this artifact was generated from. */
-export const KIND_REGISTRY_FINGERPRINT = "92b8a891dd10";
+export const KIND_REGISTRY_FINGERPRINT = "82e1f75b389e";
 
 // ─────────────────────────────────────────────────────────────────────────
 // Shared nested structures. Deduped by structure across the registry — an
@@ -2545,6 +2545,80 @@ export interface LessonScriptSection {
    * Roughly how long this section runs when spoken, in seconds.
    */
   duration_seconds?: number;
+}
+
+/**
+ * * From kind `list_change_proposal_v1`.
+ */
+export interface ListChangeProposalItemV1 {
+  /**
+   * A short id unique within this message, so a decision can be remembered against it. Never reuse one.
+   */
+  id: string;
+  /**
+   * update only: just the columns that change, keyed by the list's own column names. Columns you leave out are kept.
+   */
+  patch?: Record<string, unknown> | null;
+  /**
+   * One line naming what changes, as the person would say it. For remove and update this is the row's CURRENT title, so the person recognises it without opening the list.
+   */
+  title: string;
+  /**
+   * Block discriminator for render pipeline.
+   */
+  __kind: "list_change_proposal_item_v1";
+  /**
+   * add a new row, remove an existing one, or update one in place.
+   */
+  action: "add" | "remove" | "update";
+  /**
+   * One sentence on why. Not a paragraph, not a restatement of the row.
+   */
+  reason: string;
+  /**
+   * remove and update only: the id of the row already in the list.
+   */
+  row_id?: string | null;
+  /**
+   * add only: the new row's values, keyed by the list's own column names.
+   */
+  values?: Record<string, unknown> | null;
+  additionalDetails?: Record<string, unknown>;
+}
+
+/**
+ * * From kind `list_change_proposal_v1`.
+ */
+export interface ListChangeTargetV1 {
+  /**
+   * Which kind of list this is. scope_dataset = a table held per scope by a context item (today). table = a Table homed in a Record in the unified record store.
+   */
+  kind: "scope_dataset" | "table";
+  /**
+   * What to call this list on screen, in the person's words — e.g. 'Known defects in matrx-frontend'.
+   */
+  label?: string | null;
+  /**
+   * Block discriminator for render pipeline.
+   */
+  __kind: "list_change_target_v1";
+  /**
+   * scope_dataset only: the scope whose copy of the list this is.
+   */
+  scope_id?: string | null;
+  /**
+   * table only: the Table being changed.
+   */
+  table_id?: string | null;
+  /**
+   * table only: the Record the Table is homed in.
+   */
+  home_record_id?: string | null;
+  /**
+   * scope_dataset only: the context item that holds the list.
+   */
+  context_item_id?: string | null;
+  additionalDetails?: Record<string, unknown>;
 }
 
 /**
@@ -10399,6 +10473,29 @@ export interface LinkBuckets {
   external?: string[];
   internal?: string[];
   documents?: string[];
+}
+
+/**
+ * Kind `list_change_proposal_v1` (registry v2).
+ */
+export interface ListChangeProposalV1 {
+  /**
+   * Block discriminator for render pipeline.
+   */
+  __kind: "list_change_proposal_v1";
+  /**
+   * Which list these changes are for.
+   */
+  target: ListChangeTargetV1;
+  /**
+   * One line a person reads before deciding — what you are proposing and why, overall. Never restate the list itself.
+   */
+  summary: string;
+  /**
+   * The proposed changes, one per row. Propose only what actually changes; an empty array is a real answer.
+   */
+  proposals: ListChangeProposalItemV1[];
+  additionalDetails?: Record<string, unknown>;
 }
 
 /**
@@ -22036,6 +22133,7 @@ export type GeneratedKindSlug =
   | "kit_title"
   | "lesson_script_set"
   | "link_buckets"
+  | "list_change_proposal_v1"
   | "listing_draft"
   | "live_help_answer"
   | "local_place"
@@ -22568,6 +22666,7 @@ export interface KindPayloadBySlug {
   "kit_title": KitTitle;
   "lesson_script_set": LessonScriptSet;
   "link_buckets": LinkBuckets;
+  "list_change_proposal_v1": ListChangeProposalV1;
   "listing_draft": ListingDraft;
   "live_help_answer": LiveHelpAnswer;
   "local_place": LocalPlace;
@@ -23104,6 +23203,7 @@ export const GENERATED_KIND_SLUGS: readonly GeneratedKindSlug[] = [
   "kit_title",
   "lesson_script_set",
   "link_buckets",
+  "list_change_proposal_v1",
   "listing_draft",
   "live_help_answer",
   "local_place",

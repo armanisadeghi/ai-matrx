@@ -36,6 +36,14 @@ $inv$;
 
 drop view if exists custom.doc_template;
 
+-- A DOOR FOLLOWS ITS FUNCTION (platform._provision_shape_settled()'s own words): dropping
+-- `custom.doc_template_save` without first removing its `platform.client_callable_door` row
+-- leaves a promise nobody can verify, and the guard refuses the transaction at COMMIT rather
+-- than let it stand. FOUND when this inverse was first run (rule 20, fix on sight): the row
+-- was never deleted here.
+delete from platform.client_callable_door
+ where schema_name = 'custom' and function_name = 'doc_template_save';
+
 drop function if exists custom.doc_template_save(uuid, uuid, text, text, uuid);
 drop function if exists custom.doc_unresolved_tokens(uuid, uuid, text);
 drop function if exists custom.doc_format_value(jsonb, jsonb);

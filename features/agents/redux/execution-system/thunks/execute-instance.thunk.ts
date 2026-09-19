@@ -97,7 +97,10 @@ import {
   addOptimisticUserMessage,
   shouldCreateOptimisticUserMessage,
 } from "../messages/messages.slice";
-import { selectMessageCount } from "../messages/messages.selectors";
+import {
+  selectMessageCount,
+  selectNextMessagePosition,
+} from "../messages/messages.selectors";
 import { selectWireTranscript } from "../utils/wire-transcript";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -758,7 +761,7 @@ export const executeInstance = createAsyncThunk<
         }
         content.push(...resourceBlocks);
         userMessageClientTempId = uuidv4();
-        const nextPosition = selectMessageCount(conversationId)(stateAtSubmit);
+        const nextPosition = selectNextMessagePosition(conversationId)(stateAtSubmit);
         // Capture the TRUE per-turn context this message carried, frozen at
         // submit time. The user bubble reads this snapshot — never the live
         // conversation-level context, which keeps mutating as the user changes

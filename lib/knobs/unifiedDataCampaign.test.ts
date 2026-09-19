@@ -23,6 +23,7 @@ import {
     UNIFIED_DATA_CAMPAIGN,
     UNIFIED_DATA_CAMPAIGN_DEFAULT,
     UNIFIED_DATA_CAMPAIGN_FEATURE,
+    UNIFIED_DATA_CAMPAIGN_KNOB,
     UNIFIED_DATA_CAMPAIGN_KEY,
     type CampaignEntryPoint,
 } from "./unifiedDataCampaign";
@@ -71,6 +72,13 @@ describe("unified data campaign switch", () => {
         expect(UNIFIED_DATA_CAMPAIGN_KEY).toBe("code_paths_enabled");
         expect(UNIFIED_DATA_CAMPAIGN.FEATURE).toBe("custom");
         expect(UNIFIED_DATA_CAMPAIGN.KEY).toBe("code_paths_enabled");
+        // The `{ feature, key }` ref every reader takes says the SAME address.
+        // It is written as literals so the knob census can resolve a call site
+        // that imports it; this is what stops the two spellings drifting.
+        expect(UNIFIED_DATA_CAMPAIGN_KNOB).toEqual({
+            feature: UNIFIED_DATA_CAMPAIGN_FEATURE,
+            key: UNIFIED_DATA_CAMPAIGN_KEY,
+        });
     });
 
     it("SHIPS OFF: the default is false", () => {
@@ -136,23 +144,38 @@ describe("unified data campaign switch", () => {
         }
     });
 
-    it("OFF ≡ ABSENT: no shipped module imports the campaign switch, so turning it off changes nothing", () => {
+    it("OFF ≡ ABSENT: every shipped importer of the switch is a registered runtime entry that calls enabled()", () => {
         // WHAT "byte-identical" MEANS HERE, concretely. `enabled()` has exactly
         // one observable effect: what it returns. A file whose behaviour could
         // differ between "switch OFF" and "campaign module deleted from the
-        // repo" must therefore CALL it. So the proof is a census, not a
-        // simulation: resolve every import in every tracked file and show that
-        // the only importers of this module are its own test, its guard, and
-        // the register it re-exports. If that set is empty of shipped code,
-        // deleting the module changes no served byte — which is the strongest
-        // form of "OFF leaves current behaviour unchanged" available while the
-        // campaign has no runtime code yet.
+        // repo" must therefore CALL it.
         //
-        // The moment a lane adds one, this test starts pointing at it and the
-        // claim must be re-earned by the gate, not by this census.
+        // Until 2026-09-18 this was a census over an EMPTY set: no shipped file
+        // imported the switch at all, so deleting the module changed no served
+        // byte, and the test asserted exactly that — while saying, in its own
+        // words, that "the moment a lane adds one, this test starts pointing at
+        // it and the claim must be re-earned by the gate, not by this census."
+        // W6-APP added the first three (`/data-v2`, `/data-v2/[tableId]`, and
+        // the CRM record page's custom-fields section), so the claim is re-earned
+        // here the way that comment demanded: the census still runs, and every
+        // file it finds must be a `runtime` entry on the register — which the
+        // gate independently requires to call `enabled()`. Anything else
+        // importing the switch is a file that would ship unguarded, and fails.
+        // The census reads TRACKED files, and the register may legitimately
+        // carry a runtime entry another lane has written but not yet committed
+        // in this shared checkout — so the direction that matters is this one:
+        // nothing that SHIPS may import the switch without being registered
+        // runtime. A registered file that the census cannot see is covered by
+        // the two tests around this one (it must exist on disk, and it must
+        // call the gate).
         const importers = trackedImportersOfTheSwitch();
-        expect(importers).toEqual([]);
-        expect(UNIFIED_DATA_CAMPAIGN.RUNTIME_ENTRY_POINTS).toEqual([]);
+        const runtime = UNIFIED_DATA_CAMPAIGN.RUNTIME_ENTRY_POINTS.map((e) => e.file).sort();
+        expect(runtime.length).toBeGreaterThan(0);
+        expect(importers.filter((f) => !runtime.includes(f))).toEqual([]);
+        for (const file of runtime) {
+            const src = fs.readFileSync(path.resolve(REPO_ROOT, file), "utf8");
+            expect(src).toMatch(/UNIFIED_DATA_CAMPAIGN\.enabled\s*\(/);
+        }
     });
 
     it("RED THEN GREEN: a stray campaign importer is caught, and is not caught once removed", () => {

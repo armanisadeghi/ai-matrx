@@ -54,6 +54,14 @@ import {
   storedJournalistActivity,
 } from "./JournalistIntelligenceCard";
 import { PartyProvenanceCard } from "./PartyProvenanceCard";
+import { CustomFieldsSection, RecordsMount, personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { createClient } from "@/utils/supabase/client";
+import {
+  UNIFIED_DATA_CAMPAIGN,
+  useUnifiedDataCampaign,
+} from "@/lib/knobs/unifiedDataCampaign";
 import { PartyOutputsSection } from "./PartyOutputsSection";
 import { PartyDealsCard } from "../deals/PartyDealsCard";
 import type { CrmRecordCopyParent } from "./record-copy";
@@ -332,6 +340,12 @@ export function PartyRecordPage({ partyId }: Props) {
                     rendered as real doors. Renders nothing for a record the
                     user typed in themselves. */}
                 <PartyProvenanceCard party={party} onChanged={refresh} />
+                {/* REC-34 / SCR-12 — the organization's OWN fields on this
+                    standard entity, from the unified record store. One line,
+                    no per-entity code: a field an organization adds to
+                    contacts appears here the same afternoon. Absent (not an
+                    empty box) until this org declares one. */}
+                <PartyUnifiedCustomFields partyId={party.id} />
                 {!isPerson && party.primary_domain && (
                   <OutreachContactCandidatesCard outletPartyId={party.id} />
                 )}
@@ -399,5 +413,31 @@ export function PartyRecordPage({ partyId }: Props) {
         )}
       </div>
     </SurfaceRuntimeProvider>
+  );
+}
+
+/**
+ * The unified record store's custom fields for this standard entity, behind the
+ * campaign switch. It is the provider pair plus ONE line — everything else,
+ * including "which fields extend `party`" and "render nothing when there are
+ * none", lives in `@ai-matrx/records-ui`. When the campaign is on
+ * platform-wide this wrapper collapses to the single `<CustomFieldsSection />`.
+ */
+function PartyUnifiedCustomFields({ partyId }: { partyId: string }) {
+  const userId = useAppSelector(selectUserId);
+  const organizationId = useAppSelector(selectActiveOrganizationId);
+  const campaign = useUnifiedDataCampaign({
+    organizationId,
+    userId,
+    platformDefault: () => UNIFIED_DATA_CAMPAIGN.enabled(),
+  });
+  if (!campaign.on || !organizationId) return null;
+  return (
+    <RecordsMount
+      letTheStoreDecideRights
+      config={{ dataSource: recordsDataSource(createClient()), actor: personActor(userId), organizationId }}
+    >
+      <CustomFieldsSection entityToken="party" recordId={partyId} />
+    </RecordsMount>
   );
 }

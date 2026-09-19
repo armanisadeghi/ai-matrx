@@ -2105,6 +2105,87 @@
         }
       }
     },
+    "/ai/decisions": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Create Decision",
+        "operationId": "create_decision_ai_decisions_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ai/decisions/{execution_id}": {
+      "get": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "Read Decision",
+        "operationId": "read_decision_ai_decisions__execution_id__get",
+        "parameters": [
+          {
+            "name": "execution_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Execution Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionResultPayload"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/ai/agent-assignments": {
       "post": {
         "tags": [
@@ -8864,6 +8945,454 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/devices": {
+      "get": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "List Devices",
+        "operationId": "list_devices_GET",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response List Devices Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Register Device",
+        "description": "Register THIS computer. The token is returned exactly once, ever.",
+        "operationId": "register_device_POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDeviceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Register Device Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/devices/{device_id}": {
+      "patch": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Patch Device",
+        "operationId": "patch_device_PATCH",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Device Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateDeviceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Patch Device Patch"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Remove Device",
+        "operationId": "remove_device_DELETE",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Device Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Remove Device Delete"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/pairings": {
+      "post": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Create Pairing",
+        "description": "ANONYMOUS. The helper has no account yet; the code is the whole link.\n\nThe body is ``{\"registration\": {...}}`` — the same envelope as\n``POST /egress/devices`` — because the helper sends exactly one shape for\nboth doors (proven 2026-09-18: a flat body here answered the real helper\nwith a 422 and no pairing ever started).",
+        "operationId": "create_pairing_POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterDeviceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Create Pairing Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/pairings/{pairing_id}": {
+      "get": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Poll Pairing",
+        "description": "``Bearer <pairing_secret>`` — the helper's own poll, not a user JWT.",
+        "operationId": "poll_pairing_GET",
+        "parameters": [
+          {
+            "name": "pairing_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Pairing Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Poll Pairing Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/pairings/by-code/{user_code}": {
+      "get": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Describe Pairing",
+        "operationId": "describe_pairing_GET",
+        "parameters": [
+          {
+            "name": "user_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Describe Pairing Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/pairings/by-code/{user_code}/approve": {
+      "post": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Approve Pairing",
+        "operationId": "approve_pairing_POST",
+        "parameters": [
+          {
+            "name": "user_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Approve Pairing Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/pairings/by-code/{user_code}/deny": {
+      "post": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Deny Pairing",
+        "operationId": "deny_pairing_POST",
+        "parameters": [
+          {
+            "name": "user_code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "User Code"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Deny Pairing Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/tickets": {
+      "post": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Mint Ticket",
+        "operationId": "mint_ticket_POST",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MintTicketRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Mint Ticket Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/egress/status": {
+      "get": {
+        "tags": [
+          "Residential Egress"
+        ],
+        "summary": "Egress Status",
+        "operationId": "egress_status_GET",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Egress Status Get"
                 }
               }
             }
@@ -55619,6 +56148,27 @@
               "title": "Facet Limit"
             },
             "description": "Max entries per facet axis"
+          },
+          {
+            "name": "exclude_source_app",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Hide conversations from these source_apps (repeatable; NULL-safe). The CX Explorer sends 'code-plugin' by default: outside coding-tool data.",
+              "title": "Exclude Source App"
+            },
+            "description": "Hide conversations from these source_apps (repeatable; NULL-safe). The CX Explorer sends 'code-plugin' by default: outside coding-tool data."
           }
         ],
         "responses": {
@@ -77160,6 +77710,38 @@
             }
           },
           {
+            "name": "action_key",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action Key"
+            }
+          },
+          {
+            "name": "action_status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Action Status"
+            }
+          },
+          {
             "name": "order",
             "in": "query",
             "required": false,
@@ -83456,6 +84038,49 @@
         }
       }
     },
+    "/browser-manager/runs/{run_id}/retry-through-home-computer": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Retry Through Home Computer",
+        "description": "Move this live run's exit to one of the caller's OWN computers.\n\nThe automatic switch already runs when a navigate lands on a detectable\nchallenge; this is the door for the challenge nobody could detect — a\nperson or an agent that can SEE the block says so, and the session is\ncheckpointed and reopened through their computer with the same run id.\nContract: ``common-docs/systems/platform/residential-egress/FEATURE.md``.",
+        "operationId": "retry_through_home_computer_browser_manager_runs__run_id__retry_through_home_computer_post",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetryThroughHomeComputerResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/browser-manager/runs/{run_id}/control-requests": {
       "post": {
         "tags": [
@@ -85977,6 +86602,24 @@
             "description": "Only rows with failed_at < this instant (ISO-8601)."
           },
           {
+            "name": "column_filters",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "JSON-encoded dashboard filters for table_target, op_type, error_text, user_id, and request_id.",
+              "title": "Column Filters"
+            },
+            "description": "JSON-encoded dashboard filters for table_target, op_type, error_text, user_id, and request_id."
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -86439,6 +87082,24 @@
               "title": "Until"
             },
             "description": "Only rows with occurred_at < this instant (ISO-8601)."
+          },
+          {
+            "name": "column_filters",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "JSON-encoded dashboard filters for kind, route, error_text, user_id, and request_id.",
+              "title": "Column Filters"
+            },
+            "description": "JSON-encoded dashboard filters for kind, route, error_text, user_id, and request_id."
           },
           {
             "name": "limit",
@@ -98905,6 +99566,27 @@
         "type": "object",
         "title": "AnnotationUpdateBody"
       },
+      "Answer": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NoulAnswer"
+          },
+          {
+            "$ref": "#/components/schemas/ChoiceAnswer"
+          },
+          {
+            "$ref": "#/components/schemas/ScoreAnswer"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "choice": "#/components/schemas/ChoiceAnswer",
+            "noul": "#/components/schemas/NoulAnswer",
+            "score": "#/components/schemas/ScoreAnswer"
+          }
+        }
+      },
       "AnthropicCountTokensResponse": {
         "properties": {
           "input_tokens": {
@@ -110233,6 +110915,51 @@
         ],
         "title": "BridgeOrigin"
       },
+      "BridgePinDivergence": {
+        "properties": {
+          "schema_version": {
+            "type": "integer",
+            "title": "Schema Version",
+            "default": 1
+          },
+          "provider_pinned": {
+            "type": "boolean",
+            "title": "Provider Pinned"
+          },
+          "ai_matrx_is_favorite": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Matrx Is Favorite"
+          },
+          "authority": {
+            "type": "string",
+            "enum": [
+              "ai_matrx",
+              "provider"
+            ],
+            "title": "Authority"
+          },
+          "mirrored": {
+            "type": "boolean",
+            "title": "Mirrored"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider_pinned",
+          "authority",
+          "mirrored"
+        ],
+        "title": "BridgePinDivergence",
+        "description": "The provider's star and the AI Matrx favorite disagreed — say so.\n\nA coding session's pin exists on both sides: the provider's own star (what a\n``SessionMetadata`` observation reports, mirrored into the binding's\n``provider_pinned`` metadata) and the AI Matrx favorite\n(``platform.user_entity_state.is_favorite``, the row every star in the app\nreads and writes). They are TWO facts, and until 2026-09-18 the server\ncompared the provider's own echo against itself — so a divergence looked\nlike agreement and could never heal.\n\nWhich side wins a conflict is an ORG KNOB (``effective_setting`` key\n``coding_session_provider_pin_wins``, default: the provider wins, because\nthe coding agent is where the pin is made — Arman, 2026-09-18). Whatever the\nknob says, the disagreement is REPORTED: it is never silently dropped, and\nthe identity list carries both values so a screen can show it."
+      },
       "BridgeProjectionErrorGroup": {
         "properties": {
           "code": {
@@ -110726,6 +111453,16 @@
               }
             ],
             "title": "Deleted Entries"
+          },
+          "pin_divergence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BridgePinDivergence"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "hookSpecificOutput": {
             "anyOf": [
@@ -121149,6 +121886,71 @@
         "title": "ChiliPiperStatusResult",
         "description": "Safe projection of Chili Piper's high-level service status."
       },
+      "ChoiceAnswer": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "choice",
+            "title": "Type",
+            "default": "choice"
+          },
+          "choice": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Choice"
+          },
+          "probabilities": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Probabilities"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Confidence"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "choice",
+          "probabilities",
+          "confidence"
+        ],
+        "title": "ChoiceAnswer"
+      },
+      "ChoiceQuestion": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "choice",
+            "title": "Type",
+            "default": "choice"
+          },
+          "instructions": {
+            "$ref": "#/components/schemas/SystemOneEntry"
+          },
+          "criteria": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SystemOneEntry"
+            },
+            "type": "object",
+            "minProperties": 2,
+            "title": "Criteria"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instructions",
+          "criteria"
+        ],
+        "title": "ChoiceQuestion"
+      },
       "ChunkDetail": {
         "properties": {
           "chunk_id": {
@@ -127462,6 +128264,17 @@
               }
             ],
             "title": "Claude Category"
+          },
+          "ai_matrx_is_favorite": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Matrx Is Favorite"
           }
         },
         "type": "object",
@@ -127935,6 +128748,69 @@
         ],
         "title": "CombinedRatingSide"
       },
+      "CommandEgress": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "residential",
+            "title": "Kind",
+            "default": "residential"
+          },
+          "device_name": {
+            "type": "string",
+            "title": "Device Name"
+          },
+          "device_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "device_name"
+        ],
+        "title": "CommandEgress",
+        "description": "How this command reached the internet — announced, never hidden.\n\n🚨 CONTROL-PLANE authored (S2 v1.1, additive 2026-09-18). The worker never\nsets it: only the Browser Manager knows that a blocked page was retried\nthrough the person's own computer. It rides the command reply because that\nis where the agent and the panel read the answer, and rule 5 of\n``common-docs/systems/platform/residential-egress/FEATURE.md`` says a page\nfetched through a person's computer always says so."
+      },
+      "CommandEgressUnavailable": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "reason",
+          "message"
+        ],
+        "title": "CommandEgressUnavailable",
+        "description": "Why the blocked page could NOT be retried through a person's computer.\n\nAlso control-plane authored. Never a dead end: the reason is one of the\ncontract's (`no_computer`, `offline`, `paused`, `org_forbids`, `feature_off`,\n`no_acting_user`, `unavailable`) and the message is the remedy in words."
+      },
       "CommandResponse": {
         "properties": {
           "ok": {
@@ -128118,6 +128994,26 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/ActionEventFacts"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "egress": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CommandEgress"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "egress_unavailable": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CommandEgressUnavailable"
               },
               {
                 "type": "null"
@@ -137515,6 +138411,14 @@
             "type": "array",
             "title": "Origin Classes",
             "description": "matrx_connect ORIGIN_CLASSES + 'unknown' (DB backfill for pre-provenance rows). Valid filter values for origin_class."
+          },
+          "outside_source_apps": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Outside Source Apps",
+            "description": "source_apps holding outside (non-AI Matrx) data — today only 'code-plugin'. CX Explorer hides them unless the viewer turns them on."
           }
         },
         "additionalProperties": false,
@@ -139621,6 +140525,168 @@
         ],
         "title": "DblpPublicPublication",
         "description": "Safe bounded projection of one public DBLP publication."
+      },
+      "DecisionResultPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "decision_result",
+            "title": "Type",
+            "default": "decision_result"
+          },
+          "execution_id": {
+            "type": "string",
+            "title": "Execution Id"
+          },
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "provider_request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Request Id"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "answers": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Answer"
+            },
+            "type": "object",
+            "title": "Answers"
+          },
+          "usage": {
+            "$ref": "#/components/schemas/DecisionUsage"
+          },
+          "cost_usd": {
+            "type": "number",
+            "title": "Cost Usd"
+          },
+          "offering_id": {
+            "type": "string",
+            "title": "Offering Id"
+          },
+          "route": {
+            "type": "string",
+            "title": "Route"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "execution_id",
+          "request_id",
+          "model",
+          "answers",
+          "usage",
+          "cost_usd",
+          "offering_id",
+          "route"
+        ],
+        "title": "DecisionResultPayload"
+      },
+      "DecisionRunRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Model"
+          },
+          "offering_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Offering Id"
+          },
+          "state": {
+            "$ref": "#/components/schemas/SystemOneState"
+          },
+          "questions": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Question"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Questions"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "model",
+          "state",
+          "questions"
+        ],
+        "title": "DecisionRunRequest",
+        "description": "HTTP/service input; native runner validates the provider discriminated body."
+      },
+      "DecisionUsage": {
+        "properties": {
+          "input_tokens": {
+            "type": "integer",
+            "title": "Input Tokens"
+          },
+          "output_tokens": {
+            "type": "integer",
+            "title": "Output Tokens"
+          }
+        },
+        "type": "object",
+        "required": [
+          "input_tokens",
+          "output_tokens"
+        ],
+        "title": "DecisionUsage"
       },
       "DeclarePanelBody": {
         "properties": {
@@ -142346,6 +143412,86 @@
           "jti"
         ],
         "title": "DevLoginResponse"
+      },
+      "DeviceRegistration": {
+        "properties": {
+          "instance_id": {
+            "type": "string",
+            "title": "Instance Id"
+          },
+          "instance_name": {
+            "type": "string",
+            "title": "Instance Name"
+          },
+          "platform": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Platform"
+          },
+          "os_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Os Version"
+          },
+          "hostname": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hostname"
+          },
+          "hardware_uuid": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hardware Uuid"
+          },
+          "helper_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Helper Version"
+          },
+          "client_kind": {
+            "type": "string",
+            "pattern": "^(desktop_app|helper)$",
+            "title": "Client Kind",
+            "default": "helper"
+          }
+        },
+        "type": "object",
+        "required": [
+          "instance_id",
+          "instance_name"
+        ],
+        "title": "DeviceRegistration",
+        "description": "The helper's self-description. The desktop engine sends the same shape."
       },
       "DevtoServiceStatus": {
         "properties": {
@@ -191988,6 +193134,30 @@
         "title": "MintResponse",
         "description": "S4 §2.1 / §2.2. `endpoint` is DATA — the client never constructs it."
       },
+      "MintTicketRequest": {
+        "properties": {
+          "device_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id"
+          },
+          "purpose": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Purpose",
+            "default": "scrape"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MintTicketRequest"
+      },
       "MintTokenRequest": {
         "properties": {
           "audience": {
@@ -196545,6 +197715,67 @@
           "published_at"
         ],
         "title": "NotesnookPublicRelease"
+      },
+      "NoulAnswer": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "noul",
+            "title": "Type",
+            "default": "noul"
+          },
+          "noul": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Noul"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "noul"
+        ],
+        "title": "NoulAnswer"
+      },
+      "NoulQuestion": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "noul",
+            "title": "Type",
+            "default": "noul"
+          },
+          "instructions": {
+            "$ref": "#/components/schemas/SystemOneEntry"
+          },
+          "criteria": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/SystemOneEntry"
+                },
+                "propertyNames": {
+                  "enum": [
+                    "false",
+                    "true"
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Criteria"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instructions"
+        ],
+        "title": "NoulQuestion"
       },
       "NounDirectives": {
         "properties": {
@@ -215163,6 +216394,28 @@
           "status": {
             "type": "string",
             "title": "Status"
+          },
+          "last_started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Started At"
+          },
+          "checkpoint_status": {
+            "type": "string",
+            "title": "Checkpoint Status",
+            "default": "none"
+          },
+          "live": {
+            "type": "boolean",
+            "title": "Live",
+            "default": false
           }
         },
         "additionalProperties": false,
@@ -215176,7 +216429,7 @@
           "status"
         ],
         "title": "ProfileView",
-        "description": "The safe profile facts a caller receives after creating one."
+        "description": "The safe profile facts a caller receives after creating one — and the\nsame shape a LISTING returns, so \"the browser you just made\" and \"the\nbrowsers you have\" are never two different vocabularies.\n\n``last_started_at`` / ``checkpoint_status`` / ``live`` are the recognisers:\non a freshly created profile they are honestly None / \"none\" / False."
       },
       "ProjectInputPart": {
         "properties": {
@@ -219318,6 +220571,27 @@
         ],
         "title": "QueryVariant"
       },
+      "Question": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/NoulQuestion"
+          },
+          {
+            "$ref": "#/components/schemas/ChoiceQuestion"
+          },
+          {
+            "$ref": "#/components/schemas/ScoreQuestion"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "type",
+          "mapping": {
+            "choice": "#/components/schemas/ChoiceQuestion",
+            "noul": "#/components/schemas/NoulQuestion",
+            "score": "#/components/schemas/ScoreQuestion"
+          }
+        }
+      },
       "QueueRefreshResult": {
         "properties": {
           "scanned": {
@@ -223006,6 +224280,19 @@
           "extraction_kind"
         ],
         "title": "RegionExtractResponse"
+      },
+      "RegisterDeviceRequest": {
+        "properties": {
+          "registration": {
+            "$ref": "#/components/schemas/DeviceRegistration"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "registration"
+        ],
+        "title": "RegisterDeviceRequest"
       },
       "RegisterSelectedFileRequest": {
         "properties": {
@@ -228358,6 +229645,36 @@
           "queue_item_id"
         ],
         "title": "RetrySubmitRequest"
+      },
+      "RetryThroughHomeComputerResponse": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "device_name": {
+            "type": "string",
+            "title": "Device Name"
+          },
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "run_id",
+          "state",
+          "device_name",
+          "note"
+        ],
+        "title": "RetryThroughHomeComputerResponse",
+        "description": "What happened when a run was moved onto the person's own computer."
       },
       "RevertRequest": {
         "properties": {
@@ -233988,6 +235305,79 @@
         "title": "ScopedBody",
         "description": "Base for every body on this router.\n\nThe FE's `callApi` injects the ambient scope (organization_id / project_id /\ntask_id) into EVERY request body. A bare `extra=\"forbid\"` model therefore\n422s the moment the user has an active org selected — these fields must be\nACCEPTED and ignored (scope here comes from the path + the request's user\ncontext, never the body). `extra=\"forbid\"` stays, so real typos still fail\nloudly."
       },
+      "ScoreAnswer": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "score",
+            "title": "Type",
+            "default": "score"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          },
+          "probabilities": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Probabilities"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Confidence"
+          },
+          "legend": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Legend"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "score",
+          "probabilities",
+          "confidence",
+          "legend"
+        ],
+        "title": "ScoreAnswer"
+      },
+      "ScoreQuestion": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "score",
+            "title": "Type",
+            "default": "score"
+          },
+          "instructions": {
+            "$ref": "#/components/schemas/SystemOneEntry"
+          },
+          "criteria": {
+            "items": {
+              "$ref": "#/components/schemas/SystemOneEntry"
+            },
+            "type": "array",
+            "minItems": 2,
+            "title": "Criteria"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "instructions",
+          "criteria"
+        ],
+        "title": "ScoreQuestion"
+      },
       "ScoreSourcesRequest": {
         "properties": {
           "source_ids": {
@@ -235602,6 +236992,37 @@
               }
             ],
             "title": "Q"
+          },
+          "action_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Key"
+          },
+          "action_status": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "failed",
+                    "ready",
+                    "running",
+                    "skipped"
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Action Status"
           }
         },
         "type": "object",
@@ -247102,6 +248523,16 @@
               }
             ],
             "title": "Runtime Execution Id"
+          },
+          "egress": {
+            "type": "string",
+            "enum": [
+              "always",
+              "auto",
+              "never"
+            ],
+            "title": "Egress",
+            "default": "auto"
           }
         },
         "additionalProperties": false,
@@ -251621,6 +253052,47 @@
         "type": "object",
         "title": "SystemInstructionInput",
         "description": "Structured system prompt on the chat/manual wire.\n\nMirrors ``SystemInstruction.from_value`` dict parsing — callers may send\neither a plain string or this object (agent-builder uses ``content`` +\n``include_date`` + ``intro`` / ``outro``). Downstream ``UnifiedConfig``\nnormalizes both shapes to ``SystemInstruction``."
+      },
+      "SystemOneEntry": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object"
+          },
+          {
+            "items": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "array"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "SystemOneState": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "object"
+          },
+          {
+            "items": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "type": "array"
+          }
+        ]
       },
       "SystemTaskItem": {
         "properties": {
@@ -257202,6 +258674,16 @@
             "title": "Declared In Code",
             "default": false
           },
+          "exists_in_db": {
+            "type": "boolean",
+            "title": "Exists In Db",
+            "default": true
+          },
+          "is_owned": {
+            "type": "boolean",
+            "title": "Is Owned",
+            "default": false
+          },
           "drift_count": {
             "type": "integer",
             "title": "Drift Count",
@@ -262517,6 +263999,35 @@
         "type": "object",
         "title": "UpdateCrmFoldSettingsRequest",
         "description": "Partial update — only the fields the user actually changed."
+      },
+      "UpdateDeviceRequest": {
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "UpdateDeviceRequest"
       },
       "UpdateMessageResponse": {
         "properties": {

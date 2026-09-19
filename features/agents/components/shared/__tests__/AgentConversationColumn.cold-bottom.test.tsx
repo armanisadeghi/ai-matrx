@@ -8,6 +8,12 @@ import messages, {
 } from "@/features/agents/redux/execution-system/messages/messages.slice";
 import conversations from "@/features/agents/redux/execution-system/conversations/conversations.slice";
 import creatorDebug from "@/lib/redux/preferences/creatorDebugSlice";
+// The column's header carries `TranscriptIntegrityCopyButton` since 35ea1916b5
+// (2026-09-18), and that button asks `selectIsSuperAdmin` — i.e. `state.userAuth`.
+// A store without the slice made the selector read `undefined.adminLevel` and the
+// whole column threw at render. The real store always carries it (rootReducer.ts),
+// so the seat mounts the real reducer rather than stubbing the selector.
+import userAuth from "@/lib/redux/slices/userAuthSlice";
 import { loadOlderMessages } from "@/features/agents/redux/execution-system/thunks/load-older-messages.thunk";
 import { AgentConversationColumn } from "../AgentConversationColumn";
 
@@ -203,7 +209,7 @@ describe("AgentConversationColumn cold history anchoring", () => {
 
   it("keeps a cold transcript at newest through delayed growth until the user reads upward", () => {
     const store = configureStore({
-      reducer: { messages, conversations, creatorDebug },
+      reducer: { messages, conversations, creatorDebug, userAuth },
     });
     store.dispatch(
       hydrateMessages({

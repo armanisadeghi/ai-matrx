@@ -91,6 +91,42 @@ export type VaultVerifiedExportActor = VaultExpectedActor & {
   email: string;
 };
 
+export type VaultRestoreResult = Pick<
+  components["schemas"]["VaultRestoreResponse"],
+  "restored_fields" | "restored_attachments" | "already_restored" | "notice"
+>;
+
+export class VaultIdentityConfirmationError extends Error {
+  constructor(
+    public readonly code:
+      | "credentials_rejected"
+      | "context_changed"
+      | "identity_unverified",
+  ) {
+    super(code);
+  }
+}
+
+export class VaultRestoreTransportError extends Error {
+  constructor(
+    public readonly code:
+      | "recent_auth_required"
+      | "context_changed"
+      | "retryable"
+      | "request_rejected",
+  ) {
+    super(
+      code === "recent_auth_required"
+        ? "Confirm your identity before restoring this credential."
+        : code === "context_changed"
+          ? "Your account or request organization changed. Review this credential again."
+          : code === "retryable"
+            ? "We could not confirm whether this credential was restored. Retry with this same recovery record."
+            : "This credential could not be restored. Review its recovery details and try again.",
+    );
+  }
+}
+
 export class VaultLoginExportTransportError extends Error {
   constructor(
     public readonly code:
@@ -160,8 +196,7 @@ async function authHeaders(
     data: { user },
     error: userError,
   } = await supabase.auth.getUser(session.access_token);
-  if (userError || !user)
-    throw new Error("Not signed in");
+  if (userError || !user) throw new Error("Not signed in");
   // Imports reread request context after final auth await; ordinary transport
   // keeps its existing fail-before-auth behavior.
   const organizationId =
@@ -202,6 +237,77 @@ export async function getVaultExportActor(): Promise<VaultVerifiedExportActor> {
   };
 }
 
+/** Confirm a password without retaining it in application state. The caller
+ * owns the uncontrolled input and clears it before and after this call. */
+export async function confirmVaultPasswordIdentity(
+  expectedActor: VaultVerifiedExportActor,
+  password: string,
+  getActor: () => Promise<VaultVerifiedExportActor> = getVaultExportActor,
+): Promise<VaultVerifiedExportActor> {
+  let before: VaultVerifiedExportActor;
+  try {
+    before = await getActor();
+  } catch {
+    throw new VaultIdentityConfirmationError("context_changed");
+  }
+  if (
+    before.userId !== expectedActor.userId ||
+    before.organizationId !== expectedActor.organizationId
+  ) {
+    throw new VaultIdentityConfirmationError("context_changed");
+  }
+  const supabase = createClient();
+  const { data, error: signInError } = await supabase.auth.signInWithPassword({
+    email: expectedActor.email,
+    password,
+  });
+  if (signInError || !data.user || !data.session) {
+    throw new VaultIdentityConfirmationError("credentials_rejected");
+  }
+  const { data: claimData, error: claimsError } = await supabase.auth.getClaims(
+    data.session.access_token,
+  );
+  let actual: VaultVerifiedExportActor;
+  try {
+    actual = await getActor();
+  } catch {
+    throw new VaultIdentityConfirmationError("context_changed");
+  }
+  if (
+    actual.userId !== expectedActor.userId ||
+    actual.organizationId !== expectedActor.organizationId
+  ) {
+    throw new VaultIdentityConfirmationError("context_changed");
+  }
+  if (
+    claimsError ||
+    data.user.id !== expectedActor.userId ||
+    !hasFreshPasswordAmr(claimData?.claims)
+  ) {
+    throw new VaultIdentityConfirmationError("identity_unverified");
+  }
+  return actual;
+}
+
+function hasFreshPasswordAmr(claims: unknown): boolean {
+  if (!claims || typeof claims !== "object" || !("amr" in claims)) return false;
+  const { amr } = claims;
+  if (!Array.isArray(amr)) return false;
+  const now = Math.floor(Date.now() / 1_000);
+  return amr.some((entry) => {
+    if (!entry || typeof entry !== "object") return false;
+    const value = entry as Record<string, unknown>;
+    return (
+      value.method === "password" &&
+      typeof value.timestamp === "number" &&
+      Number.isFinite(value.timestamp) &&
+      value.timestamp > 0 &&
+      value.timestamp <= now &&
+      now - value.timestamp <= 900
+    );
+  });
+}
+
 async function assertVaultExportActor(
   expectedActor: VaultExpectedActor,
 ): Promise<void> {
@@ -214,9 +320,21 @@ async function assertVaultExportActor(
   }
 }
 
-async function exportFailureCode(resp: Response): Promise<
-  VaultLoginExportTransportError["code"]
-> {
+async function assertVaultRestoreActor(
+  expectedActor: VaultExpectedActor,
+): Promise<void> {
+  const actual = await getVaultExportActor();
+  if (
+    actual.userId !== expectedActor.userId ||
+    actual.organizationId !== expectedActor.organizationId
+  ) {
+    throw new VaultRestoreTransportError("context_changed");
+  }
+}
+
+async function exportFailureCode(
+  resp: Response,
+): Promise<VaultLoginExportTransportError["code"]> {
   // The structured recent-auth code is intentionally the only detail the
   // browser reads. Never match server prose, which is neither a stable wire
   // contract nor a safe place for sensitive diagnostics.
@@ -278,7 +396,8 @@ async function vaultExportResponse(
       cache: "no-store",
     });
   } catch (cause) {
-    if (cause instanceof DOMException && cause.name === "AbortError") throw cause;
+    if (cause instanceof DOMException && cause.name === "AbortError")
+      throw cause;
     throw new VaultLoginExportTransportError("unreachable");
   }
   await assertVaultExportActor(expectedActor);
@@ -315,6 +434,97 @@ export async function downloadVaultLoginCsv(
   );
   await assertVaultExportActor(expectedActor);
   return response.blob();
+}
+
+function restoreFailureCode(
+  status: number,
+  body: unknown,
+): VaultRestoreTransportError["code"] {
+  if (
+    status === 403 &&
+    body &&
+    typeof body === "object" &&
+    "code" in body &&
+    body.code === "recent_auth_required"
+  ) {
+    return "recent_auth_required";
+  }
+  return "request_rejected";
+}
+
+function isVaultRestoreResult(value: unknown): value is VaultRestoreResult {
+  if (!value || typeof value !== "object") return false;
+  const restoredFields =
+    "restored_fields" in value ? value.restored_fields : null;
+  const restoredAttachments =
+    "restored_attachments" in value ? value.restored_attachments : null;
+  const alreadyRestored =
+    "already_restored" in value ? value.already_restored : null;
+  const notice = "notice" in value ? value.notice : null;
+  return (
+    typeof restoredFields === "number" &&
+    Number.isInteger(restoredFields) &&
+    restoredFields >= 0 &&
+    typeof restoredAttachments === "number" &&
+    Number.isInteger(restoredAttachments) &&
+    restoredAttachments >= 0 &&
+    typeof alreadyRestored === "boolean" &&
+    notice === "sharing_and_automatic_use_off"
+  );
+}
+
+/** Restore a Vault aggregate through its authenticated server boundary. */
+export async function restoreVaultItem(
+  itemId: string,
+  deletionId: string,
+  expectedActor: VaultExpectedActor,
+  signal?: AbortSignal,
+): Promise<VaultRestoreResult> {
+  const { organizationId, headers: auth } = await authHeaders(
+    expectedActor,
+    () => new VaultRestoreTransportError("context_changed"),
+  );
+  const headers = applyOrganizationContextHeader(auth, organizationId);
+  let response: Response;
+  try {
+    response = await fetch(
+      `${backendBase()}/api/vault/items/${encodeURIComponent(itemId)}/restore`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ deletion_id: deletionId }),
+        signal,
+        cache: "no-store",
+      },
+    );
+  } catch (cause) {
+    if (cause instanceof DOMException && cause.name === "AbortError")
+      throw cause;
+    throw new VaultRestoreTransportError("retryable");
+  }
+  await assertVaultRestoreActor(expectedActor);
+  if (!response.ok) {
+    if ([408, 429, 500, 502, 503, 504].includes(response.status)) {
+      throw new VaultRestoreTransportError("retryable");
+    }
+    let body: unknown = null;
+    try {
+      body = await response.json();
+    } catch {
+      // The HTTP status still provides the safe retry distinction above.
+    }
+    throw new VaultRestoreTransportError(restoreFailureCode(response.status, body));
+  }
+  const body: unknown = await response.json();
+  if (!isVaultRestoreResult(body)) {
+    throw new VaultRestoreTransportError("request_rejected");
+  }
+  return {
+    restored_fields: body.restored_fields,
+    restored_attachments: body.restored_attachments,
+    already_restored: body.already_restored,
+    notice: body.notice,
+  };
 }
 
 async function vaultFetch<T>(

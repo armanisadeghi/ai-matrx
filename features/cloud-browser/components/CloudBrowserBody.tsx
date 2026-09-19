@@ -27,6 +27,7 @@ import { Globe, FileText, Camera, MonitorPlay, BellRing } from "lucide-react";
 import { CLOUD_BROWSER_ASSIST_SURFACE } from "../constants";
 import { useCloudBrowser } from "../hooks/useCloudBrowser";
 import { useCloudBrowserTakeover } from "../hooks/useCloudBrowserTakeover";
+import { useCloudBrowserProfileContextSync } from "../hooks/useCloudBrowserProfileContextSync";
 import { useScreenshotSession } from "../hooks/useScreenshotSession";
 import {
   dismissHandoff,
@@ -34,7 +35,12 @@ import {
   StreamConnectError,
 } from "../service";
 import { BackendApiError } from "@/lib/api/errors";
-import type { StreamTicketEnvelope } from "../types";
+import type {
+  EgressUnavailable,
+  ProgressEvent,
+  RunEgress,
+  StreamTicketEnvelope,
+} from "../types";
 
 import { WrittenProgressFace } from "./WrittenProgressFace";
 import { ScreenshotFace } from "./ScreenshotFace";
@@ -60,6 +66,24 @@ import { AuthenticatorPanel } from "./AuthenticatorPanel";
 
 type FaceTab = "written" | "screenshots" | "takeover";
 
+/**
+ * The NEWEST navigate that said it could not be retried through one of the
+ * person's own computers — read from the tail, so a refusal from ten steps ago
+ * never outlives the page it was about. A run that IS already going out
+ * through a home connection has nothing to offer, so it reports none.
+ */
+function latestEgressRefusal(
+  progress: readonly ProgressEvent[],
+  egress: RunEgress | null,
+): EgressUnavailable | null {
+  if (egress?.kind === "residential") return null;
+  for (let i = progress.length - 1; i >= 0; i -= 1) {
+    const refusal = progress[i]?.egressUnavailable;
+    if (refusal) return refusal;
+  }
+  return null;
+}
+
 export interface CloudBrowserBodyProps {
   initialProfileId?: string;
   /** The exact run to show, when the opener knows it (agent-raised handoff). */
@@ -83,6 +107,9 @@ export function CloudBrowserBody({
   className,
 }: CloudBrowserBodyProps) {
   const cb = useCloudBrowser(initialProfileId, runId);
+  // The browser the person picked here is the browser the agent should use.
+  // Published as a context entry, never as user input (THE USER-INPUT LAW).
+  useCloudBrowserProfileContextSync(conversationId, cb.activeProfile);
   // Rapid = per-session opt-in for visually busy pages; captures are otherwise
   // event-driven (browser tool activity) with a slow idle heartbeat.
   const [rapidShots, setRapidShots] = useState(false);
@@ -501,6 +528,11 @@ export function CloudBrowserBody({
         <TabsContent value="usage" className="min-h-0 flex-1 overflow-auto">
           <TelemetrySurface
             telemetry={cb.telemetry}
+            egress={cb.run?.egress ?? null}
+            egressUnavailable={latestEgressRefusal(
+              cb.progress,
+              cb.run?.egress ?? null,
+            )}
             onRefresh={cb.refreshTelemetry}
           />
         </TabsContent>

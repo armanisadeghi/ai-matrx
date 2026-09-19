@@ -125,7 +125,7 @@ The server resolves the full tool/skill/MCP set from the stored agent definition
 
 When `showTaskAssociation` is enabled by `/work/conversations`, each row and detail header reuse `AssociateTaskButton entityType="conversation"`; that writes the canonical association edge and offers existing-task plus create-task paths without changing the provider binding.
 
-Fidelity is a verdict, never an inference: `event_mirror` says native resume is unavailable and continuation is a seeded handoff; `native` says only that the exact ledger exists and lists the still-required credential/workspace/runtime/lease checks. The page never turns either state into a “Resume” button on its own. Canonical provider vocabulary is storage `claude_code|codex|cursor|vscode`, conversation `source_app` `claude-code|codex|cursor|vscode`, and `source_feature='code-editor'`; the conversation source tree provides the provenance filter.
+Fidelity is a verdict, never an inference: `event_mirror` says native resume is unavailable and continuation is a seeded handoff; `native` says only that the exact ledger exists and lists the still-required credential/workspace/runtime/lease checks. The page never turns either state into a “Resume” button on its own. Canonical provider vocabulary is storage `claude_code|codex|cursor|vscode`, conversation `source_app='code-plugin'` (the one "outside data" test, `isCodePluginSourceApp` in `features/ai-work/lib/providerSource.ts`), and `source_feature` = the tool `claude-code|codex|cursor|vscode` (`CodingSessionProviderMeta.sourceFeature`; Arman, 2026-09-18). A coding-tool slug is never a `source_app`, and `code-editor` belongs to the in-app code editor only; the conversation source tree provides the provenance filter.
 
 ---
 
@@ -175,6 +175,7 @@ Fidelity is a verdict, never an inference: `event_mirror` says native resume is 
 
 ## Change log
 
+- `2026-09-18` — Claude (lane code-plugin-FE): the coding-tool slug moved from conversation `source_app` to `source_feature` under `source_app='code-plugin'` (Arman's ruling). `CodingSessionProviderMeta.sourceApp` is now `sourceFeature`; `PluginsSection` stamps `code-plugin` · tool (it used to fall back to the in-app `code-editor` feature); `verdict.test.ts` pins that every tool is a FEATURE_META entry and never an APP_META one.
 - `2026-08-18` — Closed the MCP false-connection dead end: Agent Connections now routes OAuth through the canonical popup, reserves metadata-only connect for no-auth servers, sends manual strategies to the credential editor, reports connection errors inline, and renders the live tool-discovery inventory instead of hiding it behind “coming later” copy.
 - `2026-08-15` — Coming-soon compliance: the two bare "coming soon" strings in this feature (`HooksSection`, `SubAgentsSection`) became registered promises — `agent-connections.hooks` (planned) and `agent-connections.sub-agents` (blocked on `agent_definition.kind`) in `lib/coming-soon/registry.ts`, with both sections rendering heading + body FROM the registry so the entry and the copy cannot drift.
 - `2026-08-12` — `fetchCodingSessions` replaced its flat 100-row read with keyset pagination (`beforeLastSeenAt` cursor, `hasMore`, limit+1 probe); `useCodingSessions` exposes `loadOlder`/`loadingMore`, and `PluginsSection` swapped the static "latest 100" disclosure for a real "Load older sessions" control.

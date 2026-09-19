@@ -1,97 +1,74 @@
 /**
- * ATTACK-8 §8.1 — THE CHAIR-STEP CONTRACT GETS A FORCING FUNCTION.
+ * THE CHAIR-STEP CONFIRMATION — a chair step runs only when the command NAMES it, and it is
+ * never a job for Arman.
  *
- * `-- chair-step:` stands in for `-- additive: yes` AND `-- guard:` and excuses every
- * non-additive reason, so the one thing it may never be is unattended. ATTACK-7 found it
- * was a `print` statement in the runner both release trains execute. The fix is correct in
- * both languages and had NO test in either — `grep isatty|isTTY` over `db/tests/` and
- * `scripts/__tests__/` returned nothing — and the conformance corpus cannot reach it,
- * because `--judge-only` stops at the verdict and never opens a terminal. So the instance
- * was fixed and the class was not: the next edit to either function reddened nothing.
+ * Until 2026-09-18 this suite drove `confirmChairStep` through a real pty, because the contract
+ * was "a human types the filename at a terminal". That contract is gone (owner ruling, quoted in
+ * scripts/lib/chair-step.ts): agents have no terminal, so every DROP on the platform became a
+ * command handed to the owner, and one unapplied chair step in the swept directory halted every
+ * unattended release. What is proven here instead:
  *
- * THESE TESTS DRIVE A REAL PTY. `process.stdin.isTTY` is a property of the PROCESS, so a
- * mock proves nothing about the branch that matters: the harness runs in a process with an
- * actual terminal on its stdin, opened by `pty.openpty()`. The Python twin,
- * `aidream/db/tests/test_chair_step_confirmation.py`, drives `_confirm_chair_step` through
- * the same primitive and asserts the same three outcomes.
- *
- * RED, proven 2026-09-16 against a mutated copy in a scratch directory: with the `isTTY`
- * guard removed the no-terminal case returns null — the unattended apply ATTACK-7 found.
- * Accept any answer and the third test fails; accept a prefix and the second does.
- *
- * If python3 is absent this suite FAILS as UNMEASURED. It never skips: "the chair step is
- * confirmed at a terminal" is exactly the claim nobody may make without measuring it.
+ *   1. named      → confirmed, with no stdin at all (the shape every agent and every cron has);
+ *   2. not named  → refused, and the refusal tells the reader the flag, WHO runs it, and that it
+ *                   is never Arman;
+ *   3. the RUNNER itself, as a real child process with stdin closed, refuses an unnamed chair
+ *      step BEFORE it loads a credential or opens a connection, and says so.
  */
-import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { writeFileSync, rmSync } from "node:fs";
 import { resolve } from "node:path";
+import { chairStepRefusal, confirmChairStep } from "../lib/chair-step";
 
-const ROOT = resolve(__dirname, "..", "..");
-const HARNESS = resolve(__dirname, "fixtures", "chair-step-harness.ts");
-const FILE = "custom_entity_types_detail_variant_down.sql";
-const WHY = "§8.9 step 3a, the one production undo";
+const FILE = "zz_example_drop.sql";
+const WHY = "drops one index nobody reads";
 
-/**
- * A REAL TERMINAL, via `pty.openpty()` in a two-dozen-line Python driver.
- *
- * `script(1)` is the obvious tool and cannot be used from a test runner: on macOS it calls
- * `tcgetattr` on its OWN stdin, which is a pipe under Jest, and dies with
- * "Operation not supported on socket" before the command ever starts. `pty.openpty()` is
- * the same primitive without that requirement, and python3 is on every machine this repo
- * runs on. Absent = UNMEASURED, never skipped.
- */
-const PTY_RUN = resolve(__dirname, "fixtures", "pty-run.py");
-
-function python3Exists(): boolean {
-  const probe = spawnSync("sh", ["-c", "command -v python3"], { encoding: "utf8" });
-  return probe.status === 0 && probe.stdout.trim().length > 0;
-}
-
-function resultOf(output: string): string | null {
-  const line = output.split("\n").find((l) => l.startsWith("RESULT "));
-  if (!line) throw new Error(`the harness printed no RESULT line. Got:\n${output}`);
-  return JSON.parse(line.slice("RESULT ".length)) as string | null;
-}
-
-/** Run the harness on a REAL pty, typing `answer` at its prompt. */
-function inATerminal(answer: string): string | null {
-  const res = spawnSync(
-    "python3",
-    [PTY_RUN, answer, "--", "npx", "tsx", HARNESS, FILE, WHY],
-    { cwd: ROOT, encoding: "utf8", timeout: 180_000 },
-  );
-  return resultOf(`${res.stdout ?? ""}${res.stderr ?? ""}`);
-}
-
-describe("the chair-step confirmation, driven through a real pty", () => {
-  it("has a harness and a pty driver to run it on — otherwise this suite is UNMEASURED", () => {
-    expect(existsSync(HARNESS)).toBe(true);
-    expect(existsSync(PTY_RUN)).toBe(true);
-    expect(python3Exists()).toBe(true);
+describe("the chair-step confirmation", () => {
+  it("CONFIRMS when the command named this file — no terminal, no prompt", async () => {
+    await expect(confirmChairStep(FILE, WHY, [FILE])).resolves.toBeNull();
+    await expect(confirmChairStep(FILE, WHY, ["other.sql", FILE])).resolves.toBeNull();
   });
 
-  it("REFUSES a process with no terminal — the shape both release crons have", () => {
-    const out = execFileSync("npx", ["tsx", HARNESS, FILE, WHY], {
-      cwd: ROOT,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"],
-      timeout: 120_000,
-    });
-    const result = resultOf(out);
-    expect(result).not.toBeNull();
-    expect(result).toContain("NO TERMINAL");
-    expect(result).toContain(WHY);
-    expect(result).toContain("Run it by hand, from a terminal");
+  it("REFUSES when the command did not name it, or named a different file", async () => {
+    await expect(confirmChairStep(FILE, WHY, [])).resolves.toBe(chairStepRefusal(FILE, WHY));
+    await expect(confirmChairStep(FILE, WHY, ["zz_example_drop"])).resolves.toBe(chairStepRefusal(FILE, WHY));
+    await expect(confirmChairStep(FILE, WHY, ["other.sql"])).resolves.toBe(chairStepRefusal(FILE, WHY));
   });
 
-  it("REFUSES at a terminal when the filename is not typed back exactly", () => {
-    const result = inATerminal(FILE.slice(0, -4));
-    expect(result).not.toBeNull();
-    expect(result).toContain("chair step NOT confirmed");
-    expect(result).toContain("Nothing ran.");
+  it("tells the reader the flag, who runs it, and that it is never Arman", () => {
+    const text = chairStepRefusal(FILE, WHY);
+    expect(text).toContain(`--confirm-chair-step ${FILE}`);
+    expect(text).toContain("Opus, Fable, Sol, Astra");
+    expect(text).toContain("hands it UP");
+    expect(text).toContain("NEVER handed to Arman");
+    expect(text).toContain("migrations/inverse/");
+    // The retired contract must not creep back into the words.
+    expect(text).not.toMatch(/terminal|TTY|type the filename/i);
   });
 
-  it("CONFIRMS at a terminal when the filename is typed back exactly", () => {
-    expect(inATerminal(FILE)).toBeNull();
+  it("the real runner refuses an UNNAMED chair step with stdin closed, before any connection", () => {
+    // The runner refuses any file outside migrations/, so the probe lives where a real pending
+    // chair step lives: migrations/inverse/, the directory no release sweeps. Unique per process,
+    // removed in `finally`, and it could not run even if it were left behind — it is unnamed.
+    const probe = `zz_chair_step_probe_${process.pid}.sql`;
+    const file = resolve(__dirname, "..", "..", "migrations", "inverse", probe);
+    writeFileSync(file, `-- chair-step: ${WHY}\ndrop index if exists public.zz_never_existed;\n`);
+    try {
+      const runner = resolve(__dirname, "..", "apply-migration.ts");
+      const cli = resolve(__dirname, "..", "..", "node_modules", "tsx", "dist", "cli.mjs");
+      const res = spawnSync(process.execPath, [cli, runner, file, "--target", "production"], {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+        // No database credential may be needed to be refused: prove it by withholding them.
+        env: { PATH: process.env.PATH ?? "", HOME: process.env.HOME ?? "", NODE_ENV: process.env.NODE_ENV ?? "test" },
+        timeout: 120_000,
+      });
+      const out = `${res.stdout}\n${res.stderr}`;
+      expect(res.status).toBe(1);
+      expect(out).toContain(`--confirm-chair-step ${probe}`);
+      expect(out).toContain("NEVER handed to Arman");
+      expect(out).not.toMatch(/Applied and ledgered/);
+    } finally {
+      rmSync(file, { force: true });
+    }
   });
 });

@@ -41,6 +41,15 @@ jest.mock(
 );
 
 import CreateProjectWithTasksRenderer from "@/features/matrx-envelope/directives/createProjectWithTasks/CreateProjectWithTasksRenderer";
+// The card opens the created project IN PLACE through the Detail primitive
+// (`useOpenItemPresentation` → `useOpenDetail` → `useDetailHost`), and since the
+// Detail primitive landed (6732bc0795, 2026-09-17) that hook THROWS rather than
+// silently doing nothing when no host is mounted — which is right, and which
+// killed this suite at render before it could read a single sentence. The stub
+// ports are the shared seat every other Detail-touching suite uses; the card's
+// open action is not what this suite asserts, only its words are.
+import { DetailHostProvider } from "@/lib/detail/host";
+import { makePorts } from "@/lib/detail/__tests__/harness";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -70,7 +79,9 @@ function render(): { text: string; cleanup: () => void } {
     root = createRoot(host);
     root.render(
       <Provider store={configureStore({ reducer: { overlay: overlayReducer } })}>
-        <CreateProjectWithTasksRenderer directive={directive} />
+        <DetailHostProvider ports={makePorts()}>
+          <CreateProjectWithTasksRenderer directive={directive} />
+        </DetailHostProvider>
       </Provider>,
     );
   });

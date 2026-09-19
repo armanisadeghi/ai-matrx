@@ -119,6 +119,7 @@ export const FIXTURE_RUN: CloudBrowserRun = {
   stoppedAt: null,
   errorCode: null,
   errorDetailSafe: null,
+  egress: null,
 };
 
 export const FIXTURE_PROGRESS: ProgressEvent[] = [
@@ -196,7 +197,7 @@ export const FIXTURE_TELEMETRY: TelemetrySnapshot = {
 export const FIXTURE_CONSENT: CloudBrowserConsent = {
   unattendedLogin: true,
   sessionHealthChecks: true,
-  totpDelegation: false,
+  totpDelegation: true,
   sensitiveActionsRequireHuman: true,
 };
 

@@ -343,12 +343,45 @@ function isRecordValue(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-/** Best-effort draft instance from a JSON Schema node (defaults > examples > const > enum > type placeholder). */
+/** Resolve a LOCAL JSON pointer (`#/$defs/x`) against the document root. */
+function resolveLocalRef(root: unknown, ref: string): unknown {
+  if (!ref.startsWith("#/")) return null;
+  let cursor: unknown = root;
+  for (const raw of ref.slice(2).split("/")) {
+    const segment = raw.replace(/~1/g, "/").replace(/~0/g, "~");
+    if (!isRecordValue(cursor)) return null;
+    cursor = cursor[segment];
+  }
+  return cursor;
+}
+
+/**
+ * Best-effort draft instance from a JSON Schema node (defaults > examples >
+ * const > enum > type placeholder).
+ *
+ * 🚨 `__kind` IS PART OF THE DATA (KINDS_EVERYWHERE_PLAN §4.2a). A schema that
+ * declares the marker (every emitted kind schema does — `injectKind: true`)
+ * gets it pre-filled from its `const`, as the FIRST key, at every level that
+ * declares it — nested child kinds included, reached through local `$ref`s.
+ * `options.kind` stamps the ROOT with the authoritative slug even when the
+ * schema (a raw proposal) does not declare it yet.
+ */
 export function draftSampleFromJsonSchema(
   node: unknown,
-  depth = 0,
+  options: { kind?: string } = {},
 ): unknown {
+  const draft = draftNode(node, 0, node);
+  if (!options.kind || !isRecordValue(draft)) return draft;
+  const stamped: Record<string, unknown> = { [KIND_KEY]: options.kind, ...draft };
+  stamped[KIND_KEY] = options.kind;
+  return stamped;
+}
+
+function draftNode(node: unknown, depth: number, root: unknown): unknown {
   if (!isRecordValue(node) || depth > DRAFT_DEPTH_LIMIT) return null;
+  if (typeof node.$ref === "string") {
+    return draftNode(resolveLocalRef(root, node.$ref), depth + 1, root);
+  }
   if (node.default !== undefined) return node.default;
   if (Array.isArray(node.examples) && node.examples.length > 0) {
     return node.examples[0];
@@ -361,7 +394,7 @@ export function draftSampleFromJsonSchema(
     const first = variants.find(
       (v) => isRecordValue(v) && v.type !== "null",
     );
-    if (first) return draftSampleFromJsonSchema(first, depth + 1);
+    if (first) return draftNode(first, depth + 1, root);
   }
 
   const type = Array.isArray(node.type)
@@ -381,7 +414,7 @@ export function draftSampleFromJsonSchema(
     case "null":
       return null;
     case "array": {
-      const item = draftSampleFromJsonSchema(node.items, depth + 1);
+      const item = draftNode(node.items, depth + 1, root);
       return item === null && !isRecordValue(node.items) ? [] : [item];
     }
     case "object":
@@ -391,9 +424,14 @@ export function draftSampleFromJsonSchema(
         return type === "object" || type === undefined ? {} : null;
       }
       const out: Record<string, unknown> = {};
+      // The marker leads — a declared `__kind` is filled (from its const)
+      // before any data field, never skipped.
+      if (KIND_KEY in properties) {
+        out[KIND_KEY] = draftNode(properties[KIND_KEY], depth + 1, root);
+      }
       for (const [key, child] of Object.entries(properties)) {
-        if (key === KIND_KEY) continue;
-        out[key] = draftSampleFromJsonSchema(child, depth + 1);
+        if (key in out) continue;
+        out[key] = draftNode(child, depth + 1, root);
       }
       return out;
     }

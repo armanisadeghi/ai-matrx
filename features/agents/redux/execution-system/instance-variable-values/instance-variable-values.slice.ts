@@ -314,6 +314,25 @@ const instanceVariableValuesSlice = createSlice({
     },
 
     /**
+     * Drop named entries from `scopeValues`. Used by the bound-variable runtime when a
+     * value it folded in stops resolving (its scope was deactivated), so the input never
+     * keeps showing a value that is no longer sent.
+     */
+    removeScopeVariableValues(
+      state,
+      action: PayloadAction<{ conversationId: string; names: string[] }>,
+    ) {
+      const { conversationId, names } = action.payload;
+      const entry = state.byConversationId[conversationId];
+      if (!entry) return;
+      // A name the surface mapper currently owns is its to replace, not ours to drop.
+      const surfaceOwned = entry.surfaceValueNames ?? [];
+      for (const name of names) {
+        if (!surfaceOwned.includes(name)) delete entry.scopeValues[name];
+      }
+    },
+
+    /**
      * Replace the surface-owned subset of `scopeValues` with a freshly mapped
      * live provider scope. User values remain in their higher-priority tier;
      * unrelated active-scope values remain untouched.
@@ -421,6 +440,7 @@ export const {
   setScopeVariableValues,
   setRuntimeVariableResourcePolicy,
   mergeScopeVariableValues,
+  removeScopeVariableValues,
   replaceSurfaceVariableValues,
   resetUserVariableValues,
   clearSubmittedVariableResourcePolicies,

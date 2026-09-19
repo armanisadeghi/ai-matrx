@@ -504,6 +504,10 @@ export function ShareWithUserTab({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="viewer">Viewer</SelectItem>
+              {/* `commenter` joined `public.permission_level` and the generated
+                  `Constants` on 2026-09-18 (30e05dbd80). A level the database
+                  accepts and no picker offers is a capability nobody can grant. */}
+              <SelectItem value="commenter">Commenter</SelectItem>
               <SelectItem value="editor">Editor</SelectItem>
               {/* THE SCOPE-QUALIFIED ADMIN RULE (access/DECISIONS.md 2026-09-10): the heading
                   above is "Permission Level", which names no item, so the bare "Admin" is

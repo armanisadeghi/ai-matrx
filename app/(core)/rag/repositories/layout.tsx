@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/knowledge/repositories", {
   titlePrefix: "Repositories",
   title: "Knowledge",
   description: "Manage document repositories connected to your Knowledge pipeline.",
-  letter: "Rp",
+  letter: "RRP",
 });
 
 export default function RagRepositoriesLayout({

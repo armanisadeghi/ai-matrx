@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/demo", {
   titlePrefix: "Container Drop",
   title: "Demo",
   description: "SSR container drop interaction demo",
-  letter: "Dt",
+  letter: "CDP",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

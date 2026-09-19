@@ -30,7 +30,7 @@ export const metadata = createRouteMetadata("/chat", {
   titlePrefix: "SSR",
   title: "Chat",
   description: "SSR-first chat shell with panel sidebar and mobile chrome",
-  letter: "Cs",
+  letter: "DCH",
 });
 
 export default function ChatLayout({

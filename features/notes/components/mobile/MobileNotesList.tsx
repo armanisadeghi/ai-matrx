@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState, useMemo } from "react";
-import { draftInitializationErrorMessage } from "../../redux/thunks";
+import { noteCreateErrorMessage } from "../../utils/writeErrors";
 import { selectNotesListError, selectNotesListStatus } from "../../redux/selectors";
 import { useNoteContentSearch } from "../../hooks/useNoteContentSearch";
 import { idMatchesQuery } from "@ai-matrx/kit/search-scoring";
@@ -168,7 +168,7 @@ export default function MobileNotesList({
     } catch (error) {
       // A tap that does nothing is a lying screen: say why, in words.
       console.error("Error creating note:", error);
-      toast.error(draftInitializationErrorMessage(error));
+      toast.error(noteCreateErrorMessage(error));
     }
   };
 

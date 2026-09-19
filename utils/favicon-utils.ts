@@ -39,8 +39,14 @@ function isMetadataIconsMap(
 export const DEMO_COLOR = "#ca8a04";
 /** Tests / experimental / beta family — lime green. */
 export const TEST_COLOR = "#65a30d";
-/** Administration family — deep indigo (distinct from the red app accent). */
-export const ADMIN_COLOR = "#4338ca";
+/**
+ * Administration family — near-black graphite (Arman, 2026-09-18: "Need a good
+ * color for admin — maybe black or gray"). It is the only near-neutral badge in
+ * the palette, so an admin tab is identifiable at 16px without reading the
+ * letter, and white letters sit on it at maximum contrast. Deliberately not pure
+ * `#000` — that dissolves into a dark tab bar.
+ */
+export const ADMIN_COLOR = "#111827";
 
 /**
  * Stable fallback palette for routes that have not been curated in

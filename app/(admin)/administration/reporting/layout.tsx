@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/administration", {
   title: "Reporting",
   description:
     "Review platform reports, quality findings, events, and system inventories.",
-  letter: "RP",
+  letter: "RPT",
   canonicalPath: "/administration/reporting",
 });
 

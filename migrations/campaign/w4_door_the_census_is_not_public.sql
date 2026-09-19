@@ -1,0 +1,16 @@
+-- target: branch,production
+-- additive: yes
+-- guard: custom/system_enabled
+-- allows: revoke custom
+--
+-- W4-DOOR-RECORD — THE NEW CENSUS FUNCTION TAKES PostgreSQL'S DEFAULT PUBLIC GRANT BACK.
+--
+-- `custom.doors_not_on_one_ladder()` is not SECURITY DEFINER, so the DDL guard that strips
+-- the default PUBLIC grant from definer functions never saw it and PostgreSQL's own default
+-- stood: `anon` held EXECUTE on it the moment it was created. That is exactly the class
+-- `w4_door_anon_reaches_nothing_in_custom.sql` closed this morning, re-opened by one new
+-- function — so it is closed the same way, and its two sibling censuses
+-- (doors_not_deciding_the_caller, doors_not_deciding_the_record) already hold
+-- `{postgres=X/postgres}` and nothing else, which is what this makes it hold too.
+-- Nobody but the owner runs a census: `pnpm check:store-doors-decide` connects as `postgres`.
+REVOKE ALL ON FUNCTION custom.doors_not_on_one_ladder() FROM PUBLIC;

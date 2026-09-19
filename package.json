@@ -1,6 +1,6 @@
 {
   "name": "app-matrx",
-  "version": "0.4.2058",
+  "version": "0.4.2077",
   "private": true,
   "scripts": {
     "dev": "bash scripts/dev-cleanup.sh reap && NODE_OPTIONS='--max-old-space-size=3072 --dns-result-order=ipv4first' next dev",
@@ -44,6 +44,9 @@
     "check:realtime-tools:strict": "tsx scripts/check-realtime-tools-drift.ts --strict",
     "check:agent-submit-content": "tsx scripts/check-agent-submit-content-gates.ts",
     "test": "jest --no-coverage",
+    "jest-health": "node scripts/jest-health.mjs",
+    "jest-health:strict": "node scripts/jest-health.mjs --strict",
+    "jest-health:self-test": "node scripts/jest-health.mjs --self-test",
     "test:unit": "jest --no-coverage",
     "test:window-panels": "jest features/window-panels/__tests__ --no-coverage",
     "test:content-ir": "jest features/content-ir --no-coverage",
@@ -210,6 +213,8 @@
     "check:access-errors:write": "tsx scripts/access-errors/check-access-errors.ts --write",
     "check:access-errors:self-test": "tsx scripts/access-errors/narrowed-read.self-test.ts",
     "check:dead-ends": "tsx scripts/dead-ends/check-dead-ends.ts",
+    "check:favicon-letters": "tsx scripts/check-favicon-letters.ts",
+    "check:favicon-letters:self-test": "tsx scripts/check-favicon-letters.ts --self-test",
     "check:dead-ends:write": "tsx scripts/dead-ends/check-dead-ends.ts --write",
     "check:dead-ends:strict": "tsx scripts/dead-ends/check-dead-ends.ts --strict",
     "check:unwired": "tsx scripts/unwired/check-unwired.ts",
@@ -280,6 +285,7 @@
     "test:vercel-ignore": "node --test scripts/vercel-ignore-build.test.mjs",
     "test:preview-install-guard": "node --test scripts/preview-install-guard.test.mjs",
     "test:worktree-node-modules": "bash scripts/test-worktree-node-modules.sh",
+    "test:worktree-next-bin-resolution": "bash scripts/test-worktree-next-bin-resolution.sh",
     "check:agent-links": "tsx scripts/check-agent-links.ts",
     "check:agent-links:self-test": "tsx scripts/check-agent-links.ts --self-test",
     "check:cross-deployment-links": "tsx scripts/check-cross-deployment-links.ts",
@@ -337,6 +343,8 @@
     "check:client-hard-delete": "tsx scripts/check-client-hard-delete.ts",
     "check:client-hard-delete:strict": "tsx scripts/check-client-hard-delete.ts --strict",
     "check:soft-delete-cascade": "tsx scripts/check-soft-delete-cascade.ts",
+    "check:hidden-alerts": "tsx scripts/check-hidden-alerts.ts",
+    "check:hidden-alerts:self-test": "tsx scripts/check-hidden-alerts.ts --self-test",
     "check:soft-delete-unique": "tsx scripts/check-soft-delete-unique.ts",
     "check:soft-delete-unique:strict": "tsx scripts/check-soft-delete-unique.ts --strict",
     "check:soft-delete-cascade:strict": "tsx scripts/check-soft-delete-cascade.ts --strict",
@@ -524,7 +532,11 @@
     "check:access-kernel-bounded": "tsx scripts/check-access-kernel-bounded.ts",
     "check:access-kernel-bounded:strict": "tsx scripts/check-access-kernel-bounded.ts --strict",
     "check:access-kernel-bounded:self-test": "tsx scripts/check-access-kernel-bounded.ts --self-test",
-    "check:entity-types:self-test": "tsx scripts/generate-entity-types.ts --self-test"
+    "check:entity-types:self-test": "tsx scripts/generate-entity-types.ts --self-test",
+    "check:campaign-ramp-ids": "tsx scripts/check-campaign-ramp-ids.ts",
+    "check:campaign-ramp-ids:self-test": "tsx scripts/check-campaign-ramp-ids.ts --self-test",
+    "check:store-doors-decide": "tsx scripts/check-store-doors-decide.ts",
+    "check:store-doors-decide:self-test": "tsx scripts/check-store-doors-decide.ts --self-test"
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",
@@ -544,6 +556,8 @@
     "@ai-matrx/messaging": "latest",
     "@ai-matrx/print": "latest",
     "@ai-matrx/realtime": "latest",
+    "@ai-matrx/records": "latest",
+    "@ai-matrx/records-ui": "latest",
     "@ai-matrx/tap-target": "latest",
     "@ai-sdk/google": "^4.0.68",
     "@anthropic-ai/sdk": "latest",
@@ -815,7 +829,8 @@
       "react": "latest",
       "react-dom": "latest",
       "@types/react": "latest",
-      "@types/react-dom": "latest"
+      "@types/react-dom": "latest",
+      "@ai-matrx/records": "latest"
     },
     "ignoredBuiltDependencies": [
       "@tsparticles/engine",

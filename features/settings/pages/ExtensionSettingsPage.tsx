@@ -1,13 +1,75 @@
 // app/(authenticated)/settings/extension/page.tsx
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { formatDurationSeconds } from '@ai-matrx/kit/format';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Copy, Check, RefreshCw, TriangleAlert } from 'lucide-react';
 import { Chrome } from '@/components/icons/brand-icons';
+import {
+  MATRX_EXTEND_STORE_URL,
+} from '@/lib/extension-bridge/chrome-rpc';
+import { hasOwnBrowserExtension } from '@/lib/extension-bridge/handToOwnBrowser';
 import { toast } from "@/lib/toast";
+
+/**
+ * Is the extension actually in THIS browser?
+ *
+ * 🚨 This page used to begin at step two. It explained how to connect an
+ * extension without ever saying how to get one, and without checking whether
+ * the person already had it — so somebody sent here because a capture is
+ * waiting on the extension read a page about pairing codes and learned nothing
+ * (owner, 2026-09-18: *"Has it checked if I have the extension installed or
+ * does it tell me how to get it if not? no."*).
+ *
+ * Answered by asking the extension, never by a stored flag: an extension can be
+ * removed or disabled between one page load and the next.
+ */
+function InstalledHere() {
+  const [state, setState] = useState<'checking' | 'installed' | 'missing'>(
+    'checking',
+  );
+
+  useEffect(() => {
+    let alive = true;
+    void hasOwnBrowserExtension().then((found) => {
+      if (alive) setState(found ? 'installed' : 'missing');
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (state === 'checking') return null;
+
+  if (state === 'installed') {
+    return (
+      <Card className="flex items-center gap-3 p-3 md:p-4">
+        <Check className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+        <p className="text-sm text-muted-foreground">
+          The Matrx extension is installed in this browser. Use the code below
+          if it is asking you to sign in.
+        </p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:gap-3 md:p-4">
+      <Button asChild size="sm" className="gap-1.5 self-start sm:self-auto">
+        <a href={MATRX_EXTEND_STORE_URL} target="_blank" rel="noopener noreferrer">
+          <Chrome className="h-3.5 w-3.5" />
+          Add to Chrome
+        </a>
+      </Button>
+      <p className="text-sm text-muted-foreground">
+        The Matrx extension is not in this browser yet. Add it, then come back
+        here for the code that connects it to your account.
+      </p>
+    </Card>
+  );
+}
 
 /**
  * Extension Authentication Page
@@ -61,6 +123,7 @@ export default function ExtensionAuthPage() {
 
   return (
     <div className="p-4 md:p-6 lg:p-8 max-w-5xl mx-auto space-y-4 md:space-y-6">
+      <InstalledHere />
       <Card className="p-4 md:p-6">
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-1">

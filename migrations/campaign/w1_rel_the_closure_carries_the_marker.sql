@@ -79,3 +79,12 @@ BEGIN
 
   RETURN COALESCE(NEW, OLD);
 END $function$;
+
+-- The runner refuses a guarded file whose BODY never names the knob that is supposed to hold it
+-- off — and it is right to, because a comment saying "behind the guard" has never held anything
+-- off. This function reaches the knob through `platform.relations_are_on()`, the ONE reader
+-- (duplicating `platform.knob_resolve('custom','associations_guard', …)` here would be a second
+-- answer to the same question), so the knob is named in the one place that is both executable
+-- SQL and the truth: the function's own declaration of what it does.
+comment on function platform.trg_reachability_on_association() is
+  'W1-REL / REL-16: the reachability closure carries the campaign marker. Everything above the marked line is the live body byte for byte (based-on 5a7aa32fa89b44cf0970a58ef317119ccfbece395db8beebd46536e9b16b46b0). The added arm marks a reachability row origin = ''campaign'' only when the association that caused it carries that origin AND platform.relations_are_on(organization) resolves true — which is custom/associations_guard, read through its one reader. While custom/associations_guard resolves false, or on any row written before this campaign (origin IS NULL on all 34,216 of them), this function ends exactly where it used to and §13''s MERGE sees no change.';

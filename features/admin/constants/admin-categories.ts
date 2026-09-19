@@ -383,6 +383,14 @@ export const adminCategoriesData: AdminCategory[] = [
         iconName: "Link2",
         link: "/administration/ai/ai-models/aliases",
       },
+      {
+        title: "Decisions",
+        description:
+          "Run a typed decision with catalog-backed decision models, inspect its probabilities and cost, then reload it by execution ID.",
+        iconName: "Scale",
+        link: "/administration/ai/ai-models/decisions",
+        isNew: true,
+      },
     ],
   },
   {

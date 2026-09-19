@@ -256,6 +256,7 @@ export default function AddProviderModelDialog({
                     ...templateOptions.other,
                   ].map((model) => model.id)}
                   catalogVariant="admin"
+                  selectionPurpose="admin"
                   priorityModelIds={templateOptions.same.map(
                     (model) => model.id,
                   )}

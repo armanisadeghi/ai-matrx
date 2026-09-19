@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@ai-matrx/design-system";
 import { ModelListDropdown } from "@/features/ai-models/components/lab/ModelListDropdown";
+import { hasCompatibleDecisionInteraction } from "@/features/ai-models/capabilities/types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,9 +48,7 @@ import { useOpenImpactBatchWindow } from "@/features/overlays/openers/impactBatc
 import { toast } from "@/lib/toast";
 import type { LLMParams } from "@/features/agents/types/agent-api-types";
 import { cn } from "@/lib/utils";
-import {
-  MOBILE_TABLE_FROZEN,
-} from "@/components/official/mobile-table/mobileTable";
+import { MOBILE_TABLE_FROZEN } from "@/components/official/mobile-table/mobileTable";
 
 interface DeprecatedModelsAuditProps {
   allModels: AiModel[];
@@ -895,10 +894,16 @@ export default function DeprecatedModelsAudit({
                             updateEntry(model.id, { replacementId })
                           }
                           inputModalities={[]}
-                          allowedModelIds={activeModels.map(
-                            (candidate) => candidate.id,
-                          )}
+                          allowedModelIds={activeModels
+                            .filter((candidate) =>
+                              hasCompatibleDecisionInteraction(
+                                entry.model.capabilities,
+                                candidate.capabilities,
+                              ),
+                            )
+                            .map((candidate) => candidate.id)}
                           catalogVariant="admin"
+                          selectionPurpose="admin"
                           placeholder="Select replacement..."
                           className="h-7 w-full max-w-[240px] justify-between text-xs"
                           disabled={entry.replacing}

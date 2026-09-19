@@ -51,6 +51,8 @@ import {
 } from "@/lib/contract/narrow";
 import type {
     ActionDeclaration,
+    ActionOutcome,
+    ActionOutcomeStatus,
     EstimateResult,
     JobDetailResponse,
     JobListResponse,
@@ -380,6 +382,23 @@ export function parseLibraryMetrics(
         );
     }
 
+    // §4.3. Absent is `{}` for the same reason it is on a Source row: an older
+    // server sends nothing here, and a header that refused for it would blank a
+    // working Library over a count it does not have yet.
+    const actionOutcomes: LibraryMetrics["action_outcomes"] = {};
+    for (const [key, entry] of Object.entries(
+        obj(row.action_outcomes ?? {}, `${field}.action_outcomes`),
+    )) {
+        const bucket = obj(entry, `${field}.action_outcomes.${key}`);
+        actionOutcomes[key] = {
+            ready: number(bucket.ready, `${field}.action_outcomes.${key}.ready`),
+            running: number(bucket.running, `${field}.action_outcomes.${key}.running`),
+            skipped: number(bucket.skipped, `${field}.action_outcomes.${key}.skipped`),
+            failed: number(bucket.failed, `${field}.action_outcomes.${key}.failed`),
+        };
+    }
+    const lastAction = obj(row.last_action ?? {}, `${field}.last_action`);
+
     const dateRange = obj(row.date_range ?? {}, `${field}.date_range`);
     const engagement = obj(row.engagement ?? {}, `${field}.engagement`);
 
@@ -455,6 +474,14 @@ export function parseLibraryMetrics(
             ),
         },
         transcripts,
+        action_outcomes: actionOutcomes,
+        last_action: {
+            ready: number(lastAction.ready, `${field}.last_action.ready`),
+            running: number(lastAction.running, `${field}.last_action.running`),
+            skipped: number(lastAction.skipped, `${field}.last_action.skipped`),
+            failed: number(lastAction.failed, `${field}.last_action.failed`),
+        },
+        untouched: number(row.untouched, `${field}.untouched`),
         stale: optBool(row.stale, `${field}.stale`, false),
     };
 }
@@ -463,6 +490,88 @@ export function parseLibraryMetrics(
 export function parseMetricsResponse(payload: unknown): Parsed<LibraryMetrics> {
     const problems: string[] = [];
     return { value: parseLibraryMetrics(payload, "the numbers", problems), problems };
+}
+
+/* ───────────────────────────────────────────── §4.3 action outcomes ───── */
+
+/**
+ * One Action's outcome, or `null` when it cannot be read.
+ *
+ * 🚨 REFUSES TO `null` RATHER THAN THROWING, and that is the whole point.
+ * `parseVideoRow` refuses a Source whose `id` or `url` it cannot read, because
+ * a row with no address is not a row. An outcome is different: it is a LINE
+ * ABOUT the Source, and losing the Source because the note attached to it is
+ * malformed would be strictly worse than losing the note. So a bad outcome is
+ * dropped and the Source still lists — the same per-entry rule `mapListRows`
+ * keeps for a page of rows, one level down.
+ *
+ * A `sentence` is REQUIRED. An outcome without one would render as a status
+ * badge over an empty line, which is the silent failure the projection exists
+ * to remove; a row like that is dropped rather than shown half-honest.
+ */
+function parseActionOutcome(
+    payload: unknown,
+    field: string,
+    key: string,
+): ActionOutcome | null {
+    if (payload === null || payload === undefined || typeof payload !== "object") {
+        return null;
+    }
+    const row = payload as Record<string, unknown>;
+    const sentence = typeof row.sentence === "string" ? row.sentence.trim() : "";
+    const at = typeof row.at === "string" ? row.at : "";
+    const status = typeof row.status === "string" ? row.status : "";
+    if (!sentence || !at || !status) return null;
+    return {
+        action_key: typeof row.action_key === "string" && row.action_key ? row.action_key : key,
+        job_id: typeof row.job_id === "string" && row.job_id ? row.job_id : null,
+        // Enum-ish, read as text and passed through — the header's rule: a member
+        // this build has not heard of costs a label, never a screen.
+        status: status as ActionOutcomeStatus,
+        sentence,
+        at,
+    };
+}
+
+/**
+ * Every Action that has finished on one Source.
+ *
+ * ABSENT IS `{}`, NEVER A REFUSAL. A server that predates §4.3 sends no such
+ * key at all, and a client and a server deploy minutes apart — so a missing
+ * field means "this build has nothing to say about it", which renders as a dash,
+ * not as an unreadable-shape banner over a working Library.
+ */
+function parseActionOutcomes(
+    payload: unknown,
+    field: string,
+): Record<string, ActionOutcome> {
+    if (payload === null || payload === undefined || typeof payload !== "object") {
+        return {};
+    }
+    const out: Record<string, ActionOutcome> = {};
+    for (const [key, entry] of Object.entries(payload as Record<string, unknown>)) {
+        const parsed = parseActionOutcome(entry, `${field}.${key}`, key);
+        if (parsed) out[key] = parsed;
+    }
+    return out;
+}
+
+/**
+ * The line the row shows. The server sends it; when it did not (an older build,
+ * or an outcome that failed to read), it is DERIVED from the map rather than
+ * left blank — the same fact, from the same payload, so the two can never
+ * disagree about which Action ran last.
+ */
+function latestOutcome(
+    sent: unknown,
+    outcomes: Record<string, ActionOutcome>,
+    field: string,
+): ActionOutcome | null {
+    const parsed = parseActionOutcome(sent, field, "");
+    if (parsed) return parsed;
+    const all = Object.values(outcomes);
+    if (!all.length) return null;
+    return all.reduce((latest, entry) => (entry.at > latest.at ? entry : latest));
 }
 
 /* ───────────────────────────────────────────────── §4.2 sources ───────── */
@@ -477,6 +586,10 @@ export function parseMetricsResponse(payload: unknown): Parsed<LibraryMetrics> {
  */
 export function parseVideoRow(payload: unknown, field: string): VideoRow {
     const row = obj(payload, field);
+    const actionOutcomes = parseActionOutcomes(
+        row.action_outcomes,
+        `${field}.action_outcomes`,
+    );
     return {
         id: str(row.id, `${field}.id`),
         external_id: text(row.external_id, `${field}.external_id`),
@@ -512,6 +625,8 @@ export function parseVideoRow(payload: unknown, field: string): VideoRow {
             row.transcript_lane,
             `${field}.transcript_lane`,
         ) as VideoRow["transcript_lane"],
+        action_outcomes: actionOutcomes,
+        last_action: latestOutcome(row.last_action, actionOutcomes, `${field}.last_action`),
         processing_status: optStr(row.processing_status, `${field}.processing_status`),
         position: optNum(row.position, `${field}.position`),
         first_discovered_at: optStr(row.first_discovered_at, `${field}.first_discovered_at`),
@@ -1031,6 +1146,16 @@ export function parseSyncEvent(payload: unknown, standIns: string[]): EventRead<
                             `${type}.skipped_by_reason`,
                         ),
                         skipped_total: number(row.skipped_total, `${type}.skipped_total`),
+                        // A server build older than this one sends neither
+                        // field. Absent is read as "nothing was refused"
+                        // rather than refused, matching `skipped_by_reason`
+                        // above — a missing account of a refusal must never
+                        // read as a quiet, ordinary completion either way.
+                        retire_refused: optBool(
+                            row.retire_refused,
+                            `${type}.retire_refused`,
+                            false,
+                        ),
                         metrics: parseLibraryMetrics(row.metrics, `${type}.metrics`, standIns),
                     },
                 };

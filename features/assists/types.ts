@@ -105,6 +105,28 @@ export type AssistAction =
       variableValues?: Record<string, string>;
     }
   | {
+      /**
+       * Hand this organization's queued pages to the person's OWN signed-in
+       * Chrome, through the Matrx extension.
+       *
+       * The pages in `media.capture_handoff` are ones neither our scraper nor
+       * our server browser can read, because they only open for someone signed
+       * in. The person's browser already is. This action does not send the
+       * person anywhere and does not open the page in front of them — the
+       * extension opens each one in a background tab and reads it. The one
+       * thing a click must achieve is that the extension is looking at the
+       * right WORKSPACE, which is why the organization travels in the row: the
+       * extension resolves its own active organization independently of this
+       * app, and a queue read against the wrong one is an empty screen that
+       * looks exactly like "nothing is waiting".
+       */
+      kind: "open_in_own_browser";
+      organizationId: string;
+      /** The queue's first page, so the extension's panel opens on it. */
+      handoffId?: string;
+      url?: string;
+    }
+  | {
       kind: "navigate";
       href: string;
       /**
@@ -608,6 +630,20 @@ export function narrowAction(value: Json): AssistAction | null {
         typeof obj.completeMessage === "string"
           ? obj.completeMessage
           : undefined,
+    };
+  }
+  if (
+    kind === "open_in_own_browser" &&
+    typeof obj.organizationId === "string" &&
+    obj.organizationId.length > 0
+  ) {
+    // The organization is the one field without which this action cannot be
+    // honest, so it is the one field narrowing refuses to default.
+    return {
+      kind,
+      organizationId: obj.organizationId,
+      handoffId: typeof obj.handoffId === "string" ? obj.handoffId : undefined,
+      url: typeof obj.url === "string" ? obj.url : undefined,
     };
   }
   if (kind === "navigate" && typeof obj.href === "string") {

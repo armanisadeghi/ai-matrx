@@ -38,36 +38,119 @@
 # commit, then shows that release_stage_commit does not — the foreign edits are
 # still dirty in the tree afterwards, untouched.
 
-# Refuse anything that means "the whole tree". A directory pathspec is fine
-# (the invoker owns that directory); `.`, `:/`, `*` and an empty spec are just
-# `git add -A` wearing a hat.
-release_stage_validate_paths() {
-    local p
-    for p in "$@"; do
-        case "$p" in
-            ""|"."|"./"|":/"|":/."|"*"|"./*"|":(top)"|":(top).")
-                echo "release-stage: pathspec '$p' names the whole working tree — that is the sweep this law forbids. Name the files or directories you own." >&2
-                return 1 ;;
-        esac
-        # Must exist in the working tree or be tracked (a deletion is a legitimate change).
-        if [[ ! -e "$p" ]] && ! git ls-files --error-unmatch -- "$p" >/dev/null 2>&1; then
-            echo "release-stage: pathspec '$p' matches nothing in the working tree or the index." >&2
-            return 1
-        fi
+# Normalises every named path to a repo-relative path and refuses anything that
+# could mean more than the invoker owns. A deny-list of spellings is not enough:
+# `**`, `*.py`, `:(glob)**`, `:!mine`, `mine/..` and the repo's absolute path all
+# mean "the whole tree" to git (the 2026-09-19 adversarial review committed every
+# foreign file through each of them). So:
+#   - pathspec magic (a leading `:`) and glob characters (`*` `?` `[`) are refused;
+#   - the path is resolved against the CALLER's directory (RELEASE_STAGE_CALLER_PWD,
+#     default $PWD) — ship.sh cds to the repo root, so a bare relative path would
+#     otherwise silently mean a different file;
+#   - a path that resolves to the repo root or outside the repo is refused;
+#   - the path must exist in the working tree, the index, or HEAD (a rename's old
+#     side or a staged deletion lives only in HEAD).
+# On success the normalised paths are in RELEASE_STAGE_PATHS.
+# Every git call the staging functions make (via _rs_git) treats a path as a literal file name: no magic
+# (`:!x`), no globs, no backslash escapes — even for a name that only becomes
+# one after normalisation (`./:!mine` → `:!mine`), found by the second review.
+# Scoped to these calls, never exported: release.sh sources this file.
+_rs_git() { GIT_LITERAL_PATHSPECS=1 git "$@"; }
+
+# True when every component of <root>/<rel> exists on disk with EXACTLY that
+# spelling (macOS APFS is case-insensitive; git is not — `MINE/a.py` would pass
+# `-e` yet match nothing in git, and the release would go ahead as "no change").
+_rs_exact_case() {
+    local root="$1" rel="$2" cur="$1" part
+    local IFS=/
+    for part in $rel; do
+        [[ -z "$part" ]] && continue
+        if ! ls -a "$cur" 2>/dev/null | grep -qxF -- "$part"; then return 1; fi
+        cur="$cur/$part"
     done
     return 0
 }
 
-# Prints the exact file list the release commit would carry, and the dirty
-# paths it will leave behind — so a dry run tells the truth about content.
+RELEASE_STAGE_PATHS=()
+release_stage_validate_paths() {
+    RELEASE_STAGE_PATHS=()
+    local root caller p abs d b dres full rel
+    root="$(cd "$(_rs_git rev-parse --show-toplevel)" && pwd -P)" || return 1
+    caller="${RELEASE_STAGE_CALLER_PWD:-$PWD}"
+    if [[ $# -eq 0 ]]; then
+        echo "release-stage: no paths named." >&2
+        return 1
+    fi
+    for p in "$@"; do
+        case "$p" in
+            "")
+                echo "release-stage: empty pathspec refused." >&2; return 1 ;;
+            :*)
+                echo "release-stage: pathspec '$p' uses git pathspec magic — refused; it can name the whole tree. Name plain files or directories you own." >&2; return 1 ;;
+            *[\*\?\[\\]*)
+                echo "release-stage: pathspec '$p' contains a glob or escape character — refused; a glob can name other lanes' files. Name plain files or directories you own." >&2; return 1 ;;
+        esac
+        if [[ "$p" == /* ]]; then abs="$p"; else abs="$caller/$p"; fi
+        abs="${abs%/}"
+        d="$(dirname "$abs")"; b="$(basename "$abs")"
+        if [[ "$b" == "." || "$b" == ".." ]]; then d="$abs"; b=""; fi
+        if ! dres="$(cd "$d" 2>/dev/null && pwd -P)"; then
+            echo "release-stage: pathspec '$p' is in a directory that does not exist (name its nearest existing parent)." >&2; return 1
+        fi
+        full="$dres${b:+/$b}"
+        if [[ "$full" == "$root" ]]; then
+            echo "release-stage: pathspec '$p' resolves to the repository root — that is the sweep this law forbids. Name the files or directories you own." >&2; return 1
+        fi
+        if [[ "$full" != "$root/"* ]]; then
+            echo "release-stage: pathspec '$p' resolves outside this repository ($full)." >&2; return 1
+        fi
+        rel="${full#"$root"/}"
+        case "$rel" in
+            *$'\n'*|*$'\r'*)
+                echo "release-stage: pathspec '$p' contains a line break — refused." >&2; return 1 ;;
+            :*|*/:*)
+                echo "release-stage: pathspec '$p' normalises to '$rel', which starts a component with ':' (git pathspec magic) — refused." >&2; return 1 ;;
+            *[\*\?\[\\]*)
+                echo "release-stage: pathspec '$p' normalises to '$rel', which contains a glob or escape character — refused." >&2; return 1 ;;
+        esac
+        if [[ -e "$root/$rel" ]]; then
+            if ! _rs_exact_case "$root" "$rel"; then
+                echo "release-stage: pathspec '$p' does not match the on-disk spelling (letter case) — git would see no change. Use the exact name." >&2; return 1
+            fi
+            local probe="$root/$rel"; [[ -d "$probe" ]] || probe="$(dirname "$probe")"
+            local top; top="$(cd "$(_rs_git -C "$probe" rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null && pwd -P)"
+            if [[ "$top" != "$root" || ( -d "$root/$rel" && -e "$root/$rel/.git" ) ]]; then
+                echo "release-stage: pathspec '$p' is inside a submodule or nested repository — its changes are not this repo's to commit." >&2; return 1
+            fi
+        fi
+        if [[ ! -e "$root/$rel" ]] \
+            && ! _rs_git -C "$root" ls-files --error-unmatch -- "$rel" >/dev/null 2>&1 \
+            && ! _rs_git -C "$root" cat-file -e "HEAD:$rel" 2>/dev/null; then
+            echo "release-stage: pathspec '$p' matches nothing in the working tree, the index, or HEAD." >&2; return 1
+        fi
+        RELEASE_STAGE_PATHS+=("$rel")
+    done
+    return 0
+}
+
+# Changed paths, one per line, unquoted, renames split into both sides.
+_rs_status() {
+    _rs_git -c core.quotePath=false status --porcelain -z --no-renames --untracked-files=all "$@" 2>/dev/null \
+        | tr '\0' '\n' | cut -c4- | sed '/^$/d' | sort -u
+}
+
+# Prints the exact file list the commit would carry, and the dirty paths it
+# leaves behind.
 release_stage_preview() {
     local version_files=() ship_paths=() p
     while [[ $# -gt 0 && "$1" != "--" ]]; do version_files+=("$1"); shift; done
     [[ "${1:-}" == "--" ]] && shift
     ship_paths=("$@")
 
-    local candidate
-    candidate="$(git status --porcelain --untracked-files=all -- ${version_files[@]+"${version_files[@]}"} ${ship_paths[@]+"${ship_paths[@]}"} 2>/dev/null | cut -c4- | sort -u)"
+    local candidate=""
+    if [[ ${#version_files[@]} -gt 0 || ${#ship_paths[@]} -gt 0 ]]; then
+        candidate="$(_rs_status -- ${version_files[@]+"${version_files[@]}"} ${ship_paths[@]+"${ship_paths[@]}"})"
+    fi
     echo "  Release commit will carry ONLY:"
     for p in ${version_files[@]+"${version_files[@]}"}; do echo "    $p   (version file)"; done
     if [[ -n "$candidate" ]]; then
@@ -76,23 +159,18 @@ release_stage_preview() {
             for v in ${version_files[@]+"${version_files[@]}"}; do [[ "$p" == "$v" ]] && is_version=true; done
             $is_version || echo "    $p"
         done <<< "$candidate"
-    fi
-    if [[ ${#ship_paths[@]} -gt 0 ]]; then
-        local named
-        named="$(git status --porcelain --untracked-files=all -- ${ship_paths[@]+"${ship_paths[@]}"} 2>/dev/null)"
-        [[ -z "$named" ]] && echo "    (named paths carry no change against HEAD — nothing of yours is dirty)"
+    elif [[ ${#ship_paths[@]} -gt 0 ]]; then
+        echo "    (named paths carry no change against HEAD — nothing of yours is dirty)"
     fi
 
     local excluded
-    excluded="$(git status --porcelain --untracked-files=all 2>/dev/null | cut -c4- | sort -u | comm -23 - <(printf '%s\n' "$candidate" | sort -u))"
+    excluded="$(_rs_status | comm -23 - <(printf '%s\n' "$candidate" | sort -u) | sed '/^$/d')"
     if [[ -n "$excluded" ]]; then
         echo "  Dirty paths NOT in the release commit (other lanes' work — left untouched):"
         echo "$excluded" | sed 's/^/    /'
     fi
 }
 
-# Stage the named paths and make a pathspec-scoped commit of them + the
-# version files. Never touches any other path, staged or not.
 release_stage_commit() {
     local msg="$1"; shift
     local version_files=() ship_paths=()
@@ -102,9 +180,16 @@ release_stage_commit() {
 
     if [[ ${#ship_paths[@]} -gt 0 ]]; then
         release_stage_validate_paths ${ship_paths[@]+"${ship_paths[@]}"} || return 1
-        git add -- ${ship_paths[@]+"${ship_paths[@]}"}
+        ship_paths=("${RELEASE_STAGE_PATHS[@]}")
+        local root p; root="$(_rs_git rev-parse --show-toplevel)"
+        for p in "${ship_paths[@]}"; do
+            # A path living only in HEAD (rename's old side, staged deletion) has nothing to add.
+            if [[ -e "$root/$p" ]] || _rs_git -C "$root" ls-files --error-unmatch -- "$p" >/dev/null 2>&1; then
+                _rs_git -C "$root" add -- "$p"
+            fi
+        done
     fi
-    git commit -q -m "$msg" -- ${version_files[@]+"${version_files[@]}"} ${ship_paths[@]+"${ship_paths[@]}"}
+    _rs_git -C "$(_rs_git rev-parse --show-toplevel)" commit -q -m "$msg" -- ${version_files[@]+"${version_files[@]}"} ${ship_paths[@]+"${ship_paths[@]}"}
 }
 
 # ── Self-test ────────────────────────────────────────────────────────────────
@@ -172,11 +257,26 @@ _release_stage_self_test() {
     grep -q "does-not-exist" "$new/features/theirs/broken.ts" && pass "foreign file content untouched" || failt "foreign file content changed"
     [[ "$(git -C "$new" show HEAD:package.json)" == '{"version":"0.0.2"}' ]] && pass "version file committed from the working tree" || failt "version bump not committed"
 
-    # 3. Tree-wide pathspecs are refused.
-    for spec in "." ":/" "*"; do
+    # 3. Every spelling of "more than I own" is refused. Until 2026-09-19 this
+    #    was a deny-list of exact strings, and '**', '*.ts', ':(glob)**',
+    #    ':!features/mine', 'features/..', the repo's absolute path and more
+    #    all committed the whole tree (found by adversarial review of aidream's port).
+    git init -q "$new/nested"; echo 'x' > "$new/nested/f.ts"
+    local spec
+    for spec in "." "./" ".//" "././" ":/" "*" "**" "*.ts" ":(glob)**" ":/*" ":(top,glob)**" ":(icase)*" \
+                ":!features/mine" ":(exclude)features/mine" "features/.." "features/mine/../.." "$new" "$new/" ".." "/etc/hosts" \
+                "features/*" "features/theirs/?roken.ts" "./:!features/mine" "features/../:(exclude)features" \
+                "features/mine/a\\.ts" "FEATURES/mine/a.ts" "nested" "nested/f.ts"; do
         if ( cd "$new" && release_stage_validate_paths "$spec" 2>/dev/null ); then failt "pathspec '$spec' was accepted"; else pass "pathspec '$spec' refused"; fi
     done
     if ( cd "$new" && release_stage_validate_paths "features/nowhere" 2>/dev/null ); then failt "nonexistent pathspec accepted"; else pass "nonexistent pathspec refused"; fi
+    rm -rf "$new/nested"
+    # A preview never lists foreign files as carried: magic is refused before listing.
+    ( cd "$new" && GIT_LITERAL_PATHSPECS= release_stage_validate_paths './:!features/mine' 2>/dev/null ) \
+        && failt "'./:!features/mine' validated (preview would list foreign files)" || pass "'./:!features/mine' refused before any preview"
+    # A path is resolved from the CALLER's directory, not the repo root.
+    ( cd "$new/features" && RELEASE_STAGE_PATHS=(); release_stage_validate_paths mine >/dev/null 2>&1; [[ "${RELEASE_STAGE_PATHS[0]:-}" == "features/mine" ]] ) \
+        && pass "relative path resolved from the caller's directory to a repo-relative path" || failt "relative path not resolved from the caller's directory"
 
     # 4. A deletion the invoker owns is a legitimate named path.
     local del="$tmp/del"; mk_repo "$del"; plant "$del"

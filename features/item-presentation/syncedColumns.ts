@@ -254,8 +254,25 @@ export const ACCOUNT_COLUMNS = [
  * it here. F-54 also retired `last_refreshed_at` — no table anywhere — which
  * sat FIRST and therefore looked like the primary answer while never matching
  * anything.
+ *
+ * `last_synced_at` is the SAME answer as `synced_at` under a second spelling —
+ * our own record of when we last refreshed the row — and it is what
+ * `media.source_library` and `code.code_repositories` carry (neither has
+ * `synced_at`; no table in the database carries both, so its position next to
+ * `synced_at` changes nothing for any existing row). It could not be added
+ * before 2026-09-18: `SyncedRoleColumn` is derived from the generated types and
+ * the `media` schema was not in them, which is the exact defect
+ * `SCHEMAS_AWAITING_REGENERATION` was built to make visible. With the
+ * regeneration landed (`30e05dbd80`), the reverse census named
+ * `media.source_library.last_synced_at` on its first run — as the declaration
+ * predicted it would — and this is the answer.
  */
-export const REFRESHED_COLUMNS = ["synced_at", "external_modified_at", "external_updated_at"] as const satisfies readonly SyncedRoleColumn[];
+export const REFRESHED_COLUMNS = [
+  "synced_at",
+  "last_synced_at",
+  "external_modified_at",
+  "external_updated_at",
+] as const satisfies readonly SyncedRoleColumn[];
 /**
  * The column holding where the record lives at the provider.
  * `workbench.google_document` and `web.youtube_video` both spell it
@@ -307,15 +324,16 @@ export const SYNCED_ROLE_CANDIDATES = Object.freeze({
 // two registered entity types (`provider_account`,
 // `provider_account_credential`).
 //
-// THE FIX IS IN TWO HALVES, AND ONLY ONE OF THEM COULD BE MADE HERE. The
-// `--schema` list now names `media` and `provider` (and the script's own
-// post-generation assertions now demand both schemas landed, beside the existing
-// `hr` / `esign` ones). REGENERATING the file needs the Supabase management
-// token, which this environment does not have, so the committed types still lack
-// both schemas. That gap is DECLARED below rather than left to be discovered:
-// the guard names the schemas, prints the exact command, and fails the moment a
-// configured schema is missing and NOT declared — or a declared one has landed
-// and the entry was left behind.
+// THE FIX WAS IN TWO HALVES AND BOTH HAVE LANDED. The `--schema` list names
+// `media` and `provider` (and the script's own post-generation assertions demand
+// both schemas landed, beside the existing `hr` / `esign` ones), and the
+// regeneration itself reached the committed file on 2026-09-18 in `30e05dbd80`
+// — so `media.source_library` is now visible to every type-derived census here
+// and `SCHEMAS_AWAITING_REGENERATION` is EMPTY. The guard that names a
+// configured-but-absent schema stays: it fails the moment a schema is missing
+// and NOT declared — or a declared one has landed and the entry was left behind,
+// which is the failure that carried these two entries for a day after the
+// regeneration.
 // ───────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -332,25 +350,11 @@ export const SYNCED_ROLE_CANDIDATES = Object.freeze({
  */
 export const SCHEMAS_AWAITING_REGENERATION: Readonly<Record<string, string>> =
   Object.freeze({
-    media:
-      "Holds `media.source_library` — an active, LISTED entity carrying " +
-      "`sync_status` and `external_id`, i.e. the SIXTH synced table — plus five " +
-      "more registered entity types (capture_handoff, catalog_setting, " +
-      "library_item, selection_item, selection_job). While it is missing, the " +
-      "synced-table census and the health strip's column derivation cannot see " +
-      "that table at all. Remedy: `pnpm db-types` (needs SUPABASE_ACCESS_TOKEN), " +
-      "then delete this entry — and expect the reverse census to name " +
-      "`media.source_library.last_synced_at` immediately: it plays the freshness " +
-      "role and no candidate list holds that spelling, which is the F-51 defect " +
-      "waiting on the sixth table. It cannot be added to REFRESHED_COLUMNS " +
-      "before the regeneration, because `SyncedRoleColumn` is derived from the " +
-      "generated types and the name is not in them yet.",
-    provider:
-      "Holds the two registered `provider.*` entity types (`provider_account`, " +
-      "`provider_account_credential`). Neither carries `sync_status`, so no " +
-      "synced-table census is blind because of it, but any type-derived rule " +
-      "over the entity registry is. Remedy: `pnpm db-types` (needs " +
-      "SUPABASE_ACCESS_TOKEN), then delete this entry.",
+    // EMPTY, and that is the point: `media` and `provider` were both declared
+    // here until the regeneration landed (`30e05dbd80`, 2026-09-18). A stale
+    // entry hides a table that is now visible, so the guard fails on one — which
+    // is how `media.source_library`'s `last_synced_at` finally reached
+    // REFRESHED_COLUMNS below.
   });
 
 /**

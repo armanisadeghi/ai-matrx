@@ -20,7 +20,7 @@ export const metadata = createRouteMetadata("/administration", {
   title: "Applications",
   description:
     "Shipped client applications — remote configuration, catalogs, installed fleet, npm packages, and audit history",
-  letter: "AP",
+  letter: "APL",
 });
 
 export default function ApplicationsAdminLayout({

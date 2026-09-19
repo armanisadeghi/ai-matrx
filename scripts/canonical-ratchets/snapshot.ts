@@ -40,6 +40,21 @@ export interface PostDoctrineFail {
   born_at: string;
 }
 
+export const READONLY_REQUIRED_CHECKS = [
+  "client_read_only_grants",
+  "client_read_only_policies",
+  "client_read_only_registry_guard",
+] as const;
+export type ReadonlyRequiredCheck = (typeof READONLY_REQUIRED_CHECKS)[number];
+
+export interface ClientReadOnlyCheck {
+  schema: string;
+  table: string;
+  token: string;
+  check_name: string;
+  status: string;
+}
+
 export interface RatchetSnapshot {
   generated_at: string;
   /** max(audit.refresh_log.run_at) — null if the store has never been refreshed. */
@@ -52,6 +67,61 @@ export interface RatchetSnapshot {
   births_after_cutoff: number;
   unregistered: UnregisteredCandidate[];
   post_doctrine_fails: PostDoctrineFail[];
+  /** Distinct marked physical relations, independently measured by the snapshot function. */
+  client_read_only_marked_count: number;
+  client_read_only_checked_count: number;
+  client_read_only_measurement_complete: boolean;
+  client_read_only_all_pass: boolean;
+  client_read_only_unmeasured_count: number;
+  client_read_only_checks: ClientReadOnlyCheck[];
+}
+
+/** Fail closed when fresh readonly measurements are absent, incomplete, or disagree. */
+export function readonlyMeasurementFailures(snapshot: RatchetSnapshot): string[] {
+  const failures: string[] = [];
+  const marked = snapshot.client_read_only_marked_count;
+  const checked = snapshot.client_read_only_checked_count;
+  const unmeasured = snapshot.client_read_only_unmeasured_count;
+  const checks = snapshot.client_read_only_checks;
+  const safeCount = (value: unknown) => Number.isSafeInteger(value) && (value as number) >= 0;
+  if (!safeCount(marked)) failures.push("client_read_only_marked_count is missing or invalid");
+  if (!safeCount(checked)) failures.push("client_read_only_checked_count is missing or invalid");
+  if (!safeCount(unmeasured)) failures.push("client_read_only_unmeasured_count is missing or invalid");
+  if (typeof snapshot.client_read_only_measurement_complete !== "boolean") failures.push("client_read_only_measurement_complete is missing or invalid");
+  if (typeof snapshot.client_read_only_all_pass !== "boolean") failures.push("client_read_only_all_pass is missing or invalid");
+  if (!Array.isArray(checks)) failures.push("client_read_only_checks is missing or invalid");
+  if (failures.length) return failures;
+
+  if (marked !== checked) failures.push(`marked ${marked} != checked ${checked}`);
+  if (snapshot.client_read_only_measurement_complete !== true) failures.push("measurement_complete is false");
+  if (snapshot.client_read_only_all_pass !== true) failures.push("all_pass is false");
+  if (unmeasured !== 0) failures.push(`unmeasured_count is ${unmeasured}, expected 0`);
+  if (checks.length !== marked * READONLY_REQUIRED_CHECKS.length) failures.push(`check row count is ${checks.length}, expected ${marked * READONLY_REQUIRED_CHECKS.length}`);
+
+  const byRelation = new Map<string, ClientReadOnlyCheck[]>();
+  for (const check of checks) {
+    if (!check || typeof check.schema !== "string" || !check.schema.trim() || typeof check.table !== "string" || !check.table.trim() || typeof check.token !== "string" || !check.token.trim()) {
+      failures.push("check row has no complete relation identity");
+      continue;
+    }
+    if (!READONLY_REQUIRED_CHECKS.includes(check.check_name as ReadonlyRequiredCheck)) failures.push(`${check.schema}.${check.table}: unexpected check ${String(check.check_name)}`);
+    if (check.status !== "PASS") failures.push(`${check.schema}.${check.table}.${check.check_name} is ${String(check.status)}`);
+    const key = `${check.schema}.${check.table}`;
+    const rows = byRelation.get(key);
+    if (rows) rows.push(check);
+    else byRelation.set(key, [check]);
+  }
+  for (const [relation, rows] of byRelation) {
+    if (new Set(rows.map((row) => row.token)).size !== 1) {
+      failures.push(`${relation} has inconsistent tokens across required checks`);
+    }
+    for (const required of READONLY_REQUIRED_CHECKS) {
+      const count = rows.filter((row) => row.check_name === required).length;
+      if (count !== 1) failures.push(`${relation}.${required} appears ${count} times, expected once`);
+    }
+  }
+  if (byRelation.size !== marked) failures.push(`marked ${marked} != measured relations ${byRelation.size}`);
+  return failures;
 }
 
 /**

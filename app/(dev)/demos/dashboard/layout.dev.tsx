@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/dashboard", {
   titlePrefix: "SSR",
   title: "Dashboard",
   description: "SSR dashboard shell and layout experiments",
-  letter: "Sd",
+  letter: "DDB",
 });
 
 export default function DashboardLayout({

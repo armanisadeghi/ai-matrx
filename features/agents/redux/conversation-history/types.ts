@@ -12,6 +12,7 @@
  */
 
 import type { ConversationListItem } from "@/features/agents/redux/conversation-list/conversation-list.types";
+import type { ConversationLane } from "./lanes";
 
 /**
  * How the sidebar is grouped in a given scope. Mirrors
@@ -78,6 +79,15 @@ export interface ConversationHistoryScopeState {
    */
   includeOriginClasses: string[];
   /**
+   * LANE gate (Chat | Matrx | Auto | Plugins | Subagents) — an AND gate ABOVE
+   * every source filter, applied server-side as `lane in (...)` on the
+   * `chat.lane` computed field. `null` = no lane gate (surfaces without a
+   * `surfaceId`: per-agent lists, /code). `[]` = every lane off → the list is
+   * honestly empty and no query runs. Set only by the lane toggles
+   * (`setScopeLanes`); nothing in the source tree writes it.
+   */
+  includeLanes: ConversationLane[] | null;
+  /**
    * Identity of the surface default this scope's source filter was seeded
    * from (`seedScopeSourceFilter`). A scope is seeded ONCE per default value:
    * on remount the host re-seeds with the same key and it no-ops, so a user's
@@ -104,12 +114,14 @@ export interface ConversationHistoryScopeState {
 }
 
 /**
- * A distinct (source_app, source_feature) pairing with the user's
- * conversation count. Returned by `get_cx_conversation_source_facets` and
+ * A distinct (lane, source_app, source_feature) grouping with the user's
+ * conversation count. Returned by `get_cx_conversation_lane_facets` and
  * used to populate the filter tree with real values + counts. `null`
  * app/feature represent empty/uncategorized rows.
  */
 export interface SourceFacet {
+  /** Lane of this facet's rows (`chat.conversation_lane`). */
+  lane: ConversationLane | null;
   sourceApp: string | null;
   sourceFeature: string | null;
   count: number;
@@ -141,6 +153,7 @@ export const defaultScopeState: ConversationHistoryScopeState = {
   includeSourceApps: [],
   includeEmptySource: false,
   includeOriginClasses: [],
+  includeLanes: null,
   seededSourceKey: null,
   searchTerm: "",
   grouping: "date",

@@ -586,6 +586,13 @@ export interface ConversationFilterSurfacePref {
 export interface ConversationFilterPreferences {
   /** surfaceId → override. Empty = every surface uses its registry default. */
   surfaces: Record<string, ConversationFilterSurfacePref>;
+  /**
+   * The viewer's lane toggles (chat | matrx | auto | plugin | subagent) — one
+   * choice for every filterable history surface. Absent = never chosen → the
+   * default (chat + matrx); `[]` = every lane off. Read through
+   * `normalizeLanes` (features/agents/redux/conversation-history/lanes.ts).
+   */
+  lanes?: string[];
 }
 
 /**

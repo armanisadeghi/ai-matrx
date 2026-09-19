@@ -25,6 +25,7 @@ import type {
   CredentialCaptureField,
   CredentialCaptureOutcome,
   CredentialCaptureRequest,
+  EgressUnavailable,
   ExecutionTarget,
   HandoffReason,
   HandoffState,
@@ -33,6 +34,7 @@ import type {
   ProfileQuota,
   ProfileStatus,
   ProgressEvent,
+  RunEgress,
   RunMode,
   RunState,
   ScreenshotFrame,
@@ -54,10 +56,23 @@ const LIVE_STATES = [
   "resume_pending",
   "stopping",
 ] as const;
+/**
+ * Defaults for a browser whose owner has never touched these switches.
+ *
+ * ON by default (Arman, 2026-09-18): signed-in sites stay signed in, and the
+ * platform logs back in on its own wherever a person is not truly required.
+ * A browser that stops and waits for a human on every expired session is not
+ * a cloud browser. Every one of these is a switch the person can turn off, and
+ * a saved explicit `false` always wins over this default (`cloudBrowserConsent`
+ * below only falls back when the stored value is not a boolean).
+ *
+ * `sensitiveActionsRequireHuman` is the unchanged always-on floor: payments,
+ * security settings and destructive changes still stop for a person.
+ */
 const DEFAULT_CONSENT: CloudBrowserConsent = {
-  unattendedLogin: false,
-  sessionHealthChecks: false,
-  totpDelegation: false,
+  unattendedLogin: true,
+  sessionHealthChecks: true,
+  totpDelegation: true,
   sensitiveActionsRequireHuman: true,
 };
 
@@ -304,6 +319,32 @@ function mapProfile(
     isPersonalDefault: mine && row.owner_type === "user" && row.is_default,
   };
 }
+/**
+ * `metadata.egress` on a run, and `egress` on a navigate command result.
+ *
+ * GUARDED ON PRESENCE and on SHAPE: the server half of residential egress is
+ * landing in parallel with this reader, so a missing key, a wrong type, or a
+ * kind we do not know is simply "no egress to report" — never a half-rendered
+ * sentence and never a throw. Contract:
+ * common-docs/systems/platform/residential-egress/FEATURE.md.
+ */
+function mapEgress(value: Json | undefined): RunEgress | null {
+  const egress = jsonObject(value ?? null);
+  const kind = egress.kind;
+  if (kind !== "residential" && kind !== "datacenter") return null;
+  const name = egress.device_name;
+  return { kind, deviceName: typeof name === "string" ? name : null };
+}
+
+/** `egress_unavailable` on a navigate command result — the refusal and its sentence. */
+function mapEgressUnavailable(value: Json | undefined): EgressUnavailable | null {
+  const blocked = jsonObject(value ?? null);
+  const reason = blocked.reason;
+  if (typeof reason !== "string" || !reason) return null;
+  const message = blocked.message;
+  return { reason, message: typeof message === "string" ? message : null };
+}
+
 function mapRun(row: RunRow): CloudBrowserRun {
   return {
     id: row.id,
@@ -322,6 +363,7 @@ function mapRun(row: RunRow): CloudBrowserRun {
     stoppedAt: row.stopped_at,
     errorCode: row.error_code,
     errorDetailSafe: row.error_detail_safe,
+    egress: mapEgress(jsonObject(row.metadata).egress),
   };
 }
 /**
@@ -387,6 +429,16 @@ function mapEvent(row: EventRow): ProgressEvent {
     resultClass: actionResultClass(row.result_class),
     summary: eventSummary(row),
     origin: row.origin,
+    // The navigate command's own result. The executor writes it on the event's
+    // `metadata`; `properties` is read as well because that is where the same
+    // executor puts a command's result payload on some paths, and a sentence
+    // the person needs must not depend on which of the two it landed in.
+    egress:
+      mapEgress(jsonObject(row.metadata).egress) ??
+      mapEgress(jsonObject(row.properties).egress),
+    egressUnavailable:
+      mapEgressUnavailable(jsonObject(row.metadata).egress_unavailable) ??
+      mapEgressUnavailable(jsonObject(row.properties).egress_unavailable),
   };
 }
 /**

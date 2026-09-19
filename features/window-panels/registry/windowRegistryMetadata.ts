@@ -1065,6 +1065,27 @@ const STATIC_REGISTRY: WindowStaticMetadata[] = [
 
   // ── Scope Editor ──────────────────────────────────────────────────────────
   {
+    slug: "agent-variable-editor-window",
+    overlayId: "agentVariableEditorWindow",
+    kind: "window",
+    label: "Variable Editor",
+    defaultData: {
+      agentId: null,
+      variableName: null,
+      justCreated: false,
+    },
+    // R35 — the subject is the (agent, variable) PAIR, minted and parsed by
+    // `features/agents/components/variables-management/variableEditorAddress.ts`
+    // and hydrated in `url-sync/initUrlHydration.ts`. It shipped unaddressed on
+    // 2026-09-18 (7404dc065f) and the address census caught it.
+    urlSync: { key: "agent_variable" },
+    // `ephemeral` is about RELOAD, not reach: a half-edited variable form is
+    // never restored from a persisted session. A link someone was handed still
+    // opens the editor on the variable it names.
+    ephemeral: true,
+    mobilePresentation: "drawer",
+  },
+  {
     slug: "scope-edit-window",
     overlayId: "scopeEditWindow",
     kind: "window",

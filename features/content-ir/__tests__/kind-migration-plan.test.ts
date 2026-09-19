@@ -63,6 +63,27 @@ describe("kind migration planner", () => {
     expect(plan.activeCount).toBe(2);
   });
 
+  it("emitted_json_schema DECLARES the __kind marker, exactly like the block column (§4.2a)", () => {
+    const plan = planKindMigration({ schemas, samples, getDefinition });
+    const set = plan.kinds.find((k) => k.kind === "flashcard_set")!;
+    const json = set.emittedJsonSchema as {
+      properties: Record<string, { const?: string }>;
+      required: string[];
+    };
+    // The dead "wire shape" doctrine emitted this column with injectKind:false,
+    // which under strict additionalProperties:false FORBADE a kind's identity.
+    expect(json.properties.__kind?.const).toBe("flashcard_set");
+    expect(json.required).toContain("__kind");
+    expect(set.emittedJsonSchema).toEqual(set.emittedBlockSchema);
+    // A marker-free instance is refused by the dual gate's structural leg.
+    const bare = planKindMigration({
+      schemas,
+      samples: { flashcard: { front: "Q", back: "A" } },
+      getDefinition,
+    }).kinds.find((k) => k.kind === "flashcard")!;
+    expect(bare.isActive).toBe(false);
+  });
+
   it("holds a kind inactive (loudly) when it has no sample_data", () => {
     const plan = planKindMigration({
       schemas,

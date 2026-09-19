@@ -90,7 +90,10 @@ import type { UserInputPart } from "@/features/agents/types/request.types";
 import type { RequestInitiation } from "@/features/agents/types/instance.types";
 import type { MessageRecord } from "../messages/messages.slice";
 import { isSyntheticAgentId } from "@/features/agents/redux/agent-definition/synthetic-id";
-import { selectMessageCount } from "../messages/messages.selectors";
+import {
+  selectMessageCount,
+  selectNextMessagePosition,
+} from "../messages/messages.selectors";
 // Shared with the ephemeral agent-run path — see utils/wire-transcript.ts.
 import { recordsToMessages } from "../utils/wire-transcript";
 import { generateRequestId } from "../utils/ids";
@@ -127,6 +130,8 @@ import {
 import { selectDesktopTargetInstanceId } from "@/lib/redux/preferences/adminPreferencesSlice";
 import {
   selectProjectId,
+  selectActiveScopeTypeIds,
+  selectScopeSelectionsContext,
   selectTaskId,
 } from "@/lib/redux/slices/appContextSlice";
 import { requireExecutionOrganizationId } from "../utils/required-organization";
@@ -495,6 +500,20 @@ export async function assembleManualRequest(
   if (project_id) request.project_id = project_id;
   if (task_id) request.task_id = task_id;
 
+  // Active scope selections — same as assembleRequest. The Builder omits every
+  // scope-BOUND variable from `variables` (selectVariablesForRequest: the server
+  // fills it authoritatively from the active scope), so without scope_ids here a
+  // bound variable had nothing to resolve from and the model received a raw
+  // `{{name}}` placeholder (2026-09-18). The manual route stamps no tags; the
+  // server only reads these ids for this turn's bindings and context block.
+  const scope_ids = Object.values(
+    selectScopeSelectionsContext(state) ?? {},
+  ).filter((id): id is string => !!id);
+  if (scope_ids.length > 0) request.scope_ids = scope_ids;
+  const active_scope_type_ids = selectActiveScopeTypeIds(state) ?? [];
+  if (active_scope_type_ids.length > 0)
+    request.active_scope_type_ids = active_scope_type_ids;
+
   if (selectIsBlockMode(state)) request.block_mode = true;
   if (selectIsSnapshot(state)) request.snapshot = true;
 
@@ -679,7 +698,7 @@ export const executeManualInstance = createAsyncThunk<
         }
         if (resourceBlocks.length > 0) content.push(...resourceBlocks);
         userMessageClientTempId = uuidv4();
-        const nextPosition = selectMessageCount(conversationId)(
+        const nextPosition = selectNextMessagePosition(conversationId)(
           getState() as RootState,
         );
         const userMessageMetadata: Json | undefined =

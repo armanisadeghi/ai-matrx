@@ -222,6 +222,52 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
         };
     }, [dispatch, libraryId, organizationId]);
 
+    // 🚨 THE SEAM: THIS TAB'S SYNC SLICE VS. THE SERVER'S LIBRARY ROW. The mount
+    // effect above reads the Library row exactly ONCE. When that one read lands
+    // mid-run — `sync_status: "syncing"`, started in another tab or an earlier
+    // session this one never streamed — nothing here ever asked again, so the
+    // banner in `LibraryMetricsHeader` could only ever clear if the PERSON
+    // manually reloaded the whole page and happened to catch the row after the
+    // server had actually flipped it. kottke.org (2026-09-19) reloaded four
+    // times over two-plus minutes and never caught it. So while this tab is
+    // NOT the one running the sync (`sync.sync.phase === "idle"` — a run this
+    // tab itself started is already live via the stream and needs no polling)
+    // and the last-known row says "syncing", this re-asks the one door that
+    // can ever change that answer, on its own, until it does.
+    useEffect(() => {
+        if (!organizationId) return;
+        if (live?.library?.sync_status !== "syncing") return;
+        if (sync.sync.phase !== "idle") return;
+        let cancelled = false;
+        const intervalId = window.setInterval(() => {
+            void (async () => {
+                try {
+                    const row = await getLibrary(dispatch, libraryId);
+                    if (cancelled) return;
+                    dispatch(libraryLoaded(row));
+                    if (row.sync_status !== "syncing") {
+                        void refreshMetrics();
+                        setListGeneration((n) => n + 1);
+                    }
+                } catch {
+                    // Best-effort re-check only — a genuine read failure is
+                    // already surfaced by the mount read's own `loadError`.
+                }
+            })();
+        }, 5000);
+        return () => {
+            cancelled = true;
+            window.clearInterval(intervalId);
+        };
+    }, [
+        dispatch,
+        libraryId,
+        organizationId,
+        live?.library?.sync_status,
+        sync.sync.phase,
+        refreshMetrics,
+    ]);
+
     // `?sync=1` (fresh from the paste box) and `?resync=1` (bring up to date)
     // both start the one enumeration door, once, then leave the address clean.
     useEffect(() => {
@@ -254,11 +300,29 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                 organizationId,
                 bulkActions: runner.bulkActions,
                 onOpenRow: setOpenVideo,
+                // §4.3 — the Action labels come from the SERVER'S registry, the
+                // same one the Action bar is built from. Before it answers, a
+                // Source's outcome shows the Action's key: ugly and true.
+                actionLabels: Object.fromEntries(
+                    registry.actions.map((action) => [action.key, action.label]),
+                ),
+                // The way back from "this one failed" to the run that says why.
+                // `onJobStarted` is exactly the right door: it puts the job's own
+                // panel on this page, which is where a person already reads one.
+                onOpenJob: onJobStarted,
             }),
         // `listGeneration` forces a fresh service identity after a sync lands
         // rows, so the list re-asks instead of showing what it held before.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [dispatch, libraryId, organizationId, runner.bulkActions, listGeneration],
+        [
+            dispatch,
+            libraryId,
+            organizationId,
+            runner.bulkActions,
+            listGeneration,
+            registry.actions,
+            onJobStarted,
+        ],
     );
 
     const library = live?.library ?? null;

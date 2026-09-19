@@ -672,6 +672,11 @@ const HierarchyCreationWindow = lazyOverlay(
     import("@/features/window-panels/windows/context-scopes/HierarchyCreationWindow"),
   { ssr: false },
 );
+const AgentVariableEditorWindow = lazyOverlay(
+  () =>
+    import("@/features/agents/components/variables-management/AgentVariableEditorWindow"),
+  { ssr: false },
+);
 const ScopeEditWindow = lazyOverlay(
   () =>
     import("@/features/window-panels/windows/context-scopes/ScopeEditWindow"),
@@ -1463,6 +1468,9 @@ export default function OverlayController() {
     hierarchyCreationWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "hierarchyCreationWindow"),
     ),
+    agentVariableEditorWindow: useAppSelector((s) =>
+      selectIsOverlayOpen(s, "agentVariableEditorWindow"),
+    ),
     scopeEditWindow: useAppSelector((s) =>
       selectIsOverlayOpen(s, "scopeEditWindow"),
     ),
@@ -1885,6 +1893,9 @@ export default function OverlayController() {
     ) as Record<string, unknown> | null,
     hierarchyCreationWindow: useAppSelector((s) =>
       selectOverlayData(s, "hierarchyCreationWindow"),
+    ) as Record<string, unknown> | null,
+    agentVariableEditorWindow: useAppSelector((s) =>
+      selectOverlayData(s, "agentVariableEditorWindow"),
     ) as Record<string, unknown> | null,
     scopeEditWindow: useAppSelector((s) =>
       selectOverlayData(s, "scopeEditWindow"),
@@ -4882,6 +4893,31 @@ export default function OverlayController() {
               dispatch(closeOverlay({ overlayId: "hierarchyCreationWindow" }))
             }
             data={data?.data as HierarchyCreationWindowData | undefined}
+          />
+        );
+      })()}
+
+      {/* agentVariableEditorWindow — open state lives here, above the builder's mobile tree swap (C1) */}
+      {(() => {
+        if (!isOpenById.agentVariableEditorWindow) return null;
+        const raw = dataById.agentVariableEditorWindow;
+        if (
+          !raw ||
+          typeof raw.agentId !== "string" ||
+          typeof raw.variableName !== "string"
+        )
+          return null;
+        return (
+          <AgentVariableEditorWindow
+            isOpen
+            onClose={() =>
+              dispatch(closeOverlay({ overlayId: "agentVariableEditorWindow" }))
+            }
+            data={{
+              agentId: raw.agentId,
+              variableName: raw.variableName,
+              justCreated: raw.justCreated === true,
+            }}
           />
         );
       })()}

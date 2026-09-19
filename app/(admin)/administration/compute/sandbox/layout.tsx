@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/administration", {
   titlePrefix: "Sandbox",
   title: "Admin",
   description: "Admin sandbox for testing and experimentation",
-  letter: "Sb",
+  letter: "ASB",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

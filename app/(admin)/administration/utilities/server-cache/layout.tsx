@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/administration", {
   titlePrefix: "Server Cache",
   title: "Admin",
   description: "Server-side cache inspection and invalidation tools",
-  letter: "SC",
+  letter: "SVC",
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {

@@ -31,6 +31,7 @@ import type { Json } from "@/types/database.types";
 import type { MessageRole } from "@/features/agents/types/agent-message-types";
 import type { MessagePart } from "@/types/python-generated/stream-events";
 import type { ApiEndpointMode } from "@/features/agents/types/instance.types";
+import { recordTranscriptEvent, shortId } from "./transcript-journal";
 
 // =============================================================================
 // Per-turn structured columns on cx_message (all jsonb, nullable)
@@ -207,6 +208,42 @@ function reorderMessageId(entry: MessagesEntry, messageId: string): void {
   insertOrderedMessageId(entry, messageId);
 }
 
+/**
+ * The position a NEW row appended to this conversation will most likely get
+ * from the server — `max(position) + 1` over every loaded row.
+ *
+ * 🚨 Never `orderedIds.length`. The server assigns `position = number of
+ * messages in the conversation`; the client's spine is a WINDOW (the run and
+ * chat routes hydrate only the last 12 rows), so its length is smaller than
+ * the true count as soon as a conversation outgrows that window. Guessing
+ * from the length put the optimistic user row at position 12 in a
+ * 40-message conversation, `insertOrderedMessageId` sorted it ABOVE the
+ * oldest loaded row, and the just-sent message rendered at the top of the
+ * history — invisible from the bottom of the page — until (and only if) the
+ * server's `record_reserved` promoted it to its real position. That was the
+ * "my message doesn't show" defect (2026-09-18).
+ */
+export function nextTranscriptPosition(
+  entry: Pick<MessagesEntry, "byId" | "orderedIds"> | undefined,
+): number {
+  if (!entry || entry.orderedIds.length === 0) return 0;
+  let max = -1;
+  for (const id of entry.orderedIds) {
+    const rec = entry.byId[id];
+    if (rec && typeof rec.position === "number" && rec.position > max) {
+      max = rec.position;
+    }
+  }
+  return max + 1;
+}
+
+/** A row this client minted and the server has not yet acknowledged. */
+function isPendingClientRow(record: MessageRecord | undefined): boolean {
+  return (
+    !!record && record.source === "client" && record._clientStatus === "pending"
+  );
+}
+
 // =============================================================================
 // Entry / State
 // =============================================================================
@@ -370,8 +407,29 @@ const messagesSlice = createSlice({
         metadata,
       } = action.payload;
       const entry = getOrCreate(state, conversationId);
-      if (entry.byId[clientTempId]) return; // idempotent
+      if (entry.byId[clientTempId]) {
+        recordTranscriptEvent(conversationId, "optimistic_user_duplicate_ignored", {
+          id: shortId(clientTempId),
+        });
+        return; // idempotent
+      }
       const now = new Date().toISOString();
+      const textLength = content.reduce(
+        (sum, part) =>
+          part.type === "text" && typeof part.text === "string"
+            ? sum + part.text.length
+            : sum,
+        0,
+      );
+      recordTranscriptEvent(conversationId, "optimistic_user_added", {
+        id: shortId(clientTempId),
+        position,
+        textLength,
+        parts: content.length,
+        loadedRows: entry.orderedIds.length,
+        oldestLoadedPosition: entry.oldestPosition,
+        expectedNextPosition: nextTranscriptPosition(entry),
+      });
       entry.byId[clientTempId] = {
         id: clientTempId,
         conversationId,
@@ -409,10 +467,25 @@ const messagesSlice = createSlice({
     ) {
       const { conversationId, oldId, newId, position } = action.payload;
       const entry = state.byConversationId[conversationId];
-      if (!entry?.byId[oldId]) return;
+      if (!entry?.byId[oldId]) {
+        recordTranscriptEvent(conversationId, "promote_missing_old_id", {
+          oldId: shortId(oldId),
+          newId: shortId(newId),
+          position: position ?? null,
+          newIdAlreadyPresent: !!entry?.byId[newId],
+        });
+        return;
+      }
       if (oldId === newId) return;
       const record = entry.byId[oldId];
       if (entry.byId[newId]) {
+        recordTranscriptEvent(conversationId, "promote_merged_into_existing", {
+          oldId: shortId(oldId),
+          newId: shortId(newId),
+          position: position ?? null,
+          oldPosition: record.position,
+          existingPosition: entry.byId[newId].position,
+        });
         // Target id already exists — a mid-stream loadConversation can seed
         // byId[newId] from the DB before this promote lands (the row
         // persists before the stream event). Renaming onto it would map
@@ -427,6 +500,13 @@ const messagesSlice = createSlice({
         entry.orderedIds = entry.orderedIds.filter((id) => id !== oldId);
         return;
       }
+      recordTranscriptEvent(conversationId, "promote", {
+        oldId: shortId(oldId),
+        newId: shortId(newId),
+        role: record.role,
+        fromPosition: record.position,
+        toPosition: typeof position === "number" ? position : record.position,
+      });
       delete entry.byId[oldId];
       entry.byId[newId] = {
         ...record,
@@ -479,7 +559,23 @@ const messagesSlice = createSlice({
         streamSlotStart,
       } = action.payload;
       const entry = getOrCreate(state, conversationId);
-      if (entry.byId[messageId]) return;
+      if (entry.byId[messageId]) {
+        recordTranscriptEvent(conversationId, "message_reserved_duplicate_ignored", {
+          id: shortId(messageId),
+          role,
+          position,
+        });
+        return;
+      }
+      recordTranscriptEvent(conversationId, "message_reserved", {
+        id: shortId(messageId),
+        role,
+        position,
+        requestId: shortId(requestId),
+        pendingClientRows: entry.orderedIds.filter((id) =>
+          isPendingClientRow(entry.byId[id]),
+        ).length,
+      });
       const now = new Date().toISOString();
       entry.byId[messageId] = {
         id: messageId,
@@ -542,15 +638,57 @@ const messagesSlice = createSlice({
       const { conversationId, messages, pagination } = action.payload;
       const entry = getOrCreate(state, conversationId);
       const sorted = [...messages].sort(byPositionThenCreatedAt);
+      const previous = entry.byId;
+      const previousCount = entry.orderedIds.length;
+      // 🚨 A hydrate is a DB snapshot, and the DB does not yet hold what this
+      // client minted a moment ago. An optimistic user row still waiting for
+      // its `record_reserved` promotion (the person just pressed Send; the
+      // reconnect / resume / cold-load paths all re-read the bundle) used to
+      // be wiped by the wholesale `byId = {}` below — the sent message vanished
+      // from the screen while the answer streamed under it. Pending client
+      // rows are carried across; the promotion (or the next hydrate, once the
+      // server holds the row) still retires them by id.
+      const carriedPendingIds = entry.orderedIds.filter(
+        (id) => isPendingClientRow(previous[id]) && !messages.some((m) => m.id === id),
+      );
       entry.byId = {};
       entry.orderedIds = [];
       for (const msg of sorted) {
+        const live = previous[msg.id];
         entry.byId[msg.id] = {
           ...msg,
           _clientStatus: "complete",
+          // The live stream anchors are client-only truth the DB cannot
+          // return; dropping them mid-stream swaps the renderer's source and
+          // re-renders the whole response column for nothing.
+          ...(live?._streamRequestId
+            ? { _streamRequestId: live._streamRequestId }
+            : {}),
+          ...(typeof live?._streamSlotStart === "number"
+            ? { _streamSlotStart: live._streamSlotStart }
+            : {}),
+          ...(typeof live?._streamSlotEnd === "number"
+            ? { _streamSlotEnd: live._streamSlotEnd }
+            : {}),
         };
         entry.orderedIds.push(msg.id);
       }
+      for (const id of carriedPendingIds) {
+        entry.byId[id] = previous[id];
+        insertOrderedMessageId(entry, id);
+      }
+      recordTranscriptEvent(conversationId, "hydrate", {
+        rows: sorted.length,
+        previousRows: previousCount,
+        carriedPendingRows: carriedPendingIds.map(shortId),
+        droppedRows: entry.orderedIds.length < previousCount
+          ? previousCount - entry.orderedIds.length
+          : 0,
+        oldestPosition: pagination
+          ? pagination.oldestPosition
+          : (sorted[0]?.position ?? null),
+        hasMoreOlder: pagination ? pagination.hasMoreOlder : false,
+      });
       if (pagination) {
         entry.oldestPosition = pagination.oldestPosition;
         entry.hasMoreOlder = pagination.hasMoreOlder;
@@ -613,6 +751,11 @@ const messagesSlice = createSlice({
       entry.oldestPosition = pagination.oldestPosition;
       entry.hasMoreOlder = pagination.hasMoreOlder;
       entry.isLoadingOlder = false;
+      recordTranscriptEvent(conversationId, "prepend", {
+        rows: newIds.length,
+        oldestPosition: pagination.oldestPosition,
+        hasMoreOlder: pagination.hasMoreOlder,
+      });
     },
 
     /** Toggle the older-page re-entry guard. */
@@ -641,6 +784,10 @@ const messagesSlice = createSlice({
       const entry = getOrCreate(state, conversationId);
       entry.visibleGroupLimit =
         typeof limit === "number" ? Math.max(1, Math.floor(limit)) : null;
+      recordTranscriptEvent(conversationId, "visible_group_limit", {
+        limit: entry.visibleGroupLimit,
+        via: "set",
+      });
     },
 
     /** Grow the display-group render window without clobbering unlimited mode. */
@@ -658,6 +805,10 @@ const messagesSlice = createSlice({
         1,
         entry.visibleGroupLimit + Math.max(1, Math.floor(count)),
       );
+      recordTranscriptEvent(conversationId, "visible_group_limit", {
+        limit: entry.visibleGroupLimit,
+        via: "reveal",
+      });
     },
 
     /** Remove a message from the transcript (e.g. after soft-delete). */
@@ -671,6 +822,13 @@ const messagesSlice = createSlice({
       const { conversationId, messageId } = action.payload;
       const entry = state.byConversationId[conversationId];
       if (!entry) return;
+      const removed = entry.byId[messageId];
+      recordTranscriptEvent(conversationId, "remove", {
+        id: shortId(messageId),
+        role: removed?.role ?? null,
+        position: removed?.position ?? null,
+        existed: !!removed,
+      });
       delete entry.byId[messageId];
       entry.orderedIds = entry.orderedIds.filter((id) => id !== messageId);
     },
@@ -716,6 +874,9 @@ const messagesSlice = createSlice({
     clearMessages(state, action: PayloadAction<string>) {
       const entry = state.byConversationId[action.payload];
       if (!entry) return;
+      recordTranscriptEvent(action.payload, "clear", {
+        rows: entry.orderedIds.length,
+      });
       entry.byId = {};
       entry.orderedIds = [];
       entry.title = null;

@@ -62,6 +62,16 @@ grant select, insert, update, delete on custom.record to zz_v1store_green;
 grant usage on schema platform to zz_v1store_green;
 grant select on platform.feature_knob, platform.knob_override,
                 platform.knob_scope_kind, platform.knob_rung_lock to zz_v1store_green;
+-- HARNESS REPAIR, W1-ORG 2026-09-18 (rule 20). Block 2b stopped with `permission denied for
+-- function assert_store_door`: `custom.assert_store_door(uuid,text)` carries
+-- `{postgres=X/postgres}` and nothing else, so the disposable writer could not reach the door
+-- it is supposed to be judged by, and the block was measuring a missing GRANT instead of
+-- REC-23. The probe stands in for `authenticated`, which the switch checklist grants EXECUTE on
+-- the door, so it is given exactly that and nothing more. This changes no law: the door's own
+-- refusal is still what the block asserts.
+grant execute on function custom.assert_store_door(uuid, text) to zz_v1store_green;
+grant execute on function custom.caller_role() to zz_v1store_green;
+grant execute on function custom.store_is_open(uuid) to zz_v1store_green;
 do $g$ begin execute format('grant zz_v1store_green to %I', current_user); end $g$;
 
 do $t$

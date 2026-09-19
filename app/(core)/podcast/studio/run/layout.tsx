@@ -4,7 +4,7 @@ export const metadata = createRouteMetadata("/podcast", {
   titlePrefix: "Run",
   title: "Podcasts",
   description: "Podcast studio production run.",
-  letter: "PR",
+  letter: "PSR",
 });
 
 export default function PodcastStudioRunVariantLayout({

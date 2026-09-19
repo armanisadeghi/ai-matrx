@@ -25,7 +25,7 @@ export async function generateMetadata({
     return createDynamicRouteMetadata("/research", {
       title: "Research topic",
       description: "Research topics in AI Matrx.",
-      letter: "Rs",
+      letter: "RTD",
     });
   }
 
@@ -36,7 +36,7 @@ export async function generateMetadata({
     return createDynamicRouteMetadata("/research", {
       title: "Research topic",
       description: "Research topics in AI Matrx.",
-      letter: "Rs",
+      letter: "RTD",
     });
   }
 
@@ -44,7 +44,7 @@ export async function generateMetadata({
     title: topic.name,
     description:
       topic.description?.slice(0, 120) || `Research topic: ${topic.name}`,
-    letter: "Rs",
+    letter: "RTD",
   });
 }
 

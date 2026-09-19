@@ -485,20 +485,26 @@ async function ledgerRow(
 
 
 /**
- * A CAMPAIGN FILE MAY LAND ON PRODUCTION ONLY BEHIND ITS OWN REHEARSAL AND ITS OWN
- * LOCK (ATTACK-6 findings 1 and 8).
+ * A CAMPAIGN FILE MAY LAND ON THE MAIN DATABASE BEHIND ITS OWN LANE LOCK.
  *
- * Both facts live on the REHEARSAL BRANCH and nowhere else — that is the database
- * §4.7 names, and it is named here in code so nobody has to read a book to find out:
- *   · the rehearsal is a `public._schema_migrations` row for the SAME basename whose
- *     checksum is the checksum of the bytes about to run on production. §6b.1's "it
- *     is the same file" stops being an assurance and becomes a check;
- *   · the lock is a `campaign_watch.build_lock` row whose `held_by` is this `--lane`.
- *     A lane that failed, stopped, or released its lock cannot land on production,
- *     and two lanes can never apply to the same object at once (§4.14).
+ * 🚨 THE REHEARSAL COPY IS NOT A GATE (owner ruling, 2026-09-18: *"we have no
+ * production. It's all just dev… All of your work should just go live"*). Until
+ * then this function ALSO demanded a `public._schema_migrations` row on the branch
+ * for the same basename with a byte-identical checksum, and refused the apply
+ * without one. That gate is GONE: the rehearsal copy is a fast scratch run to catch
+ * syntax errors, never a precondition. A file may be applied to the main database
+ * with no prior rehearsal ledger row and no matching rehearsal checksum.
  *
- * Read-only on the branch; opens and closes its own connection; refuses on any error
- * rather than assuming. NOTHING about this check is the environment's to decide.
+ * Nothing about the STATEMENTS moved. The additive allow-list, the guard-read rule,
+ * the named-by-the-command (chair-step) class and the `-- based-on:` hash check —
+ * which is recomputed against THE DATABASE BEING APPLIED TO, immediately before the
+ * file executes — all still judge every campaign file exactly as before.
+ *
+ * What remains here is the LANE LOCK: a `campaign_watch.build_lock` row on the
+ * branch whose `held_by` is this `--lane`. It is concurrency control between lanes
+ * (§4.14 — two lanes never land on one object at once), not a rehearsal claim, so it
+ * stays. Read-only on the branch; opens and closes its own connection; refuses on
+ * any error rather than assuming.
  */
 async function assertCampaignProductionIsAuthorised(
   filename: string,
@@ -525,27 +531,19 @@ async function assertCampaignProductionIsAuthorised(
   });
   try {
     await branch.connect();
+    // The rehearsal row is read for INFORMATION ONLY — never to refuse. See the header.
     const rehearsal = await branch.query<{ checksum: string; applied_at: string }>(
       `select checksum, applied_at::text as applied_at from public._schema_migrations
          where source = $1 and filename = $2`,
       [SOURCE, filename],
     );
     const row = rehearsal.rows[0];
-    if (!row)
-      return (
-        `${filename} has NO rehearsal ledger row on the branch ${branchRef.branchRef}.\n` +
-        `  §6b.1: nothing reaches production that has not passed its exit on the branch. Run\n` +
-        `    pnpm db:apply migrations/${CAMPAIGN_DIRNAME}/${filename} --source ${CAMPAIGN_SOURCE} --target branch --lane ${lane}\n` +
-        `  first, prove the lane's exit there, then come back.`
-      );
-    if (row.checksum !== checksum)
-      return (
-        `${filename} was rehearsed on the branch at ${row.applied_at}, but the bytes have MOVED\n` +
-        `  since: branch ledger ${row.checksum}\n` +
-        `         this file   ${checksum}\n` +
-        `  "It is the same file" is the whole of §6b.1's byte-identity argument. Re-rehearse the\n` +
-        `  current bytes on the branch (--reapply) before landing them on production.`
-      );
+    const rehearsalNote = !row
+      ? `${C.dim}not rehearsed on the copy — applying straight to the main database${C.reset}`
+      : row.checksum !== checksum
+        ? `${C.dim}rehearsed ${row.applied_at} with DIFFERENT bytes (copy ${row.checksum.slice(0, 12)}, ` +
+          `this file ${checksum.slice(0, 12)}) — the copy is not a gate${C.reset}`
+        : `${C.dim}rehearsed on the copy at ${row.applied_at}, byte-identical${C.reset}`;
     const lock = await branch.query<{ held_by: string; taken_at: string; lock_name: string }>(
       `select lock_name, held_by, taken_at::text as taken_at from campaign_watch.build_lock
          where held_by = $1`,
@@ -569,9 +567,8 @@ async function assertCampaignProductionIsAuthorised(
       );
     }
     console.log(
-      `${TAG.ok}campaign authorisation ${C.dim}— rehearsed on the branch at ${row.applied_at}, ` +
-        `byte-identical; lock ${lock.rows.map((r) => r.lock_name).join(", ")} held by ${lane} ` +
-        `since ${lock.rows[0]!.taken_at}${C.reset}`,
+      `${TAG.ok}campaign authorisation ${C.dim}— lock ${lock.rows.map((r) => r.lock_name).join(", ")} ` +
+        `held by ${lane} since ${lock.rows[0]!.taken_at}; ${rehearsalNote}${C.reset}`,
     );
     return null;
   } catch (err) {
@@ -586,7 +583,7 @@ async function assertCampaignProductionIsAuthorised(
 
 function usage(): void {
   console.log(
-    `${C.bold}pnpm db:apply <migrations/file.sql> [--target branch|production] [--dry-run] [--reapply] [--statement-timeout=10min]${C.reset}\n` +
+    `${C.bold}pnpm db:apply <migrations/file.sql> [--target branch|production] [--dry-run] [--reapply] [--statement-timeout=10min] [--confirm-chair-step <file.sql>]${C.reset}\n` +
       `  pnpm db:apply migrations/${CAMPAIGN_DIRNAME}/<file>.sql --source ${CAMPAIGN_SOURCE} --target branch|production --lane <lane>\n` +
       `                                     the ONLY route into migrations/${CAMPAIGN_DIRNAME}/, which no\n` +
       `                                     release path, sweep, CI job or scheduled job scans\n` +
@@ -612,6 +609,9 @@ interface ApplyOpts {
   lane: string | null;
   /** `--branch-ref=<path>` / MATRX_BRANCH_REF — the override a throwaway worktree needs. */
   branchRefPath?: string;
+  /** `--confirm-chair-step <file>` — the basenames this command NAMED. A chair step at
+   *  `--target production` runs only when its own basename is here (scripts/lib/chair-step.ts). */
+  confirmedChairSteps?: readonly string[];
 }
 
 /** Apply ONE file. The whole of db:apply lives here so --self-test exercises
@@ -703,8 +703,8 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
         `path scans.\n` +
         `  The ONE route to either database is the plan's own command:\n` +
         `    pnpm db:apply ${relative(ROOT, path)} --source ${CAMPAIGN_SOURCE} --target branch --lane <lane>\n` +
-        `  and, after that rehearsal is ledgered on the branch and while this lane holds its\n` +
-        `  campaign_watch.build_lock row, the same file with --target production.\n` +
+        `  and, while this lane holds its campaign_watch.build_lock row, the same file with\n` +
+        `  --target production. A rehearsal on the copy is a convenience, never a precondition.\n` +
         `  Refusing by LOCATION, before its header is read.`,
     );
     return 1;
@@ -724,7 +724,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       `${TAG.fail}${relative(ROOT, path)} is a campaign migration and no --lane was named.\n` +
         `  Every campaign apply is attributable to ONE lane: the lane id is what the\n` +
         `  campaign_watch.build_lock row on the rehearsal branch is checked against before a\n` +
-        `  production apply, and what the rehearsal is read back under. Pass --lane <lane id>.`,
+        `  production apply. Pass --lane <lane id>.`,
     );
     return 1;
   }
@@ -862,7 +862,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
   // Both happen BEFORE any production credential is loaded: a refusal here never
   // opened a connection.
   if (chairStep && target === "production" && !dryRun) {
-    const refused = await confirmChairStep(filename, chairStep.why);
+    const refused = await confirmChairStep(filename, chairStep.why, opts.confirmedChairSteps ?? []);
     if (refused) {
       console.error(`${TAG.fail}${refused}`);
       return 1;
@@ -1069,7 +1069,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
           );
           for (const line of sql.split("\n")) console.log(`       ${C.dim}${line}${C.reset}`);
           if (!dryRun) {
-            const refused = await confirmChairStep(filename, late.chairStep.why);
+            const refused = await confirmChairStep(filename, late.chairStep.why, opts.confirmedChairSteps ?? []);
             if (refused) {
               console.error(`${TAG.fail}${refused}`);
               await client.query("rollback").catch(() => {});
@@ -1145,7 +1145,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       `select set_config('matrx.db_apply_t0', clock_timestamp()::text, true);`;
     // A CONFIRMED CHAIR STEP IS LOGGED TO THE LEDGER (ATTACK-6 finding 4). The
     // column is added idempotently on the one path that writes it, so the record of
-    // who waived the additive rule and why outlives the terminal it was typed into.
+    // who waived the additive rule and why outlives the command that named it.
     // Nullable, no default, no live reader — every other insert names its columns.
     const chairStepLog = chairStepConfirmed
       ? `alter table public._schema_migrations add column if not exists chair_step text;\n`
@@ -1159,7 +1159,7 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
       `        greatest(1, (extract(epoch from clock_timestamp()\n` +
       `                     - current_setting('matrx.db_apply_t0')::timestamptz) * 1000)::int)` +
       (chairStepConfirmed
-        ? `,\n        ${lit(`${chairStepConfirmed} — confirmed at a terminal by ${process.env.USER ?? "unknown"}`)}`
+        ? `,\n        ${lit(`${chairStepConfirmed} — named with --confirm-chair-step by ${process.env.USER ?? "unknown"}`)}`
         : ``) +
       `)\n` +
       `on conflict (source, filename) do update set\n` +
@@ -2012,6 +2012,17 @@ async function main(): Promise<number> {
     const i = argv.indexOf(flag);
     if (i >= 0 && argv[i + 1] && !argv[i + 1]!.startsWith("--")) valueIdxs.add(i + 1);
   }
+  // `--confirm-chair-step <file.sql>` (repeatable, or `=` form): the basenames this command
+  // NAMES. A chair step runs only when its own basename is among them — scripts/lib/chair-step.ts.
+  const confirmedChairSteps: string[] = [];
+  argv.forEach((tok, i) => {
+    if (tok === "--confirm-chair-step" && argv[i + 1] && !argv[i + 1]!.startsWith("--")) {
+      valueIdxs.add(i + 1);
+      confirmedChairSteps.push(basename(argv[i + 1]!.trim()));
+    } else if (tok.startsWith("--confirm-chair-step=")) {
+      confirmedChairSteps.push(basename(tok.slice("--confirm-chair-step=".length).trim()));
+    }
+  });
   const positional = argv.filter((a, i) => !a.startsWith("--") && !valueIdxs.has(i));
 
   if (positional.length !== 1) {
@@ -2034,6 +2045,7 @@ async function main(): Promise<number> {
     campaignSource,
     lane,
     branchRefPath: branchRefOverride(argv),
+    confirmedChairSteps,
   });
 }
 

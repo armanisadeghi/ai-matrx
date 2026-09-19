@@ -276,9 +276,14 @@ describe("no synced table carries a role column the strip cannot see", () => {
  * fails, naming the missing spelling.
  */
 describe("ruling R28 — external_updated_at is read, not parked", () => {
-  it("REFRESHED_COLUMNS carries `external_updated_at`, after `synced_at` and `external_modified_at`", () => {
+  it("REFRESHED_COLUMNS carries `external_updated_at`, after our own refresh times", () => {
+    // OUR record of the refresh comes first, under both spellings the database
+    // uses (`synced_at`; `last_synced_at` on `media.source_library` and
+    // `code.code_repositories` — no table carries both). The PROVIDER's own
+    // modified/updated times answer only for a row we have never re-read.
     expect([...REFRESHED_COLUMNS]).toEqual([
       "synced_at",
+      "last_synced_at",
       "external_modified_at",
       "external_updated_at",
     ]);
@@ -341,6 +346,16 @@ describe("the ACCOUNT role is recognised by structure, not by spelling (F-81)", 
     }
     expect(seen).toEqual({
       "communication.calendar_event": ["synced_via_connection_id"],
+      // 🚨 EMPTY ON PURPOSE, and it is a finding, not a formality.
+      // `media.source_library` became censusable on 2026-09-18 when the `media`
+      // schema finally reached the generated types (`30e05dbd80`), and it is a
+      // MIRROR (`external_id` + `sync_status`) that carries NO connection-side
+      // column at all — so `resolveRowAccountId` has nothing to read and the
+      // strip would fall back to RANKING the accounts, which is the F-51 defect.
+      // Same standing as the `web.youtube_video` near-miss in the census below:
+      // no item type reads this table on a screen today, so nothing on a screen
+      // is wrong yet — and the day one does, the column has to exist first.
+      "media.source_library": [],
       "web.youtube_video": ["channel_resource_id"],
       "workbench.google_document": ["resource_id", "synced_via_connection_id"],
     });

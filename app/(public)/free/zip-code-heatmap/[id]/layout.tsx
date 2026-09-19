@@ -30,7 +30,7 @@ export async function generateMetadata({
   return createDynamicRouteMetadata("/free/zip-code-heatmap", {
     title,
     description,
-    letter: "Zh",
+    letter: "ZHD",
   });
 }
 

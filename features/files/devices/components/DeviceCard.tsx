@@ -17,6 +17,9 @@ import { Badge } from "@ai-matrx/design-system";
 
 import { cn } from "@/lib/utils";
 
+import { HomeConnectionRow } from "@/features/residential-egress/components/HomeConnectionRow";
+import type { EgressDeviceRow } from "@/features/residential-egress/types";
+
 import { DEVICE_SILENT_AFTER_MS } from "../honest-states";
 import { useNow } from "../useNow";
 import type { DeviceRow, SyncMappingRow } from "../types";
@@ -57,10 +60,23 @@ function sinceLabel(iso: string | null, now: number): string {
 export function DeviceCard({
   device,
   mappings,
+  homeConnection,
+  homeConnectionError,
+  onHomeConnectionChanged,
   onChanged,
 }: {
   device: DeviceRow;
   mappings: SyncMappingRow[];
+  /**
+   * This computer's home connection row (`platform.egress_device` matched by
+   * `app_instance_id`), or null when it is not lending its connection. The
+   * card owns the pairing so the two facts about ONE computer live together
+   * rather than in two lists a person has to reconcile.
+   */
+  homeConnection?: EgressDeviceRow | null;
+  /** The home-connection read's error, when there is one. Never rendered as "Not set up". */
+  homeConnectionError?: string | null;
+  onHomeConnectionChanged?: () => void;
   onChanged: () => void;
 }) {
   const now = useNow();
@@ -111,6 +127,13 @@ export function DeviceCard({
           on {name} and sign in.
         </p>
       ) : null}
+
+      <HomeConnectionRow
+        device={homeConnection ?? null}
+        deviceName={name}
+        readError={homeConnectionError ?? null}
+        onChanged={() => onHomeConnectionChanged?.()}
+      />
 
       {mappings.length === 0 ? (
         <p className="border-t border-border px-3 py-2 text-xs text-muted-foreground">

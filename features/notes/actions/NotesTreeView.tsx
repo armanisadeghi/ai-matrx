@@ -15,6 +15,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
+import { noteCreateErrorMessage } from "../utils/writeErrors";
 import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { useNotesRedux } from "../hooks/useNotesRedux";
 import { useAllFolders, getFolderIconAndColor } from "../utils/folderUtils";
@@ -123,8 +125,9 @@ export function NotesTreeView({
           organization_id: capturedOrganizationId,
         });
         onSelectNote?.(note);
-      } catch {
-        // ignored
+      } catch (cause) {
+        // A create that closes its input row and says nothing is a dead button.
+        toast.error(noteCreateErrorMessage(cause));
       } finally {
         setBusyAction(null);
         setCreatingNoteIn(null);
@@ -167,8 +170,8 @@ export function NotesTreeView({
       const note = await findOrCreateEmptyNote(name);
       setExpandedFolder(name);
       onSelectNote?.(note);
-    } catch {
-      // ignored
+    } catch (cause) {
+      toast.error(noteCreateErrorMessage(cause));
     } finally {
       setBusyAction(null);
       setCreatingFolder(false);

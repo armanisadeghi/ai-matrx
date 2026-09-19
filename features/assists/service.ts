@@ -280,6 +280,58 @@ export async function filterUndecidedKeys(keys: string[]): Promise<string[]> {
 }
 
 /**
+ * The ONE status that means "stop showing me this": the person dismissed it.
+ *
+ * Everything else is not a standing instruction. `accepted` means they DID the
+ * thing once — the opposite of "never again". `expired`, `superseded` and
+ * `resolved` happened to the row without anybody deciding anything.
+ */
+const SILENCED_BY_A_PERSON: readonly AssistStatus[] = ["dismissed"];
+
+/**
+ * Like {@link filterUndecidedKeys}, but only a DISMISSAL blocks a key. Use it
+ * when the producer's condition genuinely RECURS under the same dedupe key.
+ *
+ * 🚨 WHY THIS EXISTS, and what the live ledger taught it. `filterUndecidedKeys`
+ * treats any non-pending status as decided. For a producer whose key is stable
+ * — one row per workspace, say — that makes a one-shot notice in two different
+ * ways, and both were real:
+ *
+ *   * `resolved` means "the condition stopped reproducing and NOBODY had to
+ *     decide anything". A producer that resolves its own row when the work is
+ *     finished would then be silenced by its own success, and the queue could
+ *     fill up for ever with nobody told.
+ *   * `accepted` means the person PRESSED THE BUTTON. Reading that as "stop
+ *     showing me this" silences the one person who proved the notice works.
+ *     Two workspaces reached exactly that state within minutes of the feature
+ *     going live, which is how this was caught.
+ *
+ * A dismissal is different, and durable: it is the only one the person issued
+ * as an instruction about the future, and it is what "Dismiss for good"
+ * promises on the card.
+ */
+export async function filterKeysNotSilencedByAPerson(
+  keys: string[],
+): Promise<string[]> {
+  if (keys.length === 0) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("platform")
+    .from(TABLE)
+    .select("dedupe_key")
+    .in("dedupe_key", keys)
+    .in("status", SILENCED_BY_A_PERSON as unknown as string[]);
+  if (error) {
+    // Fail CLOSED: an unreadable ledger must not resurrect something the
+    // person told us to stop showing.
+    console.error(`[assists] silenced-key lookup failed: ${error.message}`);
+    return [];
+  }
+  const silenced = new Set((data ?? []).map((r) => r.dedupe_key));
+  return keys.filter((k) => !silenced.has(k));
+}
+
+/**
  * The manager read — EVERY status, server-side filter / sort / paginate.
  *
  * Deliberately NOT the chip read: a triage surface must reach decided and
