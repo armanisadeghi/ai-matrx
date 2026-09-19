@@ -51,7 +51,8 @@
     "W6-BOOK": 3012,
     "W6-HISTORY": 3013,
     "DATA-V2": 3014,
-    "W7-OFF": 3015
+    "W7-OFF": 3015,
+    "UI-EDIT": 3016
   },
   "noDevServer": {
     "W6-DOCS": "Proves its contract through the document pipeline, not a browser.",

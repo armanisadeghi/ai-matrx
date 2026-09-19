@@ -13,6 +13,7 @@
 // row for this person in this organization, so the campaign can be on for one
 // builder while it stays off for everybody else.
 
+import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { RecordsMount, TablesHome, personActor, recordsDataSource } from "@ai-matrx/records-ui";
@@ -22,6 +23,7 @@ import HeaderStructured from "@/features/shell/components/header/variants/varian
 import { useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { getOrganizationMembers } from "@/features/organizations/service";
 import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { createClient } from "@/utils/supabase/client";
 import {
@@ -40,6 +42,18 @@ export default function UnifiedDataPage() {
     userId,
     platformDefault: () => UNIFIED_DATA_CAMPAIGN.enabled(),
   });
+
+  /** The same membership port the table page binds — see its comment. */
+  const members = useCallback(async () => {
+    if (!organizationId) return [];
+    const roster = await getOrganizationMembers(organizationId);
+    return roster.map((member) => ({
+      userId: member.userId,
+      name: member.user?.displayName ?? null,
+      email: member.user?.email ?? null,
+      avatarUrl: member.user?.avatarUrl ?? null,
+    }));
+  }, [organizationId]);
 
   return (
     <>
@@ -61,7 +75,7 @@ export default function UnifiedDataPage() {
               actor: personActor(userId),
               organizationId: organizationId!,
             }}
-            host={{ Link, density: "condensed" }}
+            host={{ Link, density: "condensed", members }}
           >
             <TablesHome onOpenTable={(tableId) => router.push(`/data-v2/${tableId}`)} />
           </RecordsMount>
