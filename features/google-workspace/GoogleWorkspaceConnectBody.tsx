@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CircleAlert, ExternalLink, Loader2, Mail, Plus } from "lucide-react";
 import { NonEditableContextMenu } from "@/features/context-menu-v3/NonEditableContextMenu";
 import { Button } from "@/components/ui/button";
+import { Input } from "@ai-matrx/design-system";
 import { toast, recordToast } from "@/lib/toast";
 import { LazyGoogleAPIProvider } from "@/providers/google-provider/LazyGoogleAPIProvider";
 import {
@@ -43,15 +44,30 @@ import {
 } from "@/lib/googlePicker";
 import type { SelectedGoogleFile } from "@/features/google-workspace/types";
 import { extractErrorMessage } from "@/utils/errors";
-import { importGoogleDriveFiles } from "@/features/files/storage-sources/service";
+import {
+  importStorageSourceFiles,
+  safeStorageBasename,
+} from "@/features/files/storage-sources/service";
 import { getGoogleDrivePickerToken } from "@/features/google-workspace/drivePickerToken";
-import { emitGoogleConnectEvent } from "@/features/overlays/callbacks/googleConnectWindow";
-import { useAppSelector } from "@/lib/redux/hooks";
+import {
+  disposeGoogleConnectCallbackGroup,
+  emitGoogleConnectEvent,
+} from "@/features/overlays/callbacks/googleConnectWindow";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import { awaitEffectiveOrganizationId } from "@/features/organizations/awaitWorkspace";
 import { isGoogleAuthorizationActionDisabled } from "./authorizationReadiness";
 import { useGoogleAuthorizationWindow } from "@/providers/google-provider/useGoogleAuthorizationWindow";
-import { enforceStorageSelectionMode, matchStorageAccept } from "@/features/files/storage-sources/accept";
+import {
+  enforceStorageSelectionMode,
+  matchStorageAccept,
+} from "@/features/files/storage-sources/accept";
+import type {
+  CanonicalStorageImport,
+  StorageImportFailure,
+  StorageImportSelection,
+} from "@/features/files/storage-sources/types";
+import { attachChildToFolder, upsertFiles } from "@/features/files/redux/slice";
 
 export interface GoogleWorkspaceConnectBodyProps {
   onClose: () => void;
@@ -66,6 +82,8 @@ export interface GoogleWorkspaceConnectBodyProps {
   importDestinationFolderPath?: string | null;
   accept?: string | null;
   multiple?: boolean;
+  /** Window host hook used to make X/Escape obey import settlement. */
+  registerCloseRequest?: (request: (() => void) | null) => void;
 }
 
 /** Preserve the overlay's close notification for any WindowPanel composition. */
@@ -73,8 +91,12 @@ export async function closeGoogleWorkspaceConnect(
   callbackGroupId: string | null | undefined,
   onClose: () => void,
 ): Promise<void> {
-  await emitGoogleConnectEvent(callbackGroupId, { type: "window-close" });
-  onClose();
+  try {
+    await emitGoogleConnectEvent(callbackGroupId, { type: "window-close" });
+  } finally {
+    disposeGoogleConnectCallbackGroup(callbackGroupId);
+    onClose();
+  }
 }
 
 /**
@@ -102,12 +124,14 @@ function GoogleWorkspaceConnectBodyContent({
   importDestinationFolderPath,
   accept,
   multiple = true,
+  registerCloseRequest,
 }: GoogleWorkspaceConnectBodyProps) {
   const google = useGoogleAPI();
   // 🚨 ONE Google authorization window per PERSON — never a per-component
   // lock, never the raw provider primitive (V-23 NEW-3, lane F-103).
   const googleAuth = useGoogleAuthorizationWindow();
   const organizationContextId = useAppSelector(selectOrganizationId);
+  const dispatch = useAppDispatch();
   const connectGoogle = useConnectGoogle();
   const inventory = useGoogleConnectionInventory();
   const [busy, setBusy] = useState<string | null>(null);
@@ -115,6 +139,23 @@ function GoogleWorkspaceConnectBodyContent({
   const [selectedConnectionId, setSelectedConnectionId] = useState<
     string | null
   >(() => initialConnectionId ?? preferredGoogleConnectionId("workspace"));
+  const [driveFailures, setDriveFailures] = useState<StorageImportFailure[]>(
+    [],
+  );
+  const [driveCollisionNames, setDriveCollisionNames] = useState<
+    Record<string, string>
+  >({});
+  const [driveRetryError, setDriveRetryError] = useState<string | null>(null);
+  const [driveRetained, setDriveRetained] = useState<
+    Map<string, CanonicalStorageImport>
+  >(new Map());
+  const [driveDeliveryError, setDriveDeliveryError] = useState<string | null>(
+    null,
+  );
+  const driveRetainedRef = useRef<Map<string, CanonicalStorageImport>>(
+    new Map(),
+  );
+  const driveCancelRequestedRef = useRef(false);
   /**
    * 🚨 F-74 — a fresh pick hands its Record straight to the open control (F-69,
    * `openRecord.tsx`). The inventory row `files` renders from
@@ -196,6 +237,153 @@ function GoogleWorkspaceConnectBodyContent({
     }
   }, []);
 
+  const upsertCanonical = useCallback(
+    (imports: CanonicalStorageImport[]) => {
+      const canonical = imports.map((item) => item.file);
+      dispatch(upsertFiles(canonical));
+      for (const file of canonical) {
+        dispatch(
+          attachChildToFolder({
+            parentFolderId: file.parentFolderId,
+            kind: "file",
+            id: file.id,
+          }),
+        );
+      }
+    },
+    [dispatch],
+  );
+
+  const finishDriveImport = useCallback(() => {
+    disposeGoogleConnectCallbackGroup(callbackGroupId);
+    onClose();
+  }, [callbackGroupId, onClose]);
+
+  const deliverDriveImports = useCallback(
+    async (imports: CanonicalStorageImport[]): Promise<boolean> => {
+      if (!imports.length) return true;
+      upsertCanonical(imports);
+      const waiting = new Map(driveRetainedRef.current);
+      for (const imported of imports) waiting.set(imported.fileId, imported);
+      driveRetainedRef.current = waiting;
+      setDriveRetained(waiting);
+      try {
+        await emitGoogleConnectEvent(callbackGroupId, {
+          type: "drive-imported",
+          files: imports,
+          failures: [],
+        });
+        const acknowledged = new Map(driveRetainedRef.current);
+        for (const imported of imports) acknowledged.delete(imported.fileId);
+        driveRetainedRef.current = acknowledged;
+        setDriveRetained(acknowledged);
+        if (acknowledged.size === 0) setDriveDeliveryError(null);
+        return true;
+      } catch (error) {
+        setDriveDeliveryError(extractErrorMessage(error));
+        return false;
+      }
+    },
+    [callbackGroupId, upsertCanonical],
+  );
+
+  const runDriveImports = useCallback(
+    async (selections: StorageImportSelection[]) => {
+      setDriveFailures([]);
+      setDriveRetryError(null);
+      const remainingFailures: StorageImportFailure[] = [];
+      for (const selection of selections) {
+        if (driveCancelRequestedRef.current) break;
+        const result = await importStorageSourceFiles({
+          provider: "google_drive",
+          connectionId: connection?.id ?? "",
+          selections: [selection],
+          destinationFolderPath: importDestinationFolderPath ?? undefined,
+          shouldContinue: () => !driveCancelRequestedRef.current,
+        });
+        remainingFailures.push(...result.failures);
+        await deliverDriveImports(result.files);
+      }
+      setDriveFailures(remainingFailures);
+      setDriveCollisionNames((current) => {
+        const next = { ...current };
+        for (const failure of remainingFailures) {
+          if (failure.collisionProposal && !next[failure.selection.sourceRef]) {
+            next[failure.selection.sourceRef] = failure.collisionProposal;
+          }
+        }
+        return next;
+      });
+      if (
+        driveRetainedRef.current.size === 0 &&
+        (driveCancelRequestedRef.current || remainingFailures.length === 0)
+      ) {
+        finishDriveImport();
+      }
+    },
+    [
+      connection?.id,
+      deliverDriveImports,
+      finishDriveImport,
+      importDestinationFolderPath,
+    ],
+  );
+
+  const retryDriveFailures = () => {
+    const invalidCollision = driveFailures.some((failure) => {
+      if (!failure.collisionProposal) return false;
+      const confirmed = driveCollisionNames[failure.selection.sourceRef] ?? "";
+      return (
+        !safeStorageBasename(confirmed) ||
+        !matchStorageAccept(
+          confirmed,
+          failure.selection.mimeType,
+          accept ?? undefined,
+        ).accepted
+      );
+    });
+    if (invalidCollision) {
+      setDriveRetryError(
+        "Enter a valid file name for each collision before retrying.",
+      );
+      return;
+    }
+    void run("pick", () => {
+      driveCancelRequestedRef.current = false;
+      return runDriveImports(
+        driveFailures.map((failure) => ({
+          ...failure.selection,
+          ...(failure.collisionProposal
+            ? {
+                destinationName:
+                  driveCollisionNames[failure.selection.sourceRef],
+              }
+            : {}),
+        })),
+      );
+    });
+  };
+
+  const retryDriveDelivery = () =>
+    void deliverDriveImports([...driveRetainedRef.current.values()]).then(
+      (acknowledged) => {
+        if (acknowledged && driveRetainedRef.current.size === 0) {
+          finishDriveImport();
+        }
+      },
+    );
+
+  const requestClose = useCallback(() => {
+    driveCancelRequestedRef.current = true;
+    if (busy === "pick" || driveRetainedRef.current.size > 0) return;
+    void closeGoogleWorkspaceConnect(callbackGroupId, onClose);
+  }, [busy, callbackGroupId, onClose]);
+
+  useEffect(() => {
+    registerCloseRequest?.(requestClose);
+    return () => registerCloseRequest?.(null);
+  }, [registerCloseRequest, requestClose]);
+
   const connect = () =>
     void run("connect", async () => {
       const code = await googleAuth.openAuthorizationWindow([
@@ -262,43 +450,38 @@ function GoogleWorkspaceConnectBodyContent({
   const chooseFile = () =>
     void run("pick", async () => {
       if (!connection) return;
+      if (mode === "drive-import") driveCancelRequestedRef.current = false;
       const accessToken = await getGoogleDrivePickerToken(connection);
       if (mode === "drive-import") {
         const picked = await pickGoogleDriveFiles(accessToken, { multiple });
+        if (driveCancelRequestedRef.current) {
+          finishDriveImport();
+          return;
+        }
         if (!picked?.length) return;
         const selection = enforceStorageSelectionMode(picked, multiple);
         if (!selection.accepted) throw new Error(selection.reason);
         const rejected = selection.values.find(
-          (file) => !matchStorageAccept(file.name, file.mimeType, accept ?? undefined).accepted,
+          (file) =>
+            !matchStorageAccept(file.name, file.mimeType, accept ?? undefined)
+              .accepted,
         );
         if (rejected) {
           throw new Error(
-            matchStorageAccept(rejected.name, rejected.mimeType, accept ?? undefined).reason ??
-              `${rejected.name} cannot be selected here.`,
+            matchStorageAccept(
+              rejected.name,
+              rejected.mimeType,
+              accept ?? undefined,
+            ).reason ?? `${rejected.name} cannot be selected here.`,
           );
         }
-        const result = await importGoogleDriveFiles(
-          connection.id,
-          selection.values,
-          importDestinationFolderPath ?? undefined,
+        await runDriveImports(
+          selection.values.map((file) => ({
+            sourceRef: file.id,
+            name: file.name,
+            mimeType: file.mimeType,
+          })),
         );
-        if (!result.files.length) {
-          throw new Error(
-            result.failures[0]?.error ??
-              "No selected Google Drive file could be imported.",
-          );
-        }
-        await emitGoogleConnectEvent(callbackGroupId, {
-          type: "drive-imported",
-          files: result.files,
-          failures: result.failures,
-        });
-        toast.success(
-          result.files.length === 1
-            ? `${result.files[0]?.file.fileName ?? "Google Drive file"} imported.`
-            : `${result.files.length} Google Drive files imported.`,
-        );
-        onClose();
         return;
       }
       const picked = await pickGoogleWorkspaceFile(accessToken);
@@ -425,6 +608,7 @@ function GoogleWorkspaceConnectBodyContent({
                   ? "Loading Google…"
                   : "Connect Google"}
             </Button>
+
             <Button
               size="sm"
               variant="outline"
@@ -472,7 +656,11 @@ function GoogleWorkspaceConnectBodyContent({
               size="sm"
               variant="outline"
               onClick={chooseFile}
-              disabled={busy === "pick"}
+              disabled={
+                busy === "pick" ||
+                (mode === "drive-import" &&
+                  (driveRetained.size > 0 || driveFailures.length > 0))
+              }
             >
               {busy === "pick"
                 ? mode === "drive-import"
@@ -482,6 +670,67 @@ function GoogleWorkspaceConnectBodyContent({
                   ? "Choose files to import"
                   : googleWorkspacePickLabel()}
             </Button>
+
+            {mode === "drive-import" && driveFailures.length ? (
+              <div className="rounded-md border border-warning/30 bg-warning/5 p-2.5 text-xs">
+                <p className="font-medium">Some files still need attention</p>
+                {driveFailures.map((failure) => (
+                  <div key={failure.selection.sourceRef} className="mt-1">
+                    <p>
+                      {failure.selection.name}: {failure.error}
+                    </p>
+                    {failure.collisionProposal ? (
+                      <Input
+                        className="mt-1 h-9"
+                        aria-label={`New name for ${failure.selection.name}`}
+                        value={
+                          driveCollisionNames[failure.selection.sourceRef] ??
+                          failure.collisionProposal
+                        }
+                        onChange={(event) =>
+                          setDriveCollisionNames((current) => ({
+                            ...current,
+                            [failure.selection.sourceRef]: event.target.value,
+                          }))
+                        }
+                      />
+                    ) : null}
+                  </div>
+                ))}
+                {driveRetryError ? (
+                  <p className="mt-1 text-destructive">{driveRetryError}</p>
+                ) : null}
+                <Button
+                  size="sm"
+                  className="mt-2"
+                  disabled={busy === "pick"}
+                  onClick={retryDriveFailures}
+                >
+                  Retry failed imports
+                </Button>
+              </div>
+            ) : null}
+
+            {mode === "drive-import" && driveRetained.size > 0 ? (
+              <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2.5 text-xs">
+                <p>
+                  {driveDeliveryError ??
+                    `${driveRetained.size} imported file${driveRetained.size === 1 ? " is" : "s are"} waiting to be attached.`}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Button size="sm" onClick={retryDriveDelivery}>
+                    Retry attaching
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={finishDriveImport}
+                  >
+                    Keep in Files and close
+                  </Button>
+                </div>
+              </div>
+            ) : null}
 
             {mode === "workspace" &&
             files.some((file) =>

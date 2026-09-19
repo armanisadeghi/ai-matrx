@@ -18,7 +18,7 @@ import { disposeGoogleConnectCallbackGroup } from "@/features/overlays/callbacks
 import type { GoogleWorkspaceConnectBodyProps } from "@/features/google-workspace/GoogleWorkspaceConnectBody";
 import { GoogleWorkspaceOverviewBody } from "@/features/google-workspace/GoogleWorkspaceOverviewBody";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const WINDOW_ID = "google-connect-window";
 const OVERLAY_ID = "googleConnectWindow" as const;
@@ -39,12 +39,15 @@ export function GoogleConnectWindow({
   initialConnectionId,
   ...bodyProps
 }: GoogleConnectWindowProps) {
+  const closeRequestRef = useRef<(() => void) | null>(null);
   const [view, setView] = useState<"overview" | "workspace">(
     mode === "overview" ? "overview" : "workspace",
   );
   const [workspaceInitialConnectionId, setWorkspaceInitialConnectionId] =
     useState<string | null>(initialConnectionId ?? null);
   useEffect(() => {
+    // The same overlay instance is reopened with different modes/accounts.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setView(mode === "overview" ? "overview" : "workspace");
     setWorkspaceInitialConnectionId(initialConnectionId ?? null);
   }, [initialConnectionId, mode]);
@@ -52,16 +55,23 @@ export function GoogleConnectWindow({
     () => () => disposeGoogleConnectCallbackGroup(callbackGroupId),
     [callbackGroupId],
   );
-  if (!isOpen) return null;
-
   const isOverview = view === "overview";
   const connectMode = mode === "drive-import" ? "drive-import" : "workspace";
+  const registerCloseRequest = useCallback((request: (() => void) | null) => {
+    closeRequestRef.current = request;
+  }, []);
+  const requestClose = useCallback(() => {
+    if (closeRequestRef.current) closeRequestRef.current();
+    else void closeGoogleWorkspaceConnect(callbackGroupId, onClose);
+  }, [callbackGroupId, onClose]);
+
+  if (!isOpen) return null;
 
   return (
     <WindowPanel
       id={WINDOW_ID}
       overlayId={OVERLAY_ID}
-      onClose={() => void closeGoogleWorkspaceConnect(callbackGroupId, onClose)}
+      onClose={requestClose}
       titleNode={
         <span className="flex items-center gap-1.5">
           {mode === "drive-import" ? (
@@ -116,6 +126,7 @@ export function GoogleConnectWindow({
           }
           mode={connectMode}
           onClose={onClose}
+          registerCloseRequest={registerCloseRequest}
         />
       )}
     </WindowPanel>

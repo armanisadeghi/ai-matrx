@@ -65,6 +65,7 @@ export async function emitGoogleConnectEvent(
   ) {
     return;
   }
-  await callbackManager.triggerGroupCommand(callbackGroupId, event);
-  activeGoogleConnectCallbackGroups.delete(callbackGroupId);
+  await callbackManager.triggerGroupCommand(callbackGroupId, event, {
+    removeAfterSuccess: false,
+  });
 }

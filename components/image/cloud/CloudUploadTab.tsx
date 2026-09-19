@@ -39,9 +39,7 @@ import { openFolderPicker } from "@/features/files/components/pickers/cloudFiles
 import { FileUploadDropzone } from "@ai-matrx/media/react";
 import { DropzoneAcquisitionActions } from "@/features/files/components/core/FileAcquisition/DropzoneAcquisitionActions";
 import { ImageIcon } from "lucide-react";
-import {
-  useSelectedImages,
-} from "@/components/image/context/SelectedImagesProvider";
+import { useSelectedImages } from "@/components/image/context/SelectedImagesProvider";
 import {
   buildCloudImageSource,
   resolveCloudFileUrl,
@@ -220,6 +218,10 @@ export function CloudUploadTab({
             <DropzoneAcquisitionActions
               uploadOptions={{ parentFolderId: folderId, visibility }}
               accept={accept?.join(",")}
+              multiple={selectionMode !== "single"}
+              onStorageImported={(files) =>
+                handleUploaded(files.map((file) => file.fileId))
+              }
               onError={handleError}
             />
           }
