@@ -1,0 +1,37 @@
+-- scfg_88_the_disciplinary_ladder_is_the_orgs_own.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
+-- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
+--
+-- public.hr_corrective_action_issue(p_payload jsonb) — corrective_action_ladder_skip and
+-- corrective_action_ack_due_days (three reads in total).
+--
+-- Disciplinary process is about as organization-specific as anything in HR gets, and both keys
+-- were reading the platform rung:
+--
+--   corrective_action_ladder_skip governs what happens when someone issues a level that skips
+--   a step of the progressive ladder — §4.8 D2 says it WARNS rather than blocks, and shows the
+--   prior chain. Whether skipping is warned about at all, and how, belongs to the employer whose
+--   discipline policy it is.
+--
+--   corrective_action_ack_due_days is how long the employee has to acknowledge the action.
+--
+-- THE DECLARATION, and the part worth reading twice. employment_id in the payload IS the
+-- authorization input; the organization comes from it; a missing row returns `not_reachable`;
+-- and hr._l1_write_gate requires corrective_action.issue against THAT employment before
+-- anything happens. The other ids in the payload — policy_document_file_id,
+-- attendance_exception_id, prior_action_id — are NOT authorization inputs; they are an
+-- attachment and two references recorded on the row.
+--
+-- 🚨 And the issuer is NOT taken from the payload. It is resolved as
+-- hr._l1_self_employment(auth.uid(), org, current_date), so a caller cannot attribute a
+-- disciplinary record to somebody else. That is exactly the kind of fact the door declaration
+-- exists to state, because it is invisible from the signature: the payload does not carry an
+-- issuer field to be wrong about.
+--
+-- VERIFIED AFTER: census 11 → 8 rows over 6 functions; this door no longer appears.
+--
+-- REMAINING (6): _containment_guard (the deliberate baseline, scfg_83), hr_break_glass,
+-- hr_employee_profile, hr_employee_update, hr_incident_create, and hr.reveal_ssn — the
+-- disclosure and emergency-access doors, each to be read entirely on its own terms.
