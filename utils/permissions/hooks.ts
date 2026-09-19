@@ -20,6 +20,7 @@ import {
   getResourcePermissions,
   checkPermission,
   resolveResourceOwnership,
+  resolveSharingAuthority,
   shareWithUser,
   shareWithOrg,
   makePublic,
@@ -202,7 +203,17 @@ export function useCanAdmin(resourceType: ResourceType, resourceId: string) {
 }
 
 /**
- * Hook to check if current user is owner of a resource.
+ * Hook to check whether the current user MAY DECIDE WHO ELSE SEES a resource.
+ *
+ * It kept its name because every call site means "may this person manage
+ * sharing?" and none of them meant "did this person create the row". Since
+ * 2026-09-19 (lane SHARE) it asks the database's own `may_manage_sharing`
+ * predicate — the Owner rung OR the `admin` rung of VIS-17's one ladder, the
+ * same question the six sharing RPCs enforce — instead of reading `created_by`
+ * from the resource table. Before that an `admin` on a thing was shown a
+ * read-only dialog and an empty grant list, and any resource whose table
+ * carries no client SELECT grant (the whole record store) could not be asked at
+ * all.
  *
  * Returns three distinct states — `loading` (still resolving), `error`
  * (could NOT be determined), and `isOwner` — because collapsing them into one
@@ -230,7 +241,7 @@ export function useIsOwner(resourceType: ResourceType, resourceId: string) {
     let cancelled = false;
     setLoading(true);
 
-    void resolveResourceOwnership(resourceType, resourceId).then((result) => {
+    void resolveSharingAuthority(resourceType, resourceId).then((result) => {
       if (cancelled) return;
       setIsOwner(result.isOwner);
       setError(result.error);

@@ -30658,8 +30658,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -30670,8 +30672,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -30682,8 +30686,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -30697,8 +30703,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -30709,8 +30717,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -30721,8 +30731,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -30736,8 +30748,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -30748,8 +30762,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -30760,8 +30776,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -30775,8 +30793,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -30787,8 +30807,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -30799,8 +30821,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -30814,8 +30838,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -30826,8 +30852,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -30838,8 +30866,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -30853,8 +30883,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -30865,8 +30897,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -30877,8 +30911,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -30892,8 +30928,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -30904,8 +30942,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -30916,8 +30956,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -30931,8 +30973,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -30943,8 +30987,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -30955,8 +31001,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -30970,8 +31018,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -30982,8 +31032,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -30994,8 +31046,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31009,8 +31063,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31021,8 +31077,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31033,8 +31091,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31048,8 +31108,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31060,8 +31122,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31072,8 +31136,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31087,8 +31153,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31099,8 +31167,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31111,8 +31181,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31126,8 +31198,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31138,8 +31212,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31150,8 +31226,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31165,8 +31243,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31177,8 +31257,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31189,8 +31271,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31204,8 +31288,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31216,8 +31302,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31228,8 +31316,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31243,8 +31333,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31255,8 +31347,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31267,8 +31361,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31282,8 +31378,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31294,8 +31392,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31306,8 +31406,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31321,8 +31423,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31333,8 +31437,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31345,8 +31451,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31360,8 +31468,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31372,8 +31482,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31384,8 +31496,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31399,8 +31513,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31411,8 +31527,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31423,8 +31541,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31438,8 +31558,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31450,8 +31572,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31462,8 +31586,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31477,8 +31603,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31489,8 +31617,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31501,8 +31631,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31516,8 +31648,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31528,8 +31662,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31540,8 +31676,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31555,8 +31693,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31567,8 +31707,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31579,8 +31721,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31594,8 +31738,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31606,8 +31752,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31618,8 +31766,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31633,8 +31783,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31645,8 +31797,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31657,8 +31811,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31672,8 +31828,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31684,8 +31842,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31696,8 +31856,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31711,8 +31873,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31723,8 +31887,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31735,8 +31901,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31750,8 +31918,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31762,8 +31932,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31774,8 +31946,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31789,8 +31963,10 @@ export type Database = {
           actor_tier: string | null
           entity_type: string
           id: number
+          migration_id: string | null
           occurred_at: string
           operation: string
+          operation_name: string | null
           organization_id: string | null
           row_data: Json
           row_id: string | null
@@ -31801,8 +31977,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data: Json
           row_id?: string | null
@@ -31813,8 +31991,10 @@ export type Database = {
           actor_tier?: string | null
           entity_type?: string
           id?: never
+          migration_id?: string | null
           occurred_at?: string
           operation?: string
+          operation_name?: string | null
           organization_id?: string | null
           row_data?: Json
           row_id?: string | null
@@ -31898,8 +32078,10 @@ export type Database = {
         Args: { p_organization_id: string; p_record_id: string }
         Returns: {
           actor_id: string
+          migration_id: string
           occurred_at: string
           operation: string
+          operation_name: string
           row_data: Json
           version: number
         }[]
@@ -53846,6 +54028,17 @@ export type Database = {
       }
       generated_policy_names: { Args: never; Returns: string[] }
       governance_columns: { Args: { p_token: string }; Returns: string[] }
+      grant_path_blanket_refusals: {
+        Args: never
+        Returns: {
+          guard_function: string
+          on_table: string
+          remedy: string
+          trigger_name: string
+          unreadable_table: string
+          what_happens: string
+        }[]
+      }
       granted_level: {
         Args: {
           p_resource_id: string
@@ -77625,6 +77818,10 @@ export type Database = {
           review_count: number
         }[]
       }
+      may_manage_sharing: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: boolean
+      }
       mbr_add: {
         Args: {
           p_container_id: string
@@ -78972,6 +79169,10 @@ export type Database = {
         Args: { p_registry_owner: string; p_schema: string; p_table: string }
         Returns: string
       }
+      shareable_resource_exists: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: boolean
+      }
       shorten_app_url: {
         Args: {
           p_expires_at?: string
@@ -79065,6 +79266,29 @@ export type Database = {
       std_select_count_as: {
         Args: { p_schema: string; p_table: string; p_user: string }
         Returns: number
+      }
+      store_door_lane: {
+        Args: { p_resource_id: string; p_resource_type: string }
+        Returns: Json
+      }
+      store_door_share: {
+        Args: {
+          p_kind: string
+          p_level: string
+          p_principal_id: string
+          p_resource_id: string
+          p_resource_type: string
+        }
+        Returns: Json
+      }
+      store_door_unshare: {
+        Args: {
+          p_kind: string
+          p_principal_id: string
+          p_resource_id: string
+          p_resource_type: string
+        }
+        Returns: Json
       }
       studio_session_metrics: {
         Args: { p_session_ids: string[] }

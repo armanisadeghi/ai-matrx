@@ -891,6 +891,17 @@
     "is_active": true
   },
   {
+    "resource_type": "record",
+    "table_name": "record",
+    "id_column": "id",
+    "owner_column": "created_by",
+    "is_public_column": null,
+    "display_label": "Record",
+    "url_path_template": "",
+    "rls_uses_has_permission": false,
+    "is_active": true
+  },
+  {
     "resource_type": "redaction_mapping",
     "table_name": "redaction_mapping",
     "id_column": "id",
