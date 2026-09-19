@@ -8,9 +8,9 @@
  * The agent payload carries everything needed to act: the route, the issuing
  * call-site / component, the operation, the table/function/endpoint, the full
  * raw error — AND the current visibility tier plus a ready-to-paste downgrade
- * rule. That last part closes the loop on the admin workflow: "this shouldn't
- * be an error" → Copy for AI → an agent drops the suggested rule into
- * `errorTierRules.ts` → the error goes quiet.
+ * rule. The investigation prompt's job is to make the receiving agent FIX the
+ * write path, the class, and every failed safeguard. The downgrade stub is a
+ * last-step visibility knob after that work, never the work.
  */
 
 import {
@@ -34,24 +34,26 @@ import {
 
 const LOCATION = "AI Matrx — Error Inspector";
 
-const ERROR_INVESTIGATION_PROMPT = `The following error evidence was captured from the running AI Matrx application. Use it as the starting point for a complete, evidence-based root cause analysis and, only when warranted, a durable fix.
+const ERROR_INVESTIGATION_PROMPT = `The following error evidence was captured from the running AI Matrx application. Your NUMBER ONE JOB is to FIX the defect this capture points to — and every sibling, failed safeguard, and write-path remainder the same evidence supports. Root-cause analysis exists to find those fixes. It is not a substitute for them. A report-only conclusion is a failure of this brief.
+
+This capture is presumed a defect because it reached the inspector. Yellow, Silent, orange, "designed race", "already handled", "intentional guard", "expected", "transient", or any tier reason is a LEAD, not a verdict. Classification, a suggested downgrade rule, and "the inspector already knows about this" never authorize you to stop.
 
 Follow every applicable repository instruction. Do not assume the inspector's surface message is the root cause, especially when it says "unknown error." Trace the actual execution path in the code, logs, persisted records, request or conversation identifiers, configuration, and service boundaries that are available to you.
 
-Your investigation must:
+You will:
 1. Reconstruct what happened, in order, from the initiating action through the final captured error, including retries, rollback, cancellation, cleanup, and user-facing handling.
 2. Identify the direct technical root cause and explain why it happened.
 3. Identify every system, boundary, and process involved, and distinguish the original failure from secondary or duplicate symptoms.
 4. Determine which safeguards should have prevented, detected, classified, preserved, explained, recovered from, or contained the failure, and why each relevant safeguard did not.
-5. Assess the entire class of similar failures, not only this occurrence. Prefer the simplest shared correction at the real choke point over a route-specific or message-specific patch.
+5. Census the entire class of similar failures — other callers, other tables, other clients, other languages — and fix every sibling the same root supports. Prefer the simplest shared correction at the real choke point. Prefer MANY justified layer fixes over one report.
 
-Before making any change, decide whether the captured condition is truly a defect. If it is expected and correct behavior—for example, an intentional guard, a valid user mistake, a normal cancellation, or a transient condition already handled as designed—make no code changes. Report the evidence for that conclusion and explain why the current behavior is correct.
+Then implement immediately. Do not decide first whether to fix. Investigate while assuming you will ship code. Typical justified layers for one capture: the write or read door that should have made the throw impossible; the client that still races or treats a constraint as success; the wrap that captured before the app handled it; every sibling that still uses the same broken shape; the docs; and a guard proven failing, then passing. Do not merely silence or downgrade the error, swallow an exception, add a blind retry, change wording, or special-case this one payload. Preserve useful structured diagnostics and make unknown failures more specific at their source.
 
-If it is a real defect, implement the complete, durable correction at every layer the evidence shows is warranted. Do not merely silence or downgrade the error, swallow an exception, add a blind retry, change wording, or special-case this one payload. Preserve useful structured diagnostics and make unknown failures more specific at their source. Add or update focused regression coverage and the feature documentation required by the repository, then verify both the original scenario and the broader failure class.
+The only allowed no-change outcome is rare: you followed the actual write path and proved there is no remaining defect in the writer, the capture wrap, the classification, the siblings, or the user-visible result, AND you can explain why this payload should never have been pasted into this brief. If any of those remain, you are not done. Fix them.
 
-Conclude with: the root cause; the failure sequence; the systems and failed safeguards involved; the changes made at each justified layer; and the verification evidence.`;
+Conclude with: the root cause; the failure sequence; the systems and failed safeguards involved; EVERY change made at each justified layer (name more than one when the evidence supports it); every sibling still open; and the verification evidence.`;
 
-const MULTI_LAYER_REMINDER = `Important: by the time an error or warning reaches this inspector, the incident is rarely only one failure. The originating operation may have failed, and one or more validation, classification, retry, recovery, rollback, observability, or presentation layers may also have failed to prevent it or make it actionable. Inspect all of them and repair every layer supported by evidence—but do not invent failures, broaden scope without evidence, or change code when the reported behavior is actually correct.`;
+const MULTI_LAYER_REMINDER = `Important: by the time an error or warning reaches this inspector, the incident is rarely only one failure. The originating operation may have failed, and one or more validation, classification, retry, recovery, rollback, observability, or presentation layers may also have failed to prevent it or make it actionable. Inspect all of them and repair every layer the evidence supports. A yellow or Silent row is unfinished work, not permission to write an essay and stop.`;
 
 /** Wraps a faithful Error Inspector payload in an implementation-ready brief. */
 function buildErrorInvestigationPrompt(payload: AgentPayloadInput): string {
