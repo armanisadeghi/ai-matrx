@@ -115115,6 +115115,16 @@ export interface components {
              */
             declared_in_code?: boolean;
             /**
+             * Exists In Db
+             * @default true
+             */
+            exists_in_db?: boolean;
+            /**
+             * Is Owned
+             * @default false
+             */
+            is_owned?: boolean;
+            /**
              * Drift Count
              * @default 0
              */
