@@ -1,7 +1,7 @@
 import { apiPost } from "@/lib/api/typed-client";
 import { getFile } from "@/features/files/api/files";
 import type { FileRecordApi } from "@/features/files/types";
-import { importGoogleDriveFile } from "./storageSourceImport";
+import { importGoogleDriveFile } from "@/features/files/storage-sources/service";
 
 jest.mock("@/lib/api/typed-client", () => ({ apiPost: jest.fn() }));
 jest.mock("@/features/files/api/files", () => ({ getFile: jest.fn() }));

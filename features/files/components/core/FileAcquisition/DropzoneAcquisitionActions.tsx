@@ -52,7 +52,7 @@ export function DropzoneAcquisitionActions({
         }
       }}
       onError={onError}
-      googleImportParentFolderId={uploadOptions?.parentFolderId}
+      storageImportParentFolderId={uploadOptions?.parentFolderId}
       accept={accept}
       enableLocalFolder={enableLocalFolder}
       enableExistingFiles={Boolean(onChooseExisting)}

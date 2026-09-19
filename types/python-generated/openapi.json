@@ -17461,10 +17461,6 @@
     },
     "/storage-sources/import": {
       "post": {
-        "tags": [
-          "Storage Sources"
-        ],
-        "summary": "Import Provider File",
         "description": "Import provider bytes into one actor-owned canonical Matrx file.",
         "operationId": "import_provider_file_storage_sources_import_post",
         "requestBody": {
@@ -17479,26 +17475,27 @@
         },
         "responses": {
           "200": {
-            "description": "Successful Response",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StorageImportResult"
                 }
               }
-            }
+            },
+            "description": "Successful Response"
           },
           "422": {
-            "description": "Validation Error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
                 }
               }
-            }
+            },
+            "description": "Validation Error"
           }
-        }
+        },
+        "summary": "Import Provider File"
       }
     },
     "/tiktok-integrations/public-video-metadata": {
@@ -92632,6 +92629,45 @@
         },
         "summary": "Storage Callback"
       }
+    },
+    "/storage-sources/browse": {
+      "post": {
+        "description": "Return one bounded page from an actor-owned provider connection.",
+        "operationId": "browse_provider_folder_storage_sources_browse_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageBrowseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageBrowsePage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Browse Provider Folder"
+      }
     }
   },
   "components": {
@@ -155391,34 +155427,42 @@
         "description": "JSON-LD + page metadata gathered in the same live-DOM injection."
       },
       "ExternalSourceMetadata": {
+        "additionalProperties": false,
+        "description": "Non-secret provenance persisted under ``files.files.metadata``.\n\n``source_ref`` is provider-owned opaque identity. It is never trusted as\nauthorization: every later read must resolve ``connection_id`` again for\nthe acting user before the adapter touches the provider.",
         "properties": {
+          "connection_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Connection Id",
+            "type": "string"
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At"
+          },
           "provider": {
-            "type": "string",
             "enum": [
               "box",
               "dropbox",
               "google_drive",
               "onedrive"
             ],
-            "title": "Provider"
-          },
-          "connection_id": {
-            "type": "string",
-            "maxLength": 256,
-            "minLength": 1,
-            "title": "Connection Id"
-          },
-          "source_ref": {
-            "type": "string",
-            "maxLength": 4096,
-            "minLength": 1,
-            "title": "Source Ref"
+            "title": "Provider",
+            "type": "string"
           },
           "revision": {
             "anyOf": [
               {
-                "type": "string",
-                "maxLength": 512
+                "maxLength": 512,
+                "type": "string"
               },
               {
                 "type": "null"
@@ -155426,28 +155470,20 @@
             ],
             "title": "Revision"
           },
-          "modified_at": {
-            "anyOf": [
-              {
-                "type": "string",
-                "maxLength": 128
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Modified At"
+          "source_ref": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Source Ref",
+            "type": "string"
           }
         },
-        "additionalProperties": false,
-        "type": "object",
         "required": [
           "provider",
           "connection_id",
           "source_ref"
         ],
         "title": "ExternalSourceMetadata",
-        "description": "Non-secret provenance persisted under ``files.files.metadata``.\n\n``source_ref`` is provider-owned opaque identity. It is never trusted as\nauthorization: every later read must resolve ``connection_id`` again for\nthe acting user before the adapter touches the provider."
+        "type": "object"
       },
       "ExternalUrlChange": {
         "properties": {
@@ -249438,15 +249474,9 @@
         "title": "StopRunResponse"
       },
       "StorageImportResult": {
+        "additionalProperties": false,
+        "description": "Safe result of importing a provider item into canonical Matrx Files.",
         "properties": {
-          "file_id": {
-            "type": "string",
-            "title": "File Id"
-          },
-          "file_path": {
-            "type": "string",
-            "title": "File Path"
-          },
           "checksum": {
             "anyOf": [
               {
@@ -249458,21 +249488,27 @@
             ],
             "title": "Checksum"
           },
-          "version_number": {
-            "type": "integer",
-            "minimum": 1,
-            "title": "Version Number"
-          },
           "created": {
-            "type": "boolean",
-            "title": "Created"
+            "title": "Created",
+            "type": "boolean"
+          },
+          "file_id": {
+            "title": "File Id",
+            "type": "string"
+          },
+          "file_path": {
+            "title": "File Path",
+            "type": "string"
           },
           "source": {
             "$ref": "#/components/schemas/ExternalSourceMetadata"
+          },
+          "version_number": {
+            "minimum": 1,
+            "title": "Version Number",
+            "type": "integer"
           }
         },
-        "additionalProperties": false,
-        "type": "object",
         "required": [
           "file_id",
           "file_path",
@@ -249481,38 +249517,42 @@
           "source"
         ],
         "title": "StorageImportResult",
-        "description": "Safe result of importing a provider item into canonical Matrx Files."
+        "type": "object"
       },
       "StorageSourceImportRequest": {
+        "additionalProperties": false,
+        "description": "Safe caller-supplied portion of an exact-item canonical import.",
         "properties": {
+          "connection_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Connection Id",
+            "type": "string"
+          },
+          "file_path": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "File Path",
+            "type": "string"
+          },
           "provider": {
-            "type": "string",
             "enum": [
+              "box",
+              "dropbox",
               "google_drive",
               "onedrive"
             ],
-            "title": "Provider"
-          },
-          "connection_id": {
-            "type": "string",
-            "maxLength": 256,
-            "minLength": 1,
-            "title": "Connection Id"
+            "title": "Provider",
+            "type": "string"
           },
           "source_ref": {
-            "type": "string",
             "maxLength": 4096,
             "minLength": 1,
-            "title": "Source Ref"
-          },
-          "file_path": {
-            "type": "string",
-            "maxLength": 1024,
-            "minLength": 1,
-            "title": "File Path"
+            "title": "Source Ref",
+            "type": "string"
           },
           "visibility": {
-            "type": "string",
+            "default": "personal",
             "enum": [
               "internal",
               "link",
@@ -249520,11 +249560,9 @@
               "public"
             ],
             "title": "Visibility",
-            "default": "personal"
+            "type": "string"
           }
         },
-        "additionalProperties": false,
-        "type": "object",
         "required": [
           "provider",
           "connection_id",
@@ -249532,7 +249570,7 @@
           "file_path"
         ],
         "title": "StorageSourceImportRequest",
-        "description": "Safe caller-supplied portion of an exact-item canonical import."
+        "type": "object"
       },
       "StorageUsageResponse": {
         "properties": {
@@ -283491,6 +283529,201 @@
           "scope_evidence"
         ],
         "title": "StorageLifecycleResponse",
+        "type": "object"
+      },
+      "StorageBrowseItem": {
+        "additionalProperties": false,
+        "description": "Safe provider identity for one visible file or folder.",
+        "properties": {
+          "item_ref": {
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Item Ref",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "file",
+              "folder"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "maxLength": 256,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At"
+          },
+          "name": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "maxLength": 512,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "minimum": 0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          }
+        },
+        "required": [
+          "kind",
+          "item_ref",
+          "name"
+        ],
+        "title": "StorageBrowseItem",
+        "type": "object"
+      },
+      "StorageBrowsePage": {
+        "additionalProperties": false,
+        "description": "One nonrecursive provider page with an opaque continuation.",
+        "properties": {
+          "connection_id": {
+            "title": "Connection Id",
+            "type": "string"
+          },
+          "folder_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Ref"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StorageBrowseItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          },
+          "provider": {
+            "enum": [
+              "box",
+              "dropbox",
+              "onedrive"
+            ],
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "connection_id",
+          "folder_ref",
+          "items"
+        ],
+        "title": "StorageBrowsePage",
+        "type": "object"
+      },
+      "StorageBrowseRequest": {
+        "additionalProperties": false,
+        "description": "One bounded provider-folder page under the authenticated actor.",
+        "properties": {
+          "connection_id": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Connection Id",
+            "type": "string"
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "maxLength": 16384,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursor"
+          },
+          "folder_ref": {
+            "anyOf": [
+              {
+                "maxLength": 4096,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Ref"
+          },
+          "page_size": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "provider": {
+            "enum": [
+              "box",
+              "dropbox",
+              "onedrive"
+            ],
+            "title": "Provider",
+            "type": "string"
+          }
+        },
+        "required": [
+          "provider",
+          "connection_id"
+        ],
+        "title": "StorageBrowseRequest",
         "type": "object"
       }
     }

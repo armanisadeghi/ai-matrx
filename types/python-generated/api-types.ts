@@ -41000,6 +41000,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/storage-sources/browse": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Browse Provider Folder
+         * @description Return one bounded page from an actor-owned provider connection.
+         */
+        post: operations["browse_provider_folder_storage_sources_browse_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -68233,19 +68253,19 @@ export interface components {
          *     the acting user before the adapter touches the provider.
          */
         ExternalSourceMetadata: {
+            /** Connection Id */
+            connection_id: string;
+            /** Modified At */
+            modified_at?: string | null;
             /**
              * Provider
              * @enum {string}
              */
             provider: "box" | "dropbox" | "google_drive" | "onedrive";
-            /** Connection Id */
-            connection_id: string;
-            /** Source Ref */
-            source_ref: string;
             /** Revision */
             revision?: string | null;
-            /** Modified At */
-            modified_at?: string | null;
+            /** Source Ref */
+            source_ref: string;
         };
         /** ExternalUrlChange */
         ExternalUrlChange: {
@@ -110944,34 +110964,34 @@ export interface components {
          * @description Safe result of importing a provider item into canonical Matrx Files.
          */
         StorageImportResult: {
+            /** Checksum */
+            checksum?: string | null;
+            /** Created */
+            created: boolean;
             /** File Id */
             file_id: string;
             /** File Path */
             file_path: string;
-            /** Checksum */
-            checksum?: string | null;
+            source: components["schemas"]["ExternalSourceMetadata"];
             /** Version Number */
             version_number: number;
-            /** Created */
-            created: boolean;
-            source: components["schemas"]["ExternalSourceMetadata"];
         };
         /**
          * StorageSourceImportRequest
          * @description Safe caller-supplied portion of an exact-item canonical import.
          */
         StorageSourceImportRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** File Path */
+            file_path: string;
             /**
              * Provider
              * @enum {string}
              */
-            provider: "google_drive" | "onedrive";
-            /** Connection Id */
-            connection_id: string;
+            provider: "box" | "dropbox" | "google_drive" | "onedrive";
             /** Source Ref */
             source_ref: string;
-            /** File Path */
-            file_path: string;
             /**
              * Visibility
              * @default personal
@@ -126534,6 +126554,70 @@ export interface components {
             scope_evidence: string;
             /** Status */
             status: string;
+        };
+        /**
+         * StorageBrowseItem
+         * @description Safe provider identity for one visible file or folder.
+         */
+        StorageBrowseItem: {
+            /** Item Ref */
+            item_ref: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "file" | "folder";
+            /** Mime Type */
+            mime_type?: string | null;
+            /** Modified At */
+            modified_at?: string | null;
+            /** Name */
+            name: string;
+            /** Revision */
+            revision?: string | null;
+            /** Size */
+            size?: number | null;
+        };
+        /**
+         * StorageBrowsePage
+         * @description One nonrecursive provider page with an opaque continuation.
+         */
+        StorageBrowsePage: {
+            /** Connection Id */
+            connection_id: string;
+            /** Folder Ref */
+            folder_ref: string | null;
+            /** Items */
+            items: components["schemas"]["StorageBrowseItem"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "box" | "dropbox" | "onedrive";
+        };
+        /**
+         * StorageBrowseRequest
+         * @description One bounded provider-folder page under the authenticated actor.
+         */
+        StorageBrowseRequest: {
+            /** Connection Id */
+            connection_id: string;
+            /** Cursor */
+            cursor?: string | null;
+            /** Folder Ref */
+            folder_ref?: string | null;
+            /**
+             * Page Size
+             * @default 50
+             */
+            page_size?: number;
+            /**
+             * Provider
+             * @enum {string}
+             */
+            provider: "box" | "dropbox" | "onedrive";
         };
     };
     responses: never;
@@ -191099,6 +191183,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    browse_provider_folder_storage_sources_browse_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StorageBrowseRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageBrowsePage"];
+                };
             };
             /** @description Validation Error */
             422: {
