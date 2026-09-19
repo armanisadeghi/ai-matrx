@@ -4671,9 +4671,17 @@ against `hr.employment` and raise P0002 above the gate; `hr_role_revoke` reads a
 off a P0002-guarded row; `hr_authority_delegation_end` likewise. Three rest on a guarantee held
 some lines away, so the rows stay listed as a standing guard against a reordering edit.
 
-**4 REMAIN, all genuinely nullable:** `hr.wf_pending` (`p_employment_id uuid DEFAULT NULL` — null
-is the ordinary self-service case), `hr._wf_display` (`workflow_instance.subject_employment_id` is
-nullable), and `hr_mint_records_request_token` ×2 (`records_request.employment_id` is nullable;
-this door mints an outsider token and gets read whole first). The workflow pair needs its answer
-decided — refuse without an employment, or resolve the caller's own — not an org threaded in
-mechanically. Owner: unassigned. Detector is live, so the count cannot grow unnoticed.
+**1 MORE FIXED (scfg_94):** `hr_mint_records_request_token` — both gate calls were
+three-argument over a nullable `records_request.employment_id`, and passing the gate MINTS AN
+OUTSIDER TOKEN granting read+download delivered to a caller-supplied address. An HR admin in one
+employer could have issued themselves a download link for another employer's records request. The
+null is the DESIGNED shape here (an ex-employee or third party has no current employment), not an
+edge. Fixed before the lane carried its first row — `hr.records_request` is empty. Both calls now
+five-argument with `rq.organization_id`, pinned by contract.
+
+**2 REMAIN, and they need a DECISION, not a thread-through:** `hr.wf_pending`
+(`p_employment_id uuid DEFAULT NULL` — null is what a caller sends when asking about themselves)
+and `hr._wf_display` (nullable `workflow_instance.subject_employment_id`). Both are read surfaces
+on the task inbox. Refusing without an employment breaks every self-service inbox; resolving "the
+caller's own" has to pick one when someone holds employments in two employers. That is a product
+question about what the inbox shows and belongs to the workflow lane. Owner: unassigned. Detector is live, so the count cannot grow unnoticed.
