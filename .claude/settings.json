@@ -4,10 +4,7 @@
   },
   "permissions": {
     "allow": [
-      "Bash(git add *)",
-      "Bash(git commit *)",
-      "Bash(git push *)",
-      "Bash(git fetch *)",
+      "Bash",
       "Read",
       "Edit",
       "Write",
@@ -18,6 +15,39 @@
       "NotebookEdit",
       "Task",
       "Agent",
+      "Skill",
+      "ToolSearch",
+      "SendMessage",
+      "ReadNotifications",
+      "TaskOutput",
+      "TaskStop",
+      "Monitor",
+      "ScheduleWakeup",
+      "SendUserFile",
+      "TaskCreate",
+      "TaskUpdate",
+      "TaskGet",
+      "TaskList",
+      "CronCreate",
+      "CronList",
+      "CronDelete",
+      "Artifact",
+      "ArtifactComments",
+      "ArtifactData",
+      "EnterPlanMode",
+      "ExitPlanMode",
+      "EnterWorktree",
+      "ExitWorktree",
+      "ListMcpResourcesTool",
+      "ReadMcpResourceTool",
+      "ReadMcpResourceDirTool",
+      "ListConnectors",
+      "ListPlugins",
+      "ListSkills",
+      "SearchSkills",
+      "SearchPlugins",
+      "SearchMcpRegistry",
+      "Workflow",
       "mcp__Claude_Code_Remote",
       "mcp__Claude_Code_Remote__*",
       "mcp__claude_ai_Claude_Code_Remote",
@@ -44,5 +74,17 @@
       "mcp__claude_ai_AI_Dream__*"
     ]
   },
-  "enableAllProjectMcpServers": true
+  "enableAllProjectMcpServers": true,
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/ensure-permissive-permissions.sh"
+          }
+        ]
+      }
+    ]
+  }
 }
