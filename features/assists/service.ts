@@ -280,6 +280,49 @@ export async function filterUndecidedKeys(keys: string[]): Promise<string[]> {
 }
 
 /**
+ * The statuses a PERSON chose. Everything else — `expired`, `superseded`,
+ * `resolved` — happened to the row rather than being decided about it.
+ */
+const DECIDED_BY_A_PERSON: readonly AssistStatus[] = ["accepted", "dismissed"];
+
+/**
+ * Like {@link filterUndecidedKeys}, but only a person's own decision blocks a
+ * key. Use this when the producer's condition can genuinely RECUR under the
+ * same dedupe key.
+ *
+ * 🚨 WHY THIS EXISTS. `filterUndecidedKeys` treats any non-pending status as
+ * decided, `resolved` included — and `resolved` means "the condition stopped
+ * reproducing and NOBODY had to decide anything". For a producer whose key is
+ * stable (one row per workspace, say) that combination is a one-shot notice:
+ * the first time the work is finished the producer resolves its own row, and
+ * from then on the key is "decided" and the person is never told again. The
+ * queue can fill up forever in silence.
+ *
+ * A person's dismissal is still durable — that is what "Dismiss for good"
+ * promises, and it is the whole reason the gate is here at all.
+ */
+export async function filterKeysNotDecidedByAPerson(
+  keys: string[],
+): Promise<string[]> {
+  if (keys.length === 0) return [];
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .schema("platform")
+    .from(TABLE)
+    .select("dedupe_key")
+    .in("dedupe_key", keys)
+    .in("status", DECIDED_BY_A_PERSON as unknown as string[]);
+  if (error) {
+    // Fail CLOSED: an unreadable ledger must not resurrect something the
+    // person told us to stop showing.
+    console.error(`[assists] person-decided lookup failed: ${error.message}`);
+    return [];
+  }
+  const decided = new Set((data ?? []).map((r) => r.dedupe_key));
+  return keys.filter((k) => !decided.has(k));
+}
+
+/**
  * The manager read — EVERY status, server-side filter / sort / paginate.
  *
  * Deliberately NOT the chip read: a triage surface must reach decided and
