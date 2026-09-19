@@ -330,7 +330,22 @@ export const GOOGLE_CONNECTOR_PROVIDER: ConnectorProviderConfig = {
       scopes: [...GOOGLE_IDENTITY_SCOPES, GOOGLE_SCOPE.contactsReadonly],
       attachableResourceTypes: [],
       stopsOnRevoke: "importing a contact from this Google account",
-      firstAction: { kind: "route", label: "Import a contact", href: "/crm/import" },
+      // The Google Contacts import window (`features/overlays/openers/
+      // googleImportWindows.tsx`, `useOpenGoogleContactsImport`) is the real
+      // door — the same shape Tasks' row already uses for its own import.
+      // `/crm/import` is the NATIVE CSV/vCard wizard (`app/(core)/crm/
+      // import/page.tsx`); routing here sent a person who just connected
+      // Google Contacts to the wrong wizard (R27, common-docs/projects/
+      // google-native/REGISTER.md; F-51 first-action sweep). Its body
+      // (`GoogleContactsImportPanel`, wrapped by `GoogleContactsImportWindow`)
+      // reads `organizationId` off overlay data the same way Tasks' does —
+      // `needs` is how this button carries it.
+      firstAction: {
+        kind: "overlay",
+        label: "Import a contact",
+        overlayId: "googleContactsImportWindow",
+        needs: ["organizationId"],
+      },
     },
     {
       key: "tasks",

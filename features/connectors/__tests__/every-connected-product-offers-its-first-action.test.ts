@@ -101,6 +101,12 @@ describe("every product a person can switch on offers its first useful action", 
         // The product this lane was escalated for. If Calendar ever loses its
         // agenda door again, this line is the one that says so.
         expect(overlays.map((entry) => entry.key)).toContain("calendar");
+        // Contacts' real door is the `googleContactsImportWindow` panel — the
+        // same overlay Tasks' row opens for its own import — never a route to
+        // the native CSV/vCard wizard at `/crm/import` (Contacts' PREVIOUS,
+        // wrong `firstAction`: R27 / F-51 first-action sweep). If Contacts
+        // ever loses this door again, this line is the one that says so.
+        expect(overlays.map((entry) => entry.key)).toContain("contacts");
         for (const entry of overlays) {
           expect(isOverlayId(entry.action.overlayId)).toBe(true);
           expect(OVERLAY_CATALOGUE[entry.action.overlayId].isWindow).toBe(true);
