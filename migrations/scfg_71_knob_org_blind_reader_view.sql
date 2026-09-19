@@ -1,4 +1,7 @@
 -- scfg_71_knob_org_blind_reader_view.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
 -- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
 --
 -- platform.knob_org_blind_reader: the database's census of itself.

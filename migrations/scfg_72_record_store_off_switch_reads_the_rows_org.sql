@@ -1,4 +1,7 @@
 -- scfg_72_record_store_off_switch_reads_the_rows_org.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
 -- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
 --
 -- custom.trg_associations_bump_visibility read its own off switch ORG-BLIND, and this one was

@@ -1,4 +1,7 @@
 -- scfg_70_hr_internal_knob_reads_carry_their_org.sql
+-- migrate: skip: comment-only RECORD of a change already applied live via the Supabase
+-- MCP. There is no runnable statement here, so an apply would execute nothing and ledger
+-- these comment bytes as though they were the change.
 -- APPLIED LIVE via the Supabase MCP on 2026-09-19. This file is the RECORD.
 --
 -- hr._knob(feature, key) is platform.knob_resolve with the organization hard-wired to NULL:
