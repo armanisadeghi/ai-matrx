@@ -4654,9 +4654,15 @@ caller hold this capability anywhere, over anybody". That is the class closed at
 hr_l1_64; `hr.reveal_ssn` was still carrying it and is fixed in scfg_91 (latent, not exploitable
 — zero live employees lack an employment row).
 
-The remaining call sites are listed live by `hr.capability_asked_without_a_tenant`: 11 rows, of
-which 2 pass a LITERAL null subject (both `hr.wf_inbox`, `workflow.view_queue`). The rest pass an
-id read from a row and are safe only if that id can never be null — which has to be read per
-body, across the authority, workflow and records doors. Not fixed here: each needs its own null
-story established and its own verification, the way the eleven doors in the scfg_79..91 sweep did.
-Owner: unassigned. Detector is live, so the count cannot grow unnoticed.
+The remaining call sites are listed live by `hr.capability_asked_without_a_tenant`: 11 rows over
+9 functions. **2 are CLEARED (scfg_92):** both `hr.wf_inbox` literal-null calls are affordance
+gates — one decides whether to build the queue scope, the other sets `can_view_queue` for the UI —
+while every row the function returns is authorized separately with the five-argument form carrying
+`i.subject_employment_id` and `i.organization_id`. The census now carries
+`same_capability_tenant_checked` to say so, and still reports the rows rather than hiding them.
+
+**9 remain**, each safe only if its subject can never be null at that point, which has to be
+established per body: `hr._wf_display`, `hr.wf_pending`, `hr_authority_delegation_end`,
+`hr_authority_revoke`, `hr_mint_records_request_token` (×2), `hr_role_assign`, `hr_role_revoke`,
+`hr_set_employment_pin`. The last two take the id straight from the caller and are the ones to
+read first. Owner: unassigned. Detector is live, so the count cannot grow unnoticed.
