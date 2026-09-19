@@ -155,8 +155,12 @@ export interface ShellNavChild {
    * and cannot wait for an answer. One field, one filter — NOT a second
    * navigation system.
    *
-   * `unified-data-campaign` is `custom.code_paths_enabled`, resolved for this
-   * person in this organization by `useUnifiedDataCampaign`.
+   * `unified-data-campaign` is the ONE switch: does the organization on screen
+   * keep its data in the unified record store (`custom.system_enabled`, set on
+   * the unified data ramp screen)? Read by `useShellNavGates` through
+   * `useUnifiedDataCampaign`. It is an ORGANIZATION's decision, so the entry
+   * appears for every member of an organization that is on it and for nobody
+   * else — there is no per-person rung (lane NAV-FIX, 19 September).
    */
   gate?: ShellNavGateId;
 }
@@ -700,10 +704,11 @@ export const primaryNavItems: ShellNavItem[] = [
         dashboard: true,
       },
       {
-        // The unified record store's tables. It appears only where the store's
-        // campaign switch is on, which is why it carries a gate: everywhere
-        // else the screens behind it answer with the switch's own sentence and
-        // a destination that only says "not yet" is not a destination.
+        // The unified record store's tables. It appears for every member of an
+        // organization whose record store is on, which is why it carries a
+        // gate: everywhere else the screens behind it answer with the switch's
+        // own sentence, and a destination that only says "not yet" is not a
+        // destination.
         label: "Records",
         href: "/data-v2",
         iconName: "Table",

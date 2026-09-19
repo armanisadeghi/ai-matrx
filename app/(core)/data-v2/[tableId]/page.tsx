@@ -24,7 +24,6 @@ import { OrganizationContextNotice } from "@/features/organizations/components/O
 import { createClient } from "@/utils/supabase/client";
 import {
   UNIFIED_DATA_CAMPAIGN,
-  UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE,
   useUnifiedDataCampaign,
 } from "@/lib/knobs/unifiedDataCampaign";
 
@@ -37,11 +36,13 @@ export default function UnifiedDataTableRoute({
   const router = useRouter();
   const userId = useAppSelector(selectUserId);
   const { organizationId, organizationState } = useOrganizationRequired();
+  // ONE SWITCH: does THIS organization keep its data in the record store? Set
+  // once, for everybody, on the unified data ramp screen. There is no second,
+  // per-person switch any more (lane NAV-FIX, 19 September).
   const campaign = useUnifiedDataCampaign({
     organizationId,
     organizationState,
-    userId,
-    platformDefault: () => UNIFIED_DATA_CAMPAIGN.enabled(),
+    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.enabled(organization),
   });
 
   /**
@@ -73,9 +74,9 @@ export default function UnifiedDataTableRoute({
         {organizationState !== "ready" ? (
           <OrganizationContextNotice state={organizationState} what="Data records" />
         ) : campaign.on === null ? null : !campaign.on ? (
-          <p className="max-w-2xl text-sm opacity-80">
-            {UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE} <span className="opacity-70">{campaign.because}</span>
-          </p>
+          /* ONE sentence, in plain English, naming the one thing that turns
+             it on — never a knob key, and never two sentences saying it twice. */
+          <p className="max-w-2xl text-sm opacity-80">{campaign.because}</p>
         ) : (
           <RecordsMount
             letTheStoreDecideRights

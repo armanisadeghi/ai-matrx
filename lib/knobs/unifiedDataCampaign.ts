@@ -1,32 +1,48 @@
 // lib/knobs/unifiedDataCampaign.ts
 //
-// THE code-side OFF switch for the unified data campaign, frontend half.
+// THE ONE SWITCH THE RECORD STORE'S PAGES READ, AND THERE IS NOT A SECOND ONE.
 //
-// WHY THIS EXISTS. The campaign's DATABASE changes land behind their own
-// `platform.feature_knob` guards, but its CODE ships to production
-// continuously: any other lane's `release*:` commit builds the whole pushed
-// range. So campaign code that reaches production must be INERT until one
-// switch is turned on. This is that switch, and its aidream twin is
-// `aidream/services/unified_data_campaign/flag.py`
-// (`unified_data_campaign_enabled()`), reading the SAME row.
+// WHAT A PERSON HIT (independent verdict, fifth pass, 19 September). An admin
+// turned the record store ON for their organization on the switch screen — and
+// still could not find their data. The pages refused: "The unified data pages
+// are switched off for you. They are behind `custom.code_paths_enabled` … An
+// administrator turns it on for a person, an organization or the whole
+// platform in Settings → Configuration." That second switch saved PER PERSON,
+// so an admin could open the pages for themselves and had no way, from any
+// screen, to open them for the people they work with. The Records entry in the
+// sidebar never appeared at all. The verdict's words: "Three switches stand
+// between an admin and their data … Airtable, Notion and Linear each answer
+// 'where is my data?' with one link that is always there."
 //
-// THE ROW: `platform.feature_knob`, feature `custom`, key `code_paths_enabled`,
-// boolean, default `false`. Seeded by migration — never by code.
+// THE RULING (lane NAV-FIX, 19 September). ONE switch per organization — the
+// record-store switch on the unified data ramp screen — and the pages read
+// THAT and nothing else. The per-person half is gone: not disabled, not
+// deprecated, not left as a second way in. `custom.code_paths_enabled` is no
+// longer read by any page, route or nav gate in this repo, and its PERSON rung
+// was taken off the knob row in the same migration, so nobody can re-open the
+// pages for one person from Settings while their colleagues stay locked out.
+// (The knob row itself stays: aidream's server half still reads its platform
+// default, and dropping a row a live consumer reads is not this lane's to do.)
 //
-// WHY IT DOES NOT RAISE, when every other knob read in this repo does.
-// `knobBool` raises on a missing row on purpose: a ceiling with no row is a
-// bug, and a frozen fallback would hide it. A KILL SWITCH is the one shape
-// where the opposite is true — "I could not read the switch" must mean OFF, or
-// an unreachable database would turn the campaign ON in production. So this
-// reader catches and returns `false` — and ANNOUNCES it every time, naming the
-// key and the remedy, because nothing fails silently.
+// THE ADDRESS: `platform.feature_knob`, feature `custom`, key `system_enabled`,
+// boolean, default `false`, overridable per ORGANIZATION. It is written by
+// `platform.unified_data_store_set` from the switch screen and read here
+// through `platform.unified_data_store_on`, the member-readable door — because
+// the Records entry exists for every member of the organization and not only
+// for its administrators, and the administrators-only door beside it
+// (`unified_data_store_state`) refuses an ordinary member by design.
 //
-// NOT AN ENV VAR. The process environment is not consulted here and must
-// never be (this module's own test asserts that, by reading its source): an
-// env var is a value, never a toggle (repo law,
+// WHY IT DOES NOT RAISE. A switch that cannot be read must read as OFF, or an
+// unreachable database turns a half-built feature ON for everybody. So every
+// failure here returns `false` — and ANNOUNCES itself, naming the door and the
+// remedy, because nothing fails silently.
+//
+// NOT AN ENV VAR. The process environment is not consulted here and must never
+// be (this module's own test asserts that by reading its source): an env var is
+// a value, never a toggle (repo law,
 // `common-docs/policies/env-vars-are-values-not-toggles.md`).
 
-import { knobBool } from "./featureKnobs";
+import { createClient } from "@/utils/supabase/client";
 import {
     CAMPAIGN_MODULES,
     CAMPAIGN_STORE_TABLES,
@@ -34,23 +50,12 @@ import {
     RUNTIME_ENTRY_POINTS,
 } from "./unifiedDataCampaign.register";
 
-/** The registry address of the switch. One place, both halves of the repo. */
+/** The registry address of the ONE switch. */
 export const UNIFIED_DATA_CAMPAIGN_FEATURE = "custom";
-export const UNIFIED_DATA_CAMPAIGN_KEY = "code_paths_enabled";
+export const UNIFIED_DATA_CAMPAIGN_KEY = "system_enabled";
 
-/**
- * The SAME address as the pair above, in the `{ feature, key }` shape every
- * scoped-config reader takes — written as literals on purpose.
- *
- * `lib/scoped-config/__tests__/every-knob-read-addresses-a-real-row.test.ts`
- * resolves a call site's address by reading the source: an inline
- * `{ feature: UNIFIED_DATA_CAMPAIGN.FEATURE, key: … }` is a member access on an
- * imported object, which it cannot follow, so the read counted as COMPUTED and
- * the census could not tell whether it addressed a real row. A call site that
- * imports THIS constant resolves like any other. The pair is pinned against the
- * two constants above by this module's own test, so the literals cannot drift.
- */
-export const UNIFIED_DATA_CAMPAIGN_KNOB = { feature: "custom", key: "code_paths_enabled" };
+/** The door that answers it for a member of the organization. */
+export const UNIFIED_DATA_STORE_DOOR = "unified_data_store_on";
 
 /** What the switch reads as when it cannot be read at all. */
 export const UNIFIED_DATA_CAMPAIGN_DEFAULT = false;
@@ -66,26 +71,41 @@ export type {
     CampaignEntryPointKind,
 } from "./unifiedDataCampaign.register";
 
-async function enabled(): Promise<boolean> {
+/**
+ * Does THIS ORGANIZATION keep its data in the unified record store?
+ *
+ * One argument, because the switch is one organization's decision. No
+ * organization picked yet is `false` — silently, because a person who has not
+ * chosen one has no store to be in and the sidebar asks this on every boot.
+ */
+async function enabled(organizationId: string | null | undefined): Promise<boolean> {
+    if (!organizationId) return UNIFIED_DATA_CAMPAIGN_DEFAULT;
     try {
-        return await knobBool("custom", "code_paths_enabled");
+        const { data, error } = await createClient()
+            .schema("platform")
+            .rpc(UNIFIED_DATA_STORE_DOOR, { p_organization_id: organizationId });
+        if (error) throw new Error(error.message);
+        const answer = (data ?? null) as { on?: boolean } | null;
+        return answer?.on === true;
     } catch (error) {
         console.warn(
-            `[unified-data-campaign] could not read platform.feature_knob ` +
-                `"${UNIFIED_DATA_CAMPAIGN_FEATURE}"."${UNIFIED_DATA_CAMPAIGN_KEY}" ` +
-                `— every unified-data campaign code path stays OFF. ` +
-                `Remedy: seed/repair that boolean row (default false) and set it ` +
-                `to true when the campaign is ready to run. Cause: ` +
-                `${error instanceof Error ? error.message : String(error)}`,
+            `[unified-data-campaign] could not read platform.${UNIFIED_DATA_STORE_DOOR}` +
+                `(${organizationId}) — the record store's pages stay OFF for this organization. ` +
+                `Remedy: an owner or an administrator of this organization turns the store on ` +
+                `once, for everybody, on the unified data ramp screen ` +
+                `(/administration/database/unified-data-ramp), which writes ` +
+                `${UNIFIED_DATA_CAMPAIGN_FEATURE}.${UNIFIED_DATA_CAMPAIGN_KEY} for the organization. ` +
+                `Cause: ${error instanceof Error ? error.message : String(error)}`,
         );
         return UNIFIED_DATA_CAMPAIGN_DEFAULT;
     }
 }
 
-/** The one obvious symbol. Import this, never `knobBool` directly. */
+/** The one obvious symbol. Import this, never the door name directly. */
 export const UNIFIED_DATA_CAMPAIGN = {
     FEATURE: UNIFIED_DATA_CAMPAIGN_FEATURE,
     KEY: UNIFIED_DATA_CAMPAIGN_KEY,
+    DOOR: UNIFIED_DATA_STORE_DOOR,
     DEFAULT: UNIFIED_DATA_CAMPAIGN_DEFAULT,
     ENTRY_POINTS,
     RUNTIME_ENTRY_POINTS,
@@ -94,92 +114,79 @@ export const UNIFIED_DATA_CAMPAIGN = {
     enabled,
 } as const;
 
-// ── THE PER-PERSON HALF OF THE SWITCH ────────────────────────────────────────
-//
-// `enabled()` above reads the PLATFORM DEFAULT of `custom.code_paths_enabled`
-// — one row, one answer for everybody. That is the right shape for a kill
-// switch and the wrong shape for a rollout: the campaign's first screens have
-// to be usable by the person building them while the default stays `false` for
-// everyone else.
-//
-// The knob register already answers that, and this repo already has the ladder:
-// the row is declared `overridable_by {user}`, and `platform.knob_resolve`
-// (through `lib/scoped-config`) returns the nearest rung's value — a user
-// override, then an organization override, then the platform default. So the
-// per-person answer is not a second switch invented here; it is the SAME row,
-// resolved properly.
-//
-// WHY THE PLATFORM DEFAULT IS STILL READ. `knob_resolve` needs an organization
-// to resolve for, and a person who has not picked one yet has none. In that
-// window the kill switch's own answer is the answer — it can only be `false`
-// or an announced failure, never an accidental `true`.
-
 import { useEffect, useState } from "react";
-import { useEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 import type { OrganizationState } from "@/features/organizations/useOrganizationRequired";
 
 export interface UnifiedDataCampaignGate {
-  /** `null` until both halves have answered. A screen shows nothing yet, not "off". */
-  on: boolean | null;
-  /** Which rung answered, so a screen can say why it is on or off. */
-  because: string;
+    /** `null` until the switch has answered. A screen shows nothing yet, not "off". */
+    on: boolean | null;
+    /** Why it is on or off, in a sentence a person can act on. */
+    because: string;
 }
 
 /**
- * THE gate a campaign route mounts. The route passes the platform default
+ * THE gate a campaign route and the sidebar mount. The caller passes the
  * reader itself (`UNIFIED_DATA_CAMPAIGN.enabled`), which is how the release
- * guard `pnpm check:campaign-entry-points` can see, in the route's own source,
- * that the kill switch is read there.
+ * guard `pnpm check:campaign-entry-points` can see, in the calling file's own
+ * source, that the switch is read there.
+ *
+ * It re-asks whenever the organization changes. The sidebar used to read the
+ * active organization ONCE, in a mount effect, before the organization had
+ * loaded — so it always asked about `null`, always got OFF, and the Records
+ * entry never appeared however the switch was set (the verdict's third finding).
  */
 export function useUnifiedDataCampaign(args: {
-  organizationId: string | null | undefined;
-  organizationState?: OrganizationState;
-  userId: string | null | undefined;
-  platformDefault: () => Promise<boolean>;
+    organizationId: string | null | undefined;
+    organizationState?: OrganizationState;
+    storeSwitch: (organizationId: string | null | undefined) => Promise<boolean>;
 }): UnifiedDataCampaignGate {
-  const { organizationId, organizationState, userId, platformDefault } = args;
-  const [fallback, setFallback] = useState<boolean | null>(null);
+    const { organizationId, organizationState, storeSwitch } = args;
+    const [answer, setAnswer] = useState<{ organizationId: string | null; on: boolean } | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    void platformDefault().then((value) => {
-      if (!cancelled) setFallback(value);
-    });
-    return () => {
-      cancelled = true;
-    };
-    // The reader is the module's own function; re-running on identity would
-    // re-read the knob on every render for no new fact.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    useEffect(() => {
+        if (organizationState && organizationState !== "ready") return;
+        let cancelled = false;
+        const asked = organizationId ?? null;
+        void storeSwitch(asked).then((on) => {
+            if (!cancelled) setAnswer({ organizationId: asked, on });
+        });
+        return () => {
+            cancelled = true;
+        };
+        // The reader is a module function passed by the caller; re-running on its
+        // identity would re-ask the door on every render for no new fact.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [organizationId, organizationState]);
 
-  const resolved = useEffectiveKnob(organizationId, userId, UNIFIED_DATA_CAMPAIGN_KNOB);
-
-  if (organizationState && organizationState !== "ready") {
-    return { on: null, because: "Waiting for organization context." };
-  }
-  if (!organizationId) {
+    if (organizationState && organizationState !== "ready") {
+        return { on: null, because: "Waiting for organization context." };
+    }
+    if (!organizationId) {
+        return {
+            on: false,
+            because:
+                "No organization is picked yet, so there are no tables to show. " +
+                "Pick one from the organization menu and this answers for that organization.",
+        };
+    }
+    // An answer about a DIFFERENT organization is not an answer about this one.
+    if (answer === null || answer.organizationId !== organizationId) {
+        return { on: null, because: "Reading this organization's switch." };
+    }
     return {
-      on: fallback,
-      because:
-        "No organization is picked yet, so the platform default of " +
-        `"${UNIFIED_DATA_CAMPAIGN_FEATURE}.${UNIFIED_DATA_CAMPAIGN_KEY}" is the answer. ` +
-        "Pick an organization and your own override applies.",
+        on: answer.on,
+        because: answer.on
+            ? "This organization keeps its data in the unified record store."
+            : UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE,
     };
-  }
-  if (resolved === undefined) return { on: null, because: "Reading the switch." };
-  return {
-    on: resolved === true || resolved === "true",
-    because:
-      `Resolved from "${UNIFIED_DATA_CAMPAIGN_FEATURE}.${UNIFIED_DATA_CAMPAIGN_KEY}" for this ` +
-      "person in this organization — a person-level override beats the organization, which beats " +
-      "the platform default.",
-  };
 }
 
-/** What a campaign route says when the switch is off. Never a blank screen. */
+/**
+ * What a campaign route says when the switch is off. Never a blank screen, and
+ * never a knob key at a person: it names the one thing that turns it on, in the
+ * words of the screen that does it.
+ */
 export const UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE =
-  "The unified data pages are switched off for you. They are behind " +
-  `"${UNIFIED_DATA_CAMPAIGN_FEATURE}.${UNIFIED_DATA_CAMPAIGN_KEY}", which is off by default while the ` +
-  "campaign is built. An administrator turns it on for a person, an organization or the whole " +
-  "platform in Settings → Configuration. The existing data pages at /data are unaffected.";
+    "This organization does not keep its data in the unified record store yet, so there are no " +
+    "tables here. An owner or an administrator of it turns that on once, for everybody, on the " +
+    "unified data ramp screen. Your existing data pages are unaffected.";

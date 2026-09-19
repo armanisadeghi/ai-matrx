@@ -1834,9 +1834,21 @@ export type Database = {
         }
         Relationships: []
       }
+      org_default_tool: {
+        Row: {
+          feature: string | null
+          key: string | null
+          tool_name: string | null
+          why: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      default_tool_ids_for_organization: {
+        Args: { p_organization_id: string }
+        Returns: string[]
+      }
     }
     Enums: {
       [_ in never]: never
@@ -53599,6 +53611,16 @@ export type Database = {
         Args: { p_pref: string; p_schema: string; p_table: string }
         Returns: string
       }
+      access_arms_from_sources: {
+        Args: {
+          p_id: string
+          p_organization_id: string
+          p_table_id?: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
       access_delta_assert_no_widening: {
         Args: { p_after: string; p_before: string }
         Returns: string
@@ -54028,6 +54050,14 @@ export type Database = {
       }
       generated_policy_names: { Args: never; Returns: string[] }
       governance_columns: { Args: { p_token: string }; Returns: string[] }
+      grant_addressed_level: {
+        Args: {
+          p_resource_id: string
+          p_resource_type: string
+          p_user_id: string
+        }
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
       grant_path_blanket_refusals: {
         Args: never
         Returns: {
@@ -54204,6 +54234,16 @@ export type Database = {
           replayed: boolean
         }[]
       }
+      member_lane_confers: {
+        Args: {
+          p_id?: string
+          p_organization_id: string
+          p_table_id?: string
+          p_type?: string
+          p_user_id: string
+        }
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
       member_lane_open: {
         Args: { p_organization_id: string }
         Returns: boolean
@@ -54213,6 +54253,27 @@ export type Database = {
         Returns: {
           lane_open: boolean
           replayed: boolean
+        }[]
+      }
+      member_level_justified: {
+        Args: {
+          p_organization_id: string
+          p_record_id: string
+          p_user_id: string
+        }
+        Returns: Database["public"]["Enums"]["permission_level"]
+      }
+      member_level_overreach: {
+        Args: never
+        Returns: {
+          example_record_id: string
+          member_email: string
+          member_id: string
+          organization_id: string
+          organization_name: string
+          records_over: number
+          worst_actual: Database["public"]["Enums"]["permission_level"]
+          worst_justified: Database["public"]["Enums"]["permission_level"]
         }[]
       }
       membership_change_refusal: {
@@ -69193,6 +69254,10 @@ export type Database = {
           switched_on: boolean
         }[]
       }
+      unified_data_store_on: {
+        Args: { p_organization_id: string }
+        Returns: Json
+      }
       unified_data_store_set: {
         Args: {
           p_acting_user_id?: string
@@ -74363,6 +74428,40 @@ export type Database = {
       cx_restore_conversation: {
         Args: { p_conversation_id: string }
         Returns: boolean
+      }
+      cx_search_conversations: {
+        Args: {
+          p_agent_ids?: string[]
+          p_deep?: boolean
+          p_exclude_source_features?: string[]
+          p_include_empty_source?: boolean
+          p_include_source_apps?: string[]
+          p_include_source_features?: string[]
+          p_lanes?: string[]
+          p_limit?: number
+          p_offset?: number
+          p_origin_classes?: string[]
+          p_search: string
+          p_since?: string
+        }
+        Returns: {
+          created_at: string
+          description: string
+          exclude_from_kg: boolean
+          id: string
+          initial_agent_id: string
+          is_favorite: boolean
+          last_activity_at: string
+          last_model_id: string
+          message_count: number
+          origin_class: string
+          source_app: string
+          source_feature: string
+          status: string
+          title: string
+          total_count: number
+          updated_at: string
+        }[]
       }
       cx_soft_delete_conversation: {
         Args: { p_conversation_id: string }
