@@ -529,8 +529,11 @@
     "check:access-kernel-bounded": "tsx scripts/check-access-kernel-bounded.ts",
     "check:access-kernel-bounded:strict": "tsx scripts/check-access-kernel-bounded.ts --strict",
     "check:access-kernel-bounded:self-test": "tsx scripts/check-access-kernel-bounded.ts --self-test",
-    "check:entity-types:self-test": "tsx scripts/generate-entity-types.ts --self-test"
+    "check:entity-types:self-test": "tsx scripts/generate-entity-types.ts --self-test",
+    "check:campaign-ramp-ids": "tsx scripts/check-campaign-ramp-ids.ts",
+    "check:campaign-ramp-ids:self-test": "tsx scripts/check-campaign-ramp-ids.ts --self-test"
   },
+  "//TEMPORARY-vendor-tarballs": "@ai-matrx/records and @ai-matrx/records-ui are NOT on npm yet (a brand-new package needs Arman's one-time 2FA bootstrap publish, `new-package` skill step 6), so they are consumed from packed tarballs committed under vendor/. THE SWAP, one line each, the day they publish: set both to \"latest\" here and in pnpm.overrides, delete vendor/, run pnpm install.",
   "dependencies": {
     "@ai-matrx/agents": "latest",
     "@ai-matrx/alchemy": "latest",
@@ -549,6 +552,8 @@
     "@ai-matrx/messaging": "latest",
     "@ai-matrx/print": "latest",
     "@ai-matrx/realtime": "latest",
+    "@ai-matrx/records": "file:vendor/ai-matrx-records-0.3.0.tgz",
+    "@ai-matrx/records-ui": "file:vendor/ai-matrx-records-ui-0.4.0.tgz",
     "@ai-matrx/tap-target": "latest",
     "@ai-sdk/google": "^4.0.68",
     "@anthropic-ai/sdk": "latest",
@@ -820,7 +825,8 @@
       "react": "latest",
       "react-dom": "latest",
       "@types/react": "latest",
-      "@types/react-dom": "latest"
+      "@types/react-dom": "latest",
+      "@ai-matrx/records": "file:vendor/ai-matrx-records-0.3.0.tgz"
     },
     "ignoredBuiltDependencies": [
       "@tsparticles/engine",
