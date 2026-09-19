@@ -122,6 +122,18 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "The first standard entity page to grow its organization's own fields from the new store (SCR-12). The live CRM record page, so the section is behind the switch and renders nothing at all when it is off.",
     },
     {
+        id: "list-change-proposal-record-table",
+        file: "features/list-change-proposals/applyListChange.ts",
+        kind: "runtime",
+        why: "The `kind:\"table\"` target of the list-change-proposal primitive reads and writes a Table homed in a Record through `@ai-matrx/records/core`'s `record_write`/`record_update`/`record_delete`/`read_records` doors. Served to users from live chat messages, so it reads the switch first and refuses with the off sentence when it is off.",
+    },
+    {
+        id: "list-change-proposal-record-table-live-test",
+        file: "features/list-change-proposals/__tests__/applyListChange.table.live.test.ts",
+        kind: "tooling",
+        why: "Exercises the `kind:\"table\"` branch above against the live main database as admin@admin.com, whose personal organization carries a standing per-user switch override. A test run by a developer/CI, never served to a user, so it must not call the gate itself.",
+    },
+    {
         id: "migration-target",
         file: "scripts/lib/migration-target.ts",
         kind: "tooling",
@@ -264,6 +276,18 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         file: "scripts/__tests__/gate-corpus-refuses-production-identity.test.ts",
         kind: "tooling",
         why: "Jest proof that both gate-corpus runners refuse a connection whose pg_control_system().system_identifier is production's (ATTACK-9 finding 34). Reads plan/BRANCH-REF and two source files; opens no socket, holds no credential, never part of a served request.",
+    },
+    {
+        id: "unified-data-campaign-ramp",
+        file: "lib/knobs/unifiedDataCampaignRamp.ts",
+        kind: "runtime",
+        why: "THE RAMP — CUT-3's per-consumer, per-organization half of the switch. It is served code and it reads the kill switch itself (`UNIFIED_DATA_CAMPAIGN.enabled()`) before it looks at any consumer knob, so a consumer switched on for an organization still reads the old table while the campaign is off.",
+    },
+    {
+        id: "unified-data-campaign-ramp-register",
+        file: "lib/knobs/unifiedDataCampaignRamp.register.ts",
+        kind: "tooling",
+        why: "The eight consumer ids and the id-to-knob-key rule, split out for the same reason as this file: pure, import-free, readable by a guard in a bare checkout. It reads no knob and must not be gated.",
     },
 ];
 
