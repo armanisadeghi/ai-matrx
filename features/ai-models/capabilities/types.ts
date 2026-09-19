@@ -163,7 +163,7 @@ export function modelsForSelectionPurpose<
       purpose === "admin" ||
       (purpose === "decision"
         ? isDecisionModelCapability(model)
-        : !isDecisionModelCapability(model)),
+        : isConversationalModelCapability(model)),
   );
 }
 
