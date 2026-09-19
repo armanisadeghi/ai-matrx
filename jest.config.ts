@@ -137,6 +137,11 @@ const config: Config = {
         // Chromium; under Jest its `@playwright/test` import dies with
         // "Class extends value undefined" before a single test runs.
         "/features/shell/layout-gate/",
+        // Same class: the mobile rule-row-squeeze gate
+        // (`pnpm test:rule-row-squeeze`, playwright.rule-row-squeeze.config.ts)
+        // measures real rendered layout in Chromium via its own Playwright
+        // config and `globalSetup`; Jest must not load its `.spec.ts` either.
+        "/features/masterwork/components/detail/__tests__/rule-row-squeeze/",
     ],
     // Restrict to *.test.ts(x) / *.spec.ts(x). Jest's default `testMatch`
     // also globs everything under `**/__tests__/**`, which picked up our

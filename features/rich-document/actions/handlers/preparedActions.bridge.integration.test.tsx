@@ -54,33 +54,73 @@ const ID = "22222222-2222-4222-8222-222222222222";
 function note(overrides: Partial<Note> = {}): Note {
   return { id: ID, organization_id: ORG, version: 0, content: "authoritative full body", label: "Note", folder_name: null, folder_id: null, tags: [], metadata: {}, visibility: "personal", position: 0, project_id: null, task_id: null, created_at: "2026-09-12T00:00:00Z", created_by: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", updated_at: "2026-09-12T00:00:00Z", updated_by: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", deleted_at: null, content_hash: null, file_path: null, last_device_id: null, sync_version: 0, ...overrides };
 }
-function query(result: unknown) {
-  const chain = { select: jest.fn(), eq: jest.fn(), is: jest.fn(), maybeSingle: jest.fn(), update: jest.fn() };
-  chain.select.mockReturnValue(chain); chain.eq.mockReturnValue(chain); chain.is.mockReturnValue(chain); chain.update.mockReturnValue(chain); chain.maybeSingle.mockResolvedValue(result); return chain;
+/**
+ * A `workbench.notes` stub that answers by INTENT — table + filters +
+ * operation — never by call ORDER.
+ *
+ * WHY, and never go back to a queue: this replaces a `query()` helper whose
+ * every caller strung `mockSchema.mockReturnValue({ from: jest.fn()
+ * .mockReturnValueOnce(a).mockReturnValueOnce(b)... })` — the same
+ * call-order-keyed shape `features/notes/redux/draftInitialization.control
+ * .integration.test.tsx` carried before `abe5da8907` closed it there. A note
+ * flow's real read/write count is not fixed by this test file: `prepareEdit`
+ * skips the network read entirely for an already-captured dirty source, and
+ * a CAS miss makes `guardedUpdate` issue an extra `fetchCurrent` read this
+ * suite never has to enumerate by hand. A queue that assumed a fixed count
+ * would silently answer the WRONG call with the RIGHT-shaped data the moment
+ * that assumption drifted, and never say so.
+ *
+ * This stub instead holds the one row the flow actually touches and answers
+ * every `select`/`update` against its real current state, CAS included: a
+ * filtered `update` whose filters miss the stored row returns
+ * `{ data: null }`, exactly as PostgREST does, so a wrong expected version
+ * produces a genuine miss rather than a rehearsed acknowledgement.
+ */
+interface NotesIntentChain {
+  select: jest.Mock<NotesIntentChain, [string?]>;
+  eq: jest.Mock<NotesIntentChain, [string, unknown]>;
+  is: jest.Mock<NotesIntentChain, [string, unknown]>;
+  update: jest.Mock<NotesIntentChain, [Record<string, unknown>]>;
+  maybeSingle: jest.Mock<Promise<{ data: Record<string, unknown> | null; error: null }>, []>;
 }
-function staleBaseTransport() {
-  let remote = note({ content: "remote version five", version: 5 });
+function notesRowByIntent(initial: Note) {
+  let row: Record<string, unknown> = { ...initial };
   const writes: Array<{ payload: Record<string, unknown>; filters: Map<string, unknown> }> = [];
-  const from = jest.fn(() => {
+  const from = jest.fn((table: string) => {
+    if (table !== "notes") {
+      throw new Error(`This stub models workbench.notes only; \`${table}\` was read.`);
+    }
     const filters = new Map<string, unknown>();
     let payload: Record<string, unknown> | null = null;
-    const chain = {
-      select: jest.fn(), eq: jest.fn(), is: jest.fn(), maybeSingle: jest.fn(), update: jest.fn(),
+    const matches = () =>
+      [...filters].every(([column, value]) => (row[column] ?? null) === (value ?? null));
+    const chain: NotesIntentChain = {
+      select: jest.fn(() => chain),
+      eq: jest.fn((column: string, value: unknown) => { filters.set(column, value); return chain; }),
+      is: jest.fn((column: string, value: unknown) => { filters.set(column, value); return chain; }),
+      update: jest.fn((values: Record<string, unknown>) => { payload = { ...values }; return chain; }),
+      maybeSingle: jest.fn(async () => {
+        if (payload) {
+          writes.push({ payload, filters: new Map(filters) });
+          if (!matches()) return { data: null, error: null };
+          row = { ...row, ...payload };
+          return { data: { ...row }, error: null };
+        }
+        if (!matches()) return { data: null, error: null };
+        return { data: { ...row }, error: null };
+      }),
     };
-    chain.select.mockReturnValue(chain);
-    chain.eq.mockImplementation((field: string, value: unknown) => { filters.set(field, value); return chain; });
-    chain.is.mockReturnValue(chain);
-    chain.update.mockImplementation((next: Record<string, unknown>) => { payload = next; return chain; });
-    chain.maybeSingle.mockImplementation(async () => {
-      if (!payload) return { data: remote, error: null };
-      writes.push({ payload, filters });
-      if (filters.get("version") !== remote.version) return { data: null, error: null };
-      remote = { ...remote, ...payload } as Note;
-      return { data: remote, error: null };
-    });
     return chain;
   });
-  return { from, writes, remote: () => remote };
+  return {
+    from,
+    /** Every write ATTEMPT, matched or not — the CAS filters it carried. */
+    writes,
+    /** The stored row, as the database would hold it right now. */
+    row: () => ({ ...row }),
+    /** Something else moved the row without going through this stub's `.update()`. */
+    advance: (patch: Record<string, unknown>) => { row = { ...row, ...patch }; },
+  };
 }
 
 function makeStore() {
@@ -114,9 +154,8 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
   afterEach(async () => { await act(async () => root.unmount()); container.remove(); });
 
   it.each(["edit", "open-fullscreen-editor"])("prepares identity source before %s overlay and saves via real adapter/service", async (id) => {
-    const read = query({ data: note(), error: null }); const existing = query({ data: note(), error: null });
-    const write = query({ data: note({ content: "saved full body", version: 1 }), error: null });
-    mockSchema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(read).mockReturnValueOnce(existing).mockReturnValueOnce(write) });
+    const server = notesRowByIntent(note());
+    mockSchema.mockReturnValue({ from: server.from });
     const store = makeStore(); const action = getAction(id); if (!action) throw new Error("registered action missing");
     await action.run(context(store));
     const instanceId = id === "edit" ? "note:edit-content" : "note:fullscreen-editor";
@@ -124,18 +163,19 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     if (!overlay || !isFullScreenOverlayData(overlay.data)) throw new Error("overlay did not open with a callback target");
     const overlayData = overlay.data;
     expect(overlayData.content).toBe("authoritative full body");
-    expect(read.eq).toHaveBeenCalledWith("id", ID);
+    expect(server.from.mock.results[0]?.value.eq).toHaveBeenCalledWith("id", ID);
     await act(async () => root.render(<Provider store={store}><FullScreenMarkdownEditorBridge isOpen onClose={() => {}} instanceId={instanceId} content={overlayData.content} callbackGroupId={overlayData.callbackGroupId} /></Provider>));
     if (!editorProps) throw new Error("rendered bridge missing visual editor");
     await editorProps.onSave("saved full body");
-    expect(write.update).toHaveBeenCalledWith({ content: "saved full body", version: 1 });
-    expect(write.eq).toHaveBeenCalledWith("id", ID); expect(write.eq).toHaveBeenCalledWith("organization_id", ORG); expect(write.eq).toHaveBeenCalledWith("version", 0);
+    const write = server.writes.at(-1);
+    expect(write?.payload).toEqual({ content: "saved full body", version: 1 });
+    expect(write?.filters.get("id")).toBe(ID); expect(write?.filters.get("organization_id")).toBe(ORG); expect(write?.filters.get("version")).toBe(0);
+    expect(server.row()).toMatchObject({ content: "saved full body", version: 1 });
   });
 
   it("uses a dirty captured base without a save-time reread", async () => {
-    const existing = query({ data: note({ content: "acknowledged", version: 4 }), error: null });
-    const write = query({ data: note({ content: "second dirty body", version: 5 }), error: null });
-    mockSchema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(write) });
+    const server = notesRowByIntent(note({ content: "acknowledged", version: 4 }));
+    mockSchema.mockReturnValue({ from: server.from });
     const source = captureNoteEditSource({ acknowledgedNote: note({ content: "acknowledged", version: 4 }), displayedNote: note({ content: "first dirty body", version: 4 }), actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", sourceId: "dirty", snapshotId: "dirty-1" });
     const store = makeStore(); const action = getAction("edit"); if (!action) throw new Error("registered action missing");
     await action.run(context(store, source));
@@ -146,23 +186,14 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     expect(mockSchema).not.toHaveBeenCalledWith(expect.anything());
     await act(async () => root.render(<Provider store={store}><FullScreenMarkdownEditorBridge isOpen onClose={() => {}} instanceId="note:edit-content" content={overlayData.content} callbackGroupId={overlayData.callbackGroupId} /></Provider>));
     if (!editorProps) throw new Error("missing rendered editor"); await editorProps.onSave("second dirty body");
-    expect(write.eq).toHaveBeenCalledWith("version", 4);
+    const write = server.writes.at(-1);
+    expect(write?.filters.get("version")).toBe(4);
+    expect(server.row()).toMatchObject({ content: "second dirty body", version: 5 });
   });
 
   it("keeps the HTML bridge's real hook and callback open for a second acknowledged save", async () => {
-    const read = query({ data: note(), error: null });
-    const firstExisting = query({ data: note(), error: null });
-    const firstWrite = query({ data: note({ content: "first HTML save", version: 1 }), error: null });
-    const secondExisting = query({ data: note({ content: "first HTML save", version: 1 }), error: null });
-    const secondWrite = query({ data: note({ content: "second HTML save", version: 2 }), error: null });
-    mockSchema.mockReturnValue({
-      from: jest.fn()
-        .mockReturnValueOnce(read)
-        .mockReturnValueOnce(firstExisting)
-        .mockReturnValueOnce(firstWrite)
-        .mockReturnValueOnce(secondExisting)
-        .mockReturnValueOnce(secondWrite),
-    });
+    const server = notesRowByIntent(note());
+    mockSchema.mockReturnValue({ from: server.from });
     const store = makeStore(); const action = getAction("html-preview"); if (!action) throw new Error("registered action missing");
     await action.run(context(store));
     const overlay = store.getState().overlays.overlays.htmlPreview?.["note:html-preview"];
@@ -174,13 +205,14 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     expect(htmlPreviewProps.htmlPreviewState.currentMarkdown).toBe("authoritative full body");
     await htmlPreviewProps.onSave("first HTML save");
     await htmlPreviewProps.onSave("second HTML save");
-    expect(firstWrite.eq).toHaveBeenCalledWith("version", 0);
-    expect(secondWrite.eq).toHaveBeenCalledWith("version", 1);
+    expect(server.writes[0]?.filters.get("version")).toBe(0);
+    expect(server.writes[1]?.filters.get("version")).toBe(1);
+    expect(server.row()).toMatchObject({ content: "second HTML save", version: 2 });
   });
 
   it("refuses an identity opening when authentication changes while the authoritative row is loading", async () => {
-    const read = query({ data: note(), error: null });
-    mockSchema.mockReturnValue({ from: jest.fn().mockReturnValue(read) });
+    const server = notesRowByIntent(note());
+    mockSchema.mockReturnValue({ from: server.from });
     mockGetSession
       .mockResolvedValueOnce({ data: { session: { user: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" } } }, error: null })
       .mockResolvedValueOnce({ data: { session: { user: { id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb" } } }, error: null });
@@ -191,8 +223,8 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
 
   it("refuses a moved note before a prepared editor can write into another organization", async () => {
     const movedOrganization = "99999999-9999-4999-8999-999999999999";
-    const movedRead = query({ data: note({ organization_id: movedOrganization, version: 5 }), error: null });
-    mockSchema.mockReturnValue({ from: jest.fn().mockReturnValue(movedRead) });
+    const server = notesRowByIntent(note({ organization_id: movedOrganization, version: 5 }));
+    mockSchema.mockReturnValue({ from: server.from });
     const source = captureNoteEditSource({ acknowledgedNote: note({ version: 4 }), displayedNote: note({ content: "dirty retained", version: 4 }), actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", sourceId: "moved", snapshotId: "moved:4" });
     const store = makeStore(); const action = getAction("edit"); if (!action) throw new Error("registered action missing");
     await action.run(context(store, source));
@@ -202,13 +234,13 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     await act(async () => root.render(<Provider store={store}><FullScreenMarkdownEditorBridge isOpen onClose={() => {}} instanceId="note:edit-content" content={overlayData.content} callbackGroupId={overlayData.callbackGroupId} /></Provider>));
     if (!editorProps) throw new Error("missing moved-note callback");
     await expect(editorProps.onSave("attempted overwrite")).rejects.toThrow(/different organization/i);
-    expect(movedRead.update).not.toHaveBeenCalled();
+    expect(server.writes).toHaveLength(0);
     expect(store.getState().overlays.overlays.fullScreenEditor?.["note:edit-content"]).toBeDefined();
   });
 
   it("keeps a stale dirty base when the remote revision advanced before save", async () => {
-    const transport = staleBaseTransport();
-    mockSchema.mockReturnValue({ from: transport.from });
+    const server = notesRowByIntent(note({ content: "remote version five", version: 5 }));
+    mockSchema.mockReturnValue({ from: server.from });
     const source = captureNoteEditSource({
       acknowledgedNote: note({ content: "acknowledged at four", version: 4 }),
       displayedNote: note({ content: "dirty retained", version: 4 }),
@@ -222,9 +254,9 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     await act(async () => root.render(<Provider store={store}><FullScreenMarkdownEditorBridge isOpen onClose={() => {}} instanceId="note:edit-content" content={overlayData.content} callbackGroupId={overlayData.callbackGroupId} /></Provider>));
     if (!editorProps) throw new Error("missing stale-base callback");
     await expect(editorProps.onSave("attempted stale overwrite")).rejects.toThrow(/changed elsewhere/i);
-    expect(transport.writes).toHaveLength(1);
-    expect(transport.writes[0]?.filters.get("version")).toBe(4);
-    expect(transport.remote()).toMatchObject({ version: 5, content: "remote version five" });
+    expect(server.writes).toHaveLength(1);
+    expect(server.writes[0]?.filters.get("version")).toBe(4);
+    expect(server.row()).toMatchObject({ version: 5, content: "remote version five" });
     expect(store.getState().overlays.overlays.fullScreenEditor?.["note:edit-content"]).toBeDefined();
   });
 
@@ -233,11 +265,12 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     // real context-only operation. The no-spy tests above cover the actual
     // content adapter; this proves the common callback protocol for an
     // unchanged association acknowledgement without claiming it saved content.
-    const firstExisting = query({ data: note({ content: "protocol body", version: 4 }), error: null });
-    const firstRead = query({ data: note({ content: "protocol body", version: 4 }), error: null });
-    const secondExisting = query({ data: note({ content: "later body", version: 4 }), error: null });
-    const secondRead = query({ data: note({ content: "later body", version: 4 }), error: null });
-    mockSchema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(firstExisting).mockReturnValueOnce(firstRead).mockReturnValueOnce(secondExisting).mockReturnValueOnce(secondRead) });
+    // `noteAdapter.edit` is replaced below to call `persistNoteUpdate` with a
+    // context-only update (`project_id` alone) — `databaseUpdates` ends up
+    // empty, so the service never issues a `.update()`, only its unconditional
+    // existing-read and its post-context re-read of the same unchanged row.
+    const server = notesRowByIntent(note({ content: "protocol body", version: 4 }));
+    mockSchema.mockReturnValue({ from: server.from });
     const source = captureNoteEditSource({ acknowledgedNote: note({ content: "base", version: 4 }), displayedNote: note({ content: "dirty retained", version: 4 }), actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", sourceId: "protocol", snapshotId: "protocol:4" });
     const adapterSpy = jest.spyOn(noteAdapter, "edit").mockImplementation(async (args) => {
       expect(args.source).toMatchObject({ mode: "editable", editBase: { version: 4 } });
@@ -252,6 +285,13 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
       await act(async () => root.render(<Provider store={store}><HtmlPreviewBridge content={overlayData.content} callbackGroupId={overlayData.callbackGroupId} onClose={() => {}} showSaveButton /></Provider>));
       if (!htmlPreviewProps?.onSave) throw new Error("missing HTML protocol callback");
       await htmlPreviewProps.onSave("protocol body");
+      // The adapter override above never writes content through this stub —
+      // it only ever calls persistNoteUpdate's context-only path. Advancing
+      // the stored row's content here (never through `.update()`) is what
+      // makes the SECOND save's submitted physical content ("later body")
+      // match what the overridden adapter's receipt reports back, exactly
+      // as a real prior content save between the two calls would have.
+      server.advance({ content: "later body" });
       await htmlPreviewProps.onSave("later body");
       // The injected unchanged acknowledgement kept the private base at 4.
       expect(adapterSpy).toHaveBeenCalledTimes(2);
@@ -261,11 +301,11 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
   });
 
   it("keeps a returned saved physical partial receipt as the callback-local retry base", async () => {
-    const partialExisting = query({ data: note({ content: "base", version: 4 }), error: null });
-    const partialWrite = query({ data: note({ content: "partial body", version: 5 }), error: null });
-    const retryExisting = query({ data: note({ content: "partial body", version: 5 }), error: null });
-    const retryWrite = query({ data: note({ content: "retry body", version: 6 }), error: null });
-    mockSchema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(partialExisting).mockReturnValueOnce(partialWrite).mockReturnValueOnce(retryExisting).mockReturnValueOnce(retryWrite) });
+    // ONE stored row carries both the direct call below and the later
+    // rendered retry — the retry's real existing-read must see the version
+    // the direct call actually left behind (5), never a rehearsed 5.
+    const server = notesRowByIntent(note({ content: "base", version: 4 }));
+    mockSchema.mockReturnValue({ from: server.from });
     mockSetTargets.mockResolvedValueOnce({ ok: false, error: { message: "project denied" } });
     let partial: NoteContextPartialSaveError | null = null;
     try {
@@ -275,6 +315,7 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
     } catch (error) { partial = error as NoteContextPartialSaveError; }
     expect(partial).toBeInstanceOf(NoteContextPartialSaveError);
     expect(partial?.receipt).toMatchObject({ databaseWrite: "saved", note: { version: 5, content: "partial body" } });
+    expect(server.row()).toMatchObject({ version: 5, content: "partial body" });
 
     const source = captureNoteEditSource({ acknowledgedNote: note({ content: "base", version: 4 }), displayedNote: note({ content: "dirty", version: 4 }), actorId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", sourceId: "partial", snapshotId: "partial:4" });
     const originalEdit = noteAdapter.edit!;
@@ -294,16 +335,17 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
       await editorProps.onSave("retry body");
       expect(adapterSpy.mock.calls[0]?.[0].source).toMatchObject({ mode: "editable", editBase: { version: 4 } });
       expect(adapterSpy.mock.calls[1]?.[0].source).toMatchObject({ mode: "editable", editBase: { version: 5 } });
-      expect(retryWrite.eq).toHaveBeenCalledWith("version", 5);
+      const retryWrite = server.writes.at(-1);
+      expect(retryWrite?.filters.get("version")).toBe(5);
+      expect(server.row()).toMatchObject({ content: "retry body", version: 6 });
     } finally {
       adapterSpy.mockRestore();
     }
   });
 
   it("retains an acknowledged base after an actor changes after the physical write", async () => {
-    const existing = query({ data: note({ content: "base", version: 4 }), error: null });
-    const write = query({ data: note({ content: "saved before actor change", version: 5 }), error: null });
-    mockSchema.mockReturnValue({ from: jest.fn().mockReturnValueOnce(existing).mockReturnValueOnce(write) });
+    const server = notesRowByIntent(note({ content: "base", version: 4 }));
+    mockSchema.mockReturnValue({ from: server.from });
     mockGetSession
       .mockResolvedValueOnce({ data: { session: { user: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" } } }, error: null })
       .mockResolvedValueOnce({ data: { session: { user: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" } } }, error: null })
@@ -324,7 +366,8 @@ describe("registered Notes actions through overlay and rendered bridge", () => {
       await expect(editorProps.onSave("retry after actor change")).rejects.toThrow(/sign-in changed/i);
       expect(adapterSpy.mock.calls[0]?.[0].source).toMatchObject({ mode: "editable", editBase: { version: 4 } });
       expect(adapterSpy.mock.calls[1]?.[0].source).toMatchObject({ mode: "editable", editBase: { version: 5 } });
-      expect(write.eq).toHaveBeenCalledWith("version", 4);
+      expect(server.writes[0]?.filters.get("version")).toBe(4);
+      expect(server.row()).toMatchObject({ content: "saved before actor change", version: 5 });
     } finally {
       adapterSpy.mockRestore();
     }
