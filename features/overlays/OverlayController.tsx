@@ -2713,6 +2713,11 @@ export default function OverlayController() {
                 ? data.callbackGroupId
                 : null
             }
+            importDestinationFolderPath={
+              typeof data?.importDestinationFolderPath === "string"
+                ? data.importDestinationFolderPath
+                : null
+            }
           />
         );
       })()}
