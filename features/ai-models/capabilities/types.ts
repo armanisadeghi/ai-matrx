@@ -24,7 +24,7 @@
 // (extraction models emit structured entities; vector models emit embeddings),
 // while `document` appears on inputs. All are members of the one shared set
 // because input/output share the vocabulary.
-export const CONTENT_TYPES = ["text", "image", "audio", "video", "document", "entities", "embedding"] as const;
+export const CONTENT_TYPES = ["text", "image", "audio", "video", "document", "entities", "embedding", "decision"] as const;
 export type ContentType = typeof CONTENT_TYPES[number];
 
 // Full live vocabulary (verified against ai.model_definition 2026-08-16:
@@ -35,6 +35,7 @@ export type ContentType = typeof CONTENT_TYPES[number];
 //   realtime   — live voice/audio transport.
 //   embedding  — vectorization models; NOT chat models.
 //   agent      — provider-managed background agent; uses its dedicated API.
+//   decision   — typed state/question evaluation; never a conversational turn.
 export const INTERACTION_MODES = [
   "turn",
   "single",
@@ -42,6 +43,7 @@ export const INTERACTION_MODES = [
   "realtime",
   "embedding",
   "agent",
+  "decision",
 ] as const;
 export type InteractionMode = typeof INTERACTION_MODES[number];
 
@@ -134,6 +136,20 @@ export interface ModelCapabilities {
   interaction: InteractionMode;
   /** Model is explicitly multilingual (canonical `capabilities.multilingual`; absent → false). */
   multilingual: boolean;
+}
+
+/** Decision models have a non-conversational wire contract. */
+export function isDecisionModelCapability(
+  capabilities: Pick<ModelCapabilities, "interaction">,
+): boolean {
+  return capabilities.interaction === "decision";
+}
+
+/** Chat and agent launchers may select turn/single models only. */
+export function isConversationalModelCapability(
+  capabilities: Pick<ModelCapabilities, "interaction">,
+): boolean {
+  return capabilities.interaction === "turn" || capabilities.interaction === "single";
 }
 
 /**

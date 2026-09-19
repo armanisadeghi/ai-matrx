@@ -102,6 +102,12 @@ export function pickRuntime(opts: PickRuntimeInput): PickRuntimeResult {
           "This is a provider-managed background agent — it cannot run through the conversational runtime. Use its dedicated agent surface instead.",
       };
 
+    case "decision":
+      return {
+        error:
+          "This is a typed decision model — it cannot run through the conversational runtime. Use the Decision playground instead.",
+      };
+
     case "turn":
     case "single":
       // "single" (one-shot generation — image/video models) deliberately
