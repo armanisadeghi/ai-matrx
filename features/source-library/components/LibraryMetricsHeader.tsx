@@ -124,6 +124,7 @@ function buildTilesFromMetrics(
     const kinds = metrics?.counts_by_kind;
     const captions = metrics?.caption_coverage;
     const transcripts = metrics?.transcripts;
+    const lastAction = metrics?.last_action;
     return [
         {
             key: "total",
@@ -216,6 +217,33 @@ function buildTilesFromMetrics(
                       transcripts.none,
                   )} not transcribed`
                 : "Ready, running, queued, failed, none",
+            wide: true,
+        },
+        {
+            // §4.3 — WHAT HAS BEEN DONE HERE, per outcome.
+            //
+            // 🚨 UNTIL THIS TILE, THE HEADER COULD ONLY COUNT TRANSCRIPTS. Six
+            // other Actions ran over these same Sources and the header had
+            // nothing to say about any of them, so a Library where 3 of 50
+            // Rulebook sends had failed looked identical to one where all 50
+            // went. The count is the SERVER'S, over the current narrowing, and it
+            // counts each Source ONCE by whatever ran on it most recently — the
+            // same question the "Result" filter chip asks, so a person clicking
+            // the number gets the rows the number described.
+            //
+            // It applies to every adapter. Unlike captions and transcripts, an
+            // Action is not a property of the medium: a blog post can go to a
+            // Rulebook exactly as a video can.
+            key: "last_action",
+            label: "Actions run",
+            value: lastAction ? formatCount(lastAction.ready) : null,
+            hint: lastAction
+                ? `${formatCount(lastAction.running)} running, ${formatCount(
+                      lastAction.skipped,
+                  )} skipped, ${formatCount(lastAction.failed)} failed, ${formatCount(
+                      metrics?.untouched ?? 0,
+                  )} untouched`
+                : "Ready, running, skipped, failed, untouched",
             wide: true,
         },
     ];

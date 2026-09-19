@@ -73,6 +73,17 @@ Transcript text is a genuine direct Supabase read (`transcriptService.ts`).
    `GET /media/actions` and there is no fallback list anywhere. One declaration
    server-side is enough to appear; a retired one disappears. If the registry
    cannot be read, the bar says so and invents nothing.
+5. **Every Source says what was last done to it** (contract §4.3). The **Last
+   action** column shows one honest line — the runner's own sentence — under the
+   Action's own label from that same registry, and a dash when nothing has run.
+   The **Action** and **Result** chips narrow on the server (`action_key` /
+   `action_status` on `GET …/videos`), so "the three that failed" is a real
+   selection an Action can be re-run over, not a filtered view of one page. The
+   header's **Actions run** tile counts each Source once by whatever ran on it
+   most recently, and the row menu opens the job the outcome came from.
+   ONE column and ONE tile, never one per Action: the registry grows, and a
+   screen whose shape is a changelog of it is always one Action behind.
+   Guard: `__tests__/an-action-leaves-a-mark.test.tsx`.
 
 ## 🚨 Two live-measured rules every reader here obeys
 
@@ -154,6 +165,26 @@ nothing moves; the claim is gone. The day the server publishes a word count,
 `vocabulary.ts` is the only file that changes.
 
 ## Change log
+
+- `2026-09-19` — **A Source can finally say what was done to it, for every
+  Action and not just `transcribe`.** Until today the only per-item outcome on
+  this screen was the Transcript column. Six other Actions ran over the same
+  Sources and wrote nothing back, so a person who selected fifty Sources, sent
+  them to a Masterwork Rulebook, read "41 succeeded, 6 skipped, 3 failed" on a
+  job panel and closed it could never again learn which forty-one went, which
+  six had no words, or which three broke — this list looked exactly as it had
+  before they clicked. The server now projects one outcome per Action onto the
+  Source (contract §4.3), and this module reads it: `ActionOutcome` in
+  `types.ts`, `parseActionOutcome`/`parseActionOutcomes` in `contract.ts` (both
+  new fields NULLABLE on the wire — an older server sends neither and its
+  Sources must still list), `lastActionColumn` in `catalog/columns.tsx`, the
+  Action/Result chips in `catalog/service.ts` + `catalog/listConfig.tsx`, and
+  the "Actions run" tile in `LibraryMetricsHeader`. `transcript_status` is now a
+  view of the same projection server-side and is otherwise untouched here.
+  A malformed outcome costs the NOTE, never the Source, and a badge never
+  renders without its sentence. Guard:
+  `__tests__/an-action-leaves-a-mark.test.tsx`, mutation-proved red on both the
+  sentence rule and the filters before green.
 
 - `2026-09-18` — **The generated contract arrived, and four calls turned out to
   be calling nothing.** `pnpm sync-types:live` wrote the real `/media/*`

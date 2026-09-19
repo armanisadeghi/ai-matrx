@@ -27,6 +27,7 @@ import type {
 } from "@/lib/entity-list/types";
 import { MediaApiError, getLibraryMetrics, listVideos } from "../api";
 import type {
+    ActionOutcomeStatus,
     MediaKind,
     TranscriptStatus,
     VideoQuery,
@@ -107,6 +108,15 @@ export function toVideoQuery(
             ).toISOString();
         }
     }
+
+    // §4.3 — "which of these went to the Rulebook" (`action_key`) and "which ones
+    // failed" (`action_status`). Both reach the SERVER; neither is a client-side
+    // pass over the 25 rows this page holds, because a filter that only narrows
+    // the visible page is a filter that lies about its total.
+    const actions = selected(query.filters, "action_key");
+    if (actions.length === 1) out.action_key = actions[0];
+    const outcomes = selected(query.filters, "action_status");
+    if (outcomes.length) out.action_status = outcomes as ActionOutcomeStatus[];
 
     if (query.search) out.q = query.search;
     if (sort) {
@@ -197,6 +207,23 @@ export function createCatalogService(
                             },
                         ].filter((option) => option.count > 0),
                         transcript_status: Object.entries(metrics.transcripts ?? {})
+                            .filter(([, count]) => count > 0)
+                            .map(([value, count]) => ({ value, count })),
+                        // §4.3. An Action nobody has run on this Library is ABSENT
+                        // from the server's map and therefore absent from the chip
+                        // list — never a chip reading "Send to a Rulebook 0", which
+                        // is a control for something that never happened.
+                        action_key: Object.entries(metrics.action_outcomes ?? {})
+                            .map(([value, counts]) => ({
+                                value,
+                                count: Object.values(counts).reduce((a, b) => a + b, 0),
+                            }))
+                            .filter(({ count }) => count > 0),
+                        // Counted on `last_action`, matching what the filter
+                        // narrows on when no Action is chosen — a chip whose count
+                        // came from a different question than its click is worse
+                        // than a chip with no count.
+                        action_status: Object.entries(metrics.last_action ?? {})
                             .filter(([, count]) => count > 0)
                             .map(([value, count]) => ({ value, count })),
                     },

@@ -26,7 +26,10 @@
     "Two lanes on two ports but one `localhost` host still share one session and one",
     "dev-login will evict the other."
   ],
-  "portRange": { "min": 3001, "max": 3013 },
+  "portRange": {
+    "min": 3001,
+    "max": 3016
+  },
   "reserved": [
     {
       "holder": "preview:start",
@@ -46,7 +49,9 @@
     "W6-PORTAL": 3010,
     "W6-CHAT": 3011,
     "W6-BOOK": 3012,
-    "W6-HISTORY": 3013
+    "W6-HISTORY": 3013,
+    "DATA-V2": 3014,
+    "W7-OFF": 3015
   },
   "noDevServer": {
     "W6-DOCS": "Proves its contract through the document pipeline, not a browser.",

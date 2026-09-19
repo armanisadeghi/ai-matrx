@@ -13,6 +13,8 @@ import { Captions, CaptionsOff, CircleDashed, Radio } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Muted, timeCell, type EntityColumnSpec } from "@/lib/entity-list/columns";
 import {
+    actionLabel,
+    actionOutcomeLabel,
     formatCompactNumber,
     formatDuration,
     mediaKindLabel,
@@ -38,7 +40,14 @@ const TRANSCRIPT_TONE: Record<string, string> = {
     none: "border-border text-muted-foreground",
 };
 
-export const CATALOG_COLUMNS: EntityColumnSpec<VideoRow>[] = [
+const OUTCOME_TONE: Record<string, string> = {
+    ready: "border-emerald-500/40 text-emerald-600 dark:text-emerald-400",
+    running: "border-primary/40 text-primary",
+    skipped: "border-border text-muted-foreground",
+    failed: "border-destructive/40 text-destructive",
+};
+
+const BASE_COLUMNS: EntityColumnSpec<VideoRow>[] = [
     {
         id: "thumbnail",
         label: "Thumbnail",
@@ -264,3 +273,91 @@ export const CATALOG_COLUMNS: EntityColumnSpec<VideoRow>[] = [
         },
     },
 ];
+
+/**
+ * §4.3 — WHAT LAST HAPPENED TO THIS SOURCE, as one honest line.
+ *
+ * 🚨 THE GAP THIS CLOSES. Until now a Source could say only whether it had a
+ * transcript. A person who selected fifty Sources, sent them to a Rulebook and
+ * closed the job panel had no way, ever again, to see which fifty went, which
+ * were skipped for having no words, and which failed — this list looked exactly
+ * as it had before they clicked.
+ *
+ * It is ONE column, not one per Action, for the same reason the server stores
+ * one map and not one column per Action: the registry grows, and a screen whose
+ * shape is a changelog of that registry is a screen that is always one Action
+ * behind.
+ *
+ * ABSENT, NEVER DEAD. A Source no Action has touched shows a dash — not "None",
+ * not a grey "Ready", and not an empty badge. And a badge NEVER renders without
+ * its sentence: the sentence is the point, the badge is the index into it.
+ */
+export function lastActionColumn(
+    actionLabels: Record<string, string> | undefined,
+): EntityColumnSpec<VideoRow> {
+    return {
+        id: "last_action",
+        label: "Last action",
+        facet: "action_status",
+        phone: "primary",
+        formatFacetValue: actionOutcomeLabel,
+        column: {
+            id: "last_action",
+            accessorKey: "last_action",
+            header: "Last action",
+            // The server orders by published date, views, length or title; there is
+            // no `order=last_action`, so this says so rather than sorting the 25
+            // rows this page happens to hold and calling it the answer.
+            sortable: false,
+            filter: "select",
+            filterOptions: [
+                { value: "ready", label: "Ready" },
+                { value: "running", label: "Running" },
+                { value: "skipped", label: "Skipped" },
+                { value: "failed", label: "Failed" },
+            ],
+            cell: (row) => {
+                const outcome = row.last_action;
+                if (!outcome) return <Muted>—</Muted>;
+                return (
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                        <div className="flex items-center gap-1.5">
+                            <Badge
+                                variant="outline"
+                                className={`py-0 text-[11px] ${OUTCOME_TONE[outcome.status] ?? ""}`}
+                            >
+                                {actionOutcomeLabel(outcome.status)}
+                            </Badge>
+                            <span className="truncate text-[11px] text-muted-foreground">
+                                {actionLabel(outcome.action_key, actionLabels)}
+                            </span>
+                        </div>
+                        {/* The sentence the runner itself wrote. `title` carries the
+                            whole of it, because a truncated explanation that cannot
+                            be read in full is half a lie. */}
+                        <span
+                            className="truncate text-[11px] text-foreground"
+                            title={outcome.sentence}
+                        >
+                            {outcome.sentence}
+                        </span>
+                    </div>
+                );
+            },
+        },
+    };
+}
+
+/** Every Sources column, with the Action labels the server published (§8). */
+export function catalogColumns(options?: {
+    actionLabels?: Record<string, string>;
+}): EntityColumnSpec<VideoRow>[] {
+    return [...BASE_COLUMNS, lastActionColumn(options?.actionLabels)];
+}
+
+/**
+ * The columns with no registry behind them — an Action shows its key instead of
+ * its label. Kept as an export because the guards read it, and because a caller
+ * that has not loaded the registry yet should still get every column.
+ */
+export const CATALOG_COLUMNS: EntityColumnSpec<VideoRow>[] = catalogColumns();
