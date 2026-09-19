@@ -4661,8 +4661,19 @@ while every row the function returns is authorized separately with the five-argu
 `i.subject_employment_id` and `i.organization_id`. The census now carries
 `same_capability_tenant_checked` to say so, and still reports the rows rather than hiding them.
 
-**9 remain**, each safe only if its subject can never be null at that point, which has to be
-established per body: `hr._wf_display`, `hr.wf_pending`, `hr_authority_delegation_end`,
-`hr_authority_revoke`, `hr_mint_records_request_token` (×2), `hr_role_assign`, `hr_role_revoke`,
-`hr_set_employment_pin`. The last two take the id straight from the caller and are the ones to
-read first. Owner: unassigned. Detector is live, so the count cannot grow unnoticed.
+**1 FIXED (scfg_93):** `hr_authority_revoke` assigned its subject only on the `employment`
+branch while `holder_kind` permits `position | employment | role`, so revoking a position- or
+role-held approval authority asked only "does this caller hold authority.grant anywhere". Latent
+— all 129 live rows across 7 orgs are `employment` — and now five-argument, pinned by contract.
+
+**4 CLEARED (scfg_93), each proved:** `hr_role_assign` and `hr_set_employment_pin` resolve the id
+against `hr.employment` and raise P0002 above the gate; `hr_role_revoke` reads a NOT NULL column
+off a P0002-guarded row; `hr_authority_delegation_end` likewise. Three rest on a guarantee held
+some lines away, so the rows stay listed as a standing guard against a reordering edit.
+
+**4 REMAIN, all genuinely nullable:** `hr.wf_pending` (`p_employment_id uuid DEFAULT NULL` — null
+is the ordinary self-service case), `hr._wf_display` (`workflow_instance.subject_employment_id` is
+nullable), and `hr_mint_records_request_token` ×2 (`records_request.employment_id` is nullable;
+this door mints an outsider token and gets read whole first). The workflow pair needs its answer
+decided — refuse without an employment, or resolve the caller's own — not an org threaded in
+mechanically. Owner: unassigned. Detector is live, so the count cannot grow unnoticed.
