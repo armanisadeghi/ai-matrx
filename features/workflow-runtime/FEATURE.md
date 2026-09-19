@@ -176,6 +176,7 @@ that is the exit-test surface.
 
 ## Change Log
 
+- 2026-09-19 — **THE FOURTH ORGANIZATION STATE (R37) in the three org-gated readers.** `useWorkflowTriggers`, `useServedRunForm` and `useResultSchema` turned `!organizationId && orgBootstrapResolved` into "No organization is selected — choose one from the picker". `setOrgBootstrapFailure` sets that flag TRUE, so a failed read produced the same sentence. All three now read `useOrganizationRequired().organizationState`: `required` keeps the refusal, `unavailable` returns `ORGANIZATION_UNAVAILABLE_DESCRIPTION`. Test: `triggers/__tests__/the-triggers-say-the-organization-read-failed.organization-context.test.tsx` (red on the prior bytes). Guard: `pnpm check:org-three-states` rule 5.
 - 2026-09-19 — **A FAILED organization read no longer holds the run lists on a
   skeleton forever (R37, the fourth state).** `useWaitingRuns` and `useRunsList`
   both gated on the legacy boolean pair, and under a failed organization read

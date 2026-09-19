@@ -12,10 +12,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "@/lib/toast";
 import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
 import {
-  selectOrganizationId,
-  selectOrgBootstrapResolved,
-} from "@/lib/redux/slices/appContextSlice";
+  ORGANIZATION_UNAVAILABLE_DESCRIPTION,
+  useOrganizationRequired,
+} from "@/features/organizations/useOrganizationRequired";
 
 import {
   deleteAuthenticator,
@@ -27,7 +28,12 @@ import { updateVaultItem } from "../vault-service";
 
 export function useAuthenticator() {
   const organizationId = useAppSelector(selectOrganizationId);
-  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  // 🚨 THE FOURTH STATE IS NOT THE REFUSAL (R37). `orgBootstrapResolved` is
+  // TRUE after a FAILED read too, so this hook used to tell a person with
+  // several organizations to pick one because one fetch threw. The gate's
+  // discriminant says which of the two happened, and each gets its own
+  // sentence — the failed one never claims anything about memberships.
+  const { organizationState } = useOrganizationRequired();
   const [entries, setEntries] = useState<AuthenticatorEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -44,7 +50,7 @@ export function useAuthenticator() {
 
   const refresh = useCallback(async () => {
     const sequence = ++refreshSequence.current;
-    if (!orgBootstrapResolved || !organizationId) {
+    if (organizationState !== "ready" || !organizationId) {
       setEntries([]);
       // 🚨 AN EMPTY LIST IS A STATEMENT, AND IT WAS A FALSE ONE. Once boot has
       // settled with no organization selected, this cleared the error and
@@ -53,11 +59,13 @@ export function useAuthenticator() {
       // screen is absent or honest. Before boot settles nothing is known yet,
       // so it keeps loading.
       setError(
-        orgBootstrapResolved
+        organizationState === "required"
           ? "No organization is selected, so your authenticator codes cannot be read — choose one from the organization picker in the header and this fills in."
-          : null,
+          : organizationState === "unavailable"
+            ? ORGANIZATION_UNAVAILABLE_DESCRIPTION
+            : null,
       );
-      setLoading(!orgBootstrapResolved);
+      setLoading(organizationState === "resolving");
       return;
     }
     setLoading(true);
@@ -76,7 +84,7 @@ export function useAuthenticator() {
         setLoading(false);
       }
     }
-  }, [orgBootstrapResolved, organizationId]);
+  }, [organizationState, organizationId]);
 
   useEffect(() => {
     // The route's initial external fetch owns the loading state it updates.
@@ -125,7 +133,7 @@ export function useAuthenticator() {
     loading,
     busy,
     error,
-    organizationRequired: orgBootstrapResolved && !organizationId,
+    organizationRequired: organizationState === "required",
     refresh,
     actions,
   };
