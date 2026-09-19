@@ -20,12 +20,12 @@ import type { CaptureHandoff } from "@/features/capture-ladder/types";
 
 const emitted: unknown[] = [];
 const resolved: string[][] = [];
-/** Keys a PERSON decided about. The mock honours the real function's contract. */
-let decidedByAPerson = new Set<string>();
+/** Keys the person DISMISSED. The mock honours the real function's contract. */
+let silencedByAPerson = new Set<string>();
 
 jest.mock("@/features/assists/service", () => ({
-  filterKeysNotDecidedByAPerson: jest.fn(async (keys: string[]) =>
-    keys.filter((k) => !decidedByAPerson.has(k)),
+  filterKeysNotSilencedByAPerson: jest.fn(async (keys: string[]) =>
+    keys.filter((k) => !silencedByAPerson.has(k)),
   ),
   resolveAssistsByDedupeKeys: jest.fn(async (keys: string[]) => {
     resolved.push(keys);
@@ -88,7 +88,7 @@ describe("the waiting-for-your-browser notice recurs", () => {
   beforeEach(() => {
     emitted.length = 0;
     resolved.length = 0;
-    decidedByAPerson = new Set();
+    silencedByAPerson = new Set();
   });
 
   it("resolves its own row the moment the queue empties", async () => {
@@ -131,6 +131,28 @@ describe("the waiting-for-your-browser notice recurs", () => {
     expect(emitted).toHaveLength(2);
   });
 
+  it("comes back after the person PRESSED the button — accepting is not 'never again'", async () => {
+    const first = await produceNeedsYouAssist({
+      userId: USER,
+      organizationId: ORG,
+      handoffs: [handoff("a", "https://www.facebook.com/nasa")],
+      dispatch,
+    });
+    expect(first).toBe("emitted");
+
+    // `accepted` is what the ledger holds after a click. It is the person
+    // saying "I did this one", never "stop telling me". Two real workspaces
+    // reached exactly this state minutes after the feature went live.
+    const second = await produceNeedsYouAssist({
+      userId: USER,
+      organizationId: ORG,
+      handoffs: [handoff("b", "https://www.instagram.com/nasa/")],
+      dispatch,
+    });
+    expect(second).toBe("emitted");
+    expect(emitted).toHaveLength(2);
+  });
+
   it("stays gone once the PERSON dismissed it for good", async () => {
     const first = await produceNeedsYouAssist({
       userId: USER,
@@ -141,7 +163,7 @@ describe("the waiting-for-your-browser notice recurs", () => {
     expect(first).toBe("emitted");
 
     // What "Dismiss for good" writes.
-    decidedByAPerson.add(
+    silencedByAPerson.add(
       (emitted[0] as { dedupeKey: string }).dedupeKey,
     );
 

@@ -41,7 +41,7 @@
  */
 
 import {
-  filterKeysNotDecidedByAPerson,
+  filterKeysNotSilencedByAPerson,
   resolveAssistsByDedupeKeys,
 } from "@/features/assists/service";
 import { emitAssistTracked } from "@/features/assists/redux/emitTracked";
@@ -200,14 +200,14 @@ export async function produceNeedsYouAssist(
   // A durable decision is durable: someone who dismissed this for good is not
   // asked again — that is the whole meaning of the button.
   //
-  // 🚨 But ONLY a person's decision counts here, which is why this is not the
-  // usual `filterUndecidedKeys`. This producer's key is stable per workspace
-  // and it RESOLVES its own row every time the queue empties. Under the usual
-  // gate, `resolved` would read as "decided" and the very first successful
-  // capture would silence this workspace permanently — the queue could fill up
-  // forever and nobody would ever be told again. A queue that goes quiet after
-  // working once is worse than one that never worked.
-  const undecided = await filterKeysNotDecidedByAPerson([dedupeKey]);
+  // 🚨 But ONLY a DISMISSAL silences, which is why this is not the usual
+  // `filterUndecidedKeys`. This producer's key is stable per workspace, so
+  // under the usual gate two ordinary outcomes would each silence a workspace
+  // for ever: `resolved`, which this producer writes itself the moment the
+  // queue empties, and `accepted`, which is the person PRESSING THE BUTTON.
+  // Both happened within minutes of this going live. A queue that goes quiet
+  // because it worked is worse than one that never worked.
+  const undecided = await filterKeysNotSilencedByAPerson([dedupeKey]);
   if (undecided.length === 0) return "skipped";
 
   const detect = args.detectExtension ?? hasOwnBrowserExtension;
