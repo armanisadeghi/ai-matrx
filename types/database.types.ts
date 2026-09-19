@@ -57181,6 +57181,7 @@ export type Database = {
       }
       library_item: {
         Row: {
+          action_outcomes: Json
           attachment_count: number
           attachment_names: string[]
           author_email: string | null
@@ -57235,6 +57236,7 @@ export type Database = {
           word_count: number
         }
         Insert: {
+          action_outcomes?: Json
           attachment_count?: number
           attachment_names?: string[]
           author_email?: string | null
@@ -57289,6 +57291,7 @@ export type Database = {
           word_count?: number
         }
         Update: {
+          action_outcomes?: Json
           attachment_count?: number
           attachment_names?: string[]
           author_email?: string | null
@@ -62324,7 +62327,6 @@ export type Database = {
           updated_by: string | null
           user_code: string
           version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           approved_by?: string | null
@@ -62343,7 +62345,6 @@ export type Database = {
           updated_by?: string | null
           user_code: string
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           approved_by?: string | null
@@ -62362,7 +62363,6 @@ export type Database = {
           updated_by?: string | null
           user_code?: string
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -62432,7 +62432,6 @@ export type Database = {
           used_streams: number
           user_id: string
           version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
@@ -62449,7 +62448,6 @@ export type Database = {
           used_streams?: number
           user_id: string
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
@@ -62466,7 +62464,6 @@ export type Database = {
           used_streams?: number
           user_id?: string
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -68805,6 +68802,84 @@ export type Database = {
           b_id: string
           b_type: string
           shape: string
+        }[]
+      }
+      unified_data_ramp_exit: {
+        Args: never
+        Returns: {
+          engine_new: string
+          engine_old: string
+          exit_date: string
+          exit_trigger: string
+          id: string
+          note: string
+          owner_name: string
+          status: string
+        }[]
+      }
+      unified_data_ramp_gate: {
+        Args: { p_consumer: string; p_organization_id: string }
+        Returns: unknown
+        SetofOptions: {
+          from: "*"
+          to: "ramp_gate_run"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      unified_data_ramp_set:
+        | {
+            Args: {
+              p_consumer: string
+              p_note?: string
+              p_on: boolean
+              p_organization_id: string
+              p_user_id?: string
+            }
+            Returns: unknown
+            SetofOptions: {
+              from: "*"
+              to: "ramp_gate_run"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: {
+              p_acting_user_id?: string
+              p_consumer: string
+              p_note?: string
+              p_on: boolean
+              p_organization_id: string
+              p_user_id?: string
+            }
+            Returns: unknown
+            SetofOptions: {
+              from: "*"
+              to: "ramp_gate_run"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+      unified_data_ramp_state: {
+        Args: { p_organization_id: string }
+        Returns: {
+          batch: string
+          consumer_id: string
+          gate_gained: number
+          gate_lost: number
+          gate_ran_at: string
+          gate_verdict: string
+          gate_why: string
+          knob_key: string
+          label: string
+          landed_at: string
+          no_rollback: boolean
+          not_ready_why: string
+          owning_lane: string
+          ramp_order: number
+          record_types: string[]
+          switched_on: boolean
         }[]
       }
       upsert_output_feedback: {
