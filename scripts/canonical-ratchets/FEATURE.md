@@ -127,7 +127,9 @@ exactly two functions and nothing else:
 
 ## Flags
 
-`--strict` (exit 1 over baseline) · `--update-baseline` · `--refresh` · `--json`.
+`--strict` (exit 1 on a ratchet, freshness, or readonly-measurement failure) · `--update-baseline` · `--refresh` · `--json`.
+
+**Client-read-only measurement.** The post-doctrine gate consumes the snapshot's marked-relation checks. Incomplete, inconsistent, or failing measurements block `--strict` and baseline updates; normal output warns and JSON lists `readonly_measurement_failures`. `check-post-doctrine-readonly-self-test.ts` exercises valid, malformed, and unavailable snapshot responses without a live database.
 
 ---
 
@@ -226,3 +228,7 @@ true.
 `ddl_guard_attached` is part of the snapshot and both halves fail `--strict`
 without it. A ratchet on a door nobody is watching is not a gate — and event
 trigger bindings are dropped SILENTLY by a project restore (db-rules §1).
+
+## Change Log
+
+- 2026-09-19: Added fail-closed client-read-only measurement coverage to the post-doctrine ratchet.

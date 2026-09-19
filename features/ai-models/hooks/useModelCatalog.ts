@@ -67,6 +67,7 @@ export const OUTPUT_MODALITIES: Modality[] = [
   "audio",
   "video",
   "entities",
+  "decision",
 ];
 
 /** Alias of the canonical interaction vocabulary — never a parallel union. */

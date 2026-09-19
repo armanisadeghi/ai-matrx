@@ -20,7 +20,7 @@
  *    recipient resolved SERVER-SIDE by exact email (`onAssign`), optionally
  *    with a server-generated password the creator never sees.
  */
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -33,7 +33,6 @@ import {
   Loader2,
   NotebookPen,
   Plus,
-  RefreshCw,
   Search,
   Trash2,
   UserPlus,
@@ -64,11 +63,7 @@ import {
   CredenzaTitle,
 } from "@/components/ui/credenza-modal/credenza";
 
-import {
-  generateVaultPassword,
-  normalizeVaultLoginUrlInput,
-  parseEnvAssignment,
-} from "../utils";
+import { normalizeVaultLoginUrlInput, parseEnvAssignment } from "../utils";
 import {
   InvalidEnrollmentInputError,
   parseEnrollmentInput,
@@ -76,8 +71,12 @@ import {
 import { enrollAuthenticator } from "../authenticator-service";
 import { checkVaultDestination } from "../vault-service";
 import { toast } from "@/lib/toast";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
 import { recommendedHandlingForFieldKey } from "../credential-identity";
 import { VaultHandlingControl } from "./VaultHandlingControl";
+import { VaultPasswordGenerator } from "./VaultPasswordGenerator";
 import {
   ENV_VALUE_DEFINITION_KEY,
   FAMILY_LABELS,
@@ -821,6 +820,8 @@ function DefinitionForm({
   onAssign: (body: VaultAssignRequest) => Promise<void>;
   onSaved?: (item: VaultItem) => void | Promise<void>;
 }) {
+  const currentUserId = useAppSelector(selectUserId);
+  const currentOrganizationId = useAppSelector(selectOrganizationId);
   const byKey = useMemo(
     () => new Map(definitions.map((d) => [d.key, d])),
     [definitions],
@@ -894,10 +895,30 @@ function DefinitionForm({
   const [attachmentPurpose, setAttachmentPurpose] = useState("");
   const [attachmentHandling, setAttachmentHandling] =
     useState<VaultHandling>("revealable");
+  const draftContext = `${currentUserId ?? ""}:${currentOrganizationId ?? ""}:${definition.key}:${principal.type === "organization" ? principal.organizationId : "user"}:${mode}:${passwordMode}:${mode === "assign" ? recipientEmail.trim().toLowerCase() : ""}`;
+  const draftContextRef = useRef(draftContext);
+  useEffect(() => {
+    if (draftContextRef.current === draftContext) return;
+    draftContextRef.current = draftContext;
+    setDrafts((current) => current.map((draft) => ({ ...draft, value: "" })));
+    setShownFieldKeys(new Set());
+  }, [draftContext]);
 
   const setDraft = (index: number, patch: Partial<FieldDraft>) =>
     setDrafts((current) =>
-      current.map((d, i) => (i === index ? { ...d, ...patch } : d)),
+      current.map((d, i) => {
+        if (i !== index) return d;
+        const targetChanged =
+          patch.def !== undefined &&
+          (patch.def.field_key !== d.def.field_key ||
+            patch.def.handling !== d.def.handling ||
+            patch.def.editable !== d.def.editable);
+        return {
+          ...d,
+          ...patch,
+          value: targetChanged ? (patch.value ?? "") : (patch.value ?? d.value),
+        };
+      }),
     );
 
   const normalizeAndCheckDestination = async (index: number, value: string) => {
@@ -1864,25 +1885,18 @@ function DefinitionForm({
                           : "Show"}
                       </Button>
                     )}
-                    {draft.def.field_key === GENERATED_FIELD_KEY && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="h-9"
-                        onClick={() => {
-                          setDraft(index, { value: generateVaultPassword() });
-                          setShownFieldKeys((current) => {
-                            const next = new Set(current);
-                            next.add(draft.def.field_key);
-                            return next;
-                          });
-                        }}
-                      >
-                        <RefreshCw className="mr-1.5 h-4 w-4" />
-                        Generate
-                      </Button>
-                    )}
+                    <VaultPasswordGenerator
+                      targetKey={`create:${draftContext}:${draft.def.field_key}:${draft.def.handling}:${draft.def.editable}`}
+                      eligible={
+                        !(mode === "assign" && passwordMode === "generate") &&
+                        draft.def.field_key === GENERATED_FIELD_KEY &&
+                        (draft.def.handling ?? "revealable") !== "sealed" &&
+                        draft.def.editable !== false
+                      }
+                      onUse={(value) => {
+                        setDraft(index, { value });
+                      }}
+                    />
                   </div>
                   {definition.key === ENV_VALUE_DEFINITION_KEY ? (
                     <div className="flex flex-wrap items-center gap-3 rounded-md bg-muted/30 p-2">
@@ -2048,9 +2062,29 @@ function CustomBuilder({
   const [recipientEmail, setRecipientEmail] = useState("");
   const [passwordMode, setPasswordMode] = useState<PasswordMode>("provided");
 
+  const currentUserId = useAppSelector(selectUserId);
+  const currentOrganizationId = useAppSelector(selectOrganizationId);
+  const draftContext = `${currentUserId ?? ""}:${currentOrganizationId ?? ""}:${principal.type === "organization" ? principal.organizationId : "user"}:${mode}:${passwordMode}:${mode === "assign" ? recipientEmail.trim().toLowerCase() : ""}`;
+  const draftContextRef = useRef(draftContext);
+  useEffect(() => {
+    if (draftContextRef.current === draftContext) return;
+    draftContextRef.current = draftContext;
+    setFields((current) => current.map((field) => ({ ...field, value: "" })));
+  }, [draftContext]);
+
   const setField = (index: number, patch: Partial<CustomFieldDraft>) =>
     setFields((current) =>
-      current.map((f, i) => (i === index ? { ...f, ...patch } : f)),
+      current.map((field, i) => {
+        if (i !== index) return field;
+        const next = { ...field, ...patch };
+        const targetChanged =
+          customFieldKey(next) !== customFieldKey(field) ||
+          next.handling !== field.handling;
+        return {
+          ...next,
+          value: targetChanged ? (patch.value ?? "") : next.value,
+        };
+      }),
     );
 
   const assigning = mode === "assign";
@@ -2240,14 +2274,25 @@ function CustomBuilder({
                   the recipient&apos;s item. You will never see it.
                 </p>
               ) : (
-                <Input
-                  type={field.handling === "visible" ? "text" : "password"}
-                  value={field.value}
-                  onChange={(e) => setField(index, { value: e.target.value })}
-                  placeholder="Paste the value"
-                  className="h-8 font-mono text-xs"
-                  autoComplete="off"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    type={field.handling === "visible" ? "text" : "password"}
+                    value={field.value}
+                    onChange={(e) => setField(index, { value: e.target.value })}
+                    placeholder="Paste the value"
+                    className="h-8 font-mono text-xs"
+                    autoComplete="off"
+                  />
+                  <VaultPasswordGenerator
+                    targetKey={`custom:${draftContext}:${index}:${customFieldKey(field)}:${field.handling}`}
+                    eligible={
+                      !(assigning && passwordMode === "generate") &&
+                      customFieldKey(field) === GENERATED_FIELD_KEY &&
+                      field.handling !== "sealed"
+                    }
+                    onUse={(value) => setField(index, { value })}
+                  />
+                </div>
               )}
             </div>
             <div className="space-y-2">

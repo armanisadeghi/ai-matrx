@@ -31952,6 +31952,10 @@ export type Database = {
         Args: { p_data: Json; p_key: string; p_world_on: string }
         Returns: Json
       }
+      value_in_force: {
+        Args: { p_data: Json; p_key: string; p_world_on: string }
+        Returns: Json
+      }
       value_undo: {
         Args: { p_key: string; p_organization_id: string; p_record_id: string }
         Returns: Json
@@ -48365,6 +48369,17 @@ export type Database = {
       }
     }
     Views: {
+      capability_asked_without_a_tenant: {
+        Row: {
+          call_site: string | null
+          capability: string | null
+          function_name: unknown
+          same_capability_tenant_checked: boolean | null
+          schema_name: unknown
+          subject_is_literal_null: boolean | null
+        }
+        Relationships: []
+      }
       v_access_audit: {
         Row: {
           access_role_key: string | null
@@ -49867,7 +49882,10 @@ export type Database = {
       _time_ok: { Args: { p_data: Json }; Returns: Json }
       _time_ot_preapproval_json: { Args: { p_id: string }; Returns: Json }
       _time_page: { Args: { p_page: Json }; Returns: Record<string, unknown> }
-      _time_punch_enabled_worker_classes: { Args: never; Returns: string[] }
+      _time_punch_enabled_worker_classes: {
+        Args: { p_organization_id: string }
+        Returns: string[]
+      }
       _time_refusal: {
         Args: { p_code: string; p_details?: Json; p_message: string }
         Returns: Json
@@ -50038,6 +50056,7 @@ export type Database = {
         Returns: number
       }
       _wf_value_text: { Args: { p_value: Json }; Returns: string }
+      _wf_waiting_visible: { Args: { p_org: string }; Returns: boolean }
       _workweek_dst: {
         Args: { p_end: string; p_start: string; p_tz: string }
         Returns: Json
@@ -50321,6 +50340,16 @@ export type Database = {
       }
       employee_directory_status: {
         Args: { p_employee_id: string; p_on: string }
+        Returns: string
+      }
+      employee_display_name: {
+        Args: {
+          p_legal_first: string
+          p_legal_last: string
+          p_org: string
+          p_preferred_first: string
+          p_preferred_last: string
+        }
         Returns: string
       }
       employment_as_of: {
@@ -53974,6 +54003,24 @@ export type Database = {
       member_default_level: {
         Args: { p_organization_id: string; p_table_id?: string }
         Returns: Database["public"]["Enums"]["permission_level"]
+      }
+      member_default_level_as_of: {
+        Args: { p_at: string; p_organization_id: string; p_table_id: string }
+        Returns: {
+          level: Database["public"]["Enums"]["permission_level"]
+          replayed: boolean
+        }[]
+      }
+      member_lane_open: {
+        Args: { p_organization_id: string }
+        Returns: boolean
+      }
+      member_lane_open_as_of: {
+        Args: { p_at: string; p_organization_id: string }
+        Returns: {
+          lane_open: boolean
+          replayed: boolean
+        }[]
       }
       membership_change_refusal: {
         Args: {
@@ -62668,6 +62715,7 @@ export type Database = {
           default_needs_approval: boolean
           default_scopeable: boolean
           default_visibility: Database["platform"]["Enums"]["visibility"] | null
+          feature_owned_restore: boolean
           governed_columns: string[] | null
           has_soft_delete: boolean
           id: string
@@ -62727,6 +62775,7 @@ export type Database = {
           default_visibility?:
             | Database["platform"]["Enums"]["visibility"]
             | null
+          feature_owned_restore?: boolean
           governed_columns?: string[] | null
           has_soft_delete?: boolean
           id?: string
@@ -62786,6 +62835,7 @@ export type Database = {
           default_visibility?:
             | Database["platform"]["Enums"]["visibility"]
             | null
+          feature_owned_restore?: boolean
           governed_columns?: string[] | null
           has_soft_delete?: boolean
           id?: string
@@ -67005,6 +67055,31 @@ export type Database = {
         }
         Relationships: []
       }
+      knob_org_blind_reader: {
+        Row: {
+          feature: string | null
+          function_name: unknown
+          identity_args: string | null
+          key: string | null
+          live_override_rows: number | null
+          overridable_by: string[] | null
+          same_key_scoped_read: boolean | null
+          schema_name: unknown
+          via: string | null
+        }
+        Relationships: []
+      }
+      knob_read_before_its_org_exists: {
+        Row: {
+          call_site: string | null
+          feature: string | null
+          function_name: unknown
+          key: string | null
+          organization_argument: string | null
+          schema_name: unknown
+        }
+        Relationships: []
+      }
       list_scope_registry: {
         Row: {
           default_list_scope: Database["platform"]["Enums"]["list_scope"] | null
@@ -67513,6 +67588,10 @@ export type Database = {
       }
       anon_function_birth_schemas: { Args: never; Returns: string[] }
       assert_admin_access_contract: { Args: never; Returns: undefined }
+      assert_may_operate_unified_data_ramp: {
+        Args: { p_door: string; p_organization_id: string }
+        Returns: undefined
+      }
       assert_no_stale_rowtype_triggers: {
         Args: never
         Returns: {
@@ -67980,6 +68059,15 @@ export type Database = {
       heal_reachability_drift: { Args: never; Returns: Json }
       is_provisioning: { Args: never; Returns: boolean }
       is_sqlstate: { Args: { p_code: string }; Returns: boolean }
+      knob_history_row_id: {
+        Args: {
+          p_feature: string
+          p_key: string
+          p_scope_id?: string
+          p_scope_kind?: string
+        }
+        Returns: string
+      }
       knob_index: {
         Args: {
           p_device_id?: string
@@ -68030,6 +68118,18 @@ export type Database = {
       knob_scope_rows: {
         Args: { p_kind: string; p_organization_id: string }
         Returns: Json
+      }
+      knob_value_as_of: {
+        Args: {
+          p_at: string
+          p_feature: string
+          p_key: string
+          p_organization_id: string
+        }
+        Returns: {
+          replayed: boolean
+          value: Json
+        }[]
       }
       knob_write_door_for: {
         Args: { p_key: string; p_organization_id?: string }
@@ -68264,6 +68364,10 @@ export type Database = {
           p_target?: Json
         }
         Returns: Json
+      }
+      may_operate_unified_data_ramp: {
+        Args: { p_organization_id: string }
+        Returns: boolean
       }
       mint_outsider_token: {
         Args: {
@@ -68804,19 +68908,33 @@ export type Database = {
           shape: string
         }[]
       }
-      unified_data_ramp_exit: {
-        Args: never
-        Returns: {
-          engine_new: string
-          engine_old: string
-          exit_date: string
-          exit_trigger: string
-          id: string
-          note: string
-          owner_name: string
-          status: string
-        }[]
-      }
+      unified_data_ramp_exit:
+        | {
+            Args: never
+            Returns: {
+              engine_new: string
+              engine_old: string
+              exit_date: string
+              exit_trigger: string
+              id: string
+              note: string
+              owner_name: string
+              status: string
+            }[]
+          }
+        | {
+            Args: { p_organization_id: string }
+            Returns: {
+              engine_new: string
+              engine_old: string
+              exit_date: string
+              exit_trigger: string
+              id: string
+              note: string
+              owner_name: string
+              status: string
+            }[]
+          }
       unified_data_ramp_gate: {
         Args: { p_consumer: string; p_organization_id: string }
         Returns: unknown
@@ -68881,6 +68999,19 @@ export type Database = {
           record_types: string[]
           switched_on: boolean
         }[]
+      }
+      unified_data_store_set: {
+        Args: {
+          p_acting_user_id?: string
+          p_note?: string
+          p_on: boolean
+          p_organization_id: string
+        }
+        Returns: Json
+      }
+      unified_data_store_state: {
+        Args: { p_organization_id: string }
+        Returns: Json
       }
       upsert_output_feedback: {
         Args: {
@@ -79459,6 +79590,7 @@ export type Database = {
           slug: string
         }[]
       }
+      vault_recovery_preview: { Args: { p_id: string }; Returns: Json }
       version_current: {
         Args: { p_id: string; p_token: string }
         Returns: Json
@@ -98895,8 +99027,10 @@ export type Database = {
           organization_id: string
           principal_id: string
           principal_type: string
+          request_fingerprint: string | null
           result_field_id: string | null
           result_item_id: string | null
+          result_passkey_id: string | null
           result_value_version: number | null
           target_field_id: string | null
           target_item_id: string | null
@@ -98916,8 +99050,10 @@ export type Database = {
           organization_id: string
           principal_id: string
           principal_type: string
+          request_fingerprint?: string | null
           result_field_id?: string | null
           result_item_id?: string | null
+          result_passkey_id?: string | null
           result_value_version?: number | null
           target_field_id?: string | null
           target_item_id?: string | null
@@ -98937,8 +99073,10 @@ export type Database = {
           organization_id?: string
           principal_id?: string
           principal_type?: string
+          request_fingerprint?: string | null
           result_field_id?: string | null
           result_item_id?: string | null
+          result_passkey_id?: string | null
           result_value_version?: number | null
           target_field_id?: string | null
           target_item_id?: string | null
@@ -99487,6 +99625,96 @@ export type Database = {
           visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: []
+      }
+      passkey_credentials: {
+        Row: {
+          algorithm: number
+          created_at: string
+          created_by: string | null
+          credential_id: string
+          credential_item_id: string
+          deleted_at: string | null
+          display_name: string | null
+          id: string
+          lifecycle: string
+          metadata: Json
+          organization_id: string
+          public_x: string
+          public_y: string
+          rp_id: string
+          source_field_id: string
+          source_sha256: string
+          source_version: number
+          updated_at: string
+          updated_by: string | null
+          user_handle: string
+          username: string | null
+          version: number
+        }
+        Insert: {
+          algorithm?: number
+          created_at?: string
+          created_by?: string | null
+          credential_id: string
+          credential_item_id: string
+          deleted_at?: string | null
+          display_name?: string | null
+          id?: string
+          lifecycle?: string
+          metadata?: Json
+          organization_id: string
+          public_x: string
+          public_y: string
+          rp_id: string
+          source_field_id: string
+          source_sha256: string
+          source_version?: number
+          updated_at?: string
+          updated_by?: string | null
+          user_handle: string
+          username?: string | null
+          version?: number
+        }
+        Update: {
+          algorithm?: number
+          created_at?: string
+          created_by?: string | null
+          credential_id?: string
+          credential_item_id?: string
+          deleted_at?: string | null
+          display_name?: string | null
+          id?: string
+          lifecycle?: string
+          metadata?: Json
+          organization_id?: string
+          public_x?: string
+          public_y?: string
+          rp_id?: string
+          source_field_id?: string
+          source_sha256?: string
+          source_version?: number
+          updated_at?: string
+          updated_by?: string | null
+          user_handle?: string
+          username?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passkey_credentials_credential_item_id_fkey"
+            columns: ["credential_item_id"]
+            isOneToOne: true
+            referencedRelation: "credential_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passkey_credentials_source_field_id_fkey"
+            columns: ["source_field_id"]
+            isOneToOne: true
+            referencedRelation: "user_secrets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

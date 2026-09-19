@@ -1,6 +1,6 @@
 # Secrets — Unified Credential Vault
 
-> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-09-12
+> **Status:** active · **Tier:** 1 · **Owners:** platform · **Updated:** 2026-09-19
 
 > Cross-repo implementation authority: `/Users/armanisadeghi/code/common-docs/projects/unified-credential-vault/PLAN.md` — read it before expanding this feature in ANY repository.
 >
@@ -112,6 +112,20 @@ the ORG `all_members` ↔ `restricted` flip only.
 - A `can_use` recipient sees `visible` fields (the username) but cannot reveal
   the password; `can_manage` adds reveal + edit. Only the owner may share,
   transfer, or delete. **Ratified 2026-07-26** — the share UI states it.
+
+## Management password generation
+
+`components/VaultPasswordGenerator.tsx` stages passwords and passphrases using
+`@ai-matrx/kit/credential-generator`. `generator-limits.ts` resolves the two
+organization/user limits through the existing settings index; unavailable or
+invalid settings refuse generation instead of supplying local defaults.
+Candidates begin masked, expire after 30 seconds and clear on option or context
+changes. Reveal, Copy and Use are separate actions. Use writes an unsaved draft;
+the existing credential save remains the persistence boundary. A copied value
+remains in the clipboard until replaced; the generator never clears a newer copy.
+The create/edit callers own draft invalidation on account, organization, target
+and capability changes. Protected, sealed and noneditable fields are ineligible.
+Assignment's private server-generated path remains separate.
 
 ## Selected login CSV export (2026-09-16)
 
@@ -230,10 +244,9 @@ Personal and organization credentials render through the same
   multiple files, edit label/purpose/download filename/protection, replace
   bytes, download, and delete. Sealing is confirmed as a permanent one-way
   action; sealed files have no human download affordance.
-- Website-login password fields offer browser-local cryptographic generation
-  plus explicit Show/Hide. Generated values remain only in the transient create
-  form, exactly like a typed value, and are never logged or persisted outside
-  the normal create request.
+- Eligible ordinary password fields in create and edit reuse the shared
+  password/passphrase generator. Explicit Use fills only the unsaved draft;
+  normal Save persists it. Showing or copying remains a separate action.
 - Every saved login destination is a labeled **Open website** door when it is
   an absolute HTTP(S) URL. Unsafe schemes and malformed addresses remain plain
   text with an Invalid URL warning; they never become clickable.
@@ -263,15 +276,18 @@ Personal and organization credentials render through the same
 | [`components/VaultHandlingControl.tsx`](./components/VaultHandlingControl.tsx) | Shared Standard / Restricted / Automation-only protection selector and current-state presentation for fields and protected files.                                                                                                                                                                                                                   |
 | [`components/SecretValue.tsx`](./components/SecretValue.tsx)                   | Canonical masked value row with audited reveal, direct copy, compact icon actions, and transient plaintext countdown/auto-clear.                                                                                                                                                                                                                    |
 | [`components/VaultCreateDialog.tsx`](./components/VaultCreateDialog.tsx)       | The one create form for Vault and Authenticator: basic-purpose picker/full catalog, progressive website login parts, TOTP, recovery codes, secure notes, protected files, local password generation, and Custom builder.                                                                                                                            |
+| [`components/VaultPasswordGenerator.tsx`](./components/VaultPasswordGenerator.tsx) | Shared staged password/passphrase controls using the published engine; explicit reveal/copy/use and candidate expiry. |
+| [`generator-limits.ts`](./generator-limits.ts) | Validated effective generator limits through the canonical settings client. |
 | [`components/VaultItemDetail.tsx`](./components/VaultItemDetail.tsx)           | Labeled fields with hidden/full reveal and one credential edit mode, including authenticator, protected files, and first-class recovery-code copy/Mark-used behavior, plus share, transfer, fork, soft delete, and audit trail.                                                                                                                     |
 | [`components/VaultEnvImportDialog.tsx`](./components/VaultEnvImportDialog.tsx) | Bulk `.env` paste/upload → `POST /api/vault/items/import-env`.                                                                                                                                                                                                                                                                                      |
 | [`components/VaultCsvImportDialog.tsx`](./components/VaultCsvImportDialog.tsx) | Local CSV, plain-Bitwarden-JSON, and 1Password 1PUX import session: bounded worker parsing with required request IDs, masked preflight, frozen idempotent commands, and truthful partial-result accounting.                                                                                                                                         |
 | [`components/VaultLoginExportDialog.tsx`](./components/VaultLoginExportDialog.tsx) | Mine-only selected-login CSV preview, plaintext warning, current-password confirmation, and short-lived browser download. |
+| [`../trash/VaultTrashRestoreDialog.tsx`](../trash/VaultTrashRestoreDialog.tsx) | Trash-owned metadata-only Vault aggregate recovery preview, quarantine warning, current-password retry, and actor/request-organization fencing. |
 | [`authenticator-service.ts`](./authenticator-service.ts)                       | `/api/authenticator/*` client — metadata plus the signed-in owner's short-lived current-code request; never a seed.                                                                                                                                                                                                                                 |
 | [`authenticator-otpauth.ts`](./authenticator-otpauth.ts)                       | Pure client parse of a setup key / `otpauth://` URI, kept in lockstep with aidream's `otpauth.py`, for the instant enrollment preview.                                                                                                                                                                                                              |
 | [`hooks/use-authenticator.ts`](./hooks/use-authenticator.ts)                   | Authenticator metadata/manage hook: list, rename, enable/disable, and remove. Login creation/enrollment stays in the canonical Vault form.                                                                                                                                                                                                          |
 | [`components/authenticator/`](./components/authenticator/)                     | The `/vault/authenticator` code-first workspace; Add opens `VaultCreateDialog` directly at Website login, and saved rows expose rotating codes plus Vault/rename/enable/remove actions.                                                                                                                                                             |
-| [`utils.ts`](./utils.ts)                                                       | `parseEnvAssignment` (single dotenv-line paste-to-fill) + `generateVaultPassword` (Web Crypto, unambiguous alphabet, all basic character groups).                                                                                                                                                                                                   |
+| [`utils.ts`](./utils.ts)                                                       | `parseEnvAssignment` (single dotenv-line paste-to-fill); credential generation comes from the published shared engine.                                                                                                                                                                                                   |
 
 ## Authenticator enrollment (2026-08-22)
 
@@ -311,7 +327,7 @@ the sealed setup seed has no reveal path at any privilege.
 
 ## Invariants
 
-1. Plaintext never appears in list responses, Redux, browser storage, query caches, URLs, analytics, or logs. The ONLY plaintext shape is a reveal/resolve response held in `useTransientSecret` component state with a ~30s auto-clear.
+1. Plaintext never appears in list responses, Redux, browser storage, query caches, URLs, analytics, or logs. Reveal/resolve responses use `useTransientSecret` with a ~30s auto-clear; locally entered or explicitly applied generated values stay only in the unsaved form draft. Generator candidates have their own 30-second expiry.
 2. Never select `value_encrypted`; never `select *` on `credential_items` / `user_secrets` — explicit column lists only.
 3. `sealed` fields get no show/copy affordance at any capability level.
 4. One workspace, one service, one hook set. A second per-principal implementation is a defect.
@@ -321,6 +337,7 @@ the sealed setup seed has no reveal path at any privilege.
 8. **The context menu never carries a secret.** A revealed `SecretValue` puts plaintext in the DOM, so the vault menu must never let the v3 shell self-resolve `content` from the subtree and must never carry the user's `selection` — it passes an explicit `getApplicationScope` built from names, type, provider, host, status, tags and FIELD KEYS only. Never a field value, never `notes`, never a non-secret custom field's value (a user can and does paste a secret into a free-text box). No `entity` is passed either, so Attach To / Share stay hidden: a credential is not agent context.
 9. **Password-manager imports stay local until per-row confirmation.** `VaultCsvImportDialog` uses Papa Parse for CSV and bounded dedicated workers for plain Bitwarden JSON and 1Password 1PUX. Each JSON worker receives the selected file and returns a required request ID; the UI accepts only its matching response. A source/principal/request-org change, deadline, error, close, or unmount sends matching cancellation, terminates the worker, and prevents late replies from reviving the draft. Bitwarden worker failures use a fixed source-free public error. JSON shows one selected destination origin, skips possible duplicates by default, and separately accounts for selected, skipped, invalid, unsupported, deleted, and archived records before and after import. Every frozen row calls canonical `POST /items` with `source=system_import`, its UUID idempotency key, explicit principal and a fresh expected actor/request-org check; retry reuses only the unresolved command and UUID. Source cells remain in encrypted `import_source_record`; raw files never enter network, global state, or storage. Import never enters `useVault.run()` organization replay.
 10. **Login CSV export never escapes its function scope.** `VaultLoginExportDialog` holds only value-free selection/preview metadata; the Blob becomes a private object URL, clicks once, and is revoked. Account, organization, close, and cancellation invalidate preview/download state; reauthentication never auto-resumes an export.
+11. **Vault Trash recovery is aggregate-only.** `credential_item` previews `vault_recovery_preview` directly without lifecycle JSON or values, then restores through `POST /vault/items/{id}/restore`; generic undelete and bulk Keep never handle Vault tokens. A restored item stays disabled with its fields inactive and sharing, browser fill, authenticators, sandbox, agent and integration use off until separately reenabled. Account, organization, close, unmount and an unknown response keep the deletion ID fenced for an honest exact retry.
 
 ## MCP connections (Phase 4 cutover, 2026-07-23)
 
@@ -350,6 +367,9 @@ owned by the connecting user (`definition_key='oauth_token_set'` or
 
 ## Change Log
 
+- `2026-09-19` — Replaced local password randomness with the published shared generator, canonical host limits and staged password/passphrase controls for management forms.
+
+- `2026-09-19` — Added ordinary Vault aggregate recovery to the existing Trash inventory: metadata-only preview, explicit disabled/quarantine confirmation, current-password retry, actor/request-organization cancellation, and generic bulk-Keep refusal for Vault tokens.
 
 - `2026-09-17` — **An empty authenticator list is no longer a calm lie.** `useAuthenticator` cleared the error and stopped loading once the org bootstrap settled with nothing selected, so the list rendered as "you have no authenticator codes" to a person who has several. It now says which organization is missing and where to choose one. Guard: `pnpm check:org-refusal-honesty`.
 

@@ -1,5 +1,4 @@
 import {
-  generateVaultPassword,
   normalizeVaultLoginUrlInput,
   parseEnvAssignment,
   safeVaultLoginUrl,
@@ -92,24 +91,6 @@ describe("recommendedHandlingForFieldKey", () => {
       expect(recommendedHandlingForFieldKey(fieldKey)).toBe("revealable");
     },
   );
-});
-
-describe("generateVaultPassword", () => {
-  test("creates a strong, unambiguous password with all basic character groups", () => {
-    const password = generateVaultPassword();
-
-    expect(password).toHaveLength(24);
-    expect(password).toMatch(/[a-z]/);
-    expect(password).toMatch(/[A-Z]/);
-    expect(password).toMatch(/[2-9]/);
-    expect(password).toMatch(/[!@#$%^&*\-_=+?]/);
-    expect(password).not.toMatch(/[O0Il1]/);
-  });
-
-  test("does not repeat deterministic output and rejects unsafe lengths", () => {
-    expect(generateVaultPassword()).not.toBe(generateVaultPassword());
-    expect(() => generateVaultPassword(3)).toThrow(RangeError);
-  });
 });
 
 describe("parseEnvAssignment", () => {

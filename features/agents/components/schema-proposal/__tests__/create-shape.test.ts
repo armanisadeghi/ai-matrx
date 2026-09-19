@@ -18,6 +18,7 @@ import {
   validateSampleAgainstPlan,
   type ShapePlan,
 } from "../create-shape";
+import { KIND_KEY } from "@ai-matrx/content-ir";
 import {
   updateShapeExampleSample,
   type ShapeWriteClient,
@@ -58,11 +59,17 @@ function planOrThrow(slug = "customer_report"): ShapePlan {
   return plan;
 }
 
+// `__kind` is part of the data (KINDS_EVERYWHERE_PLAN §4.2a): the plan's
+// emitted_json_schema declares it — required, const — at the root AND on every
+// nested child kind, so a conforming instance carries both markers.
 const VALID_SAMPLE = {
+  __kind: "customer_report",
   title: "Q3 report",
   score: 4,
   status: "open",
-  findings: [{ summary: "Slow onboarding", severity: 2 }],
+  findings: [
+    { __kind: "customer_report_finding", summary: "Slow onboarding", severity: 2 },
+  ],
 };
 
 // ---------------------------------------------------------------------------
@@ -213,6 +220,32 @@ describe("validateSampleAgainstPlan", () => {
     expect(typeof draft.title).toBe("string");
     expect(draft.status).toBe("open"); // first enum member
     expect(Array.isArray(draft.findings)).toBe(true);
+  });
+
+  it("refuses a marker-free instance — the schema declares __kind", () => {
+    const { __kind: _root, ...bare } = VALID_SAMPLE;
+    expect(validateSampleAgainstPlan(planOrThrow(), bare).ok).toBe(false);
+  });
+
+  it("the draft from the PLAN carries __kind FIRST at every level and passes as-is", () => {
+    const plan = planOrThrow();
+    const draft = draftSampleFromJsonSchema(plan.rootPlan.emittedJsonSchema, {
+      kind: plan.rootSlug,
+    }) as Record<string, unknown>;
+    expect(Object.keys(draft)[0]).toBe(KIND_KEY);
+    expect(draft.__kind).toBe("customer_report");
+    const finding = (draft.findings as Array<Record<string, unknown>>)[0];
+    expect(Object.keys(finding)[0]).toBe(KIND_KEY);
+    expect(finding.__kind).toBe("customer_report_finding"); // via the $ref
+    expect(validateSampleAgainstPlan(plan, draft).ok).toBe(true);
+  });
+
+  it("stamps the root slug FIRST even when a raw proposal does not declare it", () => {
+    const draft = draftSampleFromJsonSchema(PROPOSAL.schema, {
+      kind: "customer_report",
+    }) as Record<string, unknown>;
+    expect(Object.keys(draft)[0]).toBe(KIND_KEY);
+    expect(draft.__kind).toBe("customer_report");
   });
 });
 

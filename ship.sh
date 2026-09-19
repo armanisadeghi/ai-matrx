@@ -26,6 +26,7 @@
 # (--patch|--minor|--major|--target|--dry-run|--no-migrate|--no-gates).
 set -euo pipefail
 
+export RELEASE_STAGE_CALLER_PWD="$PWD"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$ROOT"
 

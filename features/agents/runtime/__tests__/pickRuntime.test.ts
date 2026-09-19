@@ -60,6 +60,16 @@ describe("pickRuntime — interaction-mode exhaustiveness (TASK-003)", () => {
     }
   });
 
+  it("a decision model is refused on every conversational surface", () => {
+    for (const surfaceMode of EXECUTION_MODES) {
+      const result = pickRuntime({ modelInteraction: "decision", surfaceMode });
+      expect(result).toEqual({
+        error:
+          "This is a typed decision model — it cannot run through the conversational runtime. Use the Decision playground instead.",
+      });
+    }
+  });
+
   it("a single-shot (image/video gen) model routes like a turn-based model", () => {
     expect(
       pickRuntime({ modelInteraction: "single", surfaceMode: "python-stream" }),

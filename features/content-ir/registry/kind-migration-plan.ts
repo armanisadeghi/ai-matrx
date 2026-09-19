@@ -79,9 +79,16 @@ export function planKindMigration(input: PlanInput): KindMigrationPlan {
       strict: true,
       injectKind: true,
     });
+    // 🚨 SAME OPTIONS AS `blockExport`. `emitted_json_schema` is what every
+    // validator (the DB trigger, Python, the dual gate) reads and what
+    // `response_format_for_kind` binds a producer to, so it DECLARES the
+    // `__kind` marker exactly like the block column — a marker-free export
+    // forbids a kind's own identity (KINDS_EVERYWHERE_PLAN §4.2a; the dead
+    // "wire shape" doctrine is recorded in scripts/shape/emit-kind-rows.ts).
+    // Never reintroduce `injectKind: false` here.
     const jsonExport = kindSchemaToJsonSchema(kind, resolve, {
       strict: true,
-      injectKind: false,
+      injectKind: true,
     });
     // resolve() returns the root, so these are never null here.
     const emittedBlockSchema = blockExport?.schema ?? null;
