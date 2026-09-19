@@ -26,24 +26,58 @@ import { useVisibilityAwarePageRefresh } from "../hooks/useVisibilityAwarePageRe
 const PREVIEW_DESTINATION_COUNT = 3;
 
 /**
- * Folder-card heights only. Areas with no children are a destination tile,
- * not an empty folder. Cards never stretch to the tallest sibling.
+ * Folder heights are a 32px step. Apps are one size and live in their own
+ * grid so they never sit in a hole next to a taller folder.
  */
-const LAUNCHPAD_CARD_HEIGHT = {
+const LAUNCHPAD_FOLDER_HEIGHT = {
   one: "h-32",
   two: "h-40",
   three: "h-48",
   more: "h-60",
 } as const;
 
-function launchpadCardHeightClass(
-  previewCount: number,
-  hasMoreDestinations: boolean,
-): string {
-  if (previewCount <= 1) return LAUNCHPAD_CARD_HEIGHT.one;
-  if (previewCount === 2) return LAUNCHPAD_CARD_HEIGHT.two;
-  if (hasMoreDestinations) return LAUNCHPAD_CARD_HEIGHT.more;
-  return LAUNCHPAD_CARD_HEIGHT.three;
+function childDestinations(group: LaunchpadGroup): LaunchpadDestination[] {
+  return group.destinations.filter(
+    (destination) => destination.href !== group.href,
+  );
+}
+
+function folderHeightClass(childCount: number): string {
+  if (childCount <= 1) return LAUNCHPAD_FOLDER_HEIGHT.one;
+  if (childCount === 2) return LAUNCHPAD_FOLDER_HEIGHT.two;
+  if (childCount === 3) return LAUNCHPAD_FOLDER_HEIGHT.three;
+  return LAUNCHPAD_FOLDER_HEIGHT.more;
+}
+
+function folderSizeRank(childCount: number): number {
+  if (childCount <= 1) return 1;
+  if (childCount === 2) return 2;
+  if (childCount === 3) return 3;
+  return 4;
+}
+
+function partitionLaunchpadGroups(groups: readonly LaunchpadGroup[]): {
+  apps: LaunchpadGroup[];
+  folders: LaunchpadGroup[];
+} {
+  const apps: LaunchpadGroup[] = [];
+  const folders: LaunchpadGroup[] = [];
+
+  for (const group of groups) {
+    if (childDestinations(group).length === 0) {
+      apps.push(group);
+    } else {
+      folders.push(group);
+    }
+  }
+
+  folders.sort(
+    (left, right) =>
+      folderSizeRank(childDestinations(left).length) -
+      folderSizeRank(childDestinations(right).length),
+  );
+
+  return { apps, folders };
 }
 
 export default function UserLaunchpad() {
@@ -149,31 +183,62 @@ export default function UserLaunchpad() {
           <div className="space-y-7">
             <QuickActions openInNewTab layout="grid" />
             <PinnedSection openInNewTab />
-
-            <section className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-sm font-semibold text-foreground">
-                  Browse AI Matrx
-                </h2>
-                <span className="shrink-0 text-xs text-muted-foreground">
-                  {USER_LAUNCHPAD_GROUPS.length} areas
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                {USER_LAUNCHPAD_GROUPS.map((group) => (
-                  <LaunchpadGroupCard
-                    key={group.id}
-                    group={group}
-                    onShowAll={() => setSearchQuery(group.label)}
-                  />
-                ))}
-              </div>
-            </section>
+            <BrowseSection onShowAll={(label) => setSearchQuery(label)} />
           </div>
         )}
       </div>
     </div>
+  );
+}
+
+function BrowseSection({
+  onShowAll,
+}: {
+  onShowAll: (label: string) => void;
+}) {
+  const { apps, folders } = partitionLaunchpadGroups(USER_LAUNCHPAD_GROUPS);
+
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="text-sm font-semibold text-foreground">
+          Browse AI Matrx
+        </h2>
+        <span className="shrink-0 text-xs text-muted-foreground">
+          {USER_LAUNCHPAD_GROUPS.length} areas
+        </span>
+      </div>
+
+      {apps.length > 0 ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          {apps.map((group) => (
+            <LaunchpadAppTile key={group.id} group={group} />
+          ))}
+        </div>
+      ) : null}
+
+      {[1, 2, 3, 4].map((rank) => {
+        const band = folders.filter(
+          (group) =>
+            folderSizeRank(childDestinations(group).length) === rank,
+        );
+        if (band.length === 0) return null;
+        return (
+          <div
+            key={rank}
+            className="grid grid-cols-1 items-start gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+          >
+            {band.map((group) => (
+              <LaunchpadFolderCard
+                key={group.id}
+                group={group}
+                onShowAll={() => onShowAll(group.label)}
+              />
+            ))}
+          </div>
+        );
+      })}
+    </section>
   );
 }
 
@@ -232,47 +297,61 @@ function SearchResults({
   );
 }
 
-function LaunchpadGroupCard({
+function LaunchpadAppTile({ group }: { group: LaunchpadGroup }) {
+  return (
+    <article className="flex h-14 items-center gap-2 rounded-2xl border border-border bg-card px-2.5 shadow-sm">
+      <LaunchpadAnchor
+        href={group.href}
+        external={group.external}
+        className="group/link flex min-w-0 flex-1 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <span
+          className={cn(
+            "flex h-8 w-8 shrink-0 items-center justify-center rounded-xl",
+            iconColorMap[group.color ?? "slate"] ?? iconColorMap.slate,
+          )}
+        >
+          <ShellIcon name={group.iconName} size={16} strokeWidth={2} />
+        </span>
+        <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
+          {group.label}
+        </span>
+      </LaunchpadAnchor>
+      <PinButton
+        size="sm"
+        notify={false}
+        item={{
+          id: group.href,
+          kind: "nav",
+          label: group.label,
+          href: group.href,
+          iconName: group.iconName,
+          color: group.color,
+        }}
+      />
+    </article>
+  );
+}
+
+function LaunchpadFolderCard({
   group,
   onShowAll,
 }: {
   group: LaunchpadGroup;
   onShowAll: () => void;
 }) {
-  const previewDestinations = group.destinations
-    .filter((destination) => destination.href !== group.href)
-    .slice(0, PREVIEW_DESTINATION_COUNT);
-  const remainingCount =
-    group.destinations.length - 1 - previewDestinations.length;
-
-  if (previewDestinations.length === 0) {
-    return (
-      <LaunchpadDestinationCard
-        destination={{
-          id: group.id,
-          label: group.label,
-          href: group.href,
-          description: group.description,
-          iconName: group.iconName,
-          color: group.color,
-          groupLabel: group.description ?? group.label,
-          external: group.external,
-          kind: "area",
-        }}
-      />
-    );
-  }
-
-  const heightClass = launchpadCardHeightClass(
-    previewDestinations.length,
-    remainingCount > 0,
+  const previewDestinations = childDestinations(group).slice(
+    0,
+    PREVIEW_DESTINATION_COUNT,
   );
+  const remainingCount =
+    childDestinations(group).length - previewDestinations.length;
 
   return (
     <article
       className={cn(
         "flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm",
-        heightClass,
+        folderHeightClass(childDestinations(group).length),
       )}
     >
       <div className="flex items-center gap-2 border-b border-border p-3">
@@ -315,40 +394,36 @@ function LaunchpadGroupCard({
         />
       </div>
 
-      {previewDestinations.length > 0 ? (
-        <div className="min-h-0 p-1.5">
-          {previewDestinations.map((destination) => (
-            <LaunchpadAnchor
-              key={destination.href}
-              href={destination.href}
-              external={destination.external}
-              className="group/link flex min-h-9 items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-accent/60 focus-visible:bg-accent/60 focus-visible:outline-none"
-            >
-              <ShellIcon
-                name={destination.iconName}
-                size={14}
-                strokeWidth={1.8}
-                className="shrink-0 text-muted-foreground group-hover/link:text-primary"
-              />
-              <span className="min-w-0 flex-1 truncate">
-                {destination.label}
-              </span>
-              <ArrowUpRight className="h-3 w-3 shrink-0 text-muted-foreground/60 opacity-0 transition-opacity group-hover/link:opacity-100 group-focus-visible/link:opacity-100" />
-            </LaunchpadAnchor>
-          ))}
-          {remainingCount > 0 ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={onShowAll}
-              className="mt-0.5 h-8 w-full justify-start px-2 text-xs text-muted-foreground"
-            >
-              View all {group.destinations.length} destinations
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
+      <div className="min-h-0 p-1.5">
+        {previewDestinations.map((destination) => (
+          <LaunchpadAnchor
+            key={destination.href}
+            href={destination.href}
+            external={destination.external}
+            className="group/link flex min-h-9 items-center gap-2 rounded-lg px-2 py-1.5 text-sm text-foreground transition-colors hover:bg-accent/60 focus-visible:bg-accent/60 focus-visible:outline-none"
+          >
+            <ShellIcon
+              name={destination.iconName}
+              size={14}
+              strokeWidth={1.8}
+              className="shrink-0 text-muted-foreground group-hover/link:text-primary"
+            />
+            <span className="min-w-0 flex-1 truncate">{destination.label}</span>
+            <ArrowUpRight className="h-3 w-3 shrink-0 text-muted-foreground/60 opacity-0 transition-opacity group-hover/link:opacity-100 group-focus-visible/link:opacity-100" />
+          </LaunchpadAnchor>
+        ))}
+        {remainingCount > 0 ? (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onShowAll}
+            className="mt-0.5 h-8 w-full justify-start px-2 text-xs text-muted-foreground"
+          >
+            View all {group.destinations.length} destinations
+          </Button>
+        ) : null}
+      </div>
     </article>
   );
 }
