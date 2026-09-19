@@ -348,6 +348,47 @@ ensure_worktree_node_modules() {
   log "node_modules is now a real (hard-linked) directory in this worktree — remove it before \`git worktree remove\` if you want the disk back immediately (the worktree removal does not need you to)."
 }
 
+# The launcher used to exec `node_modules/.bin/next` — a pnpm-generated POSIX
+# shim that finds its real target by counting a FIXED number of `..` hops from
+# its own directory up to what it assumes is the filesystem root, then
+# re-descending through the target's ABSOLUTE path (minus the leading slash)
+# baked in at generation time. That assumption only holds if the shim's own
+# directory is still exactly as deep as it was when it was generated.
+# `ensure_worktree_node_modules` hard-links (`cp -al`) the PRIMARY checkout's
+# node_modules into this worktree at whatever depth the worktree happens to
+# live at — here five levels deeper
+# (`.matrx/acquisition-frontier/checkout/node_modules/.bin` vs the primary's
+# `node_modules/.bin`) — so the hop count that was correct for the primary
+# checkout lands the shim's search five directories short of the filesystem
+# root. It then appends the baked-in absolute path fragment onto whatever it
+# found there, which — because the primary checkout's own path happens to
+# start where the search stopped short — silently DOUBLES the primary
+# checkout's path onto itself instead of erroring:
+#   next_bin = <5 hops up from worktree .bin> + <baked-in absolute path>
+#            = /Users/…/matrx-frontend + Users/…/matrx-frontend/node_modules/…
+#            = /Users/…/matrx-frontend/Users/…/matrx-frontend/node_modules/next/dist/bin/next
+# (reproduced verbatim from the shared-next-dev.log crash, 2026-09-19). This is
+# not specific to one hop count or one worktree depth — ANY shim copied to a
+# directory nested at a different depth than where it was generated resolves
+# to the wrong file, silently, because the arithmetic never checks whether it
+# actually reached "/". A hard-linked copy is exactly that: same bytes, new
+# depth.
+#
+# The fix is to never depend on the shim's own path arithmetic. `next`'s real
+# entry point is a plain Node script with a `#!/usr/bin/env node` shebang
+# (`node_modules/next/dist/bin/next`) reachable from node_modules/next, which
+# is itself a normal symlink into the pnpm store that `readlink`/Node resolve
+# correctly regardless of how deep this checkout is nested — no hop-counting,
+# so no depth-dependent breakage. Node can run that file directly; the shim's
+# only other job (setting NODE_PATH) is not needed here because Next resolves
+# its own dependencies relative to its real (symlink-resolved) location in the
+# pnpm store, not via NODE_PATH.
+resolve_next_bin() {
+  local bin="$REPO_ROOT/node_modules/next/dist/bin/next"
+  [[ -f "$bin" ]] || return 1
+  printf '%s\n' "$bin"
+}
+
 cmd_start() {
   mkdir -p "$STATE_DIR"
   clear_stale_state
@@ -376,7 +417,8 @@ cmd_start() {
 
   ensure_worktree_node_modules
 
-  [[ -x "$REPO_ROOT/node_modules/.bin/next" ]] || fail "dependencies are missing; run pnpm install first"
+  local next_bin
+  next_bin="$(resolve_next_bin)" || fail "dependencies are missing; run pnpm install first"
 
   # Reclaim only servers dev-cleanup already classifies as runaway/abandoned.
   # With no live server above, this mainly clears stale tracking files.
@@ -410,12 +452,14 @@ cmd_start() {
   # exec_command owns and reaps its shell process group. Python's
   # start_new_session creates a real detached OS session that survives the tool
   # call while still giving us the exact root pid to track and stop.
-  pid="$(/usr/bin/python3 - "$REPO_ROOT" "$LOG" "$DISTDIR" "$PORT" <<'PY'
+  pid="$(/usr/bin/python3 - "$REPO_ROOT" "$LOG" "$DISTDIR" "$PORT" "$next_bin" <<'PY'
 import os
+import shutil
 import subprocess
 import sys
 
-root, log_path, distdir, port = sys.argv[1:]
+root, log_path, distdir, port, next_bin = sys.argv[1:]
+node_exe = shutil.which("node") or "node"
 env = os.environ.copy()
 env["NODE_OPTIONS"] = "--dns-result-order=ipv4first"
 env["NEXT_DISTDIR"] = distdir
@@ -443,7 +487,7 @@ if os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy"):
 env["MATRX_PROFILE"] = os.environ.get("MATRX_PREVIEW_PROFILE", "core")
 with open(log_path, "ab", buffering=0) as log:
     process = subprocess.Popen(
-        [os.path.join(root, "node_modules/.bin/next"), "dev", "-p", port],
+        [node_exe, next_bin, "dev", "-p", port],
         cwd=root,
         env=env,
         stdin=subprocess.DEVNULL,

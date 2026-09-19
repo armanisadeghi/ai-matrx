@@ -282,6 +282,7 @@
     "test:vercel-ignore": "node --test scripts/vercel-ignore-build.test.mjs",
     "test:preview-install-guard": "node --test scripts/preview-install-guard.test.mjs",
     "test:worktree-node-modules": "bash scripts/test-worktree-node-modules.sh",
+    "test:worktree-next-bin-resolution": "bash scripts/test-worktree-next-bin-resolution.sh",
     "check:agent-links": "tsx scripts/check-agent-links.ts",
     "check:agent-links:self-test": "tsx scripts/check-agent-links.ts --self-test",
     "check:cross-deployment-links": "tsx scripts/check-cross-deployment-links.ts",
