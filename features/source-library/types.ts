@@ -133,6 +133,26 @@ export interface LibraryMetrics {
         coverage_percent: number;
     };
     transcripts: Record<"ready" | "queued" | "running" | "failed" | "none", number>;
+    /**
+     * §4.3 — the header's per-Action counts, computed server-side over the SAME
+     * filter the list uses, never tallied from the 25 rows a page happens to hold.
+     *
+     * An Action nobody has ever run is ABSENT from this map, not present as four
+     * zeros: a Library that has never been sent to a Rulebook has no Rulebook
+     * count to show, and rendering "0 ready, 0 failed" would be a tile about
+     * something that never happened. `{}` from an older server means exactly the
+     * same thing and renders exactly the same way — nothing.
+     */
+    action_outcomes: Record<string, Record<ActionOutcomeStatus, number>>;
+    /**
+     * Each Source counted ONCE, by whatever ran on it most recently. This and
+     * `action_outcomes` never sum to the same number and answer different
+     * questions — "how did the Rulebook send go" versus "how many Sources are in
+     * a failed state right now".
+     */
+    last_action: Record<ActionOutcomeStatus, number>;
+    /** Sources no Action has ever touched. */
+    untouched: number;
     stale: boolean;
 }
 
@@ -177,6 +197,39 @@ export interface LibraryListResponse {
     lane_counts?: { mine: number; org: number; community: number; world: number };
 }
 
+/**
+ * §4.3 — what ONE Action did to ONE Source.
+ *
+ * 🚨 THE WORDS ARE `transcript_status`'S OWN, and not one of them is new. An
+ * Action either did the thing (`ready`), knowingly did not (`skipped`), broke
+ * (`failed`), or is doing it right now (`running`). `none` and `queued` are
+ * deliberately absent from this type: an Action that never touched a Source has
+ * NO entry in `action_outcomes` — absent, which is a different and honester fact
+ * than a word meaning "nothing".
+ */
+export type ActionOutcomeStatus = "ready" | "running" | "skipped" | "failed";
+
+/**
+ * One outcome, as the Library screen shows it.
+ *
+ * `sentence` is ALWAYS present and is always a sentence — the server sends the
+ * runner's own words for a skip or a failure, and a stated result for a success.
+ * A row that rendered a status badge with no sentence would be the silent
+ * failure this whole projection exists to remove, so the narrowing below REFUSES
+ * an outcome without one rather than rendering an empty line.
+ *
+ * `job_id` is what the "Open the job" link needs. It is nullable because the
+ * contract says an Action need not run through the job queue; nothing sends null
+ * today, and a row that does simply shows the line without the link.
+ */
+export interface ActionOutcome {
+    action_key: string;
+    job_id: string | null;
+    status: ActionOutcomeStatus;
+    sentence: string;
+    at: string;
+}
+
 /** §4.2 — the Source row (one catalogued video today). */
 export interface VideoRow {
     id: string;
@@ -207,9 +260,28 @@ export interface VideoRow {
      * the one catalogued Library on 2026-09-17. Never widen this to `string[]`.
      */
     caption_languages: string[] | null;
+    /**
+     * §4.3 — DERIVED SERVER-SIDE from `action_outcomes.transcribe`, and still its
+     * own field. Every filter, column and metric that reads it keeps working; what
+     * changed is that its value now comes from the same projection every other
+     * Action writes, instead of from the one column only `transcribe` ever wrote.
+     */
     transcript_status: TranscriptStatus;
     transcript_id: string | null;
     transcript_lane: TranscriptLane | null;
+    /**
+     * §4.3 — every Action that has ever finished on this Source, keyed by Action
+     * key. `{}` means nothing has ever run on it, which is why the column shows a
+     * dash rather than a word: absent is not a status.
+     *
+     * NULLABLE ON THE WIRE. A server that predates the projection sends neither
+     * this nor `last_action`, and a client and a server deploy minutes apart —
+     * so the narrowing coalesces a missing field to `{}` / `null` and NEVER drops
+     * the Source for it. Contract §0.5's envelope tolerance, applied to a field.
+     */
+    action_outcomes: Record<string, ActionOutcome>;
+    /** The most recent of `action_outcomes` by `at` — the ONE line the row shows. */
+    last_action: ActionOutcome | null;
     processing_status: string | null;
     position: number | null;
     first_discovered_at: string | null;
@@ -226,6 +298,15 @@ export interface VideoQuery {
     min_duration_seconds?: number;
     max_duration_seconds?: number;
     q?: string;
+    /**
+     * §4.3. Together these read "which of these went to the Rulebook" and "which
+     * ones failed". `action_status` ALONE narrows on the most recent Action, which
+     * is what "show me the failures" means on a list of Sources; with an
+     * `action_key` it narrows on THAT Action's outcome, which is a different and
+     * more specific question.
+     */
+    action_key?: string;
+    action_status?: ActionOutcomeStatus[];
     order?: "published_at" | "view_count" | "duration_seconds" | "title";
     direction?: "asc" | "desc";
     limit?: number;

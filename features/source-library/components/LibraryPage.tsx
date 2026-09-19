@@ -254,11 +254,29 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                 organizationId,
                 bulkActions: runner.bulkActions,
                 onOpenRow: setOpenVideo,
+                // §4.3 — the Action labels come from the SERVER'S registry, the
+                // same one the Action bar is built from. Before it answers, a
+                // Source's outcome shows the Action's key: ugly and true.
+                actionLabels: Object.fromEntries(
+                    registry.actions.map((action) => [action.key, action.label]),
+                ),
+                // The way back from "this one failed" to the run that says why.
+                // `onJobStarted` is exactly the right door: it puts the job's own
+                // panel on this page, which is where a person already reads one.
+                onOpenJob: onJobStarted,
             }),
         // `listGeneration` forces a fresh service identity after a sync lands
         // rows, so the list re-asks instead of showing what it held before.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [dispatch, libraryId, organizationId, runner.bulkActions, listGeneration],
+        [
+            dispatch,
+            libraryId,
+            organizationId,
+            runner.bulkActions,
+            listGeneration,
+            registry.actions,
+            onJobStarted,
+        ],
     );
 
     const library = live?.library ?? null;
