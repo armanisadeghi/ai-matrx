@@ -15,13 +15,11 @@
  *     `workbench.udt_dataset_rows`. Writes go through the dataset service's
  *     `udt_bulk_write` door under the person's own authority; the store's own
  *     refusal is carried back verbatim, never translated into a shrug.
- *   - `table` (next) — a Table homed in a Record in the unified record store
- *     (`custom.record`, the agent verbs `record_write` / `record_delete`
- *     behind one door; v5 CONTRACT AGT-4 / AGT-8). It is NOT built yet, and
- *     this file refuses it BY NAME rather than failing quietly, because a
- *     control that looks like it worked is the worse failure. When the records
- *     core package (`@ai-matrx/records`, aidream `apps/shared/records`) lands,
- *     this is the one function body that changes.
+ *   - `table` (live) — a Table homed in a Record in the unified record store
+ *     (`custom.record`, the client doors `record_write` / `record_update` /
+ *     `record_delete` / `read_records`; v5 CONTRACT AGT-4 / AGT-8), reached
+ *     through `@ai-matrx/records/core`'s `createRecordsClient`. The store's
+ *     own refusal is carried back verbatim here too, never translated.
  *
  * NOTHING HERE TOUCHES A DECISION. Applying is one thing; remembering what the
  * person decided is another (`decisions.ts`). Keeping them apart is what makes
@@ -39,6 +37,17 @@ import type { BulkOp } from "@/features/data-tables/types";
 import { isBulkOpError } from "@/features/data-tables/types";
 import { scopesService } from "@/features/scopes/service/scopesService";
 import { isScopesRpcErr } from "@/features/scopes/types";
+import { createRecordsClient, type RecordsClient } from "@ai-matrx/records/core";
+import { personActor, recordsDataSource } from "@ai-matrx/records-ui";
+import { createClient } from "@/utils/supabase/client";
+import { getStoreSingleton } from "@/lib/redux/store-singleton";
+import { selectActiveOrganizationId } from "@/features/scopes/redux/selectors/active-context";
+import { selectUserId } from "@/lib/redux/selectors/userSelectors";
+import {
+  UNIFIED_DATA_CAMPAIGN,
+  UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE,
+} from "@/lib/knobs/unifiedDataCampaign";
+import { ensureEffectiveKnob } from "@/lib/scoped-config/effectiveKnobs";
 
 import type {
   ListChangeProposalItem,
@@ -179,18 +188,94 @@ const scopeDatasetStore: ListStore<
 
 // ── implementation 2: a Table homed in a Record (the unified record store) ──
 
-const PENDING_UNIFIED_STORE =
-  "This list lives in a Table homed in a Record, and the unified record store " +
-  "(custom.record) is not live yet — nothing was changed. The same proposal " +
-  "will apply unchanged the day that store opens; this message does not need " +
-  "to be re-sent.";
+/**
+ * The store is live: `custom.record_write` / `custom.record_update` /
+ * `custom.record_delete` / `custom.read_records` behind the client doors
+ * (v5 CONTRACT AGT-4 / AGT-8), reached through `@ai-matrx/records/core`. There
+ * is no "current organization" this module resolves for itself — it reads the
+ * same redux slice a component would, via the store singleton, because this
+ * file is a plain module and not a hook.
+ */
+/**
+ * The switch, resolved the way a person actually sees it: their own override
+ * beats their organization, which beats the platform default
+ * (`useUnifiedDataCampaign`'s ladder) — never just the platform row, or an
+ * admin who was switched on personally would still be refused here.
+ */
+async function unifiedDataCampaignOn(
+  organizationId: string | null,
+  userId: string | null,
+): Promise<boolean> {
+  if (!organizationId) return UNIFIED_DATA_CAMPAIGN.enabled();
+  const resolved = await ensureEffectiveKnob(organizationId, userId, {
+    feature: UNIFIED_DATA_CAMPAIGN.FEATURE,
+    key: UNIFIED_DATA_CAMPAIGN.KEY,
+  });
+  return resolved === true || resolved === "true";
+}
+
+async function recordsClientOrRefusal(): Promise<{ client: RecordsClient } | { refused: string }> {
+  const state = getStoreSingleton()?.getState();
+  const organizationId = state ? selectActiveOrganizationId(state) : null;
+  const userId = state ? selectUserId(state) : null;
+  if (!(await unifiedDataCampaignOn(organizationId, userId))) {
+    return { refused: UNIFIED_DATA_CAMPAIGN_OFF_SENTENCE };
+  }
+  if (!organizationId) {
+    return {
+      refused: "No organization is active, so the record store cannot be reached.",
+    };
+  }
+  return {
+    client: createRecordsClient({
+      dataSource: recordsDataSource(createClient()),
+      actor: personActor(userId),
+      organizationId,
+    }),
+  };
+}
 
 const recordTableStore: ListStore<Extract<ListChangeTarget, { kind: "table" }>> = {
-  async read() {
-    return { status: "refused", detail: PENDING_UNIFIED_STORE };
+  async read(target) {
+    const resolved = await recordsClientOrRefusal();
+    if ("refused" in resolved) return { status: "refused", detail: resolved.refused };
+    const { client } = resolved;
+
+    const [fields, page] = await Promise.all([
+      client.fields({ table_id: target.tableId }),
+      client.list({ table_id: target.tableId }),
+    ]);
+    if (!fields.ok) return { status: "refused", detail: fields.error.message };
+    if (!page.ok) return { status: "refused", detail: page.error.message };
+
+    return {
+      status: "read",
+      snapshot: {
+        fields: fields.data.map((f) => ({ name: f.key, label: f.label })),
+        rows: page.data.rows.map((r) => ({ id: r.id, values: r.document })),
+        label: target.label ?? "this list",
+      },
+    };
   },
-  async apply() {
-    return { status: "refused", detail: PENDING_UNIFIED_STORE };
+
+  async apply(target, proposal) {
+    const resolved = await recordsClientOrRefusal();
+    if ("refused" in resolved) return { status: "refused", detail: resolved.refused };
+    const { client } = resolved;
+
+    if (proposal.action === "add") {
+      const written = await client.recordWrite({ table_id: target.tableId, data: proposal.values });
+      if (!written.ok) return { status: "refused", detail: written.error.message };
+      return { status: "applied", rowId: written.data, detail: "Added to the list." };
+    }
+    if (proposal.action === "remove") {
+      const deleted = await client.recordDelete({ record_id: proposal.rowId });
+      if (!deleted.ok) return { status: "refused", detail: deleted.error.message };
+      return { status: "applied", rowId: proposal.rowId, detail: "Removed from the list." };
+    }
+    const updated = await client.recordUpdate({ record_id: proposal.rowId, patch: proposal.patch });
+    if (!updated.ok) return { status: "refused", detail: updated.error.message };
+    return { status: "applied", rowId: proposal.rowId, detail: "Updated on the list." };
   },
 };
 
