@@ -116,6 +116,12 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "THE unified table page: views, the four layouts, peek with history and comments, settings, the action inbox, import and export. Served to users, so it reads the switch.",
     },
     {
+        id: "shell-nav-gates",
+        file: "features/shell/navigation/useShellNavGates.ts",
+        kind: "runtime",
+        why: "The sidebar's Data group carries a `Records` child pointing at /data-v2, and it appears only where this campaign's switch is on. This hook is the one place the sidebar resolves that switch, for this person in this organization, so a gated destination is dropped everywhere the nav is drawn. Served to every signed-in user on every page, so an unanswered switch counts as OFF and the child simply is not there.",
+    },
+    {
         id: "crm-party-custom-fields",
         file: "features/crm/components/record/PartyRecordPage.tsx",
         kind: "runtime",
