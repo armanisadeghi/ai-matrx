@@ -9,7 +9,7 @@
  * the whole point of it existing.
  */
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback } from "react";
 import { useAppDispatch } from "@/lib/redux/hooks";
 import { closeOverlay, openOverlay } from "@/lib/redux/slices/overlaySlice";
 import {
@@ -26,6 +26,8 @@ export interface OpenGoogleConnectOptions extends GoogleConnectWindowHandlers {
   mode?: "overview" | "workspace" | "drive-import";
   /** Seed the account chooser from the invoking Google surface. */
   initialConnectionId?: string;
+  /** Logical Matrx Files folder used by the canonical provider import. */
+  importDestinationFolderPath?: string;
 }
 
 export interface GoogleConnectWindowHandle {
@@ -35,15 +37,6 @@ export interface GoogleConnectWindowHandle {
 
 export function useOpenGoogleConnectWindow() {
   const dispatch = useAppDispatch();
-  const disposersRef = useRef<Set<() => void>>(new Set());
-
-  useEffect(() => {
-    const disposers = disposersRef.current;
-    return () => {
-      for (const dispose of disposers) dispose();
-      disposers.clear();
-    };
-  }, []);
 
   return useCallback(
     (options?: OpenGoogleConnectOptions): GoogleConnectWindowHandle => {
@@ -54,7 +47,6 @@ export function useOpenGoogleConnectWindow() {
               onWindowClose: options.onWindowClose,
             })
           : null;
-      if (callbacks) disposersRef.current.add(callbacks.dispose);
       dispatch(
         openOverlay({
           overlayId: OVERLAY_ID,
@@ -62,13 +54,14 @@ export function useOpenGoogleConnectWindow() {
             reason: options?.reason ?? null,
             mode: options?.mode ?? "workspace",
             initialConnectionId: options?.initialConnectionId ?? null,
+            importDestinationFolderPath:
+              options?.importDestinationFolderPath ?? null,
             callbackGroupId: callbacks?.callbackGroupId ?? null,
           },
         }),
       );
       const dispose = () => {
         callbacks?.dispose();
-        if (callbacks) disposersRef.current.delete(callbacks.dispose);
       };
       return {
         close: () => {

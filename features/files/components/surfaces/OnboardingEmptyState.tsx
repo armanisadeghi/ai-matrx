@@ -67,6 +67,7 @@ export function OnboardingEmptyState({
           <FileAcquisitionActions
             presentation="buttons"
             onFiles={acquisition.uploadFiles}
+            googleImportParentFolderId={null}
             enableExistingFiles={false}
           />
           {onCreateFolder ? (

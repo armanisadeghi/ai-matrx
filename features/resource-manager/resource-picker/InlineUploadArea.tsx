@@ -40,6 +40,8 @@ import {
 // literal 1024/1048576/1073741824 divisor — could not see it. Same output for
 // every real size, plus the em-dash guard for null/NaN/negative.
 import { formatFileSize } from "@ai-matrx/kit/format";
+import type { CanonicalStorageImport } from "@/features/google-workspace/import/storageSourceImport";
+import { pythonFileInlineUrl } from "@/features/files/handler/utils/python-base";
 
 export interface UploadedFile {
   /** Original local filename, retained even when the durable URL is opaque. */
@@ -84,6 +86,36 @@ function classifyUploadType(mimeType: string): string {
   if (t.startsWith("text/") || t === "application/json") return "text";
   if (t === "application/pdf") return "pdf";
   return "other";
+}
+
+export function canonicalImportToUploadedFile(
+  imported: CanonicalStorageImport,
+): UploadedFile {
+  const { file } = imported;
+  const mimeType = file.mimeType ?? "";
+  const size = file.fileSize ?? 0;
+  const url = file.url ?? file.publicUrl ?? pythonFileInlineUrl(file.id);
+  const details = getFileDetailsByUrl(
+    url,
+    {
+      eTag: file.checksum ?? "",
+      size,
+      mimetype: mimeType,
+      cacheControl: "max-age=3600",
+      lastModified: file.updatedAt,
+      contentLength: size,
+      httpStatusCode: 200,
+    },
+    file.id,
+  );
+  return {
+    name: file.fileName,
+    fileId: file.id,
+    url,
+    type: classifyUploadType(mimeType),
+    mime_type: file.mimeType ?? undefined,
+    details: { ...details, filename: file.fileName },
+  };
 }
 
 interface FileStatus {
@@ -556,6 +588,20 @@ export function InlineUploadArea({
                 className="w-full"
                 disabled={isLoading}
                 onFiles={(files) => handleFiles(files.map(candidateFromFile))}
+                googleImportFolderPath={composeUploadFolderPath(
+                  "userContent",
+                  "prompt-attachments",
+                )}
+                onGoogleImported={async (files) => {
+                  setIsFinalizing(true);
+                  setBusy(true);
+                  try {
+                    await onSelect(files.map(canonicalImportToUploadedFile));
+                  } finally {
+                    setIsFinalizing(false);
+                    setBusy(false);
+                  }
+                }}
                 onError={setUploadError}
               />
             </>

@@ -14,6 +14,7 @@ import {
   closeGoogleWorkspaceConnect,
   GoogleWorkspaceConnectBody,
 } from "@/features/google-workspace/GoogleWorkspaceConnectBody";
+import { disposeGoogleConnectCallbackGroup } from "@/features/overlays/callbacks/googleConnectWindow";
 import type { GoogleWorkspaceConnectBodyProps } from "@/features/google-workspace/GoogleWorkspaceConnectBody";
 import { GoogleWorkspaceOverviewBody } from "@/features/google-workspace/GoogleWorkspaceOverviewBody";
 import { WindowPanel } from "@/features/window-panels/WindowPanel";
@@ -47,6 +48,10 @@ export function GoogleConnectWindow({
     setView(mode === "overview" ? "overview" : "workspace");
     setWorkspaceInitialConnectionId(initialConnectionId ?? null);
   }, [initialConnectionId, mode]);
+  useEffect(
+    () => () => disposeGoogleConnectCallbackGroup(callbackGroupId),
+    [callbackGroupId],
+  );
   if (!isOpen) return null;
 
   const isOverview = view === "overview";
@@ -56,7 +61,7 @@ export function GoogleConnectWindow({
     <WindowPanel
       id={WINDOW_ID}
       overlayId={OVERLAY_ID}
-      onClose={() => closeGoogleWorkspaceConnect(callbackGroupId, onClose)}
+      onClose={() => void closeGoogleWorkspaceConnect(callbackGroupId, onClose)}
       titleNode={
         <span className="flex items-center gap-1.5">
           {mode === "drive-import" ? (
