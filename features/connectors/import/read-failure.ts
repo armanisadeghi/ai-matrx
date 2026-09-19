@@ -37,16 +37,17 @@
  * answer, the accounts it NAMED become the choice, and pressing one re-runs
  * the read against that account.
  *
- * The candidate accounts come from the SERVER's own sentence — this module
- * never assembles a candidate set of its own from the connections table, which
- * would be a second reading of "which accounts can read this product" that can
- * disagree with the one the server just refused on
+ * The candidate accounts come from the SERVER — this module never assembles a
+ * candidate set of its own from the connections table, which would be a second
+ * reading of "which accounts can read this product" that can disagree with the
+ * one the server just refused on
  * (`aidream/services/google_integrations/tool_shared.py` →
  * `resolve_google_account`, raising `AmbiguousGoogleAccount`; the router maps
  * it to a 409 `several_google_accounts` in `aidream/api/routers/google_import.py`).
- * `google_account` is matched against a connection's `account_email`, so the
- * usable candidates are exactly the email-shaped names in that sentence — and
- * when it names none this file says so rather than rendering an empty picker.
+ * Since 2026-09-19 that refusal carries them STRUCTURALLY, as
+ * `details.candidate_accounts` — exactly the `google_account` values the call
+ * would accept. When it names none this file says so rather than rendering an
+ * empty picker.
  */
 
 import { BackendApiError, getUserMessage } from "@/lib/api/errors";
@@ -100,16 +101,45 @@ export function googleAccountsNamedIn(sentence: string): string[] {
   return [...new Set(cleaned)];
 }
 
+/**
+ * The accounts the refusal named STRUCTURALLY, from its `details` payload.
+ *
+ * Narrowed from `unknown` at the boundary (the F-25 pattern): the 409 body is a
+ * plain dict on the server, not a declared response model, so nothing about
+ * `candidate_accounts` reaches `types/python-generated/api-types.ts` and this
+ * file is where its shape is asserted — once, here, never at a call site.
+ */
+export function googleCandidateAccountsIn(details: unknown): string[] {
+  if (typeof details !== "object" || details === null) return [];
+  const raw = (details as { candidate_accounts?: unknown }).candidate_accounts;
+  if (!Array.isArray(raw)) return [];
+  const usable = raw
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => value.trim())
+    .filter((value) => value.length > 0);
+  return [...new Set(usable)];
+}
+
 /** The refusal a failed read carries, read from the thrown cause. */
 export function readGoogleImportFailure(cause: unknown): GoogleImportReadFailure {
   if (cause instanceof BackendApiError && cause.code === SEVERAL_GOOGLE_ACCOUNTS_CODE) {
+    // The server's own list first. It is the contract; the sentence is prose.
+    const structured = googleCandidateAccountsIn(cause.details);
+    // FALLBACK, and only for a server older than 2026-09-19, which carried the
+    // accounts nowhere but inside the sentence. 🚨 DELETE THIS BRANCH (and the
+    // `googleAccountsNamedIn` scan with it, if nothing else calls it) once the
+    // server carrying `details.candidate_accounts` is deployed — no-legacy
+    // policy, owed line recorded in `features/connectors/FEATURE.md`.
     // Both fields can carry the account names; the user-facing one first.
-    const accounts = [
-      ...new Set([
-        ...googleAccountsNamedIn(cause.userMessage ?? ""),
-        ...googleAccountsNamedIn(cause.detail ?? ""),
-      ]),
-    ];
+    const accounts =
+      structured.length > 0
+        ? structured
+        : [
+            ...new Set([
+              ...googleAccountsNamedIn(cause.userMessage ?? ""),
+              ...googleAccountsNamedIn(cause.detail ?? ""),
+            ]),
+          ];
     return {
       kind: "several_accounts",
       accounts,

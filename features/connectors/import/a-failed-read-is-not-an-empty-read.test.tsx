@@ -96,6 +96,55 @@ describe("the accounts the server named are read from its own sentence", () => {
     ]);
   });
 
+  it("prefers the accounts the server named STRUCTURALLY over its sentence", () => {
+    // The sentence and `details.candidate_accounts` deliberately disagree here:
+    // only a picker built from the DATA can pass. A picker built from the prose
+    // would offer the two addresses in the sentence, which is precisely the
+    // undeclared contract this replaced (server 2026-09-19).
+    const failure = readGoogleImportFailure(
+      new BackendApiError({
+        code: "several_google_accounts",
+        detail:
+          "2 connected Google accounts can read Contacts: sentence-one@example.com, sentence-two@example.com. Re-run with google_account set to the one you mean.",
+        userMessage:
+          "2 connected Google accounts can read Contacts: sentence-one@example.com, sentence-two@example.com. Re-run with google_account set to the one you mean.",
+        details: {
+          remedy: "name_the_google_account",
+          candidate_accounts: ["structured-one@example.com", "structured-two@example.com"],
+        },
+        status: 409,
+      }),
+    );
+    expect(failure.kind === "several_accounts" && failure.accounts).toEqual([
+      "structured-one@example.com",
+      "structured-two@example.com",
+    ]);
+    expect(failure.sentence).toBe(SEVERAL_ACCOUNTS_SENTENCE);
+  });
+
+  it("reads a structured list with no usable entries as naming none", () => {
+    const failure = readGoogleImportFailure(
+      new BackendApiError({
+        code: "several_google_accounts",
+        detail: "Several connected Google accounts can read Contacts.",
+        userMessage: "Several connected Google accounts can read Contacts.",
+        details: { remedy: "name_the_google_account", candidate_accounts: [] },
+        status: 409,
+      }),
+    );
+    expect(failure.kind === "several_accounts" && failure.accounts).toEqual([]);
+    expect(failure.sentence).toBe(SEVERAL_ACCOUNTS_UNNAMED_SENTENCE);
+  });
+
+  it("still reads the accounts out of an older server's sentence", () => {
+    // Deleted with the fallback once this server is deployed (see read-failure.ts).
+    const failure = readGoogleImportFailure(AMBIGUOUS());
+    expect(failure.kind === "several_accounts" && failure.accounts).toEqual([
+      "arman@armansadeghi.com",
+      "titanium-succes-4898@pages.plusgoogle.com",
+    ]);
+  });
+
   it("degrades to the honest sentence when the wording names none", () => {
     const failure = readGoogleImportFailure(
       new BackendApiError({
