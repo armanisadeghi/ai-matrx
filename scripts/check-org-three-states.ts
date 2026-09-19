@@ -31,8 +31,10 @@
  *   `useOrganizationRequired` / `organizationState`  — the hook, or
  *   `useOrganizationGatedControl`                    — the control gate, or
  *   `OrganizationContextNotice`                      — the state-driven notice, or
- *   `selectShouldPromptForOrganization` / `selectOrgBootstrapResolved`
- *                                                    — the underlying signal, or
+ *   `selectShouldPromptForOrganization`              — the underlying signal
+ *                                                      (which already refuses
+ *                                                      to nudge on a failed
+ *                                                      read), or
  *   `awaitEffectiveOrganizationId` / `awaitOrganizationForRecordRead` /
  *   `waitForOrganizationAdmission` / `ensureOrganizationContext` / `ensureOrgId` /
  *   `whenOrgBootstrapResolved`                       — it WAITS for the answer
@@ -111,6 +113,38 @@
  * must also read `organizationState`. A module that reads only `organizationId`
  * / `canLoad` is a call guard, not a screen, and is untouched. Neither the
  * census nor the allowlist is the normal answer here — the fix is one word.
+ *
+ * THE FIFTH RULE — `orgBootstrapResolved` IS NOT A "REQUIRED" SIGNAL (R37)
+ * ------------------------------------------------------------------------
+ * Rule 1 accepted `selectOrgBootstrapResolved` / `orgBootstrapResolved` as a
+ * three-state reading, and for the THREE states it was one. There are four.
+ * `setOrgBootstrapFailure` (lib/redux/slices/appContextSlice.ts) sets
+ * `orgBootstrapResolved = true` on purpose — a failed read must not hold every
+ * surface on a skeleton forever — so the shape
+ *
+ *     !organizationId && orgBootstrapResolved      →  "choose an organization"
+ *
+ * is TRUE in the fourth state as well, and one network blip tells a member of
+ * thirteen organizations to pick one. Twenty-two modules read exactly that
+ * shape on 2026-09-19, five of them named in R37.
+ *
+ * So: pairing `orgBootstrapResolved` (in any spelling, including a local alias
+ * assigned from `selectOrgBootstrapResolved`) with a FALSY organization id is
+ * refused wherever the two meet in one expression — a `&&`, a ternary test, an
+ * `if`. The fix is the gate: `organizationState === "required"` is the refusal
+ * and `"unavailable"` is the failed read, and `OrganizationContextNotice`
+ * renders both. Waiting on `orgBootstrapResolved` ALONE — no organization id
+ * in the same expression — is untouched: that is a wait, not a refusal.
+ * Neither the census nor the shape of rule 1 forgives this one; the census is
+ * the two-state population and this rule post-dates it.
+ *
+ * And rule 1 no longer accepts `selectOrgBootstrapResolved` /
+ * `orgBootstrapResolved` as a reading of the states AT ALL — that was the hole
+ * this rule closes, and it was a THREE-state signal in a four-state world.
+ * Removing it from the accepted list on 2026-09-19 added zero violations,
+ * because every module that carried it either reads the gate now or is caught
+ * by the pair above. `whenOrgBootstrapResolved` / `isOrgBootstrapResolved`
+ * stay: those WAIT for the answer, they do not spell one.
  *
  * Run:  pnpm check:org-three-states
  *       pnpm check:org-three-states --self-test   (proves it can FAIL)
@@ -197,8 +231,6 @@ const THREE_STATE_SIGNALS = [
   "useOrganizationGatedControl",
   "OrganizationContextNotice",
   "selectShouldPromptForOrganization",
-  "selectOrgBootstrapResolved",
-  "orgBootstrapResolved",
   "awaitEffectiveOrganizationId",
   "awaitOrganizationForRecordRead",
   "waitForOrganizationAdmission",
@@ -339,6 +371,33 @@ export function readsTheLegacyPairOnly(rawSource: string): boolean {
   return false;
 }
 
+/**
+ * RULE 5 — `orgBootstrapResolved` PAIRED WITH A FALSY ORGANIZATION ID.
+ *
+ * Deliberately expression-local: the two names must meet inside ONE expression
+ * (no `;`, no `{`, no `}` between them, and at most ~200 characters apart), so
+ * a module that merely reads both for unrelated reasons is untouched while
+ * every spelling of the defect — `!organizationId && orgBootstrapResolved`,
+ * `orgResolved && !orgId ? … : …`, `if (resolved && organizationId == null)` —
+ * is caught. The resolved side is matched by NAME, including a local alias
+ * assigned from the selector, because that is how most of the population spells
+ * it (`const orgResolved = useAppSelector(selectOrgBootstrapResolved);`).
+ */
+const RESOLVED_NAMES = /\b(?:selectOrgBootstrapResolved\s*\(|orgBootstrapResolved|orgResolved|bootstrapResolved|isOrgBootstrapResolved\s*\()/;
+const FALSY_ORG_ID =
+  /![\w$]*(?:[Oo]rganization|[Oo]rg)[\w$]*(?:Id|ID|id)\b|[\w$]*(?:[Oo]rganization|[Oo]rg)[\w$]*(?:Id|ID|id)\s*(?:===?)\s*null/;
+
+export function pairsResolvedWithAFalsyOrgId(rawSource: string): boolean {
+  const source = stripComments(rawSource);
+  // One expression at a time: statement and block boundaries end the window.
+  for (const expression of source.split(/[;{}]/)) {
+    if (expression.length > 400) continue;
+    if (!RESOLVED_NAMES.test(expression)) continue;
+    if (FALSY_ORG_ID.test(expression)) return true;
+  }
+  return false;
+}
+
 /** Does it name the FOURTH state? */
 export function handlesUnavailable(rawSource: string): boolean {
   return /["']unavailable["']/.test(stripComments(rawSource));
@@ -411,6 +470,21 @@ export function scan(
             "both point at \"keep waiting\", so this surface holds its skeleton, spinner " +
             "or loading state forever. Read organizationState and render the four " +
             "states (R37).",
+        });
+        continue;
+      }
+      // RULE 5: `orgBootstrapResolved` beside a falsy organization id is the
+      // fourth state wearing the refusal's clothes. Never census debt — the
+      // census is rule 1's two-state population and this shape post-dates it.
+      if (pairsResolvedWithAFalsyOrgId(raw)) {
+        violations.push({
+          file: rel,
+          why:
+            "derives a \"choose an organization\" answer from orgBootstrapResolved paired " +
+            "with a falsy organization id — setOrgBootstrapFailure sets that flag TRUE, so " +
+            "a FAILED organization read lands in the refusal and tells a member of thirteen " +
+            "organizations to pick one. Read useOrganizationRequired().organizationState: " +
+            '"required" is the refusal, "unavailable" is the failed read (R37).',
         });
         continue;
       }
@@ -688,6 +762,75 @@ export function Planted() {
   check("W. planted legacy-pair module flagged ", legacyFlagged, true);
   check("X. the repaired module is cleared     ", discriminantFlagged, false);
   check("Y. the census does not forgive rule 4 ", legacyForgiven, false);
+
+  // RULE 5 — `orgBootstrapResolved` is not a "required" signal. The shape that
+  // put the refusal on twenty-two surfaces after one failed read.
+  const resolvedPair = `"use client";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrganizationId, selectOrgBootstrapResolved } from "@/lib/redux/slices/appContextSlice";
+export function Planted() {
+  const organizationId = useAppSelector(selectOrganizationId);
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  if (!organizationId && orgBootstrapResolved) return <Refusal />;
+  return <Body />;
+}
+`;
+  const aliasedPair = resolvedPair
+    .replace("const orgBootstrapResolved", "const orgResolved")
+    .replace("!organizationId && orgBootstrapResolved", "orgResolved && organizationId == null");
+  const repairedPair = `"use client";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+export function Planted() {
+  const { organizationState } = useOrganizationRequired();
+  if (organizationState !== "ready")
+    return <OrganizationContextNotice state={organizationState} />;
+  return <Body />;
+}
+`;
+  const waitsOnly = `"use client";
+import { useAppSelector } from "@/lib/redux/hooks";
+import { selectOrgBootstrapResolved } from "@/lib/redux/slices/appContextSlice";
+export function Planted() {
+  const orgBootstrapResolved = useAppSelector(selectOrgBootstrapResolved);
+  useEffect(() => {
+    if (!orgBootstrapResolved) return;
+    void load();
+  }, [orgBootstrapResolved]);
+  return <Body />;
+}
+`;
+  check("Z. the resolved+falsy-id pair is seen  ", pairsResolvedWithAFalsyOrgId(resolvedPair), true);
+  check("AA. an aliased spelling is seen        ", pairsResolvedWithAFalsyOrgId(aliasedPair), true);
+  check("AB. the gate's reading is cleared      ", pairsResolvedWithAFalsyOrgId(repairedPair), false);
+  check("AC. waiting on resolved alone untouched", pairsResolvedWithAFalsyOrgId(waitsOnly), false);
+
+  let pairFlagged = false;
+  let pairRepairedFlagged = true;
+  let pairForgiven = true;
+  try {
+    writeFileSync(PLANTED, resolvedPair, "utf8");
+    pairFlagged = scan({ useCensus: false }).some(
+      (v) =>
+        v.file.includes("__self_test_planted__") &&
+        v.why.includes("orgBootstrapResolved paired"),
+    );
+    pairForgiven = !scan({
+      census: new Set([relative(ROOT, PLANTED)]),
+    }).some((v) => v.file.includes("__self_test_planted__"));
+    writeFileSync(PLANTED, repairedPair, "utf8");
+    pairRepairedFlagged = scan({ useCensus: false }).some((v) =>
+      v.file.includes("__self_test_planted__"),
+    );
+  } finally {
+    try {
+      unlinkSync(PLANTED);
+    } catch {
+      /* already gone */
+    }
+  }
+  check("AD. planted resolved-pair flagged      ", pairFlagged, true);
+  check("AE. the repaired module is cleared     ", pairRepairedFlagged, false);
+  check("AF. the census does not forgive rule 5 ", pairForgiven, false);
 
   if (failed > 0) {
     console.error(`SELF-TEST FAILED: ${failed} expectation(s) did not hold.`);
