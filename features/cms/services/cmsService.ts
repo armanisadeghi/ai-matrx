@@ -19,8 +19,6 @@ import type {
   ClientComponent,
   ClientActivityLog,
   AgentWritePolicy,
-  ContentException,
-  ContentExceptionStatus,
   ClientAsset,
   AssetUsage,
   AssetPageUsage,
@@ -936,34 +934,13 @@ export const CmsCollectionService = {
   },
 };
 
-// ── Validation approvals (F3, admin — degrades gracefully pre-P1) ─────────────
-
-export const CmsApprovalsService = {
-  async list(
-    params: { status?: ContentExceptionStatus; siteId?: string } = {},
-  ): Promise<{
-    violations: ContentException[];
-    available: boolean;
-    message?: string;
-  }> {
-    return callApi("approvals", "list", params);
-  },
-
-  async approve(exceptionId: string, note?: string): Promise<ContentException> {
-    const res = await callApi<{ exception: ContentException }>(
-      "approvals",
-      "approve",
-      { exceptionId, note },
-    );
-    return res.exception;
-  },
-
-  async reject(exceptionId: string, note?: string): Promise<ContentException> {
-    const res = await callApi<{ exception: ContentException }>(
-      "approvals",
-      "reject",
-      { exceptionId, note },
-    );
-    return res.exception;
-  },
-};
+// ── Validation approvals ──────────────────────────────────────────────────────
+//
+// 🚨 THERE IS NO CMS APPROVALS SERVICE. `CmsApprovalsService` (list/approve/
+// reject over `/api/cms/approvals`) was deleted on 2026-09-19 with the route and
+// the admin panel it fed: content exceptions are reviewed in THE ONE platform
+// approval queue (`features/approvals/`, kind `cms_content_exception`) and
+// decided on the server (`POST /cms/exceptions/{id}/approve|reject`), which
+// replays the ordinary human write path. A client-side flip of `status` /
+// `reviewed_by` was a second writer of a standing safety policy. `ContentException`
+// in `../types` stays — it is the P3 contract shape.

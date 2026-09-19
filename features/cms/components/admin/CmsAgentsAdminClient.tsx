@@ -7,10 +7,13 @@ import { CmsSiteService } from '../../services/cmsService';
 import type { ClientSiteSummary } from '../../types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, AlertCircle, Radio } from 'lucide-react';
+import { useAppSelector } from '@/lib/redux/hooks';
+import { selectUserId } from '@/lib/redux/selectors/userSelectors';
+import { selectActiveOrganizationId } from '@/features/scopes/redux/selectors/active-context';
+import { ApprovalQueue } from '@/features/approvals/ApprovalQueue';
 import ActivityFeedPanel from './ActivityFeedPanel';
 import SitePageTreePanel from './SitePageTreePanel';
 import PolicyEditorPanel from './PolicyEditorPanel';
-import ApprovalsQueuePanel from './ApprovalsQueuePanel';
 import AssetsPanel from './AssetsPanel';
 
 export default function CmsAgentsAdminClient() {
@@ -18,6 +21,10 @@ export default function CmsAgentsAdminClient() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState('activity');
+    // The approvals queue is addressed to a PERSON in an organization — the same
+    // scope `/approvals` mounts, so this tab and that page agree row for row.
+    const userId = useAppSelector(selectUserId);
+    const organizationId = useAppSelector(selectActiveOrganizationId);
 
     const fetchSites = useCallback(async () => {
         try {
@@ -85,7 +92,7 @@ export default function CmsAgentsAdminClient() {
                         Agent Policies
                     </TabsTrigger>
                     <TabsTrigger value="approvals" className="text-xs">
-                        Approvals Queue
+                        Content Exceptions
                     </TabsTrigger>
                     <TabsTrigger value="assets" className="text-xs">
                         Assets
@@ -101,8 +108,21 @@ export default function CmsAgentsAdminClient() {
                 <TabsContent value="policies" className="flex-1 min-h-0 mt-2">
                     <PolicyEditorPanel sites={sites} onSiteUpdated={handleSiteUpdated} />
                 </TabsContent>
-                <TabsContent value="approvals" className="flex-1 min-h-0 mt-2">
-                    <ApprovalsQueuePanel />
+                <TabsContent value="approvals" className="flex-1 min-h-0 mt-2 overflow-auto">
+                    {/* 🚨 THE ONE QUEUE, NARROWED — never a second review screen
+                        (chair ruling 2026-09-19, register row Q-1). This tab used
+                        to mount a bespoke CMS panel with its own list, its own
+                        approve/reject writer and no mode line, receipt, doors or
+                        consequence sentence. It now mounts the platform queue with
+                        a `kinds` filter, which is how every host narrows. The same
+                        rows also appear, unfiltered, at /approvals. */}
+                    <ApprovalQueue
+                        scope={{ key: userId ?? 'cms-agents', organizationId, userId }}
+                        kinds={['cms_content_exception']}
+                        title="Content exceptions waiting on you"
+                        defaultExpanded
+                        hideWhenEmpty={false}
+                    />
                 </TabsContent>
                 <TabsContent value="assets" className="flex-1 min-h-0 mt-2">
                     <AssetsPanel sites={sites} />

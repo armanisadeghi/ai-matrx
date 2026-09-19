@@ -526,3 +526,16 @@ export interface GoogleApprovalDecisionPending {
    */
   sentence: string | null;
 }
+
+/**
+ * THE REPLY EVERY DECISION DOOR ANSWERS WITH — one contract, one adapter.
+ *
+ * `GoogleApprovalDecisionPending` above describes it for the Google doors; the
+ * CMS content-exception door (`aidream/api/routers/cms.py` →
+ * `ExceptionDecisionResponse`) answers the SAME five fields, deliberately, so
+ * `./receipt.ts` → `readDecisionReply` stays the ONE reading of "what happened".
+ * A second reply shape would be a second way for a screen to infer an outcome
+ * from a status enum — the inference that once reported a failed apply as a
+ * change that was made.
+ */
+export type ApprovalDecisionReply = GoogleApprovalDecisionPending;
