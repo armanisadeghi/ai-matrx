@@ -193,8 +193,8 @@ describe("the real queue rows survive the tray's ingress parse", () => {
   });
 
   it("the assist's title and body for this exact queue read like English", () => {
-    expect(needsYouTitle(handoffs.length)).toBe(
-      "2 pages are waiting for your browser",
+    expect(needsYouTitle(handoffs.length, "admin's Workspace")).toBe(
+      "2 pages in admin's Workspace are waiting for your browser",
     );
     // The body names WHAT is waiting and nothing else. What the button does is
     // said once, by the action descriptor, one line above the button — saying

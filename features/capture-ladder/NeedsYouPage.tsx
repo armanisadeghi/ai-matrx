@@ -201,6 +201,15 @@ export function NeedsYouPage() {
       <div className="h-full overflow-hidden pt-[var(--shell-header-h)]">
         <div className="h-full overflow-y-auto px-3 py-4">
           <div className="mx-auto flex max-w-3xl flex-col gap-3">
+            {handoffs.length > 0 && organizationName && (
+              // 🚨 A list that does not name its workspace is half a sentence.
+              // The rows here are ONE workspace's; the notice below says what
+              // is waiting in the others. Without this line the person cannot
+              // tell which half they are reading (found on an independent walk).
+              <p className="text-xs text-muted-foreground">
+                Waiting in <span className="font-medium text-foreground">{organizationName}</span>
+              </p>
+            )}
             {handoffs.length > 0 && (
               <NeedsYouAction
                 organizationId={organizationId}

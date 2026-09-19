@@ -23,7 +23,10 @@
 import { useEffect, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { selectUserId } from "@/lib/redux/selectors/userSelectors";
-import { selectOrganizationId } from "@/lib/redux/slices/appContextSlice";
+import {
+  selectOrganizationId,
+  selectOrganizationName,
+} from "@/lib/redux/slices/appContextSlice";
 import { useNeedsYou } from "@/features/capture-ladder/useNeedsYou";
 import { produceNeedsYouAssist } from "@/features/capture-ladder/needsYouAssist";
 
@@ -31,6 +34,7 @@ export function NeedsYouAssistProducer(): null {
   const dispatch = useAppDispatch();
   const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectOrganizationId);
+  const organizationName = useAppSelector(selectOrganizationName);
   const { state, handoffs } = useNeedsYou();
 
   // One sweep in flight at a time, and only when the queue actually changed.
@@ -59,6 +63,7 @@ export function NeedsYouAssistProducer(): null {
     void produceNeedsYouAssist({
       userId,
       organizationId,
+      organizationName,
       handoffs,
       dispatch,
     })
@@ -77,7 +82,7 @@ export function NeedsYouAssistProducer(): null {
       .finally(() => {
         running.current = false;
       });
-  }, [state.kind, handoffs, userId, organizationId, dispatch]);
+  }, [state.kind, handoffs, userId, organizationId, organizationName, dispatch]);
 
   return null;
 }

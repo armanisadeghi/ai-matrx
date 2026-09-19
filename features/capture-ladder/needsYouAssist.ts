@@ -82,10 +82,21 @@ function hostOf(url: string): string {
  * is the button's verb and the one explainer sentence above it — saying it
  * three times is what made the old tray unreadable.
  */
-export function needsYouTitle(count: number): string {
+export function needsYouTitle(
+  count: number,
+  organizationName?: string | null,
+): string {
+  // 🚨 THE WORKSPACE IS IN THE TITLE ON PURPOSE. The dock is addressed to the
+  // PERSON, not to the workspace they happen to be looking at, so a row raised
+  // in one workspace is still shown while they work in another — which is
+  // right, because the action carries its own workspace and works from
+  // anywhere. Without naming it, "a page is waiting for your browser" while
+  // looking at a different workspace is the same ambiguity this whole rework
+  // exists to end (found on an independent walk, 2026-09-19).
+  const where = organizationName ? ` in ${organizationName}` : "";
   return count === 1
-    ? "A page is waiting for your browser"
-    : `${count} pages are waiting for your browser`;
+    ? `A page${where} is waiting for your browser`
+    : `${count} pages${where} are waiting for your browser`;
 }
 
 /**
@@ -169,6 +180,8 @@ export function needsYouAction(args: {
 export interface ProduceNeedsYouArgs {
   userId: string;
   organizationId: string;
+  /** Named in the title so a row seen from another workspace is unambiguous. */
+  organizationName?: string | null;
   handoffs: readonly CaptureHandoff[];
   dispatch: AppDispatch;
   /** Injected so the sweep is testable without a Chrome runtime. */
@@ -217,7 +230,7 @@ export async function produceNeedsYouAssist(
     userId,
     {
       sourceKey: NEEDS_YOU_SOURCE_KEY,
-      title: needsYouTitle(handoffs.length),
+      title: needsYouTitle(handoffs.length, args.organizationName),
       body: needsYouBody(handoffs, { extensionInstalled }),
       action: needsYouAction({
         organizationId,
