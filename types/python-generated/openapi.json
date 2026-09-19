@@ -258050,6 +258050,16 @@
             "title": "Declared In Code",
             "default": false
           },
+          "exists_in_db": {
+            "type": "boolean",
+            "title": "Exists In Db",
+            "default": true
+          },
+          "is_owned": {
+            "type": "boolean",
+            "title": "Is Owned",
+            "default": false
+          },
           "drift_count": {
             "type": "integer",
             "title": "Drift Count",
