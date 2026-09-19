@@ -538,7 +538,6 @@
     "check:store-doors-decide": "tsx scripts/check-store-doors-decide.ts",
     "check:store-doors-decide:self-test": "tsx scripts/check-store-doors-decide.ts --self-test"
   },
-  "//TEMPORARY-vendor-tarballs": "@ai-matrx/records and @ai-matrx/records-ui ARE on npm now (records 0.3.3, records-ui 0.3.2), but the published versions are BEHIND the fixes this app depends on — the per-call schema routing that keeps the iam trust doors reachable, and the default saved view without which a brand-new table shows no records at all. So they are still consumed from packed tarballs under vendor/. THE SWAP, one line each, the day a release carrying those lands: set both to \"latest\" here and in pnpm.overrides, delete vendor/, run pnpm install.",
   "dependencies": {
     "@ai-matrx/agents": "latest",
     "@ai-matrx/alchemy": "latest",
@@ -557,8 +556,8 @@
     "@ai-matrx/messaging": "latest",
     "@ai-matrx/print": "latest",
     "@ai-matrx/realtime": "latest",
-    "@ai-matrx/records": "file:vendor/ai-matrx-records-0.3.0.tgz",
-    "@ai-matrx/records-ui": "file:vendor/ai-matrx-records-ui-0.4.2.tgz",
+    "@ai-matrx/records": "latest",
+    "@ai-matrx/records-ui": "latest",
     "@ai-matrx/tap-target": "latest",
     "@ai-sdk/google": "^4.0.68",
     "@anthropic-ai/sdk": "latest",
@@ -831,7 +830,7 @@
       "react-dom": "latest",
       "@types/react": "latest",
       "@types/react-dom": "latest",
-      "@ai-matrx/records": "file:vendor/ai-matrx-records-0.3.0.tgz"
+      "@ai-matrx/records": "latest"
     },
     "ignoredBuiltDependencies": [
       "@tsparticles/engine",
