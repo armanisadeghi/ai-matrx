@@ -209,7 +209,13 @@ export default function ModelUsageAudit({
             className="h-8 w-full justify-between text-xs"
           />
           {replaceError && (
-            <p className="text-destructive text-xs">{replaceError}</p>
+            <p
+              role="status"
+              className="inline-flex items-center gap-1 text-xs font-medium text-destructive"
+            >
+              <AlertTriangle className="h-3 w-3" aria-hidden />
+              Couldn&apos;t replace
+            </p>
           )}
           {selectedReplacement && (
             <p className="text-xs text-muted-foreground">
@@ -325,6 +331,7 @@ export default function ModelUsageAudit({
           }
           value={pendingSettings}
           onChange={setPendingSettings}
+          onReplacementModelChange={setReplacementId}
           onApply={handleApplyWithSettings}
           onCancel={handleCancel}
           applying={replacing}
