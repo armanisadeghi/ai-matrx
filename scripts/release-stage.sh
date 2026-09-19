@@ -195,6 +195,12 @@ release_stage_commit() {
 # ── Self-test ────────────────────────────────────────────────────────────────
 _release_stage_self_test() {
     set -euo pipefail
+    # ship.sh exports the real invoker's directory before release.sh changes
+    # directories.  The harness below deliberately creates its own throwaway
+    # repositories, so inheriting that production caller makes every relative
+    # fixture path resolve against the real checkout and falsely look outside
+    # the fixture repository.
+    unset RELEASE_STAGE_CALLER_PWD
     local here; here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
     _RS_TMP="$(mktemp -d)"
     local tmp="$_RS_TMP"
