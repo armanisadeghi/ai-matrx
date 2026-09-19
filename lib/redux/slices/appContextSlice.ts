@@ -50,6 +50,7 @@ import { definePolicy } from "@/lib/sync/policies/define";
 import { getIdentity } from "@/lib/sync/identity";
 import { activeOrgCookie } from "@/lib/organizations/activeOrgCookie";
 import { selectOrgBootstrapFailure } from "@/lib/organizations/orgBootstrapFailure";
+import { selectShouldPromptForOrganization } from "@/lib/organizations/shouldPromptForOrganization";
 import { markOrgBootstrapResolved } from "@/lib/organizations/orgBootstrapGate";
 import {
   REHYDRATE_ACTION_TYPE,
@@ -450,20 +451,19 @@ export const selectOrgBootstrapResolved = (
 
 /**
  * True when the UI should actively nudge the user to choose an org: the
- * bootstrap has resolved AND no org is explicitly selected. The single source
- * of truth for showing the red avatar ring and the header reminder peek.
+ * bootstrap has resolved, no org is explicitly selected, AND the read that
+ * would have told us about their memberships succeeded (🚨 a failed read is
+ * never the nudge — R37). The single source of truth for showing the red
+ * avatar ring and the header reminder peek.
+ *
+ * DEFINED IN A PURE LEAF (`lib/organizations/shouldPromptForOrganization.ts`),
+ * exactly like `selectOrgBootstrapFailure` below, and re-exported here for
+ * ordinary Redux consumers. The gate primitive reads BOTH of its inputs from
+ * leaves, so a surface test that stands THIS module in with the one or two
+ * selectors it knew about does not break the day the gate learns another one —
+ * read that file's header before moving the definition back.
  */
-export const selectShouldPromptForOrganization = (
-  state: StateWithAppContext,
-): boolean =>
-  state.appContext.orgBootstrapResolved &&
-  state.appContext.organization_id == null &&
-  // 🚨 A FAILED READ IS NEVER THE NUDGE (R37). "Select an organization" is a
-  // statement about the person's memberships, and it may only be made once we
-  // have READ them. When the read failed we know nothing about them, so the
-  // red ring, the header reminder and every surface derived from this selector
-  // stay quiet and the fourth state speaks instead.
-  state.appContext.orgBootstrapFailure == null;
+export { selectShouldPromptForOrganization };
 
 /**
  * Why the organization question has no answer, or null when it has one (or is

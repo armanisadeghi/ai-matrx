@@ -299,6 +299,29 @@ Per-module rules live in `org_module_settings` (set in Manage → Modules). Enfo
 
 ## Change log
 
+- `2026-09-19` — **THE GATE'S SECOND INPUT BECAME A PURE LEAF TOO (owed from
+  F-102).** F-102 moved `orgBootstrapFailure` out of `appContextSlice` so that a
+  surface test standing that slice in with the two selectors it knew about could
+  not be broken by the gate learning a new input. `selectShouldPromptForOrganization`
+  — the gate's OTHER slice input — was left behind, so the class was half
+  closed: an incomplete stand-in (`{ selectOrganizationId }` alone, which is
+  every stand-in written before the nudge selector existed) still died with
+  `TypeError: selector is not a function` the moment its surface adopted
+  `useOrganizationRequired`. The definition now lives in
+  **`lib/organizations/shouldPromptForOrganization.ts`**, a leaf that imports
+  only the `orgBootstrapFailure` leaf, built with `createSelector` over three
+  one-property readers (resolved / selected id / failure) that each read
+  defensively, because the state a stand-in hands them may predate a field.
+  `appContextSlice` imports it and re-exports it under the same name for
+  ordinary Redux consumers — ONE definition, no twin — and the gate now reads
+  exactly ONE member of the slice, `selectOrganizationId`. Behaviour is
+  unchanged in all four states. Proof:
+  `features/organizations/__tests__/the-gate-survives-an-incomplete-slice-standin.organization-context.test.tsx`
+  renders a consumer over `makeAppContextState` (THE FIXTURE LAW) through a
+  stand-in carrying `selectOrganizationId` alone — 5 tests, all five RED on the
+  prior bytes with `TypeError: selector is not a function`, all five green on
+  these.
+
 - `2026-09-18` — **F-110 (V-24, NEW-3): THE FOURTH STATE'S REMEDY IS THE PRESS —
   a sentence never names a button that is not on the screen.** The `unavailable`
   control title ended "Try again." while the control could not be pressed, and
