@@ -68804,6 +68804,19 @@ export type Database = {
           shape: string
         }[]
       }
+      unified_data_ramp_exit: {
+        Args: never
+        Returns: {
+          engine_new: string
+          engine_old: string
+          exit_date: string
+          exit_trigger: string
+          id: string
+          note: string
+          owner_name: string
+          status: string
+        }[]
+      }
       unified_data_ramp_gate: {
         Args: { p_consumer: string; p_organization_id: string }
         Returns: unknown
@@ -68814,22 +68827,40 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      unified_data_ramp_set: {
-        Args: {
-          p_consumer: string
-          p_note?: string
-          p_on: boolean
-          p_organization_id: string
-          p_user_id?: string
-        }
-        Returns: unknown
-        SetofOptions: {
-          from: "*"
-          to: "ramp_gate_run"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+      unified_data_ramp_set:
+        | {
+            Args: {
+              p_consumer: string
+              p_note?: string
+              p_on: boolean
+              p_organization_id: string
+              p_user_id?: string
+            }
+            Returns: unknown
+            SetofOptions: {
+              from: "*"
+              to: "ramp_gate_run"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
+        | {
+            Args: {
+              p_acting_user_id?: string
+              p_consumer: string
+              p_note?: string
+              p_on: boolean
+              p_organization_id: string
+              p_user_id?: string
+            }
+            Returns: unknown
+            SetofOptions: {
+              from: "*"
+              to: "ramp_gate_run"
+              isOneToOne: true
+              isSetofReturn: false
+            }
+          }
       unified_data_ramp_state: {
         Args: { p_organization_id: string }
         Returns: {
