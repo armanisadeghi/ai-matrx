@@ -62324,7 +62324,6 @@ export type Database = {
           updated_by: string | null
           user_code: string
           version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           approved_by?: string | null
@@ -62343,7 +62342,6 @@ export type Database = {
           updated_by?: string | null
           user_code: string
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           approved_by?: string | null
@@ -62362,7 +62360,6 @@ export type Database = {
           updated_by?: string | null
           user_code?: string
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
@@ -62432,7 +62429,6 @@ export type Database = {
           used_streams: number
           user_id: string
           version: number
-          visibility: Database["platform"]["Enums"]["visibility"]
         }
         Insert: {
           created_at?: string
@@ -62449,7 +62445,6 @@ export type Database = {
           used_streams?: number
           user_id: string
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Update: {
           created_at?: string
@@ -62466,7 +62461,6 @@ export type Database = {
           used_streams?: number
           user_id?: string
           version?: number
-          visibility?: Database["platform"]["Enums"]["visibility"]
         }
         Relationships: [
           {
