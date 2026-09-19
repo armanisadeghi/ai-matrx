@@ -28,7 +28,7 @@
   ],
   "portRange": {
     "min": 3001,
-    "max": 3016
+    "max": 3017
   },
   "reserved": [
     {
@@ -52,7 +52,8 @@
     "W6-HISTORY": 3013,
     "DATA-V2": 3014,
     "W7-OFF": 3015,
-    "UI-EDIT": 3016
+    "UI-EDIT": 3016,
+    "SHARE": 3017
   },
   "noDevServer": {
     "W6-DOCS": "Proves its contract through the document pipeline, not a browser.",

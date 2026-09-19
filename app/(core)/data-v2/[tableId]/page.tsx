@@ -13,6 +13,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RecordsMount, TablePage, personActor, recordsDataSource } from "@ai-matrx/records-ui";
 
+import { recordStoreShare } from "@/features/sharing/components/RecordStoreShareSurface";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -83,7 +84,7 @@ export default function UnifiedDataTableRoute({
               actor: personActor(userId),
               organizationId: organizationId!,
             }}
-            host={{ Link, density: "condensed", members }}
+            host={{ Link, density: "condensed", members, share: recordStoreShare }}
           >
             {/* A table this organization cannot see says so and offers the way
                 back — never the blank frame the 19 September verdict found. */}
