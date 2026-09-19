@@ -111,37 +111,34 @@ export function GoogleTasksImportPanel({
   const [googleAccount, setGoogleAccount] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const load = useCallback(
-    async () => {
-      if (!effectiveOrganizationId) return;
-      abortRef.current?.abort();
-      const controller = new AbortController();
-      abortRef.current = controller;
-      setLoading(true);
-      setError(null);
-      try {
-        const result = await listGoogleTasks({
-          organizationId: effectiveOrganizationId,
-          googleAccount,
-          signal: controller.signal,
-        });
-        setReadFailure(null);
-        setListing(result);
-        setActiveListId((current) => current ?? result.task_lists[0]?.task_list_id ?? null);
-        result.warnings.forEach((warning) => toast.warning(warning));
-      } catch (cause) {
-        if (controller.signal.aborted) return;
-        // 🚨 A FAILED READ IS NOT AN EMPTY READ (F-113): the refusal gets its
-        // own posture, and the superseded listing goes with it — task lists
-        // left on screen under a failure answer a question nobody asked.
-        setReadFailure(readGoogleImportFailure(cause));
-        setListing(null);
-      } finally {
-        if (!controller.signal.aborted) setLoading(false);
-      }
-    },
-    [effectiveOrganizationId, googleAccount],
-  );
+  const load = useCallback(async () => {
+    if (!effectiveOrganizationId) return;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await listGoogleTasks({
+        organizationId: effectiveOrganizationId,
+        googleAccount,
+        signal: controller.signal,
+      });
+      setReadFailure(null);
+      setListing(result);
+      setActiveListId((current) => current ?? result.task_lists[0]?.task_list_id ?? null);
+      result.warnings.forEach((warning) => toast.warning(warning));
+    } catch (cause) {
+      if (controller.signal.aborted) return;
+      // 🚨 A FAILED READ IS NOT AN EMPTY READ (F-113): the refusal gets its
+      // own posture, and the superseded listing goes with it — task lists
+      // left on screen under a failure answer a question nobody asked.
+      setReadFailure(readGoogleImportFailure(cause));
+      setListing(null);
+    } finally {
+      if (!controller.signal.aborted) setLoading(false);
+    }
+  }, [effectiveOrganizationId, googleAccount]);
 
   useEffect(() => {
     void load();
