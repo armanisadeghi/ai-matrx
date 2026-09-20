@@ -6,22 +6,30 @@
 // pick) used to call `requireOrganizationContext(activeOrgId)` on the click.
 // That kernel fails closed, which is right on the wire and wrong on a button:
 // on a fresh sign-in the active organization is still being resolved for a
-// second or two, and a user with several memberships and no stated default
-// can sit with no selection at all — so the "+" answered "Select an
-// organization before sending this request." (a sentence for a programmer)
-// and looked like an auth failure. It never asked the store to finish.
+// second or two, so the "+" answered "Select an organization before sending
+// this request." (a sentence for a programmer) and looked like an auth
+// failure. It never asked the store to finish.
 //
 // This resolver asks. It returns the active organization the moment one is
-// set; while boot is still resolving it WAITS (bounded); once boot has settled
-// with nothing selected it lets the auto-select layer name one from what
-// Redux already holds (stated default → own personal org → sole membership,
-// the canonical rung order), and only when nothing can be named does it
-// refuse — with the same `OrganizationContextError` the kernel throws, so the
-// surface can render the ONE honest screen for it (`OrganizationRequiredNotice`
-// with the picker) instead of a red sentence.
+// set; while boot is still resolving it WAITS (bounded); and once boot has
+// settled with nothing selected it opens the picker and waits for the person
+// to SET one.
+//
+// 🚨 IT NO LONGER PICKS (Arman, 2026-09-19). Between those last two steps it
+// used to apply a rung order — stated default-org preference, then the
+// person's own personal workspace — and dispatch that selection itself, so a
+// note could be filed in an organization nobody named. Both rungs are gone: a
+// "default organization" is at most a per-client display preference that only
+// the picker may read, and nothing may choose an organization for the person
+// from a preference or their personal org.
+//
+//   "one missed org check that should have just failed turns into 50 in a
+//    month and 5,000 in a year, and suddenly we don't have orgs any more, we
+//    have a user and a default org, which means we just have user now."
 //
 // The write still carries an explicit organization id: nothing here
-// substitutes one per request, it waits for the SELECTION to exist.
+// substitutes one per request, it waits for the SELECTION to exist — and now
+// asks for it when it does not.
 
 import { useCallback } from "react";
 import { useAppStore } from "@/lib/redux/hooks";
@@ -33,27 +41,11 @@ import {
 import {
   selectOrganizationId,
   selectOrgBootstrapResolved,
-  selectPersonalOrganizationId,
 } from "@/lib/redux/slices/appContextSlice";
-import { selectDefaultOrganizationId } from "@/lib/redux/preferences/userPreferenceSelectors";
-import { selectOrganizationsList } from "@/features/scopes/redux/selectors/tree";
-import { pickActiveOrganization } from "@/features/organizations/hooks/useActiveOrganizationAutoSelect";
-import { chooseActiveOrganization } from "@/lib/redux/thunks/activeOrgBootstrap";
+import { ensureOrganizationContext } from "@/lib/organization/organization-gate";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/** The scope tree and preference slices are not mounted in every store this
- *  resolver can meet (a notes-only test store, an embedded host); an absent
- *  slice reads as "nothing to name from", never as a crash. */
-function memberships(state: RootState): ReturnType<typeof selectOrganizationsList> {
-  return (state as { scopesTree?: unknown }).scopesTree ? selectOrganizationsList(state) : [];
-}
-function defaultOrganizationId(state: RootState): string | null {
-  return (state as { userPreferences?: unknown }).userPreferences
-    ? selectDefaultOrganizationId(state)
-    : null;
 }
 
 /** How long a click waits for boot to name the organization before refusing. */
@@ -111,35 +103,22 @@ export async function resolveNewNoteOrganization(
 
     const resolved = selectOrgBootstrapResolved(state);
     if (resolved) {
-      // Boot settled with nothing selected. Apply the canonical rung order
-      // (stated default → own personal org → sole membership) to what Redux
-      // holds and SELECT it — the same choice `useActiveOrganizationAutoSelect`
-      // makes, made here because on /notes that hook is mounted only inside
-      // the header's picker popover, which nothing has opened.
-      const nameable = pickActiveOrganization(
-        memberships(state),
-        defaultOrganizationId(state),
-        selectPersonalOrganizationId(state),
-      );
-      if (nameable && store.dispatch) {
-        console.warn(
-          "[notes] No active organization after boot while one could be named — selecting it for the new note.",
-          { selected: nameable.id },
-        );
-        store.dispatch(chooseActiveOrganization({ id: nameable.id, name: nameable.name }));
-        continue;
-      }
-      if (!nameable) {
-        // Nothing can be named from Redux. Refuse with the kernel's error so
-        // the surface renders the ONE honest screen for it — the organization
-        // notice with the picker inside. (Not the modal chooser: its
-        // registration is module-global and outlives the surface that mounted
-        // it, so a later click could wait forever on a chooser nobody sees.)
-        throw new OrganizationContextError(
-          "organization_context_required",
-          "Choose the organization this note belongs to.",
-        );
-      }
+      // Boot has looked and settled with nothing selected. It used to apply a
+      // rung order here — stated default → own personal org → sole membership
+      // — and SELECT one silently, "the same choice
+      // `useActiveOrganizationAutoSelect` makes". Both of the first two rungs
+      // were deleted on 2026-09-19: a default organization is at most a
+      // display preference, and nothing may pick an organization for the
+      // person from a preference or their personal workspace. The sole
+      // membership case never reaches here — boot itself takes it, because
+      // there is nothing to choose.
+      //
+      // So the note asks, through the ONE gate every held action uses: the
+      // picker opens, the person SETS an organization, that becomes the active
+      // organization globally, and the note is created in it. Cancelling
+      // throws `OrganizationSelectionCancelled`, which every caller treats as
+      // "nothing happened" — no note, no toast, no lost title.
+      return ensureOrganizationContext();
     }
 
     const remaining = deadline - now();
