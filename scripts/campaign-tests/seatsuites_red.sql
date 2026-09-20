@@ -399,6 +399,20 @@ begin
     values ('custom','system_enabled','organization',v_org,v_org,'true'::jsonb,'inv');
   insert into custom.record (organization_id,table_id,data) values (v_org,null,jsonb_build_object('name','Home')) returning id into v_home;
   perform set_config('role','authenticated',true);
+  -- THE SEAT, PROVEN. Without these three lines "taking the seat" is a spelling, not a fact.
+  if current_user <> 'authenticated' then
+    raise exception '0: this suite did not take the seat — current_user is %', current_user;
+  end if;
+  if pg_has_role(current_user,
+                 (select c.relowner from pg_class c where c.oid = 'custom.record'::regclass),
+                 'member') then
+    raise exception '0: this seat is a member of the role that owns custom.record, so every wall would open on its first line';
+  end if;
+  begin
+    perform 1 from custom.record limit 1;
+    raise exception '0: this seat can SELECT custom.record directly, so it is not a client seat';
+  exception when insufficient_privilege then null;
+  end;
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
     'name','ZZ Inv','slug','zz_seat_inv','type','entity','label_singular','I','label_plural','Is',
     'title_field','pname','display','page','weight','light','ordered',false,'row_order','sorted',

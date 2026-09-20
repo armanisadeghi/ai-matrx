@@ -12,6 +12,29 @@
 -- R3 — "who could see this on that day" could not be asked at all.
 -- R4 — a field type change through the ordinary write door rewrote every value and left no
 --      Migration row.
+--
+-- 🚨 THE SEAT (lane SEAT-SUITES, 2026-09-19). A red twin's job is to prove the GREEN suite's
+-- clauses flip, so it has to ask the SAME questions from the SAME seat. It used to run every
+-- clause as the role that OWNS `custom.record` — where `custom.assert_client_may_reach` returns
+-- on its first line, every EXECUTE grant is free, SECURITY INVOKER and SECURITY DEFINER are the
+-- same thing and the table is directly readable and writable — and it asked `custom.has_visibility`,
+-- which is nobody's door, about a principal who was never signed in. It now takes the seat
+-- `authenticated` in PART 0 and proves it holds it, and asks:
+--   R1  `custom.query_can_see` AS `test@test.com` — the one door every read in the store climbs
+--   R2  `custom.read_record` and `custom.relation_targets`, from the seat, for the edge that
+--       reached into the other organization
+--   R3  `custom.visibility_as_of` CALLED, from the seat, rather than looked up in the catalogue
+--   R4  `custom.record_update` — the ordinary write door the clause is named after — and
+--       `custom.migrations`, the history door, rather than `history.migration_log`
+-- Fixtures go through `custom.table_declare`, `custom.field_declare` and `custom.record_write`.
+--
+-- WHAT STAYS OUTSIDE THE SEAT, and why. Restoring the four pre-VIS-2 bodies, deleting the
+-- client-callable-door rows and dropping the as-of door are DDL: no door does DDL. And R2's edge
+-- itself has NO client door at all — measured on the main database 2026-09-19,
+-- `custom.relation_carry` refuses a record in another organization by name and
+-- `custom.field_declare` refuses a `relation` column outright — so the edge is written by the
+-- operator, which says so, and the CLAUSE is then asked from the seat: a person in organization A
+-- holds and can read a link into organization B.
 
 \set ON_ERROR_STOP on
 \timing off
@@ -662,109 +685,179 @@ drop function if exists custom.visibility_as_of(uuid, uuid, timestamptz);
 -- ─────────────────────────────────────────────── the same fixtures the green suite uses
 do $t$
 declare
-  v_a constant uuid := '2f5e0000-0000-4a00-8a00-000000000a01';
-  v_b constant uuid := '2f5e0000-0000-4a00-8a00-000000000b01';
-  v_korg constant uuid := '11111111-0000-4000-8000-000000000004';
-  v_admin constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
-  v_dana constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
-  v_hq   constant uuid := '2f5e0000-0000-4a00-8a00-000000000101';
-  v_tbl  constant uuid := '2f5e0000-0000-4a00-8a00-000000000201';
-  v_rec  constant uuid := '2f5e0000-0000-4a00-8a00-000000000301';
-  v_hq_b constant uuid := '2f5e0000-0000-4a00-8a00-000000000501';
-  v_recb constant uuid := '2f5e0000-0000-4a00-8a00-000000000601';
-  v_fld  constant uuid := '2f5e0000-0000-4a00-8a00-000000000801';
-  v_t uuid; v_bt uuid; v_n integer; v_red integer := 0;
+  c_admin   constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';   -- admin@admin.com
+  c_dana    constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';   -- test@test.com
+  c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
+  c_dana_j  constant text := '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}';
+  v_a    uuid := gen_random_uuid();
+  v_b    uuid := gen_random_uuid();
+  v_hq   uuid; v_hq_b uuid; v_tbl uuid; v_bt uuid; v_rec uuid; v_recb uuid; v_fld uuid;
+  v_edge uuid; v_n integer; v_red integer := 0; v_caught text;
+  v_boss text := current_user;   -- the connected role, for the one edge no client door can make
 begin
+  if (select system_identifier from pg_control_system()) <> 7642734024280108049 then
+    raise exception 'vis2_red.sql runs on the MAIN database only, and this is %',
+      (select system_identifier from pg_control_system());
+  end if;
+
+  perform set_config('app.actor_system', 'campaign-test/vis2_red', true);
+  perform set_config('request.jwt.claims', c_admin_j, true);
+
   insert into iam.organizations (id, name, slug, abbreviation, created_by)
-  values (v_a, 'VIS-2 Red A', 'vis2-red-a', 'VRA', v_admin),
-         (v_b, 'VIS-2 Red B', 'vis2-red-b', 'VRB', v_admin);
+  values (v_a, 'VIS-2 Red A', 'vis2-red-a-' || substr(v_a::text, 1, 8), 'VRA', c_admin),
+         (v_b, 'VIS-2 Red B', 'vis2-red-b-' || substr(v_b::text, 1, 8), 'VRB', c_admin);
   insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
-  values (v_a, 'organization', v_a, v_admin, 'owner',  'active'),
-         (v_a, 'organization', v_a, v_dana,  'member', 'active'),
-         (v_b, 'organization', v_b, v_admin, 'owner',  'active');
+  values (v_a, 'organization', v_a, c_admin, 'owner',  'active'),
+         (v_a, 'organization', v_a, c_dana,  'member', 'active'),
+         (v_b, 'organization', v_b, c_admin, 'owner',  'active');
+  -- The store answers a person only where it is switched on.
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom','system_enabled','organization', v_a, v_a, 'true'::jsonb, 'vis2_red'),
+         ('custom','system_enabled','organization', v_b, v_b, 'true'::jsonb, 'vis2_red'),
+         -- R1's whole subject: organization A says membership alone conveys NOTHING.
+         ('custom','member_default_visibility','organization', v_a, v_a, '"shared_only"'::jsonb, 'vis2_red');
 
-  insert into custom.record (id, organization_id, table_id, data_class, data, created_by)
-  values (v_hq, v_a, v_korg, 'record', jsonb_build_object('name', 'Red HQ'), v_admin),
-         (v_hq_b, v_b, v_korg, 'record', jsonb_build_object('name', 'Red B HQ'), v_admin);
+  -- Two Home records. A Home is made by the onboarding path and no client door covers it.
+  insert into custom.record (organization_id, table_id, data, created_by)
+  values (v_a, null, jsonb_build_object('name', 'Red HQ'),   c_admin) returning id into v_hq;
+  insert into custom.record (organization_id, table_id, data, created_by)
+  values (v_b, null, jsonb_build_object('name', 'Red B HQ'), c_admin) returning id into v_hq_b;
 
-  v_t := custom.table_declare(v_a, jsonb_build_object(
+  -- ════════════════════════════════════════════════════════════════════════════
+  -- PART 0 — THE SEAT. Everything below this line runs as a signed-in person.
+  -- ════════════════════════════════════════════════════════════════════════════
+  perform set_config('role', 'authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception '0: this suite did not take the seat — current_user is %', current_user;
+  end if;
+  if pg_has_role(current_user,
+                 (select c.relowner from pg_class c where c.oid = 'custom.record'::regclass),
+                 'member') then
+    raise exception '0: this seat is a member of the role that owns custom.record, so every wall would open on its first line';
+  end if;
+  begin
+    perform 1 from custom.record limit 1;
+    raise exception '0: this seat can SELECT custom.record directly, so it is not a client seat';
+  exception when insufficient_privilege then null;
+  end;
+  raise notice 'PART 0 PASSED — the seat is `authenticated`, the ladder sees a client, and custom.record is not readable from it.';
+
+  v_tbl := custom.table_declare(v_a, jsonb_build_object(
     'name', 'Case', 'slug', 'vis2_red_case', 'label_singular', 'Case', 'label_plural', 'Cases',
     'type', 'entity', 'display', 'list', 'ordered', false, 'weight', 'light', 'retention_days', 30,
     'default_sort', '[]'::jsonb, 'row_order', 'sorted', 'agent_writable', true,
-    'fields', jsonb_build_array(jsonb_build_object('name', 'title', 'kind', 'text'),
-                                jsonb_build_object('name', 'severity', 'kind', 'text')),
+    'fields', jsonb_build_array(jsonb_build_object('name', 'title'),
+                                jsonb_build_object('name', 'severity')),
     'title_field', 'title', 'parent_id', v_hq::text));
-  if v_t is distinct from v_tbl then
-    update custom.record set id = v_tbl where organization_id = v_a and id = v_t;
-    update custom.record set data = data || jsonb_build_object('entity_definition_id', v_tbl::text)
-     where organization_id = v_a and table_id = custom.field_kernel_id()
-       and (data ->> 'entity_definition_id')::uuid = v_t;
-  end if;
+  perform custom.field_declare(v_a, v_tbl, jsonb_build_object('key','title','label','Title','plain','text','sort',10));
+  -- `severity` is a TEXT column holding "3". R4 turns it into a number through the ordinary
+  -- write door and watches what the store does about it.
+  v_fld := custom.field_declare(v_a, v_tbl, jsonb_build_object('key','severity','label','Severity','plain','text','sort',20));
 
   v_bt := custom.table_declare(v_b, jsonb_build_object(
     'name', 'Supplier', 'slug', 'vis2_red_supplier', 'label_singular', 'Supplier', 'label_plural', 'Suppliers',
     'type', 'entity', 'display', 'list', 'ordered', false, 'weight', 'light', 'retention_days', 30,
     'default_sort', '[]'::jsonb, 'row_order', 'sorted', 'agent_writable', true,
-    'fields', jsonb_build_array(jsonb_build_object('name', 'name', 'kind', 'text')),
+    'fields', jsonb_build_array(jsonb_build_object('name', 'name')),
     'title_field', 'name', 'parent_id', v_hq_b::text));
+  perform custom.field_declare(v_b, v_bt, jsonb_build_object('key','name','label','Name','plain','text','sort',10));
 
-  insert into custom.record (id, organization_id, table_id, data_class, data, created_by)
-  values (v_rec, v_a, v_tbl, 'record', jsonb_build_object('title', 'Patient 7', 'severity', '3'), v_admin);
-  insert into custom.record (id, organization_id, table_id, data_class, data, created_by)
-  values (v_recb, v_b, v_bt, 'record', jsonb_build_object('name', 'Acme Ltd'), v_admin);
+  v_rec  := custom.record_write(v_a, v_tbl, jsonb_build_object('title','Patient 7','severity','3','parent_id', v_hq::text));
+  v_recb := custom.record_write(v_b, v_bt,  jsonb_build_object('name','Acme Ltd','parent_id', v_hq_b::text));
 
-  insert into custom.field (id, organization_id, entity_definition_id, key, name, label, type,
-                            relation_target, relation_max, on_target_delete, config,
-                            source, source_config, sensitivity, context_policy,
-                            rules, depends_on, applies_to_types, multi, dated, required, sort)
-  values (v_fld, v_a, v_tbl, 'severity', 'Severity', 'Severity', 'text',
-          null, null, null, '{}'::jsonb, 'manual', '{}'::jsonb, 'internal', 'include',
-          '[]'::jsonb, '[]'::jsonb, '[]'::jsonb, false, false, false, 10);
-
+  -- ════════════════════════════════════════════════════════════════════════════
   -- R1 — the organization says shared_only and IS IGNORED.
-  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value)
-  values ('custom', 'member_default_visibility', 'organization', v_a, v_a, '"shared_only"'::jsonb);
-  if not custom.has_visibility(v_dana, 'record', v_rec, 'viewer') then
+  -- Asked as DANA, through `custom.query_can_see`, the door every read climbs.
+  -- ════════════════════════════════════════════════════════════════════════════
+  -- (The `shared_only` override itself is a fixture, written before the seat with the other
+  --  two — the knob table takes no writes from a client seat, and R1 is about what the KERNEL
+  --  does with the setting, not about who may set it.)
+  perform set_config('request.jwt.claims', c_dana_j, true);
+  if not custom.query_can_see(v_a, v_rec, 'viewer') then
     raise exception 'R1 NOT RED — with the old kernel back, shared_only already worked. The green suite proves nothing.'; end if;
+  -- AND THE CONTROL, so R1 is not a door that says yes to everything: she is a plain member,
+  -- so changing the SHAPE of the table is still refused.
+  v_caught := null;
+  begin
+    perform custom.field_declare(v_a, v_tbl, jsonb_build_object('label','Sneaked in','plain','text'));
+  exception when others then v_caught := sqlerrm;
+  end;
+  if v_caught is null then
+    raise exception 'R1 NOT MEASURED — test@test.com added a column to a table she is not an admin of, so this seat is not a client seat and the answer above means nothing.'; end if;
+  perform set_config('request.jwt.claims', c_admin_j, true);
   v_red := v_red + 1;
-  raise notice 'R1 RED — the organization set "only what is shared" and the member still sees a record nobody shared with her.';
+  raise notice 'R1 RED — the organization set "only what is shared" and the member still sees a record nobody shared with her (custom.query_can_see = true), while the same seat is still refused a shape change.';
 
+  -- ════════════════════════════════════════════════════════════════════════════
   -- R2 — the source Table's flag alone opens the wall, with the other organization never asked.
-  update custom.record set data = data || jsonb_build_object('cross_organization_relations', true)
-   where organization_id = v_a and id = v_tbl;
+  -- ════════════════════════════════════════════════════════════════════════════
+  -- The flag is an ordinary setting on the Table record, set through the ordinary write door.
+  perform custom.record_update(v_a, v_tbl, jsonb_build_object('cross_organization_relations', true));
+
+  -- THE EDGE ITSELF HAS NO CLIENT DOOR. Measured on the main database 2026-09-19:
+  -- `custom.relation_carry` refuses a record in another organization by name, and
+  -- `custom.field_declare` refuses a `relation` column outright — so a person cannot make this
+  -- edge through any door at all, and this ONE step leaves the seat and says so. It asserts no
+  -- product clause while it is out; the clause is asked from the seat, below.
+  perform set_config('role', v_boss, true);
   begin
     insert into custom.record (organization_id, table_id, data_class, data, created_by)
     values (v_a, v_tbl, 'relation',
             jsonb_build_object('from', v_rec::text, 'to', v_recb::text,
                                'role', 'supplier', 'kind', 'referenced', 'carrying', false),
-            v_admin);
-    v_red := v_red + 1;
-    raise notice 'R2 RED — one organization''s Table flag reached into another organization; organization B was never asked.';
+            c_admin)
+    returning id into v_edge;
   exception when foreign_key_violation then
+    perform set_config('role', 'authenticated', true);
     raise exception 'R2 NOT RED — the old wall already required both organizations. The green suite proves nothing.';
   end;
+  perform set_config('role', 'authenticated', true);
 
-  -- R3 — the question cannot be asked at all.
-  if to_regprocedure('custom.visibility_as_of(uuid, uuid, timestamptz)') is not null then
-    raise exception 'R3 NOT RED — the as-of door is still there, so "it did not exist" is not what is being shown.'; end if;
+  -- AND NOW THE CLAUSE, from the seat: a person in organization A holds a live link that reaches
+  -- a record organization B never agreed to, and can read both ends of it.
+  if not (custom.record_resolve(v_a, v_edge) ->> 'live')::boolean then
+    raise exception 'R2 NOT RED — the edge did not survive, so "one organization''s flag opened the wall" is not what is being shown.'; end if;
+  if (custom.read_record(v_a, v_edge, true) ->> 'to') <> v_recb::text then
+    raise exception 'R2 NOT RED — the read door in organization A does not hand back a link naming organization B''s record.'; end if;
+  if not exists (select 1 from custom.relation_targets(v_a, v_edge, 'to') t where t = v_recb) then
+    raise exception 'R2 NOT RED — the relation door in organization A does not name organization B''s record as the target.'; end if;
   v_red := v_red + 1;
-  raise notice 'R3 RED — there is no function in schema custom that takes a moment in time and returns a principal.';
+  raise notice 'R2 RED — one organization''s Table flag reached into another organization; organization B was never asked, and A''s own read and relation doors hand the link back.';
 
+  -- ════════════════════════════════════════════════════════════════════════════
+  -- R3 — the question cannot be asked at all.
+  -- CALLED from the seat, not looked up in the catalogue: what matters is that a person asking
+  -- "who could see this on that day" gets nothing back.
+  -- ════════════════════════════════════════════════════════════════════════════
+  v_caught := null;
+  begin
+    perform 1 from custom.visibility_as_of(v_a, v_rec, now()) limit 1;
+  exception when undefined_function then
+    v_caught := sqlerrm;
+  end;
+  if v_caught is null then
+    raise exception 'R3 NOT RED — the as-of door answered, so "it did not exist" is not what is being shown.'; end if;
+  v_red := v_red + 1;
+  raise notice 'R3 RED — a person asking "who could see this, and when" is told there is no such function: %', left(v_caught, 90);
+
+  -- ════════════════════════════════════════════════════════════════════════════
   -- R4 — the rewrite happens and the Migration log knows nothing about it.
-  update custom.record
-     set data = data || jsonb_build_object('type', 'range', 'config', jsonb_build_object('kind', 'number'))
-   where organization_id = v_a and id = v_fld;
-  select count(*) into v_n from history.migration_log
-   where organization_id = v_a and verb = 'retype' and target_kind = 'field' and target_id = v_fld;
+  -- Through `custom.record_update`, which IS "the ordinary write door" the clause names, and
+  -- read back through `custom.migrations`, the history door a person's history panel uses.
+  -- ════════════════════════════════════════════════════════════════════════════
+  perform custom.record_update(v_a, v_fld,
+    jsonb_build_object('type', 'range', 'config', jsonb_build_object('kind', 'number')));
+  select count(*) into v_n from custom.migrations(v_a, v_fld, 50) m
+   where m.verb = 'retype' and m.target_kind = 'field';
   if v_n <> 0 then
-    raise exception 'R4 NOT RED — the old conversion already wrote % migration row(s).', v_n; end if;
-  if (select data ->> 'severity' from custom.record where organization_id = v_a and id = v_rec) is null then
+    raise exception 'R4 NOT RED — the old conversion already wrote % migration row(s) a person can see.', v_n; end if;
+  if (custom.read_record(v_a, v_rec, true) -> 'severity') is null then
     raise exception 'R4 NOT RED — nothing was actually converted, so "rewrote the values and logged nothing" is not what is being shown.'; end if;
   v_red := v_red + 1;
-  raise notice 'R4 RED — a field type change through the ordinary write door rewrote the table''s values and left no Migration row.';
+  raise notice 'R4 RED — a field type change through the ordinary write door rewrote the table''s values and left no Migration row for anyone to find.';
 
   if v_red <> 4 then raise exception 'ONLY % of 4 blocks went red.', v_red; end if;
-  raise notice '4 of 4 blocks are RED (the defects VIS-2 closes were all present before it).';
+  raise notice '4 of 4 blocks are RED (the defects VIS-2 closes were all present before it) — every clause asked from the seat `authenticated`, through the doors a signed-in person reaches.';
 end $t$;
 
 rollback;
