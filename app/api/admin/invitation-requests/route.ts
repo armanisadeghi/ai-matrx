@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * GET /api/admin/invitation-requests
@@ -13,7 +14,7 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const {
       data: { user: authUser },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!authUser) {
       return NextResponse.json(

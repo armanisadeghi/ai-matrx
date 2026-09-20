@@ -27,6 +27,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { probeAndReconcileSandboxRow } from "@/lib/sandbox/reconcile";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export async function POST(
   _request: NextRequest,
@@ -38,7 +39,7 @@ export async function POST(
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (userError || !user) {
       return NextResponse.json(

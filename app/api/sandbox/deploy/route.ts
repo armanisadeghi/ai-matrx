@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * GET  /api/sandbox/deploy → latest matrx-sandbox GHA deploy status
@@ -34,7 +35,7 @@ export async function GET(_request: NextRequest) {
         const {
             data: { user },
             error: userError,
-        } = await supabase.auth.getUser()
+        } = await getClaimsUser(supabase)
         if (userError || !user) {
             return NextResponse.json({ error: 'User not authenticated' }, { status: 401 })
         }
@@ -94,7 +95,7 @@ export async function POST(_request: NextRequest) {
         const {
             data: { user },
             error: userError,
-        } = await supabase.auth.getUser()
+        } = await getClaimsUser(supabase)
         if (userError || !user) {
             return NextResponse.json({ error: 'User not authenticated' }, { status: 401 })
         }

@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { sendEmail, isValidFromAddress, getDefaultFromAddress, getAllowedEmailDomains } from "@/lib/email/client";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * POST /api/admin/email
@@ -14,7 +15,7 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const {
     data: { user: authUser },
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
 
   if (!authUser) {
     return NextResponse.json(

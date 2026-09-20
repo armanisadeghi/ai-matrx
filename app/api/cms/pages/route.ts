@@ -38,6 +38,7 @@ import {
   ResearchLineageValidationError,
   validateResearchLineageIds,
 } from "../_lib/researchLineage";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * Summary columns for list view (no HTML content blobs). `content_stats` is a
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await mainSupabase.auth.getUser();
+    } = await getClaimsUser(mainSupabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

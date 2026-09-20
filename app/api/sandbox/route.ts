@@ -11,6 +11,7 @@ import {
   type SandboxConfig,
 } from "@/types/sandbox";
 import type { Database } from "@/types/database.types";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 type SandboxInstanceInsert =
   Database["public"]["Tables"]["sandbox_instances"]["Insert"];
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (userError || !user) {
       return NextResponse.json(
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (userError || !user) {
       return NextResponse.json(

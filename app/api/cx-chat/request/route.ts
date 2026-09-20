@@ -6,6 +6,7 @@ import {
     deleteCxConversation,
     loadFullConversation,
 } from '@/features/public-chat/services/cx-chat';
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 // Basic UUID v4 pattern
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -72,7 +73,7 @@ export async function POST(request: Request) {
         } = body;
 
         const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await getClaimsUser(supabase);
 
         if (!user) {
             return NextResponse.json(

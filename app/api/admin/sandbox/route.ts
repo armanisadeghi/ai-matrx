@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/utils/supabase/server'
 import { checkIsSuperAdmin } from '@/utils/supabase/userSessionData'
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export async function GET(request: NextRequest) {
     try {
@@ -8,7 +9,7 @@ export async function GET(request: NextRequest) {
         const {
             data: { user },
             error: userError,
-        } = await supabase.auth.getUser()
+        } = await getClaimsUser(supabase)
 
         if (userError || !user) {
             return NextResponse.json({ error: 'User not authenticated' }, { status: 401 })

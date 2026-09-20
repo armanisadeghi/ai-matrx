@@ -23,6 +23,7 @@ import {
   withCmsValidationHeader,
   type CmsContentValidationResult,
 } from "../_lib/validateContent";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export async function POST(request: NextRequest) {
   let contentValidation: CmsContentValidationResult | null = null;
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await mainSupabase.auth.getUser();
+    } = await getClaimsUser(mainSupabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

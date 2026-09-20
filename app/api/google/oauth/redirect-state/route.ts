@@ -2,6 +2,7 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { GOOGLE_OAUTH_REDIRECT_STATE_COOKIE } from "@/providers/google-provider/oauthRedirect";
 import { createClient } from "@/utils/supabase/server";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 const MAX_AGE_SECONDS = 10 * 60;
 
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
   const {
     data: { user },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   if (authError) {
     return NextResponse.json(
       {
@@ -139,7 +140,7 @@ export async function PUT(request: NextRequest) {
   const {
     data: { user },
     error: authError,
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   if (authError) {
     return NextResponse.json(
       {

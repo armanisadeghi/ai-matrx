@@ -7,6 +7,7 @@ import {
   orchestratorJsonHeaders,
   resolvePersistedOrchestrator,
 } from "@/lib/sandbox/orchestrator-routing";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 type SandboxInstance = Tables<"sandbox_instances">;
 
@@ -15,7 +16,7 @@ async function verifyAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
     const {
       data: { user },
       error,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (error || !user)
       return {
         error: NextResponse.json(

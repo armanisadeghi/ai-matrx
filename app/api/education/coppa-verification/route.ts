@@ -16,6 +16,7 @@ import { createClient } from "@/utils/supabase/server";
 import { getStripe, isStripeConfigured } from "@/lib/stripe/server";
 import { ensureStripeCustomer } from "@/features/entitlements/stripe/sync";
 import { COPPA_VERIFICATION_PURPOSE } from "@/features/education/compliance/consent/verificationSync";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,7 +30,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }

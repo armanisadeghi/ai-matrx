@@ -43,6 +43,7 @@ import type {
   CollectionItemFilter,
   SiteCollection,
 } from "@/features/cms/types";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 const SLUG_RE = /^[a-z0-9][a-z0-9_-]{0,62}$/;
 
@@ -450,7 +451,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await mainSupabase.auth.getUser();
+    } = await getClaimsUser(mainSupabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

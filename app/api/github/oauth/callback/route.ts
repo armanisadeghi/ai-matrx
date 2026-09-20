@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { GITHUB_OAUTH_COOKIE, parseGitHubOAuthSession, requestBaseUrl } from "../session";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 type GitHubCompletion = {
   status: string;
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   const { data: { session } } = await supabase.auth.getSession();
   if (!user || !session?.access_token) {
     return errorRedirect(

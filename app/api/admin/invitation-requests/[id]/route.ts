@@ -4,6 +4,7 @@ import { createClient } from "@/utils/supabase/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
 import { SYSTEM_ORGANIZATION_ID } from "@/constants/platform-orgs";
 import { sendInvitationRequestApprovalEmail, sendInvitationRequestRejectionEmail } from "@/features/invitations/emailService";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * PATCH /api/admin/invitation-requests/[id]
@@ -18,7 +19,7 @@ export async function PATCH(
     const supabase = await createClient();
     const {
       data: { user: authUser },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!authUser) {
       return NextResponse.json(
@@ -212,7 +213,7 @@ export async function GET(
     const supabase = await createClient();
     const {
       data: { user: authUser },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!authUser) {
       return NextResponse.json(

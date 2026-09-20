@@ -16,6 +16,7 @@ import {
   FEEDBACK_CATEGORY_SELECT,
   platformCategoryToFeedbackRow,
 } from "../_lib/categoryRow";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 type RouteContext = { params: Promise<{ id: string }> };
 
@@ -38,7 +39,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

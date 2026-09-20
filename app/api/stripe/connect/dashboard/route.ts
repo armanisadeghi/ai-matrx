@@ -9,6 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { getStripe, isStripeConfigured } from "@/lib/stripe/server";
 import { getConnectAccountByUser } from "@/features/entitlements/stripe/connect";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export async function POST(_request: NextRequest) {
   try {
@@ -22,7 +23,7 @@ export async function POST(_request: NextRequest) {
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }

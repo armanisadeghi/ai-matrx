@@ -7,6 +7,7 @@ import { sendEmail } from "@/lib/email/client";
 import { emailTemplates } from "@/lib/email/client";
 import { getContactRatelimiter } from "@/lib/rate-limit/client";
 import { ipRateLimit } from "@/lib/rate-limit/helpers";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * POST /api/contact
@@ -26,7 +27,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     const body = await request.json();
     const { name, email, subject, message } = body;
@@ -143,7 +144,7 @@ export async function GET(request: NextRequest) {
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user) {
       return NextResponse.json(

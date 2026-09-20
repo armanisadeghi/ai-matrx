@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 const COOLIFY_API_URL =
   process.env.COOLIFY_API_URL ?? "https://coolify.app.matrxserver.com/api/v1";
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
 
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

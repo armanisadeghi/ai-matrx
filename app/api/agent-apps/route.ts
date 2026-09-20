@@ -6,6 +6,7 @@ import type { CreateAgentAppInput } from "@/features/agent-apps/types";
 import type { Database } from "@/types/database.types";
 import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { agentAppPublicationPatch } from "@/features/agent-apps/lib/publication";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 type AgentAppInsert = Database["app"]["Tables"]["definition"]["Insert"];
 
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

@@ -19,17 +19,21 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
     const supabase = await createClient();
-    // getUser() re-validates against the auth server rather than trusting the
-    // cookie's own copy — an identity assertion that can be stale is not one.
+    // getClaimsUser() verifies the access token's SIGNATURE locally (WebCrypto,
+    // ES256, against the cached project JWKS) rather than trusting the cookie's
+    // own copy — an identity assertion that can be forged is not one. It is as
+    // trusted as the auth-server round trip getUser() used to make here, and it
+    // is NOT the untrusted getSession() read.
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user) {
       return NextResponse.json(

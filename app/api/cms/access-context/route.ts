@@ -22,6 +22,7 @@ import {
   type CmsPageAccessRecord,
   type CmsSiteAccessRecord,
 } from "../_lib/cmsDb";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 type ResolvedTarget = {
   token: CmsAccessGateToken;
@@ -453,7 +454,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await mainSupabase.auth.getUser();
+    } = await getClaimsUser(mainSupabase);
     if (authError || !user) {
       return NextResponse.json(anonymousPayload(token));
     }

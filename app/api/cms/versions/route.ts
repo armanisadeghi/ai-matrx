@@ -35,6 +35,7 @@ import type {
   ClientEntityVersion,
   ClientEntityVersionDetail,
 } from "@/features/cms/types";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * Columns a version snapshot must never hand back, per entity.
@@ -116,7 +117,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await mainSupabase.auth.getUser();
+    } = await getClaimsUser(mainSupabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -11,6 +11,7 @@ import {
 } from "@/features/agents/services/mcp-oauth/discovery";
 import { isValidOAuthState } from "@/features/agents/services/mcp-oauth/state";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 interface OAuthSession {
   serverId: string;
@@ -107,7 +108,7 @@ export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
 
   if (!user) {
     return buildErrorRedirect(

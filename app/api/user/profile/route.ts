@@ -20,6 +20,7 @@ import {
   isOrganizationRequiredServerError,
   organizationRequiredResponse,
 } from "@/lib/organizations/organizationRequiredResponse";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 // Fields the client is allowed to PATCH on this surface. Anything outside
 // this list is ignored — auth.users has many sensitive metadata namespaces
@@ -57,7 +58,7 @@ export async function GET() {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json(
@@ -115,7 +116,7 @@ export async function PATCH(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json(
@@ -283,6 +284,22 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Echo the new state back so the client can reconcile without a refetch.
+    //
+    // 🚨 THIS ONE READ KEEPS `getUser()`, and it is the only one left in
+    // `app/api`. Everything above resolves the caller from the JWT via
+    // `getClaimsUser` — but this is a read-AFTER-WRITE of `user_metadata`, and
+    // the JWT's `user_metadata` claim is a snapshot taken when the token was
+    // ISSUED. `auth.updateUser` writes to `auth.users`; it does not reissue the
+    // cookie's access token. So a claims read here would echo the person's OLD
+    // name and avatar straight back at the client that just changed them, and
+    // the UI would reconcile to the stale value without a word. Only the auth
+    // server knows what was just saved.
+    //
+    // The better fix is to stop re-reading at all and use the user that
+    // `auth.updateUser` already returns (it is discarded in `applyMetaPatch`);
+    // that needs the write result threaded down here through the branch where
+    // nothing was written. Until then this stays an auth-server round trip on
+    // PATCH only — never on a GET.
     const echoUser = (await supabase.auth.getUser()).data.user;
     const echoMeta = (echoUser?.user_metadata ?? {}) as Record<string, unknown>;
     const { data: echoProfile } = await supabase

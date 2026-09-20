@@ -21,8 +21,8 @@
  * Advisory by default (CI is a signal, never a gate); `--strict` exits non-zero.
  * `--self-test` proves it catches each case before you trust a green run.
  */
-import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
+import { join, relative } from "node:path";
 
 const ROOT = process.cwd();
 const STRICT = process.argv.includes("--strict");
@@ -84,20 +84,63 @@ export function auditProxyAuth(files: Record<string, string>): Finding[] {
   const proxy = files["proxy.ts"];
   if (proxy !== undefined) {
     const matcher = /"(\/\(\(\?![^"]*)"/.exec(proxy)?.[1] ?? "";
-    if (!/\\\\?\.\(\?:.*svg/.test(matcher) && !matcher.includes("svg")) {
+    if (!matcher) {
       findings.push({
         where: "proxy.ts",
-        what: "the matcher no longer excludes static file extensions",
+        what: "no `config.matcher` could be read",
         remedy:
-          "A bag of bytes has no session to refresh. GET /matrx/favicon-32x32.png was starting a " +
-          "Node Lambda and /blob-sw.js timed out at 15s twice. Name the extensions — never match " +
-          "'anything after a dot', which silently stops refreshing /c/<slug-with-a-dot>.",
+          "Without a matcher this pass runs on EVERY request, static bytes included. " +
+          "If the shape changed, teach this guard the new one rather than deleting the check.",
       });
+    } else {
+      // 🚨 ASSERT THE MATCHER AGAINST REAL PATHS, never against its own spelling.
+      // A pattern can look right and behave wrong, and both failure directions
+      // cost something real: a path that should be excluded starts a Lambda, and
+      // a path that should be matched silently stops refreshing the session,
+      // which reads to the person as a random logout.
+      const re = new RegExp(`^${matcher.replace(/\\\\/g, "\\")}$`);
+      for (const [path, shouldMatch] of MATCHER_CASES) {
+        if (re.test(path) !== shouldMatch) {
+          findings.push({
+            where: "proxy.ts",
+            what: `the matcher ${shouldMatch ? "no longer matches" : "now matches"} ${path}`,
+            remedy: shouldMatch
+              ? "This route needs its session refreshed. A blanket extension rule like " +
+                "\\.[a-z]+$ is the usual cause — it eats /c/<slug.with.dot>. Name the extensions."
+              : "A bag of bytes has no session to refresh and no first touch worth capturing. " +
+                "GET /matrx/favicon-32x32.png was starting a Node Lambda and /blob-sw.js timed " +
+                "out at 15s twice. Keep it out of the matcher.",
+          });
+        }
+      }
     }
   }
 
   return findings;
 }
+
+/**
+ * Real paths this app serves, and whether the proxy should wake for them.
+ * The `false` rows are the ones that were costing a Lambda; the `true` rows are
+ * the ones a careless exclusion would silently sign people out of.
+ */
+const MATCHER_CASES: [string, boolean][] = [
+  ["/chat", true],
+  ["/chat/a/506a20fc-34a9-4038-b38b-6c71ab09b173", true],
+  ["/dashboard", true],
+  ["/login", true],
+  ["/administration/users", true],
+  ["/agents/go/db8a01e2-e1d9-4824-b019-953faf7c0a1e", true],
+  ["/education/learn/cell-structure-and-function", true],
+  // A creator slug and a share id may legitimately contain a dot.
+  ["/c/some.brand", true],
+  ["/p/e/fc_set/abc", true],
+  ["/matrx/favicon-32x32.png", false],
+  ["/blob-sw.js", false],
+  ["/styles/app.css", false],
+  ["/api/version", false],
+  ["/_next/static/chunk.js", false],
+];
 
 const WATCHED = [
   "proxy.ts",
@@ -106,12 +149,99 @@ const WATCHED = [
   "utils/supabase/resolveUser.ts",
 ];
 
+/**
+ * THE API-ROUTE HALF.
+ *
+ * Every `app/api/**\/route.ts` is the same hot path as the proxy: one HTTP
+ * request, one identity resolve, and `getUser()` makes that an auth-server
+ * round trip. Nothing dedupes them — React `cache()` is a no-op outside a
+ * render — so a route that resolves the caller three times pays three times.
+ * 134 calls across 104 files went to `getClaimsUser()` on 2026-09-20; there is
+ * no baseline, so any finding here is NEW.
+ *
+ * The exemptions are real: the JWT carries no `created_at`, `updated_at`,
+ * `identities`, `last_sign_in_at`, `factors` or `*_confirmed_at`, so a route
+ * that reads one of those MUST keep `getUser()` — add it to ALLOWED with the
+ * field it reads. `auth.admin.getUserById()` is a different call (a service-role
+ * lookup of SOMEONE ELSE) and is never flagged.
+ */
+const API_ROUTE_ALLOWED: Record<string, string> = {
+  // path -> why this route still needs the auth server
+  "app/api/user/profile/route.ts":
+    "PATCH echoes user_metadata back AFTER auth.updateUser wrote it. The JWT's " +
+    "user_metadata claim is a snapshot from token issuance and updateUser does not " +
+    "reissue the token, so a claims read would echo the OLD name and avatar at the " +
+    "client that just changed them. The caller resolve in the same file IS on " +
+    "getClaimsUser; only the echo read is exempt.",
+};
+
+export function auditApiRoutes(
+  files: Record<string, string>,
+  allowed: Record<string, string> = API_ROUTE_ALLOWED,
+): Finding[] {
+  const findings: Finding[] = [];
+
+  for (const [path, raw] of Object.entries(files)) {
+    if (path in allowed) continue;
+    const body = code(raw);
+    // `.auth.admin.getUserById(...)` looks up another user by id with the
+    // service role. Only the caller-identity read is the hot-path defect.
+    if (!/\.auth\s*\.\s*getUser\s*\(/.test(body)) continue;
+
+    findings.push({
+      where: path,
+      what: "calls auth.getUser() in an API route — an auth-server round trip per HTTP request",
+      remedy:
+        'Use `getClaimsUser(client)` from "@/utils/supabase/resolveUser" — the same ' +
+        "`{ data: { user }, error }` envelope, verified locally against the cached JWKS. " +
+        "For a route that takes a Bearer token, `resolveUser(request)` is the door. " +
+        "If this route genuinely reads created_at / updated_at / identities / " +
+        "last_sign_in_at / factors / *_confirmed_at — none of which are in the JWT — add it " +
+        "to API_ROUTE_ALLOWED in this script, naming the field.",
+    });
+  }
+
+  for (const path of Object.keys(allowed)) {
+    if (path in files && /\.auth\s*\.\s*getUser\s*\(/.test(code(files[path]))) continue;
+    findings.push({
+      where: path,
+      what: "is exempted in API_ROUTE_ALLOWED but no longer calls auth.getUser()",
+      remedy: "Delete the entry. A stale exemption hides the next real one.",
+    });
+  }
+
+  return findings;
+}
+
+/** Every `route.ts` under `app/api`, keyed by repo-relative path. */
+function readApiRoutes(): Record<string, string> {
+  const out: Record<string, string> = {};
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const abs = join(dir, entry.name);
+      if (entry.isDirectory()) walk(abs);
+      else if (entry.name === "route.ts") out[relative(ROOT, abs)] = readFileSync(abs, "utf8");
+    }
+  };
+  const apiRoot = join(ROOT, "app", "api");
+  if (existsSync(apiRoot)) walk(apiRoot);
+  return out;
+}
+
+/**
+ * The matcher this repo actually ships. The "clean" fixtures use it verbatim so a
+ * self-test pass means the real pattern satisfies MATCHER_CASES — a toy matcher
+ * would let the table drift away from production without anyone noticing.
+ */
+const REAL_MATCHER_FIXTURE =
+  'export const config = { matcher: ["/((?!api|_next/static|_next/image|public|auth|app_redirect|app_callback|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest|.*\\\\.(?:js|mjs|css|map|json|txt|xml|svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf|eot|mp3|mp4|webm|wasm|pdf)$).*)"] };';
+
 function selfTest(): boolean {
   const cases: [string, Record<string, string>, number][] = [
     [
       "clean tree",
       {
-        "proxy.ts": 'export const config = { matcher: ["/((?!api|.*\\\\.(?:js|svg|png)$).*)"] };',
+        "proxy.ts": REAL_MATCHER_FIXTURE,
         "utils/supabase/middleware.ts": "if (session.authUnavailable) return session.response;",
       },
       0,
@@ -119,7 +249,7 @@ function selfTest(): boolean {
     [
       "getUser() returns to the proxy path",
       {
-        "proxy.ts": 'export const config = { matcher: ["/((?!api|.*\\\\.(?:js|svg|png)$).*)"] };',
+        "proxy.ts": REAL_MATCHER_FIXTURE,
         "utils/supabase/middleware.ts":
           "const { data } = await client.auth.getUser(); if (session.authUnavailable) return x;",
       },
@@ -128,7 +258,7 @@ function selfTest(): boolean {
     [
       "the app stops reading authUnavailable",
       {
-        "proxy.ts": 'export const config = { matcher: ["/((?!api|.*\\\\.(?:js|svg|png)$).*)"] };',
+        "proxy.ts": REAL_MATCHER_FIXTURE,
         "utils/supabase/middleware.ts": "const user = session.user;",
       },
       1,
@@ -139,12 +269,14 @@ function selfTest(): boolean {
         "proxy.ts": 'export const config = { matcher: ["/((?!api|_next/static).*)"] };',
         "utils/supabase/middleware.ts": "if (session.authUnavailable) return session.response;",
       },
-      1,
+      // One finding per real path that would now wake a Lambda:
+      // /matrx/favicon-32x32.png, /blob-sw.js, /styles/app.css.
+      3,
     ],
     [
       "a comment NAMING getUser is not a call",
       {
-        "proxy.ts": 'export const config = { matcher: ["/((?!api|.*\\\\.(?:js|svg|png)$).*)"] };',
+        "proxy.ts": REAL_MATCHER_FIXTURE,
         "utils/supabase/middleware.ts":
           "// never call client.auth.getUser() here\nif (session.authUnavailable) return session.response;",
       },
@@ -152,9 +284,70 @@ function selfTest(): boolean {
     ],
   ];
 
+  const routeCases: [string, Record<string, string>, number, Record<string, string>?][] = [
+    [
+      "an API route on getClaimsUser is clean",
+      {
+        "app/api/whoami/route.ts":
+          'import { getClaimsUser } from "@/utils/supabase/resolveUser";\n' +
+          "const { data: { user } } = await getClaimsUser(supabase);",
+      },
+      0,
+    ],
+    [
+      "getUser() returns to an API route",
+      {
+        "app/api/whoami/route.ts": "const { data: { user } } = await supabase.auth.getUser();",
+      },
+      1,
+    ],
+    [
+      "a Bearer-token route calling getUser(token) is caught too",
+      {
+        "app/api/extension/append-message/route.ts":
+          "const { data, error } = await bearerClient.auth.getUser(token);",
+      },
+      1,
+    ],
+    [
+      "auth.admin.getUserById() is a different call and is never flagged",
+      {
+        "app/api/feedback/notify/route.ts":
+          "const { data } = await admin.auth.admin.getUserById(feedback.user_id);",
+      },
+      0,
+    ],
+    [
+      "a comment NAMING getUser in a route is not a call",
+      {
+        "app/api/whoami/route.ts":
+          "// getClaimsUser replaced supabase.auth.getUser() here\nconst x = 1;",
+      },
+      0,
+    ],
+    [
+      "an allowed route really does keep getUser()",
+      { "app/api/legacy/route.ts": "const { data } = await supabase.auth.getUser(); user.created_at;" },
+      0,
+      { "app/api/legacy/route.ts": "reads created_at" },
+    ],
+    [
+      "a stale API_ROUTE_ALLOWED entry is itself a finding",
+      { "app/api/legacy/route.ts": "const { data } = await getClaimsUser(supabase);" },
+      1,
+      { "app/api/legacy/route.ts": "reads created_at" },
+    ],
+  ];
+
   let ok = true;
   for (const [name, files, expected] of cases) {
     const got = auditProxyAuth(files).length;
+    const pass = got === expected;
+    if (!pass) ok = false;
+    console.log(`  ${pass ? "PASS" : "FAIL"}  ${name} — expected ${expected}, got ${got}`);
+  }
+  for (const [name, files, expected, allowed] of routeCases) {
+    const got = auditApiRoutes(files, allowed ?? {}).length;
     const pass = got === expected;
     if (!pass) ok = false;
     console.log(`  ${pass ? "PASS" : "FAIL"}  ${name} — expected ${expected}, got ${got}`);
@@ -176,11 +369,13 @@ function main(): void {
     if (existsSync(abs)) files[rel] = readFileSync(abs, "utf8");
   }
 
-  const findings = auditProxyAuth(files);
+  const apiRoutes = readApiRoutes();
+  const findings = [...auditProxyAuth(files), ...auditApiRoutes(apiRoutes)];
   if (findings.length === 0) {
     console.log(
       "check:proxy-auth-hot-path — OK. The proxy resolves identity locally, " +
-        "bounded, and reads authUnavailable; the matcher leaves static bytes alone.",
+        "bounded, and reads authUnavailable; the matcher leaves static bytes alone. " +
+        `All ${Object.keys(apiRoutes).length} app/api routes resolve the caller from the JWT.`,
     );
     return;
   }

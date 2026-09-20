@@ -21,13 +21,14 @@ import {
   getConnectAccountByUser,
   refreshConnectAccount,
 } from "@/features/entitlements/stripe/connect";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export async function GET() {
   try {
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }

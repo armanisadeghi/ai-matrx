@@ -14,6 +14,7 @@ import {
 } from "@/features/agents/services/mcp-oauth/pkce";
 import { validateSupabaseScopedMcpEndpointOverride } from "@/features/agents/services/mcp-oauth/endpoint";
 import { supportsClientIdMetadataDocument } from "@/features/agents/services/mcp-oauth/client-registration";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 const CALLBACK_PATH = "/api/mcp/oauth/callback";
 const CLIENT_METADATA_PATH = "/api/mcp/oauth/client-metadata";
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   if (!user) {
     return errorRedirect(req, returnUrl, "Not authenticated — please sign in");
   }

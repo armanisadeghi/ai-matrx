@@ -24,6 +24,7 @@ import {
 import { resolveOrchestratorByTier } from "@/lib/sandbox/orchestrator-routing";
 import type { components } from "@/types/python-generated/api-types";
 import { isJsonObject } from "@/types/json";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export type SandboxBindingPayload = Required<components["schemas"]["SandboxBindingRequest"]>;
 
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
   const {
     data: { user },
     error: userError,
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   if (userError || !user) {
     return NextResponse.json({ error: "auth_required" }, { status: 401 });
   }

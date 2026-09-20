@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * POST endpoint to manually refresh the AI models cache
@@ -14,7 +15,7 @@ export async function POST() {
         const supabase = await createClient();
 
         // Verify user is authenticated
-        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        const { data: { user }, error: authError } = await getClaimsUser(supabase);
         
         if (authError || !user) {
             return NextResponse.json(

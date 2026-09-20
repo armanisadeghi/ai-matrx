@@ -8,6 +8,7 @@ import {
   platformCategoryToLegacyRow,
   PLATFORM_CATEGORY_SELECT,
 } from "../../_lib/categoryRow";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * POST /api/agent-shortcut-categories/[id]/duplicate
@@ -32,7 +33,7 @@ export async function POST(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

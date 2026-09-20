@@ -14,6 +14,7 @@ import {
   FEEDBACK_CATEGORY_SELECT,
   platformCategoryToFeedbackRow,
 } from "./_lib/categoryRow";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 function authErrorResponse(error: unknown): NextResponse | null {
   const message = error instanceof Error ? error.message : "";
@@ -33,7 +34,7 @@ export async function GET() {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

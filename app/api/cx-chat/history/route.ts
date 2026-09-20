@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { getUserChatHistory } from '@/features/public-chat/services/cx-chat';
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * GET /api/cx-chat/history
@@ -15,7 +16,7 @@ export async function GET(request: Request) {
         const offset = parseInt(searchParams.get('offset') || '0', 10);
 
         const supabase = await createClient();
-        const { data: { user } } = await supabase.auth.getUser();
+        const { data: { user } } = await getClaimsUser(supabase);
 
         if (!user) {
             // Not authenticated — return empty (guest users don't persist yet)

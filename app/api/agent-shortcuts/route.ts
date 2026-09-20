@@ -5,6 +5,7 @@ import { resolveSystemOrgId } from "@/lib/organizations/systemOrg";
 import { shortcutTable } from "@/lib/supabase/shortcutStorage";
 import { toGlobalOwnershipWire, toGlobalOwnershipWireList } from "@/lib/organizations/globalOwnership";
 import { pickWritableShortcutFields } from "./writable-fields";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * Keys the CREATE body legitimately carries that are not columns: the scope
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -6,6 +6,7 @@ import {
     orchestratorJsonHeaders,
 } from '@/lib/sandbox/orchestrator-routing'
 import type { SandboxTier } from '@/types/sandbox'
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * GET /api/sandbox/system?tier=ec2|hosted
@@ -130,7 +131,7 @@ export async function GET(request: NextRequest) {
         const {
             data: { user },
             error: userError,
-        } = await supabase.auth.getUser()
+        } = await getClaimsUser(supabase)
 
         if (userError || !user) {
             return NextResponse.json({ error: 'User not authenticated' }, { status: 401 })

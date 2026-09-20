@@ -3,6 +3,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from "@/utils/supabase/server";
 import { randomBytes } from 'crypto';
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * Generate Extension Auth Code
@@ -19,7 +20,7 @@ import { randomBytes } from 'crypto';
 export async function POST() {
   try {
     const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const { data: { user }, error } = await getClaimsUser(supabase);
 
     if (error || !user) {
       return NextResponse.json(

@@ -14,6 +14,7 @@ import {
   organizationRequiredResponse,
 } from "@/lib/organizations/organizationRequiredResponse";
 import { normalizePhoneNumber } from "@/lib/sms/phoneUtils";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * GET /api/sms/preferences
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json(
@@ -115,7 +116,7 @@ export async function PUT(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json(

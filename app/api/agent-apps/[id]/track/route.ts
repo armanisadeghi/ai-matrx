@@ -3,6 +3,7 @@ import { isUuidShape } from "@ai-matrx/kit/uuid";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import type { TablesUpdate } from "@/types/database.types";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * POST /api/agent-apps/[id]/track
@@ -91,7 +92,7 @@ export async function POST(
     const supabaseSsr = await createClient();
     const {
       data: { user },
-    } = await supabaseSsr.auth.getUser();
+    } = await getClaimsUser(supabaseSsr);
 
     const fingerprint =
       request.headers.get("x-fingerprint-id") ||
