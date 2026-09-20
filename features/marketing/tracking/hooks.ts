@@ -61,7 +61,7 @@ export function useSiteTrackingStatus(site: {
     organizationId: site.organization_id,
     enabled: siteHasTagManagerContainer(site),
   });
-  const knob = useTrackingSnapshotMaxAgeHours();
+  const knob = useTrackingSnapshotMaxAgeHours("chip");
   return {
     snapshot: snapshot.data ?? null,
     maxAgeHours: knob.hours,

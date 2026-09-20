@@ -56,8 +56,14 @@ prevent (V-27 NEW-3).
 caveat #1 for `tag_manager`, printed directly above the server's own list — a fourth copy that
 drifts the moment the server edits its words. `PROVIDER_LAG_SENTENCE` now has no `tag_manager`
 entry at all; the panel hands `DataFreshnessLine` the finding's own `caveats`, and its first
-sentence takes that slot verbatim. `trackingSurfaces.test.ts` greps every non-test source file
-under `features/marketing` for the caveats' words and fails on any copy.
+sentence takes that slot verbatim. `trackingSurfaces.test.ts` greps **every `.ts`/`.tsx` file
+under `app/`, `components/`, `features/` and `lib/`, tests included**, for the caveats' words on
+a line that is also talking about Tag Manager, and fails on any copy. It walked
+`features/marketing` alone until V-29 NEW-5, and a frontend paraphrase of caveat #1 was living
+one directory outside it, in the marketing admin map (`app/(core)/marketing/admin/page.tsx`);
+that description now says only that the server declares its own read's limits and that this repo
+authors none of them. The three suites that pin the server's sentences as FIXTURES are named in
+the guard's allow-list with their reason.
 
 **A payload whose caveats were never declared says so** (V-28 NEW-2). A pre-2026-09-20 row
 carries a singular `caveat` string, or none at all; reading either as `[]` renders no caveat
@@ -75,9 +81,9 @@ can see.
 | `health.ts` | **THE ONE tracking verdict.** Pure, no clock of its own. The chip, the status board and the panel all read it, so they cannot disagree. It also carries `thresholdUnavailable` — the knob reader's own sentence when the staleness threshold could not be read — so every surface prints the same stand-in through ONE channel. |
 | `service.ts` | The two doors: the direct Supabase read of the newest `web.tag_manager_snapshot`, and `POST /google-sync/tag-manager/snapshot` through `postGoogleBackend`. |
 | `hooks.ts` | ONE query key, so the chip on a row and the panel in a window make the same read — and **`useSiteConnectionStatuses`, the ONE way any surface gets the six connection statuses**. The snapshot read is gated on the container binding, so a portfolio of unbound sites costs no queries. |
-| `knobs.ts` | `google.tracking.snapshot_max_age_hours` (168). A missing row raises by design; this turns the raise into a printed stand-in. The reason travels with the value — `useSiteTrackingStatus` passes both into the verdict, so the chip can never read as a silent "never stale". |
+| `knobs.ts` | `google.tracking.snapshot_max_age_hours` (168). A missing row raises by design; this turns the raise into a printed stand-in. The reason travels with the value — `useSiteTrackingStatus` passes both into the verdict, so the chip can never read as a silent "never stale". 🚨 **The stand-in is written for the surface it is READ on**: `useTrackingSnapshotMaxAgeHours(surface)` and `trackingKnobStandIn(reason, { surface })` both take a REQUIRED `"panel" \| "chip"`, and `STAND_IN_OPENING` declares the two openings beside each other over ONE tail — never two sentences, never a copy (V-29 NEW-2). |
 | `components/SiteTrackingPanel.tsx` | **THE canonical panel.** Every surface renders this — the settings card and the window body both wrap it. |
-| `__tests__/` | 41 tests over the derivation, the panel in each graded state, and the three shared primitives U-M2 extended. |
+| `__tests__/` | 61 tests over the derivation, the panel in each graded state, the chip on every surface it is rendered on (including the press/keyboard path), the two repo-wide grep guards, and the three shared primitives U-M2 extended. |
 
 ## Where it surfaces
 
@@ -113,6 +119,16 @@ can see.
   stored yet" beside a snapshot we are holding would be a lie about a record in hand. Its lag
   slot holds the SERVER's first caveat when one is declared and **nothing at all** when none is —
   never a frontend guess at what the read does not cover.
+- 🚨 **A chip is a control, not a label with a `title` (V-29 NEW-3).** The detail used to reach
+  the reader through the native `title` attribute alone — hover-only, so on the phone card and
+  for anyone on a keyboard or a screen reader the reason a chip was amber could not be reached at
+  all. Every chip is a focusable `<button>` whose press or tap opens the same words in the
+  platform `Popover` (`@ai-matrx/design-system`), with the `title` kept as the mouse's shortcut to
+  the identical string; the press stops propagating so a chip inside a navigating row or card
+  never opens the record behind it. One component covers every host — `SitePeekBody`, the site
+  table's Connections cell, the phone card's footer and the brand workspace's site list all
+  render `SiteConnectionChips`; `SiteOverview` and `site-surface-base` read the same statuses
+  through the hook and print the detail as page text.
 - **The chips need a React Query client.** They read the snapshot and the knob themselves, so a
   host that renders them outside `QueryClientProvider` throws rather than quietly showing a chip
   derived from nothing. Every route has one; a test that renders a list presentation must supply
@@ -136,6 +152,32 @@ can see.
   jest over fixtures and on reading the live table's generated types.
 
 ## Change log
+
+- **2026-09-20** — **V-29 NEW-2, NEW-3 and NEW-5 closed.**
+  (1) **NEW-2 — the stand-in speaks about the surface it is printed on.** The knob's failure
+  sentence was written for the panel (*"This panel cannot tell you whether the snapshot below is
+  too old…"*) and, once V-28 NEW-1 carried it to the chips, was printed verbatim on the brand's
+  site table, its phone cards and the site record's Connections board — surfaces with no panel
+  and nothing below. `trackingKnobStandIn` now takes a REQUIRED `{ surface }`; one builder, one
+  tail, two openings declared side by side in `STAND_IN_OPENING`. The panel asks for `"panel"`,
+  `useSiteTrackingStatus` asks for `"chip"`, and a new caller must say where it will be read.
+  (2) **NEW-3 — the detail is reachable without a mouse.** Each chip is now a focusable button
+  over the platform `Popover`: press, tap or keyboard opens the same words, and the mobile card —
+  the surface with no hover at all — is covered by the same one component every host renders.
+  (3) **NEW-5 — the census is the whole frontend.** Both grep guards walked `features/marketing`
+  and skipped every test file, so the caveat paraphrase in `app/(core)/marketing/admin/page.tsx`
+  and any future `siteConnectionStatuses` caller in `app/`, `components/`, `lib/` or a test were
+  invisible to them. They now walk all four source roots, tests included; the caveat sweep judges
+  a LINE (fingerprint plus a Tag-Manager subject, so ordinary English elsewhere is not accused)
+  and the call sweep reads code with comments stripped, so a file explaining the rule is not
+  mistaken for a caller. The admin map's paraphrase is replaced with a sentence that claims
+  nothing about what the read covers.
+  Red first: **6 tests failed** on the pre-change source — the chip sentence still naming a panel
+  and pointing below itself, the four press/keyboard assertions with no button to press, and the
+  widened caveat census naming `app/(core)/marketing/admin/page.tsx:1333` — all green after.
+  `npx jest features/marketing` → **224 suites / 2,126 tests passed**; `pnpm check:parse` OK over
+  17,154 files; `pnpm check:dead-ends` clean on both changed directories; scoped `tsc` over the
+  changed files and their hosts: 0 errors in any of them.
 
 - **2026-09-20** — **V-28 NEW-1, NEW-2 and NEW-3 closed, at the class.**
   (1) **NEW-1, shipped:** `siteConnectionStatuses(site, tracking?)` took the tracking input as an

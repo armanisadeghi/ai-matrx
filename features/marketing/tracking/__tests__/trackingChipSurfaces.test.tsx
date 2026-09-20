@@ -26,16 +26,21 @@ import {
 import { useSiteConnectionStatuses } from "@/features/marketing/tracking/hooks";
 import { trackingKnobStandIn } from "@/features/marketing/tracking/knobs";
 
-const STAND_IN = trackingKnobStandIn("readAllRows(platform.feature_knob): query failed");
+const READ_FAILURE = "readAllRows(platform.feature_knob): query failed";
+const STAND_IN = trackingKnobStandIn(READ_FAILURE, { surface: "chip" });
 
+// The mock stands in for the READ, never for the sentence: it hands the surface argument it was
+// given straight to the real builder, so these suites prove which surface noun each caller asks
+// for (V-29 NEW-2) rather than asserting a string this file chose.
 jest.mock("@/features/marketing/tracking/knobs", () => {
   const real = jest.requireActual("@/features/marketing/tracking/knobs");
   return {
     ...real,
-    useTrackingSnapshotMaxAgeHours: () => ({
+    useTrackingSnapshotMaxAgeHours: (surface: "panel" | "chip") => ({
       hours: null,
       unavailableReason: real.trackingKnobStandIn(
         "readAllRows(platform.feature_knob): query failed",
+        { surface },
       ),
       isLoading: false,
     }),
@@ -94,6 +99,16 @@ function siteRow() {
   } as any;
 }
 
+// Radix's popper measures its content when it opens; jsdom ships neither observer.
+if (!Element.prototype.scrollIntoView) Element.prototype.scrollIntoView = function () {};
+if (!("ResizeObserver" in globalThis)) {
+  (globalThis as unknown as { ResizeObserver: unknown }).ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
 let container: HTMLDivElement;
 let root: Root;
 
@@ -109,7 +124,7 @@ function render(node: React.ReactElement) {
   return container;
 }
 
-/** The chip's reason lives in its tooltip, which is the `title` attribute. */
+/** The chip's reason as the native hover tooltip carries it (one of the two ways out). */
 function trackingTitle(el: HTMLElement): string {
   const titles = Array.from(el.querySelectorAll("[title]")).map(
     (node) => node.getAttribute("title") ?? "",
@@ -129,6 +144,15 @@ afterEach(() => {
   act(() => root.unmount());
   container.remove();
 });
+
+/** The chip the reader presses: a real focusable control, not a `<span>` with a `title`. */
+function trackingTrigger(el: HTMLElement): HTMLButtonElement {
+  const trigger = Array.from(el.querySelectorAll("button")).find((node) =>
+    (node.getAttribute("title") ?? "").startsWith("Tag Manager tracking:"),
+  );
+  if (!trigger) throw new Error("no pressable tracking chip");
+  return trigger as HTMLButtonElement;
+}
 
 describe("🚨 an unreadable staleness knob is announced on EVERY chip surface", () => {
   it("the chip component itself — the one every surface renders", () => {
@@ -176,5 +200,85 @@ describe("🚨 an unreadable staleness knob is announced on EVERY chip surface",
   it("the verdict the chip already carried is kept — the stand-in is added, never a replacement", () => {
     const title = trackingTitle(render(<SiteConnectionChips site={siteRow()} />));
     expect(title).toContain("never been checked");
+  });
+});
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// V-29 NEW-2 — the stand-in is written for the surface it is READ on. The panel's sentence
+// ("this panel… the snapshot below") was printed verbatim in chip tooltips on rows that have no
+// panel and nothing below. ONE builder, one tail, a declared opening per surface.
+// ─────────────────────────────────────────────────────────────────────────────
+describe("🚨 the stand-in speaks about the surface it is printed on (V-29 NEW-2)", () => {
+  it("the chip's sentence names no panel and points at nothing below it", () => {
+    const title = trackingTitle(render(<SiteConnectionChips site={siteRow()} />));
+    expect(title).not.toMatch(/\bpanel\b/i);
+    expect(title).not.toMatch(/\bbelow\b/i);
+    // …and it still says the whole thing: what cannot be judged, why, and the remedy.
+    expect(title).toContain("google.tracking.snapshot_max_age_hours");
+    expect(title).toContain("nothing here is being called stale");
+    expect(title).toContain("migrations/google_tracking_knobs.sql");
+  });
+
+  it("the panel's sentence still points at the snapshot below it", () => {
+    const panel = trackingKnobStandIn(READ_FAILURE, { surface: "panel" });
+    expect(panel).toMatch(/\bpanel\b/i);
+    expect(panel).toContain("below");
+  });
+
+  it("the two sentences are one builder: identical from the colon on", () => {
+    const chip = trackingKnobStandIn(READ_FAILURE, { surface: "chip" });
+    const panel = trackingKnobStandIn(READ_FAILURE, { surface: "panel" });
+    const tail = (sentence: string) => sentence.slice(sentence.indexOf(": the "));
+    expect(tail(chip)).toBe(tail(panel));
+    expect(tail(chip)).toContain(READ_FAILURE);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// V-29 NEW-3 — the detail reached the reader through the native `title` attribute alone:
+// hover-only, so on a phone (the mobile card) and by keyboard it could not be reached at all.
+// ─────────────────────────────────────────────────────────────────────────────
+describe("🚨 the chip's detail is reachable without a mouse (V-29 NEW-3)", () => {
+  function pressAndRead(el: HTMLElement): string {
+    const trigger = trackingTrigger(el);
+    act(() => {
+      trigger.click();
+    });
+    return document.body.textContent ?? "";
+  }
+
+  it("the chip is a focusable control, not a span", () => {
+    const trigger = trackingTrigger(render(<SiteConnectionChips site={siteRow()} />));
+    expect(trigger.tagName).toBe("BUTTON");
+    expect(trigger.getAttribute("type")).toBe("button");
+    // Radix wires the disclosure semantics a screen reader announces.
+    expect(trigger.getAttribute("aria-expanded")).toBe("false");
+  });
+
+  it("pressing the chip opens the same detail as text", () => {
+    const text = pressAndRead(render(<SiteConnectionChips site={siteRow()} />));
+    expect(text).toContain("Tag Manager tracking");
+    expect(text).toContain("nothing here is being called stale");
+    expect(text).toContain("never been checked");
+  });
+
+  it("the phone card's chip opens it too — the surface with no hover at all", () => {
+    const el = render(
+      <>
+        {renderSiteListMobileCard(siteRow(), 0, {
+          actions: null,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- only `actions` is read here
+        } as any)}
+      </>,
+    );
+    expect(pressAndRead(el)).toContain("nothing here is being called stale");
+  });
+
+  it("the brand's site TABLE cell opens it too", () => {
+    const column = SITE_LIST_COLUMNS.find((spec) => spec.id === "connections");
+    if (!column?.column.cell) throw new Error("no connections cell");
+    const el = render(<>{column.column.cell(siteRow(), 0)}</>);
+    expect(pressAndRead(el)).toContain("nothing here is being called stale");
   });
 });

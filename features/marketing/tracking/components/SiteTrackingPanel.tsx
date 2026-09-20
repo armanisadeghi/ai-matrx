@@ -157,7 +157,7 @@ export function SiteTrackingPanel({
     siteId: site.id,
     organizationId: site.organization_id,
   });
-  const knob = useTrackingSnapshotMaxAgeHours();
+  const knob = useTrackingSnapshotMaxAgeHours("panel");
   const connector = useGoogleConnectorState();
   const inventory = useTagManagerInventory();
 

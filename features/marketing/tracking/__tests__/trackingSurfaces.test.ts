@@ -209,7 +209,7 @@ describe("the sixth connection chip", () => {
     // The Law-4 failure this closes (V-27 NEW-5): with an unreadable knob the chip stops
     // calling ANYTHING stale, so silence here reads as "checked recently enough" on a site
     // nobody is judging. The reason rides in `detail`, which is the chip's tooltip.
-    const reason = trackingKnobStandIn("knob row missing");
+    const reason = trackingKnobStandIn("knob row missing", { surface: "chip" });
     const { chip } = trackingChip(BOUND, {
       snapshot: null,
       maxAgeHours: null,
@@ -326,29 +326,57 @@ describe("the googleTagManager binding", () => {
 
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 
-function marketingSourceFiles(): string[] {
+/**
+ * 🚨 THE CENSUS IS THE WHOLE FRONTEND, NOT ONE FEATURE FOLDER (V-29 NEW-5).
+ *
+ * Both guards below walked `features/marketing` alone and skipped every test file, so the
+ * claim they support — "nobody else derives the chip", "no caveat sentence is authored here" —
+ * was true only inside their own walk. A frontend-authored paraphrase of the server's first
+ * caveat was living one directory outside it, in `app/(core)/marketing/admin/page.tsx`, and a
+ * future `siteConnectionStatuses` caller in `app/`, `components/` or any `*.test.ts` would have
+ * passed the census unseen. The walk is the four source roots a page can be written in.
+ */
+const SOURCE_ROOTS = ["app", "components", "features", "lib"] as const;
+
+function frontendSourceFiles(options?: { includeTests?: boolean }): string[] {
+  const includeTests = options?.includeTests ?? true;
   const out: string[] = [];
   const walk = (dir: string) => {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        if (entry.name === "__tests__" || entry.name === "node_modules") continue;
+        if (entry.name === "node_modules" || entry.name === ".next") continue;
+        if (!includeTests && entry.name === "__tests__") continue;
         walk(full);
         continue;
       }
       if (!/\.tsx?$/.test(entry.name)) continue;
-      if (/\.test\.tsx?$/.test(entry.name)) continue;
+      if (!includeTests && /\.test\.tsx?$/.test(entry.name)) continue;
       out.push(full);
     }
   };
-  walk(path.join(REPO_ROOT, "features/marketing"));
+  for (const root of SOURCE_ROOTS) walk(path.join(REPO_ROOT, root));
   return out;
 }
 
-describe("🚨 no caveat sentence is authored in the frontend (V-28 NEW-3)", () => {
+function relative(file: string): string {
+  return path.relative(REPO_ROOT, file);
+}
+
+/**
+ * Comments stripped, so the CALL census accuses code and not prose. Every file that explains
+ * why this rule exists names `siteConnectionStatuses(...)` in its header; a guard that reads
+ * those as callers teaches the next agent to stop writing the explanation.
+ */
+function codeOnly(text: string): string {
+  return text.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+}
+
+describe("🚨 no caveat sentence is authored in the frontend (V-28 NEW-3, widened V-29 NEW-5)", () => {
   // The server declares the caveats (aidream `google_sync/kinds.py::TAG_MANAGER_READ_CAVEATS`)
   // and every client prints them verbatim. A frontend copy — even a paraphrase, even in a
-  // comment — is a second authority that drifts the moment the server edits its own words.
+  // comment, even in an admin map's description — is a second authority that drifts the moment
+  // the server edits its own words.
   const CAVEAT_FINGERPRINTS = [
     /workspace draft/i,
     /not what is published/i,
@@ -356,18 +384,55 @@ describe("🚨 no caveat sentence is authored in the frontend (V-28 NEW-3)", () 
     /consent banner/i,
     /declared consent settings/i,
   ];
+  // The fingerprints are ordinary English, so repo-wide they only accuse a line that is ALSO
+  // talking about the thing the server is the authority on. A line about a meeting's consent
+  // banner or a graph node being invisible here is not a caveat copy.
+  const TRACKING_SUBJECT = /tag manager|\bgtm\b|tracking container|tag container/i;
+  // The suites that pin the server's exact words as FIXTURES: they are not a second authority,
+  // they are the assertion that we print the server's words unchanged.
+  const ALLOWED = new Map<string, string>([
+    [
+      "features/marketing/tracking/__tests__/trackingSurfaces.test.ts",
+      "this file: the fingerprints themselves, plus the server's caveats as fixtures",
+    ],
+    [
+      "features/marketing/tracking/__tests__/trackingHealth.test.ts",
+      "pins the server's caveats verbatim as parser fixtures",
+    ],
+    [
+      "features/marketing/tracking/__tests__/SiteTrackingPanel.test.tsx",
+      "asserts the panel prints the server's caveats verbatim",
+    ],
+  ]);
 
-  it("finds no copy of the server's caveat words anywhere under features/marketing", () => {
+  it("finds no copy of the server's caveat words anywhere a page is written", () => {
     const offenders: string[] = [];
-    for (const file of marketingSourceFiles()) {
-      const text = fs.readFileSync(file, "utf8");
-      for (const pattern of CAVEAT_FINGERPRINTS) {
-        if (pattern.test(text)) {
-          offenders.push(`${path.relative(REPO_ROOT, file)} :: ${pattern}`);
+    for (const file of frontendSourceFiles()) {
+      const rel = relative(file);
+      if (ALLOWED.has(rel)) continue;
+      const lines = fs.readFileSync(file, "utf8").split("\n");
+      lines.forEach((line, index) => {
+        if (!TRACKING_SUBJECT.test(line)) return;
+        for (const pattern of CAVEAT_FINGERPRINTS) {
+          if (pattern.test(line)) {
+            offenders.push(`${rel}:${index + 1} :: ${pattern}`);
+          }
         }
-      }
+      });
     }
     expect(offenders).toEqual([]);
+  });
+
+  it("the census reaches outside features/marketing", () => {
+    // The bound V-29 NEW-5 named: a guard whose walk is one feature folder proves nothing about
+    // the page that carries the copy. If this ever goes false the widening was undone.
+    const walked = frontendSourceFiles().map(relative);
+    expect(walked).toContain("app/(core)/marketing/admin/page.tsx");
+    expect(walked.some((rel) => rel.startsWith("components/"))).toBe(true);
+    expect(walked.some((rel) => rel.startsWith("lib/"))).toBe(true);
+    expect(walked).toContain(
+      "features/marketing/tracking/__tests__/trackingChipSurfaces.test.tsx",
+    );
   });
 });
 
@@ -376,23 +441,28 @@ describe("🚨 every tracking-chip surface derives through the ONE input (V-28 N
     // Four of five chip surfaces called it with no tracking argument, so `thresholdUnavailable`
     // was null BY CONSTRUCTION and the knob's failure reason reached only the panel. The
     // argument is required now, and the UI reaches it through `useSiteConnectionStatuses`
-    // alone — so no surface can be built that forgets the snapshot or the knob again.
+    // alone — so no surface can be built that forgets the snapshot or the knob again. The walk
+    // includes test files: a test calling it is fine, a test is where the next caller would be
+    // written unseen (V-29 NEW-5).
     const allowed = new Set([
       "features/marketing/lib/site-status.ts",
       "features/marketing/tracking/hooks.ts",
+      "features/marketing/tracking/__tests__/trackingSurfaces.test.ts",
     ]);
-    const offenders = marketingSourceFiles()
-      .filter((file) => /siteConnectionStatuses\s*\(/.test(fs.readFileSync(file, "utf8")))
-      .map((file) => path.relative(REPO_ROOT, file))
+    const offenders = frontendSourceFiles()
+      .filter((file) =>
+        /siteConnectionStatuses\s*\(/.test(codeOnly(fs.readFileSync(file, "utf8"))),
+      )
+      .map(relative)
       .filter((rel) => !allowed.has(rel));
     expect(offenders).toEqual([]);
   });
 
   it("every renderer of the chip component lets the component read the tracking input", () => {
-    const offenders = marketingSourceFiles()
+    const offenders = frontendSourceFiles()
       .filter((file) => /<SiteConnectionChips[\s>]/.test(fs.readFileSync(file, "utf8")))
       .filter((file) => /<SiteConnectionChips[^>]*\btracking=/.test(fs.readFileSync(file, "utf8")))
-      .map((file) => path.relative(REPO_ROOT, file));
+      .map(relative);
     expect(offenders).toEqual([]);
   });
 });

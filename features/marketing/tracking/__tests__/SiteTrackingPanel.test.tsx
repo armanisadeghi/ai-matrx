@@ -14,9 +14,14 @@ import { createRoot, type Root } from "react-dom/client";
 import type { Json } from "@/types/database.types";
 
 const snapshotState: { value: unknown } = { value: null };
-const knobState: { hours: number | null; reason: string | null } = {
+const knobState: {
+  hours: number | null;
+  reason: string | null;
+  surface: string | null;
+} = {
   hours: 168,
   reason: null,
+  surface: null,
 };
 
 jest.mock("@/features/marketing/tracking/hooks", () => ({
@@ -30,13 +35,23 @@ jest.mock("@/features/marketing/tracking/hooks", () => ({
   }),
 }));
 
-jest.mock("@/features/marketing/tracking/knobs", () => ({
-  useTrackingSnapshotMaxAgeHours: () => ({
-    hours: knobState.hours,
-    unavailableReason: knobState.reason,
-    isLoading: false,
-  }),
-}));
+// The READ is mocked; the SENTENCE is the real builder's, and the surface the panel asks for is
+// recorded so this suite proves the panel gets the panel's words (V-29 NEW-2) rather than the
+// chips'.
+jest.mock("@/features/marketing/tracking/knobs", () => {
+  const real = jest.requireActual("@/features/marketing/tracking/knobs");
+  return {
+    ...real,
+    useTrackingSnapshotMaxAgeHours: (surface: "panel" | "chip") => {
+      knobState.surface = surface;
+      return {
+        hours: knobState.hours,
+        unavailableReason: knobState.reason,
+        isLoading: false,
+      };
+    },
+  };
+});
 
 jest.mock("@/features/marketing/google/hooks", () => ({
   useTagManagerInventory: () => ({
@@ -113,6 +128,8 @@ jest.mock("@/features/marketing/components/shared/MarketingUi", () => ({
 
 // eslint-disable-next-line import/first -- after the mocks above
 import { SiteTrackingPanel } from "@/features/marketing/tracking/components/SiteTrackingPanel";
+// eslint-disable-next-line import/first -- after the mocks above
+import { trackingKnobStandIn } from "@/features/marketing/tracking/knobs";
 
 const CONNECTION = "11111111-1111-4111-8111-111111111111";
 
@@ -295,11 +312,7 @@ describe("SiteTrackingPanel", () => {
     snapshotState.value = snapshotRow(findingsPayload("pass"), "2026-01-01T00:00:00Z");
     knobState.hours = null;
     // The real `trackingKnobStandIn` sentence, which the hook returns verbatim.
-    knobState.reason =
-      "This panel cannot tell you whether the snapshot below is too old: the " +
-      "google.tracking.snapshot_max_age_hours setting could not be read (knob row missing), " +
-      "so nothing here is being called stale. If it persists, tell an administrator that the " +
-      "setting seeded by migrations/google_tracking_knobs.sql is missing or unreadable.";
+    knobState.reason = trackingKnobStandIn("knob row missing", { surface: "panel" });
     const text = render(<SiteTrackingPanel site={site(true)} now={NOW} />);
     expect(text).toContain("google.tracking.snapshot_max_age_hours");
     // It reaches the screen through the VERDICT's own field, which is the same channel the
@@ -308,6 +321,9 @@ describe("SiteTrackingPanel", () => {
     // The TRACKING staleness verdict is unenforced — the panel's own 168-hour sentence is absent.
     // (The freshness line's separate provider-lag knob is a different setting and still warns.)
     expect(text).not.toContain("168 hours your organization allows");
+    // V-29 NEW-2: the panel asks for the PANEL's words, and they point at the line below them.
+    expect(knobState.surface).toBe("panel");
+    expect(text).toContain("This panel cannot tell you whether the snapshot below is too old");
   });
 
   it("warns when the snapshot is older than the organization allows", () => {

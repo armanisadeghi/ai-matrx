@@ -214,7 +214,7 @@ describe("trackingHealth", () => {
     // The pair that must always travel together: nothing is being called stale (`stale: false`
     // on a snapshot eight months old) AND the sentence that says why. Before V-27 NEW-5 the
     // field was hardcoded null at every exit, so the chip read as a clean "never stale".
-    const reason = trackingKnobStandIn("knob row missing");
+    const reason = trackingKnobStandIn("knob row missing", { surface: "chip" });
     const health = trackingHealth({
       snapshot: snapshot({ taken_at: "2026-01-01T11:00:00Z" }),
       containerBound: true,
@@ -230,7 +230,7 @@ describe("trackingHealth", () => {
   });
 
   it("carries the reason out of the never-checked and unreadable-payload exits too", () => {
-    const reason = trackingKnobStandIn("knob row missing");
+    const reason = trackingKnobStandIn("knob row missing", { surface: "chip" });
     const never = trackingHealth({
       snapshot: null,
       containerBound: true,
