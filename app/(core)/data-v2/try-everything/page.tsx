@@ -1,6 +1,4 @@
-"use client";
-
-// app/(core)/data-v2/try-everything/page.tsx — THE MOUNT, AND NOTHING MORE.
+// app/(core)/data-v2/try-everything/page.tsx — THE MOUNT, AND THE ROUTE TREE.
 //
 // One page where a person can try every part of the unified record store in
 // the organization they are already in: real components, real doors, real
@@ -8,7 +6,12 @@
 // today and what it is waiting for.
 //
 // The screen itself lives in `features/unified-data/test-bench/`, which is
-// where the campaign switch is read. This file is the route and the header.
+// where the campaign switch is read.
+//
+// IT IS A SERVER COMPONENT NOW, for one reason: no section on that page may
+// claim an address exists or does not. Only the App Router's own directory tree
+// knows, and only a server component may read it. This file asks
+// (`routesInThisBuild`) and hands the answer down; the screen renders it.
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
@@ -16,8 +19,10 @@ import { ArrowLeft } from "lucide-react";
 import PageHeader from "@/features/shell/components/header/PageHeader";
 import HeaderStructured from "@/features/shell/components/header/variants/variants/HeaderStructured";
 import TryEverythingScreen from "@/features/unified-data/test-bench/TryEverythingScreen";
+import { routesInThisBuild } from "@/features/unified-data/test-bench/routesInThisBuild";
 
-export default function TryEverythingRoute() {
+export default async function TryEverythingRoute() {
+    const routes = await routesInThisBuild();
     return (
         <>
             <PageHeader>
@@ -33,7 +38,7 @@ export default function TryEverythingRoute() {
                         Back to your tables
                     </Link>
                 </div>
-                <TryEverythingScreen />
+                <TryEverythingScreen routes={routes} />
             </div>
         </>
     );
