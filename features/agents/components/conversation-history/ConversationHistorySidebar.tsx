@@ -888,12 +888,18 @@ const ConsumerView: React.FC<
     >
       {headerSlot}
 
+      {/* ONE row: the lane toggles ARE the filter statement, so they sit beside
+          the refresh and source-tree controls instead of costing a second row.
+          The label only earns its space when the rail is wide enough for it —
+          on a ~260px chat sidebar it yields to the toggles (a container query,
+          so it answers to THIS rail, never the viewport). */}
       {surfaceId && (
-        <div className="flex shrink-0 items-center justify-between gap-2 px-3 pt-2 pb-1">
-          <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70">
+        <div className="@container/histhead flex shrink-0 items-center gap-1.5 px-2 pt-2 pb-1">
+          <span className="hidden shrink-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70 @min-[360px]/histhead:block">
             {historyLabel}
           </span>
-          <div className="flex items-center gap-1">
+          <ConversationLaneToggles className="min-w-0 flex-1" />
+          <div className="flex shrink-0 items-center gap-1">
             {status === "loading" ? (
               <LoadingTapButton
                 variant="group"
@@ -917,12 +923,6 @@ const ConsumerView: React.FC<
               align="end"
             />
           </div>
-        </div>
-      )}
-
-      {surfaceId && (
-        <div className="shrink-0 px-2 pb-1">
-          <ConversationLaneToggles />
         </div>
       )}
 
