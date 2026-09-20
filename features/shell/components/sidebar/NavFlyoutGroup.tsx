@@ -22,6 +22,7 @@ import {
   type ShellNavChild,
   type ShellNavItem,
 } from "../../constants/nav-data";
+import { useShellNavGates } from "../../navigation/useShellNavGates";
 import { useNavActions } from "../../navigation/navActions";
 import { useNavPanelActions } from "../../navigation/navPanelActions";
 import {
@@ -62,6 +63,8 @@ export default function NavFlyoutGroup({
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showPanel = open || pinned;
+  // Which gated destinations exist for this person right now.
+  const gates = useShellNavGates();
 
   // Active child = most specific matching href among siblings (so e.g. on
   // /transcripts/studio only "Studio" lights up, not "All Transcripts").
@@ -69,7 +72,8 @@ export default function NavFlyoutGroup({
   const isGroupActive = !suppressActive && isNavGroupActive(pathname, item);
 
   // Destinations up top (grouped), create actions collected at the bottom.
-  const { sections, panels, actions } = partitionNavChildren(children);
+  // A gated destination (see `useShellNavGates`) is dropped before grouping.
+  const { sections, panels, actions } = partitionNavChildren(children, gates);
 
   // One renderer for both destinations and actions so they're pixel-identical.
   // Action entries trigger an overlay/window in place instead of navigating —

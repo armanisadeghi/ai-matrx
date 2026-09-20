@@ -113,6 +113,8 @@ _on_error() {
 trap '_on_error $LINENO' ERR
 
 # ── Resolve repo root ────────────────────────────────────────────────────────
+# Named --ship paths resolve from where the invoker stood, not the repo root.
+RELEASE_STAGE_CALLER_PWD="${RELEASE_STAGE_CALLER_PWD:-$PWD}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
@@ -329,6 +331,9 @@ if $SHIP_MODE; then
     if [[ ${#SHIP_PATHS[@]} -gt 0 ]]; then
         release_stage_validate_paths ${SHIP_PATHS[@]+"${SHIP_PATHS[@]}"} \
             || fail "--ship was given a pathspec it cannot commit (see above). Nothing has been changed."
+        # From here on the paths are repo-relative and every git call runs at the root.
+        SHIP_PATHS=("${RELEASE_STAGE_PATHS[@]}")
+        RELEASE_STAGE_CALLER_PWD="$REPO_ROOT"
     elif working_tree_dirty; then
         echo "" >&2
         git status --short --untracked-files=all | sed 's/^/    /' >&2

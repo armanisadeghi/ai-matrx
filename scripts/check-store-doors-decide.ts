@@ -37,6 +37,8 @@ import { exitAfterDrain } from "./lib/exit-after-drain";
 
 function fail(message: string): never {
   console.error(`[FAIL] ${message}`);
+  // exitAfterDrain's return type is `never` (it always calls process.exit), so a
+  // trailing statement here can never run — that made TS7027 flag it as dead code.
   exitAfterDrain(1);
 }
 
@@ -58,6 +60,7 @@ const CALLER_CENSUS = (deciders: string[]) => `
   select p.proname::text as function_name, pg_get_function_identity_arguments(p.oid) as identity_args
     from pg_proc p
    where p.pronamespace = 'custom'::regnamespace
+     and p.prosecdef
      and has_function_privilege('authenticated', p.oid, 'EXECUTE')
      and pg_get_function_identity_arguments(p.oid) ~ 'p_organization_id uuid'
      and p.proname <> 'store_is_open'
@@ -104,6 +107,157 @@ const ONE_LADDER_RED = `
                            'visible_record_ids', 'doors_not_on_one_ladder')
    order by 1`;
 
+/**
+ * THE FIFTH AND SIXTH CENSUSES — EVERY DECLARED DOOR GOES THROUGH THE LADDER,
+ * AND EVERY DECLARED DOOR THAT WRITES ASKS THE SWITCH (2026-09-19, lane REACH).
+ *
+ * The first four censuses read the CATALOGUE — "this function holds a grant, does
+ * its body decide". That catches a door somebody granted. It does not catch the
+ * opposite and now much more common thing: a door somebody DECLARED. Schema
+ * `custom` went from 28 client-reachable functions to 67 in one sitting, and every
+ * one of those arrived as a row in `platform.client_callable_door` rather than as
+ * a GRANT. A declaration whose body decides nothing is the seo.keyword_value_map
+ * class again, with a truthful-looking row in front of it.
+ *
+ * So the rule is read from the DECLARATION side as well:
+ *
+ *   5. LADDER — a door row that opens a SECURITY DEFINER function taking a uuid to
+ *      a client, whose body never reaches the one ladder. "The one ladder" is
+ *      `custom.assert_client_may_reach` (the organization wall),
+ *      `custom.assert_client_may_change` / `custom.assert_client_may_open` (the
+ *      wall and then the row), `custom.has_visibility` / `custom.visible_record_ids`
+ *      (the ladder itself), or `custom.anon_token_verify` for a door whose caller
+ *      has no account. The uuid condition and the SECURITY DEFINER condition are
+ *      the live trigger `platform.door_body_must_decide`'s own carve-outs, stated
+ *      the same way here: a SECURITY INVOKER function in this schema is bounded by
+ *      table privileges, and census 7 is what proves that boundary still exists.
+ *
+ *   6. SWITCH — a client door whose body WRITES a record and never asks
+ *      `custom.assert_store_door` / `custom.store_is_open`. The OFF switch is the
+ *      campaign's own product switch: a store that is switched off must answer a
+ *      sentence, not take the write quietly. Measured live when this was written:
+ *      home_add, record_reparent and relation_own had just become client-reachable
+ *      and none of the three asked it.
+ *
+ *   7. THE BOUNDARY CENSUS 5 LEANS ON — `authenticated` (or anon, or PUBLIC) must
+ *      hold NO table privilege anywhere in schema `custom`. The store is reached
+ *      through its doors or not at all; the moment one table privilege exists, a
+ *      SECURITY INVOKER function in this schema stops being harmless and censuses
+ *      1 and 5 are excusing something real.
+ */
+const LADDER_RUNGS = [
+  "custom\\.assert_client_may_reach",
+  "custom\\.assert_client_may_change",
+  "custom\\.assert_client_may_open",
+  "custom\\.has_visibility",
+  "custom\\.visible_record_ids",
+  "custom\\.anon_token_verify",
+];
+
+const DECLARED_DOOR_BODY = `
+    from pg_proc p
+    join platform.client_callable_door d
+      on d.schema_name = 'custom'
+     and d.function_name = p.proname
+     and d.identity_argtypes = platform.door_argtypes(p.proargtypes)
+   where p.pronamespace = 'custom'::regnamespace
+     and (d.signed_in_callers or d.anonymous_callers)`;
+
+/** `--` comments stripped: a sentence promising the ladder is not the ladder. */
+const NO_COMMENTS = `regexp_replace(pg_get_functiondef(p.oid), '--[^' || chr(10) || ']*', '', 'g')`;
+
+const DECLARED_LADDER_CENSUS = (rungs: string[]) => `
+  select p.proname::text as function_name, pg_get_function_identity_arguments(p.oid) as identity_args,
+         'declared client-callable, is SECURITY DEFINER, takes an id - and its body never reaches '
+         'the one ladder (custom.assert_client_may_reach / _may_change / _may_open / has_visibility)'::text as why
+    ${DECLARED_DOOR_BODY}
+     and p.prosecdef
+     and p.prorettype not in ('pg_catalog.trigger'::regtype, 'pg_catalog.event_trigger'::regtype)
+     and exists (select 1 from unnest(p.proargtypes) t(typ)
+                  where t.typ in ('pg_catalog.uuid'::regtype, 'pg_catalog.uuid[]'::regtype))
+     ${rungs.length ? `and ${NO_COMMENTS} !~* '(${rungs.join("|")})'` : ""}
+   order by 1`;
+
+const DECLARED_SWITCH_CENSUS = (accept: boolean) => `
+  select p.proname::text as function_name, pg_get_function_identity_arguments(p.oid) as identity_args,
+         'declared client-callable and writes a record, but never asks whether the store is open '
+         '(custom.assert_store_door / custom.store_is_open)'::text as why
+    ${DECLARED_DOOR_BODY}
+     and ${NO_COMMENTS} ~* '(insert into custom\\.record|update custom\\.record|custom\\.record_write|custom\\.record_update|custom\\.record_delete|custom\\.record_restore)'
+     ${accept ? `and ${NO_COMMENTS} !~* '(custom\\.assert_store_door|custom\\.store_is_open)'` : ""}
+   order by 1`;
+
+/**
+ * THE EIGHTH CENSUS — A CLOSED SCHEMA IS CLOSED, NOT MERELY DESCRIBED AS CLOSED
+ * (2026-09-19, lane OPEN-CENSUS).
+ *
+ * Censuses 1-7 all read a door somebody DECLARED or a body somebody WROTE. None of
+ * them could see the opposite thing: a function nobody declared at all, holding a
+ * client EXECUTE grant nobody decided to give it. Measured live on the main database
+ * when this was written: THIRTY-ONE of them.
+ *
+ *   - `custom`, 10, straight from Postgres's own default. `CREATE FUNCTION` grants
+ *     EXECUTE to PUBLIC, `authenticated` holds USAGE on the schema, and both birth
+ *     guards stand down — `platform.enforce_definer_client_grants` skips SECURITY
+ *     INVOKER by design and `platform.close_new_functions_to_anon` does not list
+ *     `custom` at all. `custom.delete_cascade_closure(uuid, uuid)`, created after
+ *     lane REACH's sweep, was executable by `authenticated` AND by `anon`.
+ *   - `history`, 21, from one blanket `GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA
+ *     history TO authenticated`.
+ *
+ * `platform.schema_client_exposure` had declared `custom` closed since 2026-09-18 and
+ * nothing in the database ever acted on that row: `platform.reopen_declared_doors`
+ * had an OPENING pass only. It now has a closing pass, it runs at `CREATE FUNCTION`
+ * as well as at `REVOKE`, and THIS is the query that says whether it is still true.
+ *
+ * The rule is the whole declaration, not one schema: every schema declared closed in
+ * `platform.schema_client_exposure` reaches a client through a
+ * `platform.client_callable_door` row or not at all.
+ */
+const CLOSED_SCHEMA_CENSUS = (respectDeclarations: boolean) => `
+  select n.nspname || '.' || p.proname as function_name,
+         pg_get_function_identity_arguments(p.oid) as identity_args,
+         'in schema ' || n.nspname || ', declared CLOSED in platform.schema_client_exposure, and '
+         'reachable by a client with no platform.client_callable_door row opening a client lane. '
+         'Run select * from platform.reopen_declared_doors(' || quote_literal(n.nspname) || ') to '
+         'close it, or declare it if a person is meant to call it.'::text as why
+    from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    join platform.schema_client_exposure e
+      on e.schema_name = n.nspname and not coalesce(e.client_exposed, false)
+   where p.prokind in ('f', 'p')
+     and p.prorettype not in ('pg_catalog.trigger'::regtype, 'pg_catalog.event_trigger'::regtype)
+     and not exists (select 1 from pg_depend dep where dep.objid = p.oid and dep.deptype = 'e')
+     and (has_function_privilege('authenticated', p.oid, 'EXECUTE')
+       or has_function_privilege('anon', p.oid, 'EXECUTE')
+       or has_function_privilege('public', p.oid, 'EXECUTE'))
+     ${
+       respectDeclarations
+         ? `and not exists (select 1 from platform.client_callable_door d
+                             where d.schema_name = n.nspname and d.function_name = p.proname
+                               and d.identity_argtypes = platform.door_argtypes(p.proargtypes)
+                               and (d.signed_in_callers or d.anonymous_callers))`
+         : ""
+     }
+   order by 1`;
+
+const TABLE_PRIVILEGE_CENSUS = `
+  select c.relname::text as function_name,
+         string_agg(g.role || ' ' || g.priv, ', ' order by g.role, g.priv) as identity_args,
+         'a client role holds a TABLE privilege in schema custom - the store is reached through '
+         'its doors or not at all, and censuses 1 and 5 excuse SECURITY INVOKER bodies only '
+         'because this is empty'::text as why
+    from pg_class c
+   cross join (values ('authenticated','SELECT'), ('authenticated','INSERT'),
+                      ('authenticated','UPDATE'), ('authenticated','DELETE'),
+                      ('anon','SELECT'), ('anon','INSERT'),
+                      ('anon','UPDATE'), ('anon','DELETE')) as g(role, priv)
+   where c.relnamespace = 'custom'::regnamespace
+     and c.relkind in ('r', 'p', 'v', 'f')
+     and has_table_privilege(g.role, c.oid, g.priv)
+   group by c.relname
+   order by 1`;
+
 const GRANT_CENSUS = `
   select d.function_name, d.identity_args,
          case when p.oid is null then 'declared, but no function in schema custom has that exact signature'
@@ -118,20 +272,55 @@ const GRANT_CENSUS = `
           or (d.signed_in_callers and not has_function_privilege('authenticated', p.oid, 'EXECUTE')))
    order by 1`;
 
+/**
+ * CENSUS 9 — A DOOR ROW SAYS THE SIGNATURE THE CATALOG SAYS, IN EVERY SCHEMA.
+ *
+ * `identity_args` is text, and text renders differently depending on the search_path of
+ * whoever rendered it: `pg_get_function_identity_arguments` schema-qualifies a type that is
+ * not visible on the path, so a door written at `search_path = pg_catalog` reads
+ * `p_required public.permission_level` while every reader on an ordinary session reads
+ * `p_required permission_level`. Census 3 above joins on that text, so a door with an enum
+ * argument was reported as naming no live function while both the door and the function were
+ * fine — and two lanes repaired their own rows by hand before anybody fixed the helper
+ * (`iam.door_identity_args`, TABLE-OWNER 2026-09-19).
+ *
+ * This census asks the class rather than the instance: matched by `identity_argtypes`, which
+ * is the search-path-free key, does the stored TEXT equal what the catalog renders here?
+ * `argtypes` null is not this census's business — census 3 already refuses a row that names
+ * no live function at all.
+ */
+const IDENTITY_RENDERING_CENSUS = `
+  select d.schema_name || '.' || d.function_name as function_name,
+         d.identity_args,
+         'the row stores ' || quote_literal(d.identity_args) ||
+         ' and the catalog renders ' || quote_literal(pg_get_function_identity_arguments(p.oid)) as why
+    from platform.client_callable_door d
+    join pg_namespace n on n.nspname = d.schema_name
+    join pg_proc p on p.proname = d.function_name and p.pronamespace = n.oid
+     and platform.door_argtypes(p.proargtypes) = d.identity_argtypes
+   where d.identity_argtypes is not null
+     and d.identity_args is distinct from pg_get_function_identity_arguments(p.oid)
+   order by 1`;
+
 interface Row {
   function_name: string;
   identity_args: string;
   why?: string;
 }
 
-function report(title: string, rows: Row[]): boolean {
+/**
+ * `qualified` says the census already returns `<schema>.<name>` — census 8 spans every
+ * schema declared closed, so prefixing it with `custom.` would print a lie.
+ */
+function report(title: string, rows: Row[], qualified = false): boolean {
   if (rows.length === 0) {
     console.log(`[ OK ] ${title} - none.`);
     return true;
   }
   console.error(`[FAIL] ${title} - ${rows.length}:`);
   for (const r of rows) {
-    console.error(`       custom.${r.function_name}(${r.identity_args})${r.why ? ` - ${r.why}` : ""}`);
+    const name = qualified ? r.function_name : `custom.${r.function_name}`;
+    console.error(`       ${name}(${r.identity_args})${r.why ? ` - ${r.why}` : ""}`);
   }
   return false;
 }
@@ -205,18 +394,107 @@ async function main(): Promise<void> {
           `census names ${ladderNames.size} door(s) including all five that must be routed. ` +
           "It can go red.",
       );
+
+      // CENSUS 5, THE RED HALF. With NO rung accepted as the ladder, every declared
+      // SECURITY DEFINER door that takes an id must be named - including the ones lane
+      // REACH routed. If it names nothing, it is reading an empty set.
+      const redDeclared = (await client.query<Row>(DECLARED_LADDER_CENSUS([]))).rows;
+      const declaredNames = new Set(redDeclared.map((r) => r.function_name));
+      const mustDeclare = [
+        "migrate_rename",
+        "query_across_homes",
+        "home_add",
+        "relation_targets",
+        "query_record_as_of",
+        "record_aggregate",
+        "io_export",
+      ];
+      const undeclared = mustDeclare.filter((n) => !declaredNames.has(n));
+      if (undeclared.length > 0) {
+        fail(
+          "SELF-TEST FAILED - with no rung accepted as the one ladder, the declared-door census " +
+            `did not name ${undeclared.join(", ")}. One door per group - a migration verb, a ` +
+            "query, a home, a relation, an as-of read, an aggregate and an export - has to be in " +
+            "reach of this query or its green answer proves nothing.",
+        );
+      }
+      console.log(
+        `[ OK ] self-test - with no rung accepted, the declared-door census names ` +
+          `${declaredNames.size} door(s) including one from every group lane REACH opened. It can go red.`,
+      );
+
+      // CENSUS 6, THE RED HALF. With the switch itself not accepted, every declared door
+      // that writes a record must be named.
+      const redSwitch = (await client.query<Row>(DECLARED_SWITCH_CENSUS(false))).rows;
+      const switchNames = new Set(redSwitch.map((r) => r.function_name));
+      const mustAsk = ["record_write", "migrate_rename", "home_add", "relation_own"];
+      const notAsking = mustAsk.filter((n) => !switchNames.has(n));
+      if (notAsking.length > 0) {
+        fail(
+          "SELF-TEST FAILED - with the store's switch not accepted as an answer, the switch " +
+            `census did not name ${notAsking.join(", ")}, which all write a record through a ` +
+            "client door. The query is not reading the bodies it claims to.",
+        );
+      }
+      console.log(
+        `[ OK ] self-test - counting the switch itself as an objection, the switch census names ` +
+          `${switchNames.size} writing door(s). It can go red.`,
+      );
+
+      // CENSUS 8, THE RED HALF. With the declarations NOT respected, every client-reachable
+      // function in a declared-closed schema must be named — which is every door lane REACH
+      // opened. If it names nothing, the query is reading an empty set and its green answer
+      // above proves only that `platform.schema_client_exposure` has no rows it can see.
+      const redClosed = (await client.query<Row>(CLOSED_SCHEMA_CENSUS(false))).rows;
+      const closedNames = new Set(redClosed.map((r) => r.function_name));
+      const mustBeReachable = [
+        "custom.record_write",
+        "custom.record_update",
+        "custom.read_record",
+        "custom.migrate_rename",
+        "custom.io_export",
+      ];
+      const unreachable = mustBeReachable.filter((n) => !closedNames.has(n));
+      if (unreachable.length > 0) {
+        fail(
+          "SELF-TEST FAILED - with the door declarations not respected, the closed-schema census " +
+            `did not name ${unreachable.join(", ")}, which ARE client-reachable in a schema ` +
+            "declared closed. Either platform.schema_client_exposure no longer declares their " +
+            "schema closed, or the census is not reading the catalog it claims to - and then its " +
+            "green answer means nothing.",
+        );
+      }
+      console.log(
+        `[ OK ] self-test - ignoring the declarations, the closed-schema census names ` +
+          `${closedNames.size} client-reachable function(s) in a declared-closed schema, ` +
+          "including all five that must be. It can go red.",
+      );
     }
 
     const callers = (await client.query<Row>(CALLER_CENSUS(DECIDERS))).rows;
     const records = (await client.query<Row>(RECORD_CENSUS(DECIDERS))).rows;
     const grants = (await client.query<Row>(GRANT_CENSUS)).rows;
     const ladder = (await client.query<Row>(ONE_LADDER_CENSUS)).rows;
+    const declaredLadder = (await client.query<Row>(DECLARED_LADDER_CENSUS(LADDER_RUNGS))).rows;
+    const declaredSwitch = (await client.query<Row>(DECLARED_SWITCH_CENSUS(true))).rows;
+    const tablePrivileges = (await client.query<Row>(TABLE_PRIVILEGE_CENSUS)).rows;
+    const closedSchemas = (await client.query<Row>(CLOSED_SCHEMA_CENSUS(true))).rows;
+    const rendering = (await client.query<Row>(IDENTITY_RENDERING_CENSUS)).rows;
 
     const ok = [
       report("client doors taking an organization id that never decide the caller", callers),
       report("client doors that write a record without deciding that row", records),
       report("declared doors whose grant or signature does not match the live catalog", grants),
       report("doors deciding a row with a ladder of their own instead of the one function", ladder),
+      report("declared client doors whose body never goes through the one ladder", declaredLadder),
+      report("declared client doors that write a record without asking the store's switch", declaredSwitch),
+      report("client roles holding a TABLE privilege in schema custom", tablePrivileges),
+      report(
+        "functions a client may execute in a declared-closed schema with no door row at all",
+        closedSchemas,
+        true,
+      ),
+      report("door rows whose stored signature is not what the catalog renders", rendering, true),
     ].every(Boolean);
 
     if (!ok) {
@@ -230,6 +508,8 @@ async function main(): Promise<void> {
           "  anonymous doors decide with custom.anon_token_verify. Adding a door is adding one of\n" +
           "  those lines; there is no door that decides nothing.\n",
       );
+      // exitAfterDrain returns `never` (it always calls process.exit), so the `return`
+      // that used to follow it here was unreachable — TS7027 caught it as dead code.
       exitAfterDrain(1);
     }
     console.log("\nEvery client door into the record store decides the caller and the row.");
