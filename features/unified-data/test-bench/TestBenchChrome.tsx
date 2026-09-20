@@ -21,25 +21,89 @@ import { ChevronDown } from "lucide-react";
 /**
  * How finished a section is. The word the person reads is the one we can prove.
  *
- * `null` is the fourth state and it is not a fourth word: it means the screen is
- * STILL ASKING the live system whether this part works, and has not been told
- * yet. A section whose verdict is measured rather than written down here shows
- * "Measuring…" until the door answers — never a guess held for a second and then
- * corrected, and never a stale word a previous version of the packages earned.
+ * `asking` is not a fourth degree of finished — it is the honest state of a
+ * section whose live check has not come back yet, and it exists because the
+ * alternative is a badge that guesses for a second and then changes its mind.
  */
-export type SectionState = "real" | "partly" | "placeholder";
+export type SectionState = "real" | "partly" | "placeholder" | "asking";
 
 const STATE_WORD: Record<SectionState, string> = {
     real: "Working",
     partly: "Working, with a gap",
     placeholder: "Not built yet",
+    asking: "Checking…",
 };
 
 const STATE_CLASS: Record<SectionState, string> = {
     real: "border-emerald-600/40 text-emerald-700 dark:border-emerald-400/40 dark:text-emerald-300",
     partly: "border-amber-600/40 text-amber-700 dark:border-amber-400/40 dark:text-amber-300",
     placeholder: "border-border text-muted-foreground",
+    asking: "border-border text-muted-foreground",
 };
+
+/**
+ * WHETHER A DOOR EXISTS HERE — the one answer every section on this page is
+ * allowed to speak from.
+ *
+ * NOTHING ON THIS PAGE MAY STATE A CAPABILITY FROM A SENTENCE SOMEBODY TYPED.
+ * On 2026-09-20 a verifier pressed three buttons this page had warned about and
+ * found all three working, and a portal this page said did not exist: "a person
+ * who believes the page will not press the buttons that work." A note is a
+ * reading of the live system or it is not written.
+ *
+ * `there: null` is the THIRD answer and it is the important one: we asked and
+ * could not tell. A check that failed is never reported as an absence.
+ */
+export interface Capability {
+    /** True = it is here and it answered. False = genuinely absent. Null = we could not tell. */
+    there: boolean | null;
+    /** What we asked, in a person's words. One sentence, always present. */
+    because: string;
+    /** Only when it is absent: the one thing that would make it appear. */
+    whatWouldMakeItAppear?: string;
+}
+
+/**
+ * A section that needs TWO things present (a route AND a door) is only working
+ * when both are, unknown while either is unknown, and absent otherwise.
+ */
+export function bothOf(a: Capability, b: Capability): Capability {
+    if (a.there === true && b.there === true) return { there: true, because: a.because };
+    if (a.there === null || b.there === null) return { there: null, because: a.because };
+    return a.there === false ? a : b;
+}
+
+/** The section badge a capability earns. Never a word typed beside it. */
+export function stateFor(capability: Capability | undefined): SectionState {
+    if (!capability) return "asking";
+    if (capability.there === null) return "asking";
+    return capability.there ? "real" : "placeholder";
+}
+
+/**
+ * WHAT WE ASKED AND WHAT CAME BACK, in one small block a person can read.
+ * Present, absent or unreadable — three states, three sentences, no fourth mood
+ * in which a note asserts something nobody checked.
+ */
+export function LiveState({ capability }: { capability: Capability }) {
+    const tone =
+        capability.there === true
+            ? "border-emerald-600/40 bg-emerald-500/5 dark:border-emerald-400/40"
+            : capability.there === false
+              ? "border-border bg-muted/40"
+              : "border-amber-600/40 bg-amber-500/5 dark:border-amber-400/40";
+    return (
+        <div className={`space-y-1 rounded-md border p-3 text-sm leading-relaxed ${tone}`}>
+            <p className="text-foreground/90">{capability.because}</p>
+            {capability.there === false && capability.whatWouldMakeItAppear ? (
+                <p className="text-muted-foreground">
+                    <span className="font-medium text-foreground/70">Waiting on:</span>{" "}
+                    {capability.whatWouldMakeItAppear}
+                </p>
+            ) : null}
+        </div>
+    );
+}
 
 export interface SectionProps {
     /** Position in the list. The contents rail and the anchor use the same number. */
@@ -47,8 +111,16 @@ export interface SectionProps {
     title: string;
     /** One line, plain English: what this part of the system is. */
     what: string;
-    /** The verdict, or `null` while the screen is still asking the live system. */
-    state: SectionState | null;
+    /**
+     * WHAT THIS DEPLOYMENT CAN ACTUALLY DO HERE — one live answer per thing this
+     * section needs. Given, it decides the badge AND is rendered under the
+     * heading where a person sees it WITHOUT opening anything: the verdict and
+     * the reason for it are the same fact, and a badge nobody can check is the
+     * hard-coded note again with fewer words.
+     */
+    capability?: Capability | readonly Capability[];
+    /** The badge, for a section whose honest state is not a door's answer. */
+    state?: SectionState;
     /**
      * Open on arrival. Only the cheapest sections do: the rest mount a live
      * component that reads — and in a few cases WRITES — this organization's
@@ -66,9 +138,15 @@ export function sectionAnchor(n: number): string {
     return `try-${n}`;
 }
 
-export function Section({ n, title, what, state, defaultOpen = false, children }: SectionProps) {
+export function Section({ n, title, what, state, capability, defaultOpen = false, children }: SectionProps) {
     const [open, setOpen] = useState(defaultOpen);
     const bodyId = useId();
+    const asked: readonly Capability[] = capability
+        ? Array.isArray(capability)
+            ? capability
+            : [capability as Capability]
+        : [];
+    const badge: SectionState = asked.length > 0 ? stateFor(asked.reduce(bothOf)) : (state ?? "asking");
     return (
         <section
             id={sectionAnchor(n)}
@@ -88,11 +166,9 @@ export function Section({ n, title, what, state, defaultOpen = false, children }
                 </span>
                 <h2 className="truncate text-sm font-medium text-foreground">{title}</h2>
                 <span
-                    className={`ml-auto shrink-0 rounded-full border px-2 py-0.5 text-[11px] ${
-                        state === null ? "border-border text-muted-foreground" : STATE_CLASS[state]
-                    }`}
+                    className={`ml-auto shrink-0 rounded-full border px-2 py-0.5 text-[11px] ${STATE_CLASS[badge]}`}
                 >
-                    {state === null ? "Measuring…" : STATE_WORD[state]}
+                    {STATE_WORD[badge]}
                 </span>
                 <ChevronDown
                     className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
@@ -101,6 +177,9 @@ export function Section({ n, title, what, state, defaultOpen = false, children }
             </button>
             <div id={bodyId} className="space-y-3 border-t border-border/60 p-3">
                 <p className="text-sm leading-relaxed text-muted-foreground">{what}</p>
+                {asked.map((one, at) => (
+                    <LiveState key={at} capability={one} />
+                ))}
                 {open ? children : null}
             </div>
         </section>
@@ -152,44 +231,6 @@ export function NotBuiltYet({
             </div>
             {children ? <TryIt hint="the part that does exist">{children}</TryIt> : null}
         </div>
-    );
-}
-
-/**
- * THE REAL SCREEN THIS PART OF THE SYSTEM LIVES ON.
- *
- * WHY IT EXISTS. This page mounts the same components the product mounts, which
- * makes it easy to believe the page IS the product. It is not: a dashboard has a
- * home, a portal has an address a client types, a subscription has a panel on
- * the table it is about. A section that stops at "here is the control" leaves the
- * person with no idea where the thing they just made actually lives — the dead
- * end this page exists to remove.
- *
- * It is a LINK and one sentence, never a second copy of the screen.
- */
-export function RealScreen({
-    href,
-    label,
-    then: thenDo,
-    Link: LinkComponent,
-}: {
-    /** The route. Always a real one somebody can type. */
-    href: string;
-    /** What the link is called, in the words on the screen it opens. */
-    label: string;
-    /** The ONE thing to do after arriving. Omitted when arriving is the whole act. */
-    then?: string;
-    /** The host's Link. Passed in because this file imports nothing. */
-    Link: (props: { href: string; className?: string; children: ReactNode }) => ReactNode;
-}) {
-    return (
-        <p className="text-xs leading-relaxed text-muted-foreground">
-            <span className="font-medium uppercase tracking-wide text-foreground/70">The real screen</span>{" "}
-            <LinkComponent href={href} className="font-medium text-foreground underline underline-offset-2">
-                {label}
-            </LinkComponent>
-            {thenDo ? <> — {thenDo}</> : null}
-        </p>
     );
 }
 

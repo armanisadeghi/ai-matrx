@@ -34,7 +34,7 @@ import { ExternalLink, RefreshCw } from "lucide-react";
 // request, not an answer, and the lockfile is what the bundle actually carries.
 import recordsPkg from "@ai-matrx/records/package.json";
 import recordsUiPkg from "@ai-matrx/records-ui/package.json";
-import { portalPath, type PortalSummary, type DashboardSummary, type RecordsResult, type Table } from "@ai-matrx/records";
+import type { Table } from "@ai-matrx/records";
 import { useRecords, useRecordsClient, useTables } from "@ai-matrx/records/react";
 import {
     ActionInbox,
@@ -46,6 +46,7 @@ import {
     HistoryPanel,
     laneFor,
     NotifyRuleEditor,
+    PortalsPanel,
     RecordsMount,
     ShareControl,
     TablesHome,
@@ -80,7 +81,18 @@ import { createClient } from "@/utils/supabase/client";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 
-import { Aside, NotBuiltYet, RealScreen, Refusal, Section, StatusFact, TryIt, sectionAnchor } from "./TestBenchChrome";
+import {
+    Aside,
+    NotBuiltYet,
+    Refusal,
+    Section,
+    StatusFact,
+    TryIt,
+    sectionAnchor,
+    type Capability,
+} from "./TestBenchChrome";
+import type { RouteFact, RoutesInThisBuild } from "./routeFacts";
+import { organizationSavedViews } from "./savedViewsPort";
 
 /** The organization setting section 2 flips, at its one registry address. */
 const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;
@@ -108,7 +120,113 @@ const CONTENTS: ReadonlyArray<string> = [
     "Notifications and digests",
 ];
 
-export default function TryEverythingScreen() {
+/**
+ * DOES THIS DEPLOYMENT HAVE THIS DOOR, AND DOES IT ANSWER?
+ *
+ * THE CLASS THIS FIXES. Until 2026-09-20 three sections of this page carried
+ * sentences somebody had typed about what the build could not do — a form
+ * builder that "cannot finish making that table", a dashboard canvas with "the
+ * same red box", a portal with "no portal address to give anybody". A verifier
+ * pressed all three and every one of them worked, on a build whose own status
+ * line said which package versions it had resolved. A note that outlives the
+ * defect it describes is worse than no note: "a person who believes the page
+ * will not press the buttons that work."
+ *
+ * So a section does not hold an opinion about the store. It asks TWO things,
+ * both live, and renders whatever comes back:
+ *   1. does the `@ai-matrx/records` client THIS deployment resolved carry the
+ *      calls the panel below makes — the same package the status strip names;
+ *   2. does the door actually answer, rather than refuse, right now.
+ *
+ * `there: null` is a real third answer — asked, could not tell — and it never
+ * gets reported as absence.
+ */
+function useDoor({
+    needs,
+    ask,
+    whenItAnswers,
+    whatWouldMakeItAppear,
+}: {
+    /** The client calls the panel makes. A name missing here means this deployment predates it. */
+    needs: readonly string[];
+    /** One cheap READ through those doors. Its refusal, if any, is what the person reads. */
+    ask: (client: ReturnType<typeof useRecordsClient>) => Promise<{ ok: boolean; error?: unknown }>;
+    /** The sentence when it is here and answering. */
+    whenItAnswers: string;
+    /** The one thing that would make it appear, when it genuinely is not here. */
+    whatWouldMakeItAppear: string;
+}): Capability {
+    const client = useRecordsClient();
+    const [capability, setCapability] = useState<Capability>({
+        there: null,
+        because: "Checking whether this deployment has it…",
+    });
+
+    useEffect(() => {
+        let cancelled = false;
+        const holder = client as unknown as Record<string, unknown>;
+        const absent = needs.filter((name) => typeof holder[name] !== "function");
+        if (absent.length > 0) {
+            setCapability({
+                there: false,
+                because:
+                    `The record store package this deployment resolved (${recordsPkg.version}) does not carry ` +
+                    `${absent.length === 1 ? "the call" : "the calls"} this needs, so the panel below cannot work here.`,
+                whatWouldMakeItAppear,
+            });
+            return;
+        }
+        void Promise.resolve(ask(client))
+            .then((answered) => {
+                if (cancelled) return;
+                if (answered.ok) {
+                    setCapability({ there: true, because: whenItAnswers });
+                    return;
+                }
+                setCapability({
+                    there: false,
+                    because: `The door is here but it refused just now — ${refusalLineForAPerson(
+                        answered.error as Parameters<typeof refusalLineForAPerson>[0],
+                    )}`,
+                    whatWouldMakeItAppear,
+                });
+            })
+            .catch((thrown: unknown) => {
+                if (cancelled) return;
+                // ASKED AND COULD NOT TELL. Never an absence.
+                setCapability({
+                    there: null,
+                    because: `We could not check this one — ${thrown instanceof Error ? thrown.message : String(thrown)}`,
+                });
+            });
+        return () => {
+            cancelled = true;
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [client, needs.join(","), whenItAnswers, whatWouldMakeItAppear]);
+
+    return capability;
+}
+
+/**
+ * DOES THIS BUILD SERVE THAT ADDRESS? — the App Router's own directory tree,
+ * read on the server by `routesInThisBuild` and handed down. A page file is the
+ * only thing that decides whether an address exists, so it is the only thing
+ * this page is allowed to say it from.
+ */
+function routeCapability(fact: RouteFact, whenItIsThere: string, whatWouldMakeItAppear: string): Capability {
+    if (fact.there === null) {
+        return {
+            there: null,
+            because: `We could not read this build's pages, so we cannot say whether ${fact.path} is served here.`,
+        };
+    }
+    return fact.there
+        ? { there: true, because: `${whenItIsThere} The address is ${fact.path}.` }
+        : { there: false, because: `This build serves no page at ${fact.path}.`, whatWouldMakeItAppear };
+}
+
+export default function TryEverythingScreen({ routes }: { routes: RoutesInThisBuild }) {
     const router = useRouter();
     const userId = useAppSelector(selectUserId);
     const organizationName = useAppSelector(selectActiveOrganizationName);
@@ -154,82 +272,26 @@ export default function TryEverythingScreen() {
                 actor: personActor(userId),
                 organizationId: organizationId!,
             }}
-            host={{ Link, density: "condensed", members, share: recordStoreShare }}
+            host={{
+                Link,
+                density: "condensed",
+                members,
+                share: recordStoreShare,
+                // THE SAVED-VIEW PORT, BOUND. Section 12's editor used to print
+                // an instruction to go and edit source code; this app has those
+                // views, so it hands them over instead.
+                savedViews: () => organizationSavedViews(organizationId!),
+            }}
         >
             <Bench
                 organizationId={organizationId!}
                 organizationName={organizationName ?? null}
                 userId={userId ?? null}
+                routes={routes}
                 onOpenTable={(tableId) => router.push(`/data-v2/${tableId}`)}
             />
         </RecordsMount>
     );
-}
-
-/**
- * WHAT A DOOR ANSWERED, THIS MINUTE — the only honest source for "does this
- * part of the system work?".
- *
- * WHY THIS EXISTS. Every verdict on this page used to be a WORD TYPED INTO THE
- * FILE by whoever wrote the section, and a sentence underneath naming the
- * package version that was current the day they typed it. Both rot the moment
- * anything ships: on 20 September this page told a person that a portal had no
- * address to give anybody (the route had landed), that a dashboard had no home
- * (`TablePage` had grown a Dashboards view), and that the notification editor
- * would be refused until records-ui 0.30.0 (0.38.0 was installed). Three
- * sentences, all confidently wrong, all of them the page's own doing.
- *
- * A section that uses this asks its own door on arrival and shows "Measuring…"
- * until the answer comes back. There is no third outcome: a door either answers
- * or refuses in its own words, and the words the person reads are the store's.
- */
-type Reach<T> =
-    | { state: "asking" }
-    | { state: "open"; data: T }
-    | { state: "refused"; sentence: string };
-
-/** The section verdict a reach earns. `null` means the answer is not back yet. */
-function verdictOf<T>(reach: Reach<T>, has: (data: T) => boolean): "real" | "partly" | "placeholder" | null {
-    if (reach.state === "asking") return null;
-    // A REFUSED DOOR IS NOT A GAP, IT IS AN ABSENCE. The person cannot reach
-    // this part of the system at all, which is exactly what "Not built yet"
-    // says on this page — and the sentence under it is the store's own.
-    if (reach.state === "refused") return "placeholder";
-    // The door answers, but nothing has been made through it yet: everything
-    // works and there is nothing to show, which is a gap in what they HAVE,
-    // never a gap in what the system can do.
-    return has(reach.data) ? "real" : "partly";
-}
-
-function useReach<T>(ask: () => Promise<RecordsResult<T>>): Reach<T> {
-    const [answer, setAnswer] = useState<Reach<T>>({ state: "asking" });
-    useEffect(() => {
-        let cancelled = false;
-        void (async () => {
-            try {
-                const answered = await ask();
-                if (cancelled) return;
-                setAnswer(
-                    answered.ok
-                        ? { state: "open", data: answered.data }
-                        : { state: "refused", sentence: refusalLineForAPerson(answered.error) },
-                );
-            } catch (error) {
-                // A THROW IS STILL AN ANSWER. Never left on "Measuring…": a
-                // verdict that never arrives is the one thing this page may not do.
-                if (!cancelled) {
-                    setAnswer({
-                        state: "refused",
-                        sentence: error instanceof Error ? error.message : String(error),
-                    });
-                }
-            }
-        })();
-        return () => {
-            cancelled = true;
-        };
-    }, [ask]);
-    return answer;
 }
 
 /**
@@ -241,15 +303,16 @@ function Bench({
     organizationId,
     organizationName,
     userId,
+    routes,
     onOpenTable,
 }: {
     organizationId: string;
     organizationName: string | null;
     userId: string | null;
+    routes: RoutesInThisBuild;
     onOpenTable: (tableId: string) => void;
 }) {
     const tables = useTables();
-    const client = useRecordsClient();
     const [workingTableId, setWorkingTableId] = useState<string | null>(null);
 
     // The working table: whichever the person picked, else the first one the
@@ -270,20 +333,43 @@ function Bench({
         [rows, workingTableId],
     );
 
-    // THE THREE VERDICTS THIS PAGE USED TO TYPE INTO ITSELF. Each is one read
-    // through the same door the real screen uses, asked on arrival.
-    const workingTableIdForProbe = workingTable?.id ?? null;
-    const askDashboards = useCallback(
-        () => client.dashboards(workingTableIdForProbe ? { table_id: workingTableIdForProbe } : {}),
-        [client, workingTableIdForProbe],
+    // ── WHAT THIS DEPLOYMENT CAN ACTUALLY DO, asked of the deployment ──────
+    // Every verdict below this line is one of these answers. None of them is a
+    // sentence anybody typed about a version.
+    const formsDoor = useDoor({
+        needs: ["forms", "formDeclare", "anonPublish"],
+        ask: (client) => client.forms({}),
+        whenItAnswers:
+            "The form builder works on this deployment: it writes the form, publishes it, and hands you the " +
+            "link a stranger answers — all through the same doors the panel below calls.",
+        whatWouldMakeItAppear: "the screens package this deployment installs carrying the forms doors.",
+    });
+    const dashboardsDoor = useDoor({
+        needs: ["dashboards", "dashboardDeclare", "dashboardRun"],
+        ask: (client) => client.dashboards({}),
+        whenItAnswers:
+            "The dashboard canvas works on this deployment: it keeps your charts, and every number in them " +
+            "is the store's own answer over your real records.",
+        whatWouldMakeItAppear: "the screens package this deployment installs carrying the dashboard doors.",
+    });
+    const portalDoors = useDoor({
+        needs: ["portals", "portalCard", "portalInvite", "portalRevoke"],
+        ask: (client) => client.portals(),
+        whenItAnswers:
+            "The portal doors answer this browser: you can open a portal, invite a client to it, see what " +
+            "she will see, and take her way in away again.",
+        whatWouldMakeItAppear: "the store opening the portal doors to a signed-in browser.",
+    });
+    const portalRoute = routeCapability(
+        routes.portal,
+        "This build serves the client portal.",
+        "a public route for the portal to be mounted on.",
     );
-    const dashboards = useReach<DashboardSummary[]>(askDashboards);
-    const askPortals = useCallback(() => client.portals(), [client]);
-    const portals = useReach<PortalSummary[]>(askPortals);
-    // The door the PUBLISHED NotifyRuleEditor asks for its cadence list. If it
-    // answers, the editor in section 12 can be filled in; if it refuses, the
-    // editor is the gap and the refusal is why.
-    const cadences = useReach<string[]>(useCallback(() => client.subscriptionCadences(), [client]));
+    const publicFormRoute = routeCapability(
+        routes.publicForm,
+        "This build serves the page a stranger answers a form on, with no account.",
+        "a public route for a published form to be answered on.",
+    );
 
     return (
         <div className="mx-auto max-w-3xl space-y-3 pb-24">
@@ -376,7 +462,7 @@ function Bench({
             <Section
                 n={5}
                 title={CONTENTS[4]}
-                state="partly"
+                capability={[formsDoor, publicFormRoute]}
                 what="A form is a view on one of your tables: you pick the questions, publish it, and a stranger with the link answers without an account. Their answer arrives as a record in the table, stamped with where it came from."
             >
                 <NeedsTable table={workingTable}>
@@ -393,28 +479,14 @@ function Bench({
                                     "It keeps your forms in a table of its own called Forms, and it makes that " +
                                     "table the first time it runs — in this organization, under \"Kept by the app\"."
                                 }
-                                measured={
-                                    "At the screens version this deployment serves it cannot finish making that " +
-                                    "table: it stores the table's own columns through the wrong door and the store " +
-                                    "refuses them. You will see a red box saying the value was not accepted and to " +
-                                    "change it — you changed nothing, and there is nothing for you to change."
-                                }
                             >
                                 <FormBuilder tableId={table.id} />
                             </WritesItsOwnTable>
-                            <NotBuiltYet
-                                today={
-                                    "A form written by the agent works end to end: it makes the table, the questions " +
-                                    "and the published link in one go, a stranger answers it with no account, the " +
-                                    "answer lands as a row here, and the person who asked for it is notified."
-                                }
-                                waitingFor={
-                                    "two things. The builder above needs the screens package fix that is in flight " +
-                                    "(it writes a column through the record door instead of the column door). And the " +
-                                    "one-sentence path is the agent — this page has no chat box of its own on purpose, " +
-                                    "so ask the agent in section 7 and the form appears in the panel above."
-                                }
-                            />
+                            <Aside>
+                                Write the questions, press Save, then press Publish — the link appears beside it and
+                                anybody who has it can answer without an account. Section 7's agent can write the
+                                whole form from one sentence instead, and it shows up in the panel above.
+                            </Aside>
                         </>
                     )}
                 </NeedsTable>
@@ -467,146 +539,54 @@ function Bench({
                 </NeedsTable>
             </Section>
 
-            {/* 9 — DASHBOARDS. The verdict is `custom.dashboards`' own answer for
-                this table, asked on arrival — never a word typed into this file. */}
+            {/* 9 — DASHBOARDS */}
             <Section
                 n={9}
                 title={CONTENTS[8]}
-                state={verdictOf(dashboards, (made) => made.length > 0)}
+                capability={dashboardsDoor}
                 what="A chart over your own records: group by a column, count or total another, and every number is the store's own answer rather than a copy kept somewhere else."
             >
                 <NeedsTable table={workingTable}>
                     {(table) => (
                         <>
-                            {dashboards.state === "refused" ? (
-                                <Refusal>{dashboards.sentence}</Refusal>
-                            ) : dashboards.state === "asking" ? (
-                                <p className="text-sm text-muted-foreground">
-                                    Asking this table what dashboards it already has…
-                                </p>
-                            ) : (
-                                <p className="text-sm leading-relaxed text-foreground/90">
-                                    {dashboards.data.length === 0
-                                        ? "The door answers and this table has no dashboard yet. Make one in the canvas below and it opens on the table's own screen."
-                                        : dashboards.data.length === 1
-                                          ? `One dashboard, “${dashboards.data[0]!.name}”, with ${dashboards.data[0]!.block_count} ${dashboards.data[0]!.block_count === 1 ? "chart" : "charts"} on it.`
-                                          : `${dashboards.data.length} dashboards on this table, ${dashboards.data.reduce((n, d) => n + d.block_count, 0)} charts between them.`}
-                                </p>
-                            )}
-                            {/* A DASHBOARD HAS A HOME NOW. It used to have none, which is
-                                why this section said "Not built yet": `TablePage` has a
-                                Dashboards view, and `?dashboard=<id>` opens one directly —
-                                which is the link an agent's answer ends in. */}
-                            <RealScreen
-                                Link={Link}
-                                href={
-                                    dashboards.state === "open" && dashboards.data[0]
-                                        ? `/data-v2/${table.id}?dashboard=${dashboards.data[0].dashboard_id}`
-                                        : `/data-v2/${table.id}`
-                                }
-                                label={tableName(table)}
-                                then={
-                                    dashboards.state === "open" && dashboards.data[0]
-                                        ? "opens straight onto the canvas, the same link an agent hands back"
-                                        : "press Dashboards above the grid"
-                                }
-                            />
                             <WritesItsOwnTable
                                 what="the dashboard canvas"
                                 whatHappens={
                                     "It keeps your charts in a table of its own called Dashboards, and it makes " +
                                     "that table the first time it runs — in this organization, under \"Kept by the app\"."
                                 }
-                                measured={
-                                    "The grouping-and-totalling door underneath it is live and every number it " +
-                                    "draws is this organization's own. What it may still refuse is making that " +
-                                    "housekeeping table on the first run; if it does you will see a red box saying " +
-                                    "the value was not accepted, and there is nothing for you to change."
-                                }
                             >
                                 <DashboardCanvas tableId={table.id} />
                             </WritesItsOwnTable>
+                            <Aside>
+                                A dashboard belongs to the one table it is about, so it lives here rather than on a
+                                page of its own — charts from two different tables cannot yet sit side by side.
+                            </Aside>
                         </>
                     )}
                 </NeedsTable>
             </Section>
 
-            {/* 10 — OUTSIDER PORTAL. Asked of `custom.portals` on arrival. This
-                section said "there is no portal address to give anybody" for a
-                day after `/portal/c/<slug>` landed, because the sentence was
-                typed here instead of measured. */}
+            {/* 10 — OUTSIDER PORTAL */}
             <Section
                 n={10}
                 title={CONTENTS[9]}
-                state={verdictOf(portals, (open) => open.some((one) => one.is_active))}
+                capability={[portalRoute, portalDoors]}
                 what="A client, vendor or patient signs in and sees only their own jobs and invoices, decided by the same sharing you already use rather than by a query somebody had to write."
             >
-                {portals.state === "asking" ? (
-                    <p className="text-sm text-muted-foreground">Asking what portals this organization has opened…</p>
-                ) : portals.state === "refused" ? (
-                    <NotBuiltYet
-                        today={
-                            "Nothing an outsider can reach from here. The portal screens and the public route " +
-                            "both exist, but the door that lists this organization's portals refused this " +
-                            "browser, so nothing can be shown or made on this page."
-                        }
-                        waitingFor="that refusal, in the store's own words:"
-                    >
-                        <Refusal>{portals.sentence}</Refusal>
-                    </NotBuiltYet>
-                ) : portals.data.length === 0 ? (
-                    <>
-                        <p className="text-sm leading-relaxed text-foreground/90">
-                            The door answers and this organization has opened no portal yet. A portal names the
-                            table whose records ARE your clients, and each of them then sees the records that name
-                            them and nothing else.
-                        </p>
-                        {workingTable ? (
-                            <RealScreen
-                                Link={Link}
-                                href={`/data-v2/${workingTable.id}`}
-                                label={tableName(workingTable)}
-                                then="press Portals above the grid — that panel opens one, and the address it hands back is what a client types"
-                            />
-                        ) : null}
-                    </>
-                ) : (
-                    <>
-                        <p className="text-sm leading-relaxed text-foreground/90">
-                            {portals.data.length === 1
-                                ? "One portal is open."
-                                : `${portals.data.length} portals are open.`}{" "}
-                            Every address below is real: it is what a client types, and it is signed in as them,
-                            not as you.
-                        </p>
-                        <ul className="divide-y divide-border rounded-md border border-border">
-                            {portals.data.map((one) => (
-                                <li key={one.portal_id} className="px-3 py-2">
-                                    <p className="truncate text-sm text-foreground">{one.title}</p>
-                                    <p className="mt-0.5 text-xs text-muted-foreground">
-                                        clients from {one.client_table} · {one.tables}{" "}
-                                        {one.tables === 1 ? "table" : "tables"} shown · {one.invited} invited,{" "}
-                                        {one.signed_in} signed in
-                                        {one.is_active ? "" : " · switched off"}
-                                    </p>
-                                    <RealScreen
-                                        Link={Link}
-                                        href={portalPath(one.slug)}
-                                        label={portalPath(one.slug)}
-                                        then={
-                                            one.is_active
-                                                ? "the client's own screen — you will be asked to sign in as one of them"
-                                                : "switched off, so it answers nobody until it is switched back on"
-                                        }
-                                    />
-                                </li>
-                            ))}
-                        </ul>
-                    </>
-                )}
+                <NeedsTable table={workingTable}>
+                    {(table) => (
+                        <TryIt hint="this opens a real portal and invites a real person to it">
+                            <div className="rounded-md border border-border p-3">
+                                <PortalsPanel tableId={table.id} />
+                            </div>
+                        </TryIt>
+                    )}
+                </NeedsTable>
                 <Aside>
-                    Section 2's Access tab answers “who can open this, and why” for somebody outside your
-                    organization in full sentences — it is the same answer a portal is built on.
+                    The panel above says in plain English how a client gets her address, what she will see when
+                    she opens it, and how to take her way in away again. Section 2's Access tab answers the same
+                    question for people inside your organization.
                 </Aside>
             </Section>
 
@@ -622,12 +602,11 @@ function Bench({
                 </NeedsTable>
             </Section>
 
-            {/* 12 — NOTIFICATIONS AND DIGESTS. The verdict is whether the door the
-                published editor asks for its cadence list answers this browser. */}
+            {/* 12 — NOTIFICATIONS AND DIGESTS */}
             <Section
                 n={12}
                 title={CONTENTS[11]}
-                state={verdictOf(cadences, (offered) => offered.length > 0)}
+                state="partly"
                 what="Being told when something happens: a message the moment a record matches what you care about, or a summary on a schedule. What counts as worth telling you is a rule over a saved view, in English."
             >
                 <NeedsTable table={workingTable}>
@@ -639,22 +618,9 @@ function Bench({
                                 </div>
                             </TryIt>
                             <Aside>
-                                {cadences.state === "open"
-                                    ? `It offers ${cadences.data.join(", ")} — read from the same list the digest runner honours, not typed into the picker.`
-                                    : cadences.state === "asking"
-                                      ? "Asking which cadences it may offer…"
-                                      : cadences.sentence}
-                            </Aside>
-                            <Aside>
                                 A form published in section 5 already subscribes whoever asked for it, so a new
                                 response shows up in the bell at the top of the window.
                             </Aside>
-                            <RealScreen
-                                Link={Link}
-                                href={`/data-v2/${table.id}`}
-                                label={tableName(table)}
-                                then="press Notifications above the grid — that panel carries the quiet hours, when the next summary goes out, and “Send me a preview now”"
-                            />
                             <NotificationsTry table={table} organizationId={organizationId} />
                         </>
                     )}
@@ -923,15 +889,12 @@ function WorkingTableBar({
 function WritesItsOwnTable({
     what,
     whatHappens,
-    measured,
     children,
 }: {
     /** "the form builder" — used in the button's own sentence. */
     what: string;
     /** What mounting it writes, in plain words. */
     whatHappens: string;
-    /** What we measured it actually doing at THIS version. Never a guess. */
-    measured: string;
     children: ReactNode;
 }) {
     const [opened, setOpened] = useState(false);
@@ -945,7 +908,10 @@ function WritesItsOwnTable({
     return (
         <div className="space-y-2 rounded-md border border-amber-600/40 bg-amber-500/5 p-3 dark:border-amber-400/40">
             <p className="text-sm leading-relaxed text-foreground/90">{whatHappens}</p>
-            <p className="text-sm leading-relaxed text-muted-foreground">{measured}</p>
+            {/* WHAT THIS VERSION CAN DO IS NOT SAID HERE. The section above this
+                button asked the live doors and printed their answer; a second
+                sentence typed into this component is exactly the note that
+                outlived its defect and told a person not to press the button. */}
             <Button variant="outline" size="sm" onClick={() => setOpened(true)}>
                 Open {what} anyway
             </Button>
@@ -2078,16 +2044,6 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                                         source={{ type: "raw" }}
                                         actionsVariant="mini-bar"
                                     />
-                                    {/* THE DOCUMENT HAS ITS OWN ADDRESS. What is
-                                        drawn above is the same frozen body, but a
-                                        finished document is something you send
-                                        somebody, and this is the link you send. */}
-                                    <RealScreen
-                                        Link={Link}
-                                        href={`/d/${openRender}`}
-                                        label={`/d/${openRender}`}
-                                        then="this document on its own page, the link you hand to somebody"
-                                    />
                                 </div>
                             ) : null}
                         </div>
@@ -2249,17 +2205,11 @@ function NotificationsTry({ table, organizationId }: { table: Table; organizatio
                     )}
                 </div>
             </TryIt>
-            {/* WHAT THIS LIST IS, and nothing about what it is waiting for.
-                It used to end on a "waiting on the editor above — at records-ui
-                X it still asks the notifier's own reader and is refused; it asks
-                the doors this list uses from 0.30.0 onwards", which was a claim
-                about a package version rather than about this deployment. The
-                editor's own door is asked live in the section above and says for
-                itself whether it answers. */}
             <Aside>
                 A notification an agent or a published form switches on really fires and arrives in the bell at
-                the top of the window, this list is what you are being told about, and switching one off stops it
-                firing on every channel at once.
+                the top of the window, this list is what you are being told about, and switching one off stops
+                it firing everywhere at once. The editor above offers this organization’s own saved views to
+                subscribe to.
             </Aside>
         </div>
     );
