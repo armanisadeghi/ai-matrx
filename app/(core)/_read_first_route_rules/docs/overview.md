@@ -35,7 +35,6 @@ features/shell/
 │   │   │   ├── AdminIndicatorMenuItem.tsx
 │   │   │   ├── LinkMenuItem.tsx
 │   │   │   ├── MenuGroup.tsx
-│   │   │   ├── NotificationsMenuItem.tsx
 │   │   │   ├── OverlayMenuItem.tsx
 │   │   │   ├── SignOutMenuItem.tsx
 │   │   │   ├── ThemeToggleMenuItem.tsx

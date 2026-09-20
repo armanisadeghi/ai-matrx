@@ -23,12 +23,13 @@
  *      chat route's rect equals the document route's rect, to the pixel.
  *   2. OPENING THE CANVAS MOVES NO SHELL HEADER BUTTON — every button in the
  *      shell header's cluster keeps its exact rect, canvas closed vs open, on
- *      both routes. Two things have to hold for that: `:root[data-canvas-open]`
- *      hides the avatar with `visibility`, which reserves its box; and
- *      `CanvasShellHeaderToggle` keeps its SLOT while the canvas is open (the
- *      canvas pane's header owns the control then) instead of unmounting and
- *      pulling every button left of it 44px sideways. Measured live on
- *      2026-09-17 before that fix: Records 887.59 closed against 931.59 open.
+ *      both routes. What has to hold for that: `CanvasShellHeaderToggle` keeps
+ *      its SLOT (and, since 2026-09-19, its button — disabled when empty) in
+ *      every state instead of unmounting and pulling every button left of it
+ *      44px sideways. Measured live on 2026-09-17 before that fix: Records
+ *      887.59 closed against 931.59 open. (The avatar used to be the other
+ *      half of this — hidden with `visibility` so its box survived; it now
+ *      lives bottom-left, outside the header, so it is no longer a factor.)
  *
  * PROVEN FAILING BEFORE PASSING, two switches:
  *   `MATRX_LAYOUT_GATE_MUTATION=dock` builds the chat fixture the way the
@@ -71,41 +72,33 @@ const TAILWIND_SUBSET = `
 `;
 
 /**
- * The shell header's right-hand button cluster, exactly as the app builds it:
- * an auto-margined row of buttons ending in `.shell-user-menu-wrapper`, the
- * one element `:root[data-canvas-open="true"]` targets.
- */
-/**
- * The shell header's right-hand cluster, as the app builds it: an auto-margined
- * row ending in the canvas toggle's slot and `.shell-user-menu-wrapper`, the one
- * element `:root[data-canvas-open="true"]` targets.
+ * The shell header's right-hand cluster, as the app builds it since
+ * 2026-09-19: an auto-margined row of route actions ending in the three fixed
+ * controls (Agents, the canvas slot, Inbox). The avatar is no longer in the
+ * header — it lives bottom-left (ShellUserBlock), which the canvas never
+ * covers, so nothing here hides on `data-canvas-open`.
  *
- * `slot` mirrors `CanvasShellHeaderToggle`: an inert placeholder of the SAME
- * width whenever the canvas has nothing to reopen (`empty`) or is showing
- * (`open`, where the canvas pane's own header owns the control), and the live
- * control only in `closed` — an item exists and the canvas is folded away.
+ * `slot` mirrors `CanvasShellHeaderToggle`: ONE box of the same width in
+ * every state, always holding the button — `disabled` when the canvas has
+ * nothing to reopen (`empty`), live otherwise.
  */
 function header(canvas: CanvasState) {
   const dropSlot =
     (MUTATION === "unmount-slot" && canvas === "open") ||
     (MUTATION === "first-item" && canvas === "empty");
-  const reserved = canvas === "open" || canvas === "empty";
+  const disabled = canvas === "empty" ? " disabled" : "";
   const slot = dropSlot
     ? ""
-    : reserved
-      ? `<div data-canvas-header-slot="reserved" data-header-button="canvas-slot"
-             style="width:44px;height:44px;visibility:hidden;pointer-events:none"></div>`
-      : `<div data-canvas-header-slot="control" data-header-button="canvas-slot"
-             style="width:44px;height:44px"><button style="width:44px;height:44px">C</button></div>`;
+    : `<div data-canvas-header-slot="control" data-canvas-header-slot-state="${canvas}" data-header-button="canvas-slot"
+             style="width:44px;height:44px"><button${disabled} style="width:44px;height:44px">C</button></div>`;
   return `
   <header class="shell-header" data-testid="shell-header">
     <div style="display:flex; align-items:center; gap:8px; margin-left:auto; height:100%">
       <button data-header-button="records" style="width:72px;height:28px">Records</button>
       <button data-header-button="canvas" style="width:72px;height:28px">Canvas</button>
+      <button data-header-button="agents" style="width:44px;height:44px">R</button>
       ${slot}
-      <div class="shell-user-menu-wrapper" data-header-button="avatar" style="width:28px;height:28px">
-        <button style="width:28px;height:28px">A</button>
-      </div>
+      <button data-header-button="inbox" style="width:44px;height:44px">B</button>
     </div>
   </header>
 `;
@@ -305,9 +298,10 @@ for (const route of ["chat", "document"] as const) {
     await mount(page, route, "closed", width);
     const closed = await headerButtonRects(page);
     expect(Object.keys(closed).sort()).toEqual([
-      "avatar",
+      "agents",
       "canvas",
       "canvas-slot",
+      "inbox",
       "records",
     ]);
 
@@ -371,9 +365,10 @@ for (const route of ["chat", "document"] as const) {
     const empty = await headerButtonRects(page);
     // The slot is on screen before anything has ever been put in the canvas.
     expect(Object.keys(empty).sort()).toEqual([
-      "avatar",
+      "agents",
       "canvas",
       "canvas-slot",
+      "inbox",
       "records",
     ]);
 

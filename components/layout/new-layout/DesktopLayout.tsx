@@ -42,10 +42,10 @@ import {
 import { MenuTapButton } from "@ai-matrx/tap-target/buttons";
 import { useVoicePadAdvanced } from "@/components/official-candidate/voice-pad/hooks/useVoicePad";
 import ShellUserMenu from "@/features/shell/components/header/header-right-menu/ShellUserMenu";
-import NotificationDropdown from "@/components/ui/notifications/NotificationDropdown";
-import { MessageIcon } from "@/features/messaging/components/MessageIcon";
+import { InboxHeaderButton } from "@/features/notifications/components/InboxHeaderButton";
 import { QuickActionsMenu } from "@/features/quick-actions/components/QuickActionsMenu";
 import FeedbackButton from "@/features/feedback/FeedbackButton";
+
 
 interface SidebarLink {
   label: string;
@@ -151,11 +151,7 @@ export default function DesktopLayout({
           <div className="flex items-center overflow-visible">
             <QuickActionsMenu />
             <FeedbackButton />
-            <MessageIcon />
-            {/* The bell owns its own data — `features/notifications/`. The
-                shell used to hand it an empty array that no code ever filled,
-                so it showed "no notifications" over real unread rows. */}
-            <NotificationDropdown />
+            <InboxHeaderButton isAuthenticated />
             <ShellUserMenu />
           </div>
         </div>

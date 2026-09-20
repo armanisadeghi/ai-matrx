@@ -7,9 +7,6 @@ import { OverlayMenuItem } from "./OverlayMenuItem";
 import { LinkMenuItem } from "./LinkMenuItem";
 import { AdminIndicatorMenuItem } from "./AdminIndicatorMenuItem";
 import { ErrorInspectorMenuItem } from "./ErrorInspectorMenuItem";
-import { NotificationsMenuItem } from "./NotificationsMenuItem";
-import { MessagesMenuItem } from "./MessagesMenuItem";
-import { ApprovalsMenuItem } from "./ApprovalsMenuItem";
 import { ThemeToggleMenuItem } from "./ThemeToggleMenuItem";
 import { CopyShortLinkMenuItem } from "./CopyShortLinkMenuItem";
 import { SignOutMenuItem } from "./SignOutMenuItem";
@@ -63,9 +60,6 @@ export default function UserMenuPanel({
 
       {divider}
 
-      <MessagesMenuItem />
-      <NotificationsMenuItem />
-      <ApprovalsMenuItem />
       {COMMUNICATION_ITEMS.map((item) => (
         <OverlayMenuItem key={item.overlayId} {...item} />
       ))}
