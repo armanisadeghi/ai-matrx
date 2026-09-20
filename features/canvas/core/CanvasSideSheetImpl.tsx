@@ -167,7 +167,9 @@ export function CanvasSideSheetImpl() {
             <div
               className={cn(
                 "w-1 h-12 rounded-full transition-colors",
-                isResizing ? "bg-primary" : "bg-border group-hover:bg-primary/70",
+                isResizing
+                  ? "bg-primary"
+                  : "bg-border group-hover:bg-primary/70",
               )}
             />
           </div>

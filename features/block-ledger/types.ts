@@ -63,6 +63,13 @@ export const RUNG_LABELS: Record<string, string> = {
   browser: "2 — Server browser",
   own_browser: "3 — Your own browser",
   human_drive: "4 — You, driving",
+  // NOT NUMBERED, because it is not a rung. Residential egress is the same
+  // step run again from the person's own connection — `OPTIONAL_RUNGS` in
+  // `features/capture-ladder/types.ts`. It appears in real `rung_trail`s on
+  // the live table, and `labelFor` answers an unknown key with the key
+  // itself, so without this line the block dialog printed the bare word
+  // "residential" at a person on the one screen whose job is to explain.
+  residential: "— Retried from your connection",
 };
 
 export const STATUS_LABELS: Record<string, string> = {

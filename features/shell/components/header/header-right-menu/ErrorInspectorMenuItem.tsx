@@ -3,6 +3,7 @@
 import { AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MENU_ITEM_CLASS } from "./menuItemClass";
+import { useMenuCheckboxId } from "./menuCheckboxId";
 import { useToggleErrorInspector } from "@/features/admin/error-inspector/useOpenErrorInspector";
 import { useCapturedErrorStats } from "@/lib/diagnostics/useCapturedErrors";
 
@@ -13,10 +14,11 @@ import { useCapturedErrorStats } from "@/lib/diagnostics/useCapturedErrors";
  */
 export function ErrorInspectorMenuItem() {
   const toggle = useToggleErrorInspector();
+  const menuCheckboxId = useMenuCheckboxId();
   const { red } = useCapturedErrorStats();
 
   return (
-    <label htmlFor="shell-user-menu" className="block">
+    <label htmlFor={menuCheckboxId} className="block">
       <button
         className={cn(MENU_ITEM_CLASS, "[&_svg]:text-amber-500")}
         onClick={toggle}
