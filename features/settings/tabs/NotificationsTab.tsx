@@ -125,11 +125,11 @@ export default function NotificationsTab() {
   );
 
   const handleReset = useCallback(
-    (eventKey: string) => {
+    (eventKey: string, channelKeys: readonly string[]) => {
       if (!scopeId || isGlobalScope) return;
       setSavingKey(`${eventKey}:reset`);
       Promise.all(
-        NOTIFICATION_CHANNELS.map(({ key }) =>
+        channelKeys.map((key) =>
           clearNotificationPreference(eventKey, key, scopeId),
         ),
       )
@@ -187,16 +187,19 @@ export default function NotificationsTab() {
             </SettingsCallout>
           ) : (
             settings.map((event) => {
+              const availableChannels = NOTIFICATION_CHANNELS.filter(
+                ({ key }) => event.availableChannels[key],
+              );
               const hasOwnRow =
                 !isGlobalScope &&
-                NOTIFICATION_CHANNELS.some(({ key }) => !event.inherited[key]);
+                availableChannels.some(({ key }) => !event.inherited[key]);
               return (
                 <SettingsSection
                   key={event.eventKey}
                   title={event.label}
                   description={event.description ?? undefined}
                 >
-                  {NOTIFICATION_CHANNELS.map(({ key, label }, index) => (
+                  {availableChannels.map(({ key, label }, index) => (
                     <SettingsSwitch
                       key={key}
                       label={label}
@@ -212,7 +215,7 @@ export default function NotificationsTab() {
                         handleToggle(event.eventKey, key, enabled)
                       }
                       disabled={savingKey === `${event.eventKey}:${key}`}
-                      last={index === NOTIFICATION_CHANNELS.length - 1 && !hasOwnRow}
+                      last={index === availableChannels.length - 1 && !hasOwnRow}
                     />
                   ))}
                   {hasOwnRow ? (
@@ -222,7 +225,12 @@ export default function NotificationsTab() {
                       actionLabel="Use my default"
                       kind="outline"
                       size="sm"
-                      onClick={() => handleReset(event.eventKey)}
+                      onClick={() =>
+                        handleReset(
+                          event.eventKey,
+                          availableChannels.map(({ key }) => key),
+                        )
+                      }
                       loading={savingKey === `${event.eventKey}:reset`}
                       last
                     />
