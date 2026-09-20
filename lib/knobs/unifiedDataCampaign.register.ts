@@ -193,10 +193,28 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "Lane NAV-FIX's RED TWIN for the sidebar gate: it wires the gate the OLD way (a synchronous Redux read inside useEffect(…, [])) and FAILS, which is what proves the real hook's four green clauses are load-bearing. It is excluded from `pnpm test` by jest.config.ts and serves no request, so it is tooling and must not be gated — a red twin held behind the campaign switch would go quiet exactly when the campaign is off, which is when a regression would land unseen. Registered by lane APPROVAL-KNOB, which found `check:campaign-entry-points` exiting 1 on origin/main for this one unregistered file.",
     },
     {
+        id: "entity-custom-fields",
+        file: "features/unified-data/components/EntityCustomFields.tsx",
+        kind: "runtime",
+        why: "THE ONE LINE a standard entity page adds (SCR-12 / REC-40), and now the ONLY place that reads the switch for it. It was `PartyRecordPage`'s own twenty-line private wrapper; lane ENTITY-FIELDS extracted it the moment a second page (the deal page) wanted the same thing, because the third would have copied it differently. The switch is read HERE, once, so a page that adds the line cannot forget it and `check:campaign-entry-points` has one row instead of one per page. Renders nothing at all when the switch is off.",
+    },
+    {
         id: "crm-party-custom-fields",
         file: "features/crm/components/record/PartyRecordPage.tsx",
-        kind: "runtime",
-        why: "The first standard entity page to grow its organization's own fields from the new store (SCR-12). The live CRM record page, so the section is behind the switch and renders nothing at all when it is off.",
+        kind: "one_line",
+        why: "The live CRM contact page carries the one line `<EntityCustomFields entityToken=\"party\" …/>`. The switch is read inside that component (entity-custom-fields), so this file holds no campaign logic of its own - it names a token.",
+    },
+    {
+        id: "crm-deal-custom-fields",
+        file: "features/crm/components/deals/DealRecordPage.tsx",
+        kind: "one_line",
+        why: "The live deal page carries the SAME one line with the token `crm_deal`. No per-entity code: the whole difference between the two pages is the word.",
+    },
+    {
+        id: "web-page-custom-fields",
+        file: "app/(core)/marketing/pages/[pageId]/page.tsx",
+        kind: "one_line",
+        why: "A standard DETAIL table (`web_page`) carrying the same one line, which is how REC-34's two types are shown to be one mechanism rather than two.",
     },
     {
         id: "list-change-proposal-record-table",
