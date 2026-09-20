@@ -163,6 +163,36 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "Exercises the `kind:\"table\"` branch above against the live main database as admin@admin.com, whose personal organization carries a standing per-user switch override. A test run by a developer/CI, never served to a user, so it must not call the gate itself.",
     },
     {
+        id: "record-change-approval-apply",
+        file: "features/record-change-approvals/applyRecordChange.ts",
+        kind: "runtime",
+        why: "The RESUME of a server-side record change a person approved in chat: it writes the agent's exact declaration through `@ai-matrx/records/core`'s `table_declare` / `record_update` / `record_write` doors under the person's own authority. Served to users from live conversations, so it reads the one switch first and refuses with the off sentence when it is off.",
+    },
+    {
+        id: "record-change-approval-card",
+        file: "features/record-change-approvals/RecordChangeApprovalCard.tsx",
+        kind: "runtime",
+        why: "The card that puts the wait on screen — the platform's own <ApprovalCard>, driven by the records tool result. It reaches the store only through the apply port above, and that port is where the switch is read; this file imports the port and never a door, so the gate it inherits is the one gate.",
+    },
+    {
+        id: "record-change-approval-test-harness",
+        file: "features/record-change-approvals/__tests__/harness.ts",
+        kind: "tooling",
+        why: "The shared harness for the two suites below: it signs in as admin@admin.com, builds a records client against the live store and carries the waits the server half actually produced. A test harness serves no request, so it must not be gated — gating it would make the suite go quiet exactly when the campaign is off, which is when a regression would land unseen.",
+    },
+    {
+        id: "record-change-approval-live-test",
+        file: "features/record-change-approvals/__tests__/recordChangeApproval.live.test.tsx",
+        kind: "tooling",
+        why: "Renders the approval card against the LIVE record store as admin@admin.com: approve lands the column and the store is read back to prove it; decline leaves it absent. Run by a developer, never served, so it does not call the gate itself.",
+    },
+    {
+        id: "record-change-approval-red-twin",
+        file: "features/record-change-approvals/__tests__/recordChangeApproval.red.test.tsx",
+        kind: "red_twin",
+        why: "The RED TWIN of the suite above: it asserts the world before this lane — a wait nobody could act on, an approval that could not land, a decline that named no setting — and FAILS all three, which is what makes the green twin mean something.",
+    },
+    {
         id: "migration-target",
         file: "scripts/lib/migration-target.ts",
         kind: "tooling",
