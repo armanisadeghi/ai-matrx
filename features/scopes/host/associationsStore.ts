@@ -29,6 +29,7 @@ import { ensureOrgId } from "@/lib/organizations/personalOrg";
 import { withOrganizationRefusalShown } from "@/lib/organizations/organizationRefusalToast";
 import { associationsErrorSink } from "./errorSink";
 import { getAssociationsEntityOverlay } from "@/features/scopes/registry/entityRegistry";
+import { readAssociationPages } from "./readAssociationPages";
 
 // D311 (2026-09-12): NOTHING here probes RPC existence, and nothing hides a
 // probe's errors. @ai-matrx/associations 0.9.0 DELETED the boot probe and its
@@ -60,6 +61,9 @@ const client = supabase as unknown as {
 };
 export const associationsDataSource: AssociationsDataSource = {
   rpc: (fn, args) => {
+    if (fn === "assoc_for_entity" || fn === "assoc_for_sources" || fn === "assoc_for_targets" || fn === "assoc_members_visible") {
+      return readAssociationPages(fn, args);
+    }
     const call = client.rpc(fn, args);
     if (fn !== "cmt_add") return call;
     // The cmt_add tap (W6 comments adoption): EVERY comment post — the

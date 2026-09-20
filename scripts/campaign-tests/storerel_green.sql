@@ -190,19 +190,52 @@ begin
     raise exception '1e (T7): an edge with no field was accepted (got %)', coalesce(v_caught,'no refusal');
   end if;
 
+  -- 1e. AND THE SHAPE 1f USED TO BUILD IS REFUSED BY NAME (FLD-13, lane APPROVAL-TAIL).
+  --     A column of a Table is stored as a FIELD. A row written into the Field kernel with any
+  --     other class is invisible to every reader that asks for a Field by class, including the
+  --     duplicate check that stops one table having the same column twice. This is the EXACT
+  --     statement 1f used to run, and the refusal is caught, so nothing is written and 1f goes
+  --     on to write the same column properly.
+  v_caught := null;
+  begin
+    insert into custom.record (organization_id, table_id, data_class, data) values
+      (v_org, custom.field_kernel_id(), 'record', jsonb_build_object(
+        'key','memo','label','Memo','type','text','sort',30,'required',false,
+        'multi',false,'dated',false,'source','manual','config','{}'::jsonb,'rules','[]'::jsonb,
+        'depends_on','[]'::jsonb,'sensitivity','internal','source_config','{}'::jsonb,
+        'context_policy','include','applies_to_types','[]'::jsonb,'entity_definition_id',v_po_t));
+  exception when others then v_caught := sqlerrm;
+  end;
+  if v_caught is null or v_caught !~ 'stored as a field' then
+    raise exception '1e (FLD-13): a column written into the Field kernel with class "record" was '
+      'not refused by name (got %)', coalesce(v_caught, 'no refusal at all');
+  end if;
+
   -- 1f. REC-18 THROUGH THE CLIENT DOOR. A Field another Field READS by name is refused, and
   --     the refusal NAMES the dependant. The fourth pass found this dark because a field
   --     written through the client door is stored as a plain record rather than as a field;
   --     the delete rule now decides what a Field is by the kernel it lives in.
+  --
+  --     THE MIS-CLASSED SHAPE CANNOT BE WRITTEN ANY MORE, and that is a stronger statement than
+  --     this clause used to make (LADDER-CAP, 2026-09-20). These two rows were written
+  --     `data_class 'record'` ON PURPOSE, to reproduce the shape the fourth pass found dark.
+  --     Lane APPROVAL-TAIL closed that door on 2026-09-20 06:56:14Z
+  --     (`apprvtail_a_field_row_is_a_field.sql`): `custom._field_class_guard` now refuses any row
+  --     in the Field kernel whose class is not `field`, so the premise of the old clause is
+  --     unreachable and this suite died on its own fixture with
+  --     `a column of a table is stored as a field, and this one says record`.
+  --     NOTHING IS WEAKENED: 1e below asserts the guard REFUSES the old shape by name, which the
+  --     suite never checked, and the delete rule is then asserted on the only shape a Field can
+  --     now have. It still decides what a Field is by the kernel it lives in.
   insert into custom.record (organization_id, table_id, data_class, data) values
-    (v_org, custom.field_kernel_id(), 'record', jsonb_build_object(
+    (v_org, custom.field_kernel_id(), 'field', jsonb_build_object(
       'key','memo','label','Memo','type','text','sort',30,'required',false,'multi',false,
       'dated',false,'source','manual','config','{}'::jsonb,'rules','[]'::jsonb,
       'depends_on','[]'::jsonb,'sensitivity','internal','source_config','{}'::jsonb,
       'context_policy','include','applies_to_types','[]'::jsonb,'entity_definition_id',v_po_t))
     returning id into v_f_memo;
   insert into custom.record (organization_id, table_id, data_class, data) values
-    (v_org, custom.field_kernel_id(), 'record', jsonb_build_object(
+    (v_org, custom.field_kernel_id(), 'field', jsonb_build_object(
       'key','memo_echo','label','Memo echo','type','text','sort',40,'required',false,'multi',false,
       'dated',false,'source','manual','config','{}'::jsonb,'rules','[]'::jsonb,
       'depends_on', jsonb_build_array('memo'),'sensitivity','internal','source_config','{}'::jsonb,

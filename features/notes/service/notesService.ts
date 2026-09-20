@@ -111,7 +111,10 @@ export async function fetchNotesByIds(ids: string[]): Promise<Note[]> {
 /**
  * Fetch a single note by ID
  */
-export async function fetchNoteById(id: string): Promise<Note | null> {
+export async function fetchNoteById(
+  id: string,
+  options: { failureMode?: "empty" | "throw" } = {},
+): Promise<Note | null> {
   const { data, error } = await supabase
     .schema("workbench")
     .from("notes")
@@ -122,6 +125,7 @@ export async function fetchNoteById(id: string): Promise<Note | null> {
 
   if (error) {
     console.error("Error fetching note:", error);
+    if (options.failureMode === "throw") throw operationFailed("load this note", error);
     return null;
   }
 

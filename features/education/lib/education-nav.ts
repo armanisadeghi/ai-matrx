@@ -49,6 +49,13 @@ export interface EduToolNavEntry {
  * know whether that lives under assessment or flashcards.
  */
 export const EDU_TOOL_NAV: EduToolNavEntry[] = [
+  {
+    slug: "study-guides",
+    label: "Study Guides",
+    iconName: "BookOpen",
+    group: "Study",
+    description: "Read notes with outlines, highlights, and key terms",
+  },
   // Study — the surfaces a learner spends session time in.
   {
     slug: "flashcards",

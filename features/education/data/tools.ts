@@ -15,6 +15,24 @@ import type { EduToolEntry } from "../types";
 
 export const EDU_TOOLS: EduToolEntry[] = [
   {
+    slug: "study-guides",
+    name: "Study Guides",
+    tagline: "Read, highlight, and study your notes",
+    description: "A focused reader with an outline, personal annotations, and associated flashcards.",
+    icon: NotebookPen,
+    letter: "Sg",
+    status: "live",
+    accessTier: "free",
+    visionRef: "Education study reader — Arman, 2026-09-20",
+    capabilities: [
+      "Resizable outline and notes sidebars",
+      "Rich study content from existing notes",
+      "Saved highlights and passage notes",
+      "Associated flashcards as key terms",
+    ],
+    featured: true,
+  },
+  {
     slug: "flashcards",
     name: "Flashcard Studio",
     tagline: "Create, generate, and study rich-media decks",
