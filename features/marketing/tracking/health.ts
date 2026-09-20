@@ -30,7 +30,12 @@ export interface TrackingHealth {
   stale: boolean;
   /** Hours since the snapshot, or null when there has never been one. */
   ageHours: number | null;
-  /** Present when the threshold could not be read — printed, never hidden. */
+  /**
+   * Present when the staleness threshold could not be read — PRINTED, never hidden, on every
+   * surface that shows this verdict. 🚨 It is not decoration: while it is set, `stale` is
+   * always false, so a chip that drops it silently announces "never stale" about a site nobody
+   * is judging (Law 4; V-27 NEW-5). It carries the knob reader's own sentence verbatim.
+   */
   thresholdUnavailable: string | null;
   findings: TrackingFindings | null;
 }
@@ -42,6 +47,12 @@ export interface TrackingHealthInput {
   containerBound: boolean;
   /** From the knob; `null` when the knob is unreadable. */
   maxAgeHours: number | null;
+  /**
+   * The knob reader's sentence when it could NOT be read (`knobs.ts::trackingKnobStandIn`).
+   * A caller that has the reason must pass it — this is the one channel by which every surface
+   * says why nothing is being called stale.
+   */
+  thresholdUnavailable?: string | null;
   now: Date;
 }
 
@@ -93,7 +104,7 @@ export function trackingHealth(input: TrackingHealthInput): TrackingHealth {
         : OFF_DETAIL,
       stale: false,
       ageHours: null,
-      thresholdUnavailable: null,
+      thresholdUnavailable: input.thresholdUnavailable ?? null,
       findings: null,
     };
   }
@@ -115,7 +126,7 @@ export function trackingHealth(input: TrackingHealthInput): TrackingHealth {
         "This site's last tracking snapshot is stored in a shape this screen cannot read, so no verdict is being shown. Run a fresh check.",
       stale,
       ageHours,
-      thresholdUnavailable: null,
+      thresholdUnavailable: input.thresholdUnavailable ?? null,
       findings: null,
     };
   }
@@ -145,7 +156,7 @@ export function trackingHealth(input: TrackingHealthInput): TrackingHealth {
       : trackingSentence(findings),
     stale,
     ageHours,
-    thresholdUnavailable: null,
+    thresholdUnavailable: input.thresholdUnavailable ?? null,
     findings,
   };
 }

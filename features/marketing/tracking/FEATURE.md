@@ -30,21 +30,39 @@ So the server takes a snapshot in two halves (`aidream/services/google_sync/`):
    `pass` (which would claim we looked) and never a `fail` (which would accuse a site that was
    merely down).
 
+   🚨 **And that fetch runs no JavaScript** (a plain HTTP GET). A snippet injected at runtime by
+   a bundle, a consent wrapper or a tag-management layer is not in those bytes, so the read can
+   prove PRESENCE but never ABSENCE: a container it does not find is `not_checked` carrying
+   *"we read the page WITHOUT RUNNING ITS SCRIPTS"*, never `fail` (V-27 NEW-4). The finding
+   carries `javascript_executed`, and the `fail` branches return the day a browser-backed fetch
+   mints the page.
+
 `not_checked` is a first-class verdict all the way to the screen. `parseTrackingFindings` reads an
 **unrecognised** verdict word as `not_checked` too, so a server that grows a fourth word can never
 be read here as "everything is fine".
+
+## 🚨 The caveats are DATA, and every one of them is printed
+
+The server declares what its read cannot see — three sentences, named ONCE at
+`aidream/services/google_sync/kinds.py::TAG_MANAGER_READ_CAVEATS`, carried on the snapshot payload
+as `caveats` and on the `tracking_health` tool answer as the same list. **The panel prints all of
+them, verbatim, and selects among them never.** The one that matters most is *"tracking installed
+outside Tag Manager … is invisible here, so a missing tag means missing from this container, not
+missing from the site"*: without it the headline *"GA4 not installed · conversion not tracked"*
+reads as a verdict on the whole site, which is the exact misread this feature exists to prevent
+(V-27 NEW-3).
 
 ## Files
 
 | File | What it owns |
 |---|---|
 | `types.ts` | The `tag_manager_findings` payload parser. `__kind` is kept, never stripped; a payload that does not declare it returns `null` and the panel says it cannot read that snapshot. |
-| `health.ts` | **THE ONE tracking verdict.** Pure, no clock of its own. The chip, the status board and the panel all read it, so they cannot disagree. |
+| `health.ts` | **THE ONE tracking verdict.** Pure, no clock of its own. The chip, the status board and the panel all read it, so they cannot disagree. It also carries `thresholdUnavailable` — the knob reader's own sentence when the staleness threshold could not be read — so every surface prints the same stand-in through ONE channel. |
 | `service.ts` | The two doors: the direct Supabase read of the newest `web.tag_manager_snapshot`, and `POST /google-sync/tag-manager/snapshot` through `postGoogleBackend`. |
 | `hooks.ts` | ONE query key, so the chip on a row and the panel in a window make the same read. |
-| `knobs.ts` | `google.tracking.snapshot_max_age_hours` (168). A missing row raises by design; this turns the raise into a printed stand-in. |
+| `knobs.ts` | `google.tracking.snapshot_max_age_hours` (168). A missing row raises by design; this turns the raise into a printed stand-in. The reason travels with the value — `useSiteTrackingStatus` passes both into the verdict, so the chip can never read as a silent "never stale". |
 | `components/SiteTrackingPanel.tsx` | **THE canonical panel.** Every surface renders this — the settings card and the window body both wrap it. |
-| `__tests__/` | 35 tests over the derivation, the panel in each graded state, and the three shared primitives U-M2 extended. |
+| `__tests__/` | 41 tests over the derivation, the panel in each graded state, and the three shared primitives U-M2 extended. |
 
 ## Where it surfaces
 
@@ -91,6 +109,21 @@ be read here as "everything is fine".
   jest over fixtures and on reading the live table's generated types.
 
 ## Change log
+
+- **2026-09-20** — **V-27 NEW-3 and NEW-5 closed.** (1) The panel printed ONE of the server's
+  three caveats because the payload hardcoded one sentence. `caveat: string | null` is now
+  `caveats: string[]`, the server declares the whole list, and the panel and the Copy-for-AI
+  payload print every one verbatim — including the "tracking outside Tag Manager is invisible
+  here" sentence, which had never reached a screen. (2) `TrackingHealth.thresholdUnavailable` was
+  documented as printed-never-hidden and hardcoded `null` at all three exits, while
+  `useSiteTrackingStatus` dropped `knob.unavailableReason` on the floor — so an unreadable knob
+  silently stopped calling anything stale and the chip announced nothing (Law 4). The reason now
+  goes IN through `TrackingHealthInput` and comes OUT on the verdict; the panel reads it there
+  (not off the hook), and the chip's tooltip appends it after the verdict it already carried.
+  Red first: 6 tests failed on the pre-change source (the two missing caveats absent from the
+  rendered panel; `thresholdUnavailable` `null`; the chip's detail with no mention of the knob;
+  `caveats` `undefined`), all 41 green after. `npx jest features/marketing/tracking
+  features/marketing/components` → 181 passed; `pnpm check:parse` OK over 17,144 files.
 
 - **2026-09-19** — Created (U-M2). The panel, the card, the window, the chip, the binding, the
   knob reader and 35 tests. Red-then-green: three planted defects (the reconciliation stops gating

@@ -15,6 +15,7 @@ import {
   parseTrackingFindings,
   type TagManagerSnapshotRow,
 } from "@/features/marketing/tracking/types";
+import { trackingKnobStandIn } from "@/features/marketing/tracking/knobs";
 
 const NOW = new Date("2026-09-19T12:00:00Z");
 
@@ -71,8 +72,11 @@ function findings(
     workspace_id: "ws-1",
     workspace_name: "Default Workspace",
     truncated: false,
-    caveat:
+    caveats: [
       "Read from the container's current Tag Manager workspace draft, which can differ from what is published on the live site.",
+      "Tracking installed outside Tag Manager — a hard-coded Google tag, a plugin, or server-side tagging — is invisible here, so a missing tag means missing from this container, not missing from the site.",
+      "Consent is read from each tag's own declared consent settings. A consent banner that blocks tags without declaring it in Tag Manager does not show up.",
+    ],
   } as Json;
 }
 
@@ -205,6 +209,45 @@ describe("trackingHealth", () => {
     expect(health.stale).toBe(false);
   });
 
+  it("🚨 carries the unreadable-threshold reason out on the verdict — it is never a silent null", () => {
+    // The pair that must always travel together: nothing is being called stale (`stale: false`
+    // on a snapshot eight months old) AND the sentence that says why. Before V-27 NEW-5 the
+    // field was hardcoded null at every exit, so the chip read as a clean "never stale".
+    const reason = trackingKnobStandIn("knob row missing");
+    const health = trackingHealth({
+      snapshot: snapshot({ taken_at: "2026-01-01T11:00:00Z" }),
+      containerBound: true,
+      maxAgeHours: null,
+      thresholdUnavailable: reason,
+      now: NOW,
+    });
+    expect(health.stale).toBe(false);
+    expect(health.thresholdUnavailable).toBe(reason);
+    expect(health.thresholdUnavailable).toContain(
+      "google.tracking.snapshot_max_age_hours",
+    );
+  });
+
+  it("carries the reason out of the never-checked and unreadable-payload exits too", () => {
+    const reason = trackingKnobStandIn("knob row missing");
+    const never = trackingHealth({
+      snapshot: null,
+      containerBound: true,
+      maxAgeHours: null,
+      thresholdUnavailable: reason,
+      now: NOW,
+    });
+    expect(never.thresholdUnavailable).toBe(reason);
+    const unreadable = trackingHealth({
+      snapshot: snapshot({}, { checks: [] } as unknown as Json),
+      containerBound: true,
+      maxAgeHours: null,
+      thresholdUnavailable: reason,
+      now: NOW,
+    });
+    expect(unreadable.thresholdUnavailable).toBe(reason);
+  });
+
   it("announces an unreadable payload instead of grading it", () => {
     const health = trackingHealth({
       snapshot: snapshot({}, { checks: [] } as unknown as Json),
@@ -221,6 +264,24 @@ describe("trackingHealth", () => {
 describe("parseTrackingFindings", () => {
   it("refuses a payload that does not declare the kind", () => {
     expect(parseTrackingFindings({ checks: [] } as unknown as Json)).toBeNull();
+  });
+
+  it("🚨 keeps EVERY caveat the server declared, in order — never one of them", () => {
+    const parsed = parseTrackingFindings(findings());
+    expect(parsed?.caveats).toHaveLength(3);
+    // The dangerous one: without it, "GA4 not installed" reads as "this site is untracked".
+    expect(parsed?.caveats[1]).toContain(
+      "is invisible here, so a missing tag means missing from this container",
+    );
+    expect(parsed?.caveats[2]).toContain("consent banner");
+  });
+
+  it("reads a payload with no caveats as an empty list, never as a crash", () => {
+    const parsed = parseTrackingFindings({
+      __kind: "tag_manager_findings",
+      checks: [],
+    } as unknown as Json);
+    expect(parsed?.caveats).toEqual([]);
   });
 
   it("keeps __kind on the parsed shape — the marker is part of the data", () => {

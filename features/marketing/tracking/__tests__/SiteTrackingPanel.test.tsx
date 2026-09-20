@@ -159,8 +159,11 @@ function findingsPayload(reconciliation: "pass" | "fail" | "not_checked"): Json 
     workspace_id: "ws-1",
     workspace_name: "Default Workspace",
     truncated: false,
-    caveat:
+    caveats: [
       "Read from the container's current Tag Manager workspace draft, which can differ from what is published on the live site.",
+      "Tracking installed outside Tag Manager — a hard-coded Google tag, a plugin, or server-side tagging — is invisible here, so a missing tag means missing from this container, not missing from the site.",
+      "Consent is read from each tag's own declared consent settings. A consent banner that blocks tags without declaring it in Tag Manager does not show up.",
+    ],
   } as Json;
 }
 
@@ -248,11 +251,19 @@ describe("SiteTrackingPanel", () => {
     expect(text).toContain("Consent configured");
   });
 
-  it("🚨 prints the server's caveat verbatim — a grade without it reads as production truth", () => {
+  it("🚨 prints EVERY caveat the server declared, verbatim — one of three is the defect", () => {
     snapshotState.value = snapshotRow(findingsPayload("pass"));
     const text = render(<SiteTrackingPanel site={site(true)} now={NOW} />);
     expect(text).toContain(
       "Read from the container's current Tag Manager workspace draft, which can differ from what is published on the live site.",
+    );
+    // 🚨 THE ONE THAT WAS MISSING (V-27 NEW-3). Without it, the headline "GA4 not installed ·
+    // conversion not tracked" reads as a verdict on the whole site rather than on one container.
+    expect(text).toContain(
+      "Tracking installed outside Tag Manager — a hard-coded Google tag, a plugin, or server-side tagging — is invisible here, so a missing tag means missing from this container, not missing from the site.",
+    );
+    expect(text).toContain(
+      "Consent is read from each tag's own declared consent settings. A consent banner that blocks tags without declaring it in Tag Manager does not show up.",
     );
     // …and the freshness line says the same thing in its own words, on every surface.
     expect(text).toContain(
@@ -280,10 +291,17 @@ describe("SiteTrackingPanel", () => {
   it("names the missing knob instead of silently not warning", () => {
     snapshotState.value = snapshotRow(findingsPayload("pass"), "2026-01-01T00:00:00Z");
     knobState.hours = null;
+    // The real `trackingKnobStandIn` sentence, which the hook returns verbatim.
     knobState.reason =
-      "This panel cannot tell you whether the snapshot below is too old: the google.tracking.snapshot_max_age_hours setting could not be read.";
+      "This panel cannot tell you whether the snapshot below is too old: the " +
+      "google.tracking.snapshot_max_age_hours setting could not be read (knob row missing), " +
+      "so nothing here is being called stale. If it persists, tell an administrator that the " +
+      "setting seeded by migrations/google_tracking_knobs.sql is missing or unreadable.";
     const text = render(<SiteTrackingPanel site={site(true)} now={NOW} />);
     expect(text).toContain("google.tracking.snapshot_max_age_hours");
+    // It reaches the screen through the VERDICT's own field, which is the same channel the
+    // chip and the status board read — not a second path only this panel happens to have.
+    expect(text).toContain("nothing here is being called stale");
     // The TRACKING staleness verdict is unenforced — the panel's own 168-hour sentence is absent.
     // (The freshness line's separate provider-lag knob is a different setting and still warns.)
     expect(text).not.toContain("168 hours your organization allows");

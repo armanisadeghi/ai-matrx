@@ -40,8 +40,14 @@ export interface TrackingFindings {
   workspaceName: string | null;
   /** The read hit its bound, so the graded list is not the whole container. */
   truncated: boolean;
-  /** The server's own words about what the read can and cannot see. Printed verbatim. */
-  caveat: string | null;
+  /**
+   * 🚨 EVERY caveat the server declared, in its order, printed VERBATIM and in full. The server
+   * owns this list (`google_sync/kinds.py::TAG_MANAGER_READ_CAVEATS`); this client never
+   * authors a caveat, never edits one and never chooses among them. Printing one of three is
+   * how "tracking installed outside Tag Manager is invisible here" stopped reaching the screen
+   * — the exact misread the feature exists to prevent (V-27 NEW-3).
+   */
+  caveats: string[];
   /** The container-versus-live-page check, also present inside `checks`. */
   pageReconciliation: TrackingCheck | null;
 }
@@ -133,7 +139,11 @@ export function parseTrackingFindings(value: Json): TrackingFindings | null {
     workspaceId: nullableText(value.workspace_id),
     workspaceName: nullableText(value.workspace_name),
     truncated: value.truncated === true,
-    caveat: nullableText(value.caveat),
+    caveats: Array.isArray(value.caveats)
+      ? value.caveats.flatMap((entry) =>
+          typeof entry === "string" && entry ? [entry] : [],
+        )
+      : [],
     pageReconciliation: reconciliation,
   };
 }

@@ -142,16 +142,23 @@ function trackingStatus(
     snapshot: tracking?.snapshot ?? null,
     containerBound,
     maxAgeHours: tracking?.maxAgeHours ?? null,
+    thresholdUnavailable: tracking?.thresholdUnavailable ?? null,
     now: tracking?.now ?? new Date(),
   });
+  const detail = health.stale
+    ? `${health.detail} — last checked more than your organization allows before a tracking check is called stale.`
+    : health.detail;
   return {
     key: "tracking",
     label: health.label,
     name: health.name,
     state: health.state,
-    detail: health.stale
-      ? `${health.detail} — last checked more than your organization allows before a tracking check is called stale.`
-      : health.detail,
+    // 🚨 THE STAND-IN IS PRINTED, NEVER HIDDEN. When the staleness threshold could not be read,
+    // nothing is being called stale — and the chip's tooltip says so instead of reading as a
+    // clean "never stale" (Law 4; V-27 NEW-5).
+    detail: health.thresholdUnavailable
+      ? `${detail} ${health.thresholdUnavailable}`
+      : detail,
   };
 }
 
@@ -161,6 +168,11 @@ export interface SiteTrackingStatusInput {
   snapshot: TagManagerSnapshotRow | null;
   /** `google.tracking.snapshot_max_age_hours`; null when the knob is unreadable. */
   maxAgeHours: number | null;
+  /**
+   * WHY it is unreadable, when it is — the knob reader's own sentence. A caller that has it
+   * must pass it: without it the chip says nothing at all about a threshold nobody could read.
+   */
+  thresholdUnavailable?: string | null;
   /** Injectable so one clock judges the age (the DataFreshnessLine contract). */
   now?: Date;
 }

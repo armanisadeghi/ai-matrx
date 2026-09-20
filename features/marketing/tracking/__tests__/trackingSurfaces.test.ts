@@ -23,6 +23,7 @@ import {
   validateSiteIntegrations,
 } from "@/features/marketing/data/integrations-schema";
 import type { TagManagerSnapshotRow } from "@/features/marketing/tracking/types";
+import { trackingKnobStandIn } from "@/features/marketing/tracking/knobs";
 
 const NOW = new Date("2026-09-19T12:00:00Z");
 const CONNECTION = "11111111-1111-4111-8111-111111111111";
@@ -158,6 +159,32 @@ describe("the sixth connection chip", () => {
     expect(chip.detail).toBe(
       "GA4 installed and firing · contact-form conversion not tracked · consent not configured",
     );
+  });
+
+  it("🚨 says on the chip itself when the staleness threshold could not be read", () => {
+    // The Law-4 failure this closes (V-27 NEW-5): with an unreadable knob the chip stops
+    // calling ANYTHING stale, so silence here reads as "checked recently enough" on a site
+    // nobody is judging. The reason rides in `detail`, which is the chip's tooltip.
+    const reason = trackingKnobStandIn("knob row missing");
+    const { chip } = trackingChip(BOUND, {
+      snapshot: null,
+      maxAgeHours: null,
+      thresholdUnavailable: reason,
+      now: NOW,
+    });
+    expect(chip.detail).toContain("google.tracking.snapshot_max_age_hours");
+    expect(chip.detail).toContain("nothing here is being called stale");
+    // …and the verdict it already carried is still there, not replaced by the stand-in.
+    expect(chip.detail).toContain("never been checked");
+  });
+
+  it("says nothing extra when the threshold WAS readable", () => {
+    const { chip } = trackingChip(BOUND, {
+      snapshot: null,
+      maxAgeHours: 168,
+      now: NOW,
+    });
+    expect(chip.detail).not.toContain("snapshot_max_age_hours");
   });
 });
 

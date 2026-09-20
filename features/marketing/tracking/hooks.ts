@@ -52,6 +52,10 @@ export function useSiteTrackingStatus(site: {
   return {
     snapshot: snapshot.data ?? null,
     maxAgeHours: knob.hours,
+    // 🚨 The knob's FAILURE travels with its value. Dropping it here is how the chip went on
+    // quietly never calling anything stale, announcing nothing (V-27 NEW-5): `maxAgeHours: null`
+    // and "the knob could not be read" look identical downstream unless the reason rides along.
+    thresholdUnavailable: knob.unavailableReason,
     isLoading: snapshot.isLoading,
   };
 }
