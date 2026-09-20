@@ -95,6 +95,17 @@ const SHOTS = [
       await page.waitForSelector("text=Yes, cancel it", { timeout: 10000 });
       await page.screenshot({ path: path.join(OUT, "public-booking-phone-cancel-confirm.png") });
       notes.push("manage: move-to list and a cancel that names the hour being given up");
+
+      // AND IT REALLY CANCELS. Photographing the confirm dialog and stopping there
+      // left a LIVE booking in the organization's calendar every time this script
+      // ran — it holds a real slot under the unique index, so the next run is offered
+      // one fewer time and somebody's day has a fake appointment in it. Lane
+      // LAND-SCREENS found one of its own still sitting there afterwards.
+      // Pressing it is also the only way the cancel path is PROVEN rather than drawn.
+      await page.click("button:has-text('Yes, cancel it')");
+      await page.waitForSelector("text=/cancelled/i", { timeout: 20000 });
+      await page.screenshot({ path: path.join(OUT, "public-booking-phone-cancelled.png") });
+      notes.push("cancelled: the appointment this run made is given back, so the run leaves nothing");
     }
 
     await ctx.close();
