@@ -138,6 +138,14 @@ jest.mock("../../review/ExpertSignOff", () => ({
   ExpertSignOff: () => null,
 }));
 jest.mock("../RunTheBench", () => ({ RunTheBench: () => null }));
+// The page reads the URL now (walk 13, N10: `?run=` is the Operator's door to
+// their own deliverable), so it needs the canonical App Router double.
+jest.mock("next/navigation", () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require("@/test-utils/next-navigation").nextNavigationMock({
+    pathname: "/masterwork/encore/d8dfbd2f-169c-468e-a892-c0980e7ddd45",
+  }),
+);
 jest.mock("../AuditionProof", () => ({ AuditionProof: () => null }));
 jest.mock("@/lib/redux/hooks", () => ({
   useAppSelector: () => null,
@@ -212,12 +220,22 @@ describe("the Encore run page's own history", () => {
     expect(text()).toContain(broken.error_message!.slice(0, 30));
   });
 
-  it("opens each run at its in-app permalink", async () => {
+  // 🚨 REWRITTEN BY WALK 13, N10. This used to assert `/workflows/runs/<id>`,
+  // and that address is exactly the defect the walk recorded: an Operator who
+  // clicked her own finished work landed on a page headed THE PLAN and LIVE
+  // ACTIVITY with a Pause / Resume / Stop / Cancel strip. The permalink is
+  // still the right door for the Studio — it is the wrong one from here.
+  it("opens each run on the Encore detail, never the developer run page", async () => {
     await mount();
     const hrefs = [...document.querySelectorAll("a")].map((a) =>
       a.getAttribute("href"),
     );
-    expect(hrefs).toContain(`/workflows/runs/${WATSON}`);
-    expect(hrefs).toContain(`/workflows/runs/${MONTESSORI}`);
+    expect(hrefs).toContain(
+      `/masterwork/encore/${MASTERWORK_ID}?run=${WATSON}`,
+    );
+    expect(hrefs).toContain(
+      `/masterwork/encore/${MASTERWORK_ID}?run=${MONTESSORI}`,
+    );
+    expect(hrefs.filter((h) => h?.startsWith("/workflows/runs/"))).toEqual([]);
   });
 });

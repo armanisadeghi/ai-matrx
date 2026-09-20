@@ -8,18 +8,22 @@
  * exists for exactly this: an explicit refusal is honest, a client-side sort
  * over the page in hand is a lie.
  *
- * 🚨 D343 — THE CONTRACT PUBLISHES THREE PARAMETERS THE LIVE SERVER DOES NOT
- * TAKE. `API-CONTRACT.md` §3 says `GET /media/libraries` accepts `visibility`,
- * `adapter` and `q`; `aidream/api/routers/media_catalog.py`'s `list_libraries`
- * declares only `limit` and `offset` (read on `origin/main`, 2026-09-20), and
- * FastAPI drops an undeclared parameter silently — so all three come back 200
- * with the whole unfiltered list. That is why the search box does not narrow,
- * why the four lane tabs serve the same rows, and why D10's per-lane counts are
- * four identical totals. It is the surviving sibling of the class aidream
- * already closed on `GET /media/libraries/{id}/videos`. This surface therefore
- * stays OFF `urlState` and the Acquisition Console still links bare
- * `/libraries`: a `?q=` the destination cannot honour is a worse lie than no
- * parameter. Both land the day the server half does — see FOUND_DEFECTS D343.
+ * THE URL IS THIS LIST'S QUERY (`urlState: true`). The search box, the four
+ * lane tabs and the page all write themselves into `?q=` / `?scope=` /
+ * `?page=` through the shell's one encoder (`lib/entity-list/urlQuery.ts`), so
+ * a reload keeps what the person did and the Acquisition Console can address a
+ * single kind of Library by link. No param is coined here: `filters` carries
+ * the adapter in the same `select` bag a column header produces.
+ *
+ * It was off until 2026-09-20 for a real reason (D343, now closed):
+ * `GET /media/libraries` published `visibility`, `adapter` and `q` in
+ * API-CONTRACT.md §3 and DECLARED none of them, so FastAPI dropped all three
+ * and answered 200 with the whole unfiltered list — the search box did not
+ * narrow, the four lane tabs served identical rows, and D10's per-lane counts
+ * were four identical totals. Putting a `?q=` in the URL while the screen
+ * ignored it would have been the lie made linkable. aidream `d7093434f6`
+ * declares all three and counts the filtered set (contract 0.6.0), so the URL
+ * and the screen now say the same thing.
  */
 
 import { useCallback } from "react";
@@ -223,6 +227,7 @@ export function createLibraryListConfig(
         serviceKey: `media-libraries:${organizationId ?? "none"}`,
         columns: LIBRARY_COLUMNS,
         prefsVersion: 1,
+        urlState: true,
         getRowId: (row) => row.id,
         getRowName: (row) => row.name,
         door: { hrefFor: libraryHref },
@@ -231,6 +236,12 @@ export function createLibraryListConfig(
         // archived axis on the list endpoint — so the affordance is switched
         // off rather than rendered over a query that cannot honour it.
         supportsArchived: false,
+        // The contract publishes no facet endpoint for Libraries, so there are
+        // no chips to render and `fetchFacets` says so by answering `{}`. An
+        // adapter filter that arrives by link is therefore not invisible: the
+        // shell's own Filters control turns primary, carries the active count,
+        // and offers Reset filters (`lib/entity-list/components/EntityFilterPanel.tsx`),
+        // which is the generic affordance every filter bag gets.
         facetSections: [],
         emptyState: {
             title: "No Libraries yet",

@@ -101,6 +101,12 @@ const CONVERSATION_DOOR_ENDPOINTS = [
   "/ai/manual",
   // The podcast pipeline (PodcastGenerateRequest extends ScopedRequest).
   "/podcast/generate",
+  // Armed 2026-09-20, the moment aidream moved source_app / source_feature /
+  // initiation onto AcceptsInjectedScope (services/conversation_context/scope.py):
+  // every model below inherits it, so the stamp no longer 422s.
+  "/images/generate",
+  "/tools/test/execute",
+  "/masterworks/ingest",
 ];
 
 /**
@@ -110,28 +116,20 @@ const CONVERSATION_DOOR_ENDPOINTS = [
  * every one of them creates an unattributed conversation row. They are NOT
  * checked, because the aidream request model physically refuses the stamp:
  * sending `source_app` would 422 the feature rather than attribute it. The fix
- * is in aidream (move the model onto `ScopedRequest`); the moment it lands,
- * move the path up into `CONVERSATION_DOOR_ENDPOINTS` and the door is guarded.
+ * is in aidream (put the fields on the mixin every door inherits); the moment
+ * it lands, move the path up into `CONVERSATION_DOOR_ENDPOINTS` and the door is
+ * guarded. That landed on 2026-09-20 for /images/generate, /tools/test/execute
+ * and the whole /masterworks/ingest-* family, and all three are armed above —
+ * an exemption that no longer exempts anything is a lie this list must not
+ * keep telling.
  *
  * Evidence read live on 2026-09-20 against aidream's models and this repo's
  * `types/python-generated/api-types.ts`.
  */
 const STAMP_BLOCKED_DOORS = [
   [
-    "/images/generate",
-    'aidream GenerateImageRequest(AcceptsInjectedScope) sets extra="forbid" (aidream/services/image/generate.py)',
-  ],
-  [
     "/podcast/resume/{run_id}",
-    "the endpoint takes NO request body at all (requestBody?: never) — it replays the stored request",
-  ],
-  [
-    "/tools/test/execute",
-    "aidream ToolTestExecuteRequest is a bare BaseModel with three fields (aidream/services/ai_execution/tool_testing.py)",
-  ],
-  [
-    "/masterworks/ingest, ingest-file, ingest-timeline, ingest-triad, ingest-drip, ingest-corpus, ingest-chat, ingest-conversations, ingest-predictions",
-    'the whole family inherits AcceptsInjectedScope with extra="forbid" (aidream/services/distillation/models.py)',
+    "the endpoint takes NO request body at all (requestBody?: never) — it replays the stored request, which already carries the original declaration",
   ],
 ];
 
@@ -320,6 +318,32 @@ const HAS_SOURCE_APP = /(?:^|[\s,{(])(?:source_app|sourceApp)\s*\??\s*[:,}]/;
 const HAS_INITIATION = /(?:^|[\s,{(])initiation\s*\??\s*[:,}]/;
 
 /**
+ * A descriptor whose body is a VARIABLE (`body`, or `JSON.stringify(body)`)
+ * carries its stamp where that variable is built, which is outside the request
+ * window. Reading only the window called those doors unattributed while the
+ * fields sat ten lines above — a false alarm that teaches people to delete the
+ * guard. So when the body is an identifier, the text from its declaration down
+ * to the request counts as part of the descriptor. Anything else (an inline
+ * literal, a spread) is judged by the window alone, as before.
+ */
+const BODY_IS_IDENTIFIER =
+  /(?:^|[\s,{(])body\s*:\s*(?:JSON\.stringify\(\s*)?([A-Za-z_$][\w$]*)\s*[,)\s}]/;
+
+function bodyDeclarationText(source, window, requestIndex) {
+  const named = BODY_IS_IDENTIFIER.exec(window.text);
+  if (!named) return "";
+  const identifier = named[1];
+  if (identifier === "JSON" || identifier === "undefined") return "";
+  const declaration = new RegExp(
+    `(?:const|let|var)\\s+${identifier}\\s*(?::[^=]+)?=`,
+  );
+  const before = source.slice(0, requestIndex);
+  const match = [...before.matchAll(new RegExp(declaration.source, "g"))].pop();
+  if (!match) return "";
+  return before.slice(match.index);
+}
+
+/**
  * RULE 2: a request descriptor that names a known conversation door must carry
  * BOTH halves of the stamp. Stamping nothing at all was invisible to rule 1.
  */
@@ -341,7 +365,8 @@ export function doorFindings(files, readFile = (f) => fs.readFileSync(f, "utf8")
         const window = requestWindow(source, at);
         if (!window || seen.has(window.start)) continue;
         seen.add(window.start);
-        if (HAS_SOURCE_APP.test(window.text) && HAS_INITIATION.test(window.text)) {
+        const text = window.text + bodyDeclarationText(source, window, at);
+        if (HAS_SOURCE_APP.test(text) && HAS_INITIATION.test(text)) {
           continue;
         }
         found.push({
@@ -456,6 +481,34 @@ function selfTest() {
     console.error("SELF-TEST FAILED: rule 2 flagged a mere mention of a door path.");
     process.exit(1);
   }
+  // ── RULE 2, body-as-variable ─────────────────────────────────────────────
+  // The stamp may live where the body is BUILT. Still red when it is absent
+  // there, or the widening would have turned the rule off.
+  const varBodyRed = `
+    const body = { tool_name: name, arguments: args };
+    await fetch(\`\${url}/tools/test/execute\`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
+  `;
+  const varBodyGreen = varBodyRed.replace(
+    "{ tool_name: name, arguments: args }",
+    '{ tool_name: name, arguments: args, source_app: "matrx-frontend", source_feature: "tool-testing", initiation: "user" }',
+  );
+  const readVar = (f) => (f === "var-red.ts" ? varBodyRed : varBodyGreen);
+  if (doorFindings(["var-red.ts"], readVar).length !== 1) {
+    console.error(
+      "SELF-TEST FAILED: rule 2 did not flag a door whose variable body carries no stamp.",
+    );
+    process.exit(1);
+  }
+  if (doorFindings(["var-green.ts"], readVar).length !== 0) {
+    console.error(
+      "SELF-TEST FAILED: rule 2 flagged a door whose stamp lives where the body is built.",
+    );
+    process.exit(1);
+  }
+
   console.log("check_client_initiation self-test: RED on the missing attestation, GREEN once declared.");
   console.log(
     "check_client_initiation self-test: rule 2 RED on an unattributed conversation door, GREEN once stamped, quiet on a mention.",

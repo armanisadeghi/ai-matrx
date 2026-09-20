@@ -87,11 +87,13 @@ export default function UserMenuPanel({
 
       {divider}
 
-      <CopyShortLinkMenuItem />
-      <ThemeToggleMenuItem />
-      {SETTINGS_ITEMS.map((item) => (
-        <OverlayMenuItem key={item.overlayId} {...item} />
-      ))}
+      <MenuGroup id="settings" icon="Settings" label="Settings">
+        <CopyShortLinkMenuItem />
+        <ThemeToggleMenuItem />
+        {SETTINGS_ITEMS.map((item) => (
+          <OverlayMenuItem key={item.overlayId} {...item} />
+        ))}
+      </MenuGroup>
 
       {divider}
 

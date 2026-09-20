@@ -484,6 +484,15 @@ export function parseLibraryMetrics(
         },
         untouched: number(row.untouched, `${field}.untouched`),
         stale: optBool(row.stale, `${field}.stale`, false),
+        // 🚨 ABSENT IS UNFILTERED, NEVER A ZERO (server contract 0.6.0). An
+        // unfiltered read — the header's own — sends none of these three keys,
+        // and so does any server older than 0.6.0. Reading a missing
+        // `filtered_total` as `0` would put "0 of 5,810 match" over a full
+        // table; `null` says "this read was not narrowed", which is the truth
+        // both builds are telling.
+        filtered: optBool(row.filtered, `${field}.filtered`, false),
+        filtered_total: optNum(row.filtered_total, `${field}.filtered_total`) ?? null,
+        library_total: optNum(row.library_total, `${field}.library_total`) ?? null,
     };
 }
 

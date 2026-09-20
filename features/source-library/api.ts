@@ -291,7 +291,25 @@ export async function createLibrary(
 
 export interface LibraryListQuery {
     visibility?: LibraryVisibility[];
-    adapter?: MediaAdapter;
+    /**
+     * §3's `adapter` is comma-separated, exactly like `visibility` — so it is a
+     * LIST here and the joining happens once, below, in the one place that owns
+     * the wire. It was a single `MediaAdapter` while the server declared no
+     * `adapter` parameter at all (D343): nothing could pass more than one
+     * because nothing could pass any.
+     *
+     * 🚨 `string[]`, NOT `MediaAdapter[]`, AND THAT IS THE POINT. This repo's
+     * `MediaAdapter` union names ten adapters; the live shelf carries more —
+     * `gmail_mbox`, `slack_export`, `kindle_clippings`, `whatsapp_txt` and the
+     * rest are read straight off `media.source_library` by
+     * `features/acquisition-console`, which deep-links into this list BY
+     * adapter. Narrowing the wire to a stale client-side union would drop a
+     * real filter on the floor at compile time — the silent-narrowing defect
+     * D343 was about, moved one layer up. The server owns this vocabulary and
+     * refuses a value it does not know with a 400 that NAMES the accepted set
+     * (aidream `d7093434f6`), which is a sentence this screen can show.
+     */
+    adapter?: string[];
     q?: string;
     limit?: number;
     offset?: number;
@@ -303,7 +321,7 @@ export async function listLibraries(
 ): Promise<LibraryListResponse> {
     const params: Record<string, string | number | boolean> = {};
     if (query.visibility?.length) params.visibility = query.visibility.join(",");
-    if (query.adapter) params.adapter = query.adapter;
+    if (query.adapter?.length) params.adapter = query.adapter.join(",");
     if (query.q) params.q = query.q;
     params.limit = query.limit ?? 50;
     params.offset = query.offset ?? 0;

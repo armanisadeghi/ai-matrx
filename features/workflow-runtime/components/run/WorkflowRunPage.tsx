@@ -39,6 +39,7 @@ import {
   workflowFailureHuman,
   workflowFailureInvestigationPrompt,
 } from "./run-copy";
+import { MasterworkRulesProvider } from "@/features/masterwork/rules-context/MasterworkRulesContext";
 
 interface LoadedWorkflow {
   id: string;
@@ -300,13 +301,20 @@ export function WorkflowRunPage({
   }
 
   return (
-    <>
+    // 🚨 A MASTERWORK'S RULEBOOK TRAVELS WITH ITS RUN (walk 13, N3). This page
+    // draws the same `masterwork_result` component every other surface draws,
+    // and it drew it with no rules in scope — so a ruling that cites the
+    // Expert's own rules printed twelve raw ids here. The provider resolves the
+    // Rulebook from the run itself (run → definition →
+    // metadata.built_from_rulebook) and answers null for every run that is not
+    // a Masterwork, which costs one read and changes nothing else on this page.
+    <MasterworkRulesProvider runId={runId}>
       {header}
       <div className="h-full overflow-hidden">
         <div className="h-full overflow-y-auto pt-[var(--shell-header-h)]">
           {body}
         </div>
       </div>
-    </>
+    </MasterworkRulesProvider>
   );
 }
