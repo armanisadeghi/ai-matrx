@@ -452,6 +452,7 @@ export type FeSynthesizedBlockType =
   | "memory_hint"
   | "episode_title_options"
   | "masterwork_checkup_finding"
+  | "masterwork_result"
   | "serial_observation_timeline"
   | "case_disclosure"
   | "unfolding_ruling"
@@ -627,6 +628,7 @@ export type ShapeBlockType =
   | "memory_hint"
   | "episode_title_options"
   | "masterwork_checkup_finding"
+  | "masterwork_result"
   | "serial_observation_timeline"
   | "case_disclosure"
   | "unfolding_ruling"
@@ -2005,6 +2007,25 @@ const SHAPE_BLOCK_DISPATCH = {
     if (block.serverData) {
       return (
         <BlockComponents.MasterworkCheckupFindingBlock
+          key={index}
+          serverData={block.serverData}
+        />
+      );
+    }
+    if (isBlockLoading(block)) {
+      return <MatrxMiniLoader key={index} />;
+    }
+    return renderJsonFallback(block, index);
+  },
+
+  // Kind-routed (masterwork_result): COMPLETE bridge — what a Masterwork run
+  // handed over, and THE place a stored rule id cited in the ruling becomes
+  // the rule's own name with a door to it (walk 12, D14). Same three-branch
+  // contract as every other kind-routed entry.
+  masterwork_result: ({ block, index }) => {
+    if (block.serverData) {
+      return (
+        <BlockComponents.MasterworkResultBlock
           key={index}
           serverData={block.serverData}
         />

@@ -77,6 +77,7 @@ import { PAGE_BRIEF_KIND_DEFINITIONS } from "../kinds/page-brief";
 import { EPISODE_TITLE_OPTIONS_KIND_DEFINITIONS } from "../kinds/episode-title-options";
 import { MEDIA_CHAPTERS_KIND_DEFINITIONS } from "../kinds/media-chapters";
 import { MASTERWORK_CHECKUP_KIND_DEFINITIONS } from "../kinds/masterwork-checkup-finding";
+import { MASTERWORK_RESULT_KIND_DEFINITIONS } from "../kinds/masterwork-result";
 import { MASTERWORK_RULE_DRAFT_KIND_DEFINITIONS } from "../kinds/masterwork-rule-draft";
 import { SERIAL_OBSERVATION_TIMELINE_KIND_DEFINITIONS } from "../kinds/serial-observation-timeline";
 import { MASTERWORK_UNFOLDING_KIND_DEFINITIONS } from "../kinds/masterwork-unfolding";
@@ -141,6 +142,7 @@ export const SYSTEM_KIND_DEFINITIONS: KindDefinition[] = [
   // THE VALUE CONTRACT for the Rulebook surface's `rule_draft` write target.
   // Schema-only (no bridge, no compiled block): its component is a
   // `source='db'` card. See kinds/masterwork-rule-draft.ts.
+  ...MASTERWORK_RESULT_KIND_DEFINITIONS,
   ...MASTERWORK_RULE_DRAFT_KIND_DEFINITIONS,
   ...SERIAL_OBSERVATION_TIMELINE_KIND_DEFINITIONS,
   // The UNFOLDING-CASE kinds — the case oracle's growing ledger and the
