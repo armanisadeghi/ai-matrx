@@ -1,5 +1,5 @@
 import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
-import type { ReactElement } from "react";
+import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { MatrxDataTableMobileCardControls } from "@ai-matrx/design-system/data-table/types";
 import type { SiteListRow } from "@/features/marketing/types";
@@ -13,7 +13,7 @@ import {
  * (V-28 NEW-1), so a caller cannot render them without that input — which means these list
  * presentations render inside the app's query client, exactly as the routes do.
  */
-function renderToStaticMarkup(node: ReactElement): string {
+function renderToStaticMarkup(node: ReactNode): string {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   });
