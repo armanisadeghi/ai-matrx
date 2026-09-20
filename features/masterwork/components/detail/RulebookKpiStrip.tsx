@@ -452,8 +452,8 @@ export function MasterworkKpiStrip({
         />
       </div>
       <div>
-        <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
-          <span className="truncate">{freshnessLine}</span>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+          <span className="min-w-0 break-words">{freshnessLine}</span>
           <span className="shrink-0 tabular-nums">
             {kpis.currentPct}% on your current rules
           </span>

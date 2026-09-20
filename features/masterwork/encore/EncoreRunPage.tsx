@@ -13,6 +13,7 @@
 // for viewers who can actually open them.
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Clock3, Rocket, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -38,8 +39,11 @@ import { RunTheBench } from "./RunTheBench";
 import { MasterworkRulesProvider } from "../rules-context/MasterworkRulesContext";
 import { setMasterworkReleased } from "../service";
 import { toast } from "@/lib/toast";
+import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import { MASTERWORK_RESULT_KIND } from "@/features/content-ir/kinds/masterwork-result";
 import {
   getEncoreMasterwork,
+  getEncoreRunResult,
   listMyEncoreRuns,
   type EncoreMasterwork,
   type EncoreRun,
@@ -49,6 +53,19 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
   const userId = useAppSelector(selectUserId);
   const [masterwork, setMasterwork] = useState<EncoreMasterwork | null>(null);
   const [runs, setRuns] = useState<EncoreRun[]>([]);
+  // 🚨 THE DELIVERABLE OPENS WHERE THE OPERATOR IS STANDING (walk 13, N10).
+  // `?run=<id>` is a real address — linkable, bookmarkable, shareable — and it
+  // renders the run's result through the SAME registered kind component the
+  // run box uses. It replaces a link that sent a non-technical Expert to the
+  // developer run page, THE PLAN / LIVE ACTIVITY and a Cancel button included.
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const openRunId = searchParams.get("run");
+  const [openRun, setOpenRun] = useState<{
+    runId: string;
+    result: Record<string, unknown> | null;
+    state: "loading" | "ready";
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
   // THE PROOF is a separate question from the quick check, and it is asked out
@@ -62,6 +79,29 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
       .then(setRuns)
       .catch(() => undefined); // History is enrichment — never blanks the page.
   }, [masterworkId]);
+
+  useEffect(() => {
+    if (!openRunId) {
+      setOpenRun(null);
+      return;
+    }
+    let cancelled = false;
+    setOpenRun({ runId: openRunId, result: null, state: "loading" });
+    getEncoreRunResult(openRunId)
+      .then((result) => {
+        if (!cancelled)
+          setOpenRun({ runId: openRunId, result, state: "ready" });
+      })
+      .catch(() => {
+        // A refused read is "we could not open it", said out loud below —
+        // never a blank panel and never a silent bounce back to the list.
+        if (!cancelled)
+          setOpenRun({ runId: openRunId, result: null, state: "ready" });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [openRunId]);
 
   const load = useCallback(
     async (isCancelled: () => boolean) => {
@@ -340,6 +380,8 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
                   <MasterworkRunRow
                     key={run.id}
                     run={run}
+                    // The Operator's door, not the developer's.
+                    href={`/masterwork/encore/${masterworkId}?run=${run.id}`}
                     trailing={
                       /* 🚨 THE SIGNATURE OUTLIVES THE RUN BOX. The Try box shows
                        the thumbs the moment a run ends, and then forgets the
