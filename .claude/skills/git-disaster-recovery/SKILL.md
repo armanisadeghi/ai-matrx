@@ -195,6 +195,11 @@ anything other than a failed build or a failed live health check, that is a
 bug in the gate: get past it, keep merging, and fix the class. Then the
 ordinary loop: pull first, commit, resolve, release, every 30 minutes.
 
+One halt seen twice in one day: a down-migration sitting at the top level of
+the migrations folder. The release sweep reads it as pending forward work and
+refuses it. It belongs in the repo's inverse directory with the header that
+directory requires. Move it, do not "fix" its SQL.
+
 Fresh dirty files after this point with no real conflict are committed on
 the ordinary cadence. Real conflicts go to Arman immediately, one at a time,
 with one recommendation.
