@@ -63,6 +63,23 @@ const inFlight = new Map<string, Promise<Snapshot>>();
 const listeners = new Set<() => void>();
 
 /**
+ * 🚨 A FETCH THAT STARTED BEFORE A WRITE MUST NOT OUTLIVE IT.
+ *
+ * Every invalidation bumps this. A fetch reads it before it asks and again
+ * when the answer lands: if it moved, that answer describes the register as it
+ * was BEFORE the write, and installing it would put the pre-write value back
+ * in the cache — where `useEffectiveKnob` would see a defined value, stop
+ * asking, and show the person the setting they just changed away from, for a
+ * whole TTL. Clearing the cache alone does not prevent this, because the
+ * in-flight promise resolves afterwards and writes into the cleared map
+ * (found by Cursor Bugbot on PR 238, 2026-09-20, before it ever ran).
+ */
+let generation = 0;
+
+/** How many times a fetch re-asks when a write lands mid-flight. */
+const MAX_RACE_RETRIES = 3;
+
+/**
  * A rung nearer than the organization that this READ should take into account —
  * the entity the value is being resolved FOR (`{ kind: "rulebook", id }`,
  * `{ kind: "agent", id }`, …). The rung must be registered in
@@ -213,6 +230,51 @@ export function ensureEffectiveKnob(
   });
 }
 
+/** ONE round trip. No caching, no races — the caller owns both. */
+async function fetchKnobSnapshot(
+  supabase: ReturnType<typeof createClient>,
+  organizationId: string,
+  userId: string | null,
+  scopes: readonly KnobScope[] | undefined,
+  deviceId: string | null,
+): Promise<Snapshot> {
+  // `knob_snapshot` is not in `types/database.types.ts` yet: regenerating it
+  // needs `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SECRET_KEY` (the strip step
+  // reads `platform.entity_types.client_excluded_columns`, and a file that
+  // was not stripped must never be committed as if it were), and this
+  // session has neither. So the RPC name is cast HERE, narrowly, and the
+  // remedy is: run `pnpm db-types` from an environment that has those two
+  // variables, then delete this cast — the call itself needs no other
+  // change. Nothing else in this file is untyped.
+  const { data, error } = await (
+    supabase.schema("platform") as unknown as {
+      rpc: (
+        name: string,
+        args: Record<string, unknown>,
+      ) => Promise<{ data: unknown; error: { message: string } | null }>;
+    }
+  ).rpc("knob_snapshot", {
+    p_organization_id: organizationId,
+    p_user_id: userId ?? undefined,
+    p_scopes: buildScopes(deviceId, scopes),
+  });
+  if (error) {
+    throw new Error(
+      `platform.knob_snapshot could not answer for organization='${organizationId}': ` +
+        `${error.message}. Every setting on this screen is falling back to its ` +
+        "consumer's own default until it can. A 42501 here means the signed-in " +
+        "person is not a member of that organization — the read is gated on " +
+        "membership by design.",
+    );
+  }
+  const payload = (data ?? {}) as { resolved?: Record<string, unknown>; stamp?: string };
+  return {
+    resolved: payload.resolved ?? {},
+    stamp: payload.stamp ?? null,
+    at: Date.now(),
+  };
+}
+
 /**
  * THE ONE NETWORK READ. Everything a screen asks about settings is answered
  * from what this returns; nothing in this repo resolves a single knob over the
@@ -233,50 +295,50 @@ export function ensureKnobSnapshot(
   // override (nearest rung of all) wins here exactly as it does on the
   // settings screen (`knob_index` takes it as `p_device_id`).
   const deviceId = getWebDeviceId();
+  // A token, not the promise itself: the `finally` below must ask "is the
+  // entry under this address still MINE?", and comparing against `run` inside
+  // its own initializer is not something the compiler will vouch for.
+  const mine: { promise?: Promise<Snapshot> } = {};
   const run = (async () => {
     try {
-      // `knob_snapshot` is not in `types/database.types.ts` yet: regenerating it
-      // needs `NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SECRET_KEY` (the strip step
-      // reads `platform.entity_types.client_excluded_columns`, and a file that
-      // was not stripped must never be committed as if it were), and this
-      // session has neither. So the RPC name is cast HERE, narrowly, and the
-      // remedy is: run `pnpm db-types` from an environment that has those two
-      // variables, then delete this cast — the call itself needs no other
-      // change. Nothing else in this file is untyped.
-      const { data, error } = await (
-        supabase.schema("platform") as unknown as {
-          rpc: (
-            name: string,
-            args: Record<string, unknown>,
-          ) => Promise<{ data: unknown; error: { message: string } | null }>;
-        }
-      ).rpc("knob_snapshot", {
-        p_organization_id: organizationId,
-        p_user_id: userId ?? undefined,
-        p_scopes: buildScopes(deviceId, scopes),
-      });
-      if (error) {
-        throw new Error(
-          `platform.knob_snapshot could not answer for organization='${organizationId}': ` +
-            `${error.message}. Every setting on this screen is falling back to its ` +
-            "consumer's own default until it can. A 42501 here means the signed-in " +
-            "person is not a member of that organization — the read is gated on " +
-            "membership by design.",
+      for (let attempt = 0; ; attempt += 1) {
+        const askedAt = generation;
+        const snapshot = await fetchKnobSnapshot(
+          supabase,
+          organizationId,
+          userId,
+          scopes,
+          deviceId,
         );
+        if (generation === askedAt) {
+          snapshots.set(id, snapshot);
+          notify();
+          return snapshot;
+        }
+        // A write landed while this was in flight. The answer in hand predates
+        // it, so it is never cached; ask again for one that does not.
+        if (attempt >= MAX_RACE_RETRIES) {
+          // Writes are still arriving faster than a round trip. Hand this
+          // caller the newest answer we have WITHOUT caching it, so the next
+          // read starts clean rather than inheriting a value we know is
+          // behind — `useEffectiveKnob` sees `undefined`, re-runs its effect
+          // and re-fetches. It self-heals; it does not go quiet (law 4).
+          console.warn(
+            `[knob] gave up re-reading platform.knob_snapshot for organization='${organizationId}' ` +
+              `after ${MAX_RACE_RETRIES} writes landed mid-flight. The answer returned is not ` +
+              "cached, so the next read fetches a fresh one.",
+          );
+          notify();
+          return snapshot;
+        }
       }
-      const payload = (data ?? {}) as { resolved?: Record<string, unknown>; stamp?: string };
-      const snapshot: Snapshot = {
-        resolved: payload.resolved ?? {},
-        stamp: payload.stamp ?? null,
-        at: Date.now(),
-      };
-      snapshots.set(id, snapshot);
-      notify();
-      return snapshot;
     } finally {
-      inFlight.delete(id);
+      // Only retire OUR entry: an invalidation may have cleared the map and a
+      // newer fetch may already be registered under this address.
+      if (inFlight.get(id) === mine.promise) inFlight.delete(id);
     }
   })();
+  mine.promise = run;
   inFlight.set(id, run);
   return run;
 }
@@ -299,7 +361,14 @@ if (typeof window !== "undefined") {
  * intent readable at the call site; it deliberately does not narrow the drop.
  */
 export function invalidateEffectiveKnob(_ref?: KnobRef): void {
+  // The bump is the half that a `clear()` alone cannot do: it tells every
+  // fetch already in flight that its answer is now historical, so none of them
+  // can reinstall the pre-write register behind this call. Dropping the
+  // in-flight entries as well means a reader arriving after this point starts
+  // its own fetch rather than joining one that began before the write.
+  generation += 1;
   snapshots.clear();
+  inFlight.clear();
   notify();
 }
 
