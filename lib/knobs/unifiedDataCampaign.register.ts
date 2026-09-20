@@ -186,6 +186,30 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "PRODUCTS row 1. The app's ONLY reach for custom.form_public and custom.form_submit, both server-lane doors granted to service_role alone. server-only, cached per request. Schema custom stays revoked from anon; nothing here widens that.",
     },
     {
+        id: "public-sign-page",
+        file: "app/(link)/sign/[token]/page.tsx",
+        kind: "door_gated",
+        why: "PRODUCTS row 16. The public signing page at its unguessable link, server-rendered for somebody with NO ACCOUNT. There is no person to read the campaign switch for and no organization the caller may name: the switch is asked INSIDE custom.sign_request_public, for the organization the request itself belongs to, and a request whose store is off answers exactly as a wrong link does. The browser never holds a store client - the frozen document text comes from the server and the signature goes to the route handler below.",
+    },
+    {
+        id: "public-sign-runner",
+        file: "app/(link)/sign/[token]/SignRunner.tsx",
+        kind: "door_gated",
+        why: "PRODUCTS row 16. The one client island on the signing page: the type-or-draw control and the decline path. It is handed the frozen document by the server, builds no record-store client, holds no key and can reach no door on its own; everything it sends goes to /api/sign/<token>, whose two doors read custom/system_enabled themselves through custom.assert_store_door.",
+    },
+    {
+        id: "public-sign-write",
+        file: "app/api/sign/[token]/route.ts",
+        kind: "door_gated",
+        why: "PRODUCTS row 16 / VAL-10. Where a signature arrives. It adds the three things a browser cannot be trusted for on a certificate - the address it came from, the browser it came from and the real Origin header - and hands everything else to custom.sign_request_sign or custom.sign_request_decline, which decide expiry, withdrawal, whether the document moved since the ask, what counts as a drawing and whether a name is blank. The switch is those doors' own assert_store_door.",
+    },
+    {
+        id: "public-sign-service",
+        file: "features/esign/service.ts",
+        kind: "door_gated",
+        why: "PRODUCTS row 16. The app's ONLY reach for custom.sign_request_public, custom.sign_request_sign and custom.sign_request_decline, all three server-lane doors granted to service_role alone. server-only, cached per request. Schema custom stays revoked from anon; nothing here widens that.",
+    },
+    {
         id: "data-v2-tables",
         file: "app/(core)/data-v2/page.tsx",
         kind: "runtime",
