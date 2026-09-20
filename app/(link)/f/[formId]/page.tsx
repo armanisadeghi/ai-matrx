@@ -1,4 +1,4 @@
-// app/(public)/f/[formId]/page.tsx — THE PUBLIC FORM. PRODUCTS row 1.
+// app/(link)/f/[formId]/page.tsx — THE PUBLIC FORM. PRODUCTS row 1.
 //
 // A person with no account opens an unguessable link and answers a few
 // questions. The answers become ordinary records in a real Table, stamped with
