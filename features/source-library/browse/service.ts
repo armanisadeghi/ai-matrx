@@ -24,6 +24,7 @@ import type { AppDispatch } from "@/lib/redux/store";
 import type { EntityListService } from "@/lib/entity-list/config";
 import type {
     EntityFacets,
+    EntityFilters,
     EntityListPage,
     EntityListQuery,
     EntityScopeCounts,
@@ -44,6 +45,24 @@ export const LIBRARY_LIST_SCOPES: ListScopeKind[] = ["mine", "orgs", "shared", "
 function visibilityForQuery(query: EntityListQuery): LibraryVisibility[] {
     const lane = SCOPE_TO_VISIBILITY[query.scope.kind];
     return lane ? [lane] : [];
+}
+
+/**
+ * THE ADAPTER IS THE FILTER THE ACQUISITION CONSOLE DEEP-LINKS ON.
+ *
+ * `features/acquisition-console` groups this org's Libraries by adapter and
+ * lane, and its "What we have" rows now carry the pair as the shell's own
+ * `?scope=…&filters=…` encoding (`lib/entity-list/urlQuery.ts`) — no second
+ * vocabulary, no hand-rolled param. `filters.adapter` is the `select` bag the
+ * column headers and the filter panel already speak, so a link, a chip and a
+ * header produce the identical query.
+ */
+function adaptersForQuery(filters: EntityFilters): string[] {
+    const value = filters.adapter;
+    if (!value) return [];
+    if (value.kind === "select") return value.values;
+    if (value.kind === "text") return value.value ? [value.value] : [];
+    return [];
 }
 
 /**
@@ -97,19 +116,24 @@ export function createLibraryListService(
         async fetchPage(query, sort): Promise<EntityListPage<LibraryRow>> {
             try {
                 const limit = sort.pageSize || pageSizeFallback;
+                const adapters = adaptersForQuery(query.filters);
                 const response = await listLibraries(dispatch, {
                     visibility: visibilityForQuery(query),
+                    ...(adapters.length ? { adapter: adapters } : {}),
                     ...(query.search ? { q: query.search } : {}),
                     limit,
                     offset: (query.page - 1) * limit,
                 });
+                // `total` is the count of what the FILTER matched, not of the
+                // organization's whole shelf (server contract 0.6.0) — so paging
+                // cannot walk off the end of a narrowed set.
                 return { rows: response.libraries, total: response.total };
             } catch (error) {
                 return rethrowForList(error);
             }
         },
 
-        async fetchCounts(): Promise<EntityScopeCounts> {
+        async fetchCounts(query): Promise<EntityScopeCounts> {
             // D10 (jobs-bar cold-walk-12, 2026-09-19): this used to trust
             // `response.lane_counts` from a call that carried NO `visibility`
             // filter at all (`listLibraries(dispatch, { limit: 1, offset: 0 })`
@@ -129,11 +153,30 @@ export function createLibraryListService(
             // already proves `listLibraries({ visibility, limit }).total` is
             // real and reliable for one lane at a time — this is that identical
             // call, once per lane, run in parallel. One derivation, two callers.
+            //
+            // D343 CLOSED (2026-09-20): between D10 and today this derivation was
+            // TRUE in shape and FALSE in fact — `list_libraries` declared only
+            // `limit` and `offset`, FastAPI dropped `visibility` without a word,
+            // and the four calls could not disagree, so the tabs read four
+            // IDENTICAL totals rather than four zeros. aidream `d7093434f6`
+            // declares all three published filters and counts the filtered set,
+            // so these four numbers are now four real answers.
+            //
+            // A TAB'S NUMBER ANSWERS THE QUESTION THE TAB WOULD ASK. The lane is
+            // the only thing that changes between these four calls; every OTHER
+            // narrowing the person has set — the adapter a console deep link
+            // carried, the words in the search box — rides along, because a tab
+            // reading "Mine 33" that turns into eleven rows the moment it is
+            // pressed is the same "the tile says 0 while the list says 5" defect
+            // this surface has already been bitten by, with the numbers swapped.
             const lanes = Object.keys(SCOPE_TO_VISIBILITY) as (keyof typeof SCOPE_TO_VISIBILITY)[];
+            const adapters = adaptersForQuery(query.filters);
             const results = await Promise.allSettled(
                 lanes.map((kind) =>
                     listLibraries(dispatch, {
                         visibility: [SCOPE_TO_VISIBILITY[kind]],
+                        ...(adapters.length ? { adapter: adapters } : {}),
+                        ...(query.search ? { q: query.search } : {}),
                         limit: 1,
                         offset: 0,
                     }),

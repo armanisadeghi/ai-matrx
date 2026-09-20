@@ -14,6 +14,7 @@ import {
 } from "../audition/listAuditionScores";
 import type { Masterwork, RulebookSource } from "../types";
 import { scopeToOwner, type ListScopeWord } from "@/lib/list-scope";
+import { MASTERWORK_RESULT_KIND } from "@/features/content-ir/kinds/masterwork-result";
 
 /**
  * Encore — the Operator-facing invocation surface. Direct supabase-js per
@@ -176,7 +177,9 @@ export async function listEncoreShelves(): Promise<EncoreShelf[]> {
   const shelf = (rows: unknown[]): Masterwork[] => {
     const out: Masterwork[] = [];
     for (const raw of rows) {
-      const m = parseMasterworkRow(raw as Parameters<typeof parseMasterworkRow>[0]);
+      const m = parseMasterworkRow(
+        raw as Parameters<typeof parseMasterworkRow>[0],
+      );
       // An Understudy is the Rulebook's own practice stand-in, not a thing the
       // Expert built — the Rulebook's "Built" count skips it, and so does Encore.
       if (m.understudy) continue;
@@ -254,4 +257,36 @@ export async function listMyEncoreRuns(
     onlyCreatedBy: ownerOnly ? userId : null,
   });
   return byMasterwork[masterworkId] ?? [];
+}
+
+/**
+ * WHAT ONE RUN HANDED OVER — the `masterwork_result` value its terminal step
+ * settled with, read straight off `workflow.node_outcome`.
+ *
+ * Walk 13, N10: an Operator who clicked their own finished run on Encore
+ * landed on `/workflows/runs/<id>`, a page headed THE PLAN and LIVE ACTIVITY
+ * with a Pause / Resume / Stop / Cancel strip. The deliverable has to be
+ * readable where they are standing, so Encore reads it itself and renders it
+ * through the registered kind component — no second renderer, no developer
+ * chrome, and a `?run=` address anyone can link to.
+ *
+ * Null when the run produced no `masterwork_result`: the panel then says so
+ * rather than drawing an empty card.
+ */
+export async function getEncoreRunResult(
+  runId: string,
+): Promise<Record<string, unknown> | null> {
+  const { data, error } = await supabase
+    .schema("workflow")
+    .from("node_outcome")
+    .select("output")
+    .eq("run_id", runId)
+    .eq("node_id", "show")
+    .maybeSingle();
+  if (error || !data?.output) return null;
+  const output = data.output as Record<string, unknown>;
+  // The kind is the contract: a payload that does not declare itself is not
+  // something this panel knows how to show, and guessing is how a run box
+  // starts printing envelopes at people.
+  return output.__kind === MASTERWORK_RESULT_KIND ? output : null;
 }

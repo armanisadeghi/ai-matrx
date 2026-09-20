@@ -66,6 +66,7 @@ import type {
     MediaErrorDetail,
     MediaSettingKnob,
     MediaSettingsResponse,
+    PaidPolicy,
     ResolveResult,
     SyncEvent,
     VideoListResponse,
@@ -483,6 +484,15 @@ export function parseLibraryMetrics(
         },
         untouched: number(row.untouched, `${field}.untouched`),
         stale: optBool(row.stale, `${field}.stale`, false),
+        // 🚨 ABSENT IS UNFILTERED, NEVER A ZERO (server contract 0.6.0). An
+        // unfiltered read — the header's own — sends none of these three keys,
+        // and so does any server older than 0.6.0. Reading a missing
+        // `filtered_total` as `0` would put "0 of 5,810 match" over a full
+        // table; `null` says "this read was not narrowed", which is the truth
+        // both builds are telling.
+        filtered: optBool(row.filtered, `${field}.filtered`, false),
+        filtered_total: optNum(row.filtered_total, `${field}.filtered_total`) ?? null,
+        library_total: optNum(row.library_total, `${field}.library_total`) ?? null,
     };
 }
 
@@ -663,6 +673,45 @@ export function parseVideoListResponse(payload: unknown): VideoListResponse {
 /* ───────────────────────────────────────────── §7 estimate & jobs ─────── */
 
 /**
+ * §7 — WHO DECIDED ABOUT MONEY. Server-owned sentences, read whole.
+ *
+ * 🚨 TOLERANT BY DESIGN, and this is the one place in this file where that is
+ * right. An estimate minted before the 2026-09-20 paid-policy contract, and
+ * every Job row frozen before it, carries no `paid_policy` at all — refusing
+ * those would blank the jobs panel over a field that did not exist when they
+ * were written. A shape this build cannot read is dropped rather than thrown,
+ * for the same reason and with nothing lost: the server appends the SAME
+ * sentence to `estimate.warnings`, which this screen already prints verbatim,
+ * so the money words still reach the person either way. Nothing is guessed —
+ * an unreadable policy renders as no policy, never as "allowed".
+ */
+function parsePaidPolicy(value: unknown, field: string): PaidPolicy | null {
+    if (value === undefined || value === null) return null;
+    if (typeof value !== "object" || Array.isArray(value)) return null;
+    const row = value as Record<string, unknown>;
+    const sentence = typeof row.sentence === "string" ? row.sentence.trim() : "";
+    // A policy with no sentence has nothing to say to a person, and this client
+    // never writes the money words itself. Absent is honest; invented is not.
+    if (!sentence) return null;
+    return {
+        // Absent/unreadable defaults to FALSE — "nobody said" is not permission,
+        // which is the whole defect this contract closes.
+        allowed: row.allowed === true,
+        decided_by: typeof row.decided_by === "string" ? row.decided_by : "",
+        would_be_paid_count:
+            typeof row.would_be_paid_count === "number" &&
+            Number.isFinite(row.would_be_paid_count)
+                ? row.would_be_paid_count
+                : 0,
+        sentence,
+        how_to_allow:
+            typeof row.how_to_allow === "string" && row.how_to_allow.trim()
+                ? row.how_to_allow
+                : null,
+    };
+}
+
+/**
  * The estimate — the only thing standing between a person and a bill.
  *
  * 🚨 NOTHING HERE FALLS BACK TO ZERO. Every count and every cost is required:
@@ -726,6 +775,7 @@ export function parseEstimateResult(payload: unknown, field = "the estimate"): E
               }
             : null,
         warnings: strList(row.warnings ?? [], `${field}.warnings`),
+        paid_policy: parsePaidPolicy(row.paid_policy, `${field}.paid_policy`),
         // Absent defaults to TRUE: confirming is the safe side of this knob.
         requires_confirmation: optBool(
             row.requires_confirmation,
@@ -783,6 +833,7 @@ export function parseJobRow(payload: unknown, field = "this job"): JobRow {
             row.estimate === undefined || row.estimate === null
                 ? null
                 : parseEstimateResult(row.estimate, `${field}.estimate`),
+        paid_policy: parsePaidPolicy(row.paid_policy, `${field}.paid_policy`),
         estimate_confirmed_at: optStr(
             row.estimate_confirmed_at,
             `${field}.estimate_confirmed_at`,

@@ -22,6 +22,7 @@ import {
   createReaders,
   mapListRows,
 } from "@/lib/contract/narrow";
+import { providerErrorSentence } from "@/lib/progress/failureSentence";
 import {
   connectionAction,
   labelFor,
@@ -191,14 +192,26 @@ export function parseBlockRow(entry: unknown, index: number): BlockedRow {
   const label = r.optStr(row.input_label, `blocks[${index}].input_label`);
   const unblock = r.optStr(row.unblock_note, `blocks[${index}].unblock_note`);
   const lawful = r.optStr(row.lawful_route, `blocks[${index}].lawful_route`);
+  const errorSentence = r.optStr(
+    row.error_sentence,
+    `blocks[${index}].error_sentence`,
+  );
+  // No `error_sentence` — the only thing left is `error_class`, a raw
+  // provider/exception token (`LOGIN_REQUIRED`, `ProxyError`) rather than a
+  // sentence. Map it through the failure-sentence helper rather than
+  // printing it: cold-walk-13 caught this token sitting inside an otherwise
+  // excellent person-facing row.
+  const errorClass = errorSentence
+    ? null
+    : providerErrorSentence(
+        r.optStr(row.error_class, `blocks[${index}].error_class`),
+      );
   return {
     id: `block:${id}`,
     origin: "block",
     what: label?.trim() || ref.replace(/^https?:\/\//, ""),
-    where:
-      r.optStr(row.error_sentence, `blocks[${index}].error_sentence`) ??
-      r.optStr(row.error_class, `blocks[${index}].error_class`) ??
-      "It refused without saying why",
+    where: errorSentence ?? errorClass?.text ?? "It refused without saying why",
+    whereDetail: errorClass?.detail,
     since:
       r.optStr(row.first_seen_at, `blocks[${index}].first_seen_at`) ??
       r.str(row.last_seen_at, `blocks[${index}].last_seen_at`),
@@ -242,6 +255,57 @@ export function parseHandoffs(items: unknown[]): NarrowedList<BlockedRow> {
 }
 
 // ── The roll-ups Section 1 renders ─────────────────────────────────────────
+
+/**
+ * The console's lane → the Libraries list's scope tab.
+ *
+ * Both vocabularies are already on the platform and neither is invented here:
+ * the console's lane IS `media.source_library.visibility`, and the destination's
+ * four tabs are the four list scopes `lib/list-scope/types.ts` defines, mapped
+ * to those same lanes by `features/source-library/browse/service.ts`. This is
+ * that one mapping read backwards.
+ *
+ * `shared-with-you` is the console's OWN refinement — someone else's `personal`
+ * Library reaching this seat through a share — and the destination has no tab
+ * for it, because the server has no lane for it either. It therefore addresses
+ * the lane the row actually carries (`personal` → `mine`), which is where that
+ * Library is listed; the console keeps the finer distinction, the link does not
+ * pretend to.
+ */
+const LANE_TO_LIST_SCOPE: Record<string, string> = {
+  personal: "mine",
+  "shared-with-you": "mine",
+  internal: "orgs",
+  link: "shared",
+  public: "public",
+};
+
+/**
+ * A "What we have" Library row's door, addressed down to the kind it counted.
+ *
+ * 🚨 IT SPEAKS THE SHELL'S OWN QUERY ENCODING, NOT A SECOND ONE.
+ * `?scope=` and `?filters=` are `lib/entity-list/urlQuery.ts`'s params, and
+ * `filters` carries the adapter in the very `select` bag a column header or the
+ * filter panel produces — so this link, a chip click and a typed filter are the
+ * identical query. Inventing `?kind=` or `?adapter=` here would have been a
+ * third spelling of a vocabulary the platform already has twice.
+ *
+ * THE SCOPE IS ALWAYS WRITTEN, never left to the default. The destination's
+ * default scope can be decided late (the entity-type registry answers after the
+ * first render, `lib/entity-list/useEntityList.ts`), so a link that omits it is
+ * a link whose landing tab depends on a race.
+ *
+ * Until 2026-09-20 this was a bare `/libraries` and deliberately so (D343): the
+ * server declared none of the three filters API-CONTRACT.md §3 published, so a
+ * parameter the destination could not honour would have been a worse lie than
+ * no parameter. aidream `d7093434f6` closed that; the link is now exact.
+ */
+export function librariesHref(adapter: string, lane: string): string {
+  const params = new URLSearchParams();
+  params.set("scope", LANE_TO_LIST_SCOPE[lane] ?? "mine");
+  params.set("filters", JSON.stringify({ adapter: { kind: "select", values: [adapter] } }));
+  return `/libraries?${params.toString()}`;
+}
 
 /**
  * Group Libraries into one row per KIND AND LANE.
@@ -309,7 +373,7 @@ export function rollUpLibraries(
       lastAdded,
       yield: yieldSentence,
       yieldCount,
-      href: "/libraries",
+      href: librariesHref(adapter, lane),
     };
   });
 }

@@ -55,6 +55,7 @@ import {
   listKeptSourcesBrief,
   type KeptSourceBrief,
 } from "./kept-sources/service";
+import { entityIdentity, keptIdentity, urlIdentity } from "./sourceIdentity";
 
 /**
  * The registered source→rulebook pairs (`platform.association_types`,
@@ -94,6 +95,18 @@ export interface RulebookSourceTally {
   kept: number;
   /** Everything, which is what "does this Rulebook have sources" means. */
   total: number;
+  /**
+   * How many of `attached + kept` were the SAME source under two names —
+   * the number this screen used to add twice. Exposed so a reader can prove
+   * the union happened instead of trusting that it did.
+   */
+  countedOnce: number;
+}
+
+/** The two fields an identity needs off a kept row. */
+export interface KeptIdentityRow {
+  source_key: string;
+  approach_key?: string | null;
 }
 
 export type RulebookSourceCount =
@@ -178,14 +191,16 @@ export function useKeptSourceCount(rulebookId: string): KeptSourceCount {
  * question is the defect, not a degraded mode. A partial success would once
  * again render "you have nothing" over material we are holding.
  *
- * @param extra Sources this Rulebook has that live on neither store — today
- *   only the URLs staged on `rulebook.metadata.dump_url_sources`, which the
- *   caller already holds on the Rulebook row and would otherwise re-fetch.
+ * @param extraUrls Sources this Rulebook has that live on neither store —
+ *   today only the URLs staged on `rulebook.metadata.dump_url_sources`, which
+ *   the caller already holds on the Rulebook row and would otherwise re-fetch.
+ *   URLs, not a count: a staged URL and a kept `url:` row are one source, and
+ *   only the address can prove it (N4).
  */
 export function useRulebookSourceCount(
   rulebookId: string,
   organizationId: string | null | undefined,
-  extra: number = 0,
+  extraUrls: readonly string[] = [],
 ): RulebookSourceCount {
   const links = useContainerLinks({
     containerType: "rulebook",
@@ -196,10 +211,11 @@ export function useRulebookSourceCount(
 
   const attached = useMemo(
     () =>
-      DUMP_SOURCE_TOKENS.reduce(
-        (total, token) =>
-          total + links.linksFor(token).filter((l) => l.role === DUMP_ROLE).length,
-        0,
+      DUMP_SOURCE_TOKENS.flatMap((token) =>
+        links
+          .linksFor(token)
+          .filter((l) => l.role === DUMP_ROLE)
+          .map((l) => entityIdentity(token, l.resourceId)),
       ),
     // `linksFor` is stable per render over the hook's internal edges array —
     // the same dependency set `RulebookSourcesPanel` uses.
@@ -225,23 +241,65 @@ export function useRulebookSourceCount(
   }
   if (links.status !== "ready" || kept.state !== "ready") return { state: "loading" };
 
-  return { state: "ready", ...tallyOf(attached + extra, kept.count) };
+  return {
+    state: "ready",
+    ...tallyOf(
+      [...attached, ...extraUrls.map((url) => urlIdentity(url))],
+      kept.rows,
+      kept.count,
+    ),
+  };
 }
 
 /**
- * THE ONE PLACE the two stores are added together.
+ * THE ONE PLACE the two stores are brought together — by IDENTITY, not by
+ * addition.
  *
  * Every gate, badge and empty state derives its number here, so a Rulebook
  * cannot be "empty" on one screen and full on the next.
+ *
+ * 🚨 IT USED TO BE `attached + kept` (cold walk 13, N4). Those two stores
+ * overlap by construction: every file the dump lane reads gets a
+ * `distillation_source` edge AND a `platform.masterwork_source` row, so a
+ * Rulebook holding one interview, one email thread and five uploads reported
+ * TWELVE sources and listed four of its own five files as material it already
+ * held "besides" them. Each item is now counted once under the identity
+ * `aidream/services/distillation/source_identity.py` already gives it
+ * (`./sourceIdentity`).
  */
 export function tallyOf(
-  attached: number,
-  kept: number,
+  attached: readonly string[],
+  kept: readonly KeptIdentityRow[],
+  keptTotal: number = kept.length,
 ): { count: number; tally: RulebookSourceTally } {
+  const distinct = new Set<string>();
+  for (const key of attached) if (key) distinct.add(key);
+  for (const row of kept) {
+    const key = keptIdentity(row);
+    if (key) distinct.add(key);
+  }
+  // Kept rows past the page this screen holds cannot be compared to anything,
+  // so they are counted as themselves rather than guessed at. `keptTotal` is
+  // the server's exact number; `kept` is the page. Saying a smaller number
+  // than we hold would be the D7 defect wearing the N4 fix.
+  const beyondThePage = Math.max(0, keptTotal - kept.length);
+  const total = distinct.size + beyondThePage;
   const tally: RulebookSourceTally = {
-    attached,
-    kept,
-    total: attached + kept,
+    attached: attached.length,
+    kept: keptTotal,
+    total,
+    countedOnce: attached.length + keptTotal - total,
   };
-  return { count: tally.total, tally };
+  return { count: total, tally };
+}
+
+/** The identity of every attachment the panel can see, for {@link tallyOf}. */
+export function attachedIdentities(input: {
+  sourceLinks: readonly { token: string; resourceId: string }[];
+  stagedUrls: readonly { url: string }[];
+}): string[] {
+  return [
+    ...input.sourceLinks.map((l) => entityIdentity(l.token, l.resourceId)),
+    ...input.stagedUrls.map((s) => urlIdentity(s.url)),
+  ];
 }

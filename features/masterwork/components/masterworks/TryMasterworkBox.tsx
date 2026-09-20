@@ -106,6 +106,7 @@ import {
 } from "@/features/workflow-runtime/run-failure-explanation";
 
 import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
+import { MasterworkRulesProvider } from "../../rules-context/MasterworkRulesContext";
 import { CASE_DISCLOSURE_KIND } from "@/features/content-ir/kinds/masterwork-unfolding";
 import {
   latestCaseDisclosure,
@@ -177,7 +178,8 @@ function buildFallbackInputs(
       kind: "text",
       sourcing: "require",
       label:
-        fieldLabels?.[0] ?? (isEdit ? "The text to check" : "What you want made"),
+        fieldLabels?.[0] ??
+        (isEdit ? "The text to check" : "What you want made"),
       json_schema: { type: "string" },
     },
     ...(isEdit
@@ -192,9 +194,7 @@ function buildFallbackInputs(
         ]
       : []),
   ];
-  return raw
-    .map(parseServedInput)
-    .filter((i): i is ServedInput => i !== null);
+  return raw.map(parseServedInput).filter((i): i is ServedInput => i !== null);
 }
 
 export function TryMasterworkBox({
@@ -455,10 +455,10 @@ export function TryMasterworkBox({
     if (runStatus === "completed") return;
     // The run ROW's recorded error is richer than anything the stream carried.
     void getMasterworkRunVerdict(runId)
-      .then((row) => setFailure(explainRunFailure(row?.error ?? null, whatItRuns)))
-      .catch(() =>
-        setFailure(explainRunFailure(null, whatItRuns)),
-      );
+      .then((row) =>
+        setFailure(explainRunFailure(row?.error ?? null, whatItRuns)),
+      )
+      .catch(() => setFailure(explainRunFailure(null, whatItRuns)));
   }, [runId, terminal, runStatus, onRunFinished, whatItRuns]);
 
   // ── The fields, and starting ────────────────────────────────────────────
@@ -503,8 +503,8 @@ export function TryMasterworkBox({
     {
       when: unsatisfiedServedInputs(inputs, values, touched).length > 0,
       reason: `${
-        unsatisfiedServedInputs(inputs, values, touched)[0]?.label
-          .split("(")[0]
+        unsatisfiedServedInputs(inputs, values, touched)[0]
+          ?.label.split("(")[0]
           .trim() ?? "One field"
       } — fill this in first`,
     },
@@ -602,7 +602,13 @@ export function TryMasterworkBox({
             output: finalInvocation?.output,
           })
         : null,
-    [terminal, runStatus, finalStep?.nodeId, emissions, finalInvocation?.output],
+    [
+      terminal,
+      runStatus,
+      finalStep?.nodeId,
+      emissions,
+      finalInvocation?.output,
+    ],
   );
   const candidateText = presentedResult?.text ?? null;
   /**
@@ -620,201 +626,211 @@ export function TryMasterworkBox({
       : null;
 
   return (
-    <div className="space-y-3">
-      {/* ── LOUD: a surface that could not be read, or was never served ─── */}
-      {served.status === "error" ? (
-        // 🚨 THE READER IS NEVER BLAMED FOR A WORKFLOW THAT DOES NOT COMPILE.
-        // This printed "Bad request. Please check your input. The fields below
-        // are the fallback pair…" on 2026-09-11 while the reader had typed
-        // nothing and the server had sent six named node errors. Both halves
-        // were false. `runFormScreamProps` drops the fallback-pair note for a
-        // compile refusal (there is nothing to fill in) and carries the
-        // server's own reasons through as lines.
-        <ServedFormScream
-          {...runFormScreamProps(served, {
-            title: "Could not read what this asks for",
-            surfaceNote:
-              "The fields below are the fallback pair, not this Masterwork's own declared inputs — what the builder designed is not being asked for.",
-          })}
-        />
-      ) : served.status === "ready" && !served.form.surfaceServed ? (
-        <ServedFormScream
-          title="This backend serves no input surface"
-          body="The run-form response carried no `inputs` array, so the reachable server predates the compiled input surface. The fields below are the fallback pair — point at a server that serves it."
-        />
-      ) : null}
-      {kindError ? (
-        <ServedFormScream title="Kind registry gap" body={kindError} />
-      ) : null}
-      {servedLoading ? (
-        <p
-          className="text-xs text-muted-foreground"
-          data-masterwork-intake="loading"
-        >
-          Loading what this Masterwork asks for…
-        </p>
-      ) : null}
-
-      {/* ── THE SEALED CASE, when this Masterwork is a desk ─────────────── */}
-      <SealedCasePicker
-        state={sealedCases}
-        value={caseItemId}
-        onChange={setCaseItemId}
-      />
-
-      {/* ── The builder's own fields ────────────────────────────────────── */}
-      {inputs.map((input) => (
-        <div
-          key={input.name}
-          className="space-y-1"
-          {...(usingFallback ? { "data-masterwork-intake": "fallback" } : {})}
-        >
-          <label className="text-xs font-medium text-foreground">
-            {input.label}
-            {input.sourcing === "optional" ? (
-              <span className="ml-1 font-normal text-muted-foreground">
-                (optional)
-              </span>
-            ) : null}
-          </label>
-          <ServedFieldControl
-            input={input}
-            kind={kinds[input.kind]}
-            value={values[input.name]}
-            onChange={(v) => setValue(input.name, v)}
+    // 🚨 THE RULES RIDE WITH THE RUN BOX (walk 13, N3). Every surface that runs
+    // a Masterwork renders THIS component — the build dialog, Encore, the
+    // Masterworks lane — so the Rulebook is published here, once, instead of by
+    // each page remembering to. `masterworkId` is a workflow.definition id and
+    // its metadata names the Rulebook it was built from, so nothing has to be
+    // passed in. A page that already knows its Rulebook wraps this one and is
+    // never clobbered: an inner provider that resolves nothing inherits.
+    <MasterworkRulesProvider masterworkId={masterworkId}>
+      <div className="space-y-3">
+        {/* ── LOUD: a surface that could not be read, or was never served ─── */}
+        {served.status === "error" ? (
+          // 🚨 THE READER IS NEVER BLAMED FOR A WORKFLOW THAT DOES NOT COMPILE.
+          // This printed "Bad request. Please check your input. The fields below
+          // are the fallback pair…" on 2026-09-11 while the reader had typed
+          // nothing and the server had sent six named node errors. Both halves
+          // were false. `runFormScreamProps` drops the fallback-pair note for a
+          // compile refusal (there is nothing to fill in) and carries the
+          // server's own reasons through as lines.
+          <ServedFormScream
+            {...runFormScreamProps(served, {
+              title: "Could not read what this asks for",
+              surfaceNote:
+                "The fields below are the fallback pair, not this Masterwork's own declared inputs — what the builder designed is not being asked for.",
+            })}
           />
-          {input.help ? (
-            <p className="text-[11px] text-muted-foreground">{input.help}</p>
-          ) : null}
-        </div>
-      ))}
+        ) : served.status === "ready" && !served.form.surfaceServed ? (
+          <ServedFormScream
+            title="This backend serves no input surface"
+            body="The run-form response carried no `inputs` array, so the reachable server predates the compiled input surface. The fields below are the fallback pair — point at a server that serves it."
+          />
+        ) : null}
+        {kindError ? (
+          <ServedFormScream title="Kind registry gap" body={kindError} />
+        ) : null}
+        {servedLoading ? (
+          <p
+            className="text-xs text-muted-foreground"
+            data-masterwork-intake="loading"
+          >
+            Loading what this Masterwork asks for…
+          </p>
+        ) : null}
 
-      {/* PHONE: the note beside the button does not fit next to it at 390px,
+        {/* ── THE SEALED CASE, when this Masterwork is a desk ─────────────── */}
+        <SealedCasePicker
+          state={sealedCases}
+          value={caseItemId}
+          onChange={setCaseItemId}
+        />
+
+        {/* ── The builder's own fields ────────────────────────────────────── */}
+        {inputs.map((input) => (
+          <div
+            key={input.name}
+            className="space-y-1"
+            {...(usingFallback ? { "data-masterwork-intake": "fallback" } : {})}
+          >
+            <label className="text-xs font-medium text-foreground">
+              {input.label}
+              {input.sourcing === "optional" ? (
+                <span className="ml-1 font-normal text-muted-foreground">
+                  (optional)
+                </span>
+              ) : null}
+            </label>
+            <ServedFieldControl
+              input={input}
+              kind={kinds[input.kind]}
+              value={values[input.name]}
+              onChange={(v) => setValue(input.name, v)}
+            />
+            {input.help ? (
+              <p className="text-[11px] text-muted-foreground">{input.help}</p>
+            ) : null}
+          </div>
+        ))}
+
+        {/* PHONE: the note beside the button does not fit next to it at 390px,
           and without wrapping it printed straight across "Coach me through it"
           (jobs-bar-2026-09-16, item 16). */}
-      <div className="flex flex-wrap items-center gap-2">
-        <GatedActionButton
-          size="sm"
-          className="shrink-0"
-          wrapperClassName="justify-start"
-          onClick={() => void start()}
-          disabled={
-            starting || running || servedLoading || rejoining || noSealedCases
-          }
-          reason={missingToRun}
-          aria-label={submitLabel ?? `Run ${whatItRuns}`}
-          title={submitLabel ?? `Run ${whatItRuns}`}
-        >
-          {/* THE PRIMARY ACTION ALWAYS HAS WORDS (jobs-bar-2026-09-16, item 6).
+        <div className="flex flex-wrap items-center gap-2">
+          <GatedActionButton
+            size="sm"
+            className="shrink-0"
+            wrapperClassName="justify-start"
+            onClick={() => void start()}
+            disabled={
+              starting || running || servedLoading || rejoining || noSealedCases
+            }
+            reason={missingToRun}
+            aria-label={submitLabel ?? `Run ${whatItRuns}`}
+            title={submitLabel ?? `Run ${whatItRuns}`}
+          >
+            {/* THE PRIMARY ACTION ALWAYS HAS WORDS (jobs-bar-2026-09-16, item 6).
               Without a `submitLabel` this rendered a bare blue play triangle —
               the only button on the Understudy card, and the one thing a
               first-timer has to press. An icon is a decoration, never the
               instruction. */}
-          <Play className="mr-1 h-4 w-4" />
-          {rejoining
-            ? "Checking…"
-            : starting
-              ? "Starting…"
-              : running
-                ? "Working…"
-                : (submitLabel ?? "Run it")}
-        </GatedActionButton>
-        {onCompare && !candidateText && !noResultReason ? (
-          <span className="text-xs text-muted-foreground">
-            Runs land in your recent runs below.
-          </span>
-        ) : null}
-      </div>
-
-      {/* ── WHICH RUN IS THIS? Never leave the reader guessing whether the
-          thing on screen is the one they just started (wall W15). ───────── */}
-      {rejoining ? (
-        <p
-          className="text-[11px] text-muted-foreground"
-          data-masterwork-run="checking"
-        >
-          Checking the run you started earlier…
-        </p>
-      ) : runId ? (
-        <p
-          className="text-[11px] text-muted-foreground"
-          data-masterwork-run={runOrigin ?? "fresh"}
-        >
-          {runOrigin === "rejoined"
-            ? "Rejoined the run you started earlier"
-            : "This run"}
-          {" · "}
-          <span className="font-mono">{runId.slice(0, 8)}</span>
-        </p>
-      ) : null}
-
-      {/* ── The steps, straight from the run adapter's phases ───────────── */}
-      {runId && visibleSteps.length > 0 ? (
-        <div className="space-y-1 rounded-md border border-border bg-muted/30 p-2.5">
-          {visibleSteps.map((step) => {
-            const phase = phases[step.nodeId] ?? "idle";
-            return (
-              <div
-                key={step.nodeId}
-                className={cn(
-                  "flex items-center gap-1.5 text-xs",
-                  phase === "idle" ? "text-muted-foreground/50" : "text-muted-foreground",
-                )}
-              >
-                {phase === "running" || phase === "retrying" ? (
-                  <CircleDashed className="h-3 w-3 shrink-0 animate-spin text-primary" />
-                ) : phase === "failed" ? (
-                  <CircleX className="h-3 w-3 shrink-0 text-destructive" />
-                ) : phase === "settled" || phase === "skipped" ? (
-                  <CircleCheck className="h-3 w-3 shrink-0 text-primary" />
-                ) : (
-                  <CircleDashed className="h-3 w-3 shrink-0 opacity-40" />
-                )}
-                <span className="truncate">{step.label}</span>
-              </div>
-            );
-          })}
+            <Play className="mr-1 h-4 w-4" />
+            {rejoining
+              ? "Checking…"
+              : starting
+                ? "Starting…"
+                : running
+                  ? "Working…"
+                  : (submitLabel ?? "Run it")}
+          </GatedActionButton>
+          {onCompare && !candidateText && !noResultReason ? (
+            <span className="text-xs text-muted-foreground">
+              Runs land in your recent runs below.
+            </span>
+          ) : null}
         </div>
-      ) : null}
 
-      {/* ── THE CASE, UNFOLDING. Rendered through the `case_disclosure` kind
+        {/* ── WHICH RUN IS THIS? Never leave the reader guessing whether the
+          thing on screen is the one they just started (wall W15). ───────── */}
+        {rejoining ? (
+          <p
+            className="text-[11px] text-muted-foreground"
+            data-masterwork-run="checking"
+          >
+            Checking the run you started earlier…
+          </p>
+        ) : runId ? (
+          <p
+            className="text-[11px] text-muted-foreground"
+            data-masterwork-run={runOrigin ?? "fresh"}
+          >
+            {runOrigin === "rejoined"
+              ? "Rejoined the run you started earlier"
+              : "This run"}
+            {" · "}
+            <span className="font-mono">{runId.slice(0, 8)}</span>
+          </p>
+        ) : null}
+
+        {/* ── The steps, straight from the run adapter's phases ───────────── */}
+        {runId && visibleSteps.length > 0 ? (
+          <div className="space-y-1 rounded-md border border-border bg-muted/30 p-2.5">
+            {visibleSteps.map((step) => {
+              const phase = phases[step.nodeId] ?? "idle";
+              return (
+                <div
+                  key={step.nodeId}
+                  className={cn(
+                    "flex items-center gap-1.5 text-xs",
+                    phase === "idle"
+                      ? "text-muted-foreground/50"
+                      : "text-muted-foreground",
+                  )}
+                >
+                  {phase === "running" || phase === "retrying" ? (
+                    <CircleDashed className="h-3 w-3 shrink-0 animate-spin text-primary" />
+                  ) : phase === "failed" ? (
+                    <CircleX className="h-3 w-3 shrink-0 text-destructive" />
+                  ) : phase === "settled" || phase === "skipped" ? (
+                    <CircleCheck className="h-3 w-3 shrink-0 text-primary" />
+                  ) : (
+                    <CircleDashed className="h-3 w-3 shrink-0 opacity-40" />
+                  )}
+                  <span className="truncate">{step.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
+
+        {/* ── THE CASE, UNFOLDING. Rendered through the `case_disclosure` kind
           component — one component for this shape everywhere, and never a
           spinner while the desk is working: the ledger IS the progress. ── */}
-      {runId && disclosure ? (
-        <div
-          className="rounded-md border border-border bg-card p-3"
-          data-masterwork-sealed-case="ledger"
-        >
-          <KindInstanceRender
-            kind={CASE_DISCLOSURE_KIND}
-            value={disclosure}
-            variant="bare"
-          />
-        </div>
-      ) : null}
+        {runId && disclosure ? (
+          <div
+            className="rounded-md border border-border bg-card p-3"
+            data-masterwork-sealed-case="ledger"
+          >
+            <KindInstanceRender
+              kind={CASE_DISCLOSURE_KIND}
+              value={disclosure}
+              variant="bare"
+            />
+          </div>
+        ) : null}
 
-      {/* Pause & Ask, if this Masterwork ever interrupts. The desk's own human
+        {/* Pause & Ask, if this Masterwork ever interrupts. The desk's own human
           pause — "the case does not say, so the Expert answers" — arrives
           through exactly this one interrupt path, never a second prompt. */}
-      {runId ? <InterruptCard runId={runId} /> : null}
+        {runId ? <InterruptCard runId={runId} /> : null}
 
-      {/* ── THE RESULT — the canonical renderer. Typed partial kinds render
+        {/* ── THE RESULT — the canonical renderer. Typed partial kinds render
           progressively as real components; a declared-kind step shows its
           arriving silhouette rather than a JSON dump; the settled,
           kind-checked document takes over when the run ends. Everything
           Arman asked to see, owned by one component we do not maintain. */}
-      {runId && finalStep && finalInvocation ? (
-        <div className="rounded-md border border-border bg-card p-3">
-          <InvocationBody
-            runId={runId}
-            invocation={finalInvocation}
-            declaredKind={finalStep.outputKind}
-            prefer="live"
-          />
-        </div>
-      ) : null}
+        {runId && finalStep && finalInvocation ? (
+          <div className="rounded-md border border-border bg-card p-3">
+            <InvocationBody
+              runId={runId}
+              invocation={finalInvocation}
+              declaredKind={finalStep.outputKind}
+              prefer="live"
+            />
+          </div>
+        ) : null}
 
-      {/* ── THE EXPERT'S SIGNATURE (Arman, 2026-09-15: a thumbs-up on a result
+        {/* ── THE EXPERT'S SIGNATURE (Arman, 2026-09-15: a thumbs-up on a result
           is "the most important indication we need"). One tap writes a verdict
           row through the platform's ONE feedback path
           (`platform.output_feedback`, subject `workflow_run`) — never a new
@@ -822,74 +838,75 @@ export function TryMasterworkBox({
           becomes a rule candidate. Only on a FINISHED run: there is nothing to
           judge while it is still working, and a control that pretends
           otherwise is a dead control. */}
-      {runId && terminal && !failure ? (
-        <div
-          className="rounded-md border border-border bg-muted/20 px-3 py-2"
-          data-masterwork-signature="run"
-        >
-          <ExpertSignOff
-            subjectType={MASTERWORK_RUN_SUBJECT_TYPE}
-            subjectId={runId}
-            originalContent={candidateText ?? null}
-          />
-        </div>
-      ) : null}
+        {runId && terminal && !failure ? (
+          <div
+            className="rounded-md border border-border bg-muted/20 px-3 py-2"
+            data-masterwork-signature="run"
+          >
+            <ExpertSignOff
+              subjectType={MASTERWORK_RUN_SUBJECT_TYPE}
+              subjectId={runId}
+              originalContent={candidateText ?? null}
+            />
+          </div>
+        ) : null}
 
-      {failure ? (
-        <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2.5">
-          <p className="text-xs font-medium text-foreground">
-            {failure.headline}
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {failure.nextStep}
-          </p>
-          {failure.technical ? (
-            <details className="mt-1">
-              <summary className="cursor-pointer text-[11px] text-muted-foreground hover:text-foreground">
-                Technical detail (for us)
-              </summary>
-              <p className="mt-1 break-words font-mono text-[11px] text-muted-foreground">
-                {failure.technical}
-              </p>
-            </details>
-          ) : null}
-        </div>
-      ) : null}
+        {failure ? (
+          <div className="rounded-md border border-destructive/40 bg-destructive/5 p-2.5">
+            <p className="text-xs font-medium text-foreground">
+              {failure.headline}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {failure.nextStep}
+            </p>
+            {failure.technical ? (
+              <details className="mt-1">
+                <summary className="cursor-pointer text-[11px] text-muted-foreground hover:text-foreground">
+                  Technical detail (for us)
+                </summary>
+                <p className="mt-1 break-words font-mono text-[11px] text-muted-foreground">
+                  {failure.technical}
+                </p>
+              </details>
+            ) : null}
+          </div>
+        ) : null}
 
-      {(onCompare || onCompareTwo) && candidateText ? (
-        <div className="flex flex-wrap gap-2">
-          {onCompare ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onCompare(candidateText)}
-            >
-              <Scale className="mr-1 h-4 w-4" />
-              Judge this against your own work
-            </Button>
-          ) : null}
-          {onCompareTwo ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onCompareTwo(candidateText)}
-            >
-              <GitCompareArrows className="mr-1 h-4 w-4" />
-              Compare it to another answer
-            </Button>
-          ) : null}
-        </div>
-      ) : onCompare && noResultReason ? (
-        // THE DOOR IS ABSENT AND HONEST, never a filler sentence about where
-        // runs land: this run FINISHED, and this line says what it finished
-        // with instead.
-        <p
-          className="text-xs text-muted-foreground"
-          data-masterwork-audition="absent"
-        >
-          {noResultReason}
-        </p>
-      ) : null}
-    </div>
+        {(onCompare || onCompareTwo) && candidateText ? (
+          <div className="flex flex-wrap gap-2">
+            {onCompare ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onCompare(candidateText)}
+              >
+                <Scale className="mr-1 h-4 w-4" />
+                Judge this against your own work
+              </Button>
+            ) : null}
+            {onCompareTwo ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => onCompareTwo(candidateText)}
+              >
+                <GitCompareArrows className="mr-1 h-4 w-4" />
+                Compare it to another answer
+              </Button>
+            ) : null}
+          </div>
+        ) : onCompare && noResultReason ? (
+          // THE DOOR IS ABSENT AND HONEST, never a filler sentence about where
+          // runs land: this run FINISHED, and this line says what it finished
+          // with instead.
+          <p
+            className="text-xs text-muted-foreground"
+            data-masterwork-audition="absent"
+          >
+            {noResultReason}
+          </p>
+        ) : null}
+      </div>
+    </MasterworkRulesProvider>
   );
 }

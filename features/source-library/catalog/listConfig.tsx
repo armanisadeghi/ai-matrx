@@ -79,6 +79,10 @@ export function createCatalogListConfig(options: {
         syncReportsRows,
     } = options;
     const vocabulary = sourceVocabulary(library);
+    // The Library's kind is only KNOWN once its row is here; until then the
+    // neutral vocabulary means "not yet", never "this axis does not exist".
+    // Same gate the metrics header uses for its tiles and its chart title.
+    const kindKnown = library !== null;
 
     function useCatalogRowActions(
         _list: EntityListController<VideoRow>,
@@ -144,7 +148,7 @@ export function createCatalogListConfig(options: {
         scopes: [],
         service: createCatalogService(dispatch, libraryId),
         serviceKey: `media-catalog:${libraryId}:${organizationId ?? "none"}:${refreshToken ?? 0}`,
-        columns: catalogColumns({ actionLabels, vocabulary }),
+        columns: catalogColumns({ actionLabels, vocabulary, kindKnown }),
         prefsVersion: 1,
         getRowId: (row) => row.id,
         getRowName: (row) => row.title,
@@ -156,22 +160,38 @@ export function createCatalogListConfig(options: {
         bulkActions,
         bulkSelection: { noun: vocabulary.item.one, selectAllMatching: true },
         facetSections: [
-            {
-                facet: "media_kind",
-                filterId: "media_kind",
-                label: "Type",
-                noneLabel: "Unclassified",
-                countInLabel: false,
-            },
-            {
-                facet: "has_captions",
-                filterId: "has_captions",
-                label: "Captions",
-                noneLabel: "Unknown",
-                countInLabel: false,
-                formatValue: (value) =>
-                    value === "true" ? "Has captions" : "No captions",
-            },
+            // A FILTER FOLLOWS THE MEDIA KIND, exactly as its column does
+            // (jobs-bar cold-walk-13, Friction; see `catalog/columns.tsx`).
+            // A "Type: Long / Short / Live" chip over a podcast filters by
+            // YouTube's duration threshold, and a Captions chip over text
+            // filters by something that does not exist — so both are absent
+            // where `vocabulary.ts` says the axis is not real, rather than
+            // offering a narrowing that can only return everything or
+            // nothing.
+            ...(!kindKnown || vocabulary.kindSplit !== null
+                ? [
+                      {
+                          facet: "media_kind" as const,
+                          filterId: "media_kind",
+                          label: "Type",
+                          noneLabel: "Unclassified",
+                          countInLabel: false,
+                      },
+                  ]
+                : []),
+            ...(!kindKnown || vocabulary.transcribable
+                ? [
+                      {
+                          facet: "has_captions" as const,
+                          filterId: "has_captions",
+                          label: "Captions",
+                          noneLabel: "Unknown",
+                          countInLabel: false,
+                          formatValue: (value: string) =>
+                              value === "true" ? "Has captions" : "No captions",
+                      },
+                  ]
+                : []),
             {
                 facet: "transcript_status",
                 filterId: "transcript_status",

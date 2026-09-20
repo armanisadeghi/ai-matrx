@@ -48,6 +48,18 @@ export interface SourceVocabulary {
      * beside it correctly called "a podcast" — one screen, two vocabularies.
      */
     freeCaptionsSource: string | null;
+    /**
+     * What a view/play count is called here, or `null` when this kind of
+     * Source has no such number AT ALL.
+     *
+     * 🚨 A COLUMN THAT CAN NEVER FILL IS NOT A COLUMN (jobs-bar cold-walk-13,
+     * Friction). A podcast Library rendered a VIEWS column reading `—` on
+     * every one of 2,981 rows, and a "Most watched" panel beside it: an RSS
+     * feed publishes no play count, so neither could ever be anything else.
+     * Same rule as `length` and `kindSplit` above — absent, never a row of
+     * dashes, and never a header promising a number nobody has.
+     */
+    views: { column: string; top: string } | null;
     /** The cadence chart's own title. */
     cadence: string;
 }
@@ -58,6 +70,7 @@ const NEUTRAL: SourceVocabulary = {
     length: null,
     transcribable: false,
     freeCaptionsSource: null,
+    views: null,
     cadence: "Added, by month",
 };
 
@@ -77,6 +90,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         },
         transcribable: true,
         freeCaptionsSource: "YouTube's own captions",
+        views: { column: "Views", top: "Most watched" },
         cadence: "Publishing cadence, by month",
     },
     podcast_rss: {
@@ -92,6 +106,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         },
         transcribable: true,
         freeCaptionsSource: "the show's own published transcript",
+        views: null,
         cadence: "Publishing cadence, by month",
     },
     blog_feed: {
@@ -101,6 +116,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         length: null,
         transcribable: false,
         freeCaptionsSource: null,
+        views: null,
         cadence: "Publishing cadence, by month",
     },
     slide_deck: {
@@ -109,6 +125,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         length: null,
         transcribable: false,
         freeCaptionsSource: null,
+        views: null,
         cadence: "Published, by month",
     },
     drive_folder: {
@@ -117,6 +134,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         length: null,
         transcribable: false,
         freeCaptionsSource: null,
+        views: null,
         cadence: "Added, by month",
     },
     onedrive_drive: {
@@ -125,6 +143,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         length: null,
         transcribable: false,
         freeCaptionsSource: null,
+        views: null,
         cadence: "Added, by month",
     },
     google_picked_files: {
@@ -133,6 +152,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         length: null,
         transcribable: false,
         freeCaptionsSource: null,
+        views: null,
         cadence: "Added, by month",
     },
     outlook_mail: {
@@ -141,6 +161,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         length: null,
         transcribable: false,
         freeCaptionsSource: null,
+        views: null,
         cadence: "Received, by month",
     },
     outlook_calendar: {
@@ -149,6 +170,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         length: null,
         transcribable: false,
         freeCaptionsSource: null,
+        views: null,
         cadence: "Scheduled, by month",
     },
     teams_chat: {
@@ -157,6 +179,7 @@ const BY_ADAPTER: Partial<Record<MediaAdapter, SourceVocabulary>> = {
         length: null,
         transcribable: false,
         freeCaptionsSource: null,
+        views: null,
         cadence: "Active, by month",
     },
 };
@@ -172,3 +195,64 @@ export function sourceVocabulary(library: LibraryRow | null): SourceVocabulary {
 
 /** Every adapter this file speaks for — the guard iterates it. */
 export const ADAPTERS_WITH_VOCABULARY = Object.keys(BY_ADAPTER) as MediaAdapter[];
+
+/**
+ * 🚨 N6 (jobs-bar cold-walk-13): THE SERVER'S SENTENCES SPEAK THIS TABLE TOO.
+ *
+ * Walk 12 fixed the headers — "3 episodes selected", "Transcribe 3 episodes" —
+ * because those are written HERE, from the table above. Walk 13 found the word
+ * "video" seven more times in the same two dialogs, all of it in sentences the
+ * SERVER wrote: the Action registry's own descriptions, the estimate's cost
+ * basis, its warnings, and the refusal you get when a selection has no
+ * transcripts.
+ *
+ * The server cannot fix that by itself. `GET /media/actions` is one global
+ * registry — it has no Library and therefore no adapter — so a description
+ * baked with a noun is baked with somebody else's noun for everyone. The
+ * server now writes those sentences with TOKENS instead, and this function is
+ * the one place they become words. One table, one substitution, and a header
+ * and the sentence under it can no longer disagree.
+ *
+ * The tokens (the server half is `aidream/services/media_catalog`):
+ *   {item} {items}                singular / plural, lowercase
+ *   {Item} {Items}                the same, capitalised for sentence starts
+ *   {free_captions_source}        where the free lane's words come from
+ *
+ * UNKNOWN TOKENS ARE LEFT ALONE, NEVER BLANKED. A `{whatever}` this build has
+ * never heard of is a server ahead of this client; printing it intact is ugly
+ * and obvious, which is what we want — blanking it would quietly delete a
+ * noun from the middle of a sentence and nobody would ever find it.
+ */
+export function speakMediaNouns(
+    text: string,
+    vocabulary: SourceVocabulary,
+): string;
+export function speakMediaNouns(
+    text: string | null | undefined,
+    vocabulary: SourceVocabulary,
+): string | null;
+export function speakMediaNouns(
+    text: string | null | undefined,
+    vocabulary: SourceVocabulary,
+): string | null {
+    if (text == null) return null;
+    const one = vocabulary.item.one;
+    const many = vocabulary.item.many.toLowerCase();
+    const replacements: Record<string, string> = {
+        item: one,
+        items: many,
+        Item: capitalise(one),
+        Items: capitalise(many),
+        // A Library with no free lane still has to read as a sentence. The
+        // neutral phrasing names no provider and promises nothing.
+        free_captions_source:
+            vocabulary.freeCaptionsSource ?? "captions it already has",
+    };
+    return text.replace(/\{([A-Za-z_]+)\}/g, (whole, token: string) =>
+        token in replacements ? replacements[token] : whole,
+    );
+}
+
+function capitalise(word: string): string {
+    return word.charAt(0).toUpperCase() + word.slice(1);
+}
