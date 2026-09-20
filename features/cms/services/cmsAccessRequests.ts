@@ -12,6 +12,7 @@ import type {
   AccessRequestRecipient,
 } from "@/features/access-gate/types";
 import type { CmsAccessGateToken } from "@/features/cms/accessGateTokens";
+import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
 
 function rec(value: unknown): Record<string, unknown> | null {
   return value && typeof value === "object" && !Array.isArray(value)
@@ -45,7 +46,7 @@ export async function createCmsAccessRequest(args: {
   message?: string;
   currentUserId?: string | null;
 }): Promise<AccessRequestCreated> {
-  const response = await fetch("/api/cms/access-context", {
+  const response = await fetchWithOrganization("/api/cms/access-context", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

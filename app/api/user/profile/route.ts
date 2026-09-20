@@ -16,6 +16,10 @@ import { createClient } from "@/utils/supabase/server";
 import type { UserAccountData, UserAccountPatch } from "@/features/user-profile/types";
 import { EMPTY_ACCOUNT_DATA } from "@/features/user-profile/types";
 import { ensureOrgIdServer } from "@/lib/organizations/personalOrg";
+import {
+  isOrganizationRequiredServerError,
+  organizationRequiredResponse,
+} from "@/lib/organizations/organizationRequiredResponse";
 
 // Fields the client is allowed to PATCH on this surface. Anything outside
 // this list is ignored — auth.users has many sensitive metadata namespaces
@@ -153,21 +157,6 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    if (Object.keys(metaPatch).length > 0) {
-      // Merge over existing user_metadata — Supabase's updateUser does this
-      // shallow merge for top-level keys, which is what we want.
-      const { error: updateError } = await supabase.auth.updateUser({
-        data: metaPatch,
-      });
-      if (updateError) {
-        console.error("[/api/user/profile PATCH] auth updateUser:", updateError);
-        return NextResponse.json(
-          { success: false, msg: updateError.message },
-          { status: 500 },
-        );
-      }
-    }
-
     // Build the users.profiles patch.
     const profilesPatch: Record<string, string | null> = {};
     for (const key of PROFILES_FIELDS) {
@@ -183,7 +172,73 @@ export async function PATCH(request: NextRequest) {
       }
     }
 
-    if (Object.keys(profilesPatch).length > 0) {
+    // 🚨 THE ORGANIZATION QUESTION IS SETTLED BEFORE ANYTHING IS WRITTEN.
+    // Until 2026-09-19 the profiles upsert read
+    // `ensureOrgIdServer(supabase, null)`, which ended in the
+    // `current_personal_org_id()` RPC — the server stamping the row with the
+    // person's personal workspace because the request named no organization.
+    // The old comment called that deliberate ("a per-person singleton, PK =
+    // the user id"), but the primary key is what makes the row a singleton;
+    // `organization_id` is still a tenant, and picking it here is exactly the
+    // substitution the 2026-09-19 ruling forbids. The caller states the
+    // organization on `X-Organization-Id` — the header every Matrx client
+    // carries and every other org-scoped route under app/api/** already reads
+    // (app/api/_lib/apply-scope-to-insert.ts).
+    //
+    // It is resolved HERE, above the `auth.updateUser` call that used to run
+    // first, because a refusal issued after that call would have already
+    // written the person's name and avatar into auth metadata and then told
+    // them nothing was saved. A refusal must find the account exactly as it
+    // was: both writes happen after the question is answered, or neither does.
+    //
+    // 🚨 THE RESOLVED ORGANIZATION NEVER PASSES THROUGH A NULLABLE BINDING.
+    // A `let organizationId: string | null` narrowed at the write is enough
+    // for the compiler and NOT enough for `check:org-insert-scope`, which
+    // follows the payload value back through its declaration: a nullable
+    // anywhere in that chain is a write that MAY send null, and a null here
+    // is `public._stamp_org_default` stamping the writer's personal workspace
+    // — precisely the substitution this handler just stopped making. So the
+    // resolve and the write live in ONE branch, the binding is `const` and
+    // `string`, and there is no path by which an absent organization reaches
+    // the upsert. The guard is right to refuse the SHAPE even where today's
+    // flow happens to be safe: the next edit to this block is what makes it
+    // unsafe.
+    const writesProfile = Object.keys(profilesPatch).length > 0;
+
+    // The auth-metadata half, factored out so it can run in either branch and
+    // always AFTER the organization question is answered. It returns the
+    // error response to send, or null when it is done.
+    const applyMetaPatch = async (): Promise<NextResponse | null> => {
+      if (Object.keys(metaPatch).length === 0) return null;
+      // Merge over existing user_metadata — Supabase's updateUser does this
+      // shallow merge for top-level keys, which is what we want.
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: metaPatch,
+      });
+      if (updateError) {
+        console.error("[/api/user/profile PATCH] auth updateUser:", updateError);
+        return NextResponse.json(
+          { success: false, msg: updateError.message },
+          { status: 500 },
+        );
+      }
+      return null;
+    };
+
+    if (writesProfile) {
+      // Answered BEFORE anything is written — a refusal issued after
+      // `auth.updateUser` would have already saved the person's name and
+      // avatar and then told them nothing was saved.
+      const actingOrganizationId =
+        request.headers.get("X-Organization-Id")?.trim() || undefined;
+      const writeOrganizationId = await ensureOrgIdServer(
+        supabase,
+        actingOrganizationId,
+      );
+
+      const metaFailure = await applyMetaPatch();
+      if (metaFailure) return metaFailure;
+
       // display_name is NOT NULL in the table; if the caller clears it, fall
       // back to the auth-metadata full_name or the literal "User".
       if (profilesPatch.display_name === null) {
@@ -196,16 +251,12 @@ export async function PATCH(request: NextRequest) {
         profilesPatch.display_name = fallback;
       }
 
-      // org-fallback-deliberate: users.profiles is a per-person singleton (PK =
-      //   the user id) that follows the person across every organization, so its
-      //   tenant IS their own workspace
-      const organizationId = await ensureOrgIdServer(supabase, null);
       const { error: upsertError } = await supabase
         .schema("users").from("profiles")
         .upsert(
           {
             id: user.id,
-            organization_id: organizationId,
+            organization_id: writeOrganizationId,
             ...profilesPatch,
             // Keep updated_at fresh on every save.
             updated_at: new Date().toISOString(),
@@ -223,6 +274,12 @@ export async function PATCH(request: NextRequest) {
           { status: 500 },
         );
       }
+    } else {
+      // Nothing organization-scoped is being written, so there is no
+      // organization to ask about: a metadata-only save (name, avatar) must
+      // not be held behind a question it does not need answered.
+      const metaFailure = await applyMetaPatch();
+      if (metaFailure) return metaFailure;
     }
 
     // Echo the new state back so the client can reconcile without a refetch.
@@ -256,6 +313,13 @@ export async function PATCH(request: NextRequest) {
       msg: "Profile updated",
     });
   } catch (error) {
+    // The organization refusal is an ANSWER, not a failure: it carries the
+    // caller's own memberships so the client can hold the save, show the
+    // picker and retry. Collapsing it into the generic 500 below would turn
+    // the one question the person can answer into a dead end.
+    if (isOrganizationRequiredServerError(error)) {
+      return organizationRequiredResponse(error);
+    }
     console.error("[/api/user/profile PATCH] unexpected:", error);
     return NextResponse.json(
       { success: false, msg: "Failed to update profile" },

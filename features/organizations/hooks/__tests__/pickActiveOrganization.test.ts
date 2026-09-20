@@ -1,14 +1,27 @@
 /**
- * pickActiveOrganization.test.ts — the RECOVERY layer applies the same rung
- * order as the primary resolver.
+ * pickActiveOrganization.test.ts — BOOT MAY SELECT ONLY WHAT IT IS NOT
+ * CHOOSING.
  *
- * The second layer used to require a stated default-org preference, exactly
- * like the primary path, so both declined together for the user in the
- * 2026-09-12 incident (many memberships, null defaultOrganizationId) and the
- * app sat forever with nothing selected. Recovery that shares the primary
- * path's blind spot is not a second layer at all.
+ * Arman, 2026-09-19: a "default organization" is at most a per-client display
+ * preference. Nothing but the org picker may read it, and nothing may pick an
+ * organization for the user from a cookie, a saved preference, or their
+ * personal workspace. Sole membership is the one exception, because there is
+ * nothing to choose.
  *
- * SUT: the real rung-order function the hook dispatches from.
+ *   "one missed org check that should have just failed turns into 50 in a
+ *    month and 5,000 in a year, and suddenly we don't have orgs any more, we
+ *    have a user and a default org, which means we just have user now."
+ *
+ * This file used to assert the OPPOSITE — that the recovery layer names the
+ * personal org when memberships exist and no default is stated, and honours a
+ * stated default over it. Those were the two rungs; they are deleted, and
+ * these tests are the forcing function that stops them growing back. The
+ * signature itself is the guard: `pickActiveOrganization` no longer ACCEPTS a
+ * default-org id or a personal-org id, so a rung cannot be re-added here
+ * without a caller change that `scripts/check-no-default-organization.ts` and
+ * a reviewer both see.
+ *
+ * SUT: the real function the hook dispatches from.
  */
 
 import { pickActiveOrganization } from "@/features/organizations/hooks/useActiveOrganizationAutoSelect";
@@ -21,25 +34,33 @@ const A = org("a", "Client A");
 const B = org("b", "Client B");
 
 describe("pickActiveOrganization", () => {
-  it("names the personal org when memberships exist and no default is stated", () => {
-    expect(pickActiveOrganization([A, PERSONAL, B], null, "personal")).toBe(
-      PERSONAL,
-    );
+  it("selects the only membership — nothing is being chosen for anybody", () => {
+    expect(pickActiveOrganization([A])).toBe(A);
   });
 
-  it("a stated default outranks the personal org", () => {
-    expect(pickActiveOrganization([A, PERSONAL], "a", "personal")).toBe(A);
+  it("names nothing when there are several memberships, so the person is asked", () => {
+    expect(pickActiveOrganization([A, B])).toBeNull();
   });
 
-  it("falls to a sole membership when neither is known", () => {
-    expect(pickActiveOrganization([A], null, null)).toBe(A);
+  it("does NOT reach for the personal workspace when several memberships exist", () => {
+    // The deleted rung b. A person who belongs to their own workspace and two
+    // clients has a real choice to make, and boot may not make it for them.
+    expect(pickActiveOrganization([A, PERSONAL, B])).toBeNull();
   });
 
-  it("names nothing when several memberships exist and none can be chosen", () => {
-    expect(pickActiveOrganization([A, B], null, null)).toBeNull();
+  it("takes no default-organization argument at all", () => {
+    // The deleted rung a, enforced at the type level and at run time: extra
+    // arguments are ignored, so a re-added preference rung cannot smuggle
+    // itself in through this function.
+    const withStrayArgs = pickActiveOrganization as unknown as (
+      orgs: readonly OrgNode[],
+      ...rest: unknown[]
+    ) => OrgNode | null;
+    expect(withStrayArgs([A, PERSONAL, B], "a", "personal")).toBeNull();
+    expect(pickActiveOrganization.length).toBe(1);
   });
 
-  it("names nothing when there are no memberships at all", () => {
-    expect(pickActiveOrganization([], "a", "personal")).toBeNull();
+  it("names nothing when there are no memberships", () => {
+    expect(pickActiveOrganization([])).toBeNull();
   });
 });

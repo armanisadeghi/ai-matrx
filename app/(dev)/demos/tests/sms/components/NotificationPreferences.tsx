@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Save, CheckCircle2, AlertCircle, Settings } from 'lucide-react';
+import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
 
 interface Preferences {
   phone_number: string | null;
@@ -36,7 +37,7 @@ export default function NotificationPreferences() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/sms/preferences');
+      const response = await fetchWithOrganization('/api/sms/preferences');
       const data = await response.json();
 
       if (response.ok) {
@@ -61,7 +62,7 @@ export default function NotificationPreferences() {
     setResult(null);
 
     try {
-      const response = await fetch('/api/sms/preferences', {
+      const response = await fetchWithOrganization('/api/sms/preferences', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(preferences),

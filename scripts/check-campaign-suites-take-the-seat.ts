@@ -39,32 +39,58 @@ import { resolve } from "node:path";
 import { exitAfterDrain } from "./lib/exit-after-drain";
 
 const DIR = resolve(__dirname, "campaign-tests");
+/**
+ * The OTHER directory the same pattern lives in. SEAT-SUITES, 2026-09-19: both suites there
+ * that call schema `custom` already take the seat, so this one starts at ZERO and a bare suite
+ * written here is refused on the day it is written. A guard that watched one directory while
+ * the identical file was allowed in the one next to it is a safe path beside an unsafe one.
+ */
+const TESTS_DIR = resolve(__dirname, "..", "migrations", "tests");
+const TESTS_BASELINE = 0;
 
 /**
- * The number of suites that called schema `custom` and did NOT take the seat when this guard
- * was written (2026-09-20). It may only ever go DOWN.
+ * The number of suites that call schema `custom` and do NOT take the seat. It may only ever go
+ * DOWN. 57 when this guard was written (2026-09-20); 20 after lane SEAT-SUITES converted 37 of
+ * them — every clause moved onto the doors a signed-in person reaches, which turned up nine
+ * real defects in those doors, each fixed on the main database.
+ *
+ * WHAT THE REMAINING 26 ARE, so nobody has to re-derive it:
+ *   - 16 are the remaining W1 field/rule and W3 document/workflow/migration/history suites,
+ *     plus w4_agg_green and w4_query_green, still in conversion.
+ *   - `readperf_green`, `readperf_red` and `readperf_parity_20_pairs` are OPERATOR PARITY
+ *     CENSUSES over live data, not product suites: `platform.client_callable_door` names them
+ *     explicitly as legitimate callers of the server-only helpers (`custom.visible_set`,
+ *     `custom.read_door_carried_ids`, `custom.read_door_granted_ids`, `custom.read_door_parity`),
+ *     the same lane as `pnpm check:store-doors-decide`. They are NOT excused here — an excuse
+ *     list is how a ratchet dies — so they stay in the count and stay visible.
+ *   - `sharedonly_red` belongs to lane SHARED-ONLY and landed after this guard did.
  */
-const BASELINE = 55;
+const BASELINE = 20;
 
 /** Taking the seat, in either of the two spellings psql and plpgsql use. */
 const TAKES_THE_SEAT = /set\s+local\s+role\s+authenticated|set_config\(\s*'role'\s*,\s*'authenticated'/i;
 /** Calls the store at all. A suite that never touches `custom.` has no seat to take. */
 const TOUCHES_THE_STORE = /\bcustom\./;
 
-function main(): void {
-  const selfTest = process.argv.includes("--self-test");
-
-  const files = readdirSync(DIR).filter((f) => f.endsWith(".sql")).sort();
+/** The census of one directory: which of its .sql files call the store, and which sit down. */
+function census(dir: string): { relevant: string[]; seated: string[]; bare: string[] } {
   const relevant: string[] = [];
   const seated: string[] = [];
   const bare: string[] = [];
-
-  for (const f of files) {
-    const body = readFileSync(resolve(DIR, f), "utf8");
+  for (const f of readdirSync(dir).filter((x) => x.endsWith(".sql")).sort()) {
+    const body = readFileSync(resolve(dir, f), "utf8");
     if (!TOUCHES_THE_STORE.test(body)) continue;
     relevant.push(f);
     (TAKES_THE_SEAT.test(body) ? seated : bare).push(f);
   }
+  return { relevant, seated, bare };
+}
+
+function main(): void {
+  const selfTest = process.argv.includes("--self-test");
+
+  const { relevant, seated, bare } = census(DIR);
+  const tests = census(TESTS_DIR);
 
   if (relevant.length === 0) {
     console.error(
@@ -80,6 +106,30 @@ function main(): void {
     // relevant suite must be named — including the ones that really do take the seat.
     const impossible = /set\s+local\s+role\s+nobody_at_all/;
     const wouldBeBare = relevant.filter((f) => !impossible.test(readFileSync(resolve(DIR, f), "utf8")));
+    // THE SECOND ARM, PROVEN SEPARATELY: migrations/tests is watched too, and its baseline is
+    // zero, so with a seat spelling nothing matches EVERY seated suite there must be named.
+    const testsWouldBeBare = tests.relevant.filter(
+      (f) => !impossible.test(readFileSync(resolve(TESTS_DIR, f), "utf8")),
+    );
+    if (tests.relevant.length === 0) {
+      console.error(
+        "[FAIL] SELF-TEST FAILED - not one suite in migrations/tests names schema `custom`. " +
+          "Either the directory moved or this check is reading the wrong place, and then its " +
+          "zero baseline there means nothing.",
+      );
+      exitAfterDrain(1);
+    }
+    if (testsWouldBeBare.length !== tests.relevant.length) {
+      console.error(
+        "[FAIL] SELF-TEST FAILED - with a seat pattern nothing can match, this check did not " +
+          `name all ${tests.relevant.length} migrations/tests suite(s). It is not reading them.`,
+      );
+      exitAfterDrain(1);
+    }
+    console.log(
+      `[ OK ] self-test - migrations/tests: with a seat spelling no file contains, the census ` +
+        `names all ${testsWouldBeBare.length} suite(s) that touch the store. That arm can go red too.`,
+    );
     if (wouldBeBare.length !== relevant.length) {
       console.error(
         "[FAIL] SELF-TEST FAILED - with a seat pattern nothing can match, this check did not " +
@@ -97,6 +147,23 @@ function main(): void {
     `[INFO] ${relevant.length} campaign suite(s) call schema custom; ${seated.length} take the ` +
       `seat, ${bare.length} do not (baseline ${BASELINE}).`,
   );
+  console.log(
+    `[INFO] migrations/tests: ${tests.relevant.length} suite(s) call schema custom; ` +
+      `${tests.seated.length} take the seat, ${tests.bare.length} do not ` +
+      `(baseline ${TESTS_BASELINE}).`,
+  );
+
+  if (tests.bare.length > TESTS_BASELINE) {
+    console.error(
+      `[FAIL] ${tests.bare.length} suite(s) in migrations/tests call schema custom without ` +
+        `taking the seat, and that directory's baseline is ${TESTS_BASELINE}. The rule is the ` +
+        `same one: a suite that runs as the role owning custom.record walks through the ` +
+        `organization wall on its first line and proves nothing about the product. ` +
+        `scripts/campaign-tests/doorfix_green.sql PART 0 is the worked example.`,
+    );
+    console.error(`       ${tests.bare.join(", ")}`);
+    exitAfterDrain(1);
+  }
 
   if (bare.length > BASELINE) {
     console.error(
