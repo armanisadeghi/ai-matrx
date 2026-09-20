@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import IntegrationsPage from "@/features/settings/pages/IntegrationsSettingsPage";
 import { MicrosoftConnectPanel } from "@/features/microsoft-integration/MicrosoftConnectPanel";
+import { StorageConnectionsPanel } from "@/features/storage-connections/StorageConnectionsPanel";
 
 export default function IntegrationsTab() {
   return (
@@ -15,6 +16,9 @@ export default function IntegrationsTab() {
       */}
       <Suspense fallback={null}>
         <MicrosoftConnectPanel />
+      </Suspense>
+      <Suspense fallback={null}>
+        <StorageConnectionsPanel />
       </Suspense>
       <IntegrationsTabCatalog />
     </div>

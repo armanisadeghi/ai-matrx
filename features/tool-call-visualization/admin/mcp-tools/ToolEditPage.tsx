@@ -33,6 +33,8 @@ import {
 } from "./source-kind-badge";
 import type { Database } from "@/types/database.types";
 import { ProTextarea } from "@/components/official/ProTextarea";
+import { toolApiErrorMessage } from "./tool-definition.service";
+import { parseSemver } from "@/features/admin/applications/version";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -88,18 +90,18 @@ export function ToolEditPage({ tool }: Props) {
   };
 
   const handleSave = async () => {
-    if (!editedTool.name || !editedTool.description) {
+    if (!editedTool.description) {
       toast({
         title: "Missing required fields",
-        description: "Name and Description are required.",
+        description: "Description is required.",
         variant: "destructive",
       });
       return;
     }
-    if (editedTool.source_kind === "mcp_discovered" && !editedTool.managed_by_server_id) {
+    if (!parseSemver(editedTool.semver)) {
       toast({
-        title: "MCP server required",
-        description: "Tools with source_kind=mcp_discovered must be linked to an MCP server.",
+        title: "Invalid semantic version",
+        description: "Use major.minor.patch format, for example 1.0.0.",
         variant: "destructive",
       });
       return;
@@ -110,19 +112,25 @@ export function ToolEditPage({ tool }: Props) {
     }
     setIsSaving(true);
     try {
-      const { id, created_at, updated_at, ...updateData } = editedTool;
-      // If source_kind is no longer mcp_discovered, null out the server FK.
-      if (updateData.source_kind !== "mcp_discovered") {
-        updateData.managed_by_server_id = null;
-      }
+      const updateData = {
+        description: editedTool.description,
+        parameters: editedTool.parameters,
+        output_schema: editedTool.output_schema,
+        annotations: editedTool.annotations,
+        category: editedTool.category,
+        tags: editedTool.tags,
+        icon: editedTool.icon,
+        semver: editedTool.semver,
+        version: editedTool.version,
+        is_active: editedTool.is_active,
+      };
       const response = await fetch(`/api/admin/tools/${tool.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updateData),
       });
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Failed to save");
+        throw new Error(await toolApiErrorMessage(response, "Failed to save"));
       }
       toast({ title: "Saved", description: "Tool updated successfully" });
       navigateTo(`/administration/agents/mcp-tools/${tool.id}`);
@@ -181,8 +189,7 @@ export function ToolEditPage({ tool }: Props) {
           </Label>
           <Input
             value={editedTool.name}
-            onChange={(e) => setField("name", e.target.value)}
-            placeholder="e.g., core_web_search"
+            disabled
             className="font-mono"
             style={{ fontSize: "16px" }}
           />
@@ -218,7 +225,7 @@ export function ToolEditPage({ tool }: Props) {
           </Label>
           <Select
             value={editedTool.source_kind ?? "admin_authored"}
-            onValueChange={(v) => setField("source_kind", v)}
+            disabled
           >
             <SelectTrigger>
               <SelectValue />
@@ -239,7 +246,7 @@ export function ToolEditPage({ tool }: Props) {
             </Label>
             <Select
               value={editedTool.managed_by_server_id ?? ""}
-              onValueChange={(v) => setField("managed_by_server_id", v || null)}
+              disabled
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select an MCP server…" />
@@ -256,7 +263,7 @@ export function ToolEditPage({ tool }: Props) {
         ) : null}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="space-y-1.5">
           <Label>Icon</Label>
           <IconInputWithValidation
@@ -266,14 +273,27 @@ export function ToolEditPage({ tool }: Props) {
           />
         </div>
         <div className="space-y-1.5">
-          <Label>Version</Label>
+          <Label>Semantic version</Label>
           <Input
+            value={editedTool.semver ?? ""}
+            onChange={(e) => setField("semver", e.target.value)}
+            placeholder="1.0.0"
+            style={{ fontSize: "16px" }}
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Revision</Label>
+          <Input
+            type="number"
+            min={1}
+            step={1}
             value={String(editedTool.version)}
             onChange={(e) => {
               const n = Number(e.target.value);
               setEditedTool((prev) => ({
                 ...prev,
-                version: Number.isFinite(n) ? n : prev.version,
+                version:
+                  Number.isInteger(n) && n >= 1 ? n : prev.version,
               }));
             }}
             placeholder="1"

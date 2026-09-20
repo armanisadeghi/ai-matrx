@@ -8,7 +8,12 @@ import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useGoogleConnectionInventory } from "@/features/marketing/google/hooks";
 import { GOOGLE_SCOPE } from "@/lib/googleScopes";
 import { cn } from "@/lib/utils";
+import { toast } from "@/lib/toast";
 import { useOpenGoogleConnectWindow } from "@/features/overlays/openers/googleConnectWindow";
+import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
+import { selectAllFoldersMap } from "@/features/files/redux/selectors";
+import { attachChildToFolder, upsertFiles } from "@/features/files/redux/slice";
+import type { CanonicalStorageImport } from "@/features/google-workspace/import/storageSourceImport";
 
 export type FileAcquisitionPresentation =
   "menu" | "buttons" | "inline" | "icons";
@@ -34,6 +39,12 @@ export interface FileAcquisitionActionsProps {
   enableLocalFolder?: boolean;
   enableExistingFiles?: boolean;
   enableGoogleDrive?: boolean;
+  /** Existing Files destination. `null` means the Files root. */
+  googleImportParentFolderId?: string | null;
+  /** Explicit destination for non-Files consumers such as chat attachments. */
+  googleImportFolderPath?: string;
+  /** Receives already-persisted canonical files; no browser re-upload occurs. */
+  onGoogleImported?: (files: CanonicalStorageImport[]) => void | Promise<void>;
   disabled?: boolean;
   className?: string;
 }
@@ -56,6 +67,9 @@ export function FileAcquisitionActions({
   enableLocalFolder = true,
   enableExistingFiles = Boolean(onChooseExisting),
   enableGoogleDrive = true,
+  googleImportParentFolderId,
+  googleImportFolderPath,
+  onGoogleImported,
   disabled = false,
   className,
 }: FileAcquisitionActionsProps) {
@@ -63,7 +77,17 @@ export function FileAcquisitionActions({
   const folderInputRef = useRef<HTMLInputElement>(null);
   const inventory = useGoogleConnectionInventory();
   const openGoogle = useOpenGoogleConnectWindow();
+  const dispatch = useAppDispatch();
+  const foldersById = useAppSelector(selectAllFoldersMap);
   const [googleBusy, setGoogleBusy] = useState(false);
+
+  const importDestinationFolderPath: string | null =
+    googleImportFolderPath ??
+    (googleImportParentFolderId === null
+      ? ""
+      : googleImportParentFolderId
+        ? (foldersById[googleImportParentFolderId]?.folderPath ?? null)
+        : "My Files/Imports");
 
   const googleConnected = useMemo(
     () =>
@@ -75,31 +99,63 @@ export function FileAcquisitionActions({
     [inventory.data?.connections],
   );
 
+  const reportError = useCallback(
+    (message: string) => {
+      if (onError) onError(message);
+      else toast.error(message);
+    },
+    [onError],
+  );
+
   const deliverFiles = useCallback(
     (files: File[]) => {
       if (!files.length) return;
       void Promise.resolve(onFiles(files)).catch((error: unknown) => {
-        onError?.(
+        reportError(
           error instanceof Error ? error.message : "File import failed.",
         );
       });
     },
-    [onError, onFiles],
+    [onFiles, reportError],
   );
 
   const openDrive = useCallback(() => {
+    if (importDestinationFolderPath === null) {
+      reportError(
+        "This destination folder is not available yet. Refresh Files and try again.",
+      );
+      return;
+    }
     setGoogleBusy(true);
     openGoogle({
       mode: "drive-import",
       reason: "to import selected Drive files into AI Matrx",
-      onDriveImported: (event) => {
+      importDestinationFolderPath,
+      onDriveImported: async (event) => {
+        const canonicalFiles = event.files.map((imported) => imported.file);
+        dispatch(upsertFiles(canonicalFiles));
+        for (const file of canonicalFiles) {
+          dispatch(
+            attachChildToFolder({
+              parentFolderId: file.parentFolderId,
+              kind: "file",
+              id: file.id,
+            }),
+          );
+        }
+        await onGoogleImported?.(event.files);
+        if (event.failures.length) reportError(errorText(event.failures));
         setGoogleBusy(false);
-        deliverFiles(event.files);
-        if (event.failures.length) onError?.(errorText(event.failures));
       },
       onWindowClose: () => setGoogleBusy(false),
     });
-  }, [deliverFiles, onError, openGoogle]);
+  }, [
+    dispatch,
+    importDestinationFolderPath,
+    onGoogleImported,
+    openGoogle,
+    reportError,
+  ]);
 
   const onInputChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {

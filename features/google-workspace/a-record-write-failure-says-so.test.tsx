@@ -86,9 +86,6 @@ jest.mock("@/lib/googlePicker", () => ({
 jest.mock("@/features/google-workspace/drivePickerToken", () => ({
   getGoogleDrivePickerToken: jest.fn(async () => "token"),
 }));
-jest.mock("@/features/google-workspace/import/materializeGoogleDriveFile", () => ({
-  materializeGoogleDriveFiles: jest.fn(),
-}));
 jest.mock("@/features/overlays/callbacks/googleConnectWindow", () => ({
   emitGoogleConnectEvent: jest.fn(),
 }));
@@ -440,4 +437,3 @@ describe("GoogleWorkspaceReviewWorkspace — a record write failure says so", ()
     expect(container.textContent).not.toContain("could not be created");
   });
 });
-

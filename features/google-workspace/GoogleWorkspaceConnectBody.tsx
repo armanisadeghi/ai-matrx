@@ -43,7 +43,7 @@ import {
 } from "@/lib/googlePicker";
 import type { SelectedGoogleFile } from "@/features/google-workspace/types";
 import { extractErrorMessage } from "@/utils/errors";
-import { materializeGoogleDriveFiles } from "@/features/google-workspace/import/materializeGoogleDriveFile";
+import { importGoogleDriveFiles } from "@/features/google-workspace/import/storageSourceImport";
 import { getGoogleDrivePickerToken } from "@/features/google-workspace/drivePickerToken";
 import { emitGoogleConnectEvent } from "@/features/overlays/callbacks/googleConnectWindow";
 import { useAppSelector } from "@/lib/redux/hooks";
@@ -61,14 +61,16 @@ export interface GoogleWorkspaceConnectBodyProps {
   mode?: "workspace" | "drive-import";
   callbackGroupId?: string | null;
   initialConnectionId?: string | null;
+  /** Logical Matrx Files folder selected by the invoking acquisition surface. */
+  importDestinationFolderPath?: string | null;
 }
 
 /** Preserve the overlay's close notification for any WindowPanel composition. */
-export function closeGoogleWorkspaceConnect(
+export async function closeGoogleWorkspaceConnect(
   callbackGroupId: string | null | undefined,
   onClose: () => void,
-): void {
-  emitGoogleConnectEvent(callbackGroupId, { type: "window-close" });
+): Promise<void> {
+  await emitGoogleConnectEvent(callbackGroupId, { type: "window-close" });
   onClose();
 }
 
@@ -94,6 +96,7 @@ function GoogleWorkspaceConnectBodyContent({
   mode = "workspace",
   callbackGroupId,
   initialConnectionId,
+  importDestinationFolderPath,
 }: GoogleWorkspaceConnectBodyProps) {
   const google = useGoogleAPI();
   // 🚨 ONE Google authorization window per PERSON — never a per-component
@@ -258,22 +261,26 @@ function GoogleWorkspaceConnectBodyContent({
       if (mode === "drive-import") {
         const picked = await pickGoogleDriveFiles(accessToken);
         if (!picked?.length) return;
-        const result = await materializeGoogleDriveFiles(accessToken, picked);
+        const result = await importGoogleDriveFiles(
+          connection.id,
+          picked,
+          importDestinationFolderPath ?? undefined,
+        );
         if (!result.files.length) {
           throw new Error(
             result.failures[0]?.error ??
               "No selected Google Drive file could be imported.",
           );
         }
-        emitGoogleConnectEvent(callbackGroupId, {
+        await emitGoogleConnectEvent(callbackGroupId, {
           type: "drive-imported",
           files: result.files,
           failures: result.failures,
         });
         toast.success(
           result.files.length === 1
-            ? `${result.files[0]?.name ?? "Google Drive file"} is ready to import.`
-            : `${result.files.length} Google Drive files are ready to import.`,
+            ? `${result.files[0]?.file.fileName ?? "Google Drive file"} imported.`
+            : `${result.files.length} Google Drive files imported.`,
         );
         onClose();
         return;
@@ -461,7 +468,9 @@ function GoogleWorkspaceConnectBodyContent({
             </Button>
 
             {mode === "workspace" &&
-            files.some((file) => hasGoogleDocumentRecord(file.resource_type)) ? (
+            files.some((file) =>
+              hasGoogleDocumentRecord(file.resource_type),
+            ) ? (
               <p className="text-xs text-muted-foreground">
                 {OPEN_GOOGLE_RECORD_CONSEQUENCE}
               </p>
