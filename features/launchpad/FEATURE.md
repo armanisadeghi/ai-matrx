@@ -47,7 +47,7 @@ destinations derive from the shell navigation registry.
 - The Launchpad is authenticated and hidden from guests.
 - `/dashboard` stays a hub. Do not move its metrics or rotating discovery content here.
 - The default browse state stays compact. Full destination density appears only after a search or an explicit `View all` action.
-- The route uses the canonical `(core)` AppShell sidebar, header, and full-height body rules.
+- The route uses the canonical `(core)` AppShell sidebar and header. The page is a normal document in `.shell-main` — it does not become a second full-height scroller.
 - Browse is two grids on one page: apps with no children in a uniform dense row, folders with children in a second grid sorted by size. Folder heights are one of four 32px steps. Descriptions stay on one line. The left shell sidebar stays visible.
 - Area-card descriptions stay on one line. The catalog shortens long nav copy for the card; search still ranks the full nav description.
 

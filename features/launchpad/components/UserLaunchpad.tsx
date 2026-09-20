@@ -120,8 +120,8 @@ export default function UserLaunchpad() {
   );
 
   return (
-    <div className="h-full overflow-y-auto bg-textured text-foreground">
-      <div className="mx-auto w-full max-w-[1680px] px-3 pb-10 pt-[calc(var(--shell-header-h)+1rem)] sm:px-5 lg:px-7">
+    <div className="bg-textured text-foreground">
+      <div className="mx-auto w-full max-w-[1680px] px-3 pb-24 pt-[calc(var(--shell-header-h)+1rem)] sm:px-5 lg:px-7">
         <section className="mb-4 flex flex-col gap-3 rounded-2xl border border-border bg-card-textured p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div className="min-w-0">
             <div className="mb-1 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary">
