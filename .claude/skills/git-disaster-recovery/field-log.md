@@ -8,12 +8,25 @@ timestamp: 2026-09-20T00:00:00Z
 
 # Field log
 
-One row per unique observation. Fold a reusable rule into `SKILL.md` in the same
-session. Leave a one-off here with the repo and the date.
+**These rows are examples from specific repos on specific nights. They are not
+procedure.** The five aidream leftovers, the `db/generate.py` step, the D249
+release halt, the W7-OFF ancestor, the launchpad series: none of that is
+required on your repo. Read a row only when you hit something like it.
+
+One row per unique observation. If a row turns out to be a reusable rule, fold
+a one-line version into `SKILL.md` and leave the example here. Column "Folded
+into" names the old stage numbers from the first draft; the current skill is
+six numbered steps.
+
+**The lesson of the frontend run (2026-09-20).** The agent followed the first
+draft's stage order: inventory, owner tables, prompts, then landing. Seven hours
+in, skills, docs, and thirty already-applied migrations were still sitting
+dirty while owners were being hunted. Arman: "the name of the game is to reduce
+the volume of stuff in front of your face." The skill was rewritten so step 2
+is shrink the dirty set, and owners are step 4 for whatever is left.
 
 | When | Repo | What we thought | What was true | Folded into SKILL.md? |
 |---|---|---|---|---|
-| 2026-09-20 | matrx-frontend | Dirty skills/docs/migrations wait for owners | 30 dirty migrations already matched GitHub. Dirty GDR deleted companions GitHub still has. Unique FEATURE.md hunks and true-new files landed through intake the same hour | Stage 1b / 3 / 4b: skills+docs in; matching migrations already done |
 | 2026-09-20 | matrx-frontend | Fan-out after 01:30 PT was Prompt A | Codex/Claude got Prompt C cleanup at ~01:33 PT. Only vault-task3 parked a new branch. Live writers `4aca9d01` / `97ce06fb` are not leftovers | owner-park: C forbidden on stale shared folder |
 | 2026-09-20 | matrx-frontend | Prompt A is the first-night "you got cut off" text | There was no interruption. The ask is isolate unique work so it can be found. The cutoff sentence makes owners resume and repair the shared folder | owner-park A/B rewritten |
 | 2026-09-20 | matrx-frontend | Owner hunt waits for Stage 4c | Arman ordered it as soon as Stage 1 named the hard leftovers. Codex owners (battle, server-search, storage-picker, vault-task3) showed up while landing continued | Owner hunt after Stage 1 |

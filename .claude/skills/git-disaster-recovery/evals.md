@@ -62,6 +62,17 @@ broke.
 | matrx-common-docs | Cursor 2026-09-20 common-docs recovery | 0–6; unique work on GitHub; shared reset after a last dirty re-diff | (1) `log.md` named files that were never on GitHub. (2) Mixed stash. (3) Two recoveries rewrote this skill. (4) Stage 6 ordered still needs a last re-diff. | Yes — those four | Not GREEN. Unique work not deleted. Shared checkout not committed as one blob. |
 | matrx-frontend | Cursor 2026-09-20 frontend Size 2 (same session as extend stand-down) | 0–1 truth pass; Stage 2 attempted | (1) Live intake looked like A. (2) Hollow A trees (` D` thousands) then hung even on `--force`. | Yes — hold live intake; hollow+hung is G | Not GREEN. Zero A deletes landed. Unique families and shared folder untouched. |
 
+## Rewrite (2026-09-20, Claude Code, this record's author)
+
+The first draft was a diary of two nights organized as stages. On the frontend
+run it produced seven hours of inventory and owner hunting before any easy file
+landed. Rewritten as six steps: freeze, shrink the dirty set, land PRs and clean
+leftovers, find owners for what is left, point the folder at GitHub, release.
+Aidream-only facts moved to `field-log.md`. Prompts became three four-line
+messages. The "ask before the reset" gate was removed: once every dirty path is
+proven dropped, landed, or on a named branch, the agent does it and reports.
+First test of the rewrite: the matrx-frontend pile, same day. Record it below.
+
 ## What would count as GREEN later
 
 Not "the checkout got cleaner." All of:
