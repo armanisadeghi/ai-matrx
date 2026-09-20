@@ -173,6 +173,14 @@ export interface EntityBulkAction<TRow> {
   confirm?: (
     selection: EntityBulkSelection<TRow>,
   ) => EntityBulkActionConfirm | null;
+  /**
+   * 🚨 RESOLVING WITH NOTHING MEANS THE ACTION DID NOT RUN. An action whose
+   * verb is a dialog resolves `void`/`undefined` when the person cancels — the
+   * shell then KEEPS the selection and says nothing, exactly as it does when
+   * the action throws. An action that DID work returns a result object, even
+   * an empty one, which is what opts it into the default success toast and the
+   * default "clear the selection, the work is done" behaviour.
+   */
   run: (
     selection: EntityBulkSelection<TRow>,
   ) => Promise<EntityBulkActionResult | void> | EntityBulkActionResult | void;

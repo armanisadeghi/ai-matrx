@@ -348,7 +348,9 @@ function CadenceChart({
             ? "The publishing cadence could not be read from the server."
             : periods.length === 0
             ? "No months to chart yet."
-            : `${noun.many} per month, ${formatMonthPeriod(periods[0].period)} to ${formatMonthPeriod(
+            : `${noun.many} per month across ${formatCount(periods.length)} months, ${formatMonthPeriod(
+                  periods[0].period,
+              )} to ${formatMonthPeriod(
                   periods[periods.length - 1].period,
               )}. Busiest month ${peak ? describe(peak) : "—"}.`;
 
@@ -362,8 +364,17 @@ function CadenceChart({
                         title
                     )}
                 </span>
+                {/* 🚨 "117 months" IS NOT A LABEL (jobs-bar cold-walk-13,
+                    Friction). A number of months tells a person nothing about
+                    WHICH months, and it was the only writing anywhere near the
+                    chart — a strip of unlabelled bars over a bare count. The
+                    scale a bar is drawn against belongs beside it, so this
+                    says how tall the tallest bar is; the months themselves are
+                    named on the axis underneath. */}
                 <span className="text-[11px] text-muted-foreground tabular-nums">
-                    {loading || unreadable ? "" : `${formatCount(periods.length)} months`}
+                    {loading || unreadable || periods.length === 0
+                        ? ""
+                        : `Peak ${formatCount(max)} in a month`}
                 </span>
             </div>
 
@@ -393,8 +404,18 @@ function CadenceChart({
                         aria-label={summary}
                     >
                         {periods.map((p, i) => {
+                            // A month that PUBLISHED something must be
+                            // visibly taller than a month that did not. On a
+                            // 117-month span whose peak is in the hundreds, a
+                            // 3-unit floor drew a 7px stub for a real month
+                            // and a 3px stub for an empty one — indistinguishable
+                            // at arm's length, which is what made this chart
+                            // "a strip of 6px squares". The floor is now a
+                            // readable share of the plot, and an empty month
+                            // stays a baseline tick so the gaps still read as
+                            // gaps.
                             const ratio = max > 0 ? p.count / max : 0;
-                            const height = p.count > 0 ? Math.max(3, ratio * 100) : 1.5;
+                            const height = p.count > 0 ? Math.max(9, ratio * 100) : 2;
                             const isActive = i === activeIndex;
                             return (
                                 <g key={p.period}>
@@ -437,7 +458,31 @@ function CadenceChart({
                 )}
             </div>
 
-            <div className="mt-1 flex h-8 items-center">
+            {/* THE AXIS. Three ticks — first month, middle, last — is what a
+                117-bar strip needs to stop being a decoration: it says what
+                span you are looking at and roughly where in it any bar sits.
+                Absent, not faked, when there is nothing to date. */}
+            <div className="mt-1 flex h-4 items-center justify-between text-[10px] tabular-nums text-muted-foreground">
+                {loading || periods.length === 0 ? null : (
+                    <>
+                        <span>{formatMonthPeriod(periods[0].period)}</span>
+                        {periods.length > 2 ? (
+                            <span className="hidden sm:inline">
+                                {formatMonthPeriod(
+                                    periods[Math.floor((periods.length - 1) / 2)].period,
+                                )}
+                            </span>
+                        ) : null}
+                        {periods.length > 1 ? (
+                            <span>
+                                {formatMonthPeriod(periods[periods.length - 1].period)}
+                            </span>
+                        ) : null}
+                    </>
+                )}
+            </div>
+
+            <div className="mt-0.5 flex h-8 items-center">
                 {loading ? (
                     <Skeleton className="h-4 w-56 rounded" />
                 ) : (
@@ -452,10 +497,13 @@ function CadenceChart({
 
 function TopByViews({
     metrics,
+    title,
     unreadable = false,
     onOpenVideo,
 }: {
     metrics: LibraryMetrics | null;
+    /** This Library's own name for the ranking — never a hardcoded one. */
+    title: string;
     /** The metrics read failed — five skeletons forever would be a lie. */
     unreadable?: boolean;
     onOpenVideo: (videoId: string) => void;
@@ -466,7 +514,7 @@ function TopByViews({
             <div className="flex h-5 items-center gap-1.5">
                 <Eye className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                 <span className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-                    Most watched
+                    {title}
                 </span>
             </div>
             <ul className="mt-1 flex flex-1 flex-col gap-1">
@@ -1058,7 +1106,9 @@ export function LibraryMetricsHeader(props: {
             <div
                 className={cn(
                     "grid gap-2",
-                    onOpenVideo ? "lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]" : "grid-cols-1",
+                    onOpenVideo && vocabulary.views !== null
+                        ? "lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]"
+                        : "grid-cols-1",
                 )}
             >
                 <CadenceChart
@@ -1068,9 +1118,16 @@ export function LibraryMetricsHeader(props: {
                     loading={metrics === null && metricsError === null}
                     unreadable={metricsError !== null}
                 />
-                {onOpenVideo && (
+                {/* 🚨 "Most watched" IS A VIEW COUNT, AND AN RSS FEED HAS
+                    NONE (jobs-bar cold-walk-13, Friction — the sibling of the
+                    VIEWS column that read `—` on all 2,981 podcast rows). The
+                    panel is absent where `vocabulary.views` is null, and the
+                    cadence chart takes the whole width instead of a five-row
+                    list of dashes sitting beside it. */}
+                {onOpenVideo && vocabulary.views !== null && (
                     <TopByViews
                         metrics={metrics}
+                        title={vocabulary.views.top}
                         unreadable={metricsError !== null}
                         onOpenVideo={onOpenVideo}
                     />

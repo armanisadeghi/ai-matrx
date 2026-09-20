@@ -65,7 +65,24 @@ export function EntityBulkActions<TRow>({
 
     setPending(action.id);
     try {
-      const result = (await action.run(target)) ?? {};
+      const result = await action.run(target);
+      // 🚨 NOTHING HAPPENED MEANS NOTHING HAPPENED (jobs-bar cold-walk-13,
+      // Friction). An action whose verb is a DIALOG resolves with nothing when
+      // the person presses Cancel — and this line used to read that as `{}`,
+      // which then cleared the selection and raised a success toast for work
+      // that was never started. On a Library of 2,981 episodes that is three
+      // carefully-made ticks thrown away for pressing Cancel, plus a toast
+      // saying the thing you just refused had run.
+      //
+      // Two surfaces already had this shape and both were wrong the same way:
+      // `features/source-library` (Transcribe / Send to a Masterwork Rulebook)
+      // and `features/exports` (Send) both return a promise a dialog resolves.
+      // So the fix is here, in the shell that owns the selection lifecycle,
+      // not in either of them: a `void` / `undefined` result is the action
+      // saying it did not run. The selection stays exactly as it was and
+      // nothing is announced — the same treatment a thrown error already got,
+      // for the same reason.
+      if (result == null) return;
       if (result.removedIds?.length) onRemoveRows(result.removedIds);
       if (result.refresh) onRefresh();
       if (!result.keepSelection) selection.clear();

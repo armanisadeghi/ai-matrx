@@ -168,6 +168,34 @@ nothing moves; the claim is gone. The day the server publishes a word count,
 
 ## Change log
 
+- `2026-09-20` — Claude (Opus): **the dialogs' BODIES now speak the Library's
+  own noun, and three things that could never be true are gone (jobs-bar
+  cold-walk-13: N6 + Friction).** Walk 12 fixed the headers; walk 13 found
+  "video" seven more times in the Send and Transcribe BODIES, all of it from
+  sentences the server writes — the Action registry's descriptions, the
+  estimate's cost basis, its warnings and its refusals. `GET /media/actions` is
+  one global registry with no Library, so a noun baked there is baked wrong for
+  everyone: the server now writes `{item}` / `{items}` /
+  `{free_captions_source}` and `speakMediaNouns` (in `vocabulary.ts`, the same
+  table the headers read) is the ONE place those become words. Every server
+  sentence in `ActionRunDialog` and `JobPanel` goes through it — description,
+  not-yet reason, refusal, cost basis, warnings, field labels and help text —
+  and an unknown token is left intact rather than blanked, so a server ahead of
+  this client is loud instead of quietly ungrammatical. Guard:
+  `__tests__/a-podcast-is-never-told-it-is-a-video.test.tsx`, proven red on the
+  unwrapped call sites. Alongside it: `vocabulary.ts` grew a `views` axis, so a
+  podcast no longer renders a VIEWS column of dashes over 2,981 rows or a "Most
+  watched" panel beside the cadence chart, and the `TYPE: Long` badge and the
+  Type/Captions facets follow `kindSplit`/`transcribable` the way the metrics
+  tiles already did — all four gated on `kindKnown`, because the neutral
+  vocabulary means "the row has not arrived", never "this axis does not
+  exist". The cadence chart got a real axis (first / middle / last month), a
+  stated scale ("Peak N in a month" instead of a bare "117 months") and a bar
+  floor tall enough to tell a month that published something from one that did
+  not. And the second "Bring up to date" — the poorer of two identical buttons
+  300px apart — is deleted; the metrics header's keeps the running state, the
+  honest disabled reasons and the stale-numbers notice.
+
 - `2026-09-20` — **D343 filed, not fixed: three of this surface's controls are
   decorative because the live endpoint takes neither of the parameters they
   send.** `GET /media/libraries` in aidream (`media_catalog.py`, `list_libraries`,
