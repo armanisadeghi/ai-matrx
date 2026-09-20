@@ -86,6 +86,7 @@ import { KnowledgeBrowseInline } from "../renderers/knowledge-browse/KnowledgeBr
 import { DocumentContentInline } from "../renderers/document-content/DocumentContentInline";
 import { resolveDocumentContentView } from "../renderers/document-content/documentContentView";
 import { RandomWheelInline } from "../renderers/random-wheel/RandomWheelInline";
+import { RecordsInline } from "../renderers/records/RecordsInline";
 import { NoteToolInline } from "../renderers/note/NoteToolInline";
 import { NoteToolOverlay } from "../renderers/note/NoteToolOverlay";
 import { CtxGetInline } from "../renderers/ctx/CtxGetInline";
@@ -1569,6 +1570,28 @@ export const toolRendererRegistry: ToolRegistry = {
     },
   },
 
+  // The record store's ONE agent tool (eight verbs). Mostly it answers with data
+  // the agent then talks about — but under the organization's `ask` setting a
+  // change to a table that already existed WAITS FOR A PERSON, and that wait is
+  // a decision this renderer puts on screen instead of leaving it in a result
+  // nobody draws.
+  records: {
+    toolName: "records",
+    displayName: "Records",
+    phaseLabels: {
+      running: "Working with records",
+      complete: "Worked with records",
+      errorPrefix: "The record store refused",
+    },
+    resultsLabel: "Records",
+    InlineComponent: RecordsInline,
+    OverlayComponent: RecordsInline,
+    getHeaderSubtitle: (entry) => {
+      const action = getArg<string>(entry, "action");
+      return typeof action === "string" && action ? action.replace(/_/g, " ") : null;
+    },
+  },
+
   // Skill lookup (unified `skill` tool + legacy names). Verb by action.
   skill: {
     toolName: "skill",
@@ -1937,6 +1960,7 @@ const TOOL_GLYPHS: Record<string, ToolGlyphSpec> = {
   shell_execute: { icon: SquareTerminal, accent: "slate" },
   shell_python: { icon: SquareTerminal, accent: "slate" },
   random_wheel: { icon: Disc3, accent: "rose" },
+  records: { icon: Table2, accent: "green" },
 };
 
 const TOOL_GLYPH_PREFIXES: Array<[RegExp, ToolGlyphSpec]> = [
