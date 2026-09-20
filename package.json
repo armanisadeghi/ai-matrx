@@ -554,6 +554,8 @@
     "check:suites-take-the-seat": "tsx scripts/check-campaign-suites-take-the-seat.ts",
     "check:suites-take-the-seat:self-test": "tsx scripts/check-campaign-suites-take-the-seat.ts --self-test",
     "check:fields-stay-masked": "tsx scripts/check-fields-stay-masked.ts",
+    "check:people-lists-stay-in-your-organizations": "tsx scripts/check-people-lists-stay-in-your-organizations.ts",
+    "check:people-lists-stay-in-your-organizations:self-test": "tsx scripts/check-people-lists-stay-in-your-organizations.ts --self-test",
     "check:fields-stay-masked:self-test": "tsx scripts/check-fields-stay-masked.ts --self-test",
     "check:store-doors-decide": "tsx scripts/check-store-doors-decide.ts",
     "check:one-freshness-ceiling": "tsx scripts/check-one-freshness-ceiling.ts",
