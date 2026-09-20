@@ -34,7 +34,16 @@ type MandateState = {
 
 let mandateState: MandateState;
 let historyAnswer: () => Promise<unknown[]>;
-let orgState: { canLoad: boolean; organizationRequired: boolean; resolving: boolean };
+// The hook's real contract: the legacy boolean pair AND `organizationState`,
+// the one reading the panel now switches on (R37, the fourth state).
+let orgState: {
+  canLoad: boolean;
+  organizationRequired: boolean;
+  resolving: boolean;
+  organizationState: "ready" | "resolving" | "required" | "unavailable";
+  unavailableReason: string | null;
+  retry: () => void;
+};
 /** Every call the panel made for the history, so a retry is provable. */
 let historyCalls: number;
 
@@ -94,12 +103,31 @@ jest.mock("@/utils/supabase/client", () => ({
   },
 }));
 
-jest.mock("@/lib/redux/hooks", () => ({
-  useAppDispatch: () => () => {},
-  useAppStore: () => ({ getState: () => ({}) }),
-  useAppSelector: (selector: (s: unknown) => unknown) =>
-    selector({ userProfile: { userMetadata: { fullName: "Dana" } } }),
+// The picker inside the shared refusal is a surface with its own suites and a
+// whole store's worth of reads; this file proves the PANEL's posture, so the
+// picker is stood in.
+jest.mock("@/features/organizations/components/OrganizationPickerPanel", () => ({
+  OrganizationPickerPanel: () => null,
 }));
+
+jest.mock("@/lib/redux/hooks", () => {
+  // THE FIXTURE LAW: the refusal the panel now renders is the shared
+  // `OrganizationContextNotice`, whose picker reads REAL app-context state, so
+  // the state here is built by the slice's own constructor — never a hand-shape.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { makeAppContextState } = jest.requireActual(
+    "@/lib/redux/slices/appContextSlice",
+  ) as typeof import("@/lib/redux/slices/appContextSlice");
+  const state = {
+    userProfile: { userMetadata: { fullName: "Dana" } },
+    appContext: makeAppContextState({ organization_id: null, orgBootstrapResolved: true }),
+  };
+  return {
+    useAppDispatch: () => () => {},
+    useAppStore: () => ({ getState: () => state }),
+    useAppSelector: (selector: (s: unknown) => unknown) => selector(state),
+  };
+});
 
 import { ScoutInterviewContent } from "../ScoutInterviewPanel";
 
@@ -133,7 +161,14 @@ beforeEach(() => {
     loading: false,
     error: null,
   };
-  orgState = { canLoad: true, organizationRequired: false, resolving: false };
+  orgState = {
+    canLoad: true,
+    organizationRequired: false,
+    resolving: false,
+    organizationState: "ready",
+    unavailableReason: null,
+    retry: () => undefined,
+  };
   historyAnswer = async () => [];
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -199,7 +234,14 @@ describe("D9 — a reload never restarts an interview that is already going", ()
   });
 
   it("never asks — and never starts over — while no organization is settled", async () => {
-    orgState = { canLoad: false, organizationRequired: true, resolving: false };
+    orgState = {
+      canLoad: false,
+      organizationRequired: true,
+      resolving: false,
+      organizationState: "required",
+      unavailableReason: null,
+      retry: () => undefined,
+    };
     await reloadOntoTheInterview();
     expect(historyCalls).toBe(0);
     expect(container.querySelector("[data-testid=start-screen]")).toBeNull();

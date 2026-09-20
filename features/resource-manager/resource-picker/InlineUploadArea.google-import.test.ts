@@ -1,5 +1,8 @@
-import type { CanonicalStorageImport } from "@/features/google-workspace/import/storageSourceImport";
-import { canonicalImportToUploadedFile } from "./InlineUploadArea";
+import type { CanonicalStorageImport } from "@/features/files/storage-sources/types";
+import {
+  canonicalImportsToUploadedFiles,
+  canonicalImportToUploadedFile,
+} from "./InlineUploadArea";
 
 function importedFile(input: {
   id: string;
@@ -90,4 +93,13 @@ describe("Google Drive canonical chat attachment", () => {
       });
     },
   );
+
+  it("deduplicates repeated delivery by canonical file ID without changing order", () => {
+    const first = importedFile({ id: "first", name: "first.pdf", mimeType: "application/pdf", size: 1 });
+    const second = importedFile({ id: "second", name: "second.pdf", mimeType: "application/pdf", size: 2 });
+    expect(canonicalImportsToUploadedFiles([first, second, first]).map((file) => file.fileId)).toEqual([
+      "first",
+      "second",
+    ]);
+  });
 });

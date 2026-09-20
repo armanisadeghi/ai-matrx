@@ -163,13 +163,13 @@ export const CAMPAIGN_STORE_TABLES: readonly string[] = [
 export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
     {
         id: "public-form-page",
-        file: "app/(public)/f/[formId]/page.tsx",
+        file: "app/(link)/f/[formId]/page.tsx",
         kind: "door_gated",
         why: "PRODUCTS row 1. The public form at its unguessable link, server-rendered for somebody with NO ACCOUNT. It does NOT read the campaign switch the way a signed-in page does — there is no person to read it for and no organization the caller may name. The switch is asked INSIDE custom.form_public, for the organization the form itself belongs to, and a form whose store is off answers with zero rows, which is the 404. The browser never holds a store client: the Fields come from the server and the answers go to the route handler below.",
     },
     {
         id: "public-form-runner",
-        file: "app/(public)/f/[formId]/PublicFormRunner.tsx",
+        file: "app/(link)/f/[formId]/PublicFormRunner.tsx",
         kind: "door_gated",
         why: "PRODUCTS row 1. The one client island on the public form page: it mounts @ai-matrx/records-ui's FormRunner in its PUBLIC arm, which takes the server-resolved Fields and a submit port and builds no record-store client at all. Everything it knows came through custom.form_public, and everything it sends goes to custom.form_submit — both of which read custom/system_enabled themselves, through custom.store_is_open and custom.assert_store_door, for the organization the form belongs to. This file holds no key and can reach no door on its own.",
     },
@@ -190,6 +190,12 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         file: "app/(core)/data-v2/page.tsx",
         kind: "runtime",
         why: "THE unified data page: a person's tables from the new record store, in four lanes, with create and import. Served to users, so it reads the switch and shows the off sentence when it is off.",
+    },
+    {
+        id: "data-v2-try-everything",
+        file: "features/unified-data/test-bench/TryEverythingScreen.tsx",
+        kind: "runtime",
+        why: "THE TEST BENCH at /data-v2/try-everything: one page that mounts the real screens of every part of the store — tables and grid, sharing and the Access tab, relations and rollups, custom fields on a CRM contact, forms, the approval inbox, the agent's door, history, dashboards, documents and notify rules — against this organization's live data, with an honest note on each unfinished part. It is served to users and it reads the switch itself; its frames and labels live in TestBenchChrome.tsx, which reaches nothing and is deliberately not registered.",
     },
     {
         id: "data-v2-table",

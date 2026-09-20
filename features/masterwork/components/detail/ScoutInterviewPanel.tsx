@@ -38,6 +38,7 @@ import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useMandate } from "@/features/mandates/useMandate";
 import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
+import { OrganizationContextNotice } from "@/features/organizations/components/OrganizationRequiredNotice";
 import { useConversationResume } from "@/features/agents/hooks/useConversationResume";
 import { supabase } from "@/utils/supabase/client";
 import {
@@ -636,7 +637,11 @@ export function ScoutInterviewContent({
   // history and nothing else.
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [historyAttempt, setHistoryAttempt] = useState(0);
-  const { canLoad, organizationRequired } = useOrganizationRequired();
+  // 🚨 AND THE READ ITSELF CAN FAIL — the FOURTH state (R37). `organizationRequired`
+  // alone cannot see it: under a failed organization read it is false and
+  // `canLoad` is false, so this panel held its skeleton forever. `organizationState`
+  // names all four, and the shared notice renders the two terminal answers.
+  const { canLoad, organizationState, retry } = useOrganizationRequired();
   useEffect(() => {
     if (!canLoad) return undefined;
     let cancelled = false;
@@ -677,12 +682,16 @@ export function ScoutInterviewContent({
     // No organization yet is a HOLD, not an empty history — the skeleton stays
     // until the boot settles, and only a boot that settles with no
     // organization at all says so.
-    if (organizationRequired) {
+    if (organizationState === "required" || organizationState === "unavailable") {
       return (
-        <div className="px-4 py-6 text-sm text-muted-foreground">
-          Choose which organization this interview belongs to, at the top of
-          the page, and it will pick up from here.
-        </div>
+        <OrganizationContextNotice
+          state={organizationState}
+          what="interviews"
+          description="Choose which organization this interview belongs to, at the top of the page, and it will pick up from here."
+          onRetry={retry}
+          compact
+          className="px-4 py-6"
+        />
       );
     }
     return <ChatRoomSkeleton />;

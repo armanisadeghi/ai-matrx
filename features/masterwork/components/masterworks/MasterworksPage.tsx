@@ -38,6 +38,7 @@ import { AuditionDialog } from "./AuditionDialog";
 import { CompareTwoDialog } from "./CompareTwoDialog";
 import { MasterworkDriftDialog } from "./MasterworkDriftDialog";
 import { TryMasterworkBox } from "./TryMasterworkBox";
+import { MasterworkRulesProvider } from "../../rules-context/MasterworkRulesContext";
 import {
   computeMasterworkKpis,
   MasterworkKpiStrip,
@@ -366,180 +367,226 @@ export function MasterworksPage({
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4 px-4 pb-8 sm:px-6">
-      <section className="rounded-lg border border-border bg-card p-4">
-        <MasterworkKpiStrip
-          kpis={kpis}
-          rulebookId={rulebook.id}
-          activeFilter={activeFilter}
-        />
-      </section>
+    // THE RULES IN SCOPE — this page already holds them, so the provider takes
+    // them directly and reads nothing twice. It is what lets the
+    // `masterwork_result` kind component resolve a rule id cited in a ruling
+    // into that rule's name with a door to it (walk 12, D14).
+    <MasterworkRulesProvider rulebookId={rulebook.id} rules={rulebook.rules}>
+      <div className="mx-auto max-w-4xl space-y-4 px-4 pb-8 sm:px-6">
+        <section className="rounded-lg border border-border bg-card p-4">
+          <MasterworkKpiStrip
+            kpis={kpis}
+            rulebookId={rulebook.id}
+            activeFilter={activeFilter}
+          />
+        </section>
 
-      {masterworks.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border p-8 text-center">
-          <Workflow className="mx-auto h-6 w-6 text-muted-foreground" />
-          <p className="mt-2 text-sm text-muted-foreground">
-            No Masterworks yet. Build one from the Rulebook page — one button, a
-            few minutes, and this Rulebook becomes a working checker.
-          </p>
-          <Button asChild size="sm" variant="outline" className="mt-3">
-            <Link href={`/masterwork/${rulebook.id}`}>Open the Rulebook</Link>
-          </Button>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {renderedMasterworks.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border p-8 text-center">
-              <p className="text-sm text-muted-foreground">
-                {activeFilter === "all"
-                  ? "Every Masterwork built from this Rulebook is archived."
-                  : `No ${activeFilter === "current" ? "current" : "released"} Masterworks.`}
-              </p>
-              {activeFilter === "all" ? null : (
-                <Button asChild size="sm" variant="ghost" className="mt-2">
-                  <Link
-                    href={`/masterwork/${rulebook.id}/masterworks?status=all`}
-                  >
-                    Show all Masterworks
-                  </Link>
-                </Button>
-              )}
-            </div>
-          ) : null}
-          {renderedMasterworks.map((masterwork) => {
-            const drifted =
-              masterwork.rulebook_version !== null &&
-              masterwork.rulebook_version < rulebook.version;
-            return (
-              <div
-                key={masterwork.id}
-                className="rounded-lg border border-border bg-card p-4"
-              >
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <a
-                        href={`${WORKFLOWS_APP_URL}/workflows/${masterwork.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="font-medium text-foreground hover:text-primary hover:underline hover:underline-offset-2"
-                      >
-                        {masterwork.name}
-                      </a>
-                      {masterwork.masterwork_kind ? (
-                        <Badge
-                          variant="outline"
-                          className="px-1.5 py-0 text-[10px]"
+        {masterworks.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border p-8 text-center">
+            <Workflow className="mx-auto h-6 w-6 text-muted-foreground" />
+            <p className="mt-2 text-sm text-muted-foreground">
+              No Masterworks yet. Build one from the Rulebook page — one button,
+              a few minutes, and this Rulebook becomes a working checker.
+            </p>
+            <Button asChild size="sm" variant="outline" className="mt-3">
+              <Link href={`/masterwork/${rulebook.id}`}>Open the Rulebook</Link>
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {renderedMasterworks.length === 0 ? (
+              <div className="rounded-lg border border-dashed border-border p-8 text-center">
+                <p className="text-sm text-muted-foreground">
+                  {activeFilter === "all"
+                    ? "Every Masterwork built from this Rulebook is archived."
+                    : `No ${activeFilter === "current" ? "current" : "released"} Masterworks.`}
+                </p>
+                {activeFilter === "all" ? null : (
+                  <Button asChild size="sm" variant="ghost" className="mt-2">
+                    <Link
+                      href={`/masterwork/${rulebook.id}/masterworks?status=all`}
+                    >
+                      Show all Masterworks
+                    </Link>
+                  </Button>
+                )}
+              </div>
+            ) : null}
+            {renderedMasterworks.map((masterwork) => {
+              const drifted =
+                masterwork.rulebook_version !== null &&
+                masterwork.rulebook_version < rulebook.version;
+              return (
+                <div
+                  key={masterwork.id}
+                  className="rounded-lg border border-border bg-card p-4"
+                >
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <a
+                          href={`${WORKFLOWS_APP_URL}/workflows/${masterwork.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-medium text-foreground hover:text-primary hover:underline hover:underline-offset-2"
                         >
-                          {masterwork.masterwork_kind === "edit"
-                            ? "Checks & corrects"
-                            : masterwork.masterwork_kind === "generate"
-                              ? "Creates & checks"
-                              : masterwork.masterwork_kind}
-                        </Badge>
-                      ) : null}
-                      {masterwork.rulebook_version !== null ? (
-                        <Badge
-                          variant="outline"
-                          className="px-1.5 py-0 text-[10px]"
-                        >
-                          v{masterwork.rulebook_version}
-                        </Badge>
-                      ) : null}
-                      {/* A revealed archived row SAYS it is archived — the
+                          {masterwork.name}
+                        </a>
+                        {masterwork.masterwork_kind ? (
+                          <Badge
+                            variant="outline"
+                            className="px-1.5 py-0 text-[10px]"
+                          >
+                            {masterwork.masterwork_kind === "edit"
+                              ? "Checks & corrects"
+                              : masterwork.masterwork_kind === "generate"
+                                ? "Creates & checks"
+                                : masterwork.masterwork_kind}
+                          </Badge>
+                        ) : null}
+                        {masterwork.rulebook_version !== null ? (
+                          <Badge
+                            variant="outline"
+                            className="px-1.5 py-0 text-[10px]"
+                          >
+                            v{masterwork.rulebook_version}
+                          </Badge>
+                        ) : null}
+                        {/* A revealed archived row SAYS it is archived — the
                           disclosure is above it, the label is on it. */}
-                      {masterwork.is_archived ? (
-                        <Badge
-                          variant="outline"
-                          className="px-1.5 py-0 text-[10px] text-muted-foreground"
+                        {masterwork.is_archived ? (
+                          <Badge
+                            variant="outline"
+                            className="px-1.5 py-0 text-[10px] text-muted-foreground"
+                          >
+                            Archived
+                          </Badge>
+                        ) : null}
+                        {masterwork.released_at !== null ? (
+                          <Badge className="px-1.5 py-0 text-[10px]">
+                            Released
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="outline"
+                            className="px-1.5 py-0 text-[10px] text-muted-foreground"
+                          >
+                            Draft
+                          </Badge>
+                        )}
+                        {masterwork.rule_count !== null ? (
+                          <Badge
+                            variant="outline"
+                            className="px-1.5 py-0 text-[10px] text-muted-foreground"
+                          >
+                            {masterwork.rule_count} rules
+                          </Badge>
+                        ) : null}
+                        <span
+                          className="inline-flex items-center gap-1 text-[10px] text-muted-foreground"
+                          title={`Last updated ${formatAbsoluteDate(masterwork.updated_at)}`}
                         >
-                          Archived
-                        </Badge>
+                          <Clock3 className="h-3 w-3" />
+                          Updated {formatRelativeTime(masterwork.updated_at)}
+                        </span>
+                      </div>
+                      {masterwork.description ? (
+                        <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                          {masterwork.description}
+                        </p>
+                      ) : null}
+                      {masterwork.deliverable ? (
+                        <p className="mt-1 line-clamp-1 text-xs text-foreground">
+                          <span className="text-muted-foreground">
+                            Creates:{" "}
+                          </span>
+                          {masterwork.deliverable}
+                        </p>
+                      ) : null}
+                      {drifted ? (
+                        <p className="mt-1.5 flex flex-wrap items-center gap-1 text-xs text-primary">
+                          <AlertTriangle className="h-3.5 w-3.5" />
+                          Needs rebuild for v{rulebook.version}.
+                          <button
+                            type="button"
+                            onClick={() => setDriftMasterwork(masterwork)}
+                            className="underline underline-offset-2 hover:text-primary/80"
+                          >
+                            See what changed
+                          </button>
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="flex shrink-0 items-center gap-0.5">
+                      {isOwner ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                              disabled={releaseBusy === masterwork.id}
+                              onClick={() => void toggleReleased(masterwork)}
+                              aria-label={
+                                masterwork.released_at === null
+                                  ? "Release Masterwork"
+                                  : "Un-release Masterwork"
+                              }
+                            >
+                              {masterwork.released_at === null ? (
+                                <Rocket className="h-4 w-4" />
+                              ) : (
+                                <Undo2 className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {masterwork.released_at === null
+                              ? "Release"
+                              : "Un-release"}
+                          </TooltipContent>
+                        </Tooltip>
                       ) : null}
                       {masterwork.released_at !== null ? (
-                        <Badge className="px-1.5 py-0 text-[10px]">
-                          Released
-                        </Badge>
-                      ) : (
-                        <Badge
-                          variant="outline"
-                          className="px-1.5 py-0 text-[10px] text-muted-foreground"
-                        >
-                          Draft
-                        </Badge>
-                      )}
-                      {masterwork.rule_count !== null ? (
-                        <Badge
-                          variant="outline"
-                          className="px-1.5 py-0 text-[10px] text-muted-foreground"
-                        >
-                          {masterwork.rule_count} rules
-                        </Badge>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              asChild
+                              size="icon"
+                              variant="ghost"
+                              className="h-8 w-8"
+                            >
+                              <Link
+                                href={`/masterwork/encore/${masterwork.id}`}
+                                aria-label="Open in Encore"
+                              >
+                                <Play className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Open in Encore</TooltipContent>
+                        </Tooltip>
                       ) : null}
-                      <span
-                        className="inline-flex items-center gap-1 text-[10px] text-muted-foreground"
-                        title={`Last updated ${formatAbsoluteDate(masterwork.updated_at)}`}
-                      >
-                        <Clock3 className="h-3 w-3" />
-                        Updated {formatRelativeTime(masterwork.updated_at)}
-                      </span>
-                    </div>
-                    {masterwork.description ? (
-                      <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
-                        {masterwork.description}
-                      </p>
-                    ) : null}
-                    {masterwork.deliverable ? (
-                      <p className="mt-1 line-clamp-1 text-xs text-foreground">
-                        <span className="text-muted-foreground">Creates: </span>
-                        {masterwork.deliverable}
-                      </p>
-                    ) : null}
-                    {drifted ? (
-                      <p className="mt-1.5 flex flex-wrap items-center gap-1 text-xs text-primary">
-                        <AlertTriangle className="h-3.5 w-3.5" />
-                        Needs rebuild for v{rulebook.version}.
-                        <button
-                          type="button"
-                          onClick={() => setDriftMasterwork(masterwork)}
-                          className="underline underline-offset-2 hover:text-primary/80"
-                        >
-                          See what changed
-                        </button>
-                      </p>
-                    ) : null}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-0.5">
-                    {isOwner ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
+                            asChild
                             size="icon"
                             variant="ghost"
                             className="h-8 w-8"
-                            disabled={releaseBusy === masterwork.id}
-                            onClick={() => void toggleReleased(masterwork)}
-                            aria-label={
-                              masterwork.released_at === null
-                                ? "Release Masterwork"
-                                : "Un-release Masterwork"
-                            }
                           >
-                            {masterwork.released_at === null ? (
-                              <Rocket className="h-4 w-4" />
-                            ) : (
-                              <Undo2 className="h-4 w-4" />
-                            )}
+                            <a
+                              href={`${WORKFLOWS_APP_URL}/workflows/${masterwork.id}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label="Open in Studio"
+                            >
+                              <SquareArrowOutUpRight className="h-4 w-4" />
+                            </a>
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>
-                          {masterwork.released_at === null
-                            ? "Release"
-                            : "Un-release"}
-                        </TooltipContent>
+                        <TooltipContent>Open in Studio</TooltipContent>
                       </Tooltip>
-                    ) : null}
-                    {masterwork.released_at !== null ? (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -549,173 +596,136 @@ export function MasterworksPage({
                             className="h-8 w-8"
                           >
                             <Link
-                              href={`/masterwork/encore/${masterwork.id}`}
-                              aria-label="Open in Encore"
+                              href={workflowRunsHref(masterwork.id)}
+                              aria-label="Past runs"
                             >
-                              <Play className="h-4 w-4" />
+                              <History className="h-4 w-4" />
                             </Link>
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Open in Encore</TooltipContent>
+                        <TooltipContent>Past runs</TooltipContent>
                       </Tooltip>
-                    ) : null}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          asChild
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8"
-                        >
-                          <a
-                            href={`${WORKFLOWS_APP_URL}/workflows/${masterwork.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            aria-label="Open in Studio"
-                          >
-                            <SquareArrowOutUpRight className="h-4 w-4" />
-                          </a>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Open in Studio</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          asChild
-                          size="icon"
-                          variant="ghost"
-                          className="h-8 w-8"
-                        >
-                          <Link
-                            href={workflowRunsHref(masterwork.id)}
-                            aria-label="Past runs"
-                          >
-                            <History className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Past runs</TooltipContent>
-                    </Tooltip>
-                  </div>
-                </div>
-                {/* Try it right here — the Masterwork is a working checker, not
-                    a link to another app. Runs land in Recent runs below. */}
-                <div className="mt-3 border-t border-border pt-3">
-                  <TryMasterworkBox
-                    masterworkId={masterwork.id}
-                    masterworkKind={masterwork.masterwork_kind}
-                    submitLabel={masterwork.submit_label}
-                    fieldLabels={
-                      masterwork.masterwork_kind === "edit"
-                        ? ["Your text", "Key facts"]
-                        : undefined
-                    }
-                    onRunFinished={() => void refreshRuns()}
-                    onCompare={
-                      isOwner
-                        ? (candidate) => setAuditionCandidate(candidate)
-                        : undefined
-                    }
-                    onCompareTwo={
-                      isOwner
-                        ? (candidate) => setCompareFirst(candidate)
-                        : undefined
-                    }
-                  />
-                </div>
-                {(runsByMasterwork[masterwork.id] ?? []).length > 0 ? (
-                  <div className="mt-3 border-t border-border pt-2">
-                    <p className="px-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                      Recent runs
-                    </p>
-                    <div className="mt-1">
-                      {(runsByMasterwork[masterwork.id] ?? []).map((run) => (
-                        <MasterworkRunRow
-                          key={run.id}
-                          run={run}
-                          onFeedback={
-                            isOwner
-                              ? () =>
-                                  setFeedbackSeed(
-                                    `I just looked at a run of the "${masterwork.name}" Masterwork (${runWhen(run)}, run ${run.id.slice(0, 8)}) and something came out wrong. Here's what it got wrong: `,
-                                  )
-                              : undefined
-                          }
-                        />
-                      ))}
                     </div>
                   </div>
-                ) : null}
-              </div>
-            );
-          })}
-          {/* THE ARCHIVED-ITEMS LAW: one click, closed by default, and the
+                  {/* Try it right here — the Masterwork is a working checker, not
+                    a link to another app. Runs land in Recent runs below. */}
+                  <div className="mt-3 border-t border-border pt-3">
+                    <TryMasterworkBox
+                      masterworkId={masterwork.id}
+                      masterworkKind={masterwork.masterwork_kind}
+                      submitLabel={masterwork.submit_label}
+                      fieldLabels={
+                        masterwork.masterwork_kind === "edit"
+                          ? ["Your text", "Key facts"]
+                          : undefined
+                      }
+                      onRunFinished={() => void refreshRuns()}
+                      onCompare={
+                        isOwner
+                          ? (candidate) => setAuditionCandidate(candidate)
+                          : undefined
+                      }
+                      onCompareTwo={
+                        isOwner
+                          ? (candidate) => setCompareFirst(candidate)
+                          : undefined
+                      }
+                    />
+                  </div>
+                  {(runsByMasterwork[masterwork.id] ?? []).length > 0 ? (
+                    <div className="mt-3 border-t border-border pt-2">
+                      <p className="px-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                        Recent runs
+                      </p>
+                      <div className="mt-1">
+                        {(runsByMasterwork[masterwork.id] ?? []).map((run) => (
+                          <MasterworkRunRow
+                            key={run.id}
+                            run={run}
+                            onFeedback={
+                              isOwner
+                                ? () =>
+                                    setFeedbackSeed(
+                                      `I just looked at a run of the "${masterwork.name}" Masterwork (${runWhen(run)}, run ${run.id.slice(0, 8)}) and something came out wrong. Here's what it got wrong: `,
+                                    )
+                                : undefined
+                            }
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+            {/* THE ARCHIVED-ITEMS LAW: one click, closed by default, and the
               count is the true number of archived Masterworks this view would
               reveal. Nothing renders at all when there are none. */}
-          <ArchivedDisclosure
-            count={visibleArchived.length}
-            open={showArchived}
-            onOpenChange={setShowArchived}
-            label="Archived Masterworks"
+            <ArchivedDisclosure
+              count={visibleArchived.length}
+              open={showArchived}
+              onOpenChange={setShowArchived}
+              label="Archived Masterworks"
+            />
+          </div>
+        )}
+        {driftMasterwork !== null &&
+        driftMasterwork.rulebook_version !== null ? (
+          <MasterworkDriftDialog
+            open
+            onOpenChange={(open) => {
+              if (!open) setDriftMasterwork(null);
+            }}
+            rulebookId={rulebookId}
+            masterworkName={driftMasterwork.name}
+            masterworkVersion={driftMasterwork.rulebook_version}
+            currentVersion={rulebook.version}
+            currentRules={rulebook.rules}
           />
-        </div>
-      )}
-      {driftMasterwork !== null && driftMasterwork.rulebook_version !== null ? (
-        <MasterworkDriftDialog
-          open
-          onOpenChange={(open) => {
-            if (!open) setDriftMasterwork(null);
-          }}
-          rulebookId={rulebookId}
-          masterworkName={driftMasterwork.name}
-          masterworkVersion={driftMasterwork.rulebook_version}
-          currentVersion={rulebook.version}
-          currentRules={rulebook.rules}
-        />
-      ) : null}
-      {isOwner ? (
-        <AuditionDialog
-          open={auditionCandidate !== null}
-          onOpenChange={(open) => {
-            if (!open) setAuditionCandidate(null);
-          }}
-          rulebookId={rulebookId}
-          rules={rulebook.rules}
-          benchmarkClaim={
-            (rulebook.metadata as { intake?: { benchmark?: string } } | null)
-              ?.intake?.benchmark
-          }
-          initialCandidate={auditionCandidate ?? undefined}
-        />
-      ) : null}
-      {isOwner ? (
-        <CompareTwoDialog
-          open={compareFirst !== null}
-          onOpenChange={(open) => {
-            if (!open) setCompareFirst(null);
-          }}
-          rulebookId={rulebookId}
-          initialFirst={compareFirst ?? undefined}
-        />
-      ) : null}
-      {isOwner ? (
-        <ScoutInterviewPanel
-          rulebookId={rulebookId}
-          rulebookName={rulebook.name}
-          open={feedbackSeed !== null}
-          onOpenChange={(open) => {
-            if (!open) setFeedbackSeed(null);
-          }}
-          seedText={feedbackSeed ?? undefined}
-          onRulebookChanged={() => {
-            toast.success("New draft rules captured", {
-              description:
-                "Review and approve them on the Rulebook page — then rebuild the Masterwork to adopt them.",
-            });
-          }}
-        />
-      ) : null}
-    </div>
+        ) : null}
+        {isOwner ? (
+          <AuditionDialog
+            open={auditionCandidate !== null}
+            onOpenChange={(open) => {
+              if (!open) setAuditionCandidate(null);
+            }}
+            rulebookId={rulebookId}
+            rules={rulebook.rules}
+            benchmarkClaim={
+              (rulebook.metadata as { intake?: { benchmark?: string } } | null)
+                ?.intake?.benchmark
+            }
+            initialCandidate={auditionCandidate ?? undefined}
+          />
+        ) : null}
+        {isOwner ? (
+          <CompareTwoDialog
+            open={compareFirst !== null}
+            onOpenChange={(open) => {
+              if (!open) setCompareFirst(null);
+            }}
+            rulebookId={rulebookId}
+            initialFirst={compareFirst ?? undefined}
+          />
+        ) : null}
+        {isOwner ? (
+          <ScoutInterviewPanel
+            rulebookId={rulebookId}
+            rulebookName={rulebook.name}
+            open={feedbackSeed !== null}
+            onOpenChange={(open) => {
+              if (!open) setFeedbackSeed(null);
+            }}
+            seedText={feedbackSeed ?? undefined}
+            onRulebookChanged={() => {
+              toast.success("New draft rules captured", {
+                description:
+                  "Review and approve them on the Rulebook page — then rebuild the Masterwork to adopt them.",
+              });
+            }}
+          />
+        ) : null}
+      </div>
+    </MasterworkRulesProvider>
   );
 }

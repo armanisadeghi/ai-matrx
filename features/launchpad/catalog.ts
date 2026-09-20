@@ -46,6 +46,42 @@ const searchFields = [
   { get: (item: LaunchpadDestination) => item.href, weight: "meta" as const },
 ];
 
+/**
+ * Area-card subtitles must stay on one line so the browse grid can snap.
+ * Sidebar and search keep the full nav descriptions; only the card uses this.
+ */
+export const LAUNCHPAD_CARD_DESCRIPTION_MAX_LENGTH = 40;
+
+const LAUNCHPAD_CARD_DESCRIPTIONS: Record<string, string> = {
+  "AI Matrx": "Your hub for activity and insights",
+  "AI Work": "Chats and connected work",
+  Chat: "Chat with AI Matrx",
+  Masterwork: "Your expertise, enforced as rules",
+  Knowledge: "Stores, graph, research, and search",
+  "Agent Apps": "Apps built from agents",
+  Workflows: "Run multi-step workflows live",
+  Shapes: "Design structured-content shapes",
+  Reports: "Agent drift and other reports",
+  Publish: "Podcasts, artifacts, and sites",
+  Files: "Your files and documents",
+  HR: "People, time, pay, and records",
+  CRM: "People, companies, and contacts",
+  Libraries: "Catalogue and transcribe YouTube",
+  "Legal Hub": "Legal tools and case utilities",
+  "Medical Hub (Soon)": "Clinical tools — coming soon",
+  "Education Hub": "Flashcards, quizzes, and a tutor",
+  Print: "Decks, tests, labels, and documents",
+  Marketing: "Brands, search, and measurement",
+  Communication: "Messages, email, and windows",
+  "Workflow Studio": "Design workflow graphs on a canvas",
+};
+
+export function launchpadCardDescription(
+  item: Pick<ShellNavItem, "label" | "description">,
+): string | undefined {
+  return LAUNCHPAD_CARD_DESCRIPTIONS[item.label] ?? item.description;
+}
+
 function destinationFromItem(
   item: ShellNavItem,
   kind: LaunchpadDestination["kind"] = "area",
@@ -107,7 +143,7 @@ export function buildUserLaunchpadCatalog(
       id: item.href,
       label: item.label,
       href: item.href,
-      description: item.description,
+      description: launchpadCardDescription(item),
       iconName: item.iconName,
       color: item.color,
       external: item.external,

@@ -40,7 +40,7 @@ import {
 // literal 1024/1048576/1073741824 divisor — could not see it. Same output for
 // every real size, plus the em-dash guard for null/NaN/negative.
 import { formatFileSize } from "@ai-matrx/kit/format";
-import type { CanonicalStorageImport } from "@/features/google-workspace/import/storageSourceImport";
+import type { CanonicalStorageImport } from "@/features/files/storage-sources/types";
 import { pythonFileInlineUrl } from "@/features/files/handler/utils/python-base";
 
 export interface UploadedFile {
@@ -75,6 +75,7 @@ interface InlineUploadAreaProps {
   onSelect: (files: UploadedFile[]) => void | Promise<void>;
   /** Lets the host disable navigation while uploads are in flight. */
   onBusyChange?: (busy: boolean) => void;
+  selectionMode?: "single" | "multiple";
 }
 
 function classifyUploadType(mimeType: string): string {
@@ -116,6 +117,14 @@ export function canonicalImportToUploadedFile(
     mime_type: file.mimeType ?? undefined,
     details: { ...details, filename: file.fileName },
   };
+}
+
+export function canonicalImportsToUploadedFiles(
+  imports: CanonicalStorageImport[],
+): UploadedFile[] {
+  return [...new Map(imports.map((item) => [item.fileId, item])).values()].map(
+    canonicalImportToUploadedFile,
+  );
 }
 
 interface FileStatus {
@@ -313,6 +322,7 @@ function uploadDirectory(relativePath: string): string {
 export function InlineUploadArea({
   onSelect,
   onBusyChange,
+  selectionMode = "multiple",
 }: InlineUploadAreaProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isFinalizing, setIsFinalizing] = useState(false);
@@ -588,15 +598,16 @@ export function InlineUploadArea({
                 className="w-full"
                 disabled={isLoading}
                 onFiles={(files) => handleFiles(files.map(candidateFromFile))}
-                googleImportFolderPath={composeUploadFolderPath(
+                multiple={selectionMode === "multiple"}
+                storageImportFolderPath={composeUploadFolderPath(
                   "userContent",
                   "prompt-attachments",
                 )}
-                onGoogleImported={async (files) => {
+                onStorageImported={async (files) => {
                   setIsFinalizing(true);
                   setBusy(true);
                   try {
-                    await onSelect(files.map(canonicalImportToUploadedFile));
+                    await onSelect(canonicalImportsToUploadedFiles(files));
                   } finally {
                     setIsFinalizing(false);
                     setBusy(false);

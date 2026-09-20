@@ -13,6 +13,7 @@
 "use client";
 
 import { useMediaUpload } from "@ai-matrx/media/core";
+import type { CanonicalStorageImport } from "@/features/files/storage-sources/types";
 import { FileAcquisitionActions } from "./FileAcquisitionActions";
 
 export interface DropzoneAcquisitionActionsProps {
@@ -23,6 +24,9 @@ export interface DropzoneAcquisitionActionsProps {
     metadata?: Record<string, unknown>;
   };
   accept?: string;
+  multiple?: boolean;
+  /** Receives provider files already persisted in canonical Matrx Files. */
+  onStorageImported?: (files: CanonicalStorageImport[]) => void | Promise<void>;
   onError?: (message: string) => void;
   onChooseExisting?: () => void;
   enableLocalFolder?: boolean;
@@ -32,6 +36,8 @@ export interface DropzoneAcquisitionActionsProps {
 export function DropzoneAcquisitionActions({
   uploadOptions,
   accept,
+  multiple = true,
+  onStorageImported,
   onError,
   onChooseExisting,
   enableLocalFolder = true,
@@ -52,8 +58,10 @@ export function DropzoneAcquisitionActions({
         }
       }}
       onError={onError}
-      googleImportParentFolderId={uploadOptions?.parentFolderId}
+      storageImportParentFolderId={uploadOptions?.parentFolderId}
       accept={accept}
+      multiple={multiple}
+      onStorageImported={onStorageImported}
       enableLocalFolder={enableLocalFolder}
       enableExistingFiles={Boolean(onChooseExisting)}
       onChooseExisting={onChooseExisting}

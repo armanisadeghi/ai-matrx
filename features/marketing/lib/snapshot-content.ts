@@ -363,6 +363,30 @@ export function isMediaResourceKind(kind: string): boolean {
   return MEDIA_RESOURCE_KINDS.has(kind.toLowerCase());
 }
 
+/**
+ * Structured-data attributes that name a POSTER, never the media itself. A
+ * `VideoObject.thumbnailUrl` is recorded with kind="video" and is the still
+ * image, so anything that lists media evidence has to drop it or it shows a
+ * picture (or, when the markup is wrong, the page's own URL) as a video. It
+ * belongs beside `isMediaResourceKind` for the same reason that one does:
+ * consumers must share ONE vocabulary instead of each re-deciding what
+ * counts. Measured 2026-09-20: 589 `thumbnailUrl` entries site-wide, and
+ * datadestruction.com's point at its own pages, so a URL-extension test
+ * cannot catch them. The real media is on the same node under
+ * `contentUrl`/`embedUrl`, so nothing is lost.
+ */
+const POSTER_SOURCE_ATTRIBUTES = new Set([
+  "thumbnailurl",
+  "thumbnail",
+  "poster",
+  "image",
+]);
+
+export function isPosterResource(resource: ParsedSnapshotResource): boolean {
+  const attribute = resource.sourceAttribute?.trim().toLowerCase();
+  return attribute ? POSTER_SOURCE_ATTRIBUTES.has(attribute) : false;
+}
+
 export interface ParsedSnapshotResources {
   count: number;
   counts: Record<string, number>;

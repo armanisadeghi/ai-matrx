@@ -36,6 +36,7 @@ import { useOrganizationRequired } from "@/features/organizations/useOrganizatio
 import { ExpertSignOff } from "../review/ExpertSignOff";
 import { MASTERWORK_RUN_SUBJECT_TYPE } from "../review/signature";
 import { RunTheBench } from "./RunTheBench";
+import { MasterworkRulesProvider } from "../rules-context/MasterworkRulesContext";
 import { setMasterworkReleased } from "../service";
 import { toast } from "@/lib/toast";
 import {
@@ -217,134 +218,141 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 pb-8 sm:px-6">
-      <div className="rounded-lg border border-border bg-card p-4">
-        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-          <div className="min-w-0">
-            <h2 className="text-base font-semibold text-foreground">
-              {masterwork.name}
-            </h2>
-            <div className="mt-1 flex flex-wrap items-center gap-1.5">
-              {masterwork.rulebook ? (
-                <Link
-                  href={`/masterwork/${masterwork.rulebook.id}`}
-                  className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+    // THE RULES IN SCOPE. The Operator holds a REFERENCE to the Rulebook, never
+    // its rules — so the provider reads them, and the `masterwork_result` kind
+    // component can turn a stored rule id the ruling cites into that rule's
+    // name with a door to it (walk 12, D14). `rulebook` is null exactly when
+    // this viewer cannot read it; then nothing resolves and the ruling renders
+    // exactly as the agent wrote it.
+    <MasterworkRulesProvider rulebookId={masterwork.rulebook?.id ?? null}>
+      <div className="mx-auto max-w-3xl px-4 pb-8 sm:px-6">
+        <div className="rounded-lg border border-border bg-card p-4">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+            <div className="min-w-0">
+              <h2 className="text-base font-semibold text-foreground">
+                {masterwork.name}
+              </h2>
+              <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                {masterwork.rulebook ? (
+                  <Link
+                    href={`/masterwork/${masterwork.rulebook.id}`}
+                    className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                  >
+                    By {masterwork.rulebook.expert}
+                  </Link>
+                ) : null}
+                {masterwork.rule_count !== null ? (
+                  <Badge
+                    variant="outline"
+                    className="px-1.5 py-0 text-[10px] text-muted-foreground"
+                  >
+                    {masterwork.rule_count} rules
+                  </Badge>
+                ) : null}
+                <span
+                  className="inline-flex items-center gap-1 text-[10px] text-muted-foreground"
+                  title={`Last updated ${formatAbsoluteDate(masterwork.updated_at)}`}
                 >
-                  By {masterwork.rulebook.expert}
-                </Link>
-              ) : null}
-              {masterwork.rule_count !== null ? (
-                <Badge
-                  variant="outline"
-                  className="px-1.5 py-0 text-[10px] text-muted-foreground"
-                >
-                  {masterwork.rule_count} rules
-                </Badge>
-              ) : null}
-              <span
-                className="inline-flex items-center gap-1 text-[10px] text-muted-foreground"
-                title={`Last updated ${formatAbsoluteDate(masterwork.updated_at)}`}
-              >
-                <Clock3 className="h-3 w-3" />
-                {formatRelativeTime(masterwork.updated_at)}
-              </span>
+                  <Clock3 className="h-3 w-3" />
+                  {formatRelativeTime(masterwork.updated_at)}
+                </span>
+              </div>
             </div>
-          </div>
-          {ownsRulebook && masterwork.rulebook ? (
-            <Button
-              asChild
-              size="icon"
-              variant="ghost"
-              className="h-8 w-8"
-              title="Open in Studio"
-            >
-              <Link
-                href={`/masterwork/${masterwork.rulebook.id}/masterworks`}
-                aria-label="Open in Studio"
+            {ownsRulebook && masterwork.rulebook ? (
+              <Button
+                asChild
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8"
+                title="Open in Studio"
               >
-                <Wrench className="h-4 w-4" />
-              </Link>
-            </Button>
+                <Link
+                  href={`/masterwork/${masterwork.rulebook.id}/masterworks`}
+                  aria-label="Open in Studio"
+                >
+                  <Wrench className="h-4 w-4" />
+                </Link>
+              </Button>
+            ) : null}
+          </div>
+          {masterwork.deliverable ? (
+            <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
+              <span className="text-foreground">Creates: </span>
+              {masterwork.deliverable}
+            </p>
           ) : null}
-        </div>
-        {masterwork.deliverable ? (
-          <p className="mt-2 line-clamp-2 text-xs text-muted-foreground">
-            <span className="text-foreground">Creates: </span>
-            {masterwork.deliverable}
-          </p>
-        ) : null}
-        {/* 🚨 YOUR OWN DRAFT RUNS, AND SAYS IT IS A DRAFT. Run it, check it,
+          {/* 🚨 YOUR OWN DRAFT RUNS, AND SAYS IT IS A DRAFT. Run it, check it,
             sign off on what it said — then release it when you are ready.
             The screen never pretends it is already shared. */}
-        {isDraft ? (
-          <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
-            <span className="text-xs text-muted-foreground">
-              Draft — only you can see this one. Run it as much as you like.
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-7 text-xs"
-              disabled={releasing}
-              onClick={() => void releaseThis()}
-            >
-              <Rocket className="mr-1 h-3.5 w-3.5" />
-              {releasing ? "Releasing…" : "Release it"}
-            </Button>
-          </div>
-        ) : null}
-        <AuditionProof
-          variant="panel"
-          score={masterwork.auditionScore}
-          verdict={masterwork.auditionVerdict}
-          auditionedAt={masterwork.auditionedAt}
-          bench={bench}
-        />
-        {/* THE PROOF HAS A DOOR. It sits beside the quick check because that
+          {isDraft ? (
+            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2">
+              <span className="text-xs text-muted-foreground">
+                Draft — only you can see this one. Run it as much as you like.
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                disabled={releasing}
+                onClick={() => void releaseThis()}
+              >
+                <Rocket className="mr-1 h-3.5 w-3.5" />
+                {releasing ? "Releasing…" : "Release it"}
+              </Button>
+            </div>
+          ) : null}
+          <AuditionProof
+            variant="panel"
+            score={masterwork.auditionScore}
+            verdict={masterwork.auditionVerdict}
+            auditionedAt={masterwork.auditionedAt}
+            bench={bench}
+          />
+          {/* THE PROOF HAS A DOOR. It sits beside the quick check because that
             is the comparison being made: one is a two-arm check, the other is
             the six-arm trial that can establish a win. When the server cannot
             start one here, this renders its reason — never a dead button. */}
-        {rulebookId ? (
-          <RunTheBench
-            rulebookId={rulebookId}
-            bench={bench}
-            onVerdict={refreshBench}
-          />
-        ) : null}
+          {rulebookId ? (
+            <RunTheBench
+              rulebookId={rulebookId}
+              bench={bench}
+              onVerdict={refreshBench}
+            />
+          ) : null}
 
-        <div className="mt-4 border-t border-border pt-4">
-          <TryMasterworkBox
-            masterworkId={masterwork.id}
-            masterworkKind={masterwork.masterwork_kind}
-            submitLabel={masterwork.submit_label}
-            fieldLabels={
-              masterwork.masterwork_kind === "edit"
-                ? ["Your text", "Key facts"]
-                : undefined
-            }
-            onRunFinished={refreshRuns}
-          />
-        </div>
+          <div className="mt-4 border-t border-border pt-4">
+            <TryMasterworkBox
+              masterworkId={masterwork.id}
+              masterworkKind={masterwork.masterwork_kind}
+              submitLabel={masterwork.submit_label}
+              fieldLabels={
+                masterwork.masterwork_kind === "edit"
+                  ? ["Your text", "Key facts"]
+                  : undefined
+              }
+              onRunFinished={refreshRuns}
+            />
+          </div>
 
-        {runs.length > 0 ? (
-          <div className="mt-4 border-t border-border pt-3">
-            <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Your recent runs
-            </h3>
-            {/* ONE RUN ROW, NOT TWO (jobs-bar-2026-09-16, item 18). This list
+          {runs.length > 0 ? (
+            <div className="mt-4 border-t border-border pt-3">
+              <h3 className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Your recent runs
+              </h3>
+              {/* ONE RUN ROW, NOT TWO (jobs-bar-2026-09-16, item 18). This list
                 used to print its own line — a dot, a status word and an age —
                 so eight runs of the same Masterwork read as eight copies of
                 "Finished · 1d ago" with nothing to tell them apart, while the
                 Masterworks lane, three clicks away, showed the first line of
                 what each run actually said. `MasterworkRunRow` is that row;
                 Encore mounts it and hangs its own sign-off off `trailing`. */}
-            <div className="mt-2">
-              {runs.map((run) => (
-                <MasterworkRunRow
-                  key={run.id}
-                  run={run}
-                  trailing={
-                    /* 🚨 THE SIGNATURE OUTLIVES THE RUN BOX. The Try box shows
+              <div className="mt-2">
+                {runs.map((run) => (
+                  <MasterworkRunRow
+                    key={run.id}
+                    run={run}
+                    trailing={
+                      /* 🚨 THE SIGNATURE OUTLIVES THE RUN BOX. The Try box shows
                        the thumbs the moment a run ends, and then forgets the
                        run on purpose — so without this, an Expert who came
                        back an hour later had no way to say "yes, that one was
@@ -352,20 +360,21 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
                        a page reload. Same control, same row in
                        `platform.output_feedback`. Only a FINISHED run: there
                        is nothing to sign on a run that failed. */
-                    run.status === "completed" ? (
-                      <ExpertSignOff
-                        subjectType={MASTERWORK_RUN_SUBJECT_TYPE}
-                        subjectId={run.id}
-                        showPrompt={false}
-                      />
-                    ) : null
-                  }
-                />
-              ))}
+                      run.status === "completed" ? (
+                        <ExpertSignOff
+                          subjectType={MASTERWORK_RUN_SUBJECT_TYPE}
+                          subjectId={run.id}
+                          showPrompt={false}
+                        />
+                      ) : null
+                    }
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
-    </div>
+    </MasterworkRulesProvider>
   );
 }

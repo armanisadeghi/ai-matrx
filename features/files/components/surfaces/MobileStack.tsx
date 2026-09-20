@@ -685,7 +685,7 @@ function FloatingUploadAction({ parentFolderId }: FloatingUploadActionProps) {
       <FileAcquisitionActions
         presentation="icons"
         onFiles={handleFiles}
-        googleImportParentFolderId={parentFolderId}
+        storageImportParentFolderId={parentFolderId}
         enableLocalFolder={false}
       />
     </div>

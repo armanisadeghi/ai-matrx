@@ -26,7 +26,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Check, Loader2, Play, ShieldAlert, Table2, X } from "lucide-react";
+import { AlertTriangle, Check, Compass, Loader2, Play, ShieldAlert, Table2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/lib/toast";
@@ -227,13 +227,29 @@ export function UnifiedDataRampScreen() {
    * moves. One organization, everywhere, and the page it lands on is reading
    * the same choice this screen just made.
    */
-  const openTables = useCallback(() => {
-    if (!organizationId) return;
-    const name = nameOf(organizationId);
-    dispatch(setOrganization({ id: organizationId, name }));
-    toast.success(`Now working in ${name}. Opening its tables.`);
-    router.push("/data-v2");
-  }, [organizationId, nameOf, dispatch, router]);
+  const goToStore = useCallback(
+    (path: string, what: string) => {
+      if (!organizationId) return;
+      const name = nameOf(organizationId);
+      dispatch(setOrganization({ id: organizationId, name }));
+      toast.success(`Now working in ${name}. Opening ${what}.`);
+      router.push(path);
+    },
+    [organizationId, nameOf, dispatch, router],
+  );
+
+  const openTables = useCallback(() => goToStore("/data-v2", "its tables"), [goToStore]);
+
+  /**
+   * THE TEST BENCH. The same organization switch, then the one page that shows
+   * every part of the store — and says which parts are not finished. It goes
+   * through `goToStore` for the same reason the button above does: the page it
+   * lands on reads the ACTIVE organization, not the one this selector names.
+   */
+  const openTryEverything = useCallback(
+    () => goToStore("/data-v2/try-everything", "everything it can do"),
+    [goToStore],
+  );
 
   const setSwitch = useCallback(
     async (consumer: RampConsumer, on: boolean) => {
@@ -330,10 +346,16 @@ export function UnifiedDataRampScreen() {
           </div>
           <div className="mt-1 text-muted-foreground">{storeSwitch.why}</div>
           {storeSwitch.switched_on ? (
-            <Button variant="outline" size="sm" className="mt-2" onClick={openTables}>
-              <Table2 className="size-4" />
-              Open {nameOf(organizationId)}&apos;s tables
-            </Button>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={openTables}>
+                <Table2 className="size-4" />
+                Open {nameOf(organizationId)}&apos;s tables
+              </Button>
+              <Button variant="outline" size="sm" onClick={openTryEverything}>
+                <Compass className="size-4" />
+                Try everything it can do
+              </Button>
+            </div>
           ) : null}
         </div>
       )}

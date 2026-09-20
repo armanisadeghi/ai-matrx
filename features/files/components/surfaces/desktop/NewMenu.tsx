@@ -206,7 +206,7 @@ export function NewMenu({ parentFolderId, className }: NewMenuProps) {
           <FileAcquisitionActions
             presentation="menu"
             onFiles={handleUploadFiles}
-            googleImportParentFolderId={parentFolderId}
+            storageImportParentFolderId={parentFolderId}
             onLocalSelectionComplete={() => setMenuOpen(false)}
             onError={(message) => toast.error(message)}
             enableExistingFiles={false}

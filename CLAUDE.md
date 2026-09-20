@@ -126,6 +126,7 @@ Arman plus dozens of agents edit this ONE checkout at once. `git add <your files
 | `(portal)` | Signed-in departed-member portal (`/portal/**`) without `AppShell`, org switcher, global search, or org-scoped navigation; contract: [`features/continued-access/FEATURE.md`](./features/continued-access/FEATURE.md). |
 | `(popup)` | Unused popup demo — fate undecided (D127). |
 | `(oauth-review)` | Google OAuth verification review surface. |
+| `(link)` | A link somebody SENT, not a page of our website (`/f/[formId]`, a clinic's intake form answered by a stranger): `Providers` and nothing else — no marketing header or footer, no shell. The rest of that class (`/p`, `/s`, `/l`, `/r`, `/c`, `/open/chat`, `/unsubscribe`, the appointment reminder) still sits in `(public)` and belongs here (see `app/(link)/layout.tsx`). |
 
 ## Finding a feature's docs
 

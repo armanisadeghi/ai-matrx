@@ -289,6 +289,11 @@ export const OVERLAY_CATALOGUE = {
     instanceMode: "singleton",
     isWindow: true,
   },
+  storageSourcePicker: {
+    label: "Import from cloud storage",
+    instanceMode: "singleton",
+    isWindow: true,
+  },
   // The connector primitive's "Choose what to connect" dialog. One provider
   // today (Google); the provider is resolved inside the component, so a second
   // provider does not add a second overlay.

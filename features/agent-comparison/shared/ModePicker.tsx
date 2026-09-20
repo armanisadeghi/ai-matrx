@@ -23,6 +23,7 @@ import {
   Cpu,
   Gauge,
   Boxes,
+  MessagesSquare,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -94,6 +95,13 @@ const MODES: ModeEntry[] = [
     href: "/agents/battle/request-mod",
     icon: Workflow,
     hint: "Lock the agent; vary per-column variables and user message",
+  },
+  {
+    id: "conversation",
+    label: "Conversation",
+    href: "/agents/battle/conversation",
+    icon: MessagesSquare,
+    hint: "Load one chat, fork it per column, then continue each fork independently",
   },
 ];
 
