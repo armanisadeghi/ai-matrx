@@ -18,7 +18,15 @@
 import { useId, useState, type ReactNode } from "react";
 import { ChevronDown } from "lucide-react";
 
-/** How finished a section is. The word the person reads is the one we can prove. */
+/**
+ * How finished a section is. The word the person reads is the one we can prove.
+ *
+ * `null` is the fourth state and it is not a fourth word: it means the screen is
+ * STILL ASKING the live system whether this part works, and has not been told
+ * yet. A section whose verdict is measured rather than written down here shows
+ * "Measuring…" until the door answers — never a guess held for a second and then
+ * corrected, and never a stale word a previous version of the packages earned.
+ */
 export type SectionState = "real" | "partly" | "placeholder";
 
 const STATE_WORD: Record<SectionState, string> = {
@@ -39,7 +47,8 @@ export interface SectionProps {
     title: string;
     /** One line, plain English: what this part of the system is. */
     what: string;
-    state: SectionState;
+    /** The verdict, or `null` while the screen is still asking the live system. */
+    state: SectionState | null;
     /**
      * Open on arrival. Only the cheapest sections do: the rest mount a live
      * component that reads — and in a few cases WRITES — this organization's
@@ -79,9 +88,11 @@ export function Section({ n, title, what, state, defaultOpen = false, children }
                 </span>
                 <h2 className="truncate text-sm font-medium text-foreground">{title}</h2>
                 <span
-                    className={`ml-auto shrink-0 rounded-full border px-2 py-0.5 text-[11px] ${STATE_CLASS[state]}`}
+                    className={`ml-auto shrink-0 rounded-full border px-2 py-0.5 text-[11px] ${
+                        state === null ? "border-border text-muted-foreground" : STATE_CLASS[state]
+                    }`}
                 >
-                    {STATE_WORD[state]}
+                    {state === null ? "Measuring…" : STATE_WORD[state]}
                 </span>
                 <ChevronDown
                     className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
@@ -141,6 +152,44 @@ export function NotBuiltYet({
             </div>
             {children ? <TryIt hint="the part that does exist">{children}</TryIt> : null}
         </div>
+    );
+}
+
+/**
+ * THE REAL SCREEN THIS PART OF THE SYSTEM LIVES ON.
+ *
+ * WHY IT EXISTS. This page mounts the same components the product mounts, which
+ * makes it easy to believe the page IS the product. It is not: a dashboard has a
+ * home, a portal has an address a client types, a subscription has a panel on
+ * the table it is about. A section that stops at "here is the control" leaves the
+ * person with no idea where the thing they just made actually lives — the dead
+ * end this page exists to remove.
+ *
+ * It is a LINK and one sentence, never a second copy of the screen.
+ */
+export function RealScreen({
+    href,
+    label,
+    then: thenDo,
+    Link: LinkComponent,
+}: {
+    /** The route. Always a real one somebody can type. */
+    href: string;
+    /** What the link is called, in the words on the screen it opens. */
+    label: string;
+    /** The ONE thing to do after arriving. Omitted when arriving is the whole act. */
+    then?: string;
+    /** The host's Link. Passed in because this file imports nothing. */
+    Link: (props: { href: string; className?: string; children: ReactNode }) => ReactNode;
+}) {
+    return (
+        <p className="text-xs leading-relaxed text-muted-foreground">
+            <span className="font-medium uppercase tracking-wide text-foreground/70">The real screen</span>{" "}
+            <LinkComponent href={href} className="font-medium text-foreground underline underline-offset-2">
+                {label}
+            </LinkComponent>
+            {thenDo ? <> — {thenDo}</> : null}
+        </p>
     );
 }
 

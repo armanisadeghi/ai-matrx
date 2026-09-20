@@ -34,8 +34,8 @@ import { ExternalLink, RefreshCw } from "lucide-react";
 // request, not an answer, and the lockfile is what the bundle actually carries.
 import recordsPkg from "@ai-matrx/records/package.json";
 import recordsUiPkg from "@ai-matrx/records-ui/package.json";
-import type { Table } from "@ai-matrx/records";
-import { useRecords, useTables } from "@ai-matrx/records/react";
+import { portalPath, type PortalSummary, type DashboardSummary, type RecordsResult, type Table } from "@ai-matrx/records";
+import { useRecords, useRecordsClient, useTables } from "@ai-matrx/records/react";
 import {
     ActionInbox,
     CustomFieldsSection,
@@ -80,7 +80,7 @@ import { createClient } from "@/utils/supabase/client";
 import { UNIFIED_DATA_CAMPAIGN } from "@/lib/knobs/unifiedDataCampaign";
 import { useUnifiedDataCampaign } from "@/lib/knobs/useUnifiedDataCampaignGate";
 
-import { Aside, NotBuiltYet, Refusal, Section, StatusFact, TryIt, sectionAnchor } from "./TestBenchChrome";
+import { Aside, NotBuiltYet, RealScreen, Refusal, Section, StatusFact, TryIt, sectionAnchor } from "./TestBenchChrome";
 
 /** The organization setting section 2 flips, at its one registry address. */
 const MEMBER_VISIBILITY = { feature: "custom", key: "member_default_visibility" } as const;
@@ -167,6 +167,72 @@ export default function TryEverythingScreen() {
 }
 
 /**
+ * WHAT A DOOR ANSWERED, THIS MINUTE — the only honest source for "does this
+ * part of the system work?".
+ *
+ * WHY THIS EXISTS. Every verdict on this page used to be a WORD TYPED INTO THE
+ * FILE by whoever wrote the section, and a sentence underneath naming the
+ * package version that was current the day they typed it. Both rot the moment
+ * anything ships: on 20 September this page told a person that a portal had no
+ * address to give anybody (the route had landed), that a dashboard had no home
+ * (`TablePage` had grown a Dashboards view), and that the notification editor
+ * would be refused until records-ui 0.30.0 (0.38.0 was installed). Three
+ * sentences, all confidently wrong, all of them the page's own doing.
+ *
+ * A section that uses this asks its own door on arrival and shows "Measuring…"
+ * until the answer comes back. There is no third outcome: a door either answers
+ * or refuses in its own words, and the words the person reads are the store's.
+ */
+type Reach<T> =
+    | { state: "asking" }
+    | { state: "open"; data: T }
+    | { state: "refused"; sentence: string };
+
+/** The section verdict a reach earns. `null` means the answer is not back yet. */
+function verdictOf<T>(reach: Reach<T>, has: (data: T) => boolean): "real" | "partly" | "placeholder" | null {
+    if (reach.state === "asking") return null;
+    // A REFUSED DOOR IS NOT A GAP, IT IS AN ABSENCE. The person cannot reach
+    // this part of the system at all, which is exactly what "Not built yet"
+    // says on this page — and the sentence under it is the store's own.
+    if (reach.state === "refused") return "placeholder";
+    // The door answers, but nothing has been made through it yet: everything
+    // works and there is nothing to show, which is a gap in what they HAVE,
+    // never a gap in what the system can do.
+    return has(reach.data) ? "real" : "partly";
+}
+
+function useReach<T>(ask: () => Promise<RecordsResult<T>>): Reach<T> {
+    const [answer, setAnswer] = useState<Reach<T>>({ state: "asking" });
+    useEffect(() => {
+        let cancelled = false;
+        void (async () => {
+            try {
+                const answered = await ask();
+                if (cancelled) return;
+                setAnswer(
+                    answered.ok
+                        ? { state: "open", data: answered.data }
+                        : { state: "refused", sentence: refusalLineForAPerson(answered.error) },
+                );
+            } catch (error) {
+                // A THROW IS STILL AN ANSWER. Never left on "Measuring…": a
+                // verdict that never arrives is the one thing this page may not do.
+                if (!cancelled) {
+                    setAnswer({
+                        state: "refused",
+                        sentence: error instanceof Error ? error.message : String(error),
+                    });
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [ask]);
+    return answer;
+}
+
+/**
  * Everything below the mount. Split from the component above only because the
  * store's hooks need the provider that component renders — a hook cannot be
  * called above its own provider.
@@ -183,6 +249,7 @@ function Bench({
     onOpenTable: (tableId: string) => void;
 }) {
     const tables = useTables();
+    const client = useRecordsClient();
     const [workingTableId, setWorkingTableId] = useState<string | null>(null);
 
     // The working table: whichever the person picked, else the first one the
@@ -202,6 +269,21 @@ function Bench({
         () => rows.find((t) => t.id === workingTableId) ?? rows[0] ?? null,
         [rows, workingTableId],
     );
+
+    // THE THREE VERDICTS THIS PAGE USED TO TYPE INTO ITSELF. Each is one read
+    // through the same door the real screen uses, asked on arrival.
+    const workingTableIdForProbe = workingTable?.id ?? null;
+    const askDashboards = useCallback(
+        () => client.dashboards(workingTableIdForProbe ? { table_id: workingTableIdForProbe } : {}),
+        [client, workingTableIdForProbe],
+    );
+    const dashboards = useReach<DashboardSummary[]>(askDashboards);
+    const askPortals = useCallback(() => client.portals(), [client]);
+    const portals = useReach<PortalSummary[]>(askPortals);
+    // The door the PUBLISHED NotifyRuleEditor asks for its cadence list. If it
+    // answers, the editor in section 12 can be filled in; if it refuses, the
+    // editor is the gap and the refusal is why.
+    const cadences = useReach<string[]>(useCallback(() => client.subscriptionCadences(), [client]));
 
     return (
         <div className="mx-auto max-w-3xl space-y-3 pb-24">
@@ -385,16 +467,50 @@ function Bench({
                 </NeedsTable>
             </Section>
 
-            {/* 9 — DASHBOARDS */}
+            {/* 9 — DASHBOARDS. The verdict is `custom.dashboards`' own answer for
+                this table, asked on arrival — never a word typed into this file. */}
             <Section
                 n={9}
                 title={CONTENTS[8]}
-                state="placeholder"
+                state={verdictOf(dashboards, (made) => made.length > 0)}
                 what="A chart over your own records: group by a column, count or total another, and every number is the store's own answer rather than a copy kept somewhere else."
             >
                 <NeedsTable table={workingTable}>
                     {(table) => (
                         <>
+                            {dashboards.state === "refused" ? (
+                                <Refusal>{dashboards.sentence}</Refusal>
+                            ) : dashboards.state === "asking" ? (
+                                <p className="text-sm text-muted-foreground">
+                                    Asking this table what dashboards it already has…
+                                </p>
+                            ) : (
+                                <p className="text-sm leading-relaxed text-foreground/90">
+                                    {dashboards.data.length === 0
+                                        ? "The door answers and this table has no dashboard yet. Make one in the canvas below and it opens on the table's own screen."
+                                        : dashboards.data.length === 1
+                                          ? `One dashboard, “${dashboards.data[0]!.name}”, with ${dashboards.data[0]!.block_count} ${dashboards.data[0]!.block_count === 1 ? "chart" : "charts"} on it.`
+                                          : `${dashboards.data.length} dashboards on this table, ${dashboards.data.reduce((n, d) => n + d.block_count, 0)} charts between them.`}
+                                </p>
+                            )}
+                            {/* A DASHBOARD HAS A HOME NOW. It used to have none, which is
+                                why this section said "Not built yet": `TablePage` has a
+                                Dashboards view, and `?dashboard=<id>` opens one directly —
+                                which is the link an agent's answer ends in. */}
+                            <RealScreen
+                                Link={Link}
+                                href={
+                                    dashboards.state === "open" && dashboards.data[0]
+                                        ? `/data-v2/${table.id}?dashboard=${dashboards.data[0].dashboard_id}`
+                                        : `/data-v2/${table.id}`
+                                }
+                                label={tableName(table)}
+                                then={
+                                    dashboards.state === "open" && dashboards.data[0]
+                                        ? "opens straight onto the canvas, the same link an agent hands back"
+                                        : "press Dashboards above the grid"
+                                }
+                            />
                             <WritesItsOwnTable
                                 what="the dashboard canvas"
                                 whatHappens={
@@ -402,54 +518,96 @@ function Bench({
                                     "that table the first time it runs — in this organization, under \"Kept by the app\"."
                                 }
                                 measured={
-                                    "At the screens version this deployment serves it cannot finish making that " +
-                                    "table, for the same reason as the form builder above, and it shows the same " +
-                                    "red box. The grouping-and-totalling door underneath it IS live."
+                                    "The grouping-and-totalling door underneath it is live and every number it " +
+                                    "draws is this organization's own. What it may still refuse is making that " +
+                                    "housekeeping table on the first run; if it does you will see a red box saying " +
+                                    "the value was not accepted, and there is nothing for you to change."
                                 }
                             >
                                 <DashboardCanvas tableId={table.id} />
                             </WritesItsOwnTable>
-                            <NotBuiltYet
-                                today={
-                                    "The door that groups and totals real records is live and a browser may call " +
-                                    "it, so the numbers a chart would draw are real. Nothing else here is."
-                                }
-                                waitingFor={
-                                    "the same screens fix as the form builder, and then a home of their own — there " +
-                                    "is no dashboard page, so a dashboard lives on the one table it is about and " +
-                                    "cannot sit beside charts from another."
-                                }
-                            />
                         </>
                     )}
                 </NeedsTable>
             </Section>
 
-            {/* 10 — OUTSIDER PORTAL */}
+            {/* 10 — OUTSIDER PORTAL. Asked of `custom.portals` on arrival. This
+                section said "there is no portal address to give anybody" for a
+                day after `/portal/c/<slug>` landed, because the sentence was
+                typed here instead of measured. */}
             <Section
                 n={10}
                 title={CONTENTS[9]}
-                state="placeholder"
-                what="The plan: a client, vendor or patient signs in and sees only their own jobs and invoices, decided by the same sharing you already use rather than by a query somebody had to write."
+                state={verdictOf(portals, (open) => open.some((one) => one.is_active))}
+                what="A client, vendor or patient signs in and sees only their own jobs and invoices, decided by the same sharing you already use rather than by a query somebody had to write."
             >
-                <NotBuiltYet
-                    today={
-                        "Nothing an outsider can reach. The screens exist inside the records package, but the " +
-                        "platform door that turns an outsider into someone the store will answer holds no grant " +
-                        "for a browser, and there is no portal address to give anybody."
-                    }
-                    waitingFor={
-                        "the external-principal door being opened to a client, and one public route to mount the " +
-                        "portal on. Until then the only way to give an outsider anything is a published form " +
-                        "(section 5), which needs no account at all."
-                    }
-                >
-                    <p className="text-sm">
-                        The nearest thing that works today is the Access tab in section 2: it already answers
-                        “who can open this, and why” in full sentences, including for somebody outside your
-                        organization, and it is the same answer a portal would be built on.
-                    </p>
-                </NotBuiltYet>
+                {portals.state === "asking" ? (
+                    <p className="text-sm text-muted-foreground">Asking what portals this organization has opened…</p>
+                ) : portals.state === "refused" ? (
+                    <NotBuiltYet
+                        today={
+                            "Nothing an outsider can reach from here. The portal screens and the public route " +
+                            "both exist, but the door that lists this organization's portals refused this " +
+                            "browser, so nothing can be shown or made on this page."
+                        }
+                        waitingFor="that refusal, in the store's own words:"
+                    >
+                        <Refusal>{portals.sentence}</Refusal>
+                    </NotBuiltYet>
+                ) : portals.data.length === 0 ? (
+                    <>
+                        <p className="text-sm leading-relaxed text-foreground/90">
+                            The door answers and this organization has opened no portal yet. A portal names the
+                            table whose records ARE your clients, and each of them then sees the records that name
+                            them and nothing else.
+                        </p>
+                        {workingTable ? (
+                            <RealScreen
+                                Link={Link}
+                                href={`/data-v2/${workingTable.id}`}
+                                label={tableName(workingTable)}
+                                then="press Portals above the grid — that panel opens one, and the address it hands back is what a client types"
+                            />
+                        ) : null}
+                    </>
+                ) : (
+                    <>
+                        <p className="text-sm leading-relaxed text-foreground/90">
+                            {portals.data.length === 1
+                                ? "One portal is open."
+                                : `${portals.data.length} portals are open.`}{" "}
+                            Every address below is real: it is what a client types, and it is signed in as them,
+                            not as you.
+                        </p>
+                        <ul className="divide-y divide-border rounded-md border border-border">
+                            {portals.data.map((one) => (
+                                <li key={one.portal_id} className="px-3 py-2">
+                                    <p className="truncate text-sm text-foreground">{one.title}</p>
+                                    <p className="mt-0.5 text-xs text-muted-foreground">
+                                        clients from {one.client_table} · {one.tables}{" "}
+                                        {one.tables === 1 ? "table" : "tables"} shown · {one.invited} invited,{" "}
+                                        {one.signed_in} signed in
+                                        {one.is_active ? "" : " · switched off"}
+                                    </p>
+                                    <RealScreen
+                                        Link={Link}
+                                        href={portalPath(one.slug)}
+                                        label={portalPath(one.slug)}
+                                        then={
+                                            one.is_active
+                                                ? "the client's own screen — you will be asked to sign in as one of them"
+                                                : "switched off, so it answers nobody until it is switched back on"
+                                        }
+                                    />
+                                </li>
+                            ))}
+                        </ul>
+                    </>
+                )}
+                <Aside>
+                    Section 2's Access tab answers “who can open this, and why” for somebody outside your
+                    organization in full sentences — it is the same answer a portal is built on.
+                </Aside>
             </Section>
 
             {/* 11 — DOCUMENTS */}
@@ -464,11 +622,12 @@ function Bench({
                 </NeedsTable>
             </Section>
 
-            {/* 12 — NOTIFICATIONS AND DIGESTS */}
+            {/* 12 — NOTIFICATIONS AND DIGESTS. The verdict is whether the door the
+                published editor asks for its cadence list answers this browser. */}
             <Section
                 n={12}
                 title={CONTENTS[11]}
-                state="partly"
+                state={verdictOf(cadences, (offered) => offered.length > 0)}
                 what="Being told when something happens: a message the moment a record matches what you care about, or a summary on a schedule. What counts as worth telling you is a rule over a saved view, in English."
             >
                 <NeedsTable table={workingTable}>
@@ -480,9 +639,22 @@ function Bench({
                                 </div>
                             </TryIt>
                             <Aside>
+                                {cadences.state === "open"
+                                    ? `It offers ${cadences.data.join(", ")} — read from the same list the digest runner honours, not typed into the picker.`
+                                    : cadences.state === "asking"
+                                      ? "Asking which cadences it may offer…"
+                                      : cadences.sentence}
+                            </Aside>
+                            <Aside>
                                 A form published in section 5 already subscribes whoever asked for it, so a new
                                 response shows up in the bell at the top of the window.
                             </Aside>
+                            <RealScreen
+                                Link={Link}
+                                href={`/data-v2/${table.id}`}
+                                label={tableName(table)}
+                                then="press Notifications above the grid — that panel carries the quiet hours, when the next summary goes out, and “Send me a preview now”"
+                            />
                             <NotificationsTry table={table} organizationId={organizationId} />
                         </>
                     )}
@@ -1906,6 +2078,16 @@ function DocumentsTry({ table, organizationId }: { table: Table; organizationId:
                                         source={{ type: "raw" }}
                                         actionsVariant="mini-bar"
                                     />
+                                    {/* THE DOCUMENT HAS ITS OWN ADDRESS. What is
+                                        drawn above is the same frozen body, but a
+                                        finished document is something you send
+                                        somebody, and this is the link you send. */}
+                                    <RealScreen
+                                        Link={Link}
+                                        href={`/d/${openRender}`}
+                                        label={`/d/${openRender}`}
+                                        then="this document on its own page, the link you hand to somebody"
+                                    />
                                 </div>
                             ) : null}
                         </div>
@@ -2067,18 +2249,18 @@ function NotificationsTry({ table, organizationId }: { table: Table; organizatio
                     )}
                 </div>
             </TryIt>
-            <NotBuiltYet
-                today={
-                    "A notification an agent or a published form switches on really fires and arrives in the " +
-                    "bell at the top of the window, this list is what you are being told about, and switching " +
-                    "one off stops it firing everywhere at once."
-                }
-                waitingFor={
-                    "the editor above. At the screens version this deployment serves " +
-                    `(${recordsUiPkg.version}) it still asks the notifier’s own reader and is refused; it asks ` +
-                    "the doors this list uses from 0.30.0 onwards. Nothing else here is waiting on anything."
-                }
-            />
+            {/* WHAT THIS LIST IS, and nothing about what it is waiting for.
+                It used to end on a "waiting on the editor above — at records-ui
+                X it still asks the notifier's own reader and is refused; it asks
+                the doors this list uses from 0.30.0 onwards", which was a claim
+                about a package version rather than about this deployment. The
+                editor's own door is asked live in the section above and says for
+                itself whether it answers. */}
+            <Aside>
+                A notification an agent or a published form switches on really fires and arrives in the bell at
+                the top of the window, this list is what you are being told about, and switching one off stops it
+                firing on every channel at once.
+            </Aside>
         </div>
     );
 }
