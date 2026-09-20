@@ -1,3 +1,4 @@
+-- retired: its public.cvx_list_scoped body was replaced since; the live one comes from cvx_audience_derives_from_the_lane_classifier.sql
 -- CS-23: the provider-account display rule becomes ONE function, and it stops
 -- rendering a raw account key for a row that explains why its label is gone.
 --

@@ -1,3 +1,4 @@
+-- retired: its public.cvx_list_scoped body was replaced since; the live one comes from cvx_audience_derives_from_the_lane_classifier.sql
 -- cvx_deep_hits_once_per_request — 2026-09-18
 -- based-on: public.cvx_list_scoped(text, uuid, text, boolean, text, text, boolean, text, jsonb, integer, integer) 8db7db8fc1ecdee744897e0184125a87be30b4cd10376a332737445e466b7b9e
 -- based-on: public.cvx_list_scope_counts(text, boolean, text, jsonb) 915b08b2607b84470f0d51a4b333e2f2dd9ce0ee31d56ba7d2ae9403e7f97a44

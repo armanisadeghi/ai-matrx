@@ -81,6 +81,14 @@ export interface RunAgentArgs {
   /** Durable producer attribution for the conversation and usage ledger. */
   sourceApp: string;
   sourceFeature: string;
+  /**
+   * Interactivity attestation — the ONLY input a client has into
+   * `origin_class`. "user" (the default) is a person's gesture on the screen
+   * that calls this hook; client code firing a run with no gesture behind it
+   * passes "auto". Omitting it entirely is what makes the server class our own
+   * screens as unattested API callers.
+   */
+  initiation?: "user" | "auto";
   /** Abort the in-flight run. */
   signal?: AbortSignal;
   /** Stream chunk-by-chunk text as it arrives (e.g. to show live progress). */
@@ -133,6 +141,7 @@ export function buildRunAgentRequest(args: RunAgentArgs): {
       config_overrides: args.configOverrides,
       source_app: args.sourceApp,
       source_feature: args.sourceFeature,
+      initiation: args.initiation ?? "user",
       context_anchor: args.contextAnchor,
       stream: true,
       debug: false,

@@ -25,6 +25,7 @@ import type {
   KindRollup,
   ManifestExpert,
   ManifestItemRaw,
+  ManifestPageEntities,
   ManifestKeyword,
   ManifestTag,
   ManifestTopic,
@@ -252,6 +253,7 @@ export function parseManifest(
   raw: unknown,
   topicId: string,
   experts: ManifestExpert[] = [],
+  entities: ManifestPageEntities[] = [],
 ): ResourceManifest {
   const root = isJsonObject(raw) ? raw : {};
 
@@ -310,6 +312,7 @@ export function parseManifest(
     rollups,
     unknownKinds: Array.from(unknown),
     experts,
+    entities,
   };
 }
 

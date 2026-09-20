@@ -134,7 +134,10 @@ export const DOMAIN_OUTPUTS: DomainOutputDefinition[] = [
     description:
       "The brand's tree of subjects — every offering, audience and place it should cover — authored from this research by the topical map author, then reviewed in the map.",
     mandateKey: MANDATE_KEYS.seo__map_author,
-    bundleSlug: null,
+    // The recipe the map author resolves SERVER-SIDE (aidream
+    // research/context_bundles.py); named here so the Context Builder can show
+    // exactly what the author reads. The card still opens the start door.
+    bundleSlug: "research-topical-map",
     outputKind: "topical_map",
     openHref: (topicId) =>
       marketingRoutes.topicalMapStart({ researchTopicId: topicId, source: "existing_research" }),

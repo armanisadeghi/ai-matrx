@@ -94,6 +94,14 @@
  *     ... ADD VALUE): those cannot run inside this transaction — apply them from
  *     aidream: `python db/apply_migrations.py --source matrx-frontend --only <f>`
  *   - a `-- migrate: skip:` file
+ *   - 🚨 a `-- retired: <why>` file: frozen history the live database has moved past.
+ *     An already-ledgered file is never re-judged — that is what makes `--reapply` work —
+ *     so the OLD body it carries would execute verbatim and revert whatever replaced it,
+ *     with every check green. `migrations/cvx_list_scoped_audience.sql` held the
+ *     pre-`chat.conversation_lane` `public.cvx_audience` exactly that way. Refused at every
+ *     target, on every path: `--reapply` is not a key for it, `--dry-run` does not soften
+ *     it, and it is read BEFORE the header checks so a confirmed `-- chair-step:` never
+ *     reaches it. The one remedy is a NEW migration, judged and ledgered on its own bytes.
  *   - a ledger row with a different checksum, without --reapply
  *   - absent connection credentials (never a quiet downgrade to a weaker path)
  *   - 🚨 DD-220: a file that REPLACES a function body already live without saying
@@ -328,12 +336,38 @@ const TXN_CONTROL_RE =
   /(?:^|;)\s*(BEGIN|START\s+TRANSACTION|COMMIT|ROLLBACK|END\s+(?:TRANSACTION|WORK))\b/i;
 
 const SKIP_MARKER = /^\s*--\s*migrate\s*:\s*skip(?:\s*:\s*(.+))?\s*$/i;
+/**
+ * 🚨 `-- retired: <why>` — THE FILE IS FROZEN HISTORY AND ITS BYTES MUST NEVER RUN AGAIN.
+ *
+ * WHY (the door this closes, 2026-09-20): an already-ledgered file is never re-judged —
+ * its bytes are frozen history, which is what makes `--reapply` work at all (see the
+ * DD-220 note in this file's header). But "frozen history" cuts both ways: a file that
+ * REPLACED a function body which has since been replaced again still carries the OLD
+ * body, and `--reapply` executes exactly those bytes against the one live database. That
+ * is the `billing.plan_status` class in reverse — not a stale `-- based-on:` hash, but a
+ * correct file whose whole content is superseded. `migrations/cvx_list_scoped_audience.sql`
+ * carried the pre-`chat.conversation_lane` `public.cvx_audience`; re-running it would have
+ * silently reverted the live classification rule with every check green.
+ *
+ * A reason is REQUIRED (there is no bare form) and it names what superseded the file, so
+ * the refusal can hand the next lane the file that is actually current.
+ */
+const RETIRED_MARKER = /^\s*--\s*retired\s*:\s*(.+?)\s*$/i;
 const SHA256_RE = /^[0-9a-f]{64}$/;
 const PG_INTERVAL_RE = /^\d+(?:\.\d+)?\s*(?:us|ms|s|min|h|d|)$/i;
 
 function skipReason(sql: string): string | null {
   for (const line of sql.split("\n", 25)) {
     const m = line.match(SKIP_MARKER);
+    if (m) return (m[1] ?? "").trim();
+  }
+  return null;
+}
+
+/** The `-- retired:` reason, or null. Same 25-line header window as `-- migrate: skip`. */
+function retiredReason(sql: string): string | null {
+  for (const line of sql.split("\n", 25)) {
+    const m = line.match(RETIRED_MARKER);
     if (m) return (m[1] ?? "").trim();
   }
   return null;
@@ -738,6 +772,27 @@ async function applyFile(path: string, opts: ApplyOpts): Promise<number> {
 
   if (sql.trim().length === 0) {
     console.error(`${TAG.fail}${filename} is empty — nothing to apply.`);
+    return 1;
+  }
+
+  // 🚨 `-- retired:` — refused at EVERY target, on EVERY path, before anything else this
+  // runner does with the bytes. Not softened by --dry-run, not softened by --reapply, and
+  // not excused by a confirmed `-- chair-step:` (this is read before the header checks run,
+  // so the chair step is never even offered). A retired file has exactly one remedy and it
+  // is a NEW migration.
+  const retired = retiredReason(sql);
+  if (retired !== null) {
+    console.error(
+      `${TAG.fail}${filename} carries \`-- retired: ${retired}\`\n` +
+        `  Its bytes are frozen history that the live database has since moved past, so\n` +
+        `  executing them again would REVERT what replaced them — silently, with every check\n` +
+        `  green, because an already-ledgered file is never re-judged.\n` +
+        `  Refused at every target, on every path: --reapply does not soften it, --dry-run does\n` +
+        `  not soften it, and a confirmed --chair-step never reaches it.\n` +
+        `  If those changes genuinely must run again, WRITE A NEW MIGRATION — a new file, judged\n` +
+        `  and ledgered on its own bytes. Deleting this marker to re-run the old bytes is the\n` +
+        `  exact defect it exists to stop.`,
+    );
     return 1;
   }
 
@@ -1258,6 +1313,8 @@ const SELFTEST_FN_FILE = "zz_db_apply_selftest_dd220_fn.sql";
 const SELFTEST_REPLACE_FILE = "zz_db_apply_selftest_dd220_replace.sql";
 /** V-84 residue: the same rule applied to DDL built at runtime. */
 const SELFTEST_DYNAMIC_FILE = "zz_db_apply_selftest_dd220_dynamic.sql";
+/** `-- retired:` arm: a file the live database has moved past, proven unrunnable. */
+const SELFTEST_RETIRED_FILE = "zz_db_apply_selftest_retired.sql";
 
 async function selfTest(statementTimeout: string): Promise<number> {
   const env = loadDbEnv();
@@ -1272,6 +1329,7 @@ async function selfTest(statementTimeout: string): Promise<number> {
   const fnPath = resolve(MIGRATIONS_DIR, SELFTEST_FN_FILE);
   const replacePath = resolve(MIGRATIONS_DIR, SELFTEST_REPLACE_FILE);
   const dynamicPath = resolve(MIGRATIONS_DIR, SELFTEST_DYNAMIC_FILE);
+  const retiredPath = resolve(MIGRATIONS_DIR, SELFTEST_RETIRED_FILE);
   const body =
     `create schema if not exists ${SELFTEST_SCHEMA};\n` +
     // Deliberately inside the file executed through applyFile, after its
@@ -1465,13 +1523,84 @@ async function selfTest(statementTimeout: string): Promise<number> {
           `and a DO-block/EXECUTE replace is judged the same — refused bare, refused on a computed ` +
           `name, applied when declared (V-84 residue)`,
       );
+
+    // ── `-- retired:`: frozen history that must never execute again ──────────
+    // The door this closes is the one --reapply deliberately leaves open: an
+    // already-ledgered file is never re-judged, so its OLD bytes still run. Five
+    // proofs, in the order that matters — the refusal must hold on the paths an
+    // agent would actually reach for:
+    //   1. plain apply of a marked file           → refused, NOTHING ledgered
+    //   2. the same file with --reapply           → refused (the flag is not a key)
+    //   3. the same file with a CONFIRMED chair step → refused (never even offered)
+    //   4. the SAME BYTES with the marker removed → applies (so the refusal is the
+    //      marker, not the file: this arm can go green, which is what makes it a test)
+    //   5. the marker restored on the now-LEDGERED file, with --reapply → refused
+    //      (the live shape: `migrations/cvx_list_scoped_audience.sql`)
+    console.log(
+      `${C.bold}self-test retired${C.reset} ${C.dim}(frozen history cannot be re-executed)${C.reset}`,
+    );
+    const retiredBody =
+      `create table if not exists ${SELFTEST_SCHEMA}.retired_probe (id int primary key);\n`;
+    const marker = `-- retired: superseded by ${SELFTEST_FILE} (self-test)\n`;
+    const retiredLedgerRows = async () =>
+      (
+        await client.query<{ n: number }>(
+          `select count(*)::int as n from public._schema_migrations
+             where source = ${lit(SOURCE)} and filename = ${lit(SELFTEST_RETIRED_FILE)}`,
+        )
+      ).rows[0]!.n;
+
+    writeFileSync(retiredPath, marker + retiredBody, "utf8");
+    const retiredPlain = await applyFile(retiredPath, opts);
+    if (retiredPlain !== 1) fail(`a \`-- retired:\` file exited ${retiredPlain}, expected 1`);
+    if ((await retiredLedgerRows()) !== 0) fail(`a \`-- retired:\` file wrote a ledger row`);
+
+    const retiredReapply = await applyFile(retiredPath, { ...opts, reapply: true });
+    if (retiredReapply !== 1) fail(`--reapply on a retired file exited ${retiredReapply}, expected 1`);
+
+    writeFileSync(
+      retiredPath,
+      `${marker}-- chair-step: prove a confirmed chair step does not excuse a retired file\n${retiredBody}`,
+      "utf8",
+    );
+    const retiredChair = await applyFile(retiredPath, {
+      ...opts,
+      confirmedChairSteps: [SELFTEST_RETIRED_FILE],
+    });
+    if (retiredChair !== 1)
+      fail(`a CONFIRMED chair step on a retired file exited ${retiredChair}, expected 1`);
+    if ((await retiredLedgerRows()) !== 0)
+      fail(`a retired file reached the ledger through --reapply or a chair step`);
+
+    // GREEN: the identical bytes WITHOUT the marker. If this ever fails, the arm is
+    // refusing something else and proves nothing about the marker.
+    writeFileSync(retiredPath, retiredBody, "utf8");
+    const retiredUnmarked = await applyFile(retiredPath, opts);
+    if (retiredUnmarked !== 0)
+      fail(`the same bytes with NO retired marker exited ${retiredUnmarked}, expected 0`);
+    if ((await retiredLedgerRows()) !== 1)
+      fail(`the unmarked file did not land exactly one ledger row`);
+
+    // The live shape: a file that already RAN, marked afterwards, re-run on purpose.
+    writeFileSync(retiredPath, marker + retiredBody, "utf8");
+    const retiredLedgered = await applyFile(retiredPath, { ...opts, reapply: true });
+    if (retiredLedgered !== 1)
+      fail(`--reapply of a LEDGERED retired file exited ${retiredLedgered}, expected 1`);
+
+    if (failures === 0)
+      console.log(
+        `${TAG.ok}retired proven: a \`-- retired:\` file is refused unledgered, refused under ` +
+          `--reapply, refused with a CONFIRMED chair step, and refused again once ledgered — while ` +
+          `the SAME bytes without the marker apply normally`,
+      );
   } finally {
     await client
       .query(
         `drop schema if exists ${SELFTEST_SCHEMA} cascade;
          delete from public._schema_migrations where source = ${lit(SOURCE)}
             and filename in (${lit(SELFTEST_FILE)}, ${lit(SELFTEST_FN_FILE)},
-                             ${lit(SELFTEST_REPLACE_FILE)}, ${lit(SELFTEST_DYNAMIC_FILE)});`,
+                             ${lit(SELFTEST_REPLACE_FILE)}, ${lit(SELFTEST_DYNAMIC_FILE)},
+                             ${lit(SELFTEST_RETIRED_FILE)});`,
       )
       .catch((err: unknown) =>
         console.error(
@@ -1480,7 +1609,8 @@ async function selfTest(statementTimeout: string): Promise<number> {
         ),
       );
     await client.end().catch(() => undefined);
-    for (const p of [path, fnPath, replacePath, dynamicPath]) if (existsSync(p)) unlinkSync(p);
+    for (const p of [path, fnPath, replacePath, dynamicPath, retiredPath])
+      if (existsSync(p)) unlinkSync(p);
   }
 
   if (failures) {

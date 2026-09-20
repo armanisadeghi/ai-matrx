@@ -1,3 +1,4 @@
+-- retired: its public.cvx_list_scoped body was replaced since; the live one comes from cvx_audience_derives_from_the_lane_classifier.sql (public.cvx_deep_hits, which this file introduced, is still live and unchanged)
 -- cvx_deep_hits_is_a_definer_probe — 2026-09-18
 -- based-on: public.cvx_list_scoped(text, uuid, text, boolean, text, text, boolean, text, jsonb, integer, integer) 9fcb1245b9d9afa85a90d99e3cdea74b1bd5951541fbc2fa6af066e6bed87c28
 --
