@@ -28,6 +28,10 @@
  *
  * UNMEASURED IS NOT PASSED. No credentials or an unreachable database is a FAILURE.
  *
+ *  11. A client-executable function in schema `custom` that is SECURITY INVOKER. The
+ *      grant on it is worth nothing (census 7 keeps `authenticated` holding no table
+ *      privilege here) and the call dies on the body's own first line. That was T9.
+ *
  *   pnpm check:store-doors-decide
  *   pnpm check:store-doors-decide:self-test   # proves the censuses can still go RED
  */
@@ -178,6 +182,40 @@ const DECLARED_LADDER_CENSUS = (rungs: string[]) => `
      ${rungs.length ? `and ${NO_COMMENTS} !~* '(${rungs.join("|")})'` : ""}
    order by 1`;
 
+/**
+ * THE ELEVENTH CENSUS - A GRANT ON A SECURITY INVOKER BODY IS A GRANT WORTH NOTHING
+ * (2026-09-20, lane STORE-T).
+ *
+ * `custom.migrate_retype` was declared client-callable, held EXECUTE for `authenticated`,
+ * asked the one ladder in its first three lines - and was SECURITY INVOKER. So it ran with
+ * the CALLER'S privileges, and `authenticated` holds EXECUTE on none of the ladder, so it
+ * died on its own first line: `permission denied for function assert_client_may_reach`, to
+ * the OWNER of the record. That is the whole of acceptance test T9, and every census above
+ * was green on it: the grant was there, the door row was there, the ladder was in the body.
+ *
+ * Census 7 keeps the boundary that makes this checkable - `authenticated` holds no TABLE
+ * privilege in schema `custom` - so an INVOKER function here can reach nothing of the store
+ * at all. Which means: if its body names the store's own tables or the ladder, the grant on
+ * it is either dead or about to be. Either way it is a lie told to a caller.
+ *
+ * TRIGGER functions are exempt and always were: they have no direct call surface, `CREATE
+ * FUNCTION` gives them PUBLIC EXECUTE by default, and both DDL guards exempt them for the
+ * same reason.
+ */
+const INVOKER_DOOR_CENSUS = (exempt: boolean) => `
+  select p.proname::text as function_name, pg_get_function_identity_arguments(p.oid) as identity_args,
+         'a client may execute it and it is SECURITY INVOKER, so it runs with the CALLER''s '
+         'privileges - and authenticated holds no table privilege in schema custom and no '
+         'EXECUTE on the ladder, so the grant is worth nothing and the call dies on the '
+         'body''s own first line'::text as why
+    from pg_proc p
+   where p.pronamespace = 'custom'::regnamespace
+     and not p.prosecdef
+     ${exempt ? `and p.prorettype not in ('pg_catalog.trigger'::regtype, 'pg_catalog.event_trigger'::regtype)` : ""}
+     and has_function_privilege('authenticated', p.oid, 'EXECUTE')
+     and ${NO_COMMENTS} ~* '(custom\\.record|custom\\.assert_|assert_client_may|has_visibility)'
+   order by 1`;
+
 const DECLARED_SWITCH_CENSUS = (accept: boolean) => `
   select p.proname::text as function_name, pg_get_function_identity_arguments(p.oid) as identity_args,
          'declared client-callable and writes a record, but never asks whether the store is open '
@@ -303,7 +341,7 @@ const IDENTITY_RENDERING_CENSUS = `
    order by 1`;
 
 /**
- * CENSUS 11 — THE THREE ANSWERS TO ONE QUESTION, IN EVERY `shared_only` ORGANIZATION
+ * CENSUS 12 — THE THREE ANSWERS TO ONE QUESTION, IN EVERY `shared_only` ORGANIZATION
  * (2026-09-19, lane SHARED-ONLY).
  *
  * Censuses 1-9 read the CATALOGUE and census 10 asks two seats about one record. All eleven
@@ -678,7 +716,23 @@ async function main(): Promise<void> {
           "write and the read go through. It can go red.",
       );
 
-      // CENSUS 11, THE RED HALF. The two states this really was in, each of which must produce
+      // CENSUS 11, THE RED HALF. With trigger functions no longer exempt, every SECURITY
+      // INVOKER trigger body in this schema that touches the store must be named. An empty
+      // answer would mean the query is not reading the catalogue it claims to.
+      const redInvoker = (await client.query<Row>(INVOKER_DOOR_CENSUS(false))).rows;
+      if (redInvoker.length === 0) {
+        fail(
+          "SELF-TEST FAILED - with trigger functions no longer exempt, the SECURITY INVOKER " +
+            "census named nothing at all. Schema `custom` is full of INVOKER trigger bodies " +
+            "that touch custom.record, so an empty answer means it is not reading them.",
+        );
+      }
+      console.log(
+        `[ OK ] self-test - without the trigger exemption the SECURITY INVOKER census names ` +
+          `${redInvoker.length} function(s). It can go red.`,
+      );
+
+      // CENSUS 12, THE RED HALF. The two states this really was in, each of which must produce
       // the kind of disagreement it caused: the RLS mirror before it learned
       // `custom/member_default_visibility`, and the screens the sixth pass photographed.
       for (const [pretend, kind, what] of [
@@ -720,8 +774,9 @@ async function main(): Promise<void> {
     const tablePrivileges = (await client.query<Row>(TABLE_PRIVILEGE_CENSUS)).rows;
     const closedSchemas = (await client.query<Row>(CLOSED_SCHEMA_CENSUS(true))).rows;
     const rendering = (await client.query<Row>(IDENTITY_RENDERING_CENSUS)).rows;
+    const invokerDoors = (await client.query<Row>(INVOKER_DOOR_CENSUS(true))).rows;
 
-    // CENSUS 11 — the three answers, live, in every organization that has said `shared_only`.
+    // CENSUS 12 — the three answers, live, in every organization that has said `shared_only`.
     // `mirror-admits-less` is a failure only when census 7 is non-empty, so the two are read
     // together rather than one of them excusing the other in prose.
     const sharedOnlyAll = (await client.query<Row>(SHARED_ONLY_CENSUS(null))).rows;
@@ -773,6 +828,10 @@ async function main(): Promise<void> {
         true,
       ),
       report("door rows whose stored signature is not what the catalog renders", rendering, true),
+      report(
+        "client-executable functions in schema custom that are SECURITY INVOKER",
+        invokerDoors,
+      ),
       report(
         "doors that took a write from somebody shared at viewer, or showed a revoked person the record",
         twoSeat,

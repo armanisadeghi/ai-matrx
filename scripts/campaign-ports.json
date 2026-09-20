@@ -57,7 +57,7 @@
     "AGENT-UI": 3018,
     "NAV-FIX": 3019,
     "AGENT-BLANK": 3020,
-    "SHARED-ONLY": 3021
+    "UI-HONEST": 3021
   },
   "noDevServer": {
     "W6-DOCS": "Proves its contract through the document pipeline, not a browser.",
