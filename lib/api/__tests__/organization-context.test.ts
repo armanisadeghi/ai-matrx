@@ -14,6 +14,10 @@ import userAuthReducer, {
 } from "@/lib/redux/slices/userAuthSlice";
 import userProfileReducer from "@/lib/redux/slices/userProfileSlice";
 import type { RootState } from "@/lib/redux/store";
+import {
+  clearCapturedErrors,
+  getSnapshot,
+} from "@/lib/diagnostics/errorCaptureStore";
 
 const ORGANIZATION_ID = "5dc930e9-bd65-44a1-8369-af773f6e1a5b";
 const OTHER_ORGANIZATION_ID = "39c38960-d30c-4840-b0c1-c9960de95582";
@@ -49,6 +53,7 @@ describe("callApi organization context", () => {
 
   afterEach(() => {
     global.fetch = originalFetch;
+    clearCapturedErrors();
   });
 
   it("refuses to resolve a request without an explicitly selected or supplied organization", () => {
@@ -304,4 +309,34 @@ describe("callApi organization context", () => {
       user_input: "hello",
     });
   });
+
+  it.each([false, true])(
+    "correlates a failed %s request with its response request id",
+    async (stream) => {
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        headers: new Headers({ "X-Request-ID": "fork-request-1" }),
+        json: async () => ({ message: "Failed to create forked conversation." }),
+      } as Response);
+    const state = requestState(ORGANIZATION_ID, null);
+
+    const result = await callApi({
+      path: "/ai/agents/{agent_id}",
+      method: "POST",
+      pathParams: { agent_id: "agent-test" },
+      body: { user_input: "hello" },
+      stream,
+      _testOverrides: { forceBaseUrl: "https://server.test" },
+    })(jest.fn(), () => state, undefined);
+
+    expect(result.error).toMatchObject({ status: 500 });
+    expect(getSnapshot()).toEqual([
+      expect.objectContaining({
+        relation: "POST /ai/agents/{agent_id}",
+        requestId: "fork-request-1",
+      }),
+    ]);
+    },
+  );
 });
