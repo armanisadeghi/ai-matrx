@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * ConversationLaneToggles — the five independent on/off lane gates at the top
- * of every filterable conversation-history surface, in Arman's order:
+ * ConversationLaneToggles — the five independent on/off lane gates inside
+ * the canonical conversation filter popover, in Arman's order:
  * Chat | Matrx | Auto | Plugins | Subagents.
  *
  * The choice is the VIEWER's (one persisted preference,
@@ -65,10 +65,8 @@ export const ConversationLaneToggles: React.FC<
       value={lanes}
       onValueChange={(next) => setLanes(normalizeLanes(next))}
       aria-label="Conversation lanes"
-      // A container, so the labels size to the SIDEBAR, not the viewport:
-      // all five names fit one row down to a ~180px rail.
       className={cn(
-        "@container/lanes flex w-full items-stretch rounded-md bg-muted/60 p-px",
+        "grid w-full grid-cols-5 overflow-hidden rounded-sm border border-border bg-background",
         className,
       )}
     >
@@ -87,9 +85,8 @@ export const ConversationLaneToggles: React.FC<
                 : `${meta.label} — ${meta.description}`
             }
             className={cn(
-              "h-6 min-w-0 flex-auto rounded-[5px] px-0.5 text-[9px] font-medium whitespace-nowrap text-muted-foreground",
-              "@min-[215px]/lanes:text-[10px] @min-[260px]/lanes:px-1 @min-[260px]/lanes:text-[11px]",
-              "hover:text-foreground data-[state=on]:bg-background data-[state=on]:text-foreground data-[state=on]:shadow-sm",
+              "h-7 min-w-0 rounded-none border-0 border-r border-border px-1 text-[10px] font-medium whitespace-nowrap text-muted-foreground last:border-r-0",
+              "hover:bg-accent hover:text-foreground data-[state=on]:bg-primary/10 data-[state=on]:text-primary data-[state=on]:shadow-none",
             )}
           >
             {meta.label}
