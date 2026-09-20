@@ -871,9 +871,6 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   // when the knowledge lives in the Expert's head — the Scout interview IS the
   // next step.
   const [interviewOpen, setInterviewOpen] = useState(false);
-  useDeepLinkArrival(searchParams.get("interview") === "1", true, () =>
-    setInterviewOpen(true),
-  );
   // Which interview the panel opens INTO — set by the Conversations section
   // (Continue resumes that conversation; New skips the chooser into a fresh
   // one). Cleared whenever the panel closes, so a plain "Interview me" always
@@ -886,14 +883,22 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   // streaming conversation with this Rulebook attached. ?conduct=1 deep-links
   // straight into it.
   const [conductorOpen, setConductorOpen] = useState(false);
-  useDeepLinkArrival(searchParams.get("conduct") === "1", true, () =>
-    setConductorOpen(true),
+  // The Conductor is handed `rulebook.id`, so the arrival waits for it — the class fix beside the
+  // interview's (cold walk 13): a `true` here spends the arrival on mount.
+  useDeepLinkArrival(
+    searchParams.get("conduct") === "1",
+    Boolean(rulebook?.id),
+    () => setConductorOpen(true),
   );
   // THE MEETING SCAVENGER lands here with ?meeting=1 — its dialog IS the next
   // step (`intake_query = {"meeting":"1"}` on the registry row).
   const [meetingOpen, setMeetingOpen] = useState(false);
-  useDeepLinkArrival(searchParams.get("meeting") === "1", true, () =>
-    setMeetingOpen(true),
+  // The Meeting Scavenger dialog reads the Rulebook, so the arrival waits for it — the class fix beside the
+  // interview's (cold walk 13): a `true` here spends the arrival on mount.
+  useDeepLinkArrival(
+    searchParams.get("meeting") === "1",
+    Boolean(rulebook?.id),
+    () => setMeetingOpen(true),
   );
   // 🚨 THE TRIAD GAME'S DEEP LINK. The guided start (`/masterwork/new?approach=
   // triad_game`) creates the Rulebook and then appends the registry row's own
@@ -964,15 +969,23 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
   // The body_of_work Approach ("Everything you've published") lands here with
   // ?body_of_work=1 — the corpus dialog IS the next step.
   const [corpusOpen, setCorpusOpen] = useState(false);
-  useDeepLinkArrival(searchParams.get("body_of_work") === "1", true, () =>
-    setCorpusOpen(true),
+  // The corpus dialog reads the Rulebook, so the arrival waits for it — the class fix beside the
+  // interview's (cold walk 13): a `true` here spends the arrival on mount.
+  useDeepLinkArrival(
+    searchParams.get("body_of_work") === "1",
+    Boolean(rulebook?.id),
+    () => setCorpusOpen(true),
   );
   // The chat-import Approach ("Import your AI chats") lands here with
   // ?chatImport=1 — the import dialog IS the next step. Full page:
   // /masterwork/[id]/import.
   const [chatImportOpen, setChatImportOpen] = useState(false);
-  useDeepLinkArrival(searchParams.get("chatImport") === "1", true, () =>
-    setChatImportOpen(true),
+  // The chat-import dialog reads the Rulebook, so the arrival waits for it — the class fix beside the
+  // interview's (cold walk 13): a `true` here spends the arrival on mount.
+  useDeepLinkArrival(
+    searchParams.get("chatImport") === "1",
+    Boolean(rulebook?.id),
+    () => setChatImportOpen(true),
   );
   // SHADOW-THE-INBOX ("Shadow your inbox") lands here with ?shadowInbox=1 —
   // the inbox dialog IS the next step. The registry row carries the same
@@ -1522,6 +1535,29 @@ function RulebookDetailPageInstance({ rulebookId }: { rulebookId: string }) {
 
   const canEdit =
     rulebook !== null && userId !== null && rulebook.created_by === userId;
+
+  // 🚨 AN ARRIVAL IS HELD UNTIL THE SURFACE IT OPENS CAN EXIST (cold walk 13,
+  // 2026-09-20, Friction). "Start" on New Masterwork navigates here with
+  // `?interview=1` and the walker was "left on the Rulebook home with no panel
+  // for 25 seconds"; a manual reload of the identical URL opened it.
+  //
+  // This hook's `ready` argument exists precisely for that — "may we act yet",
+  // with the arrival HELD rather than dropped while it is false — and eleven
+  // of the fifteen deep links on this page already pass the real answer
+  // (`Boolean(rulebook?.id)`). Five passed a bare `true`, and the interview
+  // was the worst of them: its panel is additionally gated on `canEdit`, which
+  // cannot be true until the Rulebook row has loaded AND the viewer has been
+  // resolved. So the arrival fired on MOUNT, into a page whose door did not
+  // exist yet — and an arrival latches itself handled, so nothing re-ran it.
+  //
+  // `canEdit` is the honest readiness for THIS link: it is exactly the
+  // condition under which `<ScoutInterviewPanel>` is rendered below. A reload
+  // and a client-side arrival now fire at the same moment, which is the whole
+  // point. A viewer who genuinely cannot edit never had a panel to open, and
+  // the page is unchanged for them.
+  useDeepLinkArrival(searchParams.get("interview") === "1", canEdit, () =>
+    setInterviewOpen(true),
+  );
 
   // THE RULEBOOK SAYS WHICH WORKSPACE THIS IS (wall W3, 2026-09-10) — the
   // same adoption the lane routes make, because this page is the other door
