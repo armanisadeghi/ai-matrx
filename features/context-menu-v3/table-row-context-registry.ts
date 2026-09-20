@@ -1,5 +1,9 @@
 import type { ContextMenuExtraSection, ResolvedContextMenuContext } from "./types";
 import type { MatrxDataTableRecordControls } from "@ai-matrx/design-system/data-table/types";
+import type {
+  MatrxTableMenuPayload,
+  MatrxTableMenuTarget,
+} from "@ai-matrx/design-system/data-table/menu-targets";
 
 export interface TableRowMenuDescriptor {
   context: ResolvedContextMenuContext;
@@ -7,7 +11,7 @@ export interface TableRowMenuDescriptor {
 }
 
 const descriptors = new WeakMap<object, TableRowMenuDescriptor>();
-const resolvers = new Map<string, (rowId: string) => unknown>();
+const resolvers = new Map<string, (target: MatrxTableMenuTarget) => unknown>();
 
 export function createTableRowMenuDescriptor(descriptor: TableRowMenuDescriptor): object {
   const token = {};
@@ -15,20 +19,59 @@ export function createTableRowMenuDescriptor(descriptor: TableRowMenuDescriptor)
   return token;
 }
 
-/** The host's generic row model: complete current row data plus table-owned edit commands. */
+/** Exactly the row commands the default menu renders. Nothing else is read. */
+export type TableRowEditCommands = Pick<
+  MatrxDataTableRecordControls,
+  "beginEdit" | "saveEdits" | "cancelEdits"
+>;
+
+function isCommand(value: unknown): value is () => void {
+  return typeof value === "function";
+}
+
+/**
+ * The table hands its host the row's controls as `unknown` — it never
+ * interprets what the host builds from them — so they are READ here, one
+ * command at a time. A command the table did not send, or sent as something
+ * that cannot be called, is simply not offered rather than rendered dead.
+ */
+export function tableRowEditCommands(controls: unknown): TableRowEditCommands {
+  if (typeof controls !== "object" || controls === null) return {};
+  const read = (key: string): (() => void) | undefined => {
+    const value: unknown = Reflect.get(controls, key);
+    return isCommand(value) ? value : undefined;
+  };
+  return {
+    beginEdit: read("beginEdit"),
+    saveEdits: read("saveEdits"),
+    cancelEdits: read("cancelEdits"),
+  };
+}
+
+/**
+ * The host's generic menu model: complete current row data plus the
+ * table-owned edit commands.
+ *
+ * The table asks this for whichever of its five right-click LEVELS was aimed
+ * at. Only the row has a generic menu here, so every other level answers
+ * `null` and the table leaves that level to the surface that owns it.
+ */
 export function createDefaultTableRowMenuDescriptor(
-  row: unknown,
-  controls: MatrxDataTableRecordControls,
-): object {
+  payload: MatrxTableMenuPayload,
+): object | null {
+  if (payload.level !== "row") return null;
   return createTableRowMenuDescriptor(
-    buildDefaultTableRowMenuDescriptor(row, controls),
+    buildDefaultTableRowMenuDescriptor(
+      payload.row,
+      tableRowEditCommands(payload.controls),
+    ),
   );
 }
 
 /** Reusable base for a domain menu that keeps the shared row edit controls. */
 export function buildDefaultTableRowMenuDescriptor(
   row: unknown,
-  controls: MatrxDataTableRecordControls,
+  controls: TableRowEditCommands,
 ): TableRowMenuDescriptor {
   const items = [
     ...(controls.beginEdit
@@ -53,7 +96,15 @@ export function buildDefaultTableRowMenuDescriptor(
   };
 }
 
-export function registerTableRowContextResolver(tableId: string, resolve: (rowId: string) => unknown) {
+/**
+ * The canonical table registers ONE resolver per mounted instance and asks it
+ * which of its right-click LEVELS was aimed at (`MatrxTableMenuTarget`), not
+ * merely which row — so the resolver takes the target the package defines.
+ */
+export function registerTableRowContextResolver(
+  tableId: string,
+  resolve: (target: MatrxTableMenuTarget) => unknown,
+) {
   resolvers.set(tableId, resolve);
   return () => { if (resolvers.get(tableId) === resolve) resolvers.delete(tableId); };
 }
@@ -63,6 +114,9 @@ export function resolveTableRowMenuDescriptor(target: HTMLElement | null): Table
   const tableId = row?.closest<HTMLElement>("[data-matrx-table-id]")?.dataset.matrxTableId;
   const rowId = row?.dataset.rowId;
   if (!tableId || !rowId) return null;
-  const token = resolvers.get(tableId)?.(rowId);
+  // This menu acts on the ROW it found in the DOM, so it asks for that level
+  // by name. Handing the resolver a bare id instead leaves `level` undefined
+  // and the table answers nothing at all.
+  const token = resolvers.get(tableId)?.({ tableId, level: "row", rowId });
   return token && typeof token === "object" ? descriptors.get(token) ?? null : null;
 }

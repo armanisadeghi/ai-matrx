@@ -571,18 +571,19 @@ async function displayNameFor(userId: string): Promise<string> {
 /**
  * ONE in-flight start per profile, process-wide.
  *
- * The fleet runs a single browser worker (`max_live_browser_fleet_runs = 1`),
- * so two concurrent starts are not "one wins, one retries" — the loser gets a
- * 503 `admission_capacity_exceeded` and the panel renders that failure even
- * though the winner successfully created a browser. The server's own
- * idempotency cannot save us either: it keys on `(profile_id, activation_key)`
- * and every call minted a fresh random key, so a duplicate start looked like a
- * DIFFERENT start competing for the last slot. Observed in production
- * 2026-08-23: two `POST /browser-manager/runs`, second one 503, dead panel.
+ * Every start is its own ECS task now (one browser machine per session, since
+ * 2026-09-17; the one-worker fleet this latch was written against is gone), so
+ * two concurrent starts of the SAME profile no longer fight for one slot —
+ * but they still are two durable activations: the server keys idempotency on
+ * `(profile_id, activation_key)` and every call mints a fresh key, so a double
+ * click is a second cold boot of the same profile that the server then has to
+ * refuse or attach to the first (`superseded_by_live_run`). The original
+ * outage this prevents (2026-08-23: two `POST /browser-manager/runs`, second
+ * one 503, dead panel) had a one-worker cause, but the duplicate-start shape
+ * is still real, and the fix is the same: share the promise.
  *
  * The key stays per-attempt (a stable one would collide with the activation
- * unique index and make restart-after-stop impossible); concurrency is solved
- * here instead, by sharing the promise.
+ * unique index and make restart-after-stop impossible).
  */
 const startRunInFlight = new Map<string, Promise<string>>();
 // Keep the initiating admitted organization and activation key together until

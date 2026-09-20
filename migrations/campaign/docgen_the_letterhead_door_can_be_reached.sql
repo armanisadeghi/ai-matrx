@@ -1,0 +1,27 @@
+-- chair-step: this GRANTs EXECUTE on ONE new function, custom.doc_letterhead(uuid), to `authenticated`, and nothing else. A GRANT is refused by the additive allow-list by name, so it comes through this route and a person reads exactly which function and why. No REVOKE, no DROP, no data movement, no existing grant changed. The door is already declared in platform.client_callable_door by docgen_a_template_is_the_tables_wording.sql, which runs before this file.
+-- lane: DOCGEN (document generation, PRODUCTS row 5 — the letterhead)
+--
+--   custom.doc_letterhead(uuid) → authenticated, EXECUTE
+--
+-- WHO MAY CALL IT is not decided by this grant. The function asks
+-- `custom.assert_client_may_reach` for the organization wall and then
+-- `custom.assert_store_door` for the custom/system_enabled guard, so a person outside the
+-- organization is refused by name before a row is read. A grant opens the door; the ladder
+-- inside decides who walks through it.
+--
+-- NOTHING BEHIND THE DOOR IS OPENED. `iam.organizations` keeps exactly the client
+-- privileges it has today. The whole point of the function is that a browser, and an agent
+-- writing a template, can read the letterhead that will be on a document without any
+-- direct read of that table.
+--
+-- MEASURED after the doors file applied (2026-09-20 14:56Z): `custom.doc_letterhead` came
+-- out `has_function_privilege('authenticated', …, 'EXECUTE') = false`. It is a SECURITY
+-- DEFINER function created in a schema declared CLOSED, so the DDL guard took the grant
+-- back inside the same transaction and `platform.reopen_declared_doors` — which sweeps
+-- after a later statement — could not reach it in time. That is the same asymmetry lanes
+-- FORMS and DOORS-TWO both wrote down, and it is exactly why the grant is issued by name
+-- here rather than hoped for.
+--
+-- Idempotent: an already-held GRANT is a no-op.
+
+grant execute on function custom.doc_letterhead(uuid) to authenticated;

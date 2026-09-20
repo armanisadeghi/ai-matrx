@@ -30,9 +30,28 @@ The failure classes are:
 `scripts/agent-dev-server.sh` owns this lifecycle. Its state and start lock live
 in the user's machine-wide temporary directory, not inside a checkout, so two
 worktrees cannot both acquire the slot. It is provider-neutral:
-Claude and Codex start the same process, then open `http://localhost:3001` in
-their own in-app browser. The state records the exact owning checkout; another
-checkout must wait for an explicit release and then start its own build.
+Claude and Codex start the same process. `preview:start` prints the owning
+session's exact `http://<session>.localhost:3001` URL; bare `localhost` is not
+the supported login URL because it shares cookies across sessions. The state
+records the exact owning checkout; another checkout must wait for an explicit
+release and then start its own build.
+
+**Browser access and checkout ownership are separate gates.** A working server
+can answer `curl` while Codex's in-app or extension browser rejects local HTTP
+with `ERR_BLOCKED_BY_CLIENT` before navigation. That browser error does not mean
+the server is unavailable, and a successful response does not prove the current
+checkout: compare the lease's `ROOT` with the checkout under test. Never certify
+a change from another checkout's preview. If no approved isolated browser can
+open the printed URL, report browser verification as blocked rather than using
+the user's existing tabs or treating an HTTP response as visual proof.
+
+An alive PID is not sufficient proof that a lease is usable. If the owning
+checkout has disappeared, its dependencies are missing, or the requested route
+returns a build/runtime 500, inspect the recorded log. That is a stale preview,
+not an active verification lease. Stop it through its owning checkout when that
+checkout still exists; if the checkout was removed, terminate the exact PID
+recorded in the machine-wide lease, confirm it exited, then let
+`preview:status` clear the stale metadata. Do not kill by port or process name.
 
 The launcher continuously measures the whole preview process group. Its **192
 GB RSS watchdog is a runaway guard, not a budget**: the measured normal peak is
@@ -90,6 +109,12 @@ Codex skips a new or changed non-managed hook until a human reviews its hash.
 Open `/hooks` once after installation and trust the Matrx dev-server guard.
 
 ## Change Log
+
+- 2026-09-20: Corrected the false claim that Codex can always open bare
+  `localhost:3001` in its in-app browser. Browser transport can block local
+  HTTP independently of server health; documented the per-session hostname,
+  exact-checkout proof boundary, and safe recovery for a live PID whose owning
+  checkout has been removed.
 
 - 2026-09-18 (F-101, V-23 NEW-1): `ensure_worktree_node_modules` in
   `scripts/agent-dev-server.sh` handled only the symlink case

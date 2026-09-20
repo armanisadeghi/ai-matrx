@@ -29,7 +29,7 @@ export function tableFilterValues(
     filters[column] =
       filter.kind === "number"
         ? { min: filter.min ?? null, max: filter.max ?? null }
-        : filter.value;
+        : "value" in filter ? filter.value : filter;
   }
   return Object.keys(filters).length > 0 ? filters : undefined;
 }

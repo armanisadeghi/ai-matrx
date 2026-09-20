@@ -22,17 +22,21 @@ import {
   type ShellNavChild,
   type ShellNavItem,
 } from "../../constants/nav-data";
-import { useShellNavGates } from "../../navigation/useShellNavGates";
 import { useNavActions } from "../../navigation/navActions";
 import { useNavPanelActions } from "../../navigation/navPanelActions";
 import {
   findActiveNavChild,
-  isNavGroupActive,
+  isExclusiveNavGroupActive,
 } from "../../utils/is-nav-group-active";
 import { cn } from "@/lib/utils";
 
 interface NavFlyoutGroupProps {
   item: ShellNavItem;
+  /**
+   * Sibling groups used to pick the single most-specific owner. Required so a
+   * placeholder that borrows another module's href cannot light up beside it.
+   */
+  candidates: readonly ShellNavItem[];
   /**
    * Launcher groups (e.g. Favorites) aren't a route — their children duplicate
    * other nav items that already light up. Set this so the group never shows
@@ -46,6 +50,7 @@ const CLOSE_DELAY = 240;
 
 export default function NavFlyoutGroup({
   item,
+  candidates,
   suppressActive = false,
 }: NavFlyoutGroupProps) {
   const children = item.children ?? [];
@@ -63,17 +68,15 @@ export default function NavFlyoutGroup({
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showPanel = open || pinned;
-  // Which gated destinations exist for this person right now.
-  const gates = useShellNavGates();
 
   // Active child = most specific matching href among siblings (so e.g. on
   // /transcripts/studio only "Studio" lights up, not "All Transcripts").
   const activeHref = findActiveNavChild(pathname, item)?.href;
-  const isGroupActive = !suppressActive && isNavGroupActive(pathname, item);
+  const isGroupActive =
+    !suppressActive && isExclusiveNavGroupActive(pathname, item, candidates);
 
   // Destinations up top (grouped), create actions collected at the bottom.
-  // A gated destination (see `useShellNavGates`) is dropped before grouping.
-  const { sections, panels, actions } = partitionNavChildren(children, gates);
+  const { sections, panels, actions } = partitionNavChildren(children);
 
   // One renderer for both destinations and actions so they're pixel-identical.
   // Action entries trigger an overlay/window in place instead of navigating —

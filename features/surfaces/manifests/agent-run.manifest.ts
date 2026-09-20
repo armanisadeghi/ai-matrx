@@ -245,8 +245,8 @@ const surfaceSpecific: SurfaceValue[] = [
     name: "agent_json",
     label: "Agent as JSON",
     description:
-      "Full agent definition (as currently loaded) serialized as JSON. The canonical input for 'judge this agent' actions — gives the judge the entire agent contract in one value.",
-    valueType: "string",
+      "Full agent definition (as currently loaded) as a native structured object. The canonical input for 'judge this agent' actions — gives the judge the entire agent contract in one value.",
+    valueType: "object",
     alwaysAvailable: false,
     typicalCharCount: 8000,
     autoContext: false,
@@ -549,7 +549,7 @@ export function createAgentRunScope(values: {
   agent_model_id?: string;
   agent_tools?: string[];
   agent_variable_definitions?: unknown[];
-  agent_json?: string;
+  agent_json?: object;
   user_request?: string;
   user_input_draft?: string;
   variable_values?: Record<string, unknown>;

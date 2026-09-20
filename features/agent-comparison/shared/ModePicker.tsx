@@ -13,6 +13,7 @@
  */
 
 import Link from "next/link";
+import { RouteModeNav } from "@/features/shell/components/header/RouteModeNav";
 import { usePathname } from "next/navigation";
 import {
   Layers,
@@ -23,7 +24,6 @@ import {
   Cpu,
   Gauge,
   Boxes,
-  MessagesSquare,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -96,13 +96,6 @@ const MODES: ModeEntry[] = [
     icon: Workflow,
     hint: "Lock the agent; vary per-column variables and user message",
   },
-  {
-    id: "conversation",
-    label: "Conversation",
-    href: "/agents/battle/conversation",
-    icon: MessagesSquare,
-    hint: "Load one chat, fork it per column, then continue each fork independently",
-  },
 ];
 
 export function ModePicker() {
@@ -164,4 +157,19 @@ function matchActive(pathname: string | null, href: string): boolean {
   if (!pathname) return false;
   if (href === "/agents/battle") return pathname === "/agents/battle";
   return pathname === href || pathname.startsWith(href + "/");
+}
+
+/** Compact shell-header navigation; keeps the same mode catalog as sibling pages. */
+export function BattleModeNav() {
+  return (
+    <RouteModeNav
+      items={MODES.filter((mode) => !mode.comingSoon).map((mode) => ({
+        name: mode.label,
+        href: mode.href,
+        icon: mode.icon,
+        description: mode.hint,
+        exact: mode.id === "open",
+      }))}
+    />
+  );
 }

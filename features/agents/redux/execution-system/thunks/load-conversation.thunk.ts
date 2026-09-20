@@ -41,6 +41,7 @@ import { hydrateInbox } from "../inbox/inbox.thunks";
 import {
   initInstanceVariables,
   restoreVariableValues,
+  stampSubmittedFirstTurnValues,
 } from "../instance-variable-values/instance-variable-values.slice";
 import { parsePersistedHostValueNames } from "../instance-variable-values/instance-variable-values.persistence";
 import {
@@ -130,17 +131,15 @@ export interface LoadConversationArgs {
    */
   expectMaterialized?: boolean;
   /**
-   * Display fields the CALLER is certain of, applied in the same dispatch that
-   * stamps `metadata.display` — so there is no window in which the stored
-   * value is live and the caller's is not.
+   * Display state the CALLER knows better than the stored `metadata.display`
+   * does — applied on top of it in the SAME dispatch, so no render can see the
+   * stored value where the caller's correction belongs.
    *
-   * It exists for the `?panels=` restore (`url-sync/initUrlHydration.ts`): a
-   * link names the display mode itself, and a reopen must never auto-run —
-   * refreshing a page is not a decision to spend a paid run, and nothing asked
-   * the person. Correcting these AFTER the load would leave exactly that gap,
-   * because `AgentRunner`'s auto-run effect can commit on the render between.
+   * The reopen-from-a-URL path uses exactly two: the display mode the link
+   * named (more specific than whatever was stored) and `autoRun: false`,
+   * because reopening an address is never a decision to spend a paid run.
    */
-  displayOverrides?: Partial<InitInstanceUIStatePayload>;
+  displayOverrides?: Omit<InitInstanceUIStatePayload, "conversationId">;
 }
 
 interface ThunkApi {
@@ -400,11 +399,19 @@ export const loadConversation = createAsyncThunk<
         ? (conv.variables as Record<string, unknown>)
         : {};
     if (Object.keys(persistedVariables).length > 0) {
+      const persistedHostValueNames = parsePersistedHostValueNames(conv);
       dispatch(
         restoreVariableValues({
           conversationId,
           values: persistedVariables,
-          hostValueNames: parsePersistedHostValueNames(conv),
+          hostValueNames: persistedHostValueNames,
+        }),
+      );
+      dispatch(
+        stampSubmittedFirstTurnValues({
+          conversationId,
+          values: persistedVariables,
+          hostValueNames: persistedHostValueNames,
         }),
       );
     }

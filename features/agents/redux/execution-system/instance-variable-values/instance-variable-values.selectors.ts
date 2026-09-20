@@ -16,6 +16,7 @@ import type {
   VariableDefinition,
   VariableResourceContextConfig,
 } from "@/features/agents/types/agent-definition.types";
+import { resolveVariablesForRequest } from "./resolve-variables-for-request";
 
 // Stable references returned when the instance hasn't been initialized yet.
 const EMPTY_DEFINITIONS: VariableDefinition[] = [];
@@ -87,6 +88,22 @@ export const selectOwnVariableValues = (conversationId: string) =>
     },
   );
 
+/** Immutable first-turn values, excluding names the host supplied. */
+export const selectOwnSubmittedFirstTurnValues = (conversationId: string) =>
+  createSelector(
+    (state: RootState) =>
+      state.instanceVariableValues.byConversationId[conversationId],
+    (entry) => {
+      if (!entry?.submittedFirstTurnValues) return EMPTY_RECORD;
+      const hostNames = entry.submittedFirstTurnHostValueNames ?? [];
+      const own: Record<string, unknown> = {};
+      for (const [name, value] of Object.entries(entry.submittedFirstTurnValues)) {
+        if (!hostNames.includes(name)) own[name] = value;
+      }
+      return Object.keys(own).length > 0 ? own : EMPTY_RECORD;
+    },
+  );
+
 /**
  * Raw scope-resolved values for an instance.
  */
@@ -145,42 +162,18 @@ export const selectResolvedVariables = (conversationId: string) =>
  * that scope value (client value wins). A user override (present in userValues) is sent
  * and correctly wins. Unbound variables keep their exact prior behavior (incl. null).
  */
+/**
+ * Variables to PUT ON THE REQUEST — three-tier merge via
+ * `resolveVariablesForRequest`. Explicit userValues are never dropped, even
+ * when instance definitions have not hydrated yet.
+ */
 export const selectVariablesForRequest = (conversationId: string) =>
   createSelector(
     (state: RootState) =>
       state.instanceVariableValues.byConversationId[conversationId],
     (entry) => {
       if (!entry) return EMPTY_RECORD;
-      const { definitions, userValues, scopeValues } = entry;
-      const out: Record<string, unknown> = {};
-      for (const def of definitions) {
-        const isBound = !!(def.binding?.itemKey || def.binding?.contextItemId);
-        if (def.name in userValues) {
-          out[def.name] = userValues[def.name];
-          continue;
-        }
-        // Bound + no explicit override → let the server fill it from scope.
-        if (isBound) continue;
-        if (def.name in scopeValues) {
-          out[def.name] = scopeValues[def.name];
-        } else if (def.defaultValue !== undefined && def.defaultValue !== null) {
-          out[def.name] = def.defaultValue;
-        } else {
-          out[def.name] = null;
-        }
-      }
-      // Explicitly-set values are NEVER silently dropped. userValues only
-      // ever holds deliberate sets (variable panel edits, or caller-injected
-      // `runtime.variables` at launch). When the instance's definitions
-      // haven't hydrated (stale/minimal agent record → empty definitions),
-      // the loop above misses them and the server silently falls back to the
-      // agent's defaults — the injected value vanishes with no error (first
-      // hit: KindAgentActionButton's video_prompt_options launch). Sending
-      // them unconditionally is safe: the server ignores names the agent
-      // doesn't declare.
-      for (const [name, value] of Object.entries(userValues)) {
-        if (!(name in out)) out[name] = value;
-      }
+      const out = resolveVariablesForRequest(entry);
       return Object.keys(out).length === 0 ? EMPTY_RECORD : out;
     },
   );

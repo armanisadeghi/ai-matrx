@@ -126,14 +126,16 @@ export interface UnifiedUsageRow {
   kind: "usage" | "mandate" | "aggregate";
   dimension: UsageDimension;
   name: string;
-  /** One short line under the name (lineage, holder kind, org). */
+  /** Holder / scope — its own column, never stacked under the name. */
+  holderLabel: string | null;
+  /** Search-only extras (lineage, inactive). Not rendered in the name cell. */
   subtitle: string | null;
   pinnedLabel: string;
   newestLabel: string;
   /** Pinned to something older than the newest version. */
   behind: boolean;
   risk: UsageRisk;
-  /** ONE phrase: what changed, in the grader's words. */
+  /** ONE short fact: what changed. Detail pane carries the sentences. */
   whatChanged: string;
   ownerText: string | null;
   organizationName: string | null;
@@ -155,23 +157,19 @@ export function rowFromUsage(usage: AgentUsageRow): UnifiedUsageRow {
     .map(usageFindingSentence);
   const whatChanged =
     findings.length > 0
-      ? capitalize(findings.join("; "))
+      ? capitalize(findings[0]) + (findings.length > 1 ? ` +${findings.length - 1}` : "")
       : usage.stalePin
-        ? "Only the instructions, model, or settings moved"
+        ? "Behind"
         : usage.pinMode === "follow_active"
-          ? "Follows the active version"
-          : "Nothing that affects a run changed";
+          ? "Follows latest"
+          : "—";
   return {
     id: `usage:${usage.usageType}:${usage.usageId}:${usage.nodeId ?? ""}`,
     kind: "usage",
     dimension: usage.usageType,
     name: usage.label,
-    subtitle:
-      usage.isUsageActive === false
-        ? "inactive"
-        : usage.organizationName
-          ? `org: ${usage.organizationName}`
-          : null,
+    holderLabel: usage.organizationName,
+    subtitle: usage.isUsageActive === false ? "inactive" : null,
     pinnedLabel:
       usage.pinMode === "follow_active"
         ? "active"
@@ -203,12 +201,13 @@ export function rowFromAggregate(aggregate: AgentUsageAggregate): UnifiedUsageRo
     kind: "aggregate",
     dimension: aggregate.usageType,
     name: `${aggregate.count} owned by other people`,
-    subtitle: aggregate.organizationName ? `org: ${aggregate.organizationName}` : "not yours to move",
+    holderLabel: aggregate.organizationName,
+    subtitle: null,
+    whatChanged: parts.length > 0 ? capitalize(parts.join(", ")) : "—",
     pinnedLabel: aggregate.stalePins > 0 ? `${aggregate.stalePins} behind` : "—",
     newestLabel: `v${aggregate.currentVersion}`,
     behind: aggregate.stalePins > 0,
     risk,
-    whatChanged: parts.length > 0 ? capitalize(parts.join(", ")) : "Nothing flagged",
     ownerText: null,
     organizationName: aggregate.organizationName,
     managedByCaller: false,
@@ -217,13 +216,18 @@ export function rowFromAggregate(aggregate: AgentUsageAggregate): UnifiedUsageRo
   };
 }
 
-/** One short phrase per blocker for the table cell; the detail pane carries `BLOCKER_META`'s full sentence. */
+/** One short fact per blocker. Sentences live in the detail pane. */
 const BLOCKER_PHRASE: Record<NonNullable<ImpactVerdict["blocker"]>, string> = {
-  tracks_latest: "Follows the newest version — your change already applies",
-  unreachable: "No saved version to pin to — save a version first",
-  set_aside: "Set aside by resolution — fix that before moving it",
-  unsupported_holder: "Held by something that is not an agent",
+  tracks_latest: "Follows latest",
+  unreachable: "No version",
+  set_aside: "Set aside",
+  unsupported_holder: "Unsupported holder",
 };
+
+function holderLabelOf(verdict: ImpactVerdict): string {
+  if (verdict.holder_kind !== "binding") return "Default";
+  return verdict.principal.kind === "user" ? "User" : "Org";
+}
 
 export function rowFromVerdict(
   verdict: ImpactVerdict,
@@ -232,40 +236,31 @@ export function rowFromVerdict(
   const risk = GRADE_TO_RISK[verdict.grade];
   const findings = changeFindingsOf(verdict);
   const settings = settingsSignalOf(verdict);
-  // The server's tracks-latest / set-aside findings are full sentences; the
-  // cell carries the short phrase and the detail pane the sentences.
   const changeFindings = verdict.blocker
     ? findings.filter((finding) => !finding.rule_id.startsWith("blocker."))
     : findings;
   let whatChanged: string;
   if (verdict.blocker) {
     whatChanged = BLOCKER_PHRASE[verdict.blocker];
-    if (changeFindings.length > 0) {
-      whatChanged += ` · ${changeFindings[0].message}`;
-      if (changeFindings.length > 1) whatChanged += ` (+${changeFindings.length - 1} more)`;
-    }
   } else if (changeFindings.length > 0) {
     whatChanged = capitalize(changeFindings[0].message);
-    if (changeFindings.length > 1) whatChanged += ` (+${changeFindings.length - 1} more)`;
+    if (changeFindings.length > 1) whatChanged += ` +${changeFindings.length - 1}`;
+  } else if (settings.state === "changed") {
+    whatChanged = "Settings";
+  } else if (settings.state === "unmeasured") {
+    whatChanged = "Unmeasured";
   } else {
-    whatChanged = "Nothing that affects a run changed";
+    whatChanged = "—";
   }
-  if (settings.state === "changed") whatChanged += " · settings changed";
-  else if (settings.state === "unmeasured") whatChanged += " · settings unmeasured";
   const viaDuplicate =
-    verdict.agent_id !== focusAgentId
-      ? `on duplicate “${verdict.agent_name}”`
-      : null;
-  const holder =
-    verdict.holder_kind === "binding"
-      ? `${verdict.principal.kind} binding`
-      : "default";
+    verdict.agent_id !== focusAgentId ? `via ${verdict.agent_name}` : null;
   return {
     id: `mandate:${verdict.holder_kind}:${verdict.row_id}`,
     kind: "mandate",
     dimension: "mandate",
     name: verdict.mandate_key,
-    subtitle: viaDuplicate ? `${holder} · ${viaDuplicate}` : holder,
+    holderLabel: holderLabelOf(verdict),
+    subtitle: viaDuplicate,
     pinnedLabel: pinnedLabelOf(verdict),
     newestLabel: newestLabelOf(verdict),
     behind: isBehindLatest(verdict),

@@ -1,14 +1,12 @@
 // features/scopes/redux/thunks/syncConversationScopes.ts
 //
-// Stamp the user's ACTIVE scope selections onto a conversation's
-// ctx_scope_assignments tags so resolve_full_context delivers the selected
-// scopes' context cells to the agent.
+// Stamp the user's ACTIVE scope selections onto a conversation through the
+// canonical platform association edge so later turns can resolve the selected
+// scopes' context cells.
 //
-// Why this exists alongside `scope_ids` on the request body: the request
-// field only takes effect once the aidream deploy that threads it lands;
-// the entity tags are read by the already-live RPC, so tagging covers turn
-// 2+ immediately. It also durably records which scopes a conversation was
-// worked under (filterable later).
+// Why this exists alongside `scope_ids` on the request body: the request field
+// supplies the current turn, while the association edge durably records which
+// scopes the conversation uses for later turns and filtering.
 //
 // Semantics: UNION, never replace. A scope the user deselects globally is
 // NOT untagged — manual Surface B tags and earlier stamps are preserved
@@ -26,6 +24,7 @@ import {
   entityScopesKey,
 } from "@/features/scopes/redux/thunks/ensureEntityScopes";
 import { setEntityScopes } from "@/features/scopes/redux/thunks/setEntityScopes";
+import { waitForConversationPersisted } from "@/features/agents/redux/execution-system/conversations/conversation-persistence";
 import type { RootState } from "@/lib/redux/rootReducer";
 
 type AppThunk<R = void> = ThunkAction<R, RootState, unknown, UnknownAction>;
@@ -39,6 +38,20 @@ export function syncConversationScopes(
       (id): id is string => !!id,
     );
     if (activeIds.length === 0) return;
+
+    // A new conversation UUID is announced before the server's atomic turn
+    // commit makes chat.conversation readable. Association authorization asks
+    // iam.has_access(source), so writing during that window is correctly
+    // refused as "editor access to source required". Use the same materialized
+    // row barrier as route promotion and document-edge writes.
+    const persisted = await waitForConversationPersisted(conversationId);
+    if (!persisted) {
+      console.error(
+        "[scopes] syncConversationScopes skipped: conversation was not persisted",
+        { conversationId, scopeIds: activeIds },
+      );
+      return;
+    }
 
     // Existing tags (cached after first fetch; no-refetch).
     await dispatch(ensureEntityScopes("conversation", conversationId));

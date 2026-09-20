@@ -3,6 +3,7 @@ import "server-only";
 import type { NextFetchEvent, NextRequest, NextResponse } from "next/server";
 import {
   ACQUISITION_VISITOR_COOKIE,
+  classifyAcquisitionTraffic,
   FirstTouchPayloadSchema,
   isLocalAcquisitionHost,
   safeObservedUrl,
@@ -44,6 +45,18 @@ function shouldCapture(request: NextRequest): boolean {
   const path = request.nextUrl.pathname;
   const host = request.headers.get("host") ?? request.nextUrl.host;
   return (
+    // ONLY A BROWSER HAS AN ACQUISITION STORY. A crawler, monitor, unfurler
+    // or script never keeps the visitor cookie, so every request it makes
+    // reads as a brand new first touch and queues another service-role write
+    // from inside the proxy Lambda — forever. Over the 3 hours to 2026-09-20
+    // 16:00Z that was SentryUptimeBot 165 rows, curl 73, facebookexternalhit
+    // 72, plus YandexBot and a bare `node`: ~400 rows and ~400 RPCs an hour of
+    // pure noise, issued from a Lambda whose `waitUntil` work keeps the
+    // instance busy after the response and so costs the NEXT request in a
+    // burst a cold start. `unknown` (no User-Agent at all) is excluded for the
+    // same reason: a real browser always sends one.
+    classifyAcquisitionTraffic(request.headers.get("user-agent")) ===
+      "browser" &&
     !path.startsWith("/administration") &&
     !path.startsWith("/api") &&
     !path.startsWith("/auth") &&

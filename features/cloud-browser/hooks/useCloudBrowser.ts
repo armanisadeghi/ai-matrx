@@ -50,6 +50,7 @@ function toLoadError(e: unknown): CloudBrowserLoadError {
       retryable:
         typeof details?.retryable === "boolean" ? details.retryable : true,
       requestId: e.requestId || null,
+      code: e.code || null,
     };
   }
   return {

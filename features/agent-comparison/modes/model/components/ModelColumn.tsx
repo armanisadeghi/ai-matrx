@@ -14,7 +14,8 @@ import { cn } from "@/lib/utils";
 import { useAppDispatch, useAppSelector } from "@/lib/redux/hooks";
 import { BoundColumn } from "../../../shared/BoundColumn";
 import { BlindColumnHeader } from "../../../shared/BlindColumnHeader";
-import { selectBlindActive } from "../../../redux/selectors";
+import { selectBlindActive, selectBlindOrder } from "../../../redux/selectors";
+import { blindAnonLabel } from "../../../shared/blind";
 import { ModelColumnHeader } from "./ModelColumnHeader";
 import {
   MODEL_SURFACE_KEY,
@@ -58,6 +59,7 @@ export function ModelColumn({ column, onToggleCollapse, isBaseline }: Props) {
           conversationId={column.conversationId}
           surfaceKey={MODEL_SURFACE_KEY}
           hideInput
+          hideCreatorPanel={blindActive}
         />
       </div>
     </div>
@@ -71,11 +73,16 @@ function CollapsedView({
   column: ModelColumnType;
   onExpand: () => void;
 }) {
+  const blindActive = useAppSelector(selectBlindActive);
+  const blindOrder = useAppSelector(selectBlindOrder);
+  const label = blindActive
+    ? blindAnonLabel(column.columnId, blindOrder)
+    : column.label;
   return (
     <button
       type="button"
       onClick={onExpand}
-      title={`Expand "${column.label}"`}
+      title={`Expand "${label}"`}
       className={cn(
         "h-full w-full flex flex-col items-center justify-between py-2",
         "border-x border-dashed border-primary/40 bg-primary/5",
@@ -88,7 +95,7 @@ function CollapsedView({
       </div>
       <div className="flex-1 min-h-0 flex items-center justify-center overflow-hidden py-2">
         <span className="text-[11px] font-semibold uppercase tracking-wider truncate max-h-full [writing-mode:vertical-rl] rotate-180 text-primary">
-          {column.label}
+          {label}
         </span>
       </div>
       <span className="text-[9px] uppercase tracking-wider text-muted-foreground">

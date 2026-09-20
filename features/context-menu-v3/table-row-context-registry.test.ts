@@ -22,7 +22,7 @@ describe("table row context registry", () => {
     });
     const unregister = registerTableRowContextResolver(
       "table-instance-a",
-      (rowId) => (rowId === "row-2" ? descriptor : null),
+      (target) => (target.level === "row" && target.rowId === "row-2" ? descriptor : null),
     );
 
     expect(resolveTableRowMenuDescriptor(target)?.context.content).toBe("current row");
@@ -33,9 +33,11 @@ describe("table row context registry", () => {
 
   it("keeps full current row data and only exposes declared edit controls", () => {
     const beginEdit = jest.fn();
-    const descriptor = createDefaultTableRowMenuDescriptor(
-      { id: "row-3", title: "Pending title", draft: true },
-      {
+    const descriptor = createDefaultTableRowMenuDescriptor({
+      level: "row",
+      rowId: "row-3",
+      row: { id: "row-3", title: "Pending title", draft: true },
+      controls: {
         closeDetail: jest.fn(),
         openDetail: jest.fn(),
         openWindow: jest.fn(),
@@ -44,7 +46,7 @@ describe("table row context registry", () => {
         discardPendingEdits: jest.fn(),
         beginEdit,
       },
-    );
+    });
     const table = document.createElement("div");
     table.dataset.matrxTableId = "table-instance-b";
     const row = document.createElement("div");

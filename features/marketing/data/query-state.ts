@@ -78,7 +78,8 @@ function encodeFilter(filter: ColumnFilterValue): string {
       : `select:${filter.values?.[0] ?? filter.value}`;
   }
   if (filter.kind === "boolean") return `boolean:${filter.value}`;
-  return `number:${filter.min ?? ""},${filter.max ?? ""}`;
+  if (filter.kind === "number") return `number:${filter.min ?? ""},${filter.max ?? ""}`;
+  throw new Error("Marketing source does not support this column filter kind");
 }
 
 function readFilters(params: URLSearchParams): ColumnFiltersState {

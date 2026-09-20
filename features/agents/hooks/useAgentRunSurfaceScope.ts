@@ -81,7 +81,7 @@ export function useAgentRunSurfaceScope({
       agent_tools: selectAgentTools(state, agentId) ?? undefined,
       agent_variable_definitions:
         selectAgentVariableDefinitions(state, agentId) ?? undefined,
-      agent_json: definition ? JSON.stringify(definition) : undefined,
+      agent_json: definition ?? undefined,
       run_source_feature: sourceFeature,
     };
 

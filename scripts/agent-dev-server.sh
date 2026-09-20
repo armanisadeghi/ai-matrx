@@ -7,9 +7,13 @@
 #   pnpm preview:stop
 #
 # The server is detached and registered in one machine-wide state directory.
-# Browser tooling is deliberately separate: after start, any supported browser
-# opens localhost:3001. A different worktree may never reuse this server because
-# that would certify code other than the diff under test.
+# Browser tooling is deliberately separate. `preview:start` prints the owning
+# session's `*.localhost:3001` URL; open that exact URL only in a browser surface
+# that permits local HTTP. Codex's in-app/extension browser transport may reject
+# local HTTP with `ERR_BLOCKED_BY_CLIENT` before Chrome navigates. That is a
+# browser-transport limitation, not proof that the preview is down. A different
+# worktree may never reuse this server because that would certify code other
+# than the diff under test.
 set -uo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -58,6 +58,7 @@ import {
   Type,
   AlertTriangle,
   Loader2,
+  Plus,
   Save,
   Shield,
   ShieldCheck,
@@ -111,6 +112,11 @@ interface TableConfigModalProps {
   tableInfo: TableInfo;
   fields: TableField[];
   onSuccess: () => void;
+  /**
+   * Open the add-column form. The place columns are MANAGED must be able to
+   * add one. Omitted on mounts that cannot add a column.
+   */
+  onAddColumn?: () => void;
 }
 
 const DATA_TYPES = [
@@ -130,6 +136,7 @@ export default function TableConfigModal({
   tableId,
   tableInfo: initialTableInfo,
   fields: initialFields,
+  onAddColumn,
   onSuccess,
 }: TableConfigModalProps) {
   const [loading, setLoading] = useState(false);
@@ -1017,6 +1024,26 @@ export default function TableConfigModal({
                     )}
                 </React.Fragment>
               ))}
+              {onAddColumn &&
+                (hasChanges ? (
+                  // Adding a column reloads this list from the table, which
+                  // would discard edits made here — say so instead of
+                  // offering a button that silently throws work away.
+                  <p className="px-1 pt-1 text-xs text-muted-foreground">
+                    Save or cancel your changes to add a column.
+                  </p>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-1 w-full justify-center gap-1.5 border-dashed"
+                    onClick={onAddColumn}
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add column
+                  </Button>
+                ))}
             </div>
           </TabsContent>
 

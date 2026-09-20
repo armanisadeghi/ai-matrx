@@ -31,7 +31,7 @@ function describeFilters(
     if (filter.kind === "number") {
       applied[column] = { min: filter.min ?? null, max: filter.max ?? null };
     } else {
-      applied[column] = filter.value;
+      applied[column] = "value" in filter ? filter.value : filter;
     }
   }
   return Object.keys(applied).length > 0 ? applied : undefined;

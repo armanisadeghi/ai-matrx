@@ -385,4 +385,27 @@ export interface CloudBrowserLoadError {
   retryable: boolean;
   /** Quotable in a report; null for client-side failures. */
   requestId: string | null;
+  /**
+   * The server's error code, when it sent one. The panel keys its behaviour
+   * on this, never on the sentence: a capacity refusal is a WAIT the panel
+   * carries out itself (see `isWaitingForCapacity`), not a dead "Try again".
+   */
+  code?: string | null;
+}
+
+/**
+ * Refusals that mean "not now, soon" rather than "it failed": every browser
+ * slot is taken, or too many are starting this second. What the best hosted
+ * browsers do here (Browserbase, Browserless) is hold the request and start
+ * the session when a slot frees; the server has no durable start queue yet
+ * (register CB-002), so the panel is the queue: it waits visibly and retries
+ * on its own until a slot frees or the wait becomes unreasonable.
+ */
+export const CAPACITY_WAIT_CODES: ReadonlySet<string> = new Set([
+  "admission_capacity_exceeded",
+  "admission_storm_rate_exceeded",
+]);
+
+export function isWaitingForCapacity(error: CloudBrowserLoadError | null): boolean {
+  return !!error && !!error.code && CAPACITY_WAIT_CODES.has(error.code);
 }

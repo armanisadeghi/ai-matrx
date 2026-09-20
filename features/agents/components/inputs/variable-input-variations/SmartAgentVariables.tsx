@@ -27,6 +27,8 @@ interface SmartAgentVariablesProps {
   onSubmit?: () => void;
   /** Override the Redux-stored style (e.g. from parent props) */
   styleOverride?: VariablesPanelStyle;
+  /** Optional Locate anchor supplied by the owning surface. */
+  surfaceValueName?: string;
 }
 
 export function SmartAgentVariables({
@@ -34,6 +36,7 @@ export function SmartAgentVariables({
   compact = false,
   onSubmit = () => {},
   styleOverride,
+  surfaceValueName,
 }: SmartAgentVariablesProps) {
   const reduxStyle = useAppSelector(selectVariableInputStyle(conversationId));
   const submitOnEnter = useAppSelector(
@@ -57,6 +60,7 @@ export function SmartAgentVariables({
           compact={compact}
           onSubmit={onSubmit}
           submitOnEnter={submitOnEnter}
+          surfaceValueName={surfaceValueName}
         />
       );
     case "wizard":

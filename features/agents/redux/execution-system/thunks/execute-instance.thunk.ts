@@ -111,7 +111,11 @@ import {
 } from "./run-ai-stream";
 import { validateMessageBlocks } from "@/features/agents/runtime/validation";
 import { getCapabilitiesForConversation } from "@/features/agents/runtime/get-model-capabilities";
-import { restoreVariableValues } from "../instance-variable-values/instance-variable-values.slice";
+import {
+  restoreVariableValues,
+  stampSubmittedFirstTurnValues,
+  clearSubmittedFirstTurnValues,
+} from "../instance-variable-values/instance-variable-values.slice";
 import { persistVariableAuthorship } from "../instance-variable-values/instance-variable-values.persistence";
 import {
   markInputSubmitted,
@@ -483,6 +487,8 @@ export const executeInstance = createAsyncThunk<
         executionRejectionMeta(requestId, conversationId, originalErrorName),
       );
 
+    let firstTurnSnapshotStamped = false;
+    let streamStarted = false;
     try {
       // `let`, not `const`: the organization gate below can suspend for human
       // time and commit a new active organization, and everything downstream
@@ -716,6 +722,14 @@ export const executeInstance = createAsyncThunk<
             hostValueNames: hostNamesAtSubmit,
           }),
         );
+        dispatch(
+          stampSubmittedFirstTurnValues({
+            conversationId,
+            values: payload.variables,
+            hostValueNames: hostNamesAtSubmit,
+          }),
+        );
+        firstTurnSnapshotStamped = true;
       }
       // Authorship has to outlive this tab: `chat.conversation.variables` is
       // the merged payload and cannot tell a host value from a typed one, so
@@ -1126,6 +1140,12 @@ export const executeInstance = createAsyncThunk<
             // A retry sends no input and reads none — leave the box untouched
             // (it may hold an unrelated draft). Initial sends clear on failure.
             clearInputOnError: !retry,
+            // HTTP validation lives inside runAiStream. Mark the snapshot as
+            // accepted only after its 2xx response has actually opened; an
+            // eager marker would strand a failed first-submit snapshot.
+            onStreamOpen: () => {
+              streamStarted = true;
+            },
             userMessageClientTempId,
           });
 
@@ -1161,6 +1181,9 @@ export const executeInstance = createAsyncThunk<
         }
       }
     } catch (error) {
+      if (firstTurnSnapshotStamped && !streamStarted) {
+        dispatch(clearSubmittedFirstTurnValues(conversationId));
+      }
       // The organization gate asked which workspace and the person declined.
       // Nothing was sent and nothing was written — the gate runs before any
       // draft, optimistic message or resource state is touched — so this

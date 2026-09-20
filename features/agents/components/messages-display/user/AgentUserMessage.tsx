@@ -29,7 +29,7 @@ import { FirstTurnVariables, UserMessageVariables } from "./FirstTurnVariables";
 import { ContextPolicyChipStrip } from "@/features/agents/components/context-policies-display/ContextPolicyChipStrip";
 import { useMachineFramesVisible } from "@/features/agents/components/shared/transcript-audience";
 import { useCollapsibleMessageText } from "./useCollapsibleMessageText";
-import { selectUserVariableValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
+import { selectOwnSubmittedFirstTurnValues } from "@/features/agents/redux/execution-system/instance-variable-values/instance-variable-values.selectors";
 import { MessageAttachmentStrip } from "../MessageAttachmentStrip";
 import { isAttachmentMessagePart } from "@/features/agents/components/context-items/normalize";
 import MarkdownStream from "@/components/MarkdownStream";
@@ -233,7 +233,7 @@ export function AgentUserMessage({
   // signature reflects them. This is the "top section" that holds the largest
   // text and was previously excluded from collapse measurement entirely.
   const userVariableValues = useAppSelector(
-    selectUserVariableValues(conversationId),
+    selectOwnSubmittedFirstTurnValues(conversationId),
   );
   const hasVisibleVariables =
     isFirstTurnMessage &&

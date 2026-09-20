@@ -43,6 +43,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Paintbrush,
+  Plus,
 } from "lucide-react";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { VersionHistoryViewer } from "@/features/data-tables/components/VersionHistoryViewer";
@@ -3466,6 +3467,14 @@ const UserTableViewer = ({
                 hidden={hiddenColumns}
                 order={columnOrder}
                 onHiddenChange={setHiddenColumns}
+                onAddColumn={
+                  isReadOnly
+                    ? undefined
+                    : () => {
+                        setPendingColumnInsert(null);
+                        setShowAddColumnModal(true);
+                      }
+                }
                 onOrderChange={setColumnOrder}
               />
             </div>
@@ -3567,6 +3576,14 @@ const UserTableViewer = ({
           hidden={hiddenColumns}
           order={columnOrder}
           onHiddenChange={setHiddenColumns}
+                onAddColumn={
+                  isReadOnly
+                    ? undefined
+                    : () => {
+                        setPendingColumnInsert(null);
+                        setShowAddColumnModal(true);
+                      }
+                }
           onOrderChange={setColumnOrder}
         />
         {isViewCustomized && (
@@ -3713,7 +3730,13 @@ const UserTableViewer = ({
           // content-driven widths (150px minimum per header) and scrolls
           // horizontally, exactly as it already does on a phone.
           className={cn(
-            "w-auto min-w-max table-auto",
+            // `w-max min-w-full`: natural column widths, but NEVER narrower
+            // than the panel. Until 2026-09-20 this was `w-auto min-w-max`,
+            // so a table that crossed FIXED_LAYOUT_MAX_COLUMNS (showing a
+            // ninth column) snapped from full width to its content width and
+            // left the right third of the screen blank — it read as "the page
+            // only half loaded" (Arman, Coding Accounts, nine columns).
+            "w-max min-w-full table-auto",
             viewFields.length <= FIXED_LAYOUT_MAX_COLUMNS &&
               "md:w-full md:min-w-full md:table-fixed",
           )}
@@ -3849,6 +3872,31 @@ const UserTableViewer = ({
                             ? undefined
                             : () => startColumnRename(field.field_name)
                         }
+                        // The same three doors the right-click Column section
+                        // has — a column is managed from its own header too.
+                        onInsert={
+                          isReadOnly
+                            ? undefined
+                            : (side) => {
+                                setPendingColumnInsert({
+                                  order:
+                                    side === "left"
+                                      ? field.field_order
+                                      : field.field_order + 1,
+                                });
+                                setShowAddColumnModal(true);
+                              }
+                        }
+                        onHide={
+                          viewFields.length <= 1
+                            ? undefined
+                            : () =>
+                                setHiddenColumns(
+                                  hiddenColumns.includes(field.field_name)
+                                    ? hiddenColumns
+                                    : [...hiddenColumns, field.field_name],
+                                )
+                        }
                         onConfigure={
                           isReadOnly
                             ? undefined
@@ -3865,7 +3913,27 @@ const UserTableViewer = ({
                 );
               })}
               <TableHead className="sticky top-0 z-20 bg-gray-100 dark:bg-gray-800 w-[140px] text-gray-700 dark:text-gray-300 text-center py-3 border-b border-gray-200 dark:border-gray-700">
-                Actions
+                <div className="flex items-center justify-center gap-1.5">
+                  {/* Where every spreadsheet puts it: a "+" at the end of the
+                      header row adds a column at the end. */}
+                  {!isReadOnly && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      title="Add a column at the end"
+                      aria-label="Add a column at the end"
+                      onClick={() => {
+                        setPendingColumnInsert(null);
+                        setShowAddColumnModal(true);
+                      }}
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                  <span>Actions</span>
+                </div>
               </TableHead>
             </TableRow>
           </TableHeader>
@@ -3908,9 +3976,24 @@ const UserTableViewer = ({
                   colSpan={viewFields.length + 2}
                   className="text-center py-8"
                 >
-                  {hasColumnFilters
-                    ? "No rows match the current filters"
-                    : "No data found"}
+                  <div className="flex flex-col items-center gap-2">
+                    <span>
+                      {hasColumnFilters
+                        ? "No rows match the current filters"
+                        : "This table has no rows yet"}
+                    </span>
+                    {!isReadOnly && !hasColumnFilters && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAddRowModal(true)}
+                      >
+                        <Plus className="mr-1 h-3.5 w-3.5" />
+                        Add the first row
+                      </Button>
+                    )}
+                  </div>
                 </TableCell>
               </TableRow>
             ) : (
@@ -4375,6 +4458,22 @@ const UserTableViewer = ({
                   </TableCell>
                 </TableRow>
               ))
+            )}
+            {/* Where every spreadsheet puts it: the line under the last row
+                adds a row. Absent on read-only tables and while loading. */}
+            {!isReadOnly && !loading && displayRows.length > 0 && (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={viewFields.length + 2} className="p-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddRowModal(true)}
+                    className="flex h-9 w-full items-center gap-1.5 px-3 text-left text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Add row
+                  </button>
+                </TableCell>
+              </TableRow>
             )}
           </TableBody>
         </Table>

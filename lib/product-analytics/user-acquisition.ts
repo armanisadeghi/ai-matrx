@@ -54,8 +54,20 @@ export function isRetryableAcquisitionTransportFailure(
   );
 }
 
+/**
+ * Non-human callers. `[a-z0-9_-]*bot` already catches Googlebot, bingbot,
+ * YandexBot, SentryUptimeBot, GPTBot, ClaudeBot and the rest of the `…bot`
+ * family, so new entries only need to name the ones that do NOT say "bot".
+ *
+ * The second line is SCRIPT CLIENTS, added 2026-09-20. Measured on the main
+ * database over the 3 hours to 16:00Z: `curl/8.7.1` had created 73 acquisition
+ * visitor rows and a bare `node` 20 more — none of which this pattern called a
+ * bot, because none of them contains the word. A script never keeps the
+ * visitor cookie, so every request it makes reads as a brand new first touch,
+ * forever.
+ */
 const BOT_USER_AGENT =
-  /\b([a-z0-9_-]*bot|crawler|spider|slurp|bingpreview|facebookexternalhit|headlesschrome|lighthouse|semrush|ahrefs|bytespider)\b/i;
+  /\b([a-z0-9_-]*bot|crawler|spider|slurp|bingpreview|facebookexternalhit|headlesschrome|lighthouse|semrush|ahrefs|bytespider)\b|\b(curl|wget|python-requests|httpie|okhttp|axios|go-http-client|libwww-perl|java|apache-httpclient|node-fetch|got|undici)\b|^node$/i;
 
 export function classifyAcquisitionTraffic(
   userAgent: string | null,

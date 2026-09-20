@@ -196,6 +196,11 @@ export function summarizeColumnFilter(
       if (filter.max !== undefined) return `at most ${filter.max}`;
       return null;
     }
+    default:
+      // Preserve newer package filter contracts in agent context instead of
+      // omitting them. Unreachable for the kinds the package ships today, and
+      // that is the point: it is the landing spot for the kind it ships next.
+      return JSON.stringify(filter);
   }
 }
 

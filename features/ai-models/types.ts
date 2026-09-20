@@ -6,8 +6,10 @@ import type { ModelCapabilities } from "./capabilities/types";
 // =============================================================================
 
 export type AiModelRow = Database["ai"]["Tables"]["model_definition"]["Row"];
-export type AiModelInsert = Database["ai"]["Tables"]["model_definition"]["Insert"];
-export type AiModelUpdate = Database["ai"]["Tables"]["model_definition"]["Update"];
+export type AiModelInsert =
+  Database["ai"]["Tables"]["model_definition"]["Insert"];
+export type AiModelUpdate =
+  Database["ai"]["Tables"]["model_definition"]["Update"];
 
 export type AiProviderRow = Database["ai"]["Tables"]["provider"]["Row"];
 export type AiProviderInsert = Database["ai"]["Tables"]["provider"]["Insert"];
@@ -35,7 +37,8 @@ export type AiSettingRow = Database["ai"]["Tables"]["setting"]["Row"];
 export type AiSettingInsert = Database["ai"]["Tables"]["setting"]["Insert"];
 export type AiSettingUpdate = Database["ai"]["Tables"]["setting"]["Update"];
 
-export type AiModelOfferingViewRow = Database["ai"]["Views"]["model_offering"]["Row"];
+export type AiModelOfferingViewRow =
+  Database["ai"]["Views"]["model_offering"]["Row"];
 
 /** `ai.provider_sync_candidates` — THE one provider-sync classification.
  *  Read-only view over `ai.provider.provider_models_cache` × the registry ×
@@ -75,12 +78,7 @@ export type ModelPriceSummary = {
 // -- Unconditional constraints: single-field checks that always apply --------
 
 export type UnconditionalRule =
-  | "required"
-  | "fixed"
-  | "min"
-  | "max"
-  | "one_of"
-  | "forbidden";
+  "required" | "fixed" | "min" | "max" | "one_of" | "forbidden";
 
 export type UnconditionalConstraint = {
   id: string;
@@ -130,12 +128,7 @@ export function isConditionalConstraint(
 }
 
 export type ControlParamType =
-  | "boolean"
-  | "number"
-  | "integer"
-  | "string"
-  | "array"
-  | "object";
+  "boolean" | "number" | "integer" | "string" | "array" | "object";
 
 /** RESOLVED control shape — the OUTPUT of `ai.resolve_model_config` /
  *  the `ai.model_config` view (what the picker & agent-settings UIs consume).
@@ -408,6 +401,8 @@ export type ModelUsageItem = {
   // "prompt_builtins" migrated to "agent.definition" (agent_type='builtin'); kept in union only for old serialized data
   table: "prompts" | "prompt_builtins" | "agent.definition" | "agent.template";
   source_prompt_id?: string | null;
+  /** Live `settings` blob from the referencing row — what Review reconciles. */
+  settings?: Record<string, unknown> | null;
 };
 
 export type ModelUsageResult = {

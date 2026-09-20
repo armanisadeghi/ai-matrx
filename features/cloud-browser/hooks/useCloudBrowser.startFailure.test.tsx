@@ -99,6 +99,7 @@ describe("useCloudBrowser — a failed start", () => {
       message: "Your browser could not start. Try again in a moment.",
       retryable: true,
       requestId: "req-08fb9faf",
+      code: "worker_unreachable",
     });
     // A failed load is finished — never an endless "starting".
     expect(h.current.loading).toBe(false);
