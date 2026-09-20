@@ -73,7 +73,10 @@ export function checkQualifiedRefs(ctx: Context): Finding[] {
             visit(source);
           }
           const position = lineOffset + m.index;
-          if (!literalRanges.some(([start, end]) => position >= start && position + m[0].length <= end)) continue;
+          // `m` is a `let` the callback closes over, so its non-null narrowing
+          // does not survive into the predicate — take the length out here.
+          const matchLength = m[0].length;
+          if (!literalRanges.some(([start, end]) => position >= start && position + matchLength <= end)) continue;
         }
         // A line that already names the correct location (e.g. "moved to graveyard.prompts")
         // is documenting the move, not making a stale reference — skip it.
