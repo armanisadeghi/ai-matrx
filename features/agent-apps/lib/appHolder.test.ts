@@ -15,7 +15,14 @@
  * while it is false, and pretending otherwise would be a test that cannot fail.
  */
 
-import { APP_MANDATE_CUTOVER, pinnedHolder } from "./appHolder";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+import {
+  APP_MANDATE_CUTOVER,
+  holderIdentityFromResolved,
+  pinnedHolder,
+} from "./appHolder";
 
 describe("APP_MANDATE_CUTOVER", () => {
   it("is ON — flipped 2026-08-30 on Arman's order; apps resolve through their mandate", () => {
@@ -62,5 +69,92 @@ describe("pinnedHolder — the OFF answer", () => {
     const holder = pinnedHolder({ agent_id: "agent-1", use_latest: true });
     expect(holder.agentVersionId).toBeNull();
     expect(holder.useLatest).toBe(true);
+  });
+});
+
+describe("holderIdentityFromResolved — a pin is a pin", () => {
+  const base = {
+    agentId: "definition-id",
+    configOverrides: null,
+    mandateId: "mandate-1",
+    mandateKey: "app.thing",
+    provenance: "system" as const,
+  };
+
+  it("threads a pinned winner instead of inventing latest", () => {
+    expect(
+      holderIdentityFromResolved({
+        ...base,
+        isVersion: true,
+        versionId: "version-id",
+      }),
+    ).toEqual({
+      agentId: "definition-id",
+      agentVersionId: "version-id",
+      useLatest: false,
+      configOverrides: null,
+      mandateId: "mandate-1",
+      mandateKey: "app.thing",
+      provenance: "system",
+    });
+  });
+
+  it("keeps a floating winner floating", () => {
+    const holder = holderIdentityFromResolved({
+      ...base,
+      isVersion: false,
+      versionId: null,
+    });
+    expect(holder.agentVersionId).toBeNull();
+    expect(holder.useLatest).toBe(true);
+  });
+});
+
+describe("the leftover class — no silent pin drop after resolve", () => {
+  const root = join(__dirname, "..");
+
+  it("does not claim a resolved mandate is floating by construction", () => {
+    const holder = readFileSync(join(__dirname, "appHolder.ts"), "utf8");
+    expect(holder).not.toContain("FLOATING by construction");
+    expect(holder).not.toContain("resolveMandate refuses a pinned");
+    expect(holder).toContain("holderIdentityFromResolved(resolved)");
+  });
+
+  it("launches apps through the mandate door, not the definition id", () => {
+    const hook = readFileSync(join(root, "hooks/useAgentApp.ts"), "utf8");
+    const renderer = readFileSync(
+      join(root, "components/AgentAppPublicRendererImpl.tsx"),
+      "utf8",
+    );
+    expect(hook).toContain("mandateKey: holder.mandateKey");
+    expect(renderer).toContain("mandateKey: runMandateKey");
+    expect(renderer).toContain("do not pass pinnedVersionId here");
+  });
+
+  it("every shell hands the row to useAgentApp so the holder can resolve", () => {
+    const shells = [
+      "AgentAppChatShell.tsx",
+      "AgentAppFormToResultShell.tsx",
+      "AgentAppFullyCustomShell.tsx",
+      "AgentAppWidgetShell.tsx",
+    ];
+    for (const file of shells) {
+      const source = readFileSync(
+        join(root, "components/shells", file),
+        "utf8",
+      );
+      expect(source).toContain("useAgentApp({");
+      expect(source).toContain("app,");
+    }
+  });
+
+  it("the custom shell warms the holder, not the row pin", () => {
+    const source = readFileSync(
+      join(root, "components/shells/AgentAppFullyCustomShell.tsx"),
+      "utf8",
+    );
+    expect(source).toContain("ctx.agentVersionId");
+    expect(source).not.toContain("app.agent_version_id");
+    expect(source).not.toContain("app.use_latest");
   });
 });
