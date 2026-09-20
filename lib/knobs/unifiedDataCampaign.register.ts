@@ -41,6 +41,23 @@ export type CampaignEntryPointKind =
     | "tooling"
     | "preexisting"
     /**
+     * THE ONE LINE, AND NOTHING ELSE. A standard entity page that carries
+     * `<EntityCustomFields entityToken="…" />` (SCR-12 / REC-40) and no campaign
+     * logic of its own: the switch is read INSIDE that component, once, so the
+     * page names a token and nothing more. It is its own kind because `runtime`
+     * means "this file reads the gate" and these files deliberately do not —
+     * calling them `runtime` would make the guard demand a gate call that must
+     * not be there, and calling them `preexisting` would hide that they are the
+     * campaign's own surface.
+     *
+     * Added 2026-09-20: lane ENTITY-FIELDS registered three rows with this word
+     * and never added it to the union, so `pnpm type-check` was red on main with
+     * three TS2322 while `check:campaign-entry-points` was green — the guard
+     * reads the rows, the compiler reads the type, and only one of them was
+     * being told.
+     */
+    | "one_line"
+    /**
      * A RED TWIN: a test that wires the campaign's own gate the WRONG way on
      * purpose, asserts the world before its lane's fix, and is SUPPOSED to fail.
      * It is the only kind other than `runtime` allowed to call the gate — a red

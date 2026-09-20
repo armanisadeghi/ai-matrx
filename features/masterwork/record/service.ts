@@ -386,6 +386,35 @@ export function interviewTitleFor(rulebookName: string, when = new Date()) {
 // Reads
 // =============================================================================
 
+/**
+ * A read of this Rulebook's interview history that FAILED.
+ *
+ * 🚨 WHY THIS IS A THROW AND NOT AN EMPTY ARRAY (cold walk 12, D9). This
+ * function used to log the failure and `return []`, and every caller then read
+ * that as the honest fact "this Rulebook has no interviews". The Scout panel
+ * acts on exactly that fact: no history means nobody has talked yet, so it
+ * skips its own chooser and drops the Expert on "Before we start".
+ *
+ * So a reload mid-interview — where the association read races the
+ * organization boot and every Matrx transport refuses BEFORE networking with
+ * no organization selected — put an Expert four turns into a conversation back
+ * at the opening screen, with no offer to carry on, while all sixteen of her
+ * messages sat safely in the database. The same shape as D1 and D5 on this
+ * walk: a failed read wearing the face of a confident empty answer.
+ *
+ * "None" and "could not ask" are different answers and must be different
+ * values. Callers catch this and say which one it was.
+ */
+export class InterviewHistoryUnavailable extends Error {
+  constructor(readonly rulebookId: string, cause?: unknown) {
+    super(
+      "We couldn't check whether this Rulebook already has an interview going.",
+    );
+    this.name = "InterviewHistoryUnavailable";
+    this.cause = cause;
+  }
+}
+
 /** Every conversation id associated with this Rulebook, oldest edge first. */
 async function interviewConversationIds(rulebookId: string): Promise<string[]> {
   const res = await associationsService.listForEntity("rulebook", rulebookId);
@@ -394,7 +423,7 @@ async function interviewConversationIds(rulebookId: string): Promise<string[]> {
       "[masterwork/record] could not read this Rulebook's interview edges",
       { rulebookId, error: res.error },
     );
-    return [];
+    throw new InterviewHistoryUnavailable(rulebookId, res.error);
   }
   // ROLE MATTERS. A Rulebook now carries more than one kind of conversation
   // edge — `interview` (the Scout, the Expert's own words) and `conducting`

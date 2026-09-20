@@ -156,10 +156,60 @@ export interface KeptSourceRow extends KeptSource {
   rule_count: number;
 }
 
-/** What the reader shows for a source with no name of its own. */
-export function keptSourceTitle(source: KeptSource): string {
+/**
+ * WHAT A KEPT SOURCE IS CALLED — including when nobody ever named it.
+ *
+ * 🚨 "Untitled" IS NOT A NAME, IT IS AN ABSENCE WEARING ONE (cold walk 12,
+ * D8). Three minutes after creating a Rulebook, having attached nothing, an
+ * Expert read "1 source is already here" → "Untitled — 513 words" and
+ * reasonably concluded the platform had put a stranger's source in her
+ * Rulebook. It had not: verified on rulebook a18eb3de, all eight rows are
+ * hers, the list query is scoped by `rulebook_id`, and the nameless row is her
+ * OWN interview — `label` NULL while `chat.conversation.title` for the very
+ * same capture reads "Pressure-Drop Diagnosis for Autumn Browning". Two
+ * tables, one capture, one of them mute.
+ *
+ * So a source with no label says what it IS and WHEN it arrived, which is
+ * always known, instead of a word that tells her nothing and reads like a
+ * stranger. "Untitled" never reaches a person again.
+ *
+ * `now` is injectable so the guard can pin the clock.
+ */
+const MEDIUM_IN_WORDS: Record<KeptSourceMedium, string> = {
+  turns: "Conversation",
+  exchange: "Messages",
+  document: "Document",
+  text: "Pasted text",
+};
+
+export interface NameableKeptSource {
+  label: string | null;
+  /** `KeptSourceMedium` on a full row, the raw server string on a brief one. */
+  medium: KeptSourceMedium | string | null;
+  captured_at: string | null;
+  url?: string | null;
+}
+
+export function keptSourceTitle(
+  source: NameableKeptSource,
+  now: Date = new Date(),
+): string {
   const label = source.label?.trim();
   if (label) return label;
   if (source.url) return source.url;
-  return "Untitled source";
+
+  const medium = keptSourceMedium(source.medium);
+  const kind = medium ? MEDIUM_IN_WORDS[medium] : "Source";
+  const when = source.captured_at ? new Date(source.captured_at) : null;
+  if (!when || Number.isNaN(when.getTime())) {
+    // Even the date is unknown — say only what is true. Still never "Untitled".
+    return `${kind} you added`;
+  }
+  const sameYear = when.getFullYear() === now.getFullYear();
+  const day = when.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
+  return `${kind} you added on ${day}`;
 }

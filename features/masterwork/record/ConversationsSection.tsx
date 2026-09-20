@@ -79,20 +79,39 @@ export function ConversationsSection({
   );
   const [hiddenCount, setHiddenCount] = useState(0);
 
+  // A READ THAT FAILED IS NOT "No interviews yet" (cold walk 12, D9). The
+  // interview history read now throws when the association read is refused
+  // rather than answering `[]`, so this block says which of the two it is —
+  // an unhandled rejection here would have been a permanent spinner, and the
+  // old silent `[]` was a confident falsehood on a Rulebook full of them.
+  const [readError, setReadError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const res = await listRulebookInterviewsWithAccess(rulebookId, rules);
-      if (cancelled) return;
-      setInterviews(res.interviews);
-      onCount?.(res.interviews.length);
-      setHiddenCount(res.hiddenCount);
+      try {
+        const res = await listRulebookInterviewsWithAccess(rulebookId, rules);
+        if (cancelled) return;
+        setReadError(null);
+        setInterviews(res.interviews);
+        onCount?.(res.interviews.length);
+        setHiddenCount(res.hiddenCount);
+      } catch (err) {
+        if (cancelled) return;
+        setInterviews([]);
+        setReadError(
+          err instanceof Error
+            ? err.message
+            : "We couldn't read this Rulebook's interviews.",
+        );
+      }
     })();
     return () => {
       cancelled = true;
     };
     // rulebookVersion is the refresh signal: the Scout writing drafts bumps it.
-  }, [rulebookId, rules, rulebookVersion]);
+  }, [rulebookId, rules, rulebookVersion, attempt]);
 
   return (
     <div data-surface-value="conversations">
@@ -100,6 +119,22 @@ export function ConversationsSection({
         <div className="flex justify-center px-3 py-4">
           <LoadingSpinner size="sm" />
         </div>
+      ) : readError ? (
+        <p className="px-3 py-3 text-xs leading-5 text-muted-foreground">
+          {readError}{" "}
+          <button
+            type="button"
+            onClick={() => {
+              setReadError(null);
+              setInterviews(null);
+              setAttempt((n) => n + 1);
+            }}
+            className="font-medium text-primary underline-offset-2 hover:underline"
+          >
+            Try again
+          </button>
+          .
+        </p>
       ) : interviews.length === 0 ? (
         <p className="px-3 py-3 text-xs leading-5 text-muted-foreground">
           No interviews yet. Talk about how you work and rules get drafted as

@@ -142,6 +142,12 @@ const config: Config = {
         // measures real rendered layout in Chromium via its own Playwright
         // config and `globalSetup`; Jest must not load its `.spec.ts` either.
         "/features/masterwork/components/detail/__tests__/rule-row-squeeze/",
+        // Same class: the Library table reachability gate
+        // (`pnpm test:library-table-reachable`,
+        // playwright.library-table-reachable.config.ts) measures real
+        // rendered layout in Chromium via its own Playwright config and
+        // `globalSetup`; Jest must not load its `.spec.ts` either.
+        "/features/source-library/__tests__/library-table-reachable/",
         // RED TWINS. A `*.red.test.tsx` is a suite that MUST fail: it runs the
         // same assertions against the defect, so a green suite cannot be green
         // on the mere fact that something rendered. They are run BY NAME

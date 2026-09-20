@@ -120,6 +120,13 @@ export interface KeptSourceBrief {
   medium: string;
   approach_key: string;
   word_count: number | null;
+  /**
+   * Selected because a source with no `label` is named from WHAT IT IS and
+   * WHEN IT ARRIVED (cold walk 12, D8 — `keptSourceTitle`). Without this the
+   * brief row cannot answer the second half and falls back to "Untitled",
+   * which is the whole defect.
+   */
+  captured_at: string;
 }
 
 /**
@@ -140,7 +147,7 @@ export async function listKeptSourcesBrief(
   const { data, count, error } = await supabase
     .schema("platform")
     .from("masterwork_source")
-    .select("source_key,label,medium,approach_key,word_count", {
+    .select("source_key,label,medium,approach_key,word_count,captured_at", {
       count: "exact",
     })
     .eq("rulebook_id", rulebookId)

@@ -37,6 +37,7 @@ import { selectUserInputText } from "@/features/agents/redux/execution-system/in
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/redux/hooks";
 import { selectPrimaryRequest } from "@/features/agents/redux/execution-system/active-requests/active-requests.selectors";
 import { useMandate } from "@/features/mandates/useMandate";
+import { useOrganizationRequired } from "@/features/organizations/useOrganizationRequired";
 import { useConversationResume } from "@/features/agents/hooks/useConversationResume";
 import { supabase } from "@/utils/supabase/client";
 import {
@@ -614,23 +615,57 @@ export function ScoutInterviewContent({
     setChoice({ mode: "resume", conversationId: initialConversationId });
   }, [initialConversationId]);
 
+  // 🚨 THE HISTORY READ IS ASKED ONCE THE ORGANIZATION EXISTS, AND ITS FAILURE
+  // IS NEVER READ AS "no interviews" (cold walk 12, D9).
+  //
+  // Reloading `/masterwork/<id>?interview=1` four turns into an interview
+  // landed the Expert back on "Before we start", with no offer to carry on,
+  // while every one of her turns sat kept server-side. The chooser that says
+  // "Pick up where you left off" was already written — it simply never
+  // rendered, because `listRulebookInterviews` answered `[]`.
+  //
+  // Two causes, both closed here. (1) The read is org-required and this panel
+  // opens on deep-link ARRIVAL, so on a reload it raced the boot that selects
+  // the organization and was refused before it ever reached the network;
+  // `useOrganizationRequired` is the platform's one reading of that state, so
+  // we hold the skeleton instead of racing it. (2) A refused read came back as
+  // an empty array, which is a real and different answer; it now throws
+  // (`InterviewHistoryUnavailable`) and we say so with a way to try again.
+  //
+  // The auto-jump to "Before we start" therefore fires on a CONFIRMED empty
+  // history and nothing else.
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyAttempt, setHistoryAttempt] = useState(0);
+  const { canLoad, organizationRequired } = useOrganizationRequired();
   useEffect(() => {
+    if (!canLoad) return undefined;
     let cancelled = false;
     void (async () => {
-      const rows = await listRulebookInterviews(rulebookId);
-      if (cancelled) return;
-      setInterviews(rows);
-      // No history → straight into a new interview, exactly as before.
-      if (rows.length === 0) {
-        setChoice((prev) =>
-          prev.mode === "choose" ? { mode: "configure", key: 0 } : prev,
+      try {
+        const rows = await listRulebookInterviews(rulebookId);
+        if (cancelled) return;
+        setHistoryError(null);
+        setInterviews(rows);
+        // No history → straight into a new interview, exactly as before.
+        if (rows.length === 0) {
+          setChoice((prev) =>
+            prev.mode === "choose" ? { mode: "configure", key: 0 } : prev,
+          );
+        }
+      } catch (err) {
+        if (cancelled) return;
+        setInterviews([]);
+        setHistoryError(
+          err instanceof Error
+            ? err.message
+            : "We couldn't check whether this Rulebook already has an interview going.",
         );
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [rulebookId]);
+  }, [rulebookId, canLoad, historyAttempt]);
 
   const startNew = useCallback(() => {
     const key = freshKey + 1;
@@ -638,8 +673,43 @@ export function ScoutInterviewContent({
     setChoice({ mode: "configure", key });
   }, [freshKey]);
 
-  if (loading || rulebookDoc.loading || interviews === null)
+  if (loading || rulebookDoc.loading || interviews === null) {
+    // No organization yet is a HOLD, not an empty history — the skeleton stays
+    // until the boot settles, and only a boot that settles with no
+    // organization at all says so.
+    if (organizationRequired) {
+      return (
+        <div className="px-4 py-6 text-sm text-muted-foreground">
+          Choose which organization this interview belongs to, at the top of
+          the page, and it will pick up from here.
+        </div>
+      );
+    }
     return <ChatRoomSkeleton />;
+  }
+
+  // A history we could not READ never renders as a history that is EMPTY.
+  if (historyError) {
+    return (
+      <div className="space-y-3 px-4 py-6 text-sm">
+        <p className="text-foreground">
+          {historyError} If one is already going, starting a new one here would
+          leave it behind — so nothing has been started.
+        </p>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => {
+            setHistoryError(null);
+            setInterviews(null);
+            setHistoryAttempt((n) => n + 1);
+          }}
+        >
+          Try again
+        </Button>
+      </div>
+    );
+  }
   if (error || !mandate?.agentId) {
     return (
       <div className="px-4 py-6 text-sm text-muted-foreground">

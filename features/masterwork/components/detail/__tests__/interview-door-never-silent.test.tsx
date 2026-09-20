@@ -79,6 +79,18 @@ jest.mock("@/utils/supabase/client", () => ({
   },
 }));
 
+// The panel reads the organization gate before it asks for the interview
+// history (cold walk 12, D9 — a reload used to race the organization boot and
+// read the refusal as "no interviews"). This suite is about the door never
+// going blank, not about that gate, so the gate is settled and out of the way.
+jest.mock("@/features/organizations/useOrganizationRequired", () => ({
+  useOrganizationRequired: () => ({
+    canLoad: true,
+    organizationRequired: false,
+    resolving: false,
+  }),
+}));
+
 jest.mock("@/lib/redux/hooks", () => ({
   useAppDispatch: () => () => {},
   useAppStore: () => ({ getState: () => ({}) }),
