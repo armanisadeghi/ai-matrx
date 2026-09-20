@@ -41,39 +41,107 @@ function kebabToCamel(value: string): string {
 }
 
 /**
- * The top-level settings sections, in the registry's own spelling. Nested tabs
- * live under one of these (`ai.textGeneration` under `ai`), so the first
- * segment is what decides whether a settings href names a real section.
+ * 🚨 EVERY CONSUMED SEGMENT IS JUDGED, NOT JUST THE FIRST (V-29 NEW-7). The
+ * first version of this vocabulary asked only whether segment ONE named a real
+ * section, so `/user-settings/integrations/not-a-real-tab` answered `true` — a
+ * href naming a section that exists and a tab that does not, walking through
+ * the guard whose whole question is "does following this land on the thing it
+ * names". The settings URL is a WHOLE tab id
+ * (`features/settings/route-shell/routing.ts`: segments → kebab-to-camel →
+ * dot-joined), and a tab id the registry does not carry renders no tab at all
+ * (`useSettingsTree.resolveTab` → `findTab` → `null`). So the vocabulary is the
+ * registry's FULL id set, sub-tabs included.
+ *
+ * The registry's own spelling, `features/settings/registry.ts`. Every id is
+ * diffed against the registry's REAL export by
+ * `__tests__/a-declared-href-lands-on-what-it-names.test.ts` — which imports
+ * `settingsRegistry` rather than grepping its source, because a regex over one
+ * file measures one spelling in one file (V-29 NEW-7's second half).
  */
-export const SETTINGS_SECTION_IDS: readonly string[] = [
+export const SETTINGS_TAB_IDS: readonly string[] = [
   "account",
+  "account.addresses",
+  "account.contact",
+  "account.emergency",
+  "account.identity",
+  "account.work",
   "admin",
+  "admin.server",
   "ai",
+  "ai.assistants",
+  "ai.imageGeneration",
+  "ai.memory",
+  "ai.models",
+  "ai.photoEditing",
+  "ai.textGeneration",
   "appearance",
-  "communication",
+  "appearance.accent",
+  "appearance.density",
+  "appearance.layout",
+  "appearance.siteWorkbench",
+  "appearance.theme",
+  "appearance.windows",
+  "communication.email",
+  "communication.messaging",
+  "communication.video",
   "devices",
   "editor",
+  "editor.codeWorkspace",
+  "editor.coding",
+  "editor.keybindings",
   "extension",
   "feedback",
-  "files",
+  "files.devices",
   "general",
+  "general.conversationFilters",
+  "general.language",
+  "general.lists",
+  "general.notifications",
+  "general.personalConfig",
+  "general.privacy",
+  "general.system",
   "integrations",
-  "learning",
+  "integrations.googleWorkspace",
+  "integrations.microsoft",
+  "learning.flashcards",
   "organizations",
+  "organizations.mediaCatalog",
   "plan",
   "sandboxStorage",
   "voice",
+  "voice.diagnostics",
+  "voice.dictionary",
+  "voice.input",
+  "voice.tts",
 ];
+
+/**
+ * The one id family this file cannot enumerate: the taxonomy-driven
+ * configuration sections (`features/settings/universal/configTree.ts`) are
+ * built at runtime from the org's registry domains, under the root `config`.
+ * They are real pages, so a `config`-rooted href answers — and this comment is
+ * the honest statement that their leaf names are NOT checked here.
+ */
+const CONFIG_TAB_ROOT_ID = "config";
+
+/** Segments → the registry tab id the route would resolve them to. */
+export function settingsTabIdFor(segments: readonly string[]): string {
+  return segments.filter(Boolean).map(kebabToCamel).join(".");
+}
 
 export const CLOSED_VOCABULARY_SEGMENTS: readonly ClosedVocabularySegment[] = [
   {
     pattern: "/user-settings/[[...path]]",
     param: "path",
     source: "features/settings/registry.ts",
-    why: "app/(core)/user-settings/[[...path]]/page.tsx translates the segments into a registry TAB ID (`urlToTabId`) and renders that section — the segments are page names, never a record id.",
+    why: "app/(core)/user-settings/[[...path]]/page.tsx translates ALL the segments into one registry TAB ID (`urlToTabId`) and renders that tab — the segments are page names, never a record id, and a tab id the registry does not carry renders nothing.",
     has(segments) {
       if (segments.length === 0) return true; // the settings home
-      return SETTINGS_SECTION_IDS.includes(kebabToCamel(segments[0]));
+      const tabId = settingsTabIdFor(segments);
+      if (SETTINGS_TAB_IDS.includes(tabId)) return true;
+      return (
+        tabId === CONFIG_TAB_ROOT_ID || tabId.startsWith(`${CONFIG_TAB_ROOT_ID}.`)
+      );
     },
   },
 ];

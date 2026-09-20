@@ -49,6 +49,23 @@
  *      nothing, while the two in-function variants beside it were flagged. ONE
  *      hop, one file: a helper imported from another module is still invisible.
  *
+ * WHAT IT REPORTS AS **UNMEASURED** (added 2026-09-20, V-29 NEW-8). The two
+ * blind spots above used to print NOTHING — a file the scan could not judge was
+ * character-identical to a file with no defect, so "not looked at" read as
+ * "clean". So when the rows a completeness question is asked of came from
+ * somewhere this text scan cannot see, the read is listed in its OWN section,
+ * with its own count, as UNMEASURED:
+ *
+ *   - CROSS-FILE: the variable being indexed / diffed was returned by a helper
+ *     IMPORTED from another module. The read is in that file; this sweep never
+ *     saw it, and cannot say whether it is bounded.
+ *   - TWO HOPS: a helper in this file performs a bare read and returns the
+ *     rows, and its caller hands them on again rather than deciding — the
+ *     second hop is past the one hop shape 3 follows.
+ *
+ * An unmeasured line is NEVER a finding and never a verdict: it is the sweep
+ * saying out loud what it did not judge. Exit code is 0 either way.
+ *
  * WHAT IT DOES NOT FLAG: a read that only renders. That is not this bug.
  *
  * Loud, ADVISORY, never blocking (exit 0 always, per the repo's scream-never-
@@ -64,7 +81,9 @@
  *   - a list read in one function and judged in another is tracked through an
  *     index that escapes its function (shape 2) and across ONE return to a
  *     caller in the SAME file (shape 3) — never across a module boundary, and
- *     never two hops;
+ *     never two hops; both of those are now REPORTED as UNMEASURED rather than
+ *     passed over in silence (V-29 NEW-8), and the cross-file half only looks
+ *     at an AWAITED first-party helper, so a synchronous selector is not one;
  *   - a helper whose return is DERIVED from the rows (`.filter(…)`, `.length`)
  *     is not treated as a read source: what the caller holds is no longer the
  *     list;
@@ -129,6 +148,27 @@ const WINDOW = 60;
 const LOOP_BODY = 20;
 
 type Shape = "direct" | "index" | "returned";
+
+/** Why this read could not be judged — never a finding (V-29 NEW-8). */
+type Blindness = "cross-file" | "two-hops";
+
+interface Unmeasured {
+  file: string;
+  line: number;
+  /** The helper whose rows this scan cannot see through. */
+  source: string;
+  /** The variable the completeness question was asked of. */
+  variable: string;
+  consumer: string;
+  kind: Blindness;
+  /** One sentence naming what was not judged, and why. */
+  reason: string;
+}
+
+export interface ScanResult {
+  findings: Finding[];
+  unmeasured: Unmeasured[];
+}
 
 interface Finding {
   file: string;
@@ -506,9 +546,147 @@ function returnedRowsConsumer(
   return null;
 }
 
-export function scanSource(src: string, rel: string): Finding[] {
-  if (!src.includes(".from(") && !src.includes(".rpc(")) return [];
+/**
+ * 🚨 UNMEASURED IS NOT CLEAN (V-29 NEW-8), half one: THE ROWS CAME FROM ANOTHER
+ * FILE. `const rows = await loadKnobs(); const byKey = new Map(rows.map(…));
+ * byKey.get(k) === undefined` is the ordinary service+hook layout, and this
+ * text scan cannot open `./service` to see whether that read is bounded. It
+ * used to print nothing at all. Now it says so.
+ */
+function firstPartyNamedImports(src: string): Map<string, string> {
+  const out = new Map<string, string>();
+  const re = /import\s+(?:type\s+)?\{([^}]*)\}\s*from\s*["'`]([^"'`]+)["'`]/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(src)) !== null) {
+    const from = m[2] ?? "";
+    // Only our own modules: a node_modules helper is somebody else's read.
+    if (!from.startsWith(".") && !from.startsWith("@/")) continue;
+    for (const part of (m[1] ?? "").split(",")) {
+      const name = part.trim().split(/\s+as\s+/).pop()?.trim();
+      if (name) out.set(name, from);
+    }
+  }
+  return out;
+}
+
+/** Helper names that plausibly hand back ROWS — precision over recall. */
+const READ_ISH = /^(?:use)?(?:load|fetch|get|list|read|query|select|all)/i;
+
+function crossFileUnmeasured(src: string, lines: string[], rel: string): Unmeasured[] {
+  const imported = firstPartyNamedImports(src);
+  if (imported.size === 0) return [];
+  const out: Unmeasured[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? "";
+    // AWAIT is required, and it is the discriminator that keeps this section
+    // worth reading: a DB read helper is asynchronous, while the synchronous
+    // `selectX` / `getX` a component imports is a selector over state already
+    // in memory — 225 lines became 44 when this was added.
+    const call = line.match(
+      /(?:const|let)\s*(?:\{[^}]*\}|[A-Za-z_$][\w$]*)\s*(?::[^=]*)?=\s*await\s+([A-Za-z_$][\w$]*)\s*\(/,
+    );
+    const fn = call?.[1];
+    if (!fn || !imported.has(fn) || !READ_ISH.test(fn)) continue;
+    if (BOUNDED.some((b) => fn.includes(b.replace(/[.(]/g, "")))) continue;
+
+    let end = i;
+    while (end < lines.length && !(lines[end] ?? "").includes(";")) end++;
+    const stmt = lines.slice(i, Math.min(end + 1, lines.length)).join("\n");
+    if (BOUNDED.some((b) => stmt.includes(b))) continue;
+    const held = assignedVariable(stmt);
+    if (!held) continue;
+
+    const from = end + 1;
+    const to = Math.min(lines.length, end + 1 + WINDOW);
+    const direct = directConsumer(lines, from, to, held);
+    const index = direct ? null : indexConsumer(lines, from, to, held);
+    if (!direct && !index) continue;
+
+    const consumer = direct
+      ? `${held} ${direct.op}`
+      : `${index?.how} → ${index?.via} ${index?.op}`;
+    out.push({
+      file: rel,
+      line: i + 1,
+      source: `${fn}()`,
+      variable: held,
+      consumer,
+      kind: "cross-file",
+      reason: `\`${held}\` is asked a completeness question, but it comes from \`${fn}()\`, imported from "${imported.get(fn)}" — the read itself is in another file, so this sweep never judged whether it is bounded.`,
+    });
+  }
+  return out;
+}
+
+/**
+ * Half two: TWO HOPS IN ONE FILE. Shape 3 follows a helper's rows across ONE
+ * return. When the caller hands them on AGAIN (`return await loadRows()`),
+ * the verdict is somewhere this scan does not go — quiet, and quiet is what
+ * NEW-8 is about.
+ */
+function secondHopUnmeasured(
+  lines: string[],
+  readLine: number,
+  stmtEnd: number,
+  variable: string,
+  rel: string,
+  target: string,
+): Unmeasured | null {
+  const fn = enclosingFunction(lines, readLine);
+  if (!fn) return null;
+  let bodyEnd = Math.min(lines.length, stmtEnd + 1 + WINDOW);
+  for (let j = stmtEnd + 1; j < bodyEnd; j++) {
+    const l = lines[j] ?? "";
+    if (/^\s*[})\]];?\s*$/.test(l) || FUNCTION_HEAD.test(l)) {
+      bodyEnd = j + 1;
+      break;
+    }
+  }
+  const returnAt = returnsVariable(lines, stmtEnd + 1, bodyEnd, variable);
+  if (returnAt === null) return null;
+
+  const call = new RegExp(
+    `(?:const|let|var)\\s*(?:\\{[^}]*\\}|[A-Za-z_$][\\w$]*)\\s*(?::[^=]*)?=\\s*(?:await\\s+)?${fn.name.replace(/\$/g, "\\$")}\\s*\\(`,
+  );
+  for (let j = 0; j < lines.length; j++) {
+    // Never the body the read sits in — a recursive call is not a hop.
+    if (j >= fn.line && j <= returnAt) continue;
+    if (!call.test(lines[j] ?? "")) continue;
+    let end = j;
+    while (end < lines.length && !(lines[end] ?? "").includes(";")) end++;
+    const stmt = lines.slice(j, Math.min(end + 1, lines.length)).join("\n");
+    const held = assignedVariable(stmt);
+    if (!held) continue;
+
+    const outer = enclosingFunction(lines, j);
+    let outerEnd = Math.min(lines.length, end + 1 + WINDOW);
+    for (let k = end + 1; k < outerEnd; k++) {
+      const l = lines[k] ?? "";
+      if (/^\s*[})\]];?\s*$/.test(l) || FUNCTION_HEAD.test(l)) {
+        outerEnd = k + 1;
+        break;
+      }
+    }
+    if (returnsVariable(lines, end + 1, outerEnd, held) === null) continue;
+    return {
+      file: rel,
+      line: readLine + 1,
+      source: `${fn.name}() → ${outer?.name ?? "a second helper"}()`,
+      variable,
+      consumer: `handed on again from ${outer?.name ?? "the caller"}()`,
+      kind: "two-hops",
+      reason: `the \`${target}\` rows leave \`${fn.name}()\` and are handed on again by \`${outer?.name ?? "its caller"}()\` — a second hop, past the ONE hop this scan follows, so whoever decides with them was never judged.`,
+    };
+  }
+  return null;
+}
+
+/** Findings AND what this sweep could not judge (V-29 NEW-8). */
+export function scanAll(src: string, rel: string): ScanResult {
   const lines = src.split("\n");
+  const unmeasured: Unmeasured[] = crossFileUnmeasured(src, lines, rel);
+  if (!src.includes(".from(") && !src.includes(".rpc(")) return { findings: [], unmeasured };
   const findings: Finding[] = [];
 
   for (let i = 0; i < lines.length; i++) {
@@ -583,7 +761,13 @@ export function scanSource(src: string, rel: string): Finding[] {
     // Shape 3 — the read is in a helper that RETURNS the rows, and a CALLER in
     // this file asks the completeness question of what it got back.
     const hop = returnedRowsConsumer(lines, i, end, variable);
-    if (!hop) continue;
+    if (!hop) {
+      // …and when the rows leave through a SECOND hop, say so out loud rather
+      // than printing the same nothing a clean file prints (V-29 NEW-8).
+      const blind = secondHopUnmeasured(lines, i, end, variable, rel, m[1] ?? "?");
+      if (blind) unmeasured.push(blind);
+      continue;
+    }
     findings.push({
       file: rel,
       line: i + 1,
@@ -596,16 +780,21 @@ export function scanSource(src: string, rel: string): Finding[] {
       ...(filteredByIn ? { filteredByIn: true } : {}),
     });
   }
-  return findings;
+  return { findings, unmeasured };
+}
+
+/** The findings half, for callers (and self-test checks) that only want those. */
+export function scanSource(src: string, rel: string): Finding[] {
+  return scanAll(src, rel).findings;
 }
 
 /** The guard's own fixtures are deliberate defects, not findings. */
 const SELF = "scripts/check-unbounded-reads.ts";
 
-function scanFile(abs: string): Finding[] {
+function scanFile(abs: string): ScanResult {
   const rel = relative(ROOT, abs);
-  if (rel === SELF) return [];
-  return scanSource(readFileSync(abs, "utf8"), rel);
+  if (rel === SELF) return { findings: [], unmeasured: [] };
+  return scanAll(readFileSync(abs, "utf8"), rel);
 }
 
 /**
@@ -848,6 +1037,91 @@ function selfTest(): number {
       return [...byId.values()].map((r) => <Row key={r.id} row={r} />);
     `).length === 0,
   ]);
+  // 🚨 UNMEASURED IS NOT CLEAN — V-29 NEW-8, red then green on the two blind
+  // spots the header declares. Neither is a FINDING; both must be SAID.
+  const scan = (src: string) => scanAll(src, "fixture.ts");
+  checks.push([
+    "two hops in ONE file: no finding, and an UNMEASURED line naming the second hop",
+    (() => {
+      const r = scan(`
+        async function rawRead() {
+          const { data } = await sb.from("feature_knob").select("feature, key, value");
+          return data ?? [];
+        }
+
+        async function passThrough() {
+          const middle = await rawRead();
+          return middle;
+        }
+
+        async function readKnob(wanted) {
+          const rows = await passThrough();
+          const byKey = new Map(rows.map((r) => [addr(r), r]));
+          if (byKey.get(wanted) === undefined) throw new Error("missing knob");
+        }
+      `);
+      return (
+        r.findings.length === 0 &&
+        r.unmeasured.length === 1 &&
+        r.unmeasured[0]?.kind === "two-hops" &&
+        r.unmeasured[0]?.line === 3 &&
+        (r.unmeasured[0]?.source ?? "").includes("rawRead()") &&
+        (r.unmeasured[0]?.reason ?? "").includes("passThrough()")
+      );
+    })(),
+  ]);
+  checks.push([
+    "the same bug split across two FILES: no finding, and an UNMEASURED line naming the import",
+    (() => {
+      const r = scan(`
+        import { loadKnobRows } from "./knob-service";
+
+        export async function readKnob(wanted) {
+          const rows = await loadKnobRows();
+          const byKey = new Map(rows.map((r) => [addr(r), r]));
+          if (byKey.get(wanted) === undefined) throw new Error("missing knob");
+          return byKey.get(wanted);
+        }
+      `);
+      return (
+        r.findings.length === 0 &&
+        r.unmeasured.length === 1 &&
+        r.unmeasured[0]?.kind === "cross-file" &&
+        (r.unmeasured[0]?.source ?? "").includes("loadKnobRows()") &&
+        (r.unmeasured[0]?.reason ?? "").includes("./knob-service")
+      );
+    })(),
+  ]);
+  checks.push([
+    "a cross-file helper whose caller only RENDERS says nothing at all",
+    scan(`
+      import { loadKnobRows } from "./knob-service";
+
+      export async function Panel() {
+        const rows = await loadKnobRows();
+        return rows.map((r) => <Row key={r.id} row={r} />);
+      }
+    `).unmeasured.length === 0,
+  ]);
+  checks.push([
+    "the ONE-hop shape stays a FINDING and is never also reported unmeasured",
+    (() => {
+      const r = scan(`
+        async function loadRows() {
+          const { data } = await sb.from("feature_knob").select("feature, key, value");
+          return data ?? [];
+        }
+
+        async function readKnob(wanted) {
+          const rows = await loadRows();
+          const byKey = new Map(rows.map((r) => [addr(r), r]));
+          if (byKey.get(wanted) === undefined) throw new Error("missing knob");
+        }
+      `);
+      return r.findings.length === 1 && r.unmeasured.length === 0;
+    })(),
+  ]);
+
   checks.push([
     "the direct shape this guard already caught still fires",
     shapes(`
@@ -863,7 +1137,7 @@ function selfTest(): number {
   }
   console.log(
     ok
-      ? `[self-test] PASS — the rule fails on the real pre-fix knob reader, on every index shape of the class and on the same bug split across a helper's return, and passes on the fix.`
+      ? `[self-test] PASS — the rule fails on the real pre-fix knob reader, on every index shape of the class and on the same bug split across a helper's return, passes on the fix, and REPORTS AS UNMEASURED the two hops it cannot follow (second hop, another file).`
       : `[self-test] FAIL — the rule no longer separates the bug from the fix.`,
   );
   return ok ? 0 : 1;
@@ -883,28 +1157,34 @@ function main(): number {
       return 1;
     }
     const abs = resolve(ROOT, target);
-    console.log(
-      JSON.stringify(
-        scanSource(readFileSync(abs, "utf8"), relative(ROOT, abs)),
-        null,
-        2,
-      ),
-    );
+    const result = scanAll(readFileSync(abs, "utf8"), relative(ROOT, abs));
+    // Findings stay the top-level array this flag has always printed; what the
+    // scan could not judge is printed beside it, never mixed in.
+    console.log(JSON.stringify(result.findings, null, 2));
+    if (result.unmeasured.length > 0) {
+      console.log(
+        `\n${C.yellow}[UNMEASURED]${C.reset} ${result.unmeasured.length} read(s) this sweep could not judge:`,
+      );
+      console.log(JSON.stringify(result.unmeasured, null, 2));
+    }
     return 0;
   }
 
   const files: string[] = [];
   for (const d of SCAN_DIRS) walk(resolve(ROOT, d), files);
-  const findings = files.flatMap(scanFile);
+  const results = files.map(scanFile);
+  const findings = results.flatMap((r) => r.findings);
+  const unmeasured = results.flatMap((r) => r.unmeasured);
 
   if (process.argv.includes("--json")) {
-    console.log(JSON.stringify(findings, null, 2));
+    console.log(JSON.stringify({ findings, unmeasured }, null, 2));
     return 0;
   }
   if (findings.length === 0) {
     console.log(
       `${C.cyan}[INFO]${C.reset} Unbounded reads: none feeding an existence/diff decision.`,
     );
+    printUnmeasured(unmeasured);
     return 0;
   }
 
@@ -944,7 +1224,38 @@ function main(): number {
       `  ${C.dim}Not a defect if a short list is an acceptable answer here (rendering, preview, sampling).${C.reset}`,
   );
   console.log();
+  printUnmeasured(unmeasured);
   return 0; // ALWAYS advisory — scream, never block.
+}
+
+/**
+ * 🚨 UNMEASURED IS ITS OWN SECTION AND ITS OWN COUNT (V-29 NEW-8). Not a
+ * finding, not a defect verdict, never an exit code: the sweep saying which
+ * reads it did NOT judge, so a reader can tell a judged file from an
+ * unjudgeable one.
+ */
+function printUnmeasured(unmeasured: Unmeasured[]): void {
+  if (unmeasured.length === 0) return;
+  const byFile = new Map<string, Unmeasured[]>();
+  for (const u of unmeasured)
+    byFile.set(u.file, [...(byFile.get(u.file) ?? []), u]);
+  console.log(
+    `${C.cyan}[UNMEASURED]${C.reset} ${C.bold}${unmeasured.length}${C.reset} complete-list decision(s) this sweep could NOT judge ` +
+      `${C.dim}(not findings — the reads themselves are out of this text scan's reach)${C.reset}`,
+  );
+  for (const [file, rows] of [...byFile].sort((a, b) => a[0].localeCompare(b[0]))) {
+    console.log(`\n  ${C.white}${file}${C.reset}`);
+    for (const u of rows) {
+      console.log(
+        `    ${C.dim}:${u.line}${C.reset} ${C.cyan}${u.source}${C.reset} → ${C.white}${u.variable}${C.reset} ` +
+          `${C.dim}[${u.kind}]${C.reset}\n      ${C.dim}${u.reason}${C.reset}`,
+      );
+    }
+  }
+  console.log(
+    `\n  ${C.dim}Judge these by hand, or move the read onto readAllRows so the question never arises.${C.reset}`,
+  );
+  console.log();
 }
 
 exitAfterDrain(main());

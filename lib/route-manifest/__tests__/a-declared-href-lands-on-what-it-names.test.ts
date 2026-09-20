@@ -19,11 +19,10 @@
  * answers.
  */
 
-import { readFileSync } from "node:fs";
-import path from "node:path";
+import { settingsRegistry } from "@/features/settings/registry";
 
 import { routeAnswerFor, routeEntryFor, routeStatusFor } from "../match";
-import { SETTINGS_SECTION_IDS } from "../vocabulary";
+import { SETTINGS_TAB_IDS } from "../vocabulary";
 
 describe("a static href may not be swallowed by a dynamic segment", () => {
   it("fails the exact href the connectors doc names, by name", () => {
@@ -48,9 +47,9 @@ describe("a static href may not be swallowed by a dynamic segment", () => {
     expect(answer.entry?.pattern).toBe("/marketing/brands");
   });
 
-  it("passes a dynamic href whose caller declares the param it filled", () => {
+  it("passes a dynamic href whose caller supplies the VALUE it filled", () => {
     const answer = routeAnswerFor("/marketing/sites/8f1c0d2e-site", {
-      params: ["siteId"],
+      params: { siteId: "8f1c0d2e-site" },
     });
     expect(answer.entry?.pattern).toBe("/marketing/sites/[siteId]");
     expect(answer.answers).toBe(true);
@@ -59,10 +58,44 @@ describe("a static href may not be swallowed by a dynamic segment", () => {
 
   it("still fails a dynamic href that declares the WRONG param", () => {
     const answer = routeAnswerFor("/marketing/sites/8f1c0d2e-site", {
-      params: ["brandId"],
+      params: { brandId: "8f1c0d2e-site" },
     });
     expect(answer.answers).toBe(false);
     expect(answer.problem).toContain("`/marketing/sites/[siteId]`");
+  });
+
+  /**
+   * 🚨 A DECLARATION IS NOT A FACT (V-29 NEW-6). `params` used to be a list of
+   * NAMES, and a name simply switched the check off for that segment — so
+   * `routeAnswerFor("/marketing/sites/tracking", { params: ["siteId"] })`
+   * answered TRUE: the one href this whole suite exists to refuse, waved
+   * through by the caller's own say-so. The first action that legitimately
+   * carries a param would have disabled the guard for its own row, hardcoded
+   * literal and all.
+   */
+  it("refuses the door-to-nowhere href even when the caller DECLARES the param", () => {
+    const answer = routeAnswerFor("/marketing/sites/tracking", {
+      params: { siteId: "8f1c0d2e-site" },
+    });
+    expect(answer.answers).toBe(false);
+    expect(answer.problem).toBe(
+      "`/marketing/sites/tracking` declares `siteId` = '8f1c0d2e-site', but its `[siteId]` segment carries 'tracking' — the href does not name what the caller says it does.",
+    );
+  });
+
+  it("refuses a param declared by NAME only, and says the declaration proves nothing", () => {
+    const answer = routeAnswerFor("/marketing/sites/tracking", {
+      params: ["siteId"],
+    });
+    expect(answer.answers).toBe(false);
+    expect(answer.problem).toBe(
+      "`/marketing/sites/tracking` declares the parameter `siteId` but supplies no value for it, so nothing checked that 'tracking' is a real site and not a literal word — pass `params: { siteId: <the value in the href> }`.",
+    );
+    // Even a genuine id is unverified when only the NAME was declared: the
+    // whole point is that nobody compared the href to the value.
+    expect(routeAnswerFor("/marketing/sites/8f1c0d2e-site", { params: ["siteId"] }).answers).toBe(
+      false,
+    );
   });
 
   it("fails a registered coming-soon placeholder", () => {
@@ -77,6 +110,36 @@ describe("a static href may not be swallowed by a dynamic segment", () => {
     expect(answer.status).toBe("unbuilt");
     expect(answer.answers).toBe(false);
     expect(answer.problem).toContain("served by no route");
+  });
+
+  /**
+   * 🚨 AN ABSOLUTE ADDRESS IS NOT A 404 (V-29 NEW-9). This used to come back
+   * "served by no route in the manifest — it is a 404", sending the reader to
+   * hunt for a route that was never missing. It fails safe either way; the
+   * sentence is the defect.
+   */
+  it("calls an absolute href external, never a missing route", () => {
+    const answer = routeAnswerFor("https://aimatrx.com/marketing/sites/tracking");
+    expect(answer.answers).toBe(false);
+    expect(answer.external).toBe(true);
+    expect(answer.problem).toBe(
+      "`https://aimatrx.com/marketing/sites/tracking` is an absolute address, not a path this app routes — an external address is never a route door; use an explicit external action.",
+    );
+    expect(answer.problem).not.toContain("404");
+
+    for (const href of [
+      "http://example.com/x",
+      "//aimatrx.com/marketing/brands",
+      "mailto:support@aimatrx.com",
+      "tel:+15555550100",
+    ]) {
+      const external = routeAnswerFor(href);
+      expect(external.external).toBe(true);
+      expect(external.problem).toContain("an external address is never a route door");
+    }
+
+    // A same-origin path is still judged as a path, absolute-looking or not.
+    expect(routeAnswerFor("/marketing/brands").external).toBeUndefined();
   });
 
   it("ignores query and hash, which are the route's business", () => {
@@ -96,14 +159,16 @@ describe("Next.js specificity survives the guard", () => {
   it("lets an optional catch-all match zero segments", () => {
     // `/marketing/brands/[brandId]/[[...rest]]` serves a bare brand href, and
     // the catch-all that consumed nothing is not somebody's id.
-    const answer = routeAnswerFor("/marketing/brands/brand-42", { params: ["brandId"] });
+    const answer = routeAnswerFor("/marketing/brands/brand-42", {
+      params: { brandId: "brand-42" },
+    });
     expect(answer.entry?.pattern).toBe("/marketing/brands/[brandId]/[[...rest]]");
     expect(answer.answers).toBe(true);
   });
 
   it("treats a catch-all that DID consume segments as an undeclared param", () => {
     const answer = routeAnswerFor("/marketing/brands/brand-42/settings", {
-      params: ["brandId"],
+      params: { brandId: "brand-42" },
     });
     expect(answer.answers).toBe(false);
     expect(answer.problem).toContain("rest");
@@ -132,19 +197,65 @@ describe("a route may declare its segment is a page name, and must prove it", ()
   });
 
   /**
-   * 🚨 THE VOCABULARY IS NOT A HAND LIST THAT MAY DRIFT. It is a claim about
-   * `features/settings/registry.ts`, so it is diffed against that file: adding a
-   * settings section, or retiring one, fails here until `vocabulary.ts` knows.
+   * 🚨 EVERY SEGMENT IS JUDGED, NOT JUST THE FIRST (V-29 NEW-7). The first
+   * version of the vocabulary read segment ONE and stopped, so
+   * `/user-settings/integrations/not-a-real-tab` — a real section and a tab
+   * that does not exist — answered TRUE inside the guard whose only question is
+   * whether following the href lands on what it names. The settings URL is one
+   * whole tab id (`urlToTabId`), and an id the registry does not carry renders
+   * no tab at all.
    */
-  it("declares exactly the settings sections the registry declares", () => {
-    const registry = readFileSync(
-      path.join(__dirname, "..", "..", "..", "features", "settings", "registry.ts"),
-      "utf8",
+  it("refuses a real settings section with a sub-tab that does not exist", () => {
+    const answer = routeAnswerFor("/user-settings/integrations/not-a-real-tab");
+    expect(answer.status).toBe("live");
+    expect(answer.answers).toBe(false);
+    expect(answer.problem).toBe(
+      "`/user-settings/integrations/not-a-real-tab` is served by `/user-settings/[[...path]]` — it would open the path named 'integrations/not-a-real-tab'.",
     );
-    const sections = new Set(
-      [...registry.matchAll(/^\s+id: "([^"]+)"/gm)].map((hit) => hit[1].split(".")[0]),
-    );
-    expect(sections.size).toBeGreaterThan(5); // the parse itself found something
-    expect([...SETTINGS_SECTION_IDS].sort()).toEqual([...sections].sort());
+    // …and the real sub-tab beside it still answers.
+    expect(routeAnswerFor("/user-settings/integrations/google-workspace").answers).toBe(true);
+    // A category that is not itself a tab is as dead as any other literal:
+    // `communication.email` is a tab, `communication` is not.
+    expect(routeAnswerFor("/user-settings/communication").answers).toBe(false);
+    expect(routeAnswerFor("/user-settings/communication/email").answers).toBe(true);
+  });
+
+  /**
+   * 🚨 THE VOCABULARY IS NOT A HAND LIST THAT MAY DRIFT, AND THE DRIFT GUARD IS
+   * NOT A REGEX (V-29 NEW-7). This used to `readFileSync` the registry and
+   * match `^\s+id: "…"`, which measures ONE SPELLING IN ONE FILE: a section id
+   * written with single quotes, computed, or declared in another module walked
+   * straight past it. It now imports the registry's REAL export, so the check
+   * is against the ids the app actually renders.
+   */
+  it("declares exactly the tab ids the settings registry really exports", () => {
+    const ids = settingsRegistry.map((tab) => tab.id).sort();
+    expect(ids.length).toBeGreaterThan(20); // the import itself found something
+    expect([...SETTINGS_TAB_IDS].sort()).toEqual(ids);
+  });
+
+  it("answers every href the registry's own tab ids build", () => {
+    const dead = settingsRegistry
+      .map((tab) => ({
+        id: tab.id,
+        href: `/user-settings/${tab.id
+          .split(".")
+          .map((part) => part.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase())
+          .join("/")}`,
+      }))
+      .map((row) => ({ ...row, problem: routeAnswerFor(row.href).problem }))
+      .filter((row) => row.problem !== null);
+    expect(dead).toEqual([]);
+  });
+
+  /**
+   * The taxonomy-driven configuration sections are built at runtime from the
+   * org's registry domains (`features/settings/universal/configTree.ts`), so
+   * this file cannot enumerate their leaves — the `config` root answers, and
+   * this test is the written statement that its leaves are NOT checked.
+   */
+  it("answers a config-rooted settings href, whose leaves it cannot enumerate", () => {
+    expect(routeAnswerFor("/user-settings/config").answers).toBe(true);
+    expect(routeAnswerFor("/user-settings/config/marketing/sites").answers).toBe(true);
   });
 });

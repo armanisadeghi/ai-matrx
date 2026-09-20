@@ -22,8 +22,10 @@
 // the literal string "tracking", finds nothing, and refuses. The route is live,
 // the status is `live`, and the door still opens onto nothing. So a caller that
 // supplies NO parameter values may only be answered by a pattern with NO
-// dynamic segments; a caller that does supply them says which ones it filled,
-// and only those segments are allowed to be dynamic. `routeStatusFor` alone
+// dynamic segments; a caller that DOES supply them passes the VALUES it filled
+// (`{ siteId: site.id }`), and the href's own segment has to carry that exact
+// value — a declaration of names alone licenses nothing (V-29 NEW-6, where
+// `params: ["siteId"]` made this very href answer `true`). `routeStatusFor` alone
 // cannot make that distinction, because it never learns where the concrete
 // segments in an href came from — `routeAnswerFor` is the check to reach for
 // whenever an href is a declared destination rather than one a person just
@@ -108,6 +110,21 @@ function normalizePath(href: string): string {
 }
 
 /**
+ * 🚨 AN ABSOLUTE ADDRESS IS NOT A ROUTE, AND IS NOT A 404 EITHER (V-29 NEW-9).
+ * `https://aimatrx.com/marketing/sites/tracking` used to be reported as
+ * "served by no route in the manifest — it is a 404", which fails safe with the
+ * wrong sentence: it sends the reader hunting for a missing route when the real
+ * thing to say is that the manifest only ever speaks for same-origin paths.
+ * Anything carrying a scheme (`https:`, `mailto:`, `tel:`) or a protocol-
+ * relative `//host` prefix is EXTERNAL to the router, whoever owns the host.
+ */
+const ABSOLUTE_HREF = /^(?:[a-zA-Z][a-zA-Z0-9+.-]*:|\/\/)/;
+
+export function isExternalHref(href: string): boolean {
+  return ABSOLUTE_HREF.test(href.trim());
+}
+
+/**
  * The manifest row that serves this href, or `null` when nothing does (an
  * `unbuilt` route — absence from the manifest is how the generator spells it).
  * Query and hash are ignored: they are the route's business, not the router's.
@@ -180,17 +197,51 @@ export interface RouteAnswer {
   /** `null` when it answers; otherwise ONE sentence naming the defect, with
    *  both hrefs in it, ready to print in a failing expectation. */
   problem: string | null;
+  /** True when the href is an absolute/external address, which the route
+   *  manifest never speaks for (V-29 NEW-9) — never a 404 verdict. */
+  external?: boolean;
 }
+
+/**
+ * The dynamic segments this href supplies REAL values for, as NAME → VALUE.
+ * A bare list of names is accepted so an old caller still compiles, but it
+ * declares nothing this guard can check — see THE DECLARATION IS NOT A FACT.
+ */
+export type DeclaredParams =
+  | Readonly<Record<string, string>>
+  | readonly string[];
 
 export interface RouteAnswerOptions {
   /**
-   * The dynamic segment names this href supplies REAL values for — the params
-   * the declaring action carries (`["siteId"]` for a row that already knows
-   * which site it means). A name listed here licenses exactly that segment of
-   * the pattern to be dynamic; every other dynamic segment means the href's
-   * literal text is being read as somebody's id.
+   * 🚨 THE DECLARATION IS NOT A FACT (V-29 NEW-6). This used to be a list of
+   * NAMES, and a name simply switched the check off for that segment:
+   * `routeAnswerFor("/marketing/sites/tracking", { params: ["siteId"] })`
+   * answered `true` — the exact href the guard exists to refuse. A declaration
+   * a caller writes about its own href is not evidence about that href.
+   *
+   * So a param is a NAME → VALUE map (`{ siteId: site.id }`), and the segment
+   * the pattern filled must carry that exact value. A name declared with no
+   * value is UNVERIFIED and fails by sentence rather than passing quietly.
    */
-  params?: readonly string[];
+  params?: DeclaredParams;
+}
+
+/** `{ siteId: "abc" }` → the value; `["siteId"]` → `null` (declared, unproven). */
+function declaredParamValues(
+  params: DeclaredParams | undefined,
+): Map<string, string | null> {
+  const out = new Map<string, string | null>();
+  if (!params) return out;
+  if (Array.isArray(params)) {
+    for (const name of params as readonly string[]) out.set(name, null);
+    return out;
+  }
+  for (const [name, value] of Object.entries(
+    params as Readonly<Record<string, string>>,
+  )) {
+    out.set(name, value);
+  }
+  return out;
 }
 
 /**
@@ -207,6 +258,16 @@ export interface RouteAnswerOptions {
  * because the route it lands on is perfectly live.
  */
 export function routeAnswerFor(href: string, options: RouteAnswerOptions = {}): RouteAnswer {
+  if (isExternalHref(href)) {
+    return {
+      entry: null,
+      status: "unbuilt",
+      external: true,
+      answers: false,
+      problem: `\`${href}\` is an absolute address, not a path this app routes — an external address is never a route door; use an explicit external action.`,
+    };
+  }
+
   const path = normalizePath(href);
   const hit = resolve(path);
 
@@ -229,23 +290,42 @@ export function routeAnswerFor(href: string, options: RouteAnswerOptions = {}): 
     };
   }
 
-  const declared = new Set(options.params ?? []);
-  const undeclared = hit.filled.filter((segment) => {
-    if (segment.consumed.length === 0) return false; // an optional catch-all that took nothing
-    if (declared.has(segment.name)) return false; // the caller supplied this id
+  const declared = declaredParamValues(options.params);
+  for (const segment of hit.filled) {
+    if (segment.consumed.length === 0) continue; // optional catch-all, took nothing
+    const literal = segment.consumed.join("/");
+
+    if (declared.has(segment.name)) {
+      const value = declared.get(segment.name) ?? null;
+      if (value === null) {
+        // Declared by NAME only: nobody checked that this segment holds an id
+        // rather than a literal word, so the declaration proves nothing.
+        return {
+          entry: hit.entry,
+          status: hit.entry.status,
+          answers: false,
+          problem: `\`${path}\` declares the parameter \`${segment.name}\` but supplies no value for it, so nothing checked that '${literal}' is a real ${segment.name.replace(/Id$/, "")} and not a literal word — pass \`params: { ${segment.name}: <the value in the href> }\`.`,
+        };
+      }
+      if (literal === value) continue; // the href really does carry that id
+      return {
+        entry: hit.entry,
+        status: hit.entry.status,
+        answers: false,
+        problem: `\`${path}\` declares \`${segment.name}\` = '${value}', but its \`${segment.source}\` segment carries '${literal}' — the href does not name what the caller says it does.`,
+      };
+    }
+
     // A segment the ROUTE declares as a closed vocabulary of page names answers
     // when the literal is a member, and is as dead as any other swallowed word
     // when it is not (`./vocabulary.ts`).
     const vocabulary = closedVocabularyFor(hit.entry.pattern, segment.name);
-    return !vocabulary?.has(segment.consumed);
-  });
-  if (undeclared.length > 0) {
-    const first = undeclared[0];
+    if (vocabulary?.has(segment.consumed)) continue;
     return {
       entry: hit.entry,
       status: hit.entry.status,
       answers: false,
-      problem: `\`${path}\` is served by \`${hit.entry.pattern}\` — it would open the ${first.name.replace(/Id$/, "")} named '${first.consumed.join("/")}'.`,
+      problem: `\`${path}\` is served by \`${hit.entry.pattern}\` — it would open the ${segment.name.replace(/Id$/, "")} named '${literal}'.`,
     };
   }
 

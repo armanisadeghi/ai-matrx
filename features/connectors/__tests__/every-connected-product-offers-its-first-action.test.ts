@@ -201,6 +201,32 @@ describe("every product a person can switch on offers its first useful action", 
         );
       });
 
+      /**
+       * 🚨 AND A ROW MAY NOT DECLARE ITS WAY PAST THE GUARD (V-29 NEW-6), NOR
+       * POINT AT AN ABSOLUTE ADDRESS AND BE CALLED A 404 (V-29 NEW-9). Today
+       * every row's href is a fixed static string, so neither hole is in use —
+       * which is exactly when to nail them shut. A `params` DECLARATION used to
+       * switch the check off for that segment, literal and all; an absolute URL
+       * used to come back "it is a 404", sending the reader to hunt for a route
+       * that was never missing.
+       */
+      it("would refuse a declared param that the href does not carry, and call an absolute href external", () => {
+        const declared = routeAnswerFor("/marketing/sites/tracking", {
+          params: { siteId: "8f1c0d2e-site" },
+        });
+        expect(declared.answers).toBe(false);
+        expect(declared.problem).toContain("does not name what the caller says it does");
+
+        const named = routeAnswerFor("/marketing/sites/tracking", { params: ["siteId"] });
+        expect(named.answers).toBe(false);
+        expect(named.problem).toContain("supplies no value for it");
+
+        const external = routeAnswerFor("https://aimatrx.com/marketing/sites/tracking");
+        expect(external.external).toBe(true);
+        expect(external.problem).toContain("an external address is never a route door");
+        expect(external.problem).not.toContain("404");
+      });
+
       it("offers something on every row except the ones deliberately named, each with a reason", () => {
         const silent = provider.products
           .filter((product) => product.firstAction.kind === "none")
