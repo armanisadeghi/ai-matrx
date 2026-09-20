@@ -21,6 +21,7 @@
  * Advisory by default (CI is a signal, never a gate); `--strict` exits non-zero.
  * `--self-test` proves it catches each case before you trust a green run.
  */
+import { exitAfterDrain } from "./lib/exit-after-drain";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join, relative } from "node:path";
 
@@ -360,7 +361,7 @@ function main(): void {
     console.log("check:proxy-auth-hot-path — self-test");
     const ok = selfTest();
     console.log(ok ? "\nself-test PASSED" : "\nself-test FAILED");
-    process.exit(ok ? 0 : 1);
+    exitAfterDrain(ok ? 0 : 1);
   }
 
   const files: Record<string, string> = {};
@@ -387,7 +388,7 @@ function main(): void {
   for (const f of findings) {
     console.error(`  ${f.where}\n    ${f.what}\n    -> ${f.remedy}\n`);
   }
-  if (STRICT) process.exit(1);
+  if (STRICT) exitAfterDrain(1);
 }
 
 main();

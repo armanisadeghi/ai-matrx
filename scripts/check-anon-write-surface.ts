@@ -264,14 +264,12 @@ async function main() {
     // privilege (`has_column_privilege` says so) that no `relacl` query can see, and
     // it is how `docproc.processed_documents` stayed writable-by-privilege through
     // DD-193's first sweep, its self-assertion and this guard's first version. The
-    // scratch table is created and dropped inside the same rolled-back transaction.
+    // column grant on the existing protected table is always rolled back.
     await red(
       client,
-      "anon granted INSERT on NAMED COLUMNS of a scratch table (the attacl shape)",
+      "anon granted INSERT on NAMED COLUMNS of admin.admins (the attacl shape)",
       [
-        "create table public.b87_attacl_probe (id uuid primary key default gen_random_uuid(), payload text)",
-        "alter table public.b87_attacl_probe enable row level security",
-        "grant insert (id, payload) on public.b87_attacl_probe to anon",
+        "grant insert (user_id) on admin.admins to anon",
       ],
       state,
     );
@@ -291,6 +289,25 @@ async function main() {
       ["alter default privileges for role postgres in schema public grant insert on tables to anon"],
       state,
     );
+
+    // A restrictive policy is a veto, never a write authorization. Verify the
+    // actual catalog query, then prove a permissive sibling still goes RED.
+    await client.query("begin");
+    try {
+      await client.query("create policy b87_self_test_restrictive_write on admin.admins as restrictive for insert to public with check (true)");
+      if (report(await measure(client)) !== 0) {
+        throw new Error("Restrictive policy incorrectly classified as a write authorization");
+      }
+      await client.query("create policy b87_self_test_permissive_write on admin.admins for insert to public with check (true)");
+      const findings = classifyAnonWrites(await measure(client));
+      if (!findings.some((finding) => finding.arm === "policy" && finding.object === "admin.admins :: b87_self_test_permissive_write")) {
+        throw new Error("Permissive policy hidden by a restrictive sibling");
+      }
+      state.reds++;
+      console.log(`${C.g}RED proven${C.x} permissive authorization remains visible beside a restrictive policy`);
+    } finally {
+      await client.query("rollback");
+    }
 
     // ARM 4 - a write policy reaching every role that nobody declared.
     await red(

@@ -197,15 +197,15 @@ on conflict do nothing;
 --    `detail` Table is in the live kernel (db-rules §6d-1), and it is what makes
 --    arm 16 the only way in.
 -- ---------------------------------------------------------------------------
-create table corpus.corpus_home_a   (id uuid primary key, title text not null, visibility platform.visibility not null default 'personal', created_by uuid, organization_id uuid);
-create table corpus.corpus_home_b   (id uuid primary key, title text not null, visibility platform.visibility not null default 'personal', created_by uuid, organization_id uuid);
-create table corpus.corpus_item     (id uuid primary key, title text not null, visibility platform.visibility not null default 'personal', created_by uuid, organization_id uuid);
-create table corpus.corpus_note     (id uuid primary key, title text not null, visibility platform.visibility not null default 'personal', created_by uuid, organization_id uuid);
-create table corpus.corpus_loop_a   (id uuid primary key, title text not null, visibility platform.visibility not null default 'personal', created_by uuid, organization_id uuid);
-create table corpus.corpus_loop_b   (id uuid primary key, title text not null, visibility platform.visibility not null default 'personal', created_by uuid, organization_id uuid);
-create table corpus.corpus_private  (id uuid primary key, title text not null, visibility platform.visibility not null default 'personal', created_by uuid, organization_id uuid);
-create table corpus.corpus_public   (id uuid primary key, title text not null, visibility platform.visibility not null default 'personal', created_by uuid, organization_id uuid);
-create table corpus.corpus_scope    (id uuid primary key, title text not null, visibility platform.visibility not null default 'personal', created_by uuid, organization_id uuid);
+create table corpus.corpus_home_a   (id uuid primary key, title text not null, visibility platform.visibility not null default 'internal', created_by uuid, organization_id uuid);
+create table corpus.corpus_home_b   (id uuid primary key, title text not null, visibility platform.visibility not null default 'internal', created_by uuid, organization_id uuid);
+create table corpus.corpus_item     (id uuid primary key, title text not null, visibility platform.visibility not null default 'internal', created_by uuid, organization_id uuid);
+create table corpus.corpus_note     (id uuid primary key, title text not null, visibility platform.visibility not null default 'internal', created_by uuid, organization_id uuid);
+create table corpus.corpus_loop_a   (id uuid primary key, title text not null, visibility platform.visibility not null default 'internal', created_by uuid, organization_id uuid);
+create table corpus.corpus_loop_b   (id uuid primary key, title text not null, visibility platform.visibility not null default 'internal', created_by uuid, organization_id uuid);
+create table corpus.corpus_private  (id uuid primary key, title text not null, visibility platform.visibility not null default 'internal', created_by uuid, organization_id uuid);
+create table corpus.corpus_public   (id uuid primary key, title text not null, visibility platform.visibility not null default 'internal', created_by uuid, organization_id uuid);
+create table corpus.corpus_scope    (id uuid primary key, title text not null, visibility platform.visibility not null default 'internal', created_by uuid, organization_id uuid);
 create table corpus.corpus_detail   (id uuid primary key, title text not null, home_id uuid not null references corpus.corpus_home_a(id), created_by uuid, organization_id uuid);
 -- Every foreign key needs an index whose LEADING columns are the constraint columns.
 -- `provision_shape_guard` — production's event trigger, live on the rehearsal branch
