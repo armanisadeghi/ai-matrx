@@ -107,6 +107,14 @@ function PendingGroup({
   const soon = item.in_warning_window;
   const when = whenPhrase(item.days_left);
   const lead = item.rows === 1 ? "Deleted for good" : "The first goes for good";
+  const schedule =
+    item.days_left !== null && item.days_left < 0
+      ? date
+        ? `Eligible for deletion since ${date}.`
+        : "Eligible for deletion."
+      : date
+        ? `${lead} on ${date} (${when}).`
+        : `${lead} ${when}.`;
 
   return (
     <div
@@ -122,12 +130,12 @@ function PendingGroup({
           {itemCount(item.rows)} — {label}
         </p>
         <p className="text-muted-foreground mt-0.5 text-sm">
-          {date ? `${lead} on ${date} (${when}).` : `${lead} ${when}.`}
+          {schedule}
         </p>
         {soon && (
           <p className="mt-1 flex items-center gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">
             <Clock className="h-3.5 w-3.5" aria-hidden />
-            This is what we emailed you about.
+            This group is in its retention warning period.
           </p>
         )}
       </div>
@@ -538,11 +546,11 @@ export default function TrashPage() {
                       )}
                       title={
                         longDate(clock.wipe_on)
-                          ? `Deleted for good around ${longDate(clock.wipe_on)}`
+                          ? `Earliest group schedule: ${longDate(clock.wipe_on)}. Individual rows may have later deadlines.`
                           : undefined
                       }
                     >
-                      Goes {whenPhrase(clock.days_left)}
+                      Group schedule: {whenPhrase(clock.days_left)}
                     </span>
                   )}
                   <span className="text-muted-foreground hidden shrink-0 text-xs sm:inline">

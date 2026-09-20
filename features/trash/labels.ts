@@ -46,10 +46,11 @@ export function itemCount(rows: number): string {
   return `${rows.toLocaleString()} ${rows === 1 ? "item" : "items"}`;
 }
 
-/** "in 6 days" / "tomorrow" / "today" — never a raw day integer. */
+/** "in 6 days" / "tomorrow" / "today" / "eligible for deletion" — never a raw day integer. */
 export function whenPhrase(daysLeft: number | null): string {
   if (daysLeft === null) return "soon";
-  if (daysLeft <= 0) return "today";
+  if (daysLeft < 0) return "eligible for deletion";
+  if (daysLeft === 0) return "today";
   if (daysLeft === 1) return "tomorrow";
   return `in ${daysLeft} days`;
 }
