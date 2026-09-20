@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { fetchWithOrganization } from "@/lib/organizations/fetchWithOrganization";
 
 type EnrollmentStep = "phone" | "code" | "complete";
 
@@ -42,7 +43,7 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
 
     const loadEnrollment = async () => {
       try {
-        const response = await fetch("/api/sms/preferences");
+        const response = await fetchWithOrganization("/api/sms/preferences");
         const payload = (await response.json()) as SmsApiResponse;
         if (!active) return;
 
@@ -80,7 +81,7 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
   }, []);
 
   const requestVerification = async (action: "start" | "verify") => {
-    const response = await fetch("/api/sms/verify", {
+    const response = await fetchWithOrganization("/api/sms/verify", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -163,7 +164,7 @@ export function useSmsEnrollment(source: "settings" | "sms-demo") {
     setLoading(true);
     setResult(null);
     try {
-      const response = await fetch("/api/sms/preferences", {
+      const response = await fetchWithOrganization("/api/sms/preferences", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sms_enabled: false }),

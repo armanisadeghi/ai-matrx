@@ -1,67 +1,153 @@
--- W1-FIELD-TYPES — THE RED TWIN of `w1_field_types_c41.sql` (BUILD-BOOK rule 2).
+-- W1-FIELD-TYPES — THE RED TWIN of `w1_field_types_c41.sql`, ON THE MAIN DATABASE, FROM THE
+-- SEAT `authenticated`.
 --
--- Every guard this lane added is demonstrated FAILING, by removing the production object
--- that holds it and showing the write it refuses LAND, or the value it computes come back
--- empty. Nothing is hand-weakened in a shared file and nothing survives the run: the whole
--- script is one transaction that ends in ROLLBACK, and the objects it drops are restored by
--- that rollback, not by a second script somebody has to remember to run.
+-- RUN IT:
+--   PSQL="$(node node_modules/tsx/dist/cli.mjs scripts/lib/psql-path.ts --print)"
+--   "$PSQL" "<the main database DSN>" -v ON_ERROR_STOP=1 \
+--     -f scripts/campaign-tests/w1_field_types_red.sql
 --
---   RED 1  `custom_record_field_type_parity_guard` dropped -> all SEVEN declarations
---          `w1_field_types_c41.sql` clause J refuses now LAND: a field calling itself a
---          `barcode`, a `currency` with no unit, a lookup with nothing to read through, a
---          rollup along a single relation, a rollup stamped at write time, an attachment
---          that cascades and a url with no pattern Rule.
---   RED 2  `custom_record_zz_derived_fields` dropped -> the write-time formula goes STALE
---          AND SILENT: the input moves 400 -> 1000 and the stamped answer still reads 440,
---          where clause F reads 1100. Not missing - wrong, which is the worse failure.
+-- 🚨 RE-POINTED AND SEATED (lane SEAT-SUITES, 2026-09-19). It used to run on the rehearsal
+-- branch, which does not carry the doors these clauses are about, and it asked every question
+-- as the role that OWNS `custom.record`. It now runs on main and every ASSERTED clause is
+-- asked through the door a signed-in person reaches. The one thing no door covers — removing
+-- the production object under test — steps OUT of the seat, says so, and asserts nothing
+-- while it is out. Every transaction ends in ROLLBACK, so the dropped trigger and the
+-- replaced function bodies come back with it.
+--
+-- ITS JOB IS UNCHANGED: every guard the green suite credits is demonstrated doing NOTHING
+-- when removed, by performing from the seat the very thing the green suite proves is refused
+-- or correct, and asserting it LANDS or goes WRONG.
+--
+--   RED 1  `custom._field_type_parity_guard` neutered -> the three declarations THE
+--          GUARD refuses now LAND through `custom.field_declare` (a lookup with nothing to
+--          read through, a rollup along a single relation, an attachment that cascades),
+--          while the one THE DOOR refuses (a parity name nobody ships) stays refused and the
+--          three the door CORRECTS stay corrected. That division is the point: clause J of
+--          the green suite is two mechanisms, and this says which is which.
+--   RED 2  `custom._derived_fields` neutered -> the write-time formula goes STALE
+--          AND SILENT: the input moves 400 -> 1000 through the write door and the answer a
+--          person reads is still 440, where clause F reads 1100. Not missing — wrong.
 --   RED 3  `custom.derived_values` removed from `custom.record_values` (W1-VAL's body
 --          restored verbatim, which is what the lane's inverse does) -> the lookup, the
---          rollup and the formula all read back NULL, where clauses A, C, D and E read
---          "Parity Person", 350 and 440.
+--          rollup and the formula all read back as NOTHING through `custom.value_read`,
+--          where clauses A, C, D and E read "Parity Person", 350 and 440.
 --   RED 4  the DISTINCT removed from `custom.relation_targets` -> the rollup answers 450
---          instead of 350: the same line listed twice is counted twice. This is the one
---          that matters most, because the GREEN number alone cannot tell the two apart.
---
---   PSQL="$(pnpm -s exec tsx scripts/lib/psql-path.ts --print)"
---   "$PSQL" "$SUPABASE_BRANCH_DATABASE_URL" -v ON_ERROR_STOP=1 \
---     -f scripts/campaign-tests/w1_field_types_red.sql
+--          instead of 350: the same line listed twice is counted twice. This is the one that
+--          matters most, because the GREEN number alone cannot tell the two apart.
+--   RED 5  the ACCESS question from the other side: with `custom.assert_client_may_open`
+--          neutered, `test@test.com` — a member who was shared nothing — reads a record
+--          nobody gave her. Her control (the record she IS given) is asserted in the same
+--          transaction, so the clause is not satisfied by a door that opens everything.
 
 \set ON_ERROR_STOP on
 \timing off
 
-begin;
-
 -- ── RED 1 ─────────────────────────────────────────────────────────────────────────────
-drop trigger custom_record_field_type_parity_guard on custom.record;
+begin;
+-- Schema `custom` is LIVE on the main database and other campaign suites are writing it right
+-- now, so each operator step below waits rather than dying on the five-second lock_timeout
+-- the connection carries. Nothing here is a race.
+--
+-- AND NOTHING HERE TAKES ACCESS EXCLUSIVE ON `custom.record`. A guard is removed by replacing
+-- its trigger FUNCTION with a pass-through, never by dropping or disabling the trigger:
+-- `DROP TRIGGER` and `ALTER TABLE … DISABLE TRIGGER` both lock the whole live table against
+-- every other session for as long as this transaction runs, and on this database that means
+-- stalling the rest of the campaign. A replaced function body is invisible to every other
+-- session until commit, and this transaction never commits — so the demonstration is exactly
+-- as strong and costs nobody anything.
+set local lock_timeout = '60s';
+set local statement_timeout = '240s';
+
+-- OUT OF THE SEAT: no client door removes a production guard. Nothing is asserted here.
+create or replace function custom._field_type_parity_guard() returns trigger
+  language plpgsql as $g$ begin return new; end $g$;
 
 do $r1$
 declare
+  c_admin   constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
+  c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
   v_org  constant uuid := '39c38960-d30c-4840-b0c1-c9960de95582';
   v_tbl  constant uuid := '11111111-0005-4000-8000-000000000003';
   v_case record;
+  v_seen text;
+  v_id   uuid;
+  v_doc  jsonb;
   v_n    integer := 0;
 begin
+  if (pg_control_system()).system_identifier <> 7642734024280108049 then
+    raise exception 'w1_field_types_red.sql runs on the MAIN database only, and this is %',
+                    (pg_control_system()).system_identifier;
+  end if;
+  perform set_config('lock_timeout', '120s', true);
+  perform set_config('statement_timeout', '180s', true);
+  perform set_config('app.actor_system', 'campaign-test/w1_field_types_red', true);
+  perform set_config('request.jwt.claims', c_admin_j, true);
+  insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
+  values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_field_types_red');
+
+  -- PART 0 — TAKE THE SEAT AND PROVE IT.
+  perform set_config('role', 'authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception '0: this suite did not take the seat — current_user is %', current_user;
+  end if;
+  if pg_has_role(current_user,
+                 (select c.relowner from pg_class c where c.oid = 'custom.record'::regclass),
+                 'member') then
+    raise exception '0: this seat is a member of the role that owns custom.record, so every wall would open on its first line';
+  end if;
+  begin
+    perform 1 from custom.record limit 1;
+    raise exception '0: this seat can SELECT custom.record directly, so it is not a client seat';
+  exception when insufficient_privilege then null;
+  end;
+
+  -- THE THREE THE GUARD HELD. Without it they land, through the same door a person uses.
   for v_case in
     select * from (values
-      ('a name nobody ships',        '{"key":"title","label":"Bad name","parity_type":"barcode","type":"text","multi":false,"dated":false,"rules":[],"config":{},"source":"manual","sensitivity":"internal","context_policy":"include","depends_on":[],"applies_to_types":[]}'::jsonb),
-      ('a contradictory declaration','{"key":"title","label":"Fake currency","parity_type":"currency","type":"range","multi":false,"dated":false,"rules":[],"config":{"kind":"number"},"source":"manual","sensitivity":"internal","context_policy":"include","depends_on":[],"applies_to_types":[]}'::jsonb),
-      ('a blind lookup',             '{"key":"title","label":"Blind lookup","parity_type":"lookup","type":"formula","compute_on":"read","multi":false,"dated":false,"rules":[],"config":{"pick":"full_name"},"source":"synced","sensitivity":"internal","context_policy":"include","depends_on":[],"applies_to_types":[]}'::jsonb),
-      ('a single-relation rollup',   '{"key":"title","label":"Single rollup","parity_type":"rollup","type":"formula","compute_on":"read","multi":false,"dated":false,"rules":[],"config":{"via":"owner","of":"full_name","agg":"count"},"source":"formula","sensitivity":"internal","context_policy":"include","depends_on":[],"applies_to_types":[]}'::jsonb),
-      ('a stale-by-design rollup',   '{"key":"title","label":"Stale rollup","parity_type":"rollup","type":"formula","compute_on":"write","multi":false,"dated":false,"rules":[],"config":{"via":"lines","of":"amount","agg":"sum"},"source":"formula","sensitivity":"internal","context_policy":"include","depends_on":[],"applies_to_types":[]}'::jsonb),
-      ('a cascading attachment',     '{"key":"title","label":"Cascading photo","parity_type":"attachment","type":"relation","relation_target":"11111111-0000-4000-8000-000000000006","relation_max":1,"on_target_delete":"cascade","multi":false,"dated":false,"rules":[],"config":{},"source":"manual","sensitivity":"internal","context_policy":"include","depends_on":[],"applies_to_types":[]}'::jsonb),
-      ('a url with no pattern Rule','{"key":"title","label":"Loose url","parity_type":"url","type":"text","format":"url","multi":false,"dated":false,"rules":[],"config":{},"source":"manual","sensitivity":"internal","context_policy":"include","depends_on":[],"applies_to_types":[]}'::jsonb)
-    ) as t(what, decl)
+      ('a lookup with nothing to read through',
+       '{"key":"zz_red_blind","label":"Blind lookup","parity_type":"lookup","pick":"full_name"}'::jsonb),
+      ('a rollup along a single relation',
+       '{"key":"zz_red_single","label":"Single rollup","parity_type":"rollup","via":"owner","of":"full_name","agg":"count"}'::jsonb),
+      ('an attachment that would cascade',
+       '{"key":"zz_red_casc","label":"Cascading photo","parity_type":"attachment","on_target_delete":"cascade"}'::jsonb)
+    ) as t(what, spec)
   loop
-    insert into custom.record (id, organization_id, table_id, data_class, data)
-    values (gen_random_uuid(), v_org, custom.field_kernel_id(), 'field',
-            v_case.decl || jsonb_build_object('entity_definition_id', v_tbl::text));
+    v_id := custom.field_declare(v_org, v_tbl, v_case.spec);
+    if v_id is null then
+      raise exception 'RED 1 INCONCLUSIVE: % did not land with custom._field_type_parity_guard gone', v_case.what;
+    end if;
+    -- and it reads back through the door, which is how a broken definition reaches a consumer
+    if custom.read_record(v_org, v_id, true) ->> 'parity_type' is null then
+      raise exception 'RED 1: % landed and does not read back', v_case.what;
+    end if;
     v_n := v_n + 1;
-    raise notice 'RED 1 — % LANDED with custom_record_field_type_parity_guard gone', v_case.what;
+    raise notice 'RED 1 — % LANDED through custom.field_declare with custom._field_type_parity_guard gone', v_case.what;
   end loop;
-  if v_n <> 7 then
-    raise exception 'RED 1 INCONCLUSIVE: only % of seven landed', v_n;
+  if v_n <> 3 then
+    raise exception 'RED 1 INCONCLUSIVE: only % of three landed', v_n;
   end if;
-  raise notice 'RED 1 CONFIRMED — all seven declarations the guard refuses LAND without it';
+
+  -- THE DOOR'S OWN HALF IS UNTOUCHED, which is what makes RED 1 a statement about the GUARD
+  -- and not about the door: a parity name nobody ships is still refused, by name.
+  v_seen := null;
+  begin
+    perform custom.field_declare(v_org, v_tbl, '{"key":"zz_red_bad","label":"Bad name","parity_type":"barcode"}'::jsonb);
+  exception when others then v_seen := sqlerrm;
+  end;
+  if v_seen is null or position('There is no field type called "barcode"' in v_seen) = 0 then
+    raise exception 'RED 1: the door stopped refusing a parity name nobody ships — %', coalesce(v_seen, 'it landed');
+  end if;
+  -- and the three the door CORRECTS are still corrected.
+  -- Two statements, deliberately: `custom.read_record` is STABLE, so nesting the declaration
+  -- inside the read would hand the read the statement snapshot taken BEFORE the write.
+  v_id := custom.field_declare(v_org, v_tbl, '{"key":"zz_red_url","label":"Still a url","parity_type":"url"}'::jsonb);
+  v_doc := custom.read_record(v_org, v_id, true);
+  if not exists (select 1 from jsonb_array_elements(coalesce(v_doc -> 'rules','[]'::jsonb)) r where r ->> 'kind' = 'pattern') then
+    raise exception 'RED 1: the door stopped writing a url its pattern Rule';
+  end if;
+  raise notice 'RED 1 CONFIRMED — the three declarations the GUARD refuses LAND without it, while the one the DOOR refuses stays refused and the ones it corrects stay corrected';
 end;
 $r1$;
 
@@ -69,23 +155,55 @@ rollback;
 
 -- ── RED 2 ─────────────────────────────────────────────────────────────────────────────
 begin;
-drop trigger custom_record_zz_derived_fields on custom.record;
+-- Schema `custom` is LIVE on the main database and other campaign suites are writing it right
+-- now, so each operator step below waits rather than dying on the five-second lock_timeout
+-- the connection carries. Nothing here is a race.
+--
+-- AND NOTHING HERE TAKES ACCESS EXCLUSIVE ON `custom.record`. A guard is removed by replacing
+-- its trigger FUNCTION with a pass-through, never by dropping or disabling the trigger:
+-- `DROP TRIGGER` and `ALTER TABLE … DISABLE TRIGGER` both lock the whole live table against
+-- every other session for as long as this transaction runs, and on this database that means
+-- stalling the rest of the campaign. A replaced function body is invisible to every other
+-- session until commit, and this transaction never commits — so the demonstration is exactly
+-- as strong and costs nobody anything.
+set local lock_timeout = '60s';
+set local statement_timeout = '240s';
+
+-- OUT OF THE SEAT: the guard that stamps every write-time answer.
+create or replace function custom._derived_fields() returns trigger
+  language plpgsql as $g$ begin return new; end $g$;
 
 do $r2$
 declare
+  c_admin   constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
+  c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
   v_org constant uuid := '39c38960-d30c-4840-b0c1-c9960de95582';
   v_rec constant uuid := '11111111-0009-4000-8000-000000000011';
   v_v   jsonb;
 begin
-  update custom.record set data = jsonb_set(data, '{amount_usd}', '1000'::jsonb)
-   where organization_id = v_org and id = v_rec;
+  perform set_config('lock_timeout', '120s', true);
+  perform set_config('statement_timeout', '180s', true);
+  perform set_config('app.actor_system', 'campaign-test/w1_field_types_red', true);
+  perform set_config('request.jwt.claims', c_admin_j, true);
+  insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
+  values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_field_types_red');
+
+  perform set_config('role', 'authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception 'RED 2: this suite did not take the seat — current_user is %', current_user;
+  end if;
+
+  -- THE SAME WRITE THE GREEN SUITE MAKES, through the same door.
+  perform custom.record_update(v_org, v_rec, jsonb_build_object('amount_usd', 1000));
   -- The answer is not MISSING, which would at least be visible. It is STALE: the input now
   -- says 1000 and the stamped answer still says 440, and a reader has no way to tell.
-  select p.value into v_v from custom.parity_values(v_org, v_rec) p where p.field_key = 'amount_with_tax';
+  select v.value into v_v from custom.value_read(v_org, v_rec, 'amount_with_tax') v;
   if (v_v #>> '{}')::numeric <> 440 then
     raise exception 'RED 2 INCONCLUSIVE: expected the stale 440 to survive, and the formula answered %', v_v;
   end if;
-  raise notice 'RED 2 CONFIRMED — the input moved 400 -> 1000 and the stamped answer is still 440: STALE, silently, where clause F reads 1100';
+  raise notice 'RED 2 CONFIRMED — the input moved 400 -> 1000 through the write door and the answer a person reads is still 440: STALE, silently, where clause F reads 1100';
 end;
 $r2$;
 
@@ -93,8 +211,21 @@ rollback;
 
 -- ── RED 3 and RED 4 ───────────────────────────────────────────────────────────────────
 begin;
+-- Schema `custom` is LIVE on the main database and other campaign suites are writing it right
+-- now, so each operator step below waits rather than dying on the five-second lock_timeout
+-- the connection carries. Nothing here is a race.
+--
+-- AND NOTHING HERE TAKES ACCESS EXCLUSIVE ON `custom.record`. A guard is removed by replacing
+-- its trigger FUNCTION with a pass-through, never by dropping or disabling the trigger:
+-- `DROP TRIGGER` and `ALTER TABLE … DISABLE TRIGGER` both lock the whole live table against
+-- every other session for as long as this transaction runs, and on this database that means
+-- stalling the rest of the campaign. A replaced function body is invisible to every other
+-- session until commit, and this transaction never commits — so the demonstration is exactly
+-- as strong and costs nobody anything.
+set local lock_timeout = '60s';
+set local statement_timeout = '240s';
 
--- W1-VAL's body, verbatim: `custom.derived_values` is simply not called.
+-- OUT OF THE SEAT: W1-VAL's body, verbatim — `custom.derived_values` is simply not called.
 create or replace function custom.record_values(p_organization_id uuid, p_record_id uuid)
  returns jsonb language sql stable set search_path to 'pg_catalog'
 as $function$
@@ -108,23 +239,54 @@ $function$;
 
 do $r3$
 declare
+  c_admin   constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
+  c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
   v_org constant uuid := '39c38960-d30c-4840-b0c1-c9960de95582';
   v_rec constant uuid := '11111111-0009-4000-8000-000000000011';
   v_n   integer;
 begin
-  select count(*) into v_n from custom.parity_values(v_org, v_rec) p
-   where p.field_key in ('owner_name', 'line_total', 'amount_with_tax') and p.value is not null;
-  if v_n <> 0 then
-    raise exception 'RED 3 INCONCLUSIVE: % of the three computed parity Values still answered', v_n;
+  perform set_config('lock_timeout', '120s', true);
+  perform set_config('statement_timeout', '180s', true);
+  perform set_config('app.actor_system', 'campaign-test/w1_field_types_red', true);
+  perform set_config('request.jwt.claims', c_admin_j, true);
+  insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
+  values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_field_types_red');
+
+  perform set_config('role', 'authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception 'RED 3: this suite did not take the seat — current_user is %', current_user;
   end if;
-  raise notice 'RED 3 CONFIRMED — the lookup, the rollup and the write-time formula all read back as nothing';
+
+  select count(*) into v_n
+    from custom.record_values_versioned(v_org, v_rec) v
+   where v.field_key in ('owner_name', 'line_total', 'amount_with_tax') and v.value is not null;
+  if v_n <> 0 then
+    raise exception 'RED 3 INCONCLUSIVE: % of the three computed Values still answered', v_n;
+  end if;
+  raise notice 'RED 3 CONFIRMED — through custom.record_values_versioned the lookup, the rollup and the write-time formula all read back as nothing';
 end;
 $r3$;
 
 rollback;
 
 begin;
--- The DISTINCT removed, and nothing else.
+-- Schema `custom` is LIVE on the main database and other campaign suites are writing it right
+-- now, so each operator step below waits rather than dying on the five-second lock_timeout
+-- the connection carries. Nothing here is a race.
+--
+-- AND NOTHING HERE TAKES ACCESS EXCLUSIVE ON `custom.record`. A guard is removed by replacing
+-- its trigger FUNCTION with a pass-through, never by dropping or disabling the trigger:
+-- `DROP TRIGGER` and `ALTER TABLE … DISABLE TRIGGER` both lock the whole live table against
+-- every other session for as long as this transaction runs, and on this database that means
+-- stalling the rest of the campaign. A replaced function body is invisible to every other
+-- session until commit, and this transaction never commits — so the demonstration is exactly
+-- as strong and costs nobody anything.
+set local lock_timeout = '60s';
+set local statement_timeout = '240s';
+
+-- OUT OF THE SEAT: the DISTINCT removed, and nothing else.
 create or replace function custom.relation_targets(p_organization_id uuid, p_record_id uuid, p_via_key text)
   returns setof uuid language sql stable set search_path to 'pg_catalog'
 as $function$
@@ -143,16 +305,99 @@ $function$;
 
 do $r4$
 declare
+  c_admin   constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
+  c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
   v_org constant uuid := '39c38960-d30c-4840-b0c1-c9960de95582';
   v_rec constant uuid := '11111111-0009-4000-8000-000000000011';
   v_v   jsonb;
 begin
-  select p.value into v_v from custom.parity_values(v_org, v_rec) p where p.field_key = 'line_total';
+  perform set_config('lock_timeout', '120s', true);
+  perform set_config('statement_timeout', '180s', true);
+  perform set_config('app.actor_system', 'campaign-test/w1_field_types_red', true);
+  perform set_config('request.jwt.claims', c_admin_j, true);
+  insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
+  values (v_org, 'organization', v_org, c_admin, 'owner', 'active');
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_field_types_red');
+
+  perform set_config('role', 'authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception 'RED 4: this suite did not take the seat — current_user is %', current_user;
+  end if;
+
+  select v.value into v_v from custom.value_read(v_org, v_rec, 'line_total') v;
   if (v_v #>> '{}')::numeric <> 450 then
     raise exception 'RED 4 INCONCLUSIVE: without DISTINCT the rollup answered % and the double-counted sum is 450', v_v;
   end if;
   raise notice 'RED 4 CONFIRMED — the same line listed twice is counted twice: 450, where clause D reads 350';
 end;
 $r4$;
+
+rollback;
+
+-- ── RED 5: THE ACCESS QUESTION ────────────────────────────────────────────────────────
+begin;
+-- Schema `custom` is LIVE on the main database and other campaign suites are writing it right
+-- now, so each operator step below waits rather than dying on the five-second lock_timeout
+-- the connection carries. Nothing here is a race.
+--
+-- AND NOTHING HERE TAKES ACCESS EXCLUSIVE ON `custom.record`. A guard is removed by replacing
+-- its trigger FUNCTION with a pass-through, never by dropping or disabling the trigger:
+-- `DROP TRIGGER` and `ALTER TABLE … DISABLE TRIGGER` both lock the whole live table against
+-- every other session for as long as this transaction runs, and on this database that means
+-- stalling the rest of the campaign. A replaced function body is invisible to every other
+-- session until commit, and this transaction never commits — so the demonstration is exactly
+-- as strong and costs nobody anything.
+set local lock_timeout = '60s';
+set local statement_timeout = '240s';
+
+-- OUT OF THE SEAT: the one predicate that asks whether this person may open this record is
+-- replaced by a body that always says yes. This is the wall clause K of the green suite
+-- credits, and it is the one clause no trigger holds.
+create or replace function custom.assert_client_may_open(
+  p_organization_id uuid, p_subject_id uuid, p_door text,
+  p_required public.permission_level default 'viewer'::public.permission_level,
+  p_subject_word text default 'record')
+  returns void language plpgsql stable set search_path to 'pg_catalog'
+as $function$
+begin
+  return;   -- RED 5 only: every person may open everything
+end;
+$function$;
+
+do $r5$
+declare
+  c_admin   constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
+  c_dana    constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
+  c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
+  c_dana_j  constant text := '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}';
+  v_org constant uuid := '39c38960-d30c-4840-b0c1-c9960de95582';
+  v_rec constant uuid := '11111111-0009-4000-8000-000000000011';
+  v_doc jsonb;
+begin
+  perform set_config('lock_timeout', '120s', true);
+  perform set_config('statement_timeout', '180s', true);
+  perform set_config('app.actor_system', 'campaign-test/w1_field_types_red', true);
+  perform set_config('request.jwt.claims', c_admin_j, true);
+  insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
+    (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
+    (v_org, 'organization', v_org, c_dana,  'member', 'active');
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_field_types_red');
+
+  perform set_config('role', 'authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception 'RED 5: this suite did not take the seat — current_user is %', current_user;
+  end if;
+
+  -- AS test@test.com, who was shared nothing.
+  perform set_config('request.jwt.claims', c_dana_j, true);
+  v_doc := custom.read_record(v_org, v_rec, true);
+  if v_doc is null or (v_doc ->> 'title') is null then
+    raise exception 'RED 5 INCONCLUSIVE: the read was still refused, so clause K is held by something other than custom.assert_client_may_open';
+  end if;
+  raise notice 'RED 5 CONFIRMED — with custom.assert_client_may_open neutered, test@test.com reads "%" — a record nobody ever shared with her', v_doc ->> 'title';
+end;
+$r5$;
 
 rollback;

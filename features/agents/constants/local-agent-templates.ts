@@ -1,5 +1,15 @@
 import type { AgentDefinition } from "@/features/agents/types/agent-definition.types";
+import { DEFAULT_AGENT_MODEL_ID } from "@/features/agents/constants/blank-agent";
 
+/**
+ * A DEMONSTRATION TEMPLATE, and nothing a person gets by default.
+ *
+ * This is a worked example of a variable-driven agent (a city/what/format
+ * prompt). It is reachable only from an honestly-labelled template choice —
+ * never from "Create Manually", which now creates `BLANK_AGENT_SEED`. Handing
+ * this to somebody who asked for a blank agent made their agent do the demo's
+ * job instead of theirs.
+ */
 export const TEMPLATE_DATA: Omit<Partial<AgentDefinition>, "id"> = {
   agentType: "user",
   name: "New Agent Template",
@@ -53,7 +63,7 @@ export const TEMPLATE_DATA: Omit<Partial<AgentDefinition>, "id"> = {
       defaultValue: "Luxury Shopping",
     },
   ],
-  modelId: "e2150d2f-7dd3-4fad-9d81-6e6ea41d4afd",
+  modelId: DEFAULT_AGENT_MODEL_ID,
   settings: {
     stream: true,
     reasoning_effort: "minimal",

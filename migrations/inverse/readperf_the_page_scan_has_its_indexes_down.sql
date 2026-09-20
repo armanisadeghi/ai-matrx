@@ -1,0 +1,34 @@
+-- READ-PERF, the inverse of the page-scan indexes. Autocommit: CREATE/DROP INDEX CONCURRENTLY
+-- cannot run in a transaction block, so this runs through aidream's runner like its forward file.
+drop index concurrently if exists custom.record_id_rp_00;
+drop index concurrently if exists custom.record_id_rp_01;
+drop index concurrently if exists custom.record_id_rp_02;
+drop index concurrently if exists custom.record_id_rp_03;
+drop index concurrently if exists custom.record_id_rp_04;
+drop index concurrently if exists custom.record_id_rp_05;
+drop index concurrently if exists custom.record_id_rp_06;
+drop index concurrently if exists custom.record_id_rp_07;
+drop index concurrently if exists custom.record_id_rp_08;
+drop index concurrently if exists custom.record_id_rp_09;
+drop index concurrently if exists custom.record_id_rp_10;
+drop index concurrently if exists custom.record_id_rp_11;
+drop index concurrently if exists custom.record_id_rp_12;
+drop index concurrently if exists custom.record_id_rp_13;
+drop index concurrently if exists custom.record_id_rp_14;
+drop index concurrently if exists custom.record_id_rp_15;
+drop index concurrently if exists custom.record_org_table_vis_rp_00;
+drop index concurrently if exists custom.record_org_table_vis_rp_01;
+drop index concurrently if exists custom.record_org_table_vis_rp_02;
+drop index concurrently if exists custom.record_org_table_vis_rp_03;
+drop index concurrently if exists custom.record_org_table_vis_rp_04;
+drop index concurrently if exists custom.record_org_table_vis_rp_05;
+drop index concurrently if exists custom.record_org_table_vis_rp_06;
+drop index concurrently if exists custom.record_org_table_vis_rp_07;
+drop index concurrently if exists custom.record_org_table_vis_rp_08;
+drop index concurrently if exists custom.record_org_table_vis_rp_09;
+drop index concurrently if exists custom.record_org_table_vis_rp_10;
+drop index concurrently if exists custom.record_org_table_vis_rp_11;
+drop index concurrently if exists custom.record_org_table_vis_rp_12;
+drop index concurrently if exists custom.record_org_table_vis_rp_13;
+drop index concurrently if exists custom.record_org_table_vis_rp_14;
+drop index concurrently if exists custom.record_org_table_vis_rp_15;

@@ -11092,6 +11092,67 @@
         }
       }
     },
+    "/vault/items/{item_id}/restore": {
+      "post": {
+        "tags": [
+          "Credential Vault"
+        ],
+        "summary": "Restore Item",
+        "operationId": "restore_item_vault_items__item_id__restore_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultRestoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultRestoreResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/vault/items/{item_id}/fields": {
       "post": {
         "tags": [
@@ -13274,6 +13335,504 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NativeErrorOut"
+                }
+              }
+            },
+            "description": "Service Unavailable"
+          }
+        }
+      }
+    },
+    "/vault/native/passkeys": {
+      "post": {
+        "tags": [
+          "Credential Vault Native Passkeys"
+        ],
+        "summary": "Create",
+        "operationId": "create_vault_native_passkeys_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativePasskeyReceiptOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "mutation_id": {
+                    "title": "Mutation Id",
+                    "type": "string"
+                  },
+                  "source": {
+                    "maxLength": 87382,
+                    "minLength": 1,
+                    "title": "Source",
+                    "type": "string"
+                  },
+                  "label": {
+                    "maxLength": 1024,
+                    "minLength": 1,
+                    "title": "Label",
+                    "type": "string"
+                  },
+                  "principal_type": {
+                    "enum": [
+                      "organization",
+                      "user"
+                    ],
+                    "title": "Principal Type",
+                    "type": "string"
+                  },
+                  "excluded_credential_ids": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 128,
+                    "title": "Excluded Credential Ids",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "mutation_id",
+                  "source",
+                  "label",
+                  "principal_type"
+                ],
+                "title": "NativePasskeyCreateIn",
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/native/passkeys/receipts/{mutation_id}": {
+      "get": {
+        "tags": [
+          "Credential Vault Native Passkeys"
+        ],
+        "summary": "Receipt",
+        "operationId": "receipt_vault_native_passkeys_receipts__mutation_id__get",
+        "parameters": [
+          {
+            "name": "mutation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Mutation Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativePasskeyReceiptOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/native/passkeys/matches": {
+      "post": {
+        "tags": [
+          "Credential Vault Native Passkeys"
+        ],
+        "summary": "Matches",
+        "operationId": "matches_vault_native_passkeys_matches_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativePasskeyMatchesOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "rp_id": {
+                    "maxLength": 253,
+                    "minLength": 1,
+                    "title": "Rp Id",
+                    "type": "string"
+                  },
+                  "allowed_credential_ids": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 128,
+                    "title": "Allowed Credential Ids",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "rp_id"
+                ],
+                "title": "NativePasskeyMatchIn",
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/native/passkeys/{item_id}/materialize": {
+      "post": {
+        "tags": [
+          "Credential Vault Native Passkeys"
+        ],
+        "summary": "Materialize",
+        "operationId": "materialize_vault_native_passkeys__item_id__materialize_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativePasskeyMaterializeOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "rp_id": {
+                    "maxLength": 253,
+                    "minLength": 1,
+                    "title": "Rp Id",
+                    "type": "string"
+                  },
+                  "allowed_credential_ids": {
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 128,
+                    "title": "Allowed Credential Ids",
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "rp_id"
+                ],
+                "title": "NativePasskeyMatchIn",
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/native/passkeys/capabilities": {
+      "get": {
+        "tags": [
+          "Credential Vault Native Passkeys"
+        ],
+        "summary": "Capabilities",
+        "operationId": "capabilities_vault_native_passkeys_capabilities_get",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativePasskeyCapabilitiesOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/items/{item_id}/native-passkey/enable": {
+      "post": {
+        "tags": [
+          "Credential Vault Native Management"
+        ],
+        "summary": "Enable Native Passkey",
+        "operationId": "enable_native_passkey_vault_items__item_id__native_passkey_enable_post",
+        "parameters": [
+          {
+            "name": "item_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Item Id"
+            }
+          },
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VaultNativePasskeyEnableRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VaultNativePasskeyEnableResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vault/native/identities": {
+      "post": {
+        "tags": [
+          "Credential Vault Native Identities"
+        ],
+        "summary": "Identities",
+        "operationId": "identities_vault_native_identities_post",
+        "parameters": [
+          {
+            "name": "X-Organization-Id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "X-Organization-Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeIdentitiesOut"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeIdentityErrorOut"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeIdentityErrorOut"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeIdentityErrorOut"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeIdentityErrorOut"
+                }
+              }
+            },
+            "description": "Content Too Large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeIdentityErrorOut"
+                }
+              }
+            },
+            "description": "Unprocessable Content"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NativeIdentityErrorOut"
                 }
               }
             },
@@ -17459,6 +18018,48 @@
         }
       }
     },
+    "/storage-sources/browse": {
+      "post": {
+        "tags": [
+          "Storage Sources"
+        ],
+        "summary": "Browse Provider Folder",
+        "description": "Return one bounded page from an actor-owned provider connection.",
+        "operationId": "browse_provider_folder_storage_sources_browse_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageBrowseRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageBrowsePage"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/storage-sources/import": {
       "post": {
         "tags": [
@@ -17484,6 +18085,248 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/StorageImportResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storage-oauth/{provider}/authorize": {
+      "post": {
+        "tags": [
+          "Storage OAuth"
+        ],
+        "summary": "Authorize Storage",
+        "operationId": "authorize_storage_storage_oauth__provider__authorize_post",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "box",
+                "dropbox"
+              ],
+              "type": "string",
+              "title": "Provider"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageAuthorizationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/{provider}/oauth/callback": {
+      "get": {
+        "tags": [
+          "Storage OAuth"
+        ],
+        "summary": "Storage Callback",
+        "operationId": "storage_callback__provider__oauth_callback_get",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "box",
+                "dropbox"
+              ],
+              "type": "string",
+              "title": "Provider"
+            }
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "title": "State"
+            }
+          },
+          {
+            "name": "code",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 4096
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Code"
+            }
+          },
+          {
+            "name": "error",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 256
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Error"
+            }
+          }
+        ],
+        "responses": {
+          "307": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storage-oauth/{provider}/refresh": {
+      "post": {
+        "tags": [
+          "Storage OAuth"
+        ],
+        "summary": "Refresh Storage",
+        "operationId": "refresh_storage_storage_oauth__provider__refresh_post",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "box",
+                "dropbox"
+              ],
+              "type": "string",
+              "title": "Provider"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageConnectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageLifecycleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/storage-oauth/{provider}/disconnect": {
+      "post": {
+        "tags": [
+          "Storage OAuth"
+        ],
+        "summary": "Disconnect Storage",
+        "operationId": "disconnect_storage_storage_oauth__provider__disconnect_post",
+        "parameters": [
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "enum": [
+                "box",
+                "dropbox"
+              ],
+              "type": "string",
+              "title": "Provider"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorageConnectionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageLifecycleResponse"
                 }
               }
             }
@@ -83907,6 +84750,26 @@
                 "schema": {
                   "$ref": "#/components/schemas/BridgeIntegrationResponse"
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/browser-manager/local/transport/verify": {
+      "post": {
+        "tags": [
+          "cloud-browser"
+        ],
+        "summary": "Verify Local Transport",
+        "description": "Verify a daemon's existing lifecycle grant without changing any state.",
+        "operationId": "verify_local_transport_browser_manager_local_transport_verify_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           }
@@ -195381,6 +196244,98 @@
         ],
         "title": "NativeErrorOut"
       },
+      "NativeIdentitiesOut": {
+        "properties": {
+          "snapshot_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 64,
+            "title": "Snapshot Id"
+          },
+          "identities": {
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/NativePasswordIdentityOut"
+                },
+                {
+                  "$ref": "#/components/schemas/NativePasskeyIdentityOut"
+                }
+              ]
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Identities"
+          },
+          "next_after": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next After"
+          },
+          "complete": {
+            "type": "boolean",
+            "title": "Complete"
+          },
+          "unsupported_count": {
+            "type": "integer",
+            "maximum": 2000,
+            "minimum": 0,
+            "title": "Unsupported Count"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "snapshot_id",
+          "identities",
+          "complete",
+          "unsupported_count"
+        ],
+        "title": "NativeIdentitiesOut"
+      },
+      "NativeIdentityErrorDetail": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "invalid_request",
+              "inventory_changed",
+              "inventory_limit",
+              "native_session_required",
+              "native_unavailable",
+              "organization_required",
+              "request_too_large"
+            ],
+            "title": "Code"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "NativeIdentityErrorDetail"
+      },
+      "NativeIdentityErrorOut": {
+        "properties": {
+          "detail": {
+            "$ref": "#/components/schemas/NativeIdentityErrorDetail"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "detail"
+        ],
+        "title": "NativeIdentityErrorOut"
+      },
       "NativeMatchOut": {
         "properties": {
           "item_id": {
@@ -195505,6 +196460,275 @@
         ],
         "title": "NativeMaterializeOut"
       },
+      "NativePasskeyCapabilitiesOut": {
+        "properties": {
+          "protocol_version": {
+            "type": "integer",
+            "const": 1,
+            "title": "Protocol Version"
+          },
+          "activation_revision": {
+            "type": "integer",
+            "minimum": 1,
+            "title": "Activation Revision"
+          },
+          "max_source_bytes": {
+            "type": "integer",
+            "maximum": 65536,
+            "minimum": 1,
+            "title": "Max Source Bytes"
+          },
+          "max_credential_ids": {
+            "type": "integer",
+            "maximum": 128,
+            "minimum": 1,
+            "title": "Max Credential Ids"
+          },
+          "max_request_body_bytes": {
+            "type": "integer",
+            "maximum": 262144,
+            "minimum": 1,
+            "title": "Max Request Body Bytes"
+          },
+          "algorithms": {
+            "items": {
+              "type": "integer",
+              "const": -7
+            },
+            "type": "array",
+            "maxItems": 1,
+            "minItems": 1,
+            "title": "Algorithms"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "protocol_version",
+          "activation_revision",
+          "max_source_bytes",
+          "max_credential_ids",
+          "max_request_body_bytes",
+          "algorithms"
+        ],
+        "title": "NativePasskeyCapabilitiesOut"
+      },
+      "NativePasskeyIdentityOut": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "passkey",
+            "title": "Kind"
+          },
+          "item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Item Id"
+          },
+          "passkey_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Passkey Id"
+          },
+          "rp_id": {
+            "type": "string",
+            "maxLength": 253,
+            "minLength": 1,
+            "title": "Rp Id"
+          },
+          "credential_id": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Credential Id"
+          },
+          "user_handle": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "User Handle"
+          },
+          "user": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "User"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "item_id",
+          "passkey_id",
+          "rp_id",
+          "credential_id",
+          "user_handle",
+          "user"
+        ],
+        "title": "NativePasskeyIdentityOut"
+      },
+      "NativePasskeyMatchOut": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "passkey_id": {
+            "type": "string",
+            "title": "Passkey Id"
+          },
+          "credential_id": {
+            "type": "string",
+            "title": "Credential Id"
+          },
+          "user_handle": {
+            "type": "string",
+            "title": "User Handle"
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username"
+          },
+          "display_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id",
+          "passkey_id",
+          "credential_id",
+          "user_handle",
+          "username",
+          "display_name"
+        ],
+        "title": "NativePasskeyMatchOut"
+      },
+      "NativePasskeyMatchesOut": {
+        "properties": {
+          "matches": {
+            "items": {
+              "$ref": "#/components/schemas/NativePasskeyMatchOut"
+            },
+            "type": "array",
+            "title": "Matches"
+          },
+          "truncated": {
+            "type": "boolean",
+            "title": "Truncated"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "matches",
+          "truncated"
+        ],
+        "title": "NativePasskeyMatchesOut"
+      },
+      "NativePasskeyMaterializeOut": {
+        "properties": {
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "source"
+        ],
+        "title": "NativePasskeyMaterializeOut"
+      },
+      "NativePasskeyReceiptOut": {
+        "properties": {
+          "mutation_id": {
+            "type": "string",
+            "title": "Mutation Id"
+          },
+          "item_id": {
+            "type": "string",
+            "title": "Item Id"
+          },
+          "field_id": {
+            "type": "string",
+            "title": "Field Id"
+          },
+          "passkey_id": {
+            "type": "string",
+            "title": "Passkey Id"
+          },
+          "source_sha256": {
+            "type": "string",
+            "title": "Source Sha256"
+          },
+          "status": {
+            "type": "string",
+            "const": "saved_waiting_for_site",
+            "title": "Status"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "mutation_id",
+          "item_id",
+          "field_id",
+          "passkey_id",
+          "source_sha256",
+          "status"
+        ],
+        "title": "NativePasskeyReceiptOut"
+      },
+      "NativePasswordIdentityOut": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "const": "password",
+            "title": "Kind"
+          },
+          "item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Item Id"
+          },
+          "service": {
+            "$ref": "#/components/schemas/NativeUrlService"
+          },
+          "user": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "User"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "item_id",
+          "service",
+          "user"
+        ],
+        "title": "NativePasswordIdentityOut"
+      },
       "NativeServiceIdentifierIn": {
         "properties": {
           "type": {
@@ -195529,6 +196753,27 @@
           "identifier"
         ],
         "title": "NativeServiceIdentifierIn"
+      },
+      "NativeUrlService": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "url",
+            "title": "Type"
+          },
+          "identifier": {
+            "type": "string",
+            "maxLength": 2048,
+            "title": "Identifier"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "type",
+          "identifier"
+        ],
+        "title": "NativeUrlService"
       },
       "NavLink": {
         "properties": {
@@ -249207,6 +250452,258 @@
         ],
         "title": "StopRunResponse"
       },
+      "StorageAuthorizationResponse": {
+        "properties": {
+          "authorization_url": {
+            "type": "string",
+            "title": "Authorization Url"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "box",
+              "dropbox"
+            ],
+            "title": "Provider"
+          },
+          "requested_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Requested Scopes"
+          },
+          "auth_mode": {
+            "type": "string",
+            "const": "confidential_authorization_code",
+            "title": "Auth Mode"
+          },
+          "pkce": {
+            "type": "string",
+            "const": "unsupported_not_used",
+            "title": "Pkce"
+          }
+        },
+        "type": "object",
+        "required": [
+          "authorization_url",
+          "provider",
+          "requested_scopes",
+          "auth_mode",
+          "pkce"
+        ],
+        "title": "StorageAuthorizationResponse"
+      },
+      "StorageBrowseItem": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "file",
+              "folder"
+            ],
+            "title": "Kind"
+          },
+          "item_ref": {
+            "type": "string",
+            "maxLength": 4096,
+            "minLength": 1,
+            "title": "Item Ref"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 256
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          },
+          "modified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modified At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "item_ref",
+          "name"
+        ],
+        "title": "StorageBrowseItem",
+        "description": "Safe provider identity for one visible file or folder."
+      },
+      "StorageBrowsePage": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "box",
+              "dropbox",
+              "onedrive"
+            ],
+            "title": "Provider"
+          },
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          },
+          "folder_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Ref"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/StorageBrowseItem"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "connection_id",
+          "folder_ref",
+          "items"
+        ],
+        "title": "StorageBrowsePage",
+        "description": "One nonrecursive provider page with an opaque continuation."
+      },
+      "StorageBrowseRequest": {
+        "properties": {
+          "provider": {
+            "type": "string",
+            "enum": [
+              "box",
+              "dropbox",
+              "onedrive"
+            ],
+            "title": "Provider"
+          },
+          "connection_id": {
+            "type": "string",
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Connection Id"
+          },
+          "folder_ref": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4096
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Ref"
+          },
+          "page_size": {
+            "type": "integer",
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Page Size",
+            "default": 50
+          },
+          "cursor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 16384
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cursor"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "provider",
+          "connection_id"
+        ],
+        "title": "StorageBrowseRequest",
+        "description": "One bounded provider-folder page under the authenticated actor."
+      },
+      "StorageConnectionRequest": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Connection Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id"
+        ],
+        "title": "StorageConnectionRequest"
+      },
       "StorageImportResult": {
         "properties": {
           "file_id": {
@@ -249253,11 +250750,72 @@
         "title": "StorageImportResult",
         "description": "Safe result of importing a provider item into canonical Matrx Files."
       },
+      "StorageLifecycleResponse": {
+        "properties": {
+          "connection_id": {
+            "type": "string",
+            "title": "Connection Id"
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "box",
+              "dropbox"
+            ],
+            "title": "Provider"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "requested_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Requested Scopes"
+          },
+          "granted_scopes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Granted Scopes"
+          },
+          "scope_evidence": {
+            "type": "string",
+            "title": "Scope Evidence"
+          },
+          "provider_revoked": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Revoked"
+          }
+        },
+        "type": "object",
+        "required": [
+          "connection_id",
+          "provider",
+          "status",
+          "requested_scopes",
+          "granted_scopes",
+          "scope_evidence"
+        ],
+        "title": "StorageLifecycleResponse"
+      },
       "StorageSourceImportRequest": {
         "properties": {
           "provider": {
             "type": "string",
             "enum": [
+              "box",
+              "dropbox",
               "google_drive",
               "onedrive"
             ],
@@ -269246,6 +270804,84 @@
         ],
         "title": "VaultLoginCsvPreviewResponse"
       },
+      "VaultNativePasskeyEnableRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "deletion_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Deletion Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "deletion_id"
+        ],
+        "title": "VaultNativePasskeyEnableRequest",
+        "description": "Bind the explicit reenablement request to one recorded deletion."
+      },
+      "VaultNativePasskeyEnableResponse": {
+        "properties": {
+          "item_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Item Id"
+          },
+          "enabled": {
+            "type": "boolean",
+            "const": true,
+            "title": "Enabled"
+          },
+          "already_enabled": {
+            "type": "boolean",
+            "title": "Already Enabled"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "item_id",
+          "enabled",
+          "already_enabled"
+        ],
+        "title": "VaultNativePasskeyEnableResponse"
+      },
       "VaultResolveRef": {
         "properties": {
           "item_id": {
@@ -269335,6 +270971,95 @@
         ],
         "title": "VaultResolveResponse",
         "description": "Browser-facing resolution — sealed fields are structurally refused\nupstream; keys are ``\"{item_id}/{field_key}\"``."
+      },
+      "VaultRestoreRequest": {
+        "properties": {
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id",
+            "description": "Organization context for the request; omitted to use the authenticated context."
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id",
+            "description": "Optional associated project selected by the caller."
+          },
+          "task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Task Id",
+            "description": "Optional associated task selected by the caller."
+          },
+          "deletion_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Deletion Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "deletion_id"
+        ],
+        "title": "VaultRestoreRequest"
+      },
+      "VaultRestoreResponse": {
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/VaultItemOut"
+          },
+          "restored_fields": {
+            "type": "integer",
+            "title": "Restored Fields"
+          },
+          "restored_attachments": {
+            "type": "integer",
+            "title": "Restored Attachments"
+          },
+          "restored_native_passkeys": {
+            "type": "integer",
+            "title": "Restored Native Passkeys"
+          },
+          "already_restored": {
+            "type": "boolean",
+            "title": "Already Restored"
+          },
+          "notice": {
+            "type": "string",
+            "const": "sharing_and_automatic_use_off",
+            "title": "Notice"
+          }
+        },
+        "type": "object",
+        "required": [
+          "item",
+          "restored_fields",
+          "restored_attachments",
+          "restored_native_passkeys",
+          "already_restored",
+          "notice"
+        ],
+        "title": "VaultRestoreResponse"
       },
       "VaultRevealRequest": {
         "properties": {

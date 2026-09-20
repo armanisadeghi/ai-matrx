@@ -7,8 +7,9 @@
  * nudges, so the scope is always MINE (user_id = the caller), pending, live
  * (unexpired, unsuppressed, not soft-deleted).
  *
- * Producers use `emitAssist` — idempotent by `dedupe_key` (re-noticing the
- * same thing updates the live pending chip, never stacks a duplicate).
+ * Producers use `emitAssist` — the only browser write is
+ * `platform.emit_pending_assist` (idempotent by `dedupe_key`; re-noticing
+ * updates the live pending chip, never stacks a duplicate, never 409s).
  */
 
 import { createClient } from "@/utils/supabase/client";
@@ -17,7 +18,7 @@ import {
   runWithSessionRetry,
   SessionUnavailableError,
 } from "@/lib/supabase/authRetry";
-import type { Json } from "@/types/database.types";
+import type { Database, Json } from "@/types/database.types";
 import {
   toAssist,
   type Assist,
@@ -134,11 +135,35 @@ export async function canProduceAssist(sourceKey: string): Promise<boolean> {
 }
 
 /**
- * Emit (or refresh) an assist. Idempotent by `dedupe_key`: an existing live
- * pending row with the same key is UPDATED in place. Returns the row id, or
- * null when the write was refused (surfaced loudly, never thrown into UI).
+ * Same-tab collapse for one addressee + dedupe key. Two mounts in one tick
+ * used to both miss the pending SELECT and both INSERT; the door below makes
+ * that race silent, and this map keeps it from becoming two RPCs as well.
+ */
+const emitInFlight = new Map<string, Promise<string | null>>();
+
+/**
+ * Emit (or refresh) an assist. Idempotent by `dedupe_key`: the database door
+ * `platform.emit_pending_assist` inserts, or updates the caller's own live
+ * pending row, or returns null when someone else already holds the key.
+ * Returns the row id, or null when the write was refused (surfaced loudly,
+ * never thrown into UI).
  */
 export async function emitAssist(
+  userId: string,
+  input: EmitAssistInput,
+  organizationId: string,
+): Promise<string | null> {
+  const flightKey = `${userId}\0${input.dedupeKey}`;
+  const existing = emitInFlight.get(flightKey);
+  if (existing) return existing;
+  const flight = emitAssistOnce(userId, input, organizationId).finally(() => {
+    if (emitInFlight.get(flightKey) === flight) emitInFlight.delete(flightKey);
+  });
+  emitInFlight.set(flightKey, flight);
+  return flight;
+}
+
+async function emitAssistOnce(
   userId: string,
   input: EmitAssistInput,
   organizationId: string,
@@ -159,82 +184,40 @@ export async function emitAssist(
     );
     return null;
   }
-  const supabase = createClient();
-  const payload = {
-    user_id: userId,
-    organization_id: organizationId,
-    // Producers address the assist; created_by = addressee keeps RLS honest
-    // even when a service-role producer writes on someone's behalf.
-    created_by: userId,
-    source_kind: input.sourceKind ?? "deterministic",
-    source_key: input.sourceKey,
-    title: input.title,
-    body: input.body ?? null,
-    action: input.action,
-    surface_name: input.surfaceName ?? null,
-    entity_type: input.entityType ?? null,
-    entity_id: input.entityId ?? null,
-    dedupe_key: input.dedupeKey,
-    expires_at: input.expiresAt ?? null,
-    priority: input.priority ?? 0,
-    evidence: (input.evidence ?? null) as Json,
-    confidence: input.confidence ?? null,
-    reasoning: input.reasoning ?? null,
-    first_seen_at: nowIso(),
-  };
-
-  const { data: existing, error: findError } = await supabase
-    .schema("platform")
-    .from(TABLE)
-    .select("id, occurrences")
-    .eq("dedupe_key", input.dedupeKey)
-    .eq("status", "pending")
-    .is("deleted_at", null)
-    .maybeSingle();
-  if (findError) {
-    console.error(`[assists] emit lookup failed: ${findError.message}`);
+  if (!userId) {
+    console.error(`[assists] emit requires a user id`);
     return null;
   }
-
-  if (existing) {
-    // A re-notice refreshes what the user reads and COUNTS — but never moves
-    // `first_seen_at`. "You have had this for three weeks" is the signal
-    // web.finding's first_detected_at carried and a plain upsert destroys.
-    const { error } = await supabase
-      .schema("platform")
-      .from(TABLE)
-      .update({
-        title: payload.title,
-        body: payload.body,
-        action: payload.action,
-        expires_at: payload.expires_at,
-        priority: payload.priority,
-        evidence: payload.evidence,
-        confidence: payload.confidence,
-        reasoning: payload.reasoning,
-        occurrences: (existing.occurrences ?? 1) + 1,
-      })
-      .eq("id", existing.id);
-    if (error) {
-      console.error(`[assists] emit refresh failed: ${error.message}`);
-      return null;
-    }
-    return existing.id;
-  }
-
-  const { data, error } = await supabase
-    .schema("platform")
-    .from(TABLE)
-    .insert(payload)
-    .select("id")
-    .single();
+  const supabase = createClient();
+  // supabase-js codegen marks every SQL argument required-non-null. The door
+  // accepts NULL for the fields a producer may omit; that is the live
+  // signature, and passing empty strings / zero UUIDs would write fakes.
+  const emitArgs = {
+    p_organization_id: organizationId,
+    p_source_kind: input.sourceKind ?? "deterministic",
+    p_source_key: input.sourceKey,
+    p_title: input.title,
+    p_body: input.body ?? null,
+    p_action: input.action,
+    p_surface_name: input.surfaceName ?? null,
+    p_entity_type: input.entityType ?? null,
+    p_entity_id: input.entityId ?? null,
+    p_dedupe_key: input.dedupeKey,
+    p_expires_at: input.expiresAt ?? null,
+    p_priority: input.priority ?? 0,
+    p_evidence: (input.evidence ?? null) as Json,
+    p_confidence: input.confidence ?? null,
+    p_reasoning: input.reasoning ?? null,
+  };
+  const { data, error } = await supabase.schema("platform").rpc(
+    "emit_pending_assist",
+    emitArgs as Database["platform"]["Functions"]["emit_pending_assist"]["Args"],
+  );
   if (error) {
-    // 23505 = a concurrent producer won the dedupe race — that's success.
-    if (error.code === "23505") return null;
     console.error(`[assists] emit failed: ${error.message}`);
     return null;
   }
-  return data.id;
+  return data ?? null;
 }
 
 /**

@@ -426,10 +426,11 @@ export function PartyRecordPage({ partyId }: Props) {
 function PartyUnifiedCustomFields({ partyId }: { partyId: string }) {
   const userId = useAppSelector(selectUserId);
   const organizationId = useAppSelector(selectActiveOrganizationId);
+  // ONE switch: does this organization keep its data in the record store? Set
+  // once, for everybody, on the unified data ramp screen (lane NAV-FIX).
   const campaign = useUnifiedDataCampaign({
     organizationId,
-    userId,
-    platformDefault: () => UNIFIED_DATA_CAMPAIGN.enabled(),
+    storeSwitch: (organization) => UNIFIED_DATA_CAMPAIGN.enabled(organization),
   });
   if (!campaign.on || !organizationId) return null;
   return (

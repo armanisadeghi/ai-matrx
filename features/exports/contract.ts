@@ -43,6 +43,7 @@ import type {
   CreateExportResponse,
   ExportAdapter,
   ExportAdapterCatalog,
+  ExportContainer,
   ExportCorrespondent,
   ExportDateRange,
   ExportDetection,
@@ -156,6 +157,15 @@ function parseCorrespondent(value: unknown, field: string): ExportCorrespondent 
   };
 }
 
+function parseContainer(value: unknown, field: string): ExportContainer {
+  const row = obj(value, field);
+  return {
+    key: str(row.key, `${field}.key`),
+    label: str(row.label, `${field}.label`),
+    count: num(row.count, `${field}.count`),
+  };
+}
+
 /**
  * 🚨 ONE UNREADABLE CORRESPONDENT MUST NOT CRASH THE WHOLE SUMMARY. Before
  * this fix, `top_correspondents.map(parseCorrespondent)` aborted the whole
@@ -173,12 +183,18 @@ export function parseExportSummary(value: unknown, field = "summary"): ExportSum
     (entry, index) =>
       parseCorrespondent(entry, `${field}.top_correspondents[${index}]`),
   );
+  // Same per-row tolerance as correspondents above, and for the same reason:
+  // one malformed thread/channel must not blank the whole summary card.
+  const { rows: topContainers, problems: containerRowProblems } = mapListRows(
+    arr(row.top_containers, `${field}.top_containers`),
+    (entry, index) => parseContainer(entry, `${field}.top_containers[${index}]`),
+  );
   return {
     total_items: num(row.total_items, `${field}.total_items`),
     counts_by_kind: countMap(row.counts_by_kind, `${field}.counts_by_kind`),
     counts_by_direction: countMap(row.counts_by_direction, `${field}.counts_by_direction`),
     counts_by_label: countMap(row.counts_by_label, `${field}.counts_by_label`),
-    counts_by_container: countMap(row.counts_by_container, `${field}.counts_by_container`),
+    top_containers: topContainers,
     date_range: parseDateRange(row.date_range, `${field}.date_range`),
     top_correspondents: topCorrespondents,
     total_chars: num(row.total_chars, `${field}.total_chars`),
@@ -192,6 +208,7 @@ export function parseExportSummary(value: unknown, field = "summary"): ExportSum
     warnings: [
       ...strList(row.warnings ?? [], `${field}.warnings`),
       ...correspondentRowProblems,
+      ...containerRowProblems,
     ],
   };
 }

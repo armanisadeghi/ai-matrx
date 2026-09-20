@@ -10,13 +10,41 @@
 -- than a second green suite. The bodies restored below are the ones in
 -- migrations/inverse/guardswitch_*_down.sql, so running this also proves those inverses are
 -- valid SQL against the live catalogue.
+--
+-- 🚨 THE SEAT (lane SEAT-SUITES, 2026-09-19). A red twin proves the green suite's clauses
+-- flip, so it must ask them in the SAME seat the green suite asks them in — otherwise one half
+-- of the pair would be measuring the defect against the store's internals while the other
+-- measures the fix against the product, and the pair would not be a pair. So the fixtures are
+-- built and the blocks are asked from the seat `authenticated`, proved in PART 0, exactly as
+-- `guardswitch_green.sql` does: the knob writes go through `platform.knob_override_set`, the
+-- tables and records through `custom.table_declare` and `custom.record_write`, and the
+-- cross-organization edges through the INSERT on `platform.associations` that a signed-in
+-- person really holds.
+--
+-- THREE THINGS STEP OUT OF THE SEAT AND SAY WHY, asserting nothing about a person while out:
+--   · the restored bodies above — `CREATE OR REPLACE FUNCTION` is DDL on functions the store
+--     owns, and no client door covers it;
+--   · the two Home records and the one relation FIELD — a Home is made by the onboarding path,
+--     and `custom.field_declare` CANNOT declare a column pointing at another TABLE at all
+--     (only `member` and `attachment`, which overwrite the target with the Person and File
+--     kernels). That is a real finding of this lane, reported, not papered over;
+--   · RED 3 (a `pg_proc` census) and RED 4 (`history.capture_window` and
+--     `platform.knob_value_as_of`, which `platform.client_callable_door` DECLARES server-only
+--     in those words). RED 5 asks `custom.visibility_as_of`, the door that register names as
+--     the one a person reaches that truth through, and it is asked from the seat.
 
 \set ON_ERROR_STOP on
 \timing off
 
 begin;
-set local statement_timeout = '300s';
-set local lock_timeout = '20s';
+-- SEAT-SUITES 2026-09-19: MINUTES of headroom, not seconds. This transaction replaces a dozen
+-- function bodies and then writes records through the doors, on a LIVE database where several
+-- other campaign lanes are touching `custom.record` at the same time (one was mid-`drop
+-- trigger` when this was measured). A 20-second lock wait made the file die in its fixtures
+-- with `canceling statement due to lock timeout`, which reads exactly like a red block that
+-- did not flip and is not one. Nothing here is asserted on time.
+set local statement_timeout = '900s';
+set local lock_timeout = '120s';
 select set_config('app.actor_system', 'guardswitch_red_suite', true);
 
 -- ─────────────────────────── the pre-GUARD-SWITCH bodies, restored inside this transaction
@@ -467,7 +495,7 @@ BEGIN
 END $function$;
 
 CREATE OR REPLACE FUNCTION custom.visibility_as_of(p_organization_id uuid, p_record_id uuid, p_at timestamp with time zone)
- RETURNS TABLE(principal_kind text, principal_id uuid, level permission_level, through_kind text, through_id uuid, reason text, replayed boolean)
+ RETURNS TABLE(principal_kind text, principal_id uuid, level permission_level, through_kind text, through_id uuid, reason text, replayed boolean, held_from timestamp with time zone, held_to timestamp with time zone)
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
  SET search_path TO 'pg_catalog'
@@ -631,7 +659,16 @@ begin
            case when (h.g ->> 'resource_id')::uuid = p_record_id
                 then 'A grant held directly on this record at that moment.'
                 else 'A grant held at that moment on a container this record was inside, which carried down to it. What each edge conveys (custom.carrying_rule.conveys_max) is a live registry with no history, so the level shown is the grant''s own and VIS-3''s minimum-along-the-path is not applied here.' end,
-           true
+           true,
+           -- SEAT-SUITES 2026-09-19: `held_from` / `held_to` are columns a LATER lane added to
+           -- the shipped `custom.visibility_as_of`. This is the body from BEFORE this lane, so
+           -- it has no answer for them and says null rather than inventing one. Postgres
+           -- refuses `create or replace` that changes a return type, so the restored body has
+           -- to carry today's column list — and it did not, which is why this red twin failed
+           -- to run at all on the main database before this was fixed (measured 2026-09-19,
+           -- 42P13 "cannot change return type of existing function", on origin/main's own
+           -- bytes). Nothing about what RED 5 asserts — `replayed` — changes.
+           null::timestamptz, null::timestamptz
       from held h;
 
   -- ARM 3 — MEMBERSHIP, as the organization stood then, and only where the record's own
@@ -666,7 +703,8 @@ begin
                   when not v_lane_open
                   then 'They were a member of this organization at that moment. This organization now says membership alone shows nothing (its "What members can see by default" setting), and that setting keeps no history — so this is TODAY''S answer applied to that day, not a replay.'
                   else 'They were a member of this organization at that moment, and membership alone reached this record. The level comes from custom/member_default_level, which keeps no history — so the level is today''s, applied to that day.' end,
-             false
+             false,
+             null::timestamptz, null::timestamptz
         from mem m
        where m.m ->> 'role' in ('owner', 'admin')
           or (v_lane_open and v_member_default is not null);
@@ -678,39 +716,89 @@ $function$
 
 
 
--- ═══════════════════════════════════════════════════ THE FIXTURES, for this transaction only
-insert into iam.organizations (id, name, slug, abbreviation, created_by)
-values ('9a5d0000-0000-4a00-8a00-0000000ded01', 'GUARD-SWITCH Red A', 'guardswitch-red-a', 'GRA', '87a6e699-3622-4869-8843-d0867456c0dd'),
-       ('9a5d0000-0000-4a00-8a00-0000000ded02', 'GUARD-SWITCH Red B', 'guardswitch-red-b', 'GRB', '87a6e699-3622-4869-8843-d0867456c0dd');
-insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
-values ('9a5d0000-0000-4a00-8a00-0000000ded01', 'organization', '9a5d0000-0000-4a00-8a00-0000000ded01', '87a6e699-3622-4869-8843-d0867456c0dd', 'owner', 'active'),
-       ('9a5d0000-0000-4a00-8a00-0000000ded01', 'organization', '9a5d0000-0000-4a00-8a00-0000000ded01', '4060701e-706a-4c76-b3ca-0bbc69fa5a14', 'member', 'active'),
-       ('9a5d0000-0000-4a00-8a00-0000000ded02', 'organization', '9a5d0000-0000-4a00-8a00-0000000ded02', '87a6e699-3622-4869-8843-d0867456c0dd', 'owner', 'active');
-insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value)
-values ('custom', 'system_enabled', 'organization',
-        '9a5d0000-0000-4a00-8a00-0000000ded01', '9a5d0000-0000-4a00-8a00-0000000ded01', 'true'::jsonb),
-       ('custom', 'system_enabled', 'organization',
-        '9a5d0000-0000-4a00-8a00-0000000ded02', '9a5d0000-0000-4a00-8a00-0000000ded02', 'true'::jsonb),
-       ('custom', 'cross_organization_links', 'organization',
-        '9a5d0000-0000-4a00-8a00-0000000ded01', '9a5d0000-0000-4a00-8a00-0000000ded01', 'true'::jsonb);
+-- ═════════════════ AND THE OLD WORLD, not only the old BODIES, for this transaction only
+-- SEAT-SUITES 2026-09-19. A red twin restores the state the defect lived in, and the bodies
+-- are only half of that state: the four retired guard knobs stood at FALSE platform-wide with
+-- `overridable_by = {}`, which is the "outage with a name" RED 1 exists to show. On the main
+-- database today `custom/associations_guard` carries `value = true` (set 2026-09-16, after this
+-- lane), so with the old body restored `platform.relations_are_on` answered TRUE for every
+-- organization and RED 1 could not be red — measured 2026-09-19, and NOT caused by anything
+-- this file asserts. The pre-lane value is put back here, inside the same transaction that is
+-- rolled back, so the whole old world is standing when the five blocks are asked. This is
+-- operator work on the knob register: it is done as the connected role, before the seat is
+-- taken, and nothing is asserted while it happens.
+update platform.feature_knob set value = 'false'::jsonb
+ where feature = 'custom'
+   and key in ('associations_guard', 'entity_custom_fields_guard',
+               'row_versions_guard', 'field_index_guard');
 
+-- ═══════════════════════════════════════════════════ THE FIXTURES, for this transaction only
 do $t$
 declare
   v_a constant uuid := '9a5d0000-0000-4a00-8a00-0000000ded01';
   v_b constant uuid := '9a5d0000-0000-4a00-8a00-0000000ded02';
   v_admin constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';
   v_dana constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';
+  c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
   v_korg constant uuid := '11111111-0000-4000-8000-000000000004';
   v_red integer := 0;
   v_hq_a uuid; v_hq_b uuid; v_tbl_a uuid; v_tbl_b uuid;
   v_rec_a uuid; v_rec_b uuid; v_fld uuid;
   v_n bigint;
+  v_res jsonb;
   v_val jsonb; v_rep boolean; r record; v_seen boolean := false; v_replayed boolean;
+  v_boss text := current_user;
 begin
+  perform set_config('request.jwt.claims', c_admin_j, true);
+
+  insert into iam.organizations (id, name, slug, abbreviation, created_by)
+  values (v_a, 'GUARD-SWITCH Red A', 'guardswitch-red-a', 'GRA', v_admin),
+         (v_b, 'GUARD-SWITCH Red B', 'guardswitch-red-b', 'GRB', v_admin);
+  insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
+  values (v_a, 'organization', v_a, v_admin, 'owner',  'active'),
+         (v_a, 'organization', v_a, v_dana,  'member', 'active'),
+         (v_b, 'organization', v_b, v_admin, 'owner',  'active');
+
+  -- The two Homes: made by the onboarding path, not by a browser, so they are made here,
+  -- BEFORE the seat is taken, and nothing is asserted while that is true.
   insert into custom.record (organization_id, table_id, data_class, data, created_by)
   values (v_a, v_korg, 'record', jsonb_build_object('name', 'Red HQ A'), v_admin) returning id into v_hq_a;
   insert into custom.record (organization_id, table_id, data_class, data, created_by)
   values (v_b, v_korg, 'record', jsonb_build_object('name', 'Red HQ B'), v_admin) returning id into v_hq_b;
+
+  -- ════════════════════════════════════════════════════════════════════════════
+  -- PART 0 — THE SEAT. Everything below this line runs as a signed-in person.
+  -- ════════════════════════════════════════════════════════════════════════════
+  perform set_config('role', 'authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception '0: this suite did not take the seat — current_user is %', current_user;
+  end if;
+  if pg_has_role(current_user,
+                 (select c.relowner from pg_class c where c.oid = 'custom.record'::regclass),
+                 'member') then
+    raise exception '0: this seat is a member of the role that owns custom.record, so every wall would open on its first line';
+  end if;
+  begin
+    perform 1 from custom.record limit 1;
+    raise exception '0: this seat can SELECT custom.record directly, so it is not a client seat';
+  exception when insufficient_privilege then null;
+  end;
+  raise notice 'PART 0 PASSED — the seat is `authenticated`, the ladder sees a client, and custom.record is not readable from it.';
+
+  -- Both stores on, and A has already said yes to cross-organization links — through the
+  -- settings screen's own door, as an owner of each organization.
+  v_res := platform.knob_override_set('custom', 'system_enabled', 'organization', v_a, v_a,
+                                      'true'::jsonb, 'guardswitch_red fixtures');
+  if not coalesce((v_res ->> 'ok')::boolean, false) then
+    raise exception 'the fixture could not switch A''s store on through the settings door: %', v_res; end if;
+  v_res := platform.knob_override_set('custom', 'system_enabled', 'organization', v_b, v_b,
+                                      'true'::jsonb, 'guardswitch_red fixtures');
+  if not coalesce((v_res ->> 'ok')::boolean, false) then
+    raise exception 'the fixture could not switch B''s store on through the settings door: %', v_res; end if;
+  v_res := platform.knob_override_set('custom', 'cross_organization_links', 'organization',
+                                      v_a, v_a, 'true'::jsonb, 'guardswitch_red fixtures');
+  if not coalesce((v_res ->> 'ok')::boolean, false) then
+    raise exception 'the fixture could not open A''s side of the wall through the settings door: %', v_res; end if;
 
   v_tbl_a := custom.table_declare(v_a, jsonb_build_object(
     'name', 'Case', 'slug', 'gs_red_case', 'label_singular', 'Case', 'label_plural', 'Cases',
@@ -727,10 +815,13 @@ begin
     'fields', jsonb_build_array(jsonb_build_object('name', 'title', 'kind', 'text')),
     'title_field', 'title', 'parent_id', v_hq_b::text));
 
-  insert into custom.record (organization_id, table_id, data_class, data, created_by)
-  values (v_a, v_tbl_a, 'record', jsonb_build_object('title', 'Red Case'), v_admin) returning id into v_rec_a;
-  insert into custom.record (organization_id, table_id, data_class, data, created_by)
-  values (v_b, v_tbl_b, 'record', jsonb_build_object('title', 'Red Supplier'), v_admin) returning id into v_rec_b;
+  v_rec_a := custom.record_write(v_a, v_tbl_a, jsonb_build_object('title', 'Red Case'));
+  v_rec_b := custom.record_write(v_b, v_tbl_b, jsonb_build_object('title', 'Red Supplier'));
+
+  -- THE ONE FIXTURE WITH NO CLIENT DOOR (see the header): `custom.field_declare` cannot make a
+  -- column that points at another Table, so this Field row steps out of the seat. Nothing is
+  -- asserted while it is out.
+  perform set_config('role', v_boss, true);
   insert into custom.record (organization_id, table_id, data_class, data, created_by)
   values (v_a, custom.field_kernel_id(), 'field', jsonb_build_object(
     'key', 'supplier', 'label', 'Supplier', 'sort', 10, 'type', 'relation',
@@ -741,22 +832,28 @@ begin
     'sensitivity', 'internal', 'context_policy', 'include', 'applies_to_types', '[]'::jsonb,
     'promoted', false, 'entity_definition_id', v_tbl_a::text), v_admin)
   returning id into v_fld;
+  perform set_config('role', 'authenticated', true);
 
   -- ══ RED 1 — THE OUTAGE WITH A NAME. Both organizations are ON the store, and with the old
   -- body the relation surface still reads OFF, for everybody, with no rung anywhere to change
   -- it. Turning custom/associations_guard on for an organization does nothing at all, because
-  -- the knob carries overridable_by = {}.
+  -- the knob carries overridable_by = {} — and asked through the settings screen's own door,
+  -- as an OWNER of the organization, the answer is a refusal with a reason: there is no rung
+  -- to turn. That is the shape of the outage, stated from the seat a person sits in.
   if platform.relations_are_on(v_a) then
     raise exception 'RED 1 IS NOT RED — the old body reads relations ON for an organization on the store.'; end if;
-  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value)
-  values ('custom', 'associations_guard', 'organization', v_a, v_a, 'true'::jsonb);
-  if platform.relations_are_on(v_a) then
+  v_res := platform.knob_override_set('custom', 'associations_guard', 'organization', v_a, v_a,
+                                      'true'::jsonb, 'guardswitch_red RED 1');
+  if coalesce((v_res ->> 'ok')::boolean, false) and platform.relations_are_on(v_a) then
     raise exception 'RED 1 IS NOT RED — the per-object guard turned out to have an organization rung after all.'; end if;
+  if platform.relations_are_on(v_a) then
+    raise exception 'RED 1 IS NOT RED — relations came on for this organization without the store switch.'; end if;
   v_red := v_red + 1;
 
   -- ══ RED 2 — AND BECAUSE IT READS OFF, THE WALL IS DARK. The same edge the green suite's 2a
-  -- has refused three times is ACCEPTED here: organization B never opted in, and gate two of
-  -- platform.enforce_relation_edge returns NEW untouched before the wall is ever asked.
+  -- has refused three times is ACCEPTED here, written by the same signed-in person, with the
+  -- INSERT privilege `authenticated` really holds: organization B never opted in, and gate two
+  -- of platform.enforce_relation_edge returns NEW untouched before the wall is ever asked.
   insert into platform.associations
     (source_type, source_id, target_type, target_id, organization_id, role, relation_field_id, origin, created_by)
   values ('record', v_rec_a, 'record', v_rec_b, v_a, 'supplier', v_fld, 'campaign', v_admin);
@@ -773,6 +870,9 @@ begin
   -- four retired guard knobs are read again — including `custom/field_index_guard` by
   -- `platform.custom_field_index_ddl`, the fifth reader DOOR-FIX's B1 did not see, which is
   -- the reason 1c is a catalogue census and not a list somebody maintains by hand.
+  -- IT STEPS OUT OF THE SEAT, like the green suite's 1c: reading every function body on the
+  -- database out of `pg_proc` is not a product question and no client door covers it.
+  perform set_config('role', v_boss, true);
   select count(*) into v_n
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
    where p.prosrc like '%knob_resolve(''custom'', ''associations_guard''%'
@@ -785,11 +885,15 @@ begin
                   where n.nspname = 'platform' and p.proname = 'custom_field_index_ddl'
                     and p.prosrc like '%field_index_guard%') then
     raise exception 'RED 3 IS NOT RED — the fifth reader is not reading the retired knob.'; end if;
-  v_red := v_red + 1;
 
   -- ══ RED 4 — THE REGISTRY WITH NO MEMORY. Take the knob history away and the as-of read
   -- cannot replay: it hands back today's value and says replayed = false, which is exactly
   -- what VIS-2 recorded and what made the audit door's membership rows unreliable.
+  -- STILL OUT OF THE SEAT, and it says why: `history.capture_window` carries no client grant
+  -- of any kind, and `platform.client_callable_door` DECLARES `platform.knob_value_as_of`
+  -- server-only — "a client door onto it would hand any signed-in person any organization's
+  -- settings history". This lane does not overturn that ruling to make a red block convenient.
+  -- RED 5, below, IS the person's door and it goes back into the seat.
   delete from history.capture_window where entity_type in ('platform.feature_knob', 'platform.knob_override');
   insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value)
   values ('custom', 'member_default_visibility', 'organization', v_a, v_a, '"shared_only"'::jsonb);
@@ -800,10 +904,14 @@ begin
   delete from platform.knob_override
    where feature = 'custom' and key = 'member_default_visibility' and organization_id = v_a;
   v_red := v_red + 1;
+  v_red := v_red + 1;
 
-  -- ══ RED 5 — THE DOOR THAT APPLIED TODAY TO YESTERDAY. The pre-GUARD-SWITCH
-  -- custom.visibility_as_of is restored above; every membership row it returns is marked
-  -- replayed = false, whatever the settings history says, because it never looks.
+  -- ══ RED 5 — THE DOOR THAT APPLIED TODAY TO YESTERDAY, ASKED AS A PERSON. The
+  -- pre-GUARD-SWITCH custom.visibility_as_of is restored above; every membership row it
+  -- returns is marked replayed = false, whatever the settings history says, because it never
+  -- looks. This is the one client door in this file, so it is asked from the seat — as an
+  -- OWNER of organization A, which is who the audit view is for.
+  perform set_config('role', 'authenticated', true);
   for r in select * from custom.visibility_as_of(v_a, v_rec_a, now()) loop
     if r.principal_kind = 'user' and r.principal_id = v_dana and r.through_kind = 'organization' then
       v_seen := true; v_replayed := r.replayed;
@@ -814,6 +922,38 @@ begin
   if v_replayed then
     raise exception 'RED 5 IS NOT RED — the old door already marked the membership row replayed.'; end if;
   v_red := v_red + 1;
+
+  -- ══ AND THE SEAT IS A REAL SEAT. Not a red block — this lane did not touch access, so there
+  -- is nothing here to flip. It is here because a file that merely SAYS `set local role
+  -- authenticated` and asks everything of the store's internals is a fake, and the cheapest
+  -- proof that this one is not is a second person hitting a wall the first walks through.
+  declare
+    c_dana_j constant text := '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}';
+    v_caught text;
+  begin
+    perform set_config('request.jwt.claims', c_dana_j, true);
+    -- Dana is a plain member: she may not ask who could see a record.
+    v_caught := null;
+    begin
+      perform 1 from custom.visibility_as_of(v_a, v_rec_a, now());
+    exception when others then v_caught := sqlerrm;
+    end;
+    if v_caught is null then
+      raise exception 'ACCESS: test@test.com read the whole visibility audit of organization A.'; end if;
+    -- nor rewrite what the organization shows its members
+    v_res := platform.knob_override_set('custom', 'member_default_visibility', 'organization',
+                                        v_a, v_a, '"all_records"'::jsonb, 'guardswitch_red access');
+    if coalesce((v_res ->> 'ok')::boolean, false) then
+      raise exception 'ACCESS: test@test.com, a plain member, rewrote this organization''s member-visibility setting: %', v_res; end if;
+    -- THE CONTROL: she is a member, so she reads the switch that governs every door she uses,
+    -- and the record her organization's default lets her see.
+    if not custom.store_is_open(v_a) then
+      raise exception 'ACCESS: a member of this organization cannot read the switch that governs every door she uses.'; end if;
+    if (custom.read_record(v_a, v_rec_a, true) ->> 'title') <> 'Red Case' then
+      raise exception 'ACCESS: a member of an organization whose default is all_records cannot read one of its records.'; end if;
+    perform set_config('request.jwt.claims', c_admin_j, true);
+    raise notice '[SEAT] the wall is real for a second person, and it is not a wall against everyone.';
+  end;
 
   raise notice '% of 5 blocks are RED (the defect each asserts is present in the old bodies)', v_red;
   if v_red <> 5 then raise exception 'the red twin did not reach five blocks'; end if;
@@ -836,5 +976,8 @@ begin
   if (select count(*) from history.capture_window
        where entity_type in ('platform.feature_knob', 'platform.knob_override')) <> 2 then
     raise exception 'ROLLBACK FAILED — the knob capture windows did not come back.'; end if;
+  if (select coalesce(value, default_value) from platform.feature_knob
+       where feature = 'custom' and key = 'associations_guard') is distinct from 'true'::jsonb then
+    raise exception 'ROLLBACK FAILED — the platform value of custom/associations_guard did not come back; this file lowered it for its own transaction and it must be exactly as it was.'; end if;
   raise notice 'ROLLBACK VERIFIED — no fixture survived and the shipped bodies are back';
 end $t$;

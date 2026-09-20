@@ -13,8 +13,8 @@ export default function ArtifactsPage() {
           </h1>
         }
       />
-      <div className="h-full overflow-y-auto bg-textured px-4 sm:px-6 pb-6 pt-[calc(var(--shell-header-h)+0.75rem)]">
-        <div className="max-w-[1600px] mx-auto">
+      <div className="h-full overflow-y-auto bg-textured px-3 sm:px-5 pb-6 pt-[calc(var(--shell-header-h)+0.5rem)]">
+        <div className="mx-auto max-w-[1100px]">
           <CmsArtifactList />
         </div>
       </div>

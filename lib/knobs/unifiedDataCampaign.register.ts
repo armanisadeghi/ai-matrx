@@ -36,7 +36,24 @@
  *                     a shipped feature. It is registered so the guard can tell
  *                     it apart from new campaign code, never to be switched.
  */
-export type CampaignEntryPointKind = "runtime" | "tooling" | "preexisting";
+export type CampaignEntryPointKind =
+    | "runtime"
+    | "tooling"
+    | "preexisting"
+    /**
+     * A RED TWIN: a test that wires the campaign's own gate the WRONG way on
+     * purpose, asserts the world before its lane's fix, and is SUPPOSED to fail.
+     * It is the only kind other than `runtime` allowed to call the gate — a red
+     * twin that could not call it could not be a twin of anything.
+     *
+     * The guard holds it to its name: the file must end `.red.test.ts(x)`, so the
+     * word cannot be used to walk served code past the `runtime` rule. Registered
+     * because lane APPROVAL-KNOB found `check:campaign-entry-points` exiting 1 on
+     * origin/main: NAV-FIX had added the first red twin in this repo and the
+     * register had no word for one, so the only ways to green were to mis-declare
+     * it or to delete somebody's guard.
+     */
+    | "red_twin";
 
 export interface CampaignEntryPoint {
     /** Stable id, for the guard's failure message. */
@@ -122,6 +139,12 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "The sidebar's Data group carries a `Records` child pointing at /data-v2, and it appears only where this campaign's switch is on. This hook is the one place the sidebar resolves that switch, for this person in this organization, so a gated destination is dropped everywhere the nav is drawn. Served to every signed-in user on every page, so an unanswered switch counts as OFF and the child simply is not there.",
     },
     {
+        id: "shell-nav-gates-red-twin",
+        file: "features/shell/navigation/useShellNavGates.red.test.tsx",
+        kind: "red_twin",
+        why: "Lane NAV-FIX's RED TWIN for the sidebar gate: it wires the gate the OLD way (a synchronous Redux read inside useEffect(…, [])) and FAILS, which is what proves the real hook's four green clauses are load-bearing. It is excluded from `pnpm test` by jest.config.ts and serves no request, so it is tooling and must not be gated — a red twin held behind the campaign switch would go quiet exactly when the campaign is off, which is when a regression would land unseen. Registered by lane APPROVAL-KNOB, which found `check:campaign-entry-points` exiting 1 on origin/main for this one unregistered file.",
+    },
+    {
         id: "crm-party-custom-fields",
         file: "features/crm/components/record/PartyRecordPage.tsx",
         kind: "runtime",
@@ -138,6 +161,36 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         file: "features/list-change-proposals/__tests__/applyListChange.table.live.test.ts",
         kind: "tooling",
         why: "Exercises the `kind:\"table\"` branch above against the live main database as admin@admin.com, whose personal organization carries a standing per-user switch override. A test run by a developer/CI, never served to a user, so it must not call the gate itself.",
+    },
+    {
+        id: "record-change-approval-apply",
+        file: "features/record-change-approvals/applyRecordChange.ts",
+        kind: "runtime",
+        why: "The RESUME of a server-side record change a person approved in chat: it writes the agent's exact declaration through `@ai-matrx/records/core`'s `table_declare` / `record_update` / `record_write` doors under the person's own authority. Served to users from live conversations, so it reads the one switch first and refuses with the off sentence when it is off.",
+    },
+    {
+        id: "record-change-approval-card",
+        file: "features/record-change-approvals/RecordChangeApprovalCard.tsx",
+        kind: "runtime",
+        why: "The card that puts the wait on screen — the platform's own <ApprovalCard>, driven by the records tool result. It reaches the store only through the apply port above, and that port is where the switch is read; this file imports the port and never a door, so the gate it inherits is the one gate.",
+    },
+    {
+        id: "record-change-approval-test-harness",
+        file: "features/record-change-approvals/__tests__/harness.ts",
+        kind: "tooling",
+        why: "The shared harness for the two suites below: it signs in as admin@admin.com, builds a records client against the live store and carries the waits the server half actually produced. A test harness serves no request, so it must not be gated — gating it would make the suite go quiet exactly when the campaign is off, which is when a regression would land unseen.",
+    },
+    {
+        id: "record-change-approval-live-test",
+        file: "features/record-change-approvals/__tests__/recordChangeApproval.live.test.tsx",
+        kind: "tooling",
+        why: "Renders the approval card against the LIVE record store as admin@admin.com: approve lands the column and the store is read back to prove it; decline leaves it absent. Run by a developer, never served, so it does not call the gate itself.",
+    },
+    {
+        id: "record-change-approval-red-twin",
+        file: "features/record-change-approvals/__tests__/recordChangeApproval.red.test.tsx",
+        kind: "red_twin",
+        why: "The RED TWIN of the suite above: it asserts the world before this lane — a wait nobody could act on, an approval that could not land, a decline that named no setting — and FAILS all three, which is what makes the green twin mean something.",
     },
     {
         id: "migration-target",
