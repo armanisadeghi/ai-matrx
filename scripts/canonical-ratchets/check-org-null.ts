@@ -139,11 +139,9 @@ const key = (t: { schema: string; table: string }) => `${t.schema}.${t.table}`;
 /**
  * THE CONSTRAINT-BACKED EXEMPTION, and why it is not "the allowlist again".
  *
- * Five tables in this ratchet's scan set do not use `organization_id` as an
+ * Four tables in this ratchet's scan set do not use `organization_id` as an
  * OWNER column at all, and a live CHECK constraint says so in SQL:
  *
- *   platform.retention_policy      scope selector — 'global'/'taxonomy_node'/
- *                                  'entity' policies REQUIRE org IS NULL
  *   platform.entity_grants         grant TARGET — 'global'/'industry' audiences
  *                                  REQUIRE org IS NULL
  *   users.integration_connections  XOR owner — owner_type='user' REQUIRES NULL

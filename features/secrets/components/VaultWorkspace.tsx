@@ -122,7 +122,7 @@ export function VaultWorkspace({
   const switchToOrganizationScope = (): string | null => {
     if (!scopeSwitchOrganizationId) {
       toast.error(
-        "No organization is selected, so there are no organization credentials to show. Choose the organization you are working in from the avatar menu and try again.",
+        "Select an organization from the avatar menu to view its credentials.",
       );
       return null;
     }

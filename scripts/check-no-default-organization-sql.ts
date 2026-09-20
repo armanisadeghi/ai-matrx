@@ -75,6 +75,7 @@
  *       pnpm check:no-default-organization-sql --self-test   (proves it FAILS)
  * Exit 1 on any unallowlisted violation; exit 2 on unexpected errors.
  */
+import { exitAfterDrain } from "./lib/exit-after-drain";
 import {
   readdirSync,
   readFileSync,
@@ -362,8 +363,8 @@ function main(): number {
 }
 
 try {
-  process.exit(main());
+  exitAfterDrain(main());
 } catch (err) {
   console.error("check-no-default-organization-sql: unexpected error", err);
-  process.exit(2);
+  exitAfterDrain(2);
 }

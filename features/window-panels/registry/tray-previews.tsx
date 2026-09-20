@@ -14,6 +14,7 @@
  */
 
 import type { ReactNode } from "react";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { Activity } from "lucide-react";
 import type { TrayPreviewContext } from "./windowRegistryTypes";
 import ErrorInspectorTrayChip from "@/features/admin/error-inspector/ErrorInspectorTrayChip";
@@ -39,7 +40,9 @@ function LiveRunTrayPreview({ data }: { data: Record<string, unknown> }) {
   return (
     <TrayStatusChip
       icon={Activity}
-      tone={status.errorMessage ? "critical" : status.isActive ? "info" : "neutral"}
+      tone={
+        status.errorMessage ? "critical" : status.isActive ? "info" : "neutral"
+      }
       caption={
         status.errorMessage
           ? "Needs another try"
@@ -71,7 +74,14 @@ export function messagesTrayPreview({ data }: TrayPreviewContext): ReactNode {
       <span className="text-foreground/80 font-medium">Messages</span>
       {conversationId && (
         <span className="ml-1 text-muted-foreground/60">
-          · {conversationId}
+          ·{" "}
+          <EntityRef
+            token="conversation"
+            id={data.conversationId as string}
+            name={conversationId}
+            showIcon={false}
+            disablePeek
+          />
         </span>
       )}
     </div>
@@ -87,7 +97,14 @@ export function singleMessageTrayPreview({
       <span className="text-foreground/80 font-medium">Conversation</span>
       {conversationId && (
         <span className="ml-1 text-muted-foreground/60">
-          · {conversationId}
+          ·{" "}
+          <EntityRef
+            token="conversation"
+            id={data.conversationId as string}
+            name={conversationId}
+            showIcon={false}
+            disablePeek
+          />
         </span>
       )}
     </div>

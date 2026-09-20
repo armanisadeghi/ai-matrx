@@ -1145,6 +1145,7 @@ export const PUBLIC_WRITE_POLICIES_OF_RECORD: ReadonlyArray<PublicWritePolicyOfR
   { relation: "pdf.pdf_redaction_key_escrow", policy: "pdf_redaction_key_escrow_insert", cmd: "a", reason: "Escrow owner. Predicate: is_platform_admin() or owner_id = auth.uid()." },
   { relation: "pdf.pdf_redaction_key_escrow", policy: "pdf_redaction_key_escrow_update", cmd: "w", reason: "Escrow owner. Predicate: is_platform_admin() or owner_id = auth.uid()." },
   { relation: "rag.data_store_members", policy: "data_store_members_via_store_all", cmd: "*", reason: "Creator or org member of the parent data store. Predicate: is_platform_admin() or data_stores.created_by = auth.uid() or is_member_of_organization(...)." },
+  { relation: "platform.org_context_ledger", policy: "platform_admin_only", cmd: "*", reason: "Platform-operator organization context audit. USING and WITH CHECK both require is_platform_admin(), which rejects a NULL auth.uid(); anon also holds no write grant." },
   { relation: "users.feedback_comments", policy: "Users can comment on own feedback", cmd: "a", reason: "Author of the parent feedback row. Predicate: is_platform_admin() or feedback_id in (the caller own user_feedback)." },
   { relation: "users.user_analysis_preferences", policy: "user_analysis_preferences_delete", cmd: "d", reason: "The user themselves. Predicate: is_platform_admin() or user_id = auth.uid()." },
   { relation: "users.user_analysis_preferences", policy: "user_analysis_preferences_insert", cmd: "a", reason: "The user themselves. Predicate: is_platform_admin() or user_id = auth.uid()." },
@@ -1155,8 +1156,7 @@ export const PUBLIC_WRITE_POLICIES_OF_RECORD: ReadonlyArray<PublicWritePolicyOfR
   { relation: "users.user_form_profile", policy: "user_form_profile_insert", cmd: "a", reason: "The user themselves. Predicate: is_platform_admin() or user_id = auth.uid()." },
   { relation: "users.user_form_profile", policy: "user_form_profile_update", cmd: "w", reason: "The user themselves. Predicate: is_platform_admin() or user_id = auth.uid()." },
   { relation: "users.user_secrets", policy: "Users manage own secrets", cmd: "*", reason: "The user themselves. Predicate: auth.uid() = user_id." },
-  { relation: "workbench.udt_document_snapshots", policy: "udt_document_snapshots_insert", cmd: "a", reason: "Creator or editor of the parent document. Predicate: is_platform_admin() or udt_documents.created_by = auth.uid() or iam.has_access(editor)." },
-  { relation: "workbench.udt_workbook_snapshots", policy: "udt_workbook_snapshots_insert", cmd: "a", reason: "Creator or editor of the parent workbook. Predicate: is_platform_admin() or udt_workbooks.created_by = auth.uid() or iam.has_access(editor)." },];
+];
 
 export interface AnonWriteFinding {
   /** Which arm found it - the five questions this surface is made of. */
@@ -1296,7 +1296,10 @@ export const ANON_SELECT_DEFAULT_QUERY = `
   order by 1
 `;
 
-/** ARM 4 - every write-capable policy that reaches PUBLIC or `anon`. */
+/** ARM 4 - every permissive write policy that reaches PUBLIC or `anon`.
+ * Restrictive policies can only narrow a permissive grant, never authorize a write.
+ * Keep table/column grants independently measured by ARM 1.
+ */
 export const ANON_WRITE_POLICY_QUERY = `
   select n.nspname || '.' || c.relname as relation,
          p.polname as policy,
@@ -1306,7 +1309,8 @@ export const ANON_WRITE_POLICY_QUERY = `
   from pg_policy p
   join pg_class c on c.oid = p.polrelid
   join pg_namespace n on n.oid = c.relnamespace
-  where p.polcmd::text in ('a','w','d','*')
+  where p.polpermissive
+    and p.polcmd::text in ('a','w','d','*')
     and (0 = any(p.polroles) or (select oid from pg_roles where rolname = 'anon') = any(p.polroles))
     and n.nspname = any($1::text[])
   order by 1, 2

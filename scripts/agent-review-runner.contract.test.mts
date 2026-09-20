@@ -4,7 +4,7 @@ import {
   acceptSql, candidateSql, claimSql, freezeChecklist, normalizeInstruction,
   promoteSql, releaseSql, requireCompleteEvidence, requireIndependentVerdicts,
   sha256Json, sha256Text,
-} from "./agent-review-runner-sql.ts";
+} from "./agent-review-runner-sql";
 
 const actor = { stableWorker: "review-worker-01", runId: "run-20260920-a" };
 const instructions = "Open the admin sidebar. Verify mobile layout.";

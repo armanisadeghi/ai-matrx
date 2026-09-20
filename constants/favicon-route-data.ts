@@ -85,6 +85,11 @@ export const faviconRouteData: FaviconRouteEntry[] = [
   // Bring your export — a service's own data download, read (features/exports)
   { href: "/exports", favicon: { color: "#0d9488", letter: "EX" } },
   { href: "/data", favicon: { color: SHEETS_COLOR, letter: "DA" } },
+  { href: "/data-v2", favicon: { color: SHEETS_COLOR, letter: "D2" } },
+  { href: "/acquisition", favicon: { color: "#0f766e", letter: "AQN" } },
+  { href: "/approvals", favicon: { color: "#d97706", letter: "AV" } },
+  { href: "/detail", favicon: { color: "#475569", letter: "DLT" } },
+  { href: "/notifications", favicon: { color: "#0284c7", letter: "NF" } },
   { href: "/voice", favicon: { color: "#be185d", letter: "V" } },
   {
     href: "/demo/voice/voice-manager",

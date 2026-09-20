@@ -312,7 +312,7 @@ function RepairPane({
       // spend behind it — landed in a workspace the person never chose, with
       // nothing on screen saying so.
       toast.error(
-        "No organization is selected, so this repair cannot be filed — choose one from the organization picker in the header, then run it again. Nothing was created or spent.",
+        "Select an organization in the header, then run the repair again.",
       );
       return;
     }

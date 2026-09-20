@@ -1,7 +1,7 @@
 {
   "_comment": "NO NULL ORG (owner ruling 2026-08-21, db-rules FEATURE.md §2/§6e). Seeded from LIVE, not from zero — the gate's job is preventing growth, not forcing an instant cleanup, and it must never be able to block a release on the legacy backlog. `null_org_rows_total` may only go DOWN; `nullable_org_columns` may only SHRINK. Raising either is an Arman decision; agents shrink them with --update-baseline.",
   "seeded_at": "2026-08-29T08:07:16.280665+00:00",
-  "null_org_rows_total": 12526,
+  "null_org_rows_total": 12413,
   "nullable_org_columns": [
     "dictionary.dict_entries",
     "docproc.processed_documents",
@@ -9,7 +9,6 @@
     "platform._bak_assoc_file_processed_document_20260812",
     "platform.assists",
     "platform.associations",
-    "platform.retention_policy",
     "platform.share_links",
     "rag.context_item_suggestions",
     "rag.data_stores",
@@ -31,11 +30,6 @@
   "known_null_org_writers": [],
   "_org_less_by_constraint_comment": "Tables where a NULL organization_id is not debt but the shape the DATABASE DEMANDS: on each of these `organization_id` is a scope selector, a grant target, or one arm of an XOR ownership union — never an owner column — and a live CHECK constraint enforces exactly that. Stamping an org on these rows raises a check violation; it does not fix anything. Each entry NAMES the constraint it rests on and check-org-null.ts verifies that constraint against the live catalog on EVERY run (via org_constraints from public.org_null_ratchet_snapshot, added by migrations/org_null_ratchet_constraint_evidence.sql). A dropped or renamed constraint makes the exemption SCREAM instead of silently excusing real debt. Established 2026-08-29 after these five tables accounted for 148 of the 175 rows the ratchet was reporting as violations. An entry leaves this list when the table's DESIGN changes, never to quiet a gate.",
   "org_less_by_constraint": [
-    {
-      "table": "platform.retention_policy",
-      "constraint": "retention_policy_scope_addressing",
-      "reason": "organization_id is a SCOPE SELECTOR on a policy ladder, not an owner. The constraint REQUIRES organization_id IS NULL for scope in ('global','taxonomy_node','entity') and NOT NULL only for scope='organization'. The reader platform.resolve_retention_policy compares organization_id solely inside its scope='organization' arm. All 113 live NULL-org rows are scope='entity' (112, seeded by matrx-frontend/migrations/hr_13_governance.sql, one per HR entity token) or scope='global' (1, the floor policy from aidream/db/migrations/0415). There is no client write path at all: RLS is retention_policy_no_write USING(false) WITH CHECK(false)."
-    },
     {
       "table": "platform.entity_grants",
       "constraint": "entity_grants_audience_shape",
@@ -63,7 +57,6 @@
     "platform.assists": 54,
     "platform.associations": 4,
     "platform.entity_grants": 5,
-    "platform.retention_policy": 113,
     "platform.share_links": 1,
     "rag.data_stores": 2,
     "rag.embedding_cache": 11818,

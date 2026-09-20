@@ -1197,9 +1197,8 @@ async function executeStreamingRequest(
     },
   );
 
-  const requestId = response.headers.get("X-Request-ID") ?? undefined;
-  const conversationId =
-    response.headers.get("X-Conversation-ID") ?? undefined;
+  const requestId = response.headers.get("X-Request-ID");
+  const conversationId = response.headers.get("X-Conversation-ID");
 
   if (!response.ok) {
     const serverDetail: unknown = await response
@@ -1228,8 +1227,8 @@ async function executeStreamingRequest(
     await config.consumeStream(response, ids);
     config.onStreamComplete?.(ids.requestId, ids.conversationId);
     return {
-      requestId: ids.requestId ?? undefined,
-      conversationId: ids.conversationId ?? undefined,
+      requestId: ids.requestId,
+      conversationId: ids.conversationId,
     };
   }
 
@@ -1257,8 +1256,8 @@ async function executeStreamingRequest(
   config.onStreamComplete?.(parsedRequestId, parsedConversationId);
 
   return {
-    requestId: parsedRequestId ?? undefined,
-    conversationId: parsedConversationId ?? undefined,
+    requestId: parsedRequestId,
+    conversationId: parsedConversationId,
   };
 }
 

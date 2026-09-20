@@ -77,7 +77,7 @@ export function GuardianConsentVerifyDialog({
             action="Request the form"
             onClick={() =>
               toast.info(
-                "Signed-form verification is being finalized. For now, the card method above is instant. We'll email you the form option shortly.",
+        "Signed forms aren't ready yet. Use a card now; we'll email the form option.",
               )
             }
           />

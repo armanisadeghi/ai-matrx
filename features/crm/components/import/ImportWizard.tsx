@@ -283,7 +283,7 @@ export function ImportWizard() {
       }
       if (plan.connector?.syncToken && !fullConnectorSelection) {
         toast.success(
-          "Only the selected contacts were imported. The Google sync position was not advanced, so unselected contacts remain available next time.",
+          "Selected contacts imported. The rest will be available next time.",
         );
       }
     } catch (e) {
