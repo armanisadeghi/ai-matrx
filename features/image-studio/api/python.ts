@@ -452,6 +452,10 @@ export async function generateImage(
   const organizationId = await ensureOrgId(undefined);
   let complete: ImageGenerateCompleteData | null = null;
   for await (const evt of postNdjson("/images/generate", {
+    // A person pressed Generate. Declaring it is the ONLY provenance input a
+    // client may send (the server derives origin_class from it); without it
+    // their image lands in the records as an unattested `api` caller.
+    initiation: "user",
     ...body,
     organization_id: organizationId,
   })) {

@@ -506,21 +506,19 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                         ))}
                     </div>
                 }
-                headerActions={
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-11 gap-2 lg:h-7"
-                        disabled={sync.isRunning}
-                        onClick={() => void sync.start("full")}
-                    >
-                        <RefreshCw
-                            className={`size-4 ${sync.isRunning ? "animate-spin" : ""}`}
-                            aria-hidden
-                        />
-                        <span className="max-sm:sr-only">Bring up to date</span>
-                    </Button>
-                }
+                /* 🚨 THERE IS ONE "Bring up to date" ON THIS PAGE (jobs-bar
+                   cold-walk-13, Friction). A second copy lived here, in the
+                   list toolbar, about 300px below the identical button in the
+                   metrics header — two controls, same words, same verb, and
+                   nothing on screen to say whether they differed. The header's
+                   is the one that survives: it carries the running state, the
+                   honest disabled reasons ("A sync is running right now…" /
+                   "This Library cannot be brought up to date from here right
+                   now.") and the stale-numbers notice underneath it. This one
+                   carried none of that, so keeping it would mean keeping the
+                   poorer of two identical promises. Adding an affordance
+                   obliges you to delete the one it replaces — and so does
+                   finding you already have two. */
             />
 
             {runner.dialog}

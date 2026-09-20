@@ -27,6 +27,12 @@ export async function executeToolTest(
   const body: Record<string, unknown> = {
     tool_name: toolName,
     arguments: args,
+    // Every door declares who opened it: the app, the feature, and that a
+    // person pressed Execute. Without it the row lands unattributed and shows
+    // up in somebody's chat sidebar as if they started it.
+    source_app: "matrx-frontend",
+    source_feature: "tool-testing",
+    initiation: "user",
   };
 
   if (context) {

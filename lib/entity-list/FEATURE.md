@@ -428,6 +428,20 @@ how that savior page gets built.
 
 ## Change log
 
+- `2026-09-20` — Claude (Opus): **Cancel no longer throws the selection away
+  and then claims the work was done** (jobs-bar cold-walk-13, Friction). A bulk
+  action whose verb is a DIALOG resolves with nothing when the person cancels,
+  and `EntityBulkBar` read that as `{}` — clearing the selection AND raising a
+  success toast for work that never started. Three surfaces have that shape
+  (`source-library`'s Transcribe and Send to a Masterwork Rulebook, `exports`'
+  Send), so the fix is in the shell that owns the selection lifecycle: a
+  `void`/`undefined` result now means "this action did not run" — the selection
+  stays exactly as it was and nothing is announced, the same treatment a thrown
+  error already got. An action that DID work returns a result object, even an
+  empty one; `EntityBulkAction.run` says so. Guard: `bulk-selection.test.tsx`
+  ("keeps the selection and says nothing when the action did not run"), proven
+  red against the old `?? {}`.
+
 - `2026-09-19` — Claude (Sonnet): **a tall `notice` can no longer squeeze the
   table out of reach.** `notice` renders in the STATIC `shrink-0` zone above
   the scope tabs and toolbar (flex-shrink: 0, so flexbox never compresses

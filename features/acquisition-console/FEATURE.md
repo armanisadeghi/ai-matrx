@@ -111,6 +111,23 @@ the database to narrow them by.
 
 ## Change Log
 
+- `2026-09-20` — **A "What we have" Library row is a door to its own kind, not
+  to the shelf.** Every Library row's `href` was a bare `/libraries`: the
+  Acquisition Console walk clicked "Gmail export, 4" and landed on all 33
+  Libraries with an empty query string, so the 4 could not be re-counted from
+  the screen it pointed at. It was bare for a real reason — `GET /media/libraries`
+  declared none of the three filters its contract published (D343), so any
+  parameter would have been a narrowing the destination could not perform. With
+  aidream `d7093434f6` that is gone, and `librariesHref(adapter, lane)` now
+  addresses the row exactly: `?scope=` + `?filters=` — `lib/entity-list/urlQuery.ts`'s
+  own params, carrying the adapter in the very `select` bag a column header
+  produces, so the link, a chip click and a typed filter are one query and no
+  third spelling is coined. The scope is always written, never left to a default
+  the entity-type registry decides after first render. `shared-with-you` is the
+  console's own refinement and has no tab on the destination, so it addresses
+  the lane the row really carries (`personal` → `mine`) instead of inventing
+  one. Guard: `features/source-library/__tests__/the-libraries-link-is-a-query-the-list-runs.test.ts`.
+
 - **2026-09-19** — Created. Board row H5 (Acquisition Frontier). v1: three
   sections composed entirely from existing data, visibility lanes wired in after
   the seat test surfaced that a member reads 1 of 33 Libraries.

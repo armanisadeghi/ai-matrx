@@ -60,9 +60,23 @@ export function MenuGroup({
         </svg>
       </label>
 
-      {/* grid-rows transition: 0fr → 1fr — overflow-hidden on outer, NOT inner */}
+      {/* grid-rows transition: 0fr → 1fr — overflow-hidden on outer, NOT inner.
+          🚨 `min-w-0` ON THE GRID ITEM IS LOAD-BEARING, NOT TIDINESS. A grid
+          item's `min-width` defaults to `auto`, which resolves to its
+          MIN-CONTENT width — and because the clip lives on the OUTER grid (not
+          on the item, which would zero that automatic minimum by itself), any
+          child wider than the 226px menu track silently grew the item past the
+          track and the outer `overflow-hidden` ate it. That is exactly what
+          cold walk 13's N1 measured: the organization picker laid out 467px
+          wide inside a 226px disclosure, so all 48 workspace names — and the
+          "No organization selected — pick one below." line above them — were
+          clipped off the edge and the section read as a blank rectangle.
+          Truncating text (`truncate` sets `white-space: nowrap`) contributes
+          its FULL width to min-content, so every list this group will ever hold
+          is exposed the same way. Measured gate:
+          `features/shell/layout-gate/user-menu-org-disclosure.spec.ts`. */}
       <div className="grid grid-rows-[0fr] peer-checked:grid-rows-[1fr] transition-[grid-template-rows] duration-200 ease-in-out overflow-hidden">
-        <div className="min-h-0">
+        <div className="min-h-0 min-w-0">
           <div className="pl-2 pt-0.5">{children}</div>
         </div>
       </div>

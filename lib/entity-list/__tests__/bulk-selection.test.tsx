@@ -181,9 +181,14 @@ function bulkConfig(
           title: `Archive ${selection.count} records?`,
           description: `They leave every list until someone restores them.`,
         }),
+        // Returning a RESULT is how an action says it actually ran — see
+        // `EntityBulkAction.run`. An action that resolves with nothing is
+        // telling the shell it did not run (the person cancelled its dialog),
+        // and the shell then keeps the selection and says nothing.
         run: (selection: EntityBulkSelection<Row>) => {
           runCount += 1;
           received.push(selection);
+          return {};
         },
         ...actionOverrides,
       },
@@ -567,6 +572,39 @@ describe("an expensive or destructive bulk click", () => {
     await click(bulkButton("archive")!);
     expect(document.body.textContent).not.toContain("1 record selected");
     expect(bulkButton("archive")).toBeNull();
+  });
+
+  /**
+   * 🚨 jobs-bar cold-walk-13, Friction: "Cancel on the Send dialog discards
+   * the selection, so three carefully-made clicks are gone."
+   *
+   * The Library's Transcribe and Send verbs resolve a promise that a DIALOG
+   * settles, and so does the exports Library's Send — three surfaces, one
+   * shape. Cancel resolved with nothing, the shell read that as `{}`, and it
+   * both cleared the selection and raised a SUCCESS toast for work that was
+   * never started. On 2,981 episodes that is three ticks thrown away, plus a
+   * sentence saying the thing you just refused had run.
+   *
+   * RED PROOF: restore `(await action.run(target)) ?? {}` in
+   * `EntityBulkBar.tsx` and delete the `if (result == null) return;` under it
+   * — both assertions below fail, the selection vanishing and a success toast
+   * appearing.
+   */
+  it("keeps the selection and says nothing when the action did not run", async () => {
+    await render(
+      bulkConfig(
+        {},
+        {
+          // What a dialog's Cancel resolves: nothing happened.
+          run: () => undefined,
+        },
+      ),
+    );
+    await click(rowCheckboxes()[0]);
+    await click(bulkButton("archive")!);
+    expect(document.body.textContent).toContain("1 record selected");
+    expect(bulkButton("archive")).not.toBeNull();
+    expect(toasts).toHaveLength(0);
   });
 });
 
