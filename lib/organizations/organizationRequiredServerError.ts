@@ -67,25 +67,60 @@ export function isOrganizationRequiredServerError(
 }
 
 /**
- * The caller's own organizations, read through the session's RLS — never a
- * privileged list, and never filtered by anything the person did not choose.
+ * The caller's own MEMBERSHIPS — the organizations this person actually
+ * belongs to, and the only ones a refusal may offer them.
+ *
+ * 🚨 THIS READS `iam.memberships`, NOT `iam.organizations` (corrected
+ * 2026-09-19, in review). It used to select every row of `iam.organizations`
+ * that RLS would return and call the result "memberships". Those are not the
+ * same set, and the live `org_select_policy` is why:
+ *
+ *   is_platform_admin() OR created_by = auth.uid() OR id IN (iam.my_orgs())
+ *
+ * So the old read answered with (a) EVERY organization on the platform for any
+ * platform admin, and (b) organizations the person merely CREATED and has
+ * since left. Measured live on 2026-09-19 for the testing identity
+ * `admin@admin.com`: 501 organizations returned, against 27 genuine active
+ * memberships. A refusal that hands a person 501 tenants to file their write
+ * into is the substitution wearing a picker — the whole point of the envelope
+ * is that the choice is bounded by what they actually belong to. It also put
+ * 501 other organizations' names into an error body, which is nobody's
+ * business but theirs.
+ *
+ * The membership row is the fact (the same source
+ * `iam.provision_signup_organization` and the picker treat as authoritative):
+ * container_type 'organization', status 'active', not soft-deleted.
+ *
  * Returns an empty list on any failure: the refusal is still the honest
- * answer, it simply cannot offer the choices inline.
+ * answer, it simply cannot offer the choices inline, and the client falls back
+ * to the picker's own list.
  */
 export async function readCallerMemberships(
   client: SupabaseClient,
 ): Promise<OrganizationMembershipSummary[]> {
   try {
+    const { data: auth } = await client.auth.getUser();
+    const userId = auth?.user?.id;
+    if (!userId) return [];
     const { data, error } = await client
       .schema("iam")
-      .from("organizations")
-      .select("id,name")
-      .order("name");
+      .from("memberships")
+      .select("organization_id, organizations:organization_id(id,name)")
+      .eq("user_id", userId)
+      .eq("container_type", "organization")
+      .eq("status", "active")
+      .is("deleted_at", null);
     if (error || !data) return [];
-    return (data as { id: string; name: string | null }[]).map((row) => ({
-      id: row.id,
-      name: row.name ?? "Untitled organization",
-    }));
+    const rows = data as unknown as {
+      organization_id: string;
+      organizations: { id: string; name: string | null } | null;
+    }[];
+    return rows
+      .map((row) => ({
+        id: row.organizations?.id ?? row.organization_id,
+        name: row.organizations?.name ?? "Untitled organization",
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   } catch {
     return [];
   }

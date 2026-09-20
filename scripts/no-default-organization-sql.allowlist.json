@@ -1,0 +1,256 @@
+{
+  "migrations/access_gate_access_requests.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/access_gate_governed_action_requests.sql": {
+    "rules": [
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/access_gate_request_rpcs.sql": {
+    "rules": [
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/assoc_soft_delete_tombstones.sql": {
+    "rules": [
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/campaign/w1_org_billing_attaches_to_organizations.sql": {
+    "rules": [
+      6
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/campaign/w1_org_billing_owner_columns_move_to_the_organization.sql": {
+    "rules": [
+      6
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/campaign/w1_org_one_organization_at_signup_and_never_the_last.sql": {
+    "rules": [
+      6,
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/campaign/w1_org_the_default_organization_is_a_preference.sql": {
+    "rules": [
+      6
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/cmt_public_rpcs.sql": {
+    "rules": [
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/d232_org_backstop_11_laggards.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/d232_org_backstop_seo_starter_pack.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/d232_seo_canonical_repair.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/dd154_org_assignment_ddl_prevention.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/dd169_grandfather_batch2_reading_doors.sql": {
+    "rules": [
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/dd208_entitlement_consume_org_argument_is_a_claim.sql": {
+    "rules": [
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/ddl_guard_hand_rolled_entity_error.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/dm_get_or_create_direct_conversation.sql": {
+    "rules": [
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/edu_01_flashcard_tables_and_triggers.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/edu_assessment_tables.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/edu_engage_game_and_forgiveness.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/edu_study_media_create.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/edu_study_plan_tables.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/fork_shared_token_authorization_fix.sql": {
+    "rules": [
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/guest_oauth_personal_org_merge.sql": {
+    "rules": [
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/hindsight_canonicalize.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/initplan_uid_sweep_batch1.sql": {
+    "rules": [
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/initplan_uid_sweep_batch3.sql": {
+    "rules": [
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/org_backstop_triggers_sweep.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/org_null_ban_seo_builtin_rules.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/org_null_ban_udt_dataset_fields.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/org_null_ban_ui_surface_scope_tiers.sql": {
+    "rules": [
+      7,
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/org_null_ban_users_profiles.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/platform_output_feedback.sql": {
+    "rules": [
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/rag_library_docs_org_backstop.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/repoint_project_member_trio_to_iam.sql": {
+    "rules": [
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/run_org_required.sql": {
+    "rules": [
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/tasks_worldclass_lifecycle_provenance_time.sql": {
+    "rules": [
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/web_brand_layer.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/web_page_content_table.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/web_sitemaps.sql": {
+    "rules": [
+      8
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/webhook_hardening.sql": {
+    "rules": [
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  },
+  "migrations/wsp_upsert_system_task_race_fix.sql": {
+    "rules": [
+      7
+    ],
+    "reason": "Frozen applied history, pinned when check-no-default-organization-sql was written (2026-09-19). These files are already in public._schema_migrations: editing one changes nothing on the database and silently desynchronises its ledger checksum, so the shape in them is corrected by a NEW migration that supersedes it \u2014 which is what w1_org_signup_stops_writing_a_default_organization.sql and w1_org_billing_is_organization_keyed.sql did for the live readers. This list is a RATCHET: it only ever shrinks, and a newly written migration never belongs in it."
+  }
+}

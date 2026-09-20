@@ -1,6 +1,1 @@
-{
-  "lib/organizations/personalOrg.ts": {
-    "rules": [2],
-    "reason": "resolveOrgIdForUserServer resolves the personal workspace of a NAMED person for the three Twilio webhook writes (lib/sms/receive.ts, send.ts, numbers.ts), which run on an admin client with no auth.uid(), no session, no selection and nobody present to ask. The 2026-09-19 ruling's org-less shape is the right answer here and cannot be expressed yet: every communication.* table declares organization_id NOT NULL (verified live 2026-09-19), so an unrouted inbound SMS has nowhere to land as an org-less row. The system-org fallback that used to cover 'no user at all' IS deleted and that case now throws. This entry forgives rule 2 ONLY, and is retired by the NOT NULL work tracked in docs/handoffs/default-org-annihilation.md."
-  }
-}
+{}
