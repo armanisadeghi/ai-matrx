@@ -17,6 +17,9 @@ const {
   recordAttempt,
   removeArtifact,
   createVaultRouteGuard,
+  createGuardedContext,
+  canonicalId,
+  aggregateRunFailures,
   runFinalizer,
 } = require("./keepass-import-retry-acceptance.cjs");
 test("refuses unarmed or remote-origin runs before browser launch", () => {
@@ -139,7 +142,11 @@ test("uses the Fetch Response boolean contract and durably reconciles a dropped 
   global.fetch = async (url, init) => {
     calls.push({ url: String(url), init });
     return new Response(
-      JSON.stringify({ items: [{ id: "item-1", display_name: "retry" }] }),
+      JSON.stringify({
+        items: [
+          { id: "11111111-1111-4111-8111-111111111111", display_name: "retry" },
+        ],
+      }),
       { status: 200 },
     );
   };
@@ -149,7 +156,7 @@ test("uses the Fetch Response boolean contract and durably reconciles a dropped 
         name: "retry",
         key: "key-1",
         body: { source: "system_import" },
-        itemIds: ["item-1"],
+        itemIds: ["11111111-1111-4111-8111-111111111111"],
       },
     ],
   };
@@ -172,7 +179,7 @@ test("uses the Fetch Response boolean contract and durably reconciles a dropped 
       new Set(["retry"]),
       { save: async () => undefined },
     );
-    assert.equal(reconciled[0].id, "item-1");
+    assert.equal(reconciled[0].id, "11111111-1111-4111-8111-111111111111");
     assert.equal(calls.length, 2);
   } finally {
     global.fetch = priorFetch;
@@ -187,7 +194,9 @@ test("cleanup attempts every delete and reports cleanup before the scenario fail
     if (init.method === "DELETE") {
       deleted.push(target);
       return new Response(null, {
-        status: target.endsWith("item-1") ? 500 : 204,
+        status: target.endsWith("11111111-1111-4111-8111-111111111111")
+          ? 500
+          : 204,
       });
     }
     listCalls += 1;
@@ -196,8 +205,14 @@ test("cleanup attempts every delete and reports cleanup before the scenario fail
         items:
           listCalls === 1
             ? [
-                { id: "item-1", display_name: "one" },
-                { id: "item-2", display_name: "two" },
+                {
+                  id: "11111111-1111-4111-8111-111111111111",
+                  display_name: "one",
+                },
+                {
+                  id: "22222222-2222-4222-8222-222222222222",
+                  display_name: "two",
+                },
               ]
             : [],
       }),
@@ -206,8 +221,18 @@ test("cleanup attempts every delete and reports cleanup before the scenario fail
   };
   const ledger = {
     attempts: [
-      { name: "one", key: "a", body: {}, itemIds: ["item-1"] },
-      { name: "two", key: "b", body: {}, itemIds: ["item-2"] },
+      {
+        name: "one",
+        key: "a",
+        body: {},
+        itemIds: ["11111111-1111-4111-8111-111111111111"],
+      },
+      {
+        name: "two",
+        key: "b",
+        body: {},
+        itemIds: ["22222222-2222-4222-8222-222222222222"],
+      },
     ],
   };
   const actor = {
@@ -312,6 +337,51 @@ test("context-wide route guard aborts foreign and anonymous creates before trans
     ["abort", "abort", "continue"],
   );
   assert.equal(state.observedAllowedVaultRequest, true);
+  assert.deepEqual(
+    state.runFailures.map((error) => error.message),
+    ["foreign_vault_request_refused", "anonymous_vault_create_refused"],
+  );
+  const final = aggregateRunFailures(undefined, state.runFailures);
+  assert(final instanceof AggregateError);
+  assert.deepEqual(
+    final.errors.map((error) => error.message),
+    ["foreign_vault_request_refused", "anonymous_vault_create_refused"],
+  );
+});
+test("guarded context cannot resolve before route protection is installed", async () => {
+  let releaseRoute;
+  let pageCreated = false;
+  const context = {
+    route: () =>
+      new Promise((resolve) => {
+        releaseRoute = resolve;
+      }),
+    on: () => undefined,
+    newPage: () => {
+      pageCreated = true;
+    },
+  };
+  let ready = false;
+  const pending = createGuardedContext(
+    async () => context,
+    { api: "http://127.0.0.1:8027" },
+    { runFailures: [] },
+  ).then(() => {
+    ready = true;
+  });
+  const startMainNavigation = async () => {
+    await pending;
+    context.newPage();
+  };
+  const navigation = startMainNavigation();
+  await Promise.resolve();
+  assert.equal(ready, false);
+  assert.equal(pageCreated, false);
+  releaseRoute();
+  await navigation;
+  assert.equal(ready, true);
+  assert.equal(canonicalId("11111111-1111-4111-8111-111111111111"), true);
+  assert.equal(canonicalId("not-a-uuid"), false);
 });
 test("cleanup preserves mapping defects while deleting duplicate and unreceipted exact names", async () => {
   const priorFetch = global.fetch;
@@ -328,9 +398,19 @@ test("cleanup preserves mapping defects while deleting duplicate and unreceipted
         items:
           listCalls === 1
             ? [
-                { id: "same-1", display_name: "same" },
-                { id: "same-2", display_name: "same" },
-                { id: "unknown-1", display_name: "unknown" },
+                {
+                  id: "33333333-3333-4333-8333-333333333333",
+                  display_name: "same",
+                },
+                {
+                  id: "44444444-4444-4444-8444-444444444444",
+                  display_name: "same",
+                },
+                {
+                  id: "55555555-5555-4555-8555-555555555555",
+                  display_name: "unknown",
+                },
+                { id: "not-a-uuid", display_name: "same" },
               ]
             : [],
       }),
@@ -354,11 +434,18 @@ test("cleanup preserves mapping defects while deleting duplicate and unreceipted
       new Set(["same", "unknown"]),
       { save: async () => undefined },
     );
-    assert.deepEqual(deleted.sort(), ["same-1", "same-2", "unknown-1"]);
+    assert.deepEqual(deleted.sort(), [
+      "33333333-3333-4333-8333-333333333333",
+      "44444444-4444-4444-8444-444444444444",
+      "55555555-5555-4555-8555-555555555555",
+    ]);
     assert(
       failures.some(
         (error) => error.message === "owned_reconciliation_mapping_failed",
       ),
+    );
+    assert(
+      failures.some((error) => error.message === "owned_cleanup_id_required"),
     );
   } finally {
     global.fetch = priorFetch;

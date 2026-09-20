@@ -126,6 +126,9 @@ async function readPreviewAttestation(config, env = process.env) {
 function assertVaultOrigin(url, config) {
   assert(new URL(url).origin === config.api, "foreign_vault_origin_refused");
 }
+function recordGuardFailure(state, code) {
+  (state.runFailures ||= []).push(new Error(code));
+}
 function createVaultRouteGuard(config, state) {
   return async (route) => {
     let request, url;
@@ -134,24 +137,61 @@ function createVaultRouteGuard(config, state) {
       url = new URL(request.url());
     } catch (error) {
       state.routeFailure ||= error;
+      recordGuardFailure(state, "vault_request_shape_refused");
       return route.abort("blockedbyclient");
     }
-    if (url.origin !== config.api) return route.abort("blockedbyclient");
+    if (url.origin !== config.api) {
+      recordGuardFailure(state, "foreign_vault_request_refused");
+      return route.abort("blockedbyclient");
+    }
     state.observedAllowedVaultRequest = true;
     if (request.method() !== "POST" || url.pathname !== "/api/vault/items")
       return route.continue();
-    if (!state.actor || !state.handleCreate)
+    if (!state.actor || !state.handleCreate) {
+      recordGuardFailure(state, "anonymous_vault_create_refused");
       return route.abort("blockedbyclient");
+    }
     try {
       return await state.handleCreate(route);
     } catch (error) {
       state.routeFailure ||= error;
+      recordGuardFailure(state, "vault_create_validation_refused");
       return route.abort("blockedbyclient");
     }
   };
 }
+async function createGuardedContext(createContext, config, state) {
+  const context = await createContext();
+  await context.route("**/api/vault/**", createVaultRouteGuard(config, state));
+  context.on("request", (request) => {
+    try {
+      const url = new URL(request.url());
+      if (url.origin === config.api && url.pathname.startsWith("/api/vault/"))
+        state.observeAllowedRequest?.(request);
+    } catch {
+      // Observation is non-authoritative; route handling is the boundary.
+    }
+  });
+  return context;
+}
+function aggregateRunFailures(primary, runFailures) {
+  return runFailures.length
+    ? new AggregateError(
+        [...runFailures, ...(primary ? [primary] : [])],
+        "vault_route_guard_failed",
+      )
+    : primary;
+}
 function requestDigest(bodyText) {
   return crypto.createHash("sha256").update(bodyText).digest("hex");
+}
+function canonicalId(value) {
+  return (
+    typeof value === "string" &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    )
+  );
 }
 function runtimeConfig(env = process.env) {
   const frontend = env.MATRX_KEEPASS_LOCAL_FRONTEND,
@@ -286,7 +326,7 @@ async function reconcile(config, actor, ledger, names, deps = {}) {
   const items = await listOwned(config, actor, names);
   const failures = [];
   for (const item of items) {
-    if (typeof item.id !== "string") {
+    if (!canonicalId(item.id)) {
       failures.push(new Error("owned_reconciliation_id_required"));
       continue;
     }
@@ -355,10 +395,22 @@ async function cleanup(config, actor, ledger, names, deps = {}) {
     failures.push(error);
     if (Array.isArray(error?.items)) items = error.items;
   }
-  const ids = new Set([
-    ...items.map((item) => item.id),
-    ...ledger.attempts.flatMap((attempt) => attempt.itemIds),
-  ]);
+  const ids = new Set();
+  for (const item of items) {
+    if (names.has(item?.display_name) && canonicalId(item?.id))
+      ids.add(item.id);
+    else failures.push(new Error("owned_cleanup_id_required"));
+  }
+  for (const attempt of ledger.attempts) {
+    if (!names.has(attempt?.name)) {
+      failures.push(new Error("owned_cleanup_name_required"));
+      continue;
+    }
+    for (const id of attempt.itemIds || []) {
+      if (canonicalId(id)) ids.add(id);
+      else failures.push(new Error("owned_cleanup_id_required"));
+    }
+  }
   for (const id of ids) {
     try {
       const response = await api(
@@ -501,44 +553,32 @@ async function main() {
     handleCreate: null,
     observedAllowedVaultRequest: false,
     routeFailure: null,
+    runFailures: [],
+    observeAllowedRequest: null,
   };
   try {
     const preview = await readPreviewAttestation(config);
     ledger.sourceHead = preview.sourceHead;
     await save(ledger);
-    context = await chromium.launchPersistentContext(PROFILE, {
-      headless: true,
-    });
-    // This is the sole Vault route handler and is deliberately registered
-    // before a page exists: all foreign requests and anonymous creates fail
-    // before transport, including anything triggered by login/navigation.
-    await context.route(
-      "**/api/vault/**",
-      createVaultRouteGuard(config, guardState),
-    );
-    context.on("request", (request) => {
-      try {
-        const url = new URL(request.url());
-        if (
-          url.origin !== config.api ||
-          !url.pathname.startsWith("/api/vault/")
-        )
-          return;
-        const boundActor = guardState.actor;
-        const headers = request.headers();
-        if (
-          boundActor &&
-          headers.authorization === `Bearer ${boundActor.token}` &&
-          /^[0-9a-f-]{36}$/i.test(headers["x-organization-id"] || "")
-        ) {
-          boundActor.orgId = headers["x-organization-id"];
-          resolveActorBound();
-        }
-      } catch {
-        // Observation is intentionally non-authoritative and cannot bypass
-        // the route guard or turn a network violation into an uncaught error.
+    guardState.observeAllowedRequest = (request) => {
+      const boundActor = guardState.actor;
+      const headers = request.headers();
+      if (
+        boundActor &&
+        headers.authorization === `Bearer ${boundActor.token}` &&
+        /^[0-9a-f-]{36}$/i.test(headers["x-organization-id"] || "")
+      ) {
+        boundActor.orgId = headers["x-organization-id"];
+        resolveActorBound();
       }
-    });
+    };
+    // The returned context is unusable until its sole Vault guard and its
+    // non-authoritative observer are both installed.
+    context = await createGuardedContext(
+      () => chromium.launchPersistentContext(PROFILE, { headless: true }),
+      config,
+      guardState,
+    );
     page = await context.newPage();
     const login = page.waitForResponse(
       (response) =>
@@ -608,7 +648,7 @@ async function main() {
       const response = await route.fetch();
       assert(response.ok(), "create_must_complete");
       const created = await response.json();
-      assert(typeof created?.id === "string", "create_receipt_required");
+      assert(canonicalId(created?.id), "create_receipt_required");
       if (!attempt.itemIds.includes(created.id))
         attempt.itemIds.push(created.id);
       await save(ledger);
@@ -786,8 +826,12 @@ async function main() {
   } catch (error) {
     primaryFailure = error;
   } finally {
-    const failure = await runFinalizer({
+    const guardedFailure = aggregateRunFailures(
       primaryFailure,
+      guardState.runFailures,
+    );
+    const failure = await runFinalizer({
+      primaryFailure: guardedFailure,
       cleanup: () => cleanup(config, actor, ledger, names),
       logout: page
         ? async () => {
@@ -846,6 +890,9 @@ module.exports = {
   recordAttempt,
   removeArtifact,
   createVaultRouteGuard,
+  createGuardedContext,
+  canonicalId,
+  aggregateRunFailures,
   runFinalizer,
 };
 if (require.main === module) {
