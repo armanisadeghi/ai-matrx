@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<!--
+  Fixture for the LIBRARY TABLE REACHABILITY guard
+  (playwright.library-table-reachable.config.ts).
+
+  D4, cold-walk-12 (common-docs/projects/masterwork-methods-census/
+  jobs-bar-2026-09-16/cold-walk-12/README.md): on `/libraries/<id>` at
+  1440x900, the episode table was rendered below the fold with NO scrollable
+  ancestor reachable by mouse or wheel — 24px of row 1 visible, rows 2-25
+  gone, while the pagination control above it advertised "1-25 of 507".
+
+  Root cause: `notice` in `lib/entity-list/components/EntityListPage.tsx`
+  renders inside the STATIC `shrink-0` zone above the scope tabs and toolbar
+  (flex-shrink: 0 — flexbox never compresses it). `LibraryMetricsHeader`
+  (features/source-library/components/LibraryMetricsHeader.tsx) is a real
+  dashboard there — 5 stat tiles at a fixed `h-[84px]` (line 988) plus two
+  fixed `h-[276px]` chart sections (lines 356, 465) that never shrink and
+  never collapse on any breakpoint — so on a Library page it can consume
+  nearly the whole viewport, leaving the table's `flex-1 min-h-0
+  overflow-y-auto` scroll body (the OLD line 736) almost nothing to shrink
+  INTO. `min-h-0` lets that body compute a genuinely tiny height instead of
+  overflowing visibly, so the row renders a sliver with no usable scrollbar
+  and no scrollable ancestor above it.
+
+  Two full-viewport root elements below carry the ACTUAL class strings:
+  #buggyRoot is `EntityListPage`'s shrink-0/scroll-body classes exactly as
+  they shipped before this fix (bare `{notice}`, `min-h-0 flex-1
+  overflow-y-auto`); #fixedRoot carries the CURRENT classes (notice capped at
+  `max-h-[42vh] overflow-y-auto`, scroll body floored at `min-h-[16rem]
+  flex-1 overflow-y-auto`). Both embed the real `LibraryMetricsHeader`
+  container classes (grid/h-[84px]/h-[276px]) as the notice content, and a
+  30-row `<tbody>` (real rows run to 507) as the table. Only one root is
+  shown per load — `?variant=buggy|fixed` in the URL picks it via the
+  `data-show` class below, so each variant gets the WHOLE real viewport
+  (`h-screen`), the same way `.shell-root` gives `.shell-main` the whole
+  viewport in the real app. Reverting the EntityListPage fix and re-pointing
+  #fixedRoot's classes at the old ones is what would turn this guard red.
+-->
+<html class="dark">
+<head>
+  <meta charset="utf-8" />
+  <link rel="stylesheet" href="./compiled.css" />
+  <style>
+    :root {
+      /* The real value comes from styles/shell.css, which this fixture does
+         not compile (only app/globals.css, via build-css.mjs) — pinned here
+         so the `pt-[calc(var(--shell-header-h)+0.5rem)]` utility below
+         resolves to the same real-world offset instead of an unset var. */
+      --shell-header-h: 56px;
+    }
+    html, body { margin: 0; padding: 0; height: 100%; background: #09090b; }
+    #buggyRoot, #fixedRoot { display: none; }
+    html.show-buggy #buggyRoot { display: flex; }
+    html.show-fixed #fixedRoot { display: flex; }
+    .mock-tile { background: #18181b; }
+    .mock-chart { background: #18181b; }
+  </style>
+  <script>
+    var params = new URLSearchParams(location.search);
+    var variant = params.get("variant") === "fixed" ? "fixed" : "buggy";
+    document.documentElement.classList.add("show-" + variant);
+  </script>
+</head>
+<body>
+  <!--
+    Shared notice content — LibraryMetricsHeader's real container classes
+    (title row, 5-tile stat grid, two stacked fixed-height chart sections).
+    Repeated once per root so each variant is a fully independent, complete
+    page (no cross-root DOM sharing that could hide a layout-order bug).
+  -->
+  <template id="noticeTemplate">
+    <header class="flex w-full flex-col gap-3">
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex min-w-0 flex-col justify-center gap-1">
+          <span class="text-sm font-medium text-foreground">The Bike Shed</span>
+          <span class="text-xs text-muted-foreground">507 Episodes &middot; Catalogued in this Library</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        <div class="mock-tile flex h-[84px] flex-col justify-between overflow-hidden rounded-lg border border-border px-3 py-2"><span>Episodes</span></div>
+        <div class="mock-tile flex h-[84px] flex-col justify-between overflow-hidden rounded-lg border border-border px-3 py-2"><span>Shorts</span></div>
+        <div class="mock-tile flex h-[84px] flex-col justify-between overflow-hidden rounded-lg border border-border px-3 py-2"><span>Live</span></div>
+        <div class="mock-tile flex h-[84px] flex-col justify-between overflow-hidden rounded-lg border border-border px-3 py-2"><span>Total time</span></div>
+        <div class="mock-tile flex h-[84px] flex-col justify-between overflow-hidden rounded-lg border border-border px-3 py-2"><span>Last synced</span></div>
+      </div>
+      <div class="grid gap-2 grid-cols-1">
+        <section class="mock-chart flex h-[276px] flex-col rounded-lg border border-border px-3 py-2"><span>Cadence</span></section>
+        <section class="mock-chart flex h-[276px] flex-col rounded-lg border border-border px-3 py-2"><span>Top episodes by views</span></section>
+      </div>
+    </header>
+  </template>
+
+  <!-- BUGGY: EntityListPage's classes exactly as they shipped before this fix. -->
+  <div id="buggyRoot" class="flex h-screen flex-col overflow-hidden">
+    <div class="shrink-0 space-y-1.5 px-3 pb-2 sm:space-y-2 pt-[calc(var(--shell-header-h)+0.5rem)]">
+      <div id="buggyNoticeSlot"></div>
+      <div class="flex min-w-0 items-center justify-between gap-1.5 sm:gap-2">
+        <div class="min-w-0 flex-1 sm:flex-none"><span class="text-sm">Mine</span> <span class="text-sm">Organization</span></div>
+      </div>
+      <div class="flex h-9 w-full items-center rounded-md border border-border px-3 text-sm text-muted-foreground">Search episodes&hellip;</div>
+    </div>
+    <div id="buggyScrollArea" class="min-h-0 flex-1 overflow-y-auto px-3 pb-4">
+      <table class="w-full">
+        <tbody id="buggyTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- FIXED: EntityListPage's CURRENT classes (this fix). -->
+  <div id="fixedRoot" class="flex h-screen flex-col overflow-hidden">
+    <div class="shrink-0 space-y-1.5 px-3 pb-2 sm:space-y-2 pt-[calc(var(--shell-header-h)+0.5rem)]">
+      <div class="max-h-[42vh] overflow-y-auto">
+        <div id="fixedNoticeSlot"></div>
+      </div>
+      <div class="flex min-w-0 items-center justify-between gap-1.5 sm:gap-2">
+        <div class="min-w-0 flex-1 sm:flex-none"><span class="text-sm">Mine</span> <span class="text-sm">Organization</span></div>
+      </div>
+      <div class="flex h-9 w-full items-center rounded-md border border-border px-3 text-sm text-muted-foreground">Search episodes&hellip;</div>
+    </div>
+    <div id="fixedScrollArea" class="min-h-[16rem] flex-1 overflow-y-auto px-3 pb-4">
+      <table class="w-full">
+        <tbody id="fixedTbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // Real rows run to 507; 30 rows of the real ~41px row height is more than
+    // enough to force genuine overflow in every variant/viewport combination.
+    function buildRows(tbody) {
+      for (var i = 1; i <= 30; i++) {
+        var tr = document.createElement("tr");
+        tr.innerHTML =
+          '<td class="h-[41px] border-b border-border px-3 text-sm" data-row-index="' + i + '">Episode ' + i + "</td>";
+        tbody.appendChild(tr);
+      }
+    }
+    buildRows(document.getElementById("buggyTbody"));
+    buildRows(document.getElementById("fixedTbody"));
+
+    var noticeHtml = document.getElementById("noticeTemplate").innerHTML;
+    document.getElementById("buggyNoticeSlot").innerHTML = noticeHtml;
+    document.getElementById("fixedNoticeSlot").innerHTML = noticeHtml;
+  </script>
+</body>
+</html>
