@@ -1116,6 +1116,14 @@ export const adminCategoriesData: AdminCategory[] = [
     iconColor: "text-amber-600",
     features: [
       {
+        title: "Unified Data Ramp",
+        description:
+          "The switch screen for the unified data store: every consumer with its state, its Test 1 result and, only where the code has landed, a switch whose refusal quotes the gate's own sentence. Turning a consumer off is never gated.",
+        iconName: "ToggleRight",
+        link: "/administration/database/unified-data-ramp",
+        isNew: true,
+      },
+      {
         title: "Data Integrity",
         description:
           "On-demand referential + storage integrity audit for the file system and PDF document bridge: dead/unrecoverable sources, dangling folder/bridge references, orphaned processed documents, plus an opt-in live S3 byte probe. Same checks run in CI via pnpm check:data-integrity.",

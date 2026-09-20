@@ -438,7 +438,10 @@ export const adminNavigationRegistry: readonly AdminNavigationDomain[] = [
       {
         name: "Integrity",
         iconName: "ShieldCheck",
-        destinations: [destination("/administration/database/data-integrity")],
+        destinations: [
+          destination("/administration/database/data-integrity"),
+          destination("/administration/database/unified-data-ramp"),
+        ],
       },
     ],
   },
