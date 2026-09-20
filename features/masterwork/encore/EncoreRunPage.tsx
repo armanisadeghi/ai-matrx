@@ -13,7 +13,7 @@
 // for viewers who can actually open them.
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Clock3, Rocket, Wrench } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -40,8 +40,7 @@ import { RunTheBench } from "./RunTheBench";
 import { MasterworkRulesProvider } from "../rules-context/MasterworkRulesContext";
 import { setMasterworkReleased } from "../service";
 import { toast } from "@/lib/toast";
-import KindInstanceRender from "@/features/content-ir/studio/components/KindInstanceRender";
-import { MASTERWORK_RESULT_KIND } from "@/features/content-ir/kinds/masterwork-result";
+import { OpenRunPanel, type OpenRunState } from "./OpenRunPanel";
 import {
   getEncoreMasterwork,
   getEncoreRunResult,
@@ -59,14 +58,16 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
   // renders the run's result through the SAME registered kind component the
   // run box uses. It replaces a link that sent a non-technical Expert to the
   // developer run page, THE PLAN / LIVE ACTIVITY and a Cancel button included.
+  //
+  // 🚨 AND THE PANEL IS RENDERED, NOT JUST FETCHED (walk 14, defect A). The
+  // first pass at this grew the search-param read, the fetch and this state —
+  // and no JSX that consumed any of it, so `?run=` was a linkable address that
+  // changed nothing on screen. `OpenRunPanel` below is the render leg.
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const openRunId = searchParams.get("run");
-  const [openRun, setOpenRun] = useState<{
-    runId: string;
-    result: Record<string, unknown> | null;
-    state: "loading" | "ready";
-  } | null>(null);
+  const [openRun, setOpenRun] = useState<OpenRunState | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<unknown>(null);
   // THE PROOF is a separate question from the quick check, and it is asked out
@@ -87,17 +88,16 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
       return;
     }
     let cancelled = false;
-    setOpenRun({ runId: openRunId, result: null, state: "loading" });
+    setOpenRun({ runId: openRunId, read: null });
     getEncoreRunResult(openRunId)
-      .then((result) => {
-        if (!cancelled)
-          setOpenRun({ runId: openRunId, result, state: "ready" });
+      .then((read) => {
+        if (!cancelled) setOpenRun({ runId: openRunId, read });
       })
       .catch(() => {
-        // A refused read is "we could not open it", said out loud below —
-        // never a blank panel and never a silent bounce back to the list.
+        // A refused read is "we could not open it", said out loud in the
+        // panel — never a blank panel and never a silent bounce to the list.
         if (!cancelled)
-          setOpenRun({ runId: openRunId, result: null, state: "ready" });
+          setOpenRun({ runId: openRunId, read: { status: "unreadable" } });
       });
     return () => {
       cancelled = true;
@@ -266,6 +266,18 @@ export function EncoreRunPage({ masterworkId }: { masterworkId: string }) {
     // exactly as the agent wrote it.
     <MasterworkRulesProvider rulebookId={masterwork.rulebook?.id ?? null}>
       <div className="mx-auto max-w-3xl px-4 pb-8 sm:px-6">
+        {/* 🚨 THE RUN THE OPERATOR CLICKED, OPEN WHERE THEY CLICKED IT. It
+          sits INSIDE the rules provider so the ruling's cited rule ids resolve
+          into the Expert's own rule names, exactly as they do in the run box.
+          Closing it returns to the plain address — the run list is still
+          below, so nothing is lost. */}
+        {openRun ? (
+          <OpenRunPanel
+            open={openRun}
+            run={runs.find((r) => r.id === openRun.runId) ?? null}
+            onClose={() => router.replace(pathname)}
+          />
+        ) : null}
         <div className="rounded-lg border border-border bg-card p-4">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
             <div className="min-w-0">
