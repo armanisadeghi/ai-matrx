@@ -8,9 +8,11 @@
  * did the provider take, how many polls did it cost us, was it escalated or
  * cancelled, and what did the grouping actually save.
  */
-import { Fragment, useState } from "react";
-import { ChevronRight, ListFilter, PackageOpen } from "lucide-react";
+import { useState } from "react";
+import { ListFilter, PackageOpen } from "lucide-react";
 import { Skeleton } from "@ai-matrx/design-system";
+import { MatrxDataTable } from "@ai-matrx/design-system/data-table";
+import type { MatrxColumnDef } from "@ai-matrx/design-system/data-table/types";
 import { Button } from "@/components/ui/button";
 import { JsonTreeViewer } from "@/components/official/json-explorer/JsonTreeViewer";
 import { cn } from "@/lib/utils";
@@ -31,6 +33,21 @@ function escalationLabel(row: ProviderBatch): string {
   return "—";
 }
 
+export function turnaroundSeconds(row: ProviderBatch): number | null {
+  if (!row.submitted_at || !row.completed_at) return null;
+  const submittedAt = Date.parse(row.submitted_at);
+  const completedAt = Date.parse(row.completed_at);
+  if (Number.isNaN(submittedAt) || Number.isNaN(completedAt)) return null;
+  return (completedAt - submittedAt) / 1000;
+}
+
+export const providerBatchesUrlState = {
+  id: "provider-batches",
+  defaultSort: { id: "submitted_at", direction: "desc" as const },
+  // Cross-tab focus is an explicit caller intent, never a stale row query.
+  selectedRow: false,
+};
+
 export function ProviderBatchesPanel({
   batches,
   loading,
@@ -46,14 +63,14 @@ export function ProviderBatchesPanel({
   /** Narrow the items tab to what this submission carried. */
   onShowItems: (id: string) => void;
 }) {
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   // A new focus request from the items tab opens that row; adjusting state
   // during render (not in an effect) is React's documented shape for "derive
   // from a prop change" and avoids the extra committed frame.
   const [seenFocus, setSeenFocus] = useState<string | null>(null);
   if (focusId !== seenFocus) {
     setSeenFocus(focusId);
-    if (focusId) setExpanded(focusId);
+    if (focusId) setSelectedId(focusId);
   }
 
   if (loading) {
@@ -91,105 +108,32 @@ export function ProviderBatchesPanel({
     );
   }
 
+  const columns: MatrxColumnDef<ProviderBatch>[] = [
+    { id: "submitted_at", accessorKey: "submitted_at", header: "Submitted", width: 145, cell: (row) => <span className="text-muted-foreground">{fmtStamp(row.submitted_at)}</span> },
+    { id: "purpose", accessorKey: "purpose", header: "Purpose", width: 180, cell: (row) => <span className="font-medium">{row.purpose}</span> },
+    { id: "model", header: "Model", accessorFn: (row) => `${row.model ?? ""} ${row.provider}`, width: 180, cell: (row) => <div><div>{row.model ?? "—"}</div><div className="text-[10px] text-muted-foreground">{row.provider}</div></div> },
+    { id: "status", accessorKey: "status", header: "Status", filter: "select", width: 120, cell: (row) => <StatusBadge status={row.status} /> },
+    { id: "request_count", accessorKey: "request_count", header: "Items", filter: "number", width: 90, cell: (row) => <span className="tabular-nums">{fmtInt(row.request_count)}</span> },
+    { id: "poll_count", accessorKey: "poll_count", header: "Polls", filter: "number", width: 85, cell: (row) => <span className="tabular-nums text-muted-foreground">{fmtInt(row.poll_count)}</span> },
+    { id: "turnaround", header: "Turnaround", accessorFn: turnaroundSeconds, filter: "number", width: 120, cell: (row) => <span className="tabular-nums text-muted-foreground">{fmtSpan(row.submitted_at, row.completed_at)}</span> },
+    { id: "escalation", header: "Escalation", accessorFn: escalationLabel, width: 145, cell: (row) => <span className="text-muted-foreground">{escalationLabel(row)}</span> },
+    { id: "cost", header: "Cost", accessorFn: (row) => num(row.cost_usd) ?? num(row.est_live_cost_usd) ?? 0, filter: "number", width: 110, cell: (row) => <CostCell actual={num(row.cost_usd)} liveEquivalent={row.live_equivalent_cost_usd === null ? null : num(row.live_equivalent_cost_usd)} estimate={num(row.est_live_cost_usd)} settled={row.status === "completed"} /> },
+  ];
+
   return (
-    <section className="rounded-lg border border-border bg-card">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-xs">
-          <thead className="border-b border-border text-[11px] uppercase tracking-wide text-muted-foreground">
-            <tr>
-              <th className="w-6" />
-              <th className="px-2 py-1.5 font-medium">Submitted</th>
-              <th className="px-2 py-1.5 font-medium">Purpose</th>
-              <th className="px-2 py-1.5 font-medium">Model</th>
-              <th className="px-2 py-1.5 font-medium">Status</th>
-              <th className="px-2 py-1.5 text-right font-medium">Items</th>
-              <th className="px-2 py-1.5 text-right font-medium">Polls</th>
-              <th className="px-2 py-1.5 text-right font-medium">Turnaround</th>
-              <th className="px-2 py-1.5 font-medium">Escalation</th>
-              <th className="px-2 py-1.5 text-right font-medium">Cost</th>
-            </tr>
-          </thead>
-          <tbody>
-            {batches.map((row) => {
-              const open = expanded === row.id;
-              return (
-                <Fragment key={row.id}>
-                  <tr
-                    onClick={() => setExpanded(open ? null : row.id)}
-                    className={cn(
-                      "cursor-pointer border-b border-border/60 hover:bg-accent/50",
-                      open && "bg-accent/40",
-                      row.status === "failed" || row.status === "expired"
-                        ? "bg-destructive/5"
-                        : undefined,
-                    )}
-                  >
-                    <td className="pl-2">
-                      <ChevronRight
-                        className={cn(
-                          "h-3.5 w-3.5 text-muted-foreground transition-transform",
-                          open && "rotate-90",
-                        )}
-                      />
-                    </td>
-                    <td className="px-2 py-1.5 text-muted-foreground">
-                      {fmtStamp(row.submitted_at)}
-                    </td>
-                    <td className="px-2 py-1.5 font-medium text-foreground">
-                      {row.purpose}
-                    </td>
-                    <td className="px-2 py-1.5">
-                      <div className="text-foreground">{row.model ?? "—"}</div>
-                      <div className="text-[10px] text-muted-foreground">
-                        {row.provider}
-                      </div>
-                    </td>
-                    <td className="px-2 py-1.5">
-                      <StatusBadge status={row.status} />
-                    </td>
-                    <td className="px-2 py-1.5 text-right font-mono tabular-nums">
-                      {fmtInt(row.request_count)}
-                    </td>
-                    <td className="px-2 py-1.5 text-right font-mono tabular-nums text-muted-foreground">
-                      {fmtInt(row.poll_count)}
-                    </td>
-                    <td className="px-2 py-1.5 text-right font-mono tabular-nums text-muted-foreground">
-                      {fmtSpan(row.submitted_at, row.completed_at)}
-                    </td>
-                    <td className="px-2 py-1.5 text-muted-foreground">
-                      {escalationLabel(row)}
-                    </td>
-                    <td className="px-2 py-1.5 text-right">
-                      <CostCell
-                        actual={num(row.cost_usd)}
-                        liveEquivalent={
-                          row.live_equivalent_cost_usd === null
-                            ? null
-                            : num(row.live_equivalent_cost_usd)
-                        }
-                        estimate={num(row.est_live_cost_usd)}
-                        settled={row.status === "completed"}
-                      />
-                    </td>
-                  </tr>
-                  {open && (
-                    <tr className="border-b border-border">
-                      <td colSpan={10} className="bg-muted/40 px-4 py-3">
-                        <ProviderBatchDetail row={row} onShowItems={onShowItems} />
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      <footer className="border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
-        {fmtInt(batches.length)} provider{" "}
-        {batches.length === 1 ? "submission" : "submissions"} on record.
-      </footer>
-    </section>
+    <MatrxDataTable
+      urlState={providerBatchesUrlState}
+      data={batches}
+      columns={columns}
+      getRowId={(row) => row.id}
+      selectedId={selectedId}
+      onSelectedIdChange={setSelectedId}
+      pageSize={25}
+      emptyState={{ title: "No provider batch has been submitted" }}
+      toolbar={{ search: true, searchPlaceholder: "Search provider batches…" }}
+      rowClassName={(row) => cn((row.status === "failed" || row.status === "expired") && "bg-destructive/5")}
+      detail={{ title: (row) => row.purpose, description: (row) => `Submitted ${fmtStamp(row.submitted_at)}`, render: (row) => <ProviderBatchDetail row={row} onShowItems={onShowItems} /> }}
+    />
   );
 }
 
