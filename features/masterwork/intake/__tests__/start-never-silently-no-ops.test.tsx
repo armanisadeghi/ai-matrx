@@ -90,9 +90,12 @@ jest.mock("@/features/masterwork/browse/approaches", () => {
   return { ...actual, fetchDistillationApproaches: () => fetchApproaches() };
 });
 
-const createDraftRulebook = jest.fn(async () => ({ id: "r1", name: "A Rulebook" }));
+const createDraftRulebook = jest.fn(async (_input?: unknown) => ({
+  id: "r1",
+  name: "A Rulebook",
+}));
 jest.mock("@/features/masterwork/service", () => ({
-  createDraftRulebook: (...args: unknown[]) => createDraftRulebook(...args),
+  createDraftRulebook: (input: unknown) => createDraftRulebook(input),
 }));
 
 jest.mock("@/features/masterwork/MasterworkDictationOrigin", () => ({
