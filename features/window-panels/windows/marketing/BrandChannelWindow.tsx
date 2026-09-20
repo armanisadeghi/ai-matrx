@@ -40,6 +40,13 @@ export default function BrandChannelWindow({
       minWidth={420}
       minHeight={360}
       position="top-right"
+      // 🚨 THE ADDRESS CARRIES THE BRAND, NOT THE OVERLAY ID (V-27 NEW-2). Without
+      // this, `WindowPanel` falls back to the singleton overlay id for the sync
+      // entry, so `?panels=brand_channel:<brandId>` rewrote itself to
+      // `?panels=brand_channel%3AbrandChannelWindow` on first render and reloading
+      // that address opened nothing — the hydrator refuses a token that names no
+      // brand. Its `SiteTrackingWindow` twin has always passed `urlSyncId={siteId}`.
+      urlSyncId={brandId}
       onCollectData={() => ({ brandId, brandLabel: brandLabel ?? "" })}
       bodyClassName="flex min-h-0 flex-1 flex-col overflow-hidden p-0"
     >
