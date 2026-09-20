@@ -40,7 +40,11 @@ import {
   WifiOff,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { type CaptureHandoff } from "@/features/capture-ladder/types";
+import {
+  handoffNoun,
+  HANDOFF_KIND_EXPLANATION,
+  type CaptureHandoff,
+} from "@/features/capture-ladder/types";
 import type { NeedsYouState } from "@/features/capture-ladder/useNeedsYou";
 
 function hostOf(url: string): string {
@@ -61,6 +65,7 @@ export function NeedsYouRow({ handoff }: { handoff: CaptureHandoff }) {
   const Icon = yours ? Hand : MonitorSmartphone;
   const host = hostOf(handoff.url);
   const label = handoff.title || host;
+  const noun = handoffNoun(handoff.handoff_kind ?? null);
 
   return (
     <li className="flex items-start gap-3 px-3 py-2.5">
@@ -80,6 +85,23 @@ export function NeedsYouRow({ handoff }: { handoff: CaptureHandoff }) {
           {label !== host && (
             <span className="truncate text-xs text-muted-foreground">
               {host}
+            </span>
+          )}
+          {/* WHAT this row is, but only when it is not the ordinary case. A
+              queue of pages does not need "page" written on every line; a video
+              sitting among them does, or the person reads the whole list as
+              pages — which is exactly what this list did until 2026-09-20.
+              One word, no chip: the row already carries enough. */}
+          {handoff.handoff_kind !== "web_page" && (
+            <span
+              className="shrink-0 text-xs text-muted-foreground"
+              title={
+                handoff.handoff_kind
+                  ? HANDOFF_KIND_EXPLANATION[handoff.handoff_kind]
+                  : "We do not recognise what kind of thing this is — your extension does, and can still read it."
+              }
+            >
+              {noun}
             </span>
           )}
         </div>
@@ -115,7 +137,7 @@ export function NeedsYouRow({ handoff }: { handoff: CaptureHandoff }) {
         href={handoff.url}
         target="_blank"
         rel="noopener noreferrer"
-        title="Open this page in a new tab yourself"
+        title={`Open this ${noun} in a new tab yourself`}
         aria-label={`Open ${host} in a new tab yourself`}
         className="mt-0.5 shrink-0 rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
       >
@@ -230,7 +252,12 @@ export function NeedsYouList({
           {organizationName
             ? `Nothing needs your browser in ${organizationName} right now.`
             : "Nothing needs your browser right now."}{" "}
-          When a page will only open for someone signed in, it lands here.
+          {/* What LANDS here, stated for the queue as it actually is: pages
+              behind a sign-in AND videos whose subtitles a server cannot get.
+              Naming only the page case taught the person the list was smaller
+              than it is. */}
+          When a site will show something to your own browser but not to our
+          servers, it lands here.
         </p>
         {/* An empty list has to say WHERE it looked and HOW it knows. */}
         {elsewhereSentence ? (
