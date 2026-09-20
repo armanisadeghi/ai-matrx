@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { marketingSeg } from "@/features/marketing/lib/keys";
 import { marketingRoutes } from "@/features/marketing/lib/routes";
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { createClient } from "@/utils/supabase/server";
 import { webDb } from "@/utils/supabase/webDb";
@@ -147,6 +148,15 @@ export default async function MarketingPageShortLink({
               <dd>{new Date(page.last_seen).toLocaleString()}</dd>
             </div>
           </dl>
+        </section>
+
+        {/* REC-34 / SCR-12 — this organization's OWN fields on a standard
+            DETAIL table (`web_page`). The same ONE line the contact and deal
+            pages carry, with a different token: 345 Detail tables and 298
+            Entity tables are reachable by exactly this line and no per-entity
+            code. Absent, not an empty box, until a field is declared. */}
+        <section className="rounded-xl border border-border bg-card p-5 shadow-sm empty:hidden">
+          <EntityCustomFields entityToken="web_page" recordId={page.id} />
         </section>
 
         <section className="rounded-xl border border-border bg-card p-5 shadow-sm">
