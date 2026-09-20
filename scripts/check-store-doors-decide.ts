@@ -452,6 +452,21 @@ const LIST_DOOR_CENSUS = (pretend: string | null, organization: string | null) =
      from custom.list_door_disagreements(${pretend === null ? "null" : `'${pretend}'`},
                                          ${organization === null ? "null" : `'${organization}'`})`;
 
+/**
+ * CENSUS 14 — A REFUSAL NEVER TELLS SOMEBODY WHAT THEY DO HOLD UNLESS THE DOOR ASKED
+ * (2026-09-20, lane LEAK-T10).
+ *
+ * `custom.io_comment_write` refused a person who may not read a record at all with "You may
+ * READ this record but not comment on it." The door had asked one question — is she a
+ * commenter — and answered a different one, telling her she holds a level she does not and
+ * that the record exists. `custom.refusals_claiming_a_level_never_asked()` names any body in
+ * schema `custom` that says that sentence without asking `viewer` first; it reads the CODE with
+ * `--` comments stripped, and it excludes itself, because its own text has to contain the
+ * sentence it looks for.
+ */
+const REFUSAL_CENSUS = `select function_name, identity_args, why
+   from custom.refusals_claiming_a_level_never_asked()`;
+
 const T10_ORG = "2ef10000-0000-4a00-8a00-0000000000e1";
 const T10_PRETEND = "a_home_of_a_table_is_the_whole_table";
 
@@ -976,6 +991,7 @@ async function main(): Promise<void> {
     const closedSchemas = (await client.query<Row>(CLOSED_SCHEMA_CENSUS(true))).rows;
     const rendering = (await client.query<Row>(IDENTITY_RENDERING_CENSUS)).rows;
     const invokerDoors = (await client.query<Row>(INVOKER_DOOR_CENSUS(true))).rows;
+    const refusals = (await client.query<Row>(REFUSAL_CENSUS)).rows;
 
     // CENSUS 12 — the three answers, live, in every organization that has said `shared_only`.
     // `mirror-admits-less` is a failure only when census 7 is non-empty, so the two are read
@@ -1070,6 +1086,10 @@ async function main(): Promise<void> {
         "(member, record) pairs a list-shaped door answers differently from custom.read_record",
         listDoors,
         true,
+      ),
+      report(
+        "doors that refuse by telling the caller they may read a record the door never asked about",
+        refusals,
       ),
     ].every(Boolean);
 
