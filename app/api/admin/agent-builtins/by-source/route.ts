@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * GET /api/admin/agent-builtins/by-source?source_agent_id=<id>
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

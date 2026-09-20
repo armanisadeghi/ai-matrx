@@ -107,6 +107,10 @@ export function captureApiError(
       status: error.status,
       userMessage,
       requestId,
+      // A backend request id identifies one server-side attempt. Keep those
+      // failures separate: two write attempts can have different side effects
+      // even when their endpoint and message match.
+      dedupeDiscriminator: requestId,
       details:
         structuredDetail !== undefined
           ? safeStringify(structuredDetail)

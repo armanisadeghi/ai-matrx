@@ -26,6 +26,7 @@ import {
   MIN_CLASS_PRICE_CENTS,
 } from "@/lib/stripe/connect";
 import { isJsonObject } from "@/types/json";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /** Only accept an in-app relative return path (no open redirect). */
 function safePath(p: unknown, fallback: string): string {
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }

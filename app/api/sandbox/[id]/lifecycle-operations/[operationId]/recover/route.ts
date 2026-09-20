@@ -3,11 +3,12 @@ import { resolveSandboxLifecycleTarget } from "@/lib/sandbox/lifecycle-target";
 import { proxyLifecycleReceipt, readExactLifecycleReceipt } from "@/lib/sandbox/lifecycle-route-proxy";
 import { createClient } from "@/utils/supabase/server";
 import { checkIsSuperAdmin } from "@/utils/supabase/userSessionData";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 async function mayForceStop(): Promise<boolean> {
   try {
     const supabase = await createClient();
-    const { data: { user }, error } = await supabase.auth.getUser();
+    const { data: { user }, error } = await getClaimsUser(supabase);
     return !error && !!user && await checkIsSuperAdmin(supabase, user.id);
   } catch { return false; }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { sendTaskAssignmentEmail } from "@/lib/email/notificationService";
 import { sendDm } from "@/lib/services/system-dm";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * POST /api/notifications/task-assigned
@@ -12,7 +13,7 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user) {
       return NextResponse.json(

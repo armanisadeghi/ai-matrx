@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { createAdminClient } from '@/utils/supabase/adminClient';
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * GET /api/sms/conversations
@@ -17,7 +18,7 @@ import { createAdminClient } from '@/utils/supabase/adminClient';
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json(
@@ -79,7 +80,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json(

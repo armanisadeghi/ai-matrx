@@ -49,10 +49,12 @@ export type NotificationEventTypeRow =
 export type NotificationPreferenceRow =
   Database["communication"]["Tables"]["notification_preference"]["Row"];
 
-/** Channels the platform can deliver today. New channels are a registration in
- * aidream (services/notifications/channels/) plus a label here. */
+/** Channels the notification spine can deliver. A row exposes a choice only
+ * when its registry configuration actually has that channel's template. */
 export const NOTIFICATION_CHANNELS: ReadonlyArray<{ key: string; label: string }> = [
   { key: "email", label: "Email" },
+  { key: "in_app", label: "In-app" },
+  { key: "sms", label: "Text message" },
 ];
 
 /**
@@ -73,6 +75,8 @@ export interface NotificationEventSetting {
   channels: Record<string, boolean>;
   /** Per channel: the platform default declared by the event. */
   defaults: Record<string, boolean>;
+  /** Per channel: whether the registry makes a user choice meaningful. */
+  availableChannels: Record<string, boolean>;
   /**
    * Per channel: true when this scope has NO row of its own and the value shown
    * came from the person's cross-org default (or the event default). Flipping
@@ -88,6 +92,33 @@ function asBooleanMap(value: unknown): Record<string, boolean> {
     out[key] = Boolean(flag);
   }
   return out;
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+/**
+ * The server's registry stores renderable channel templates at
+ * `config.templates.<channel>` and its catalog owns `config.sms_locked`.
+ * A preference must never render a switch for a channel that cannot render or
+ * for a policy-locked SMS channel: such a switch would promise a delivery path
+ * the dispatcher must refuse.
+ */
+export function notificationChannelAvailability(config: unknown): Record<string, boolean> {
+  const eventConfig = asRecord(config);
+  const templates = asRecord(eventConfig.templates);
+  const hasTemplate = (channel: string) => {
+    const template = asRecord(templates[channel]);
+    return typeof template.body === "string" && template.body.trim().length > 0;
+  };
+
+  return {
+    email: hasTemplate("email"),
+    in_app: hasTemplate("in_app"),
+    sms: hasTemplate("sms") && eventConfig.sms_locked !== true,
+  };
 }
 
 /**
@@ -151,7 +182,7 @@ export async function loadNotificationSettings(
       supabase
         .schema("communication")
         .from("notification_event_type")
-        .select("event_key,label,description,default_channels,enabled,deleted_at")
+        .select("event_key,label,description,default_channels,config,enabled,deleted_at")
         .eq("enabled", true)
         .is("deleted_at", null)
         .order("label"),
@@ -181,8 +212,10 @@ export async function loadNotificationSettings(
     if (pref.organization_id === personalOrgId) global.set(key, Boolean(pref.enabled));
   }
 
-  return (events ?? []).map((event) => {
+  return (events ?? []).flatMap((event) => {
     const defaults = asBooleanMap(event.default_channels);
+    const availableChannels = notificationChannelAvailability(event.config);
+    if (!NOTIFICATION_CHANNELS.some(({ key }) => availableChannels[key])) return [];
     const channels: Record<string, boolean> = {};
     const inherited: Record<string, boolean> = {};
     for (const { key } of NOTIFICATION_CHANNELS) {
@@ -191,14 +224,15 @@ export async function loadNotificationSettings(
       inherited[key] = own === undefined;
       channels[key] = own ?? global.get(mapKey) ?? Boolean(defaults[key]);
     }
-    return {
+    return [{
       eventKey: event.event_key,
       label: event.label,
       description: event.description,
       channels,
       defaults,
+      availableChannels,
       inherited,
-    };
+    }];
   });
 }
 

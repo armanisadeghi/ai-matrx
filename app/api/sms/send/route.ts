@@ -12,11 +12,12 @@ import { createAdminClient } from '@/utils/supabase/adminClient';
 import { sendAndLogSms } from '@/lib/sms/send';
 import { findOrCreateConversation } from '@/lib/sms/receive';
 import { normalizePhoneNumber, isValidE164 } from '@/lib/sms/phoneUtils';
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json(

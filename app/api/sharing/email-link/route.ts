@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { emailShareLink } from "@/lib/email/exportService";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * POST /api/sharing/email-link
@@ -11,7 +12,7 @@ export async function POST(request: Request) {
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user?.email) {
       return NextResponse.json(

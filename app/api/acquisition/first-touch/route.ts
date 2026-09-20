@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { FirstTouchPayloadSchema } from "@/lib/product-analytics/user-acquisition";
 import { recordAcquisitionFirstTouch } from "@/lib/product-analytics/server/acquisition-persistence";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 function requestIp(request: NextRequest): string | null {
   return (
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
   const payload = parsed.data;
 
   const session = await createClient();
-  const { data: sessionData } = await session.auth.getUser();
+  const { data: sessionData } = await getClaimsUser(session);
   const permanentUser =
     sessionData.user && sessionData.user.is_anonymous !== true
       ? sessionData.user

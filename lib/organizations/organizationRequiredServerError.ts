@@ -57,6 +57,7 @@
 // Status is 400, the same status and the same `code` aidream answers with.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /** One organization the caller may choose, as the refusal carries it. */
 export interface OrganizationMembershipSummary {
@@ -149,7 +150,7 @@ export async function readCallerMemberships(
   client: SupabaseClient,
 ): Promise<OrganizationMembershipSummary[] | null> {
   try {
-    const { data: auth } = await client.auth.getUser();
+    const { data: auth } = await getClaimsUser(client);
     const userId = auth?.user?.id;
     if (!userId) return null;
     const { data, error } = await client

@@ -26,6 +26,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient as createMainSupabaseClient } from "@/utils/supabase/server";
 import { createClient } from "@supabase/supabase-js";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 const HTML_SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_HTML_URL ?? "";
 const HTML_SUPABASE_SECRET_KEY = process.env.SUPABASE_HTML_SECRET_KEY ?? "";
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await mainSupabase.auth.getUser();
+    } = await getClaimsUser(mainSupabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

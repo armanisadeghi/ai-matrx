@@ -18,6 +18,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { z } from "zod";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 // ============================================
 // Validation Schemas
@@ -74,7 +75,7 @@ export async function GET(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (authError || !user) {
       return NextResponse.json(
         { success: false, msg: "Not authenticated" },
@@ -219,7 +220,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (authError || !user) {
       return NextResponse.json(
         { success: false, msg: "Not authenticated" },

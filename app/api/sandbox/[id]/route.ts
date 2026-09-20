@@ -5,6 +5,7 @@ import {
   orchestratorJsonHeaders,
 } from "@/lib/sandbox/orchestrator-routing";
 import { decorateSandboxRow } from "@/lib/sandbox/decorate-sandbox-row";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 function outcomeUnknown(operation: "stop" | "delete") {
   return NextResponse.json(
@@ -27,7 +28,7 @@ export async function GET(
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (userError || !user) {
       return NextResponse.json(
@@ -95,7 +96,7 @@ export async function PATCH(
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (userError || !user) {
       return NextResponse.json(
         { error: "User not authenticated" },

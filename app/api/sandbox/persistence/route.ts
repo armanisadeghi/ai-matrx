@@ -6,6 +6,7 @@ import {
   resolveOrchestratorByTier,
 } from "@/lib/sandbox/orchestrator-routing";
 import type { SandboxTier, UserPersistenceResponse } from "@/types/sandbox";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * GET /api/sandbox/persistence
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
   const {
     data: { user },
     error: userError,
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   if (userError || !user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }
@@ -75,7 +76,7 @@ export async function DELETE(request: NextRequest) {
   const {
     data: { user },
     error: userError,
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   if (userError || !user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }

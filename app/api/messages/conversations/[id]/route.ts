@@ -13,6 +13,7 @@ import { createClient } from "@/utils/supabase/server";
 import { z } from "zod";
 import type { TablesUpdate } from "@/types/database.types";
 import { isDurableMediaUrl } from "@/lib/media/durability";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 // ============================================
 // Validation Schemas
@@ -51,7 +52,7 @@ export async function GET(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (authError || !user) {
       return NextResponse.json(
         { success: false, msg: "Not authenticated" },
@@ -166,7 +167,7 @@ export async function PUT(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (authError || !user) {
       return NextResponse.json(
         { success: false, msg: "Not authenticated" },
@@ -300,7 +301,7 @@ export async function DELETE(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (authError || !user) {
       return NextResponse.json(
         { success: false, msg: "Not authenticated" },

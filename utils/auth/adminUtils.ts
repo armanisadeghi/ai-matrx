@@ -7,6 +7,7 @@ import {
   getAdminStatus,
   type AdminLevel,
 } from '@/utils/supabase/userSessionData';
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * Server-side Admin Utilities
@@ -31,7 +32,7 @@ export async function getCurrentUserAdminStatus(): Promise<{
 } | null> {
   const supabase = await createClient();
 
-  const { data: { user }, error } = await supabase.auth.getUser();
+  const { data: { user }, error } = await getClaimsUser(supabase);
 
   if (error || !user) {
     return null;

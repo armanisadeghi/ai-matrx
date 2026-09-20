@@ -14,12 +14,13 @@ import {
 } from "../session";
 import { AIDREAM_PRODUCTION_URL } from "@/lib/api/endpoints";
 import { applyOrganizationContextHeader } from "@/lib/api/organization-context";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   if (!user) {
     return NextResponse.redirect(
       new URL("/login?next=/code", requestBaseUrl(request)),

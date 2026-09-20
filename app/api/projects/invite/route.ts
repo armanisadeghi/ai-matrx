@@ -16,6 +16,7 @@ import {
   emailErrorMessage,
 } from "@/lib/email/client";
 import { isRfc4122Uuid } from "@ai-matrx/kit/uuid";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (userError || !user) {
       return NextResponse.json(

@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export async function GET(
   _request: NextRequest,
@@ -12,7 +13,7 @@ export async function GET(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -60,7 +61,7 @@ export async function PATCH(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -104,7 +105,7 @@ export async function DELETE(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

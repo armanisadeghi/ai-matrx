@@ -26,6 +26,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { recordUnavailable } from "@/lib/records/recordUnavailable";
 import type { SandboxTier } from "@/types/sandbox";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 const LOG = "[sandbox-orchestrator-env]";
 
@@ -174,7 +175,7 @@ export async function lookupSandboxAndOrchestrator(
   const {
     data: { user },
     error: userError,
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
 
   if (userError || !user) {
     return { ok: false, status: 401, error: "User not authenticated" };

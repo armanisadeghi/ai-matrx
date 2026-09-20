@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import type { TablesUpdate } from "@/types/database.types";
 import { z } from "zod";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 // ============================================
 // Validation Schemas
@@ -39,7 +40,7 @@ export async function GET(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (authError || !user) {
       return NextResponse.json(
         { success: false, msg: "Not authenticated" },
@@ -127,7 +128,7 @@ export async function PATCH(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (authError || !user) {
       return NextResponse.json(
         { success: false, msg: "Not authenticated" },
@@ -248,7 +249,7 @@ export async function DELETE(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (authError || !user) {
       return NextResponse.json(
         { success: false, msg: "Not authenticated" },

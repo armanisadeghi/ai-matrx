@@ -24,6 +24,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 interface RouteParams {
   params: Promise<{ serverId: string }>;
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   if (!user) {
     return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
   }

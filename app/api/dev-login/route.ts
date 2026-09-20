@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { createClient } from "@/utils/supabase/server";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * THE NONCE HANDSHAKE — the ONLY way into this route.
@@ -217,7 +218,7 @@ export async function GET(request: NextRequest) {
 
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
 
   if (user) {
     const same =

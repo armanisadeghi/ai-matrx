@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 import { shortcutTable, contextMenuView } from "@/lib/supabase/shortcutStorage";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 // Dev-only diagnostic for the agent-shortcuts stack.
 // Returns row counts + samples from every table the context menu depends on,
@@ -9,7 +10,7 @@ import { shortcutTable, contextMenuView } from "@/lib/supabase/shortcutStorage";
 export async function GET() {
   try {
     const supabase = await createClient();
-    const { data: authData, error: authError } = await supabase.auth.getUser();
+    const { data: authData, error: authError } = await getClaimsUser(supabase);
     if (authError || !authData?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

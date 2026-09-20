@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { NextRequest, NextResponse } from "next/server";
 import { agentAppPublicationPatch } from "@/features/agent-apps/lib/publication";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * POST /api/agent-apps/[id]/duplicate
@@ -33,7 +34,7 @@ export async function POST(
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

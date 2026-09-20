@@ -13,6 +13,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import type { FeedbackAssignableAdmin } from "@/types/feedback.types";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export async function GET() {
   try {
@@ -21,7 +22,7 @@ export async function GET() {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (authError || !user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

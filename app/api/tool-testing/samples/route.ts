@@ -25,6 +25,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { requireEnv } from "@/utils/supabase/env";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 // API keys: ONLY sb_publishable_* / sb_secret_*. Legacy JWT keys are DEPRECATED
 // and BANNED — see https://supabase.com/docs/guides/getting-started/api-keys
@@ -68,7 +69,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await authClient.auth.getUser(token);
+    } = await getClaimsUser(authClient, token);
 
     if (authError || !user) {
       return NextResponse.json(

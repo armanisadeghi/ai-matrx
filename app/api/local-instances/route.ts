@@ -13,6 +13,7 @@
 
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export interface LocalInstance {
   id: string;
@@ -38,7 +39,7 @@ const STALE_THRESHOLD_MS = 10 * 60 * 1000; // 10 minutes
 export async function GET(): Promise<NextResponse> {
   try {
     const supabase = await createClient();
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const { data: { user }, error: authError } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

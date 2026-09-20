@@ -26,6 +26,7 @@ import {
   type UserFormProfileData,
   type UserFormProfilePatch,
 } from "@/features/user-profile/types";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 type FormProfileRow = Database["users"]["Tables"]["user_form_profile"]["Row"];
 type FormProfileInsert =
@@ -109,7 +110,7 @@ export async function GET() {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json(
@@ -148,7 +149,7 @@ export async function PATCH(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json(

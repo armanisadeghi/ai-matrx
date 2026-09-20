@@ -22,6 +22,7 @@ import { createClient } from "@/utils/supabase/server";
 import { sandboxDisplayName } from "@/lib/sandbox/format";
 import { isJsonObject } from "@/types/json";
 import { filesDb } from "@/features/files/filesDb";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 const DEVICE_FRESHNESS_WINDOW_MS = 10 * 60 * 1000;
 
@@ -71,7 +72,7 @@ export async function GET() {
   const {
     data: { user },
     error: userError,
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
   if (userError || !user) {
     return NextResponse.json({ error: "auth_required" }, { status: 401 });
   }

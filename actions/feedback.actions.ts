@@ -32,6 +32,7 @@ import {
   type FeedbackSummaryData,
   type TriageBatchData,
 } from "@/types/feedback-row-mapper";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 type UserFeedbackUpdate =
   Database["users"]["Tables"]["user_feedback"]["Update"];
@@ -40,7 +41,7 @@ async function requireAdminServiceAccess() {
   const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser();
+  } = await getClaimsUser(supabase);
 
   if (!user) {
     throw new Error("User not authenticated");
@@ -70,7 +71,7 @@ export async function submitFeedback(
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user) {
       return { success: false, error: "User not authenticated" };
@@ -198,7 +199,7 @@ export async function getUserFeedback(): Promise<{
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user) {
       return { success: false, error: "User not authenticated" };
@@ -242,7 +243,7 @@ export async function updateUserOwnFeedback(
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user) {
       return { success: false, error: "User not authenticated" };
@@ -612,7 +613,7 @@ export async function replyToUserReview(
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (!user) return { success: false, error: "User not authenticated" };
 
     const name =
@@ -696,7 +697,7 @@ export async function getAllFeedback(): Promise<{
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user) {
       return { success: false, error: "User not authenticated" };
@@ -744,7 +745,7 @@ export async function updateFeedback(
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user) {
       return { success: false, error: "User not authenticated" };
@@ -846,7 +847,7 @@ export async function getFeedbackById(
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (!user) return { success: false, error: "User not authenticated" };
 
     if (!(await checkIsUserAdmin(supabase, user.id))) {
@@ -889,7 +890,7 @@ export async function getFeedbackRaisedFromReviewRow(
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (!user) return { success: false, error: "User not authenticated" };
 
     if (!(await checkIsUserAdmin(supabase, user.id))) {
@@ -990,7 +991,7 @@ export async function forceCloseFeedback(
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user) {
       return { success: false, error: "User not authenticated" };
@@ -1052,7 +1053,7 @@ export async function confirmFeedbackResolution(
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user) {
       return { success: false, error: "User not authenticated" };
@@ -1100,7 +1101,7 @@ export async function getActiveAnnouncements(): Promise<{
     // the platform operator).
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     let query = supabase
       .schema("users")
@@ -1145,7 +1146,7 @@ export async function getAllAnnouncements(): Promise<{
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user) {
       return { success: false, error: "User not authenticated" };
@@ -1186,7 +1187,7 @@ export async function createAnnouncement(
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user) {
       return { success: false, error: "User not authenticated" };
@@ -1240,7 +1241,7 @@ export async function updateAnnouncement(
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user) {
       return { success: false, error: "User not authenticated" };
@@ -1285,7 +1286,7 @@ export async function deleteAnnouncement(
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user) {
       return { success: false, error: "User not authenticated" };

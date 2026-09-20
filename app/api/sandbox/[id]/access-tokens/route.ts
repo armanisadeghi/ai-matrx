@@ -5,6 +5,7 @@ import {
   orchestratorJsonHeaders,
 } from "@/lib/sandbox/orchestrator-routing";
 import { isJsonObject } from "@/types/json";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 const TRANSIENT_UPSTREAM_STATUSES = new Set([502, 503, 504]);
 const TOKEN_MINT_MAX_ATTEMPTS = 3;
@@ -174,7 +175,7 @@ export async function POST(
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
     if (userError || !user) {
       return NextResponse.json(
         { error: "User not authenticated" },

@@ -14,6 +14,7 @@ import { sendEmail, emailTemplates } from "@/lib/email/client";
 import { createAdminClient } from "@/utils/supabase/adminClient";
 import { createClient } from "@/utils/supabase/server";
 import { checkIsUserAdmin } from "@/utils/supabase/userSessionData";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (userError || !user) {
       return NextResponse.json(

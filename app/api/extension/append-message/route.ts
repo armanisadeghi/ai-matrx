@@ -36,6 +36,7 @@ import {
   AppendMessageRequestSchema,
   type AppendMessageRequest,
 } from "@/lib/types/bridge-envelope";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 // Request validation lives in `@/lib/types/bridge-envelope` so the
 // extension SW, the demo page, and this route all share one shape.
@@ -57,7 +58,7 @@ async function resolveAuth(request: NextRequest): Promise<AuthResult> {
   // Try cookie session first.
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase.auth.getUser();
+    const { data, error } = await getClaimsUser(supabase);
     if (!error && data?.user?.id) {
       return { ok: true, userId: data.user.id, client: supabase };
     }
@@ -88,7 +89,7 @@ async function resolveAuth(request: NextRequest): Promise<AuthResult> {
           auth: { persistSession: false, autoRefreshToken: false },
         },
       );
-      const { data, error } = await bearerClient.auth.getUser(token);
+      const { data, error } = await getClaimsUser(bearerClient, token);
       if (!error && data.user?.id) {
         return { ok: true, userId: data.user.id, client: bearerClient };
       }

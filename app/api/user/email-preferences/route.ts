@@ -7,6 +7,7 @@ import {
   organizationRequiredResponse,
 } from "@/lib/organizations/organizationRequiredResponse";
 import type { TablesUpdate } from "@/types/database.types";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 /**
  * GET /api/user/email-preferences
@@ -17,7 +18,7 @@ export async function GET() {
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user) {
       return NextResponse.json(
@@ -63,7 +64,7 @@ export async function PATCH(request: Request) {
     const supabase = await createClient();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (!user) {
       return NextResponse.json(

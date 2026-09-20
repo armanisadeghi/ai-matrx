@@ -23,6 +23,7 @@ import {
   SMS_PRIVACY_PATH,
   SMS_TERMS_PATH,
 } from "@/features/sms/compliance";
+import { getClaimsUser } from "@/utils/supabase/resolveUser";
 
 export async function POST(request: NextRequest) {
   try {
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
     const {
       data: { user },
       error: authError,
-    } = await supabase.auth.getUser();
+    } = await getClaimsUser(supabase);
 
     if (authError || !user) {
       return NextResponse.json(
