@@ -45,7 +45,7 @@ function parsePreviewLease(raw) {
   );
   return values;
 }
-function assertPreviewAttestation(lease, config, expected) {
+function assertPreviewAttestation(lease, config, expected, deps = {}) {
   assert(lease.ROOT === expected.worktree, "preview_checkout_mismatch");
   assert(
     lease.OWNER_HOST === new URL(config.frontend).hostname,
@@ -55,7 +55,30 @@ function assertPreviewAttestation(lease, config, expected) {
     lease.PORT === "3001" && /^\d+$/.test(lease.PID || ""),
     "preview_lease_invalid",
   );
-  assert(expected.commit === expected.currentCommit, "preview_commit_mismatch");
+  const alive =
+    deps.isAlive ||
+    ((pid) => {
+      try {
+        process.kill(Number(pid), 0);
+        return true;
+      } catch {
+        return false;
+      }
+    });
+  const processCwd =
+    deps.processCwd ||
+    ((pid) =>
+      execFileSync("lsof", ["-a", "-p", String(pid), "-d", "cwd", "-Fn"], {
+        encoding: "utf8",
+      })
+        .split("\n")
+        .find((line) => line.startsWith("n"))
+        ?.slice(1));
+  assert(alive(lease.PID), "preview_pid_not_live");
+  assert(
+    processCwd(lease.PID) === expected.worktree,
+    "preview_process_checkout_mismatch",
+  );
 }
 function previewLeasePath(env = process.env) {
   return (
@@ -71,22 +94,20 @@ async function readPreviewAttestation(config, env = process.env) {
   const lease = parsePreviewLease(
     await fs.readFile(previewLeasePath(env), "utf8"),
   );
-  const commit = execFileSync("git", ["rev-parse", "HEAD"], {
+  const sourceHead = execFileSync("git", ["rev-parse", "HEAD"], {
     cwd: WORKTREE,
     encoding: "utf8",
   }).trim();
   assertPreviewAttestation(lease, config, {
     worktree: WORKTREE,
-    commit,
-    currentCommit: commit,
   });
-  return { lease, commit };
+  return { lease, sourceHead };
 }
-function assertBundleBackend(sources, api) {
-  assert(
-    sources.some((source) => source.includes(api)),
-    "compiled_backend_mismatch",
-  );
+function assertVaultOrigin(url, config) {
+  assert(new URL(url).origin === config.api, "foreign_vault_origin_refused");
+}
+function requestDigest(bodyText) {
+  return crypto.createHash("sha256").update(bodyText).digest("hex");
 }
 function runtimeConfig(env = process.env) {
   const frontend = env.MATRX_KEEPASS_LOCAL_FRONTEND,
@@ -105,7 +126,7 @@ function runtimeConfig(env = process.env) {
 function exactRetry(first, retry) {
   return (
     first.key === retry.key &&
-    first.body === retry.body &&
+    first.digest === retry.digest &&
     first.id === retry.id
   );
 }
@@ -225,9 +246,7 @@ async function reconcile(config, actor, ledger, names, deps = {}) {
       (candidate) => candidate.name === item.display_name,
     );
     assert(attempt, "owned_reconciliation_attempt_required");
-    if (attempt.itemId && attempt.itemId !== item.id)
-      throw new Error("owned_reconciliation_receipt_mismatch");
-    attempt.itemId = item.id;
+    if (!attempt.itemIds.includes(item.id)) attempt.itemIds.push(item.id);
   }
   await (deps.save || save)(ledger);
   return items;
@@ -242,18 +261,20 @@ function bodyIdentity(body) {
     browserFillEnabled: body.browser_fill_enabled,
   };
 }
-async function recordAttempt(ledger, name, key, body, deps = {}) {
+async function recordAttempt(ledger, name, key, body, bodyText, deps = {}) {
   const identity = bodyIdentity(body);
+  const digest = requestDigest(bodyText);
   const existing = ledger.attempts.find((attempt) => attempt.name === name);
   if (existing) {
     assert(
       existing.key === key &&
-        JSON.stringify(existing.body) === JSON.stringify(identity),
+        JSON.stringify(existing.body) === JSON.stringify(identity) &&
+        existing.digest === digest,
       "attempt_mapping_mismatch",
     );
     return existing;
   }
-  const attempt = { name, key, body: identity, itemId: null };
+  const attempt = { name, key, digest, body: identity, itemIds: [] };
   ledger.attempts.push(attempt);
   await (deps.save || save)(ledger);
   return attempt;
@@ -270,7 +291,7 @@ async function cleanup(config, actor, ledger, names, deps = {}) {
   }
   const ids = new Set([
     ...items.map((item) => item.id),
-    ...ledger.attempts.map((attempt) => attempt.itemId).filter(Boolean),
+    ...ledger.attempts.flatMap((attempt) => attempt.itemIds),
   ]);
   for (const id of ids) {
     try {
@@ -294,10 +315,14 @@ async function cleanup(config, actor, ledger, names, deps = {}) {
   } catch (error) {
     failures.push(error);
   }
-  if (failures.length === 0) {
-    ledger.cleaned = true;
-    await (deps.save || save)(ledger);
-  }
+  if (failures.length === 0)
+    try {
+      ledger.cleaned = true;
+      await (deps.save || save)(ledger);
+    } catch (error) {
+      ledger.cleaned = false;
+      failures.push(error);
+    }
   return failures;
 }
 function finalFailure(primary, cleanupFailures) {
@@ -345,7 +370,13 @@ async function main() {
   };
   for (const item of [retry, cancelOne, cancelTwo]) item.entryXml = entry(item);
   const names = new Set([retry.title, cancelOne.title, cancelTwo.title]);
-  const ledger = { run: RUN, baseline: null, attempts: [], cleaned: false };
+  const ledger = {
+    run: RUN,
+    sourceHead: null,
+    baseline: null,
+    attempts: [],
+    cleaned: false,
+  };
   await save(ledger);
   await fs.writeFile(FIXTURE, xml([retry.entryXml]), { mode: 0o600 });
   let context;
@@ -357,18 +388,9 @@ async function main() {
       headless: true,
     });
     page = await context.newPage();
-    await readPreviewAttestation(config);
-    await page.goto(`${config.frontend}/vault`, {
-      waitUntil: "domcontentloaded",
-      timeout: 30_000,
-    });
-    const bundleSources = await page.evaluate(async () => {
-      const urls = [...document.scripts]
-        .map((script) => script.src)
-        .filter(Boolean);
-      return Promise.all(urls.map(async (url) => (await fetch(url)).text()));
-    });
-    assertBundleBackend(bundleSources, config.api);
+    const preview = await readPreviewAttestation(config);
+    ledger.sourceHead = preview.sourceHead;
+    await save(ledger);
     const login = page.waitForResponse(
       (response) =>
         response.url().includes("/auth/v1/token") &&
@@ -413,10 +435,12 @@ async function main() {
     const actorBound = new Promise((resolve) => {
       resolveActorBound = resolve;
     });
+    let observedAllowedVaultRequest = false;
     context.on("request", (request) => {
       const url = new URL(request.url());
-      if (url.origin !== config.api || !url.pathname.startsWith("/api/vault/"))
-        return;
+      if (!url.pathname.startsWith("/api/vault/")) return;
+      assertVaultOrigin(request.url(), config);
+      observedAllowedVaultRequest = true;
       const headers = request.headers();
       if (
         headers.authorization === `Bearer ${actor.token}` &&
@@ -454,16 +478,21 @@ async function main() {
         typeof key === "string" && key.length > 0,
         "idempotency_key_required",
       );
-      const attempt = await recordAttempt(ledger, expected.title, key, body);
+      const attempt = await recordAttempt(
+        ledger,
+        expected.title,
+        key,
+        body,
+        bodyText,
+      );
       const response = await route.fetch();
       assert(response.ok(), "create_must_complete");
       const created = await response.json();
       assert(typeof created?.id === "string", "create_receipt_required");
-      if (attempt.itemId && attempt.itemId !== created.id)
-        throw new Error("attempt_receipt_mismatch");
-      attempt.itemId = created.id;
+      if (!attempt.itemIds.includes(created.id))
+        attempt.itemIds.push(created.id);
       await save(ledger);
-      const receipt = { key, body: bodyText, id: created.id };
+      const receipt = { key, digest: requestDigest(bodyText), id: created.id };
       if (expected === retry && !first) {
         first = receipt;
         return route.abort("failed");
@@ -499,6 +528,7 @@ async function main() {
         ),
       ),
     ]);
+    assert(observedAllowedVaultRequest, "allowed_vault_request_not_observed");
     const baseline = await listOwned(config, actor, names);
     assert.equal(baseline.length, 0, "owned_baseline_required");
     ledger.baseline = {
@@ -531,7 +561,7 @@ async function main() {
     assert(
       first &&
         ledger.attempts.length === 1 &&
-        ledger.attempts[0].itemId === first.id,
+        ledger.attempts[0].itemIds.includes(first.id),
       "response_loss_receipt_required",
     );
     const retryItems = await reconcile(
@@ -543,7 +573,8 @@ async function main() {
     assert.equal(retryItems.length, 1, "response_loss_exactly_one_item");
     assert(
       ledger.attempts[0].key === first.key &&
-        ledger.attempts[0].itemId === retryItems[0].id,
+        ledger.attempts[0].itemIds.length === 1 &&
+        ledger.attempts[0].itemIds[0] === retryItems[0].id,
       "response_loss_durable_mapping_required",
     );
     await page.keyboard.press("Escape");
@@ -631,7 +662,12 @@ async function main() {
   } catch (error) {
     primaryFailure = error;
   } finally {
-    const cleanupFailures = await cleanup(config, actor, ledger, names);
+    let cleanupFailures;
+    try {
+      cleanupFailures = await cleanup(config, actor, ledger, names);
+    } catch (error) {
+      cleanupFailures = [error];
+    }
     if (page) {
       try {
         await page.goto(`${config.frontend}/sign-out`, {
@@ -700,7 +736,8 @@ module.exports = {
   assertSource,
   parsePreviewLease,
   assertPreviewAttestation,
-  assertBundleBackend,
+  assertVaultOrigin,
+  requestDigest,
   listOwned,
   reconcile,
   cleanup,

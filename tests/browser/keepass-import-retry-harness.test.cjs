@@ -8,7 +8,8 @@ const {
   assertSource,
   parsePreviewLease,
   assertPreviewAttestation,
-  assertBundleBackend,
+  assertVaultOrigin,
+  requestDigest,
   listOwned,
   reconcile,
   cleanup,
@@ -16,7 +17,7 @@ const {
   recordAttempt,
   removeArtifact,
 } = require("./keepass-import-retry-acceptance.cjs");
-test("refuses unarmed, remote, or bundle/backend-mismatched runs before browser launch", () => {
+test("refuses unarmed or remote-origin runs before browser launch", () => {
   const base = {
     MATRX_KEEPASS_IMPORT_CANARY: "RUN_UNDER_REVIEW",
     MATRX_KEEPASS_LOCAL_FRONTEND: "http://127.0.0.1:3001",
@@ -38,7 +39,7 @@ test("refuses unarmed, remote, or bundle/backend-mismatched runs before browser 
     /localhost_api_required/,
   );
 });
-test("refuses a lease whose checkout, hostname, or compiled backend differs", () => {
+test("refuses a lease whose live process checkout or hostname differs", () => {
   const config = {
     frontend: "http://vault-task3.localhost:3001",
     api: "http://127.0.0.1:8027",
@@ -46,20 +47,20 @@ test("refuses a lease whose checkout, hostname, or compiled backend differs", ()
   const lease = parsePreviewLease(
     "ROOT=/worktree\nOWNER_HOST=vault-task3.localhost\nPORT=3001\nPID=123",
   );
+  const live = { isAlive: () => true, processCwd: () => "/worktree" };
   assert.doesNotThrow(() =>
-    assertPreviewAttestation(lease, config, {
-      worktree: "/worktree",
-      commit: "abc",
-      currentCommit: "abc",
-    }),
+    assertPreviewAttestation(lease, config, { worktree: "/worktree" }, live),
   );
   assert.throws(
     () =>
-      assertPreviewAttestation({ ...lease, ROOT: "/foreign" }, config, {
-        worktree: "/worktree",
-        commit: "abc",
-        currentCommit: "abc",
-      }),
+      assertPreviewAttestation(
+        { ...lease, ROOT: "/foreign" },
+        config,
+        {
+          worktree: "/worktree",
+        },
+        live,
+      ),
     /preview_checkout_mismatch/,
   );
   assert.throws(
@@ -67,26 +68,41 @@ test("refuses a lease whose checkout, hostname, or compiled backend differs", ()
       assertPreviewAttestation(
         { ...lease, OWNER_HOST: "foreign.localhost" },
         config,
-        { worktree: "/worktree", commit: "abc", currentCommit: "abc" },
+        { worktree: "/worktree" },
+        live,
       ),
     /preview_host_mismatch/,
   );
   assert.throws(
     () =>
-      assertPreviewAttestation(lease, config, {
-        worktree: "/worktree",
-        commit: "old",
-        currentCommit: "new",
-      }),
-    /preview_commit_mismatch/,
-  );
-  assert.doesNotThrow(() =>
-    assertBundleBackend(["const backend='http://127.0.0.1:8027'"], config.api),
+      assertPreviewAttestation(
+        lease,
+        config,
+        { worktree: "/worktree" },
+        { isAlive: () => false, processCwd: () => "/worktree" },
+      ),
+    /preview_pid_not_live/,
   );
   assert.throws(
     () =>
-      assertBundleBackend(["https://server.app.matrxserver.com"], config.api),
-    /compiled_backend_mismatch/,
+      assertPreviewAttestation(
+        lease,
+        config,
+        { worktree: "/worktree" },
+        { isAlive: () => true, processCwd: () => "/foreign" },
+      ),
+    /preview_process_checkout_mismatch/,
+  );
+  assert.doesNotThrow(() =>
+    assertVaultOrigin("http://127.0.0.1:8027/api/vault/items", config),
+  );
+  assert.throws(
+    () =>
+      assertVaultOrigin(
+        "https://server.app.matrxserver.com/api/vault/items",
+        config,
+      ),
+    /foreign_vault_origin_refused/,
   );
 });
 test("uses the Fetch Response boolean contract and durably reconciles a dropped response", async () => {
@@ -105,7 +121,7 @@ test("uses the Fetch Response boolean contract and durably reconciles a dropped 
         name: "retry",
         key: "key-1",
         body: { source: "system_import" },
-        itemId: "item-1",
+        itemIds: ["item-1"],
       },
     ],
   };
@@ -137,6 +153,7 @@ test("uses the Fetch Response boolean contract and durably reconciles a dropped 
 test("cleanup attempts every delete and reports cleanup before the scenario failure", async () => {
   const priorFetch = global.fetch;
   const deleted = [];
+  let listCalls = 0;
   global.fetch = async (url, init = {}) => {
     const target = String(url);
     if (init.method === "DELETE") {
@@ -145,22 +162,24 @@ test("cleanup attempts every delete and reports cleanup before the scenario fail
         status: target.endsWith("item-1") ? 500 : 204,
       });
     }
+    listCalls += 1;
     return new Response(
       JSON.stringify({
-        items: target.includes("after")
-          ? []
-          : [
-              { id: "item-1", display_name: "one" },
-              { id: "item-2", display_name: "two" },
-            ],
+        items:
+          listCalls === 1
+            ? [
+                { id: "item-1", display_name: "one" },
+                { id: "item-2", display_name: "two" },
+              ]
+            : [],
       }),
       { status: 200 },
     );
   };
   const ledger = {
     attempts: [
-      { name: "one", key: "a", body: {}, itemId: "item-1" },
-      { name: "two", key: "b", body: {}, itemId: "item-2" },
+      { name: "one", key: "a", body: {}, itemIds: ["item-1"] },
+      { name: "two", key: "b", body: {}, itemIds: ["item-2"] },
     ],
   };
   const actor = {
@@ -196,12 +215,20 @@ test("records a value-free attempt mapping before a response can be dropped", as
     login_urls: ["https://fixture.example.invalid"],
     browser_fill_enabled: false,
   };
-  const attempt = await recordAttempt(ledger, "retry", "key", body, {
-    save: async () => undefined,
-  });
+  const attempt = await recordAttempt(
+    ledger,
+    "retry",
+    "key",
+    body,
+    JSON.stringify(body),
+    {
+      save: async () => undefined,
+    },
+  );
   assert.deepEqual(attempt, {
     name: "retry",
     key: "key",
+    digest: requestDigest(JSON.stringify(body)),
     body: {
       definitionKey: "website_login",
       source: "system_import",
@@ -210,12 +237,29 @@ test("records a value-free attempt mapping before a response can be dropped", as
       loginUrlCount: 1,
       browserFillEnabled: false,
     },
-    itemId: null,
+    itemIds: [],
   });
   assert.equal(
     JSON.stringify(ledger).includes("plaintext-never-persisted"),
     false,
   );
+  const changedBytes = {
+    ...body,
+    fields: [{ field_key: "password", value: "different-plaintext" }],
+  };
+  await assert.rejects(
+    () =>
+      recordAttempt(
+        ledger,
+        "retry",
+        "key",
+        changedBytes,
+        JSON.stringify(changedBytes),
+        { save: async () => undefined },
+      ),
+    /attempt_mapping_mismatch/,
+  );
+  assert.equal(requestDigest(JSON.stringify(body)).length, 64);
 });
 test("continues artifact cleanup after each independent removal failure", async () => {
   const attempted = [];
@@ -252,23 +296,23 @@ test("continues artifact cleanup after each independent removal failure", async 
     ["fixture_removal_required", "ledger_removal_required"],
   );
 });
-test("rejects response-loss replay that changes command bytes or receipt id", () => {
+test("rejects response-loss replay that changes exact request digest or receipt id", () => {
   assert(
     exactRetry(
-      { key: "a", body: "one", id: "i" },
-      { key: "a", body: "one", id: "i" },
+      { key: "a", digest: "one", id: "i" },
+      { key: "a", digest: "one", id: "i" },
     ),
   );
   assert(
     !exactRetry(
-      { key: "a", body: "one", id: "i" },
-      { key: "a", body: "two", id: "i" },
+      { key: "a", digest: "one", id: "i" },
+      { key: "a", digest: "two", id: "i" },
     ),
   );
   assert(
     !exactRetry(
-      { key: "a", body: "one", id: "i" },
-      { key: "a", body: "one", id: "other" },
+      { key: "a", digest: "one", id: "i" },
+      { key: "a", digest: "one", id: "other" },
     ),
   );
 });
