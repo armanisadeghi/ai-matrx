@@ -13,6 +13,7 @@
 import Link from "next/link";
 import { ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { personFacingSentence } from "@/lib/progress/failureSentence";
 import {
   Dialog,
   DialogContent,
@@ -62,6 +63,8 @@ export function BlockDetailsDialog({
   onClose: () => void;
 }) {
   const trail = readTrail(block?.rung_trail);
+  // 🚨 The sentence is never rendered raw — see `columns.tsx`'s `sentenceCell`.
+  const spoken = personFacingSentence(block?.error_sentence);
 
   return (
     <Dialog open={block !== null} onOpenChange={(next) => !next && onClose()}>
@@ -109,7 +112,17 @@ export function BlockDetailsDialog({
                 )}
               </Row>
               <Row label="It said">
-                <span className="text-foreground">{block.error_sentence}</span>
+                {/* Never the raw value: cold-walk-14 (2026-09-20) read a whole
+                    SQL INSERT with its bound arguments here. Machine text drops
+                    to the muted line below with the error class. */}
+                <span className="text-foreground">{spoken.text}</span>
+                {spoken.detail ? (
+                  <div className="mt-1">
+                    <code className="block break-all text-[11px] text-muted-foreground">
+                      {spoken.detail}
+                    </code>
+                  </div>
+                ) : null}
                 <div className="mt-1">
                   <code className="text-[11px] text-muted-foreground">
                     {block.error_class}

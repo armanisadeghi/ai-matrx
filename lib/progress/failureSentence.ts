@@ -217,6 +217,13 @@ export function providerErrorSentence(
   if (!value) return { text: "It refused without saying why." };
   const known = KNOWN_PROVIDER_ERROR_TOKENS[value];
   if (known) return { text: known };
+  // An unrecognised value that is not a token at all but a driver's render —
+  // SQL, bound arguments, a stack trace. Calling that "a provider error" would
+  // blame the provider for our own database, so it says what it was: ours.
+  // (See MACHINE TEXT IS NEVER THE SENTENCE, below.)
+  if (namesMachineText(value)) {
+    return { text: SYSTEM_ERROR_SENTENCE, detail: value };
+  }
   return { text: "It failed because of a provider error.", detail: value };
 }
 
@@ -233,4 +240,98 @@ export function namesAnExceptionClass(text: string | null | undefined): boolean 
   const found = PARENTHESISED_CLASS.test(value);
   PARENTHESISED_CLASS.lastIndex = 0;
   return found;
+}
+
+/**
+ * 🚨 MACHINE TEXT IS NEVER THE SENTENCE — AND SQL LEAST OF ALL.
+ *
+ * ## The defect this closes (fourteenth cold walk, 2026-09-20)
+ *
+ * `/acquisition` printed this inside a block row, as the person-facing account
+ * of what happened to a first-time Expert's file:
+ *
+ *   Matrx ORM | QueryTimeoutError … Query: INSERT INTO
+ *   docproc.processed_documents (id, organization_id, owner_id, …) VALUES
+ *   ($1, $2, $… Args: ('03e3dab7-…', '5dc930e9-…', '87a6e699-…', 'cld_file', …)
+ *
+ * A database schema, a statement, and its bound argument values — which, read
+ * out of the live row afterwards, turned out to include the OCR'd text of the
+ * customer's own document. On a screen otherwise written in careful English.
+ *
+ * The server half is fixed at the Block Ledger's write seam
+ * (`matrx_utils.person_sentence`, aidream `bd369c21c7`), so no new row can
+ * carry driver text, and the six rows that already did were repaired.
+ *
+ * This is the CLIENT half, and it is not redundant with that — for the same
+ * reason the top of this file gives for the exception-class rule. A screen that
+ * renders whatever sentence arrives is one bad `except` away from printing SQL
+ * again, in this lane or in any of the dozen others that show a server failure
+ * sentence, and it is looking at rows written by every version of the server
+ * there has ever been. So the rule lives here too, on the render path, where it
+ * is structural rather than remembered.
+ *
+ * Same two-part shape as `providerErrorSentence`: the sentence never contains
+ * the machine text, and the raw value rides as SECONDARY detail (muted, admin
+ * only), never folded into the sentence itself.
+ */
+
+/** What we say when the whole sentence was machine text. It is a FACT about
+ * WHERE the failure was — ours, not theirs — never a guess at a cause. */
+export const SYSTEM_ERROR_SENTENCE =
+  "This stopped because of a system error on our side.";
+
+/**
+ * The shapes only a machine writes. Deliberately narrow and structural: prose
+ * that happens to contain "select" or "update" is left alone, because
+ * over-cleaning a codec's careful refusal is the same lie in the other
+ * direction. Mirrors `matrx_utils/person_sentence.py`'s `_MACHINE_SHAPES`.
+ */
+const MACHINE_SHAPES: readonly RegExp[] = [
+  // A SQL statement.
+  /\b(?:INSERT\s+INTO|UPDATE\s+[\w."]+\s+SET\b|DELETE\s+FROM|SELECT\s[\s\S]{0,200}?\sFROM\s|CREATE\s+(?:TABLE|INDEX)|ALTER\s+TABLE)\b/i,
+  // Postgres bind placeholders as a driver renders them: "VALUES ($1, $2".
+  /\$\d+\s*,\s*\$\d+/,
+  // A payload marker the ORM inlines: "Query: …", "Args: (…)".
+  /\b(?:Args|Arguments|Params|Parameters|Query|SQL|Statement)\s*:\s/,
+  // A Python traceback, in either shape that has reached a field.
+  /Traceback \(most recent call last\)|File "[^"]+", line \d+/,
+  // A call written in code: `l.update_where(..., lock_rows_in_pk_order=True)`.
+  // Needs a dotted receiver AND a keyword or ellipsis argument, so "Sign in
+  // (again)" and "see step 2 (below)" do not match.
+  /\b[A-Za-z_][\w.]*\.[A-Za-z_]\w*\(\s*(?:\.\.\.|\w+\s*=)/,
+  // An ORM or driver banner title.
+  /Matrx ORM\s*\||\[ERROR in [^\]]*\]/,
+];
+
+/**
+ * Does this string carry SQL, bound parameters, a stack trace, an ORM banner
+ * or a code call? Exported so a guard can assert it over real rows.
+ */
+export function namesMachineText(text: string | null | undefined): boolean {
+  const value = (text ?? "").trim();
+  if (!value) return false;
+  if (BARE_CLASS.test(value)) return true;
+  return MACHINE_SHAPES.some((shape) => shape.test(value));
+}
+
+/**
+ * The sentence for a server-written failure SENTENCE (as opposed to
+ * `providerErrorSentence`, which takes a bare token).
+ *
+ * A sentence written for a person comes back word for word. One carrying
+ * machine text comes back as {@link SYSTEM_ERROR_SENTENCE} with a remedy, and
+ * the raw value in `detail` — for the muted, admin-only line beneath the
+ * sentence, never inside it.
+ */
+export function personFacingSentence(
+  raw: string | null | undefined,
+  { remedy = DEFAULT_FAILURE_REMEDY }: { remedy?: string } = {},
+): ProviderErrorSentence {
+  const value = (raw ?? "").trim();
+  if (!value) return { text: "It refused without saying why." };
+  if (!namesMachineText(value)) return { text: value };
+  return {
+    text: remedy ? `${SYSTEM_ERROR_SENTENCE} ${remedy}` : SYSTEM_ERROR_SENTENCE,
+    detail: value,
+  };
 }
