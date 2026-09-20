@@ -1125,6 +1125,7 @@ export interface MasterworkDumpResourceOutcome {
   token?: string | null;
   id?: string | null;
   url?: string | null;
+  source_key?: string | null;
   title?: string | null;
   status: string;
   rules_added?: number;
