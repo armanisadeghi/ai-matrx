@@ -105,7 +105,7 @@ Next.js 16.2+ (App Router) · React 19.2 · TypeScript 6.0+ (strict, no `any`) �
 
 ## Shared checkout — many concurrent writers is NORMAL
 
-Arman plus dozens of agents edit this ONE checkout at once. `git add <your files>`, commit immediately and often. Never tree-wide destructive git (blanket `stash` / `checkout -- .` / `reset --hard` / `clean` / dirty `pull --rebase`) — pathspec-scope to your files. Never complain about other sessions editing the tree, never request a branch/worktree. Full ruling: `../common-docs/policies/shared-checkout.md`.
+Arman plus dozens of agents edit this ONE checkout at once. `git add <your files>`, commit immediately and often. Never tree-wide destructive git (blanket `stash` / `checkout -- .` / `reset --hard` / `clean` / dirty `pull --rebase`) — pathspec-scope to your files. Never complain about other sessions editing the tree, never request a branch/worktree. Full ruling: `../common-docs/policies/shared-checkout.md`. 🚨 **No local worktrees, no local branches** (Arman, 2026-09-20: *"there is no reason for ever having a worktree. Updates should always be made to the single source of truth that is pushed live every 30 minutes."*). Afraid of breaking a live feature? Build the replacement beside it in this checkout, then delete and swap. An intake worktree for one landing lives minutes and is removed the same turn; anything else gets landed on main and deleted on sight.
 
 ## File organization & routes
 
