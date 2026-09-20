@@ -476,6 +476,20 @@ canonical words (Rulebook · a Masterwork · Build · Audition · Scout · Appro
 
 ## Change Log
 
+- 2026-09-20 — Claude (Opus): **"All the ways to add" is a door, not a handler**
+  (jobs-bar cold-walk-13, N5). The control in the Rulebook's Sources header did
+  nothing on the live build — no dialog, no navigation, zero network requests,
+  no console error — while its neighbour "Your words" opened. The wiring read
+  correctly end to end, which is the point: the control's whole promise rested
+  on one `onClick`, so a click that failed to reach it left a button that lies
+  and no evidence anywhere. It is now a `<Link>` to `/masterwork/approaches`
+  (the standing catalog its tooltip promises, which already existed) wearing
+  the picker as its click handler: a plain click still opens
+  `ApproachPickerDialog` in place, and anything else — a handler that never
+  runs, a modifier-click, a middle-click, "open in new tab" — follows the href.
+  Same pattern as "Your words", which pairs its window opener with a real link.
+  Guard: `__tests__/a-way-in-is-a-door-not-a-handler.test.tsx`, proven red
+  against the old plain button.
 - 2026-09-19 — **The Encore bench panel says when the ORGANIZATION read failed,
   instead of loading forever (R37, the fourth state).** `EncoreRunPage` gated on
   `organizationRequired` / the legacy `resolving`, and under a failed

@@ -119,13 +119,56 @@ export function RulebookInputsSection({
           {canEdit ? (
             <Tooltip>
               <TooltipTrigger asChild>
+                {/* 🚨 N5 (jobs-bar cold-walk-13): THIS CONTROL DID NOTHING.
+                    Measured on the live build over two separate clicks with
+                    the element scrolled into view: no dialog, no navigation,
+                    ZERO network requests, no console error — a `<button>`
+                    beside "Your words", which does open. Its whole promise
+                    ("every way to build this Rulebook") lived in one onClick
+                    handler, so any click that failed to reach that handler
+                    left the person with a control that lies.
+
+                    A control that promises a door IS a door. This is now an
+                    anchor to the standing catalog at `/masterwork/approaches`
+                    — the route the promise names, which already existed —
+                    exactly as its neighbour "Your words" pairs its window
+                    opener with a real `<Link>`. A plain click still opens the
+                    picker in place (the better behaviour: it launches an
+                    Approach's lane into THIS Rulebook without leaving the
+                    page), and the navigation is suppressed only once that has
+                    actually happened. Anything else — a handler that never
+                    runs, a modifier-click, a middle-click, "open in new tab" —
+                    follows the href. There is no longer a state in which
+                    pressing this does nothing. */}
                 <Button
+                  asChild
                   size="sm"
                   variant="ghost"
                   className="h-8 px-2 text-xs text-muted-foreground"
-                  onClick={onOpenApproaches}
                 >
-                  All the ways to add
+                  <Link
+                    href="/masterwork/approaches"
+                    data-tap-target
+                    onClick={(event) => {
+                      // Let the browser own every click that MEANS "open this
+                      // somewhere else": a new tab or window is the person's
+                      // choice, not ours to swallow.
+                      if (
+                        event.defaultPrevented ||
+                        event.button !== 0 ||
+                        event.metaKey ||
+                        event.ctrlKey ||
+                        event.shiftKey ||
+                        event.altKey
+                      ) {
+                        return;
+                      }
+                      onOpenApproaches();
+                      event.preventDefault();
+                    }}
+                  >
+                    All the ways to add
+                  </Link>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>

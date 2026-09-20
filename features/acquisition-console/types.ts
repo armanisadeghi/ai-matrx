@@ -172,8 +172,14 @@ export interface BlockedRow {
   origin: "block" | "handoff";
   /** What we could not get. */
   what: string;
-  /** Where it was being got — the engine, or the rung of the capture ladder. */
+  /** Where it was being got — the engine, or the rung of the capture ladder.
+   * Always a plain sentence — never a raw provider token (see
+   * `lib/progress/failureSentence.ts` `providerErrorSentence`). */
   where: string;
+  /** The raw token behind `where`, present ONLY when `where` fell back to
+   * "a provider error" because the token was not one we recognised. Render
+   * as secondary detail — never inside the sentence itself. */
+  whereDetail?: string;
   since: string;
   /** How many times the same wall was hit. Hand-offs count attempts. */
   times: number;

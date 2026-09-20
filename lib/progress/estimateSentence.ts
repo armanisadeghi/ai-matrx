@@ -82,8 +82,28 @@ function minutesSoFar(elapsedMs: number): number {
   return Math.max(1, Math.floor(elapsedMs / MINUTE_MS));
 }
 
-/** "about a minute" / "about 3 minutes" — plain words, never "~60s". */
+/**
+ * "a few seconds" / "about 10 seconds" / "about a minute" / "about 3 minutes"
+ * — plain words, never "~60s".
+ *
+ * 🚨 SUB-MINUTE WORK GETS A SUB-MINUTE PROMISE (cold walk 13, 2026-09-20, N8).
+ * Everything under 90 seconds used to round UP to "about a minute", so the
+ * three Masterwork openings this walk timed — each a handful of database
+ * round-trips and no model call at all — could not state an honest promise:
+ * "about a minute" over two seconds of work is the same class of untrue
+ * sentence as the constant estimate this file was written to kill, pointing
+ * the other way. A promise that is too generous never corrects itself either,
+ * because the overdue band is computed from it.
+ *
+ * Rounded to five-second steps below a minute, because nobody wants "about 17
+ * seconds" and a number that precise is a claim the platform cannot keep.
+ */
 export function describeDuration(ms: number): string {
+  if (ms < 7_500) return "a few seconds";
+  if (ms < 45_000) {
+    const seconds = Math.round(ms / 5_000) * 5;
+    return `about ${seconds} seconds`;
+  }
   if (ms < 90_000) return "about a minute";
   const minutes = Math.round(ms / MINUTE_MS);
   return `about ${minutes} minutes`;

@@ -73,7 +73,7 @@ import {
     formatElapsed,
     formatSecondsEstimate,
 } from "../format";
-import { sourceVocabulary, type SourceVocabulary } from "../vocabulary";
+import { sourceVocabulary, speakMediaNouns, type SourceVocabulary } from "../vocabulary";
 import type {
     ActionDeclaration,
     JobItemRow,
@@ -467,7 +467,10 @@ export function JobPanel({
                     </div>
                     {action?.description && (
                         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                            {action.description}
+                            {/* N6: the registry's description is a server
+                                sentence written in noun tokens — see
+                                `speakMediaNouns`. */}
+                            {speakMediaNouns(action.description, vocabulary)}
                         </p>
                     )}
                 </div>
@@ -776,7 +779,7 @@ export function JobPanel({
                             </span>
                         </div>
                         <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-                            {estimate.cost.basis}
+                            {speakMediaNouns(estimate.cost.basis, vocabulary)}
                             {estimate.cost.paid_cost_estimate > 0 && (
                                 <>
                                     {" "}
@@ -796,7 +799,9 @@ export function JobPanel({
                                         className="flex items-start gap-1.5 text-xs text-warning"
                                     >
                                         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
-                                        <TextWithDoors text={warning} />
+                                        <TextWithDoors
+                                            text={speakMediaNouns(warning, vocabulary)}
+                                        />
                                     </li>
                                 ))}
                             </ul>

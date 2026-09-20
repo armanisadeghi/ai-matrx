@@ -147,6 +147,37 @@ function auditionIsWeak(a: JourneyAudition): boolean {
   );
 }
 
+/**
+ * 🚨 "ALMOST THERE" IS A CLAIM ABOUT PROGRESS, AND IT HAS TO BE TRUE.
+ *
+ * Cold walk 13 (2026-09-20, Friction): after the FIRST interview turn the
+ * Rulebook's headline read *"Almost there — 2 rules left to review."* over
+ * **zero** approved rules out of two. Nobody is almost there at the moment
+ * their first two draft rules appear; they are at the beginning. The sentence
+ * was computed from the size of the queue alone (`n <= 3`), which is a fact
+ * about the queue and not about the person's progress through it.
+ *
+ * So the encouragement is EARNED: it is said only when the Expert has actually
+ * approved something and the drafts are the small remainder. With nothing
+ * approved yet the honest line names the work and what to do with it.
+ *
+ * MIRROR: aidream `services/masterwork_assists/journey.py` and the KPI strip's
+ * journey-less fallback (`components/detail/RulebookKpiStrip.tsx`) say exactly
+ * this. Change all three together.
+ */
+export function draftsWaitingHeadline(
+  drafts: number,
+  approved: number,
+): string {
+  if (approved > 0 && drafts <= 3) {
+    return `Almost there — ${drafts} ${plural(drafts, "rule", "rules")} left to review.`;
+  }
+  if (approved === 0 && drafts <= 3) {
+    return `Your first ${drafts} ${plural(drafts, "rule is", "rules are")} written — read ${plural(drafts, "it", "them")} and approve, correct, or reject ${plural(drafts, "it", "each one")}.`;
+  }
+  return `${drafts} suggested ${plural(drafts, "rule needs", "rules need")} your call — approve, correct, or reject each one.`;
+}
+
 /** Where this Rulebook is, and the ONE next move. Pure and deterministic. */
 export function computeJourney(
   facts: JourneyFacts,
@@ -175,10 +206,7 @@ export function computeJourney(
     let headline: string;
     if (facts.draftRules > 0) {
       const n = facts.draftRules;
-      headline =
-        n <= 3
-          ? `Almost there — ${n} ${plural(n, "rule", "rules")} left to review.`
-          : `${n} suggested ${plural(n, "rule needs", "rules need")} your call — approve, correct, or reject each one.`;
+      headline = draftsWaitingHeadline(n, facts.approvedRules);
     } else if (facts.rejectedRules > 0) {
       const n = facts.rejectedRules;
       // THE HONEST COPY (audit §2). A rejected rule is rewritten by the Scout

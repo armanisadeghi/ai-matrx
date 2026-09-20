@@ -128,6 +128,24 @@ const MAX_SELECTED = 100;
 
 type InboxDoor = "paste" | "upload" | "connected";
 
+/**
+ * Does the server's own "nothing to shadow" sentence ALREADY end by asking the
+ * Expert to pick their voice?
+ *
+ * Cold walk 13 (2026-09-20, Friction) read, on one row: *"Pick your voice and
+ * we'll shadow it — pick your voice below."* The server sentence
+ * (`nothing_to_shadow`) is written to be complete on its own and often closes
+ * with the instruction; the row then appended a second copy of it. The screen
+ * says a thing once.
+ *
+ * Exported so the guard can drive the real predicate rather than a re-typed
+ * regex of its own.
+ */
+export function alreadyAsksForVoice(sentence: string | null): boolean {
+  if (!sentence) return false;
+  return /pick\s+(your|which)\s+voice/i.test(sentence);
+}
+
 interface ThreadRow {
   key: string;
   subject: string;
@@ -660,28 +678,42 @@ export function ShadowInboxDialog({
         </div>
       ) : rows ? (
         <div className="space-y-3">
+          {/* 🚨 A COUNT ABOVE A LIST HAS TO DESCRIBE THE LIST (cold walk 13,
+              2026-09-20, Friction). This said "0 of 0 threads you replied to"
+              directly above ONE thread that was right there on the screen. The
+              number was about the SHADOWABLE threads and the reader has no way
+              to know that, so the only available reading was "we found
+              nothing" over a visible row. When nothing is shadowable the line
+              now counts what is actually on screen and says why none of it can
+              be picked — and Select all / None are ABSENT rather than two live
+              buttons that do nothing at all (law 4). */}
           <div className="flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() =>
-                setSelected(
-                  new Set(rows.filter((r) => r.youReplied).map((r) => r.key)),
-                )
-              }
-            >
-              Select all
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setSelected(new Set())}
-            >
-              None
-            </Button>
+            {shadowable > 0 ? (
+              <>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() =>
+                    setSelected(
+                      new Set(rows.filter((r) => r.youReplied).map((r) => r.key)),
+                    )
+                  }
+                >
+                  Select all
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSelected(new Set())}
+                >
+                  None
+                </Button>
+              </>
+            ) : null}
             <span className="text-xs text-muted-foreground">
-              {selected.size} of {shadowable} thread
-              {shadowable === 1 ? "" : "s"} you replied to
+              {shadowable > 0
+                ? `${selected.size} of ${shadowable} ${shadowable === 1 ? "thread" : "threads"} you replied to`
+                : `${rows.length} ${rows.length === 1 ? "thread" : "threads"} — none of ${rows.length === 1 ? "it" : "them"} has a reply of yours to compare yet`}
             </span>
           </div>
 
@@ -716,9 +748,13 @@ export function ShadowInboxDialog({
                   <p className="text-xs text-muted-foreground">
                     {row.participants.slice(0, 3).join(", ") ||
                       "no addresses we could read"}
-                    {row.messages ? ` · ${row.messages} messages` : ""}
+                    {/* "1 messages · 178 words" (cold walk 13). A count and
+                        its noun are one sentence, and the noun agrees. */}
+                    {row.messages
+                      ? ` · ${row.messages} ${row.messages === 1 ? "message" : "messages"}`
+                      : ""}
                     {row.youReplied
-                      ? ` · you wrote ${row.yourWords} words`
+                      ? ` · you wrote ${row.yourWords} ${row.yourWords === 1 ? "word" : "words"}`
                       : ""}
                   </p>
                   {row.hasGivenDraft ? (
@@ -729,8 +765,17 @@ export function ShadowInboxDialog({
                   ) : null}
                   {row.nothingToShadow ? (
                     <p className="mt-0.5 text-xs text-amber-600 dark:text-amber-400">
+                      {/* The server's own sentence already ENDS with the
+                          instruction ("…Pick your voice and we'll shadow
+                          it"), so appending "— pick your voice below." made it
+                          read "Pick your voice and we'll shadow it — pick your
+                          voice below." (cold walk 13). Say it once: the
+                          server's sentence if it already asks, ours if it
+                          does not. */}
                       {row.needsVoicePick
-                        ? `${row.nothingToShadow} — pick your voice below.`
+                        ? alreadyAsksForVoice(row.nothingToShadow)
+                          ? row.nothingToShadow
+                          : `${row.nothingToShadow} — pick your voice below.`
                         : `Nothing to shadow — ${row.nothingToShadow}.`}
                     </p>
                   ) : null}

@@ -58,8 +58,9 @@ const OUTCOME_TONE: Record<string, string> = {
  */
 function buildBaseColumns(
     vocabulary: SourceVocabulary = sourceVocabulary(null),
+    kindKnown = false,
 ): EntityColumnSpec<VideoRow>[] {
-    return [
+    const specs: EntityColumnSpec<VideoRow>[] = [
     {
         id: "thumbnail",
         label: "Thumbnail",
@@ -176,12 +177,12 @@ function buildBaseColumns(
     },
     {
         id: "view_count",
-        label: "Views",
+        label: vocabulary.views?.column ?? "Views",
         phone: "meta",
         column: {
             id: "view_count",
             accessorKey: "view_count",
-            header: "Views",
+            header: vocabulary.views?.column ?? "Views",
             filter: false,
             cell: (row) => (
                 <span className="tabular-nums">{formatCompactNumber(row.view_count)}</span>
@@ -285,6 +286,40 @@ function buildBaseColumns(
         },
     },
     ];
+
+    // NOTHING IS REMOVED UNTIL THE LIBRARY'S KIND IS KNOWN. `sourceVocabulary`
+    // answers NEUTRAL both for "the row has not arrived yet" and for "an
+    // adapter this table has never heard of", and in neither case has anything
+    // DECLARED that an axis is absent — so the neutral set means "unknown",
+    // never "no". Dropping a column on a guess is how `CATALOG_COLUMNS` (the
+    // no-Library caller, and what the guards read) would silently lose three
+    // columns, and how a real Library would flicker them in as its row
+    // arrived. Same gate, same reason, as the metrics header's `kindKnown`.
+    if (!kindKnown) return specs;
+
+    return specs.filter((spec) => {
+        // 🚨 A COLUMN FOLLOWS THE MEDIA KIND (jobs-bar cold-walk-13,
+        // Friction). Two of these can never fill on most adapters, and the
+        // walk saw both on one podcast: a VIEWS column reading `—` on every
+        // one of 2,981 rows, and a `TYPE: Long` badge — the server's
+        // long/short DURATION threshold, a YouTube distinction, worn by an
+        // episode where it means nothing to a listener.
+        //
+        // `vocabulary.ts` already declares both axes and already says `null`
+        // for a podcast and for a blog; these columns simply had not read it,
+        // exactly as the metrics tiles above them already do. A column is
+        // present and honest or ABSENT — never a header over a column of
+        // dashes, and never a badge classifying by a rule this kind of Source
+        // does not have.
+        if (spec.id === "view_count") return vocabulary.views !== null;
+        if (spec.id === "media_kind") return vocabulary.kindSplit !== null;
+        // Nothing text-native carries a caption track — the same rule the
+        // header's caption tiles already follow. The transcript column stays:
+        // a Source that is already words can still be read into a Rulebook,
+        // and that column says which ones have been.
+        if (spec.id === "has_captions") return vocabulary.transcribable;
+        return true;
+    });
 }
 
 /**
@@ -366,8 +401,16 @@ export function catalogColumns(options?: {
     actionLabels?: Record<string, string>;
     /** D6b — this Library's own words for the captions/transcript cells. */
     vocabulary?: SourceVocabulary;
+    /**
+     * Whether the Library ROW has arrived. Only then does `vocabulary` saying
+     * an axis is `null` mean the axis does not exist — see `buildBaseColumns`.
+     */
+    kindKnown?: boolean;
 }): EntityColumnSpec<VideoRow>[] {
-    return [...buildBaseColumns(options?.vocabulary), lastActionColumn(options?.actionLabels)];
+    return [
+        ...buildBaseColumns(options?.vocabulary, options?.kindKnown ?? false),
+        lastActionColumn(options?.actionLabels),
+    ];
 }
 
 /**

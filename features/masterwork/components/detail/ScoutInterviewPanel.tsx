@@ -25,7 +25,12 @@ import { Button } from "@/components/ui/button";
 import { MatrxDynamicPanelHost } from "@/components/matrx/resizable/MatrxDynamicPanelHost";
 import { AgentConversationColumn } from "@/features/agents/components/shared/AgentConversationColumn";
 import { VoiceRelayBar } from "@/features/voice-agent/relay/VoiceRelayBar";
-import { ChatRoomSkeleton } from "@/features/agents/components/chat/ChatRoomSkeleton";
+import { InterviewOpening } from "../../record/InterviewOpening";
+import {
+  INTERVIEW_HISTORY_MS,
+  INTERVIEW_OPENING_MS,
+  INTERVIEW_RESUME_MS,
+} from "../../record/openingRates";
 import { useAgentLauncher } from "@/features/agents/hooks/useAgentLauncher";
 import { setUserInputText } from "@/features/agents/redux/execution-system/instance-user-input/instance-user-input.slice";
 import {
@@ -190,6 +195,12 @@ function InterviewConversation({
     return declareBlankSlateInterview(rulebookId);
   }, [choice.mode, rulebookId]);
 
+  // 🚨 N8 — THE OPENING SAYS HOW LONG IT HAS BEEN (cold walk 13, 2026-09-20).
+  // "Start the interview" showed a bare skeleton for 60 seconds. The wait
+  // begins the moment this component mounts, which is the moment the Expert
+  // pressed the button.
+  const openingStartedAt = useRef(Date.now()).current;
+
   const { conversationId } = useAgentLauncher(agentId, {
     surfaceKey,
     sourceFeature: SOURCE_FEATURE,
@@ -282,7 +293,15 @@ function InterviewConversation({
     });
   }, [conversationId, rulebookId, rulebookName, turnStarted]);
 
-  if (!conversationId) return <ChatRoomSkeleton />;
+  if (!conversationId) {
+    return (
+      <InterviewOpening
+        doing="Setting up your interviewer…"
+        startedAt={openingStartedAt}
+        usualMs={INTERVIEW_OPENING_MS}
+      />
+    );
+  }
   return (
     <InterviewColumn
       conversationId={conversationId}
@@ -319,6 +338,8 @@ function ResumedInterviewConversation({
   onBack: () => void;
 }) {
   const surfaceKey = `masterwork-interview:${rulebookId}`;
+  // N8: "Continue this one" sat on a motionless skeleton for 53 seconds.
+  const resumeStartedAt = useRef(Date.now()).current;
   const { isResuming, error } = useConversationResume({
     conversationId,
     agentId,
@@ -351,7 +372,15 @@ function ResumedInterviewConversation({
       </div>
     );
   }
-  if (isResuming) return <ChatRoomSkeleton />;
+  if (isResuming) {
+    return (
+      <InterviewOpening
+        doing="Bringing your conversation back…"
+        startedAt={resumeStartedAt}
+        usualMs={INTERVIEW_RESUME_MS}
+      />
+    );
+  }
   return (
     <InterviewColumn
       conversationId={conversationId}
@@ -605,6 +634,11 @@ export function ScoutInterviewContent({
         : { mode: "choose" },
   );
   const [freshKey, setFreshKey] = useState(0);
+  // N8: this gate is what a deep-linked `?interview=1` arrival lands on while
+  // the Mandate, the Rulebook document and the interview history come back. It
+  // used to be a bare skeleton, which is why walk 13 read an arrival that was
+  // working as "no panel".
+  const panelStartedAt = useRef(Date.now()).current;
 
   // A NEW deep-link target while already open (the Expert clicked Continue on
   // a different conversation) must actually switch conversations.
@@ -694,7 +728,13 @@ export function ScoutInterviewContent({
         />
       );
     }
-    return <ChatRoomSkeleton />;
+    return (
+      <InterviewOpening
+        doing="Opening your interview…"
+        startedAt={panelStartedAt}
+        usualMs={INTERVIEW_HISTORY_MS}
+      />
+    );
   }
 
   // A history we could not READ never renders as a history that is EMPTY.
