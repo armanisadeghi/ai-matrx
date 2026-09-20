@@ -205,15 +205,47 @@ const DECLARED_LADDER_CENSUS = (rungs: string[]) => `
 const INVOKER_DOOR_CENSUS = (exempt: boolean) => `
   select p.proname::text as function_name, pg_get_function_identity_arguments(p.oid) as identity_args,
          'a client may execute it and it is SECURITY INVOKER, so it runs with the CALLER''s '
-         'privileges - and authenticated holds no table privilege in schema custom and no '
-         'EXECUTE on the ladder, so the grant is worth nothing and the call dies on the '
-         'body''s own first line'::text as why
+         'privileges - and it reaches ' ||
+         case when ${NO_COMMENTS} ~* '(from|join|into|update|delete\\s+from)\\s+custom\\.record\\M'
+              then 'custom.record, which authenticated holds no privilege on'
+              else 'custom.' || (select string_agg(q.proname, ', ' order by q.proname)
+                                   from pg_proc q
+                                  where q.pronamespace = 'custom'::regnamespace
+                                    and q.oid <> p.oid
+                                    and not has_function_privilege('authenticated', q.oid, 'EXECUTE')
+                                    and ${NO_COMMENTS} ~* ('custom\\.' || q.proname || '\\s*\\('))
+                   || ', which authenticated may not execute'
+         end ||
+         ' - so the grant is worth nothing and the call dies on the body''s own first line'::text as why
     from pg_proc p
    where p.pronamespace = 'custom'::regnamespace
      and not p.prosecdef
      ${exempt ? `and p.prorettype not in ('pg_catalog.trigger'::regtype, 'pg_catalog.event_trigger'::regtype)` : ""}
      and has_function_privilege('authenticated', p.oid, 'EXECUTE')
-     and ${NO_COMMENTS} ~* '(custom\\.record|custom\\.assert_|assert_client_may|has_visibility)'
+     -- THE REAL QUESTION, NOT A PROXY FOR IT (lane ENTITY-FIELDS, 2026-09-20). This used to
+     -- read \`custom.record|custom.assert_|assert_client_may|has_visibility\`, which is the
+     -- shape the defect happened to have rather than the thing that makes it a defect. It
+     -- named a body for mentioning a ladder function the caller CAN execute - and it named a
+     -- body for its own CREATE FUNCTION line, because that line contains the function's own
+     -- name. The census now asks what actually decides it: does this body touch something the
+     -- CALLER cannot reach? custom.record (census 7 keeps authenticated holding no table
+     -- privilege here) or a function of this schema with no EXECUTE for authenticated. A
+     -- The custom.record arm reads FROM / JOIN / INTO / UPDATE / DELETE FROM specifically,
+     -- because \`'custom.record'::regclass\` is a NAME, not a read: custom.assert_client_may_reach
+     -- resolves that literal to find the store's owner and needs no privilege on the table to
+     -- do it, and a census that named it for the mention alone would be back to a proxy. A
+     -- SECURITY INVOKER door that touches NEITHER runs perfectly as the person - which is the
+     -- whole point of the three ENTITY-FIELDS value doors, where the standard business table's
+     -- OWN row-level security is what must decide, and a SECURITY DEFINER wrapper would
+     -- replace it with a second access system.
+     and (
+       ${NO_COMMENTS} ~* '(from|join|into|update|delete\\s+from)\\s+custom\\.record\\M'
+       or exists (select 1 from pg_proc q
+                   where q.pronamespace = 'custom'::regnamespace
+                     and q.oid <> p.oid
+                     and not has_function_privilege('authenticated', q.oid, 'EXECUTE')
+                     and ${NO_COMMENTS} ~* ('custom\\.' || q.proname || '\\s*\\('))
+     )
    order by 1`;
 
 const DECLARED_SWITCH_CENSUS = (accept: boolean) => `
@@ -381,6 +413,144 @@ const SHARED_ONLY_CENSUS = (pretend: string | null) =>
 
 /** The kinds that are never allowed, whatever else is true. */
 const SHARED_ONLY_NEVER = ["doors-disagree", "mirror-admits-more", "unmeasured"];
+
+/**
+ * CENSUS 13 — EVERY LIST-SHAPED DOOR ANSWERS EXACTLY WHAT `custom.read_record` ANSWERS
+ * (2026-09-20, lane LEAK-T10).
+ *
+ * Census 12 compares the one LADDER, the read door's PREDICATE TEXT and the RLS POLICY TEXT.
+ * All twelve censuses above it were green on the morning the seventh independent pass found
+ * that a member shared ONE Home of a multi-Home Table was handed EVERY record of that Table in
+ * every other Home — with its contents — by `custom.read_records`, `custom.query_visible_ids`,
+ * `custom.query_across_homes` and `custom.io_export`, while `custom.read_record` refused her
+ * the same row. Nothing about the shape of a door was wrong and the ladder was right; the
+ * set-based path took a different route to the same question, and a census that reads a
+ * PREDICATE never executes the door that uses it.
+ *
+ * `custom.list_door_disagreements()` CALLS THE DOORS: every organization whose store is open —
+ * under BOTH privacy settings — every active member, every Table, `custom.read_record` per row
+ * for the truth, and each list-shaped door for its rows. Exhaustive for a Table with more than
+ * one Home, sampled otherwise.
+ *
+ * ITS KINDS. `doors-disagree` is always a failure. `unmeasured` is never a pass — it means a
+ * door DIED rather than answered (a broken worked-out column used to close a whole Table) or an
+ * organization is over the ceiling.
+ *
+ * NO LIVE ORGANIZATION HAS A MULTI-HOME TABLE, so the live sweep alone would be green about
+ * nothing. `t10Probe` BUILDS the shape — one Table in two Homes, one record in each, a member
+ * shared one Home and nothing else — through the product's own doors, runs the census on it
+ * under `shared_only` AND `all_records`, and rolls the whole thing back.
+ *
+ * Its RED half re-runs that fixture with the ONE LINE this lane changed put back
+ * (`custom.visible_set`'s whole-Table shortcut asking `custom.reaches_directly` about the Table,
+ * which climbs from the Table into the Table's Homes) and requires it to name rows.
+ */
+const LIST_DOOR_CENSUS = (pretend: string | null, organization: string | null) =>
+  `select coalesce(record_id::text, table_id::text, organization_id::text) as function_name,
+          coalesce(door, organization_name) as identity_args,
+          why
+     from custom.list_door_disagreements(${pretend === null ? "null" : `'${pretend}'`},
+                                         ${organization === null ? "null" : `'${organization}'`})`;
+
+/**
+ * CENSUS 14 — A REFUSAL NEVER TELLS SOMEBODY WHAT THEY DO HOLD UNLESS THE DOOR ASKED
+ * (2026-09-20, lane LEAK-T10).
+ *
+ * `custom.io_comment_write` refused a person who may not read a record at all with "You may
+ * READ this record but not comment on it." The door had asked one question — is she a
+ * commenter — and answered a different one, telling her she holds a level she does not and
+ * that the record exists. `custom.refusals_claiming_a_level_never_asked()` names any body in
+ * schema `custom` that says that sentence without asking `viewer` first; it reads the CODE with
+ * `--` comments stripped, and it excludes itself, because its own text has to contain the
+ * sentence it looks for.
+ */
+const REFUSAL_CENSUS = `select function_name, identity_args, why
+   from custom.refusals_claiming_a_level_never_asked()`;
+
+const T10_ORG = "2ef10000-0000-4a00-8a00-0000000000e1";
+const T10_PRETEND = "a_home_of_a_table_is_the_whole_table";
+
+/**
+ * ONE TABLE, TWO HOMES, ONE SHARE — built through `custom.table_declare`, `custom.home_add`,
+ * `custom.record_reparent` and `custom.share_grant`, which is how a person builds it, then
+ * censused and rolled back. `visibilityKnob` is the organization's privacy setting; the caller
+ * runs it at both.
+ */
+const T10_FIXTURE = (visibilityKnob: string) => `
+  select set_config('app.actor_system', 'check_store_doors_decide', true);
+  insert into iam.organizations (id, name, slug, abbreviation, created_by)
+  values ('${T10_ORG}', 'STORE DOORS two-home probe', 'store-doors-two-home-probe', 'SDH',
+          '${TWO_SEAT_ADMIN}');
+  insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status)
+  values ('${T10_ORG}', 'organization', '${T10_ORG}', '${TWO_SEAT_ADMIN}', 'owner', 'active'),
+         ('${T10_ORG}', 'organization', '${T10_ORG}', '${TWO_SEAT_MEMBER}', 'member', 'active');
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom', 'system_enabled', 'organization', '${T10_ORG}', '${T10_ORG}',
+          'true'::jsonb, 'check:store-doors-decide two-home probe'),
+         ('custom', 'member_default_visibility', 'organization', '${T10_ORG}', '${T10_ORG}',
+          '"${visibilityKnob}"'::jsonb, 'check:store-doors-decide two-home probe');
+  do $probe$
+  declare
+    v_org   constant uuid := '${T10_ORG}';
+    v_admin constant uuid := '${TWO_SEAT_ADMIN}';
+    v_dana  constant uuid := '${TWO_SEAT_MEMBER}';
+    v_boss  text := current_user;
+    v_home uuid; v_tproj uuid; v_hx uuid; v_hy uuid; v_trisk uuid; v_rx uuid; v_ry uuid;
+  begin
+    perform set_config('request.jwt.claims',
+      json_build_object('sub', v_admin::text, 'role', 'authenticated')::text, true);
+    perform set_config('role', 'authenticated', true);
+    v_home  := custom.record_write(v_org, custom.organization_kernel_id(),
+                                   jsonb_build_object('name', 'two-home probe'));
+    v_tproj := custom.table_declare(v_org, jsonb_build_object(
+      'name','sdh_projects','slug','sdh_projects','label_singular','Project','label_plural','Projects',
+      'type','entity','display','list','ordered',false,'weight','light','retention_days',30,
+      'default_sort','[]'::jsonb,'row_order','sorted','agent_writable',true,
+      'fields', jsonb_build_array(jsonb_build_object('name','title','kind','text')),
+      'title_field','title','parent_id', v_home::text));
+    perform custom.field_declare(v_org, v_tproj, jsonb_build_object('label','Title','type','text'));
+    v_hx := custom.record_write(v_org, v_tproj, jsonb_build_object('title','Project X'));
+    v_hy := custom.record_write(v_org, v_tproj, jsonb_build_object('title','Project Y'));
+    v_trisk := custom.table_declare(v_org, jsonb_build_object(
+      'name','sdh_risks','slug','sdh_risks','label_singular','Risk','label_plural','Risks',
+      'type','entity','display','list','ordered',false,'weight','light','retention_days',30,
+      'default_sort','[]'::jsonb,'row_order','sorted','agent_writable',true,
+      'fields', jsonb_build_array(jsonb_build_object('name','title','kind','text')),
+      'title_field','title','parent_id', v_home::text));
+    perform custom.field_declare(v_org, v_trisk, jsonb_build_object('label','Title','type','text'));
+    -- THE SHAPE: one Table, two Homes.
+    perform custom.home_add(v_org, v_trisk, v_hx);
+    perform custom.home_add(v_org, v_trisk, v_hy);
+    v_rx := custom.record_write(v_org, v_trisk, jsonb_build_object('title','risk in X'));
+    v_ry := custom.record_write(v_org, v_trisk, jsonb_build_object('title','risk in Y'));
+    perform custom.record_reparent(v_org, v_rx, v_hx);
+    perform custom.record_reparent(v_org, v_ry, v_hy);
+    -- SHE IS GIVEN PROJECT X AND NOTHING ELSE.
+    perform custom.share_grant(v_org, v_hx, 'user', v_dana, 'viewer'::public.permission_level);
+    perform set_config('role', v_boss, true);
+  end $probe$;
+`;
+
+/**
+ * Build the two-Home fixture at one privacy setting, run census 13 over that organization
+ * alone, roll back whatever happens, and hand back the rows it named.
+ */
+async function t10Probe(
+  client: { query: (sql: string) => Promise<unknown> },
+  visibilityKnob: string,
+  pretend: string | null,
+): Promise<Row[]> {
+  await client.query("begin");
+  try {
+    await client.query("set local statement_timeout = '300s'");
+    await client.query("set local lock_timeout = '20s'");
+    await client.query(T10_FIXTURE(visibilityKnob));
+    const rows = (await client.query(LIST_DOOR_CENSUS(pretend, T10_ORG))) as { rows: Row[] };
+    return rows.rows;
+  } finally {
+    await client.query("rollback").catch(() => undefined);
+  }
+}
 
 /**
  * CENSUS 10 — THE TWO-SEAT PROBE: "VIEWER" MEANS VIEWER, AND REVOKED MEANS REVOKED
@@ -763,6 +933,52 @@ async function main(): Promise<void> {
             `${kind} row(s). It can go red.`,
         );
       }
+
+      // CENSUS 13, THE RED HALF. The two-Home fixture with the ONE LINE this lane changed put
+      // back: `custom.visible_set`'s whole-Table shortcut asking `custom.reaches_directly` about
+      // the Table, which climbs from the Table into the Table's own HOMES. A viewer on Project X
+      // then gets Project Y's records out of every list door while `custom.read_record` refuses
+      // her. If this names nothing, the fixture is not the shape the defect lived in and the
+      // zero above is zero about nothing.
+      const redStrict = (await t10Probe(client, "shared_only", T10_PRETEND)).filter((r) =>
+        r.why?.startsWith("doors-disagree"),
+      );
+      if (redStrict.length === 0) {
+        fail(
+          "SELF-TEST FAILED - with a Home of a Table read as the whole Table again, the list-door " +
+            "census named no disagreement under `shared_only` in a fixture built exactly as " +
+            "acceptance test 10 describes it: one Table, two Homes, one record in each, the " +
+            "colleague shared ONE Home and nothing else. Either the fixture no longer builds that " +
+            "shape, or the census is not calling the doors - and then its zero above proves nothing.",
+        );
+      }
+      console.log(
+        `[ OK ] self-test - a Home read as the whole Table: the list-door census names ` +
+          `${redStrict.length} doors-disagree row(s) under shared_only. It can go red.`,
+      );
+
+      // AND IT IS RED ONLY WHERE THE DEFECT CAN EXIST. Under `all_records` the organization's
+      // own membership default already admits every row at or above `internal` to every member,
+      // so the whole-Table shortcut has nothing left to hand over and `custom.read_record` opens
+      // the other Home's row too - the doors agree, wrongly-written line or not. Asserting that
+      // pins the REASON the red above is red, so a future change that makes `all_records` leak
+      // cannot hide behind "that setting never showed it". The GREEN half still runs both.
+      const redOpen = (await t10Probe(client, "all_records", T10_PRETEND)).filter((r) =>
+        r.why?.startsWith("doors-disagree"),
+      );
+      if (redOpen.length > 0) {
+        fail(
+          "SELF-TEST FAILED - under `all_records`, where every member already reaches every row " +
+            `at or above internal, the old line produced ${redOpen.length} disagreement(s). Then ` +
+            "the member lane is no longer admitting what it is documented to admit, and the " +
+            "shared_only clause above is measuring something other than the Home-as-whole-Table " +
+            "defect.",
+        );
+      }
+      console.log(
+        "[ OK ] self-test - under all_records the same old line produces no disagreement, which " +
+          "is why the strict setting is where this defect lives.",
+      );
     }
 
     const callers = (await client.query<Row>(CALLER_CENSUS(DECIDERS))).rows;
@@ -775,6 +991,7 @@ async function main(): Promise<void> {
     const closedSchemas = (await client.query<Row>(CLOSED_SCHEMA_CENSUS(true))).rows;
     const rendering = (await client.query<Row>(IDENTITY_RENDERING_CENSUS)).rows;
     const invokerDoors = (await client.query<Row>(INVOKER_DOOR_CENSUS(true))).rows;
+    const refusals = (await client.query<Row>(REFUSAL_CENSUS)).rows;
 
     // CENSUS 12 — the three answers, live, in every organization that has said `shared_only`.
     // `mirror-admits-less` is a failure only when census 7 is non-empty, so the two are read
@@ -793,6 +1010,31 @@ async function main(): Promise<void> {
           "no policy built from that text decides a read. It becomes a failure the moment it is not.",
       );
     }
+
+    // CENSUS 13 — every list-shaped door against `custom.read_record`, per (member, record),
+    // live, in every organization the store is open in, under BOTH privacy settings. Then the
+    // shape no live organization has: one Table in two Homes, built through the product's own
+    // doors, censused at each setting, rolled back.
+    // It CALLS every door for every (member, record) rather than reading a predicate, so it is
+    // the slowest census here — ~57 s over the whole database today, against a server default
+    // that is shorter. 🚨 IT SAYS SO INSIDE A TRANSACTION: this connection reaches the database
+    // through the TRANSACTION pooler, where a bare `SET` is not guaranteed to still be on the
+    // same server connection when the next statement runs — `set local` inside an explicit
+    // transaction is the only form that holds. A census that dies on the clock reads as a crash
+    // rather than as a verdict.
+    await client.query("begin");
+    let listDoors: Row[];
+    try {
+      await client.query("set local statement_timeout = '900s'");
+      listDoors = (await client.query<Row>(LIST_DOOR_CENSUS(null, null))).rows;
+    } finally {
+      await client.query("rollback").catch(() => undefined);
+    }
+    listDoors = [
+      ...listDoors,
+      ...(await t10Probe(client, "shared_only", null)),
+      ...(await t10Probe(client, "all_records", null)),
+    ];
 
     // CENSUS 10 — the two seats, live, in a transaction that is always rolled back.
     const probe = await twoSeatProbe(client, "viewer", "shared_only");
@@ -839,6 +1081,15 @@ async function main(): Promise<void> {
       report(
         "shared_only organizations where the one ladder, the read door and the RLS policy text do not agree",
         sharedOnly,
+      ),
+      report(
+        "(member, record) pairs a list-shaped door answers differently from custom.read_record",
+        listDoors,
+        true,
+      ),
+      report(
+        "doors that refuse by telling the caller they may read a record the door never asked about",
+        refusals,
       ),
     ].every(Boolean);
 

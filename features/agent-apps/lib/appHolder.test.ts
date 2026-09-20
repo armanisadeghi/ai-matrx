@@ -23,6 +23,8 @@ import {
   holderIdentityFromResolved,
   pinnedHolder,
 } from "./appHolder";
+// A mandate key is a BRANDED value, not a string: the carrier refuses a bare
+// one so no caller can hand the door a token it never minted.
 import { storedMandateKey } from "@/features/mandates/mandate-key";
 
 describe("APP_MANDATE_CUTOVER", () => {

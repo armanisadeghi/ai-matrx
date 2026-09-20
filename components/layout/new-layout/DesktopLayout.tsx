@@ -47,8 +47,6 @@ import { MessageIcon } from "@/features/messaging/components/MessageIcon";
 import { QuickActionsMenu } from "@/features/quick-actions/components/QuickActionsMenu";
 import FeedbackButton from "@/features/feedback/FeedbackButton";
 
-import type { Notification } from "@/types/notification.types";
-
 interface SidebarLink {
   label: string;
   href: string;
@@ -76,7 +74,6 @@ export default function DesktopLayout({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(!initialOpen);
   const [isAdminMenuCollapsed, setIsAdminMenuCollapsed] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const dispatch = useAppDispatch();
   const isAdminIndicatorVisible = useAppSelector((state) =>
     selectIsOverlayOpen(state, "adminIndicator"),
@@ -155,27 +152,10 @@ export default function DesktopLayout({
             <QuickActionsMenu />
             <FeedbackButton />
             <MessageIcon />
-            <NotificationDropdown
-              notifications={notifications}
-              onMarkAsRead={(id) => {
-                setNotifications((prev) =>
-                  prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
-                );
-              }}
-              onMarkAllAsRead={() => {
-                setNotifications((prev) =>
-                  prev.map((n) => ({ ...n, isRead: true })),
-                );
-              }}
-              onClearAll={() => {
-                setNotifications([]);
-              }}
-              onNotificationClick={(notification) => {
-                if (notification.link) {
-                  window.location.href = notification.link;
-                }
-              }}
-            />
+            {/* The bell owns its own data — `features/notifications/`. The
+                shell used to hand it an empty array that no code ever filled,
+                so it showed "no notifications" over real unread rows. */}
+            <NotificationDropdown />
             <ShellUserMenu />
           </div>
         </div>

@@ -338,7 +338,7 @@ export function useHrContextResolver(
       `orgRefFor` reads the RESOLVED context, so it is null until `hr_my_context` answers. Every
       `?org=`-carrying link built from this value therefore rendered bare for the first render and
       only grew its employer once the fetch landed — measured on 2026-08-28 as
-      `413ms → /hr/tasks`, `801ms → /hr/tasks?org=zzz-throwaway-surface-test-org`. A click inside
+      `413ms → /hr/tasks`, `801ms → /hr/tasks?org=oak-street-studio`. A click inside
       that window drops the employer exactly as a hardcoded literal would, and lands the user in
       whatever their active-org selection happens to name. A link that is only correct after
       hydration is a race, not a fix.

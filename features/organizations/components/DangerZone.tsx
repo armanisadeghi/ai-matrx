@@ -18,6 +18,11 @@ import {
 import { toast } from "@/lib/toast";
 import { useRouter } from "next/navigation";
 import { deleteOrganization } from "../service";
+import {
+  clearOrganizationStore,
+  organizationStoreContents,
+  type OrganizationStoreContents,
+} from "../service/organizationStoreContents";
 import type { Organization } from "../types";
 
 interface DangerZoneProps {
@@ -39,6 +44,15 @@ export function DangerZone({ organization }: DangerZoneProps) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [confirmName, setConfirmName] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  // WHAT THIS ORGANIZATION HOLDS, read from the store's own door the moment the
+  // dialog opens. `null` while we are still asking, and when the store is
+  // switched off for this organization — there is then nothing of this kind to
+  // say, and a screen never invents a sentence it cannot stand behind.
+  const [held, setHeld] = useState<OrganizationStoreContents | null>(null);
+  const [isCounting, setIsCounting] = useState(false);
+  // The store's own answer when it could not let everything go: what is
+  // waiting, and the date it can. Never a foreign key.
+  const [storeRefusal, setStoreRefusal] = useState<string | null>(null);
   const confirmInputRef = useRef<HTMLInputElement>(null);
   const confirmationId = React.useId();
 
@@ -47,7 +61,17 @@ export function DangerZone({ organization }: DangerZoneProps) {
   const handleDialogOpenChange = (open: boolean) => {
     if (isDeleting) return;
     setIsDeleteDialogOpen(open);
-    if (!open) setConfirmName("");
+    if (!open) {
+      setConfirmName("");
+      setHeld(null);
+      setStoreRefusal(null);
+      return;
+    }
+    // SAY WHAT IS IN HERE BEFORE ANYBODY DECIDES ANYTHING.
+    setIsCounting(true);
+    void organizationStoreContents(organization.id)
+      .then(setHeld)
+      .finally(() => setIsCounting(false));
   };
 
   // Handle organization deletion
@@ -58,8 +82,22 @@ export function DangerZone({ organization }: DangerZoneProps) {
     }
 
     setIsDeleting(true);
+    setStoreRefusal(null);
 
     try {
+      // FIRST, THE SUPPORTED PATH. The store's own door retires everything this
+      // organization holds — one undoable operation per table — and then lets go
+      // of whatever the retention rule no longer protects. When something is
+      // still inside its undo window the door says so, with the date, and we
+      // stop there: destroying it would throw away an undo somebody was
+      // promised, and nothing is lost by waiting.
+      const cleared = await clearOrganizationStore(organization.id, confirmName);
+      if (!cleared.isEmpty) {
+        setStoreRefusal(cleared.sentence);
+        toast.error(cleared.sentence);
+        return;
+      }
+
       const result = await deleteOrganization(organization.id);
 
       if (result.success) {
@@ -69,12 +107,14 @@ export function DangerZone({ organization }: DangerZoneProps) {
         // Redirect to organizations list
         router.push("/organizations");
       } else {
+        setStoreRefusal(result.error ?? null);
         toast.error(result.error || "Failed to delete organization");
       }
     } catch (error: unknown) {
       console.error("Error deleting organization:", error);
       const message =
         error instanceof Error ? error.message : "An unexpected error occurred";
+      setStoreRefusal(message);
       toast.error(message);
     } finally {
       setIsDeleting(false);
@@ -143,6 +183,33 @@ export function DangerZone({ organization }: DangerZoneProps) {
                     <strong>{organization.name}</strong> and all of its data.
                     This cannot be undone.
                   </p>
+
+                  {/* WHAT IT HOLDS, IN ITS OWN WORDS — read from the store
+                      before anybody decides anything, so a person is never
+                      shown a foreign key after the fact. */}
+                  {isCounting && (
+                    <p className="text-sm text-muted-foreground">
+                      Checking what this organization holds…
+                    </p>
+                  )}
+                  {held && (
+                    <p
+                      data-testid="organization-holds"
+                      className="text-sm text-foreground"
+                    >
+                      {held.sentence}
+                    </p>
+                  )}
+
+                  {/* AND WHAT THE STORE SAID WHEN IT COULD NOT LET GO. */}
+                  {storeRefusal && (
+                    <p
+                      data-testid="organization-delete-refusal"
+                      className="text-sm text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-800 rounded p-3"
+                    >
+                      {storeRefusal}
+                    </p>
+                  )}
 
                   <div className="space-y-2">
                     <Label

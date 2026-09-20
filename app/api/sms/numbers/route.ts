@@ -16,6 +16,11 @@ import {
   releasePhoneNumber,
   listPhoneNumbers,
 } from '@/lib/sms/numbers';
+import { ensureOrgIdServer } from '@/lib/organizations/personalOrg';
+import {
+  isOrganizationRequiredServerError,
+  organizationRequiredResponse,
+} from '@/lib/organizations/organizationRequiredResponse';
 
 /**
  * GET /api/sms/numbers
@@ -96,7 +101,27 @@ export async function POST(request: NextRequest) {
           );
         }
 
-        const result = await purchasePhoneNumber(phoneNumber, user.id, friendlyName);
+        // 🚨 A PURCHASED NUMBER IS REGISTERED TO AN ORGANIZATION, AND THE
+        // CALLER NAMES IT (2026-09-19 ruling). Until the 2026-09-19 review
+        // `purchasePhoneNumber` filed the number in the buyer's PERSONAL
+        // workspace, which then silently decided where every inbound text on
+        // that number would land for the life of the number. Nothing is
+        // substituted: the caller states the organization on
+        // `X-Organization-Id` — the header every Matrx client carries — and
+        // with none the purchase is REFUSED before a number is bought, with
+        // the caller's memberships attached so the person can choose and
+        // retry. Refusing BEFORE the Twilio call is deliberate: a refusal
+        // after it would have spent money on a number with no home.
+        const actingOrganizationId =
+          request.headers.get('X-Organization-Id')?.trim() || undefined;
+        const organizationId = await ensureOrgIdServer(supabase, actingOrganizationId);
+
+        const result = await purchasePhoneNumber(
+          organizationId,
+          phoneNumber,
+          user.id,
+          friendlyName,
+        );
 
         if (!result.success) {
           return NextResponse.json(
@@ -170,6 +195,13 @@ export async function POST(request: NextRequest) {
         );
     }
   } catch (err) {
+    // The organization refusal is an ANSWER, not a server fault: it carries
+    // the caller's memberships so the client can hold the request, open the
+    // picker, and replay it with what the person set. Swallowing it into the
+    // 500 below would turn "name your organization" into a dead end.
+    if (isOrganizationRequiredServerError(err)) {
+      return organizationRequiredResponse(err);
+    }
     console.error('Error in numbers POST:', err);
     return NextResponse.json(
       { success: false, msg: 'Internal server error' },

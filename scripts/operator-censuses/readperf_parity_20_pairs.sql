@@ -1,3 +1,6 @@
+-- OPERATOR CENSUS, not a product suite: twenty measured parity pairs over custom.read_door_parity,
+-- a server-only helper platform.client_callable_door names this file as a caller of — so it cannot
+-- run as the seat `authenticated`, and pnpm check:suites-take-the-seat does not count it.
 -- READ-PERF — the parity clause, at 100,000 records: for 20 (member, filter) pairs the answer is
 -- identical to the one the per-row ladder gives. "The filter" is the pair's own combination of
 -- the organization's visibility lane, the level asked for, and the seat asking — the three
