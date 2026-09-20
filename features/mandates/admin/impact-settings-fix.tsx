@@ -20,6 +20,7 @@
 
 import { useState } from "react";
 import { confirm } from "@/components/dialogs/confirm/ConfirmDialogHost";
+import { EntityRef } from "@/components/official/entity-ref/EntityRef";
 import { toast } from "@/lib/toast";
 import { useAppDispatch, useAppStore } from "@/lib/redux/hooks";
 import type { AppDispatch, RootState } from "@/lib/redux/store";
@@ -90,9 +91,15 @@ export function describeThunkFailure(error: unknown): string {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
   if (typeof error === "object" && error !== null) {
-    const record = error as { message?: unknown; name?: unknown; payload?: unknown };
-    if (typeof record.message === "string" && record.message.length > 0) return record.message;
-    if (typeof record.payload === "string" && record.payload.length > 0) return record.payload;
+    const record = error as {
+      message?: unknown;
+      name?: unknown;
+      payload?: unknown;
+    };
+    if (typeof record.message === "string" && record.message.length > 0)
+      return record.message;
+    if (typeof record.payload === "string" && record.payload.length > 0)
+      return record.payload;
     if (record.name === "ConditionError") {
       return "the read was skipped because a read of the same record is already in flight or already failed — try again in a moment";
     }
@@ -121,15 +128,22 @@ export function describeSettingsChanges(
 ): string[] {
   const a = before as Record<string, unknown>;
   const b = after as Record<string, unknown>;
-  const keys = Array.from(new Set([...Object.keys(a), ...Object.keys(b)])).sort();
+  const keys = Array.from(
+    new Set([...Object.keys(a), ...Object.keys(b)]),
+  ).sort();
   const out: string[] = [];
   for (const key of keys) {
     const was = a[key];
     const now = b[key];
     if (JSON.stringify(was) === JSON.stringify(now)) continue;
-    if (now === undefined) out.push(`removes ${key} (was ${describeValue(was)})`);
-    else if (was === undefined) out.push(`sets ${key} to ${describeValue(now)}`);
-    else out.push(`sets ${key} from ${describeValue(was)} to ${describeValue(now)}`);
+    if (now === undefined)
+      out.push(`removes ${key} (was ${describeValue(was)})`);
+    else if (was === undefined)
+      out.push(`sets ${key} to ${describeValue(now)}`);
+    else
+      out.push(
+        `sets ${key} from ${describeValue(was)} to ${describeValue(now)}`,
+      );
   }
   return out;
 }
@@ -172,7 +186,11 @@ export async function planSettingsFix(
   }
   const record = selectAgentById(getState(), agentId);
   if (!record) {
-    return { status: "cannot", ...base, why: "the agent was read but did not land in the store." };
+    return {
+      status: "cannot",
+      ...base,
+      why: "the agent was read but did not land in the store.",
+    };
   }
   const modelId = record.modelId ?? null;
   if (!modelId) {
@@ -200,7 +218,10 @@ export async function planSettingsFix(
     }
   }
   const models = selectAllModels(getState());
-  const { normalizedControls, error: controlsError } = resolveModelControls(models, modelId);
+  const { normalizedControls, error: controlsError } = resolveModelControls(
+    models,
+    modelId,
+  );
   if (controlsError || !normalizedControls) {
     return {
       status: "cannot",
@@ -216,10 +237,19 @@ export async function planSettingsFix(
       : null;
   const before: FeLlmParams = record.settings ?? {};
   const issues = validateConfig(
-    resolveConfig(before, modelId, normalizedControls as NormalizedControls, constraints),
+    resolveConfig(
+      before,
+      modelId,
+      normalizedControls as NormalizedControls,
+      constraints,
+    ),
   ).issues;
-  const fixable = issues.filter((issue) => canFixIssue(issue, normalizedControls));
-  const manual = issues.filter((issue) => !canFixIssue(issue, normalizedControls));
+  const fixable = issues.filter((issue) =>
+    canFixIssue(issue, normalizedControls),
+  );
+  const manual = issues.filter(
+    (issue) => !canFixIssue(issue, normalizedControls),
+  );
   if (fixable.length === 0) {
     return {
       status: "nothing_fixable",
@@ -241,7 +271,15 @@ export async function planSettingsFix(
       why: `the fixer found ${fixable.length} fixable issue${fixable.length === 1 ? "" : "s"} but its fix leaves the settings unchanged — nothing to save. Open the agent, or advance anyway.`,
     };
   }
-  return { status: "fixable", ...base, fixable, manual, before, after, changes };
+  return {
+    status: "fixable",
+    ...base,
+    fixable,
+    manual,
+    before,
+    after,
+    changes,
+  };
 }
 
 /** What one fix wrote, for the caller to compare before → after. */
@@ -265,7 +303,14 @@ function FixList({ plans }: { plans: SettingsFixPlan[] }) {
       {plans.map((plan) => (
         <div key={plan.agentId} className="space-y-0.5">
           <div className="font-medium">
-            {plan.agentName}
+            <EntityRef
+              token="agent"
+              id={plan.agentId}
+              name={plan.agentName}
+              showIcon={false}
+              wrap
+              openInNewTab
+            />
             {plan.status === "fixable"
               ? ` — creates version ${plan.newestVersionNumber != null ? plan.newestVersionNumber + 1 : "N+1"}`
               : ""}
@@ -299,13 +344,16 @@ export function useImpactSettingsFix({ onFixed }: UseImpactSettingsFixOptions) {
    * Fix the agents behind these verdicts (one plan per distinct agent), one
    * confirm for the lot. Resolves to the outcomes that were saved.
    */
-  const fix = async (verdicts: readonly ImpactVerdict[]): Promise<SettingsFixOutcome[]> => {
+  const fix = async (
+    verdicts: readonly ImpactVerdict[],
+  ): Promise<SettingsFixOutcome[]> => {
     if (busy || verdicts.length === 0) return [];
     setBusy(true);
     try {
       const agents = new Map<string, ImpactVerdict>();
       for (const verdict of verdicts) {
-        if (!agents.has(verdict.agent_id)) agents.set(verdict.agent_id, verdict);
+        if (!agents.has(verdict.agent_id))
+          agents.set(verdict.agent_id, verdict);
       }
       const plans: SettingsFixPlan[] = [];
       for (const verdict of agents.values()) {
@@ -319,7 +367,10 @@ export function useImpactSettingsFix({ onFixed }: UseImpactSettingsFixOptions) {
           ),
         );
       }
-      const fixable = plans.filter((plan): plan is Extract<SettingsFixPlan, { status: "fixable" }> => plan.status === "fixable");
+      const fixable = plans.filter(
+        (plan): plan is Extract<SettingsFixPlan, { status: "fixable" }> =>
+          plan.status === "fixable",
+      );
       if (fixable.length === 0) {
         // Every plan said why; say it once, plainly, and keep the Advance door.
         toast.info(
@@ -328,22 +379,33 @@ export function useImpactSettingsFix({ onFixed }: UseImpactSettingsFixOptions) {
             : `Nothing to fix automatically on ${plans.length} agents.`,
           {
             duration: 15_000,
-            description: plans.map((plan) => (plan.status === "fixable" ? "" : `${plan.agentName}: ${plan.why}`)).filter(Boolean).join(" "),
+            description: plans
+              .map((plan) =>
+                plan.status === "fixable"
+                  ? ""
+                  : `${plan.agentName}: ${plan.why}`,
+              )
+              .filter(Boolean)
+              .join(" "),
           },
         );
         return [];
       }
       const n = fixable.length;
       const ok = await confirm({
-        title: n === 1 ? `Fix settings on ${fixable[0].agentName}?` : `Fix settings on ${n} agents?`,
+        title:
+          n === 1
+            ? `Fix settings on ${fixable[0].agentName}?`
+            : `Fix settings on ${n} agents?`,
         description: (
           <div className="space-y-2 text-xs">
             <p>
-              This edits the {n === 1 ? "agent's" : "agents'"} settings and saves{" "}
-              {n === 1 ? "it" : "them"} — the same save as in the builder, which creates a new
-              version each. Jobs that track latest use the new version from the moment it lands;
-              pinned jobs stay where they are until you advance them. The pins here are graded
-              again afterwards, and each row says whether the fix changed its pile.
+              This edits the {n === 1 ? "agent's" : "agents'"} settings and
+              saves {n === 1 ? "it" : "them"} — the same save as in the builder,
+              which creates a new version each. Jobs that track latest use the
+              new version from the moment it lands; pinned jobs stay where they
+              are until you advance them. The pins here are graded again
+              afterwards, and each row says whether the fix changed its pile.
             </p>
             <FixList plans={plans} />
           </div>
@@ -363,13 +425,18 @@ export function useImpactSettingsFix({ onFixed }: UseImpactSettingsFixOptions) {
             agentName: plan.agentName,
             fromVersionNumber: plan.newestVersionNumber,
             expectedVersionNumber:
-              plan.newestVersionNumber != null ? plan.newestVersionNumber + 1 : null,
+              plan.newestVersionNumber != null
+                ? plan.newestVersionNumber + 1
+                : null,
             changes: plan.changes,
           });
         } catch (error) {
           toast.error(
             `Saving the fix on ${plan.agentName} failed: ${error instanceof Error ? error.message : String(error)}`,
-            { description: "Its settings were not changed; the pin was not moved." },
+            {
+              description:
+                "Its settings were not changed; the pin was not moved.",
+            },
           );
         }
       }
