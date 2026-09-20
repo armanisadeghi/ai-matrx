@@ -20,6 +20,7 @@ const {
   createGuardedContext,
   canonicalId,
   aggregateRunFailures,
+  finalizeRunWithGuard,
   runFinalizer,
 } = require("./keepass-import-retry-acceptance.cjs");
 test("refuses unarmed or remote-origin runs before browser launch", () => {
@@ -382,6 +383,81 @@ test("guarded context cannot resolve before route protection is installed", asyn
   assert.equal(ready, true);
   assert.equal(canonicalId("11111111-1111-4111-8111-111111111111"), true);
   assert.equal(canonicalId("not-a-uuid"), false);
+});
+test("guarded context closes an acquired context when readiness setup rejects", async () => {
+  let closed = 0;
+  const setupFailure = new Error("route_setup_failed");
+  const context = {
+    route: async () => {
+      throw setupFailure;
+    },
+    close: async () => {
+      closed += 1;
+    },
+    newPage: () => assert.fail("navigation_before_readiness"),
+  };
+  await assert.rejects(
+    () =>
+      createGuardedContext(
+        async () => context,
+        { api: "http://127.0.0.1:8027" },
+        { runFailures: [] },
+      ),
+    (error) => error === setupFailure,
+  );
+  assert.equal(closed, 1);
+  const closeFailure = new Error("context_close_failed");
+  await assert.rejects(
+    () =>
+      createGuardedContext(
+        async () => ({
+          ...context,
+          close: async () => {
+            throw closeFailure;
+          },
+        }),
+        { api: "http://127.0.0.1:8027" },
+        { runFailures: [] },
+      ),
+    (error) =>
+      error instanceof AggregateError &&
+      error.errors.includes(setupFailure) &&
+      error.errors.includes(closeFailure),
+  );
+});
+test("final guard aggregation waits through logout and cleanup finalizers", async () => {
+  const state = { runFailures: [] };
+  const stages = [];
+  const failure = await finalizeRunWithGuard(state, () =>
+    runFinalizer({
+      primaryFailure: undefined,
+      cleanup: async () => {
+        stages.push("cleanup");
+        return [];
+      },
+      logout: async () => {
+        stages.push("logout");
+        state.runFailures.push(new Error("foreign_vault_request_refused"));
+      },
+      close: async () => stages.push("close"),
+      removeFixture: async () => stages.push("fixture"),
+      removeProfile: async () => stages.push("profile"),
+      shouldRemoveLedger: () => false,
+    }),
+  );
+  assert.deepEqual(stages, [
+    "cleanup",
+    "logout",
+    "close",
+    "fixture",
+    "profile",
+  ]);
+  assert(failure instanceof AggregateError);
+  assert(
+    failure.errors.some(
+      (error) => error.message === "foreign_vault_request_refused",
+    ),
+  );
 });
 test("cleanup preserves mapping defects while deleting duplicate and unreceipted exact names", async () => {
   const priorFetch = global.fetch;

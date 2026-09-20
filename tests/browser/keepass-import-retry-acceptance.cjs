@@ -161,18 +161,35 @@ function createVaultRouteGuard(config, state) {
   };
 }
 async function createGuardedContext(createContext, config, state) {
-  const context = await createContext();
-  await context.route("**/api/vault/**", createVaultRouteGuard(config, state));
-  context.on("request", (request) => {
+  let context;
+  try {
+    context = await createContext();
+    await context.route(
+      "**/api/vault/**",
+      createVaultRouteGuard(config, state),
+    );
+    context.on("request", (request) => {
+      try {
+        const url = new URL(request.url());
+        if (url.origin === config.api && url.pathname.startsWith("/api/vault/"))
+          state.observeAllowedRequest?.(request);
+      } catch {
+        // Observation is non-authoritative; route handling is the boundary.
+      }
+    });
+    return context;
+  } catch (setupError) {
+    if (!context) throw setupError;
     try {
-      const url = new URL(request.url());
-      if (url.origin === config.api && url.pathname.startsWith("/api/vault/"))
-        state.observeAllowedRequest?.(request);
-    } catch {
-      // Observation is non-authoritative; route handling is the boundary.
+      await context.close();
+    } catch (closeError) {
+      throw new AggregateError(
+        [setupError, closeError],
+        "guarded_context_setup_failed",
+      );
     }
-  });
-  return context;
+    throw setupError;
+  }
 }
 function aggregateRunFailures(primary, runFailures) {
   return runFailures.length
@@ -181,6 +198,10 @@ function aggregateRunFailures(primary, runFailures) {
         "vault_route_guard_failed",
       )
     : primary;
+}
+async function finalizeRunWithGuard(state, finalizer) {
+  const finalizerFailure = await finalizer();
+  return aggregateRunFailures(finalizerFailure, state.runFailures);
 }
 function requestDigest(bodyText) {
   return crypto.createHash("sha256").update(bodyText).digest("hex");
@@ -826,48 +847,46 @@ async function main() {
   } catch (error) {
     primaryFailure = error;
   } finally {
-    const guardedFailure = aggregateRunFailures(
-      primaryFailure,
-      guardState.runFailures,
-    );
-    const failure = await runFinalizer({
-      primaryFailure: guardedFailure,
-      cleanup: () => cleanup(config, actor, ledger, names),
-      logout: page
-        ? async () => {
-            await page.goto(`${config.frontend}/sign-out`, {
-              waitUntil: "domcontentloaded",
-              timeout: 15_000,
-            });
-            await page
-              .getByRole("button", { name: "Sign Out", exact: true })
-              .click();
-            const confirmation = page.getByRole("button", {
-              name: "I understand, continue",
-              exact: true,
-            });
-            if (await confirmation.isVisible().catch(() => false)) {
-              await confirmation.click();
+    const failure = await finalizeRunWithGuard(guardState, () =>
+      runFinalizer({
+        primaryFailure,
+        cleanup: () => cleanup(config, actor, ledger, names),
+        logout: page
+          ? async () => {
+              await page.goto(`${config.frontend}/sign-out`, {
+                waitUntil: "domcontentloaded",
+                timeout: 15_000,
+              });
               await page
-                .getByRole("button", { name: /^I am .+\. Sign me out$/ })
+                .getByRole("button", { name: "Sign Out", exact: true })
                 .click();
+              const confirmation = page.getByRole("button", {
+                name: "I understand, continue",
+                exact: true,
+              });
+              if (await confirmation.isVisible().catch(() => false)) {
+                await confirmation.click();
+                await page
+                  .getByRole("button", { name: /^I am .+\. Sign me out$/ })
+                  .click();
+              }
+              await page.waitForURL((url) => url.pathname === "/login", {
+                timeout: 15_000,
+              });
             }
-            await page.waitForURL((url) => url.pathname === "/login", {
-              timeout: 15_000,
-            });
-          }
-        : undefined,
-      close: context
-        ? async () => {
-            await context.clearCookies();
-            await context.close();
-          }
-        : undefined,
-      removeFixture: () => fs.rm(FIXTURE, { force: true }),
-      removeProfile: () => fs.rm(PROFILE, { recursive: true, force: true }),
-      removeLedger: () => fs.rm(LEDGER, { force: true }),
-      shouldRemoveLedger: () => ledger.cleaned,
-    });
+          : undefined,
+        close: context
+          ? async () => {
+              await context.clearCookies();
+              await context.close();
+            }
+          : undefined,
+        removeFixture: () => fs.rm(FIXTURE, { force: true }),
+        removeProfile: () => fs.rm(PROFILE, { recursive: true, force: true }),
+        removeLedger: () => fs.rm(LEDGER, { force: true }),
+        shouldRemoveLedger: () => ledger.cleaned,
+      }),
+    );
     if (failure) throw failure;
   }
   process.stdout.write(
@@ -893,6 +912,7 @@ module.exports = {
   createGuardedContext,
   canonicalId,
   aggregateRunFailures,
+  finalizeRunWithGuard,
   runFinalizer,
 };
 if (require.main === module) {
