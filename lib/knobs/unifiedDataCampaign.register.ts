@@ -240,6 +240,30 @@ export const ENTRY_POINTS: readonly CampaignEntryPoint[] = [
         why: "A standard DETAIL table (`web_page`) carrying the same one line, which is how REC-34's two types are shown to be one mechanism rather than two.",
     },
     {
+        id: "web-property-custom-fields",
+        file: "app/(core)/marketing/properties/[propertyId]/page.tsx",
+        kind: "one_line",
+        why: "Lane ENTITY-TAIL. The standard DETAIL table `web_property` on its own detail page, carrying the same one line with a different word. A server component mounting the client wrapper - which is the proof that the line costs a page nothing but the token.",
+    },
+    {
+        id: "web-screenshot-custom-fields",
+        file: "app/(core)/marketing/screenshots/[screenshotId]/page.tsx",
+        kind: "one_line",
+        why: "Lane ENTITY-TAIL. `web_screenshot`, a standard DETAIL, same one line. Its sibling `/marketing/snapshots/[snapshotId]` deliberately does NOT carry it: `web_snapshot` is typed Ledger in the registry with custom_fields_enabled false, so the registry already refuses it and the page must not ask.",
+    },
+    {
+        id: "seo-collection-run-custom-fields",
+        file: "features/marketing/seo/ai-visibility/CollectionRunView.tsx",
+        kind: "one_line",
+        why: "Lane ENTITY-TAIL. `seo_collection_run` (Entity) on the standalone AI-visibility run page. The line sits in the client half because that is where the run's card stack is; the server page owns only the RLS read and the AccessGate.",
+    },
+    {
+        id: "message-template-custom-fields",
+        file: "features/message-templates/components/TemplateViewPage.tsx",
+        kind: "one_line",
+        why: "Lane ENTITY-TAIL. `message_template` (Entity) in the VIEW lane of the template page. It is not in the edit lane on purpose: the custom fields are the store's own editor and the store decides who may fill them in, so putting them beside a form with its own dirty/save state would give one screen two owners.",
+    },
+    {
         id: "list-change-proposal-record-table",
         file: "features/list-change-proposals/applyListChange.ts",
         kind: "runtime",

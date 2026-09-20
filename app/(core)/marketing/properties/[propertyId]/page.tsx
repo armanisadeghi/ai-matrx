@@ -5,6 +5,7 @@ import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { PropertyKindMark, propertyPublicUrl } from "@/features/marketing/components/shared/PropertyKindMark";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { Button } from "@/components/ui/button";
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { createClient } from "@/utils/supabase/server";
 import { webDb } from "@/utils/supabase/webDb";
 
@@ -92,6 +93,10 @@ export default async function MarketingPropertyPage({
           </p>
         )}
       </section>
+
+      <div className="mx-auto mt-4 max-w-3xl">
+        <EntityCustomFields entityToken="web_property" recordId={property.id} />
+      </div>
     </main>
   );
 }

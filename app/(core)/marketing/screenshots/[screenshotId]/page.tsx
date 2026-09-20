@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { AccessGate } from "@/features/access-gate/components/AccessGate";
 import { ShareButton } from "@/features/sharing/components/ShareButton";
 import { Button } from "@/components/ui/button";
+import { EntityCustomFields } from "@/features/unified-data/components/EntityCustomFields";
 import { createClient } from "@/utils/supabase/server";
 import { webDb } from "@/utils/supabase/webDb";
 
@@ -59,6 +60,10 @@ export default async function MarketingScreenshotPage({
           Notes and supplemental files attached to this screenshot inherit this screenshot's viewer access.
         </p>
       </section>
+
+      <div className="mx-auto mt-4 max-w-3xl">
+        <EntityCustomFields entityToken="web_screenshot" recordId={screenshot.id} />
+      </div>
     </main>
   );
 }
