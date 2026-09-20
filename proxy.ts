@@ -312,7 +312,22 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization)
      * - favicon.ico, sitemap.xml, robots.txt, manifest.webmanifest
-     * - Static asset extensions (svg, png, jpg, jpeg, gif, webp)
+     * - a NAMED list of static file extensions (which covers /blob-sw.js)
+     *
+     * 🚨 THE EXTENSION EXCLUSION IS LOAD-BEARING, not tidiness. The comment
+     * above claimed static asset extensions were excluded; the pattern never
+     * excluded them. Next 16 runs this file in the Node runtime and that
+     * "cannot be configured", so on Vercel every matched request is its own
+     * Lambda with a cold start — and `GET /matrx/favicon-32x32.png` was
+     * starting one. `/blob-sw.js` was doing the same and timed out twice at
+     * 15s in the 48h to 2026-09-20. A bag of bytes has no session to refresh
+     * and no first touch worth capturing; it must not wake this pass.
+     *
+     * The extensions are NAMED rather than matched as "anything after a dot".
+     * A route segment may legitimately contain one — a creator slug under
+     * `/c/`, a share id under `/p/` — and a blanket `\.[a-z]+$` would silently
+     * stop refreshing the session on those pages, which reads as a random
+     * logout and is far worse than the cold start it saves.
      * - api (API routes handle their own auth)
      * - auth (auth callback routes)
      * - app_callback / app_redirect (OAuth app linking, handles own auth flow)
@@ -325,6 +340,6 @@ export const config = {
      * that authenticated users still get their session cookies refreshed. They are
      * excluded from the login-redirect check in utils/supabase/middleware.ts.
      */
-    "/((?!api|_next/static|_next/image|public|auth|app_redirect|app_callback|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest).*)",
+    "/((?!api|_next/static|_next/image|public|auth|app_redirect|app_callback|favicon.ico|sitemap.xml|robots.txt|manifest.webmanifest|.*\\.(?:js|mjs|css|map|json|txt|xml|svg|png|jpg|jpeg|gif|webp|avif|ico|woff|woff2|ttf|otf|eot|mp3|mp4|webm|wasm|pdf)$).*)",
   ],
 };

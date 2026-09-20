@@ -85,6 +85,29 @@ export async function updateSession(
   const user = session.user;
   const redirectWithSessionCookies = (url: URL) => session.redirect(url);
 
+  // 🚨 AN AUTH SERVER WE COULD NOT REACH IS NOT A SIGNED-OUT PERSON.
+  //
+  // `middlewareSession` puts a 2.5s budget on the identity resolve so a stalled
+  // auth authority costs one request its identity instead of costing the whole
+  // page its response — before that budget existed, a stall ran until Vercel
+  // killed the invocation and the person got `504
+  // MIDDLEWARE_INVOCATION_TIMEOUT` (19 of them on aimatrx.com in the 48h to
+  // 2026-09-20, always in bursts of simultaneous `<Link>` prefetches).
+  //
+  // The budget hands back `user: null` with `authUnavailable: true`, and THAT
+  // null must never be read as "not signed in". Every policy below this line
+  // acts on a null user: the login bounce would throw a signed-in person out to
+  // /login mid-session, and the destination capture would rewrite where they
+  // were going. So the pass-through is the whole policy here — the package has
+  // already guaranteed that not one auth cookie was written, expired or healed
+  // on this request, and it screams once with the remedy. The shell resolves
+  // auth on the client, and the next request resolves it here again.
+  if (session.authUnavailable) {
+    session.response.headers.set("x-pathname", pathname);
+    session.response.headers.set("x-search-params", request.nextUrl.search);
+    return session.response;
+  }
+
   // An authenticated user sitting on an auth page or a generic landing page
   // while still carrying a destination gets forwarded straight there. This is
   // the safety net that closes the whole flow: whatever route the user took —

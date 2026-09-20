@@ -554,7 +554,9 @@
     "check:fields-stay-masked:self-test": "tsx scripts/check-fields-stay-masked.ts --self-test",
     "check:store-doors-decide": "tsx scripts/check-store-doors-decide.ts",
     "check:store-doors-decide:self-test": "tsx scripts/check-store-doors-decide.ts --self-test",
-    "check:store-doors-decide:exhaustive": "tsx scripts/check-store-doors-decide.ts --exhaustive"
+    "check:store-doors-decide:exhaustive": "tsx scripts/check-store-doors-decide.ts --exhaustive",
+    "check:proxy-auth-hot-path": "tsx scripts/check-proxy-auth-hot-path.ts",
+    "check:proxy-auth-hot-path:self-test": "tsx scripts/check-proxy-auth-hot-path.ts --self-test"
   },
   "dependencies": {
     "@ai-matrx/agents": "latest",
