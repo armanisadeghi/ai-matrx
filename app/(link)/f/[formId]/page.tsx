@@ -68,7 +68,7 @@ export default async function PublicFormPage({
   // and the door can never say different things.
   if (form.state !== "open") {
     return (
-      <main className="mx-auto flex min-h-[60dvh] w-full max-w-xl flex-col justify-center px-4 py-12 text-center">
+      <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center px-5 py-12 text-center">
         <h1 className="text-xl font-medium">{form.title}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{form.message}</p>
       </main>
@@ -76,7 +76,11 @@ export default async function PublicFormPage({
   }
 
   return (
-    <main className="mx-auto w-full max-w-xl px-4 pb-safe pt-8 matrx-touch-targets">
+    // NOTHING ON THIS PAGE BUT THE FORM. It is somebody's clinic asking their
+    // patient four questions, so it is centred on the screen the way Typeform
+    // and Tally centre theirs, with the form's own name as the page's heading —
+    // said once, here, because the runner deliberately no longer repeats it.
+    <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center px-5 pb-safe pt-8 matrx-touch-targets">
       <h1 className="text-xl font-medium">{form.title}</h1>
       <PublicFormRunner form={form} />
     </main>
