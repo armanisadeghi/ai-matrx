@@ -46,7 +46,7 @@ jest.mock("../vault-hooks", () => ({
   useVaultGrants: () => ({ grants: [], loading: false, error: null }),
 }));
 
-import { useFieldSecret } from "../components/SecretValue";
+import { SecretValue, useFieldSecret } from "../components/SecretValue";
 import { VaultItemDetail } from "../components/VaultItemDetail";
 import type { VaultActions } from "../vault-hooks";
 import type { VaultField, VaultItem, VaultPrincipal } from "../types";
@@ -83,7 +83,15 @@ const field: VaultField = {
   updated_at: "2026-09-12T00:00:00Z",
 };
 
-function itemFor(nextField: VaultField): VaultItem {
+function itemFor(
+  nextField: VaultField,
+  capabilities: VaultItem["capabilities"] = {
+    can_use: true,
+    can_edit: true,
+    can_reveal: true,
+    can_manage: true,
+  },
+): VaultItem {
   return {
     id: nextField.credential_item_id,
     display_name: "Lifecycle test credential",
@@ -105,12 +113,7 @@ function itemFor(nextField: VaultField): VaultItem {
     browser_fill_enabled: false,
     fields: [nextField],
     attachments: [],
-    capabilities: {
-      can_use: true,
-      can_edit: true,
-      can_reveal: true,
-      can_manage: true,
-    },
+    capabilities,
     created_at: "2026-09-12T00:00:00Z",
     updated_at: "2026-09-12T00:00:00Z",
   };
@@ -342,6 +345,43 @@ describe("useFieldSecret operation lifecycle", () => {
     });
 
     expect(writeText).not.toHaveBeenCalled();
+  });
+});
+
+describe("SecretValue visible-field availability", () => {
+  test("resolves and renders an authorized active visible value", async () => {
+    resolveVaultFields.mockReset();
+    resolveVaultFields.mockResolvedValueOnce({ "item-a/password": "available-value" });
+    await act(async () => {
+      root.render(
+        <SecretValue item={itemFor({ ...field, handling: "visible" })} field={{ ...field, handling: "visible" }} />,
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(host.textContent).toContain("available-value");
+    expect(host.querySelector('[aria-label="Loading value"]')).toBeNull();
+    expect(host.querySelector('[aria-label="Copy password"]')).not.toBeNull();
+  });
+
+  test.each([
+    ["inactive", { ...field, handling: "visible", is_active: false }, undefined],
+    ["disabled", { ...field, handling: "visible" }, { can_use: false, can_edit: true, can_reveal: true, can_manage: true }],
+    ["denied", { ...field, handling: "visible" }, { can_use: false, can_edit: false, can_reveal: false, can_manage: false }],
+  ] as const)("shows unavailable without loading or controls for a %s visible field", async (_state, nextField, capabilities) => {
+    await act(async () => {
+      root.render(
+        <SecretValue item={itemFor(nextField, capabilities)} field={nextField} />,
+      );
+    });
+
+    expect(host.textContent).toContain("Value unavailable");
+    expect(host.querySelector('[aria-label="Loading value"]')).toBeNull();
+    expect(host.querySelector('[aria-label="Show password"]')).toBeNull();
+    expect(host.querySelector('[aria-label="Copy password"]')).toBeNull();
+    expect(resolveVaultFields).not.toHaveBeenCalled();
+    expect(revealVaultField).not.toHaveBeenCalled();
   });
 });
 

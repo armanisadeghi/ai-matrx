@@ -511,6 +511,10 @@ export function SecretValue({
           <span className="font-sans text-xs text-destructive">
             Value unavailable
           </span>
+        ) : field.handling === "visible" && !secret.allowed ? (
+          <span className="font-sans text-xs text-muted-foreground">
+            Value unavailable
+          </span>
         ) : field.handling === "visible" ? (
           <span
             className="block h-4 w-full max-w-64 animate-pulse rounded bg-muted"

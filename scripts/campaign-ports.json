@@ -28,7 +28,7 @@
   ],
   "portRange": {
     "min": 3001,
-    "max": 3029
+    "max": 3030
   },
   "reserved": [
     {
@@ -65,7 +65,8 @@
     "DATA-TABLE": 3026,
     "GRID-ONE": 3027,
     "DOORS-TWO": 3028,
-    "ESIGN": 3029
+    "ESIGN": 3029,
+    "HISTORY-SCREENS": 3030
   },
   "noDevServer": {
     "W6-DOCS": "Proves its contract through the document pipeline, not a browser.",
