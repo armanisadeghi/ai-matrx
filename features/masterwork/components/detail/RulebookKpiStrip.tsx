@@ -22,7 +22,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { Masterwork, Rulebook } from "../../types";
 import { ruleState } from "../../types";
-import type { Journey } from "../../journey";
+import { draftsWaitingHeadline, type Journey } from "../../journey";
 
 export interface RulebookKpis {
   total: number;
@@ -139,10 +139,9 @@ function nextStepLine(k: RulebookKpis, journey?: Journey): string {
     return k.approved > 0
       ? `All caught up — ${k.approved} approved ${k.approved === 1 ? "rule" : "rules"} and nothing waiting on you.`
       : "No rules waiting on you.";
-  if (k.drafts > 0 && k.drafts <= 3)
-    return `Almost there — ${k.drafts} ${k.drafts === 1 ? "rule" : "rules"} left to review.`;
-  if (k.drafts > 0)
-    return `${k.drafts} suggested ${k.drafts === 1 ? "rule needs" : "rules need"} your call — approve, correct, or reject each one.`;
+  // "Almost there" is EARNED, never a function of queue size alone — cold walk
+  // 13 met it over zero approved rules. One implementation, in the journey.
+  if (k.drafts > 0) return draftsWaitingHeadline(k.drafts, k.approved);
   if (k.rejected > 0)
     // Never "they'll come back rewritten": a rejected rule is rewritten by the
     // Scout on its NEXT turn, so nothing is happening to it while nobody is
