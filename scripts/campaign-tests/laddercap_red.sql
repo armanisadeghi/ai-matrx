@@ -234,6 +234,28 @@ begin
 end $t$;
 rollback;
 
+-- ══════════════ BLOCK 4 — THREE DOORS STOP ASKING WHETHER SHE MAY KNOW THE TABLE, and
+-- STORE-REL's own census names them again. Executes the three-door inverse.
+begin;
+set local statement_timeout = '600s';
+select set_config('app.actor_system', 'laddercap_red_suite', true);
+\i migrations/inverse/laddercap_three_doors_ask_whether_she_may_know_the_table_down.sql
+do $t$
+declare v_n int; v_who text;
+begin
+  -- STEPPING OUT, and asserting no product clause while out: this census reads the catalogue of
+  -- every client door in the schema and no client door exposes it.
+  select count(*), string_agg(function_name, ', ' order by function_name)
+    into v_n, v_who from custom.tables_described_without_asking();
+  if v_n = 0 then
+    raise exception '4 STAYED GREEN — with the VIS-5 line taken back out of all three doors, the '
+      'census is still empty, so this lane is not what made storerel_green PART 4j pass.';
+  end if;
+  raise notice '4: RED — % door(s) describe a Table without asking whether the caller may know it '
+    'exists again: %', v_n, v_who;
+end $t$;
+rollback;
+
 -- ══════════════ ROLLBACK VERIFIED — the landed state answered the whole time underneath.
 begin;
 set local statement_timeout = '600s';
@@ -248,6 +270,8 @@ begin
   if v_n <> 0 then raise exception 'ROLLBACK FAILED — census is % after the blocks', v_n; end if;
   select count(*) into v_n from iam.member_level_overreach();
   if v_n <> 0 then raise exception 'ROLLBACK FAILED — overreach census is % after the blocks', v_n; end if;
+  select count(*) into v_n from custom.tables_described_without_asking();
+  if v_n <> 0 then raise exception 'ROLLBACK FAILED — % door(s) describe a Table without asking, after the blocks', v_n; end if;
   raise notice 'ROLLBACK VERIFIED — every landed body is back and both censuses are zero.';
   raise notice 'LADDER-CAP RED: every block is RED.';
 end $t$;
