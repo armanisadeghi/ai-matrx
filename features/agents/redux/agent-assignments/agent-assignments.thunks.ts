@@ -111,6 +111,9 @@ function buildBatchRequest(
       user_input: state.userInput,
       source_app: "matrx-frontend",
       source_feature: "agents-other",
+      // The demo runs when a person presses Run on this screen; without the
+      // attestation the server can only class the work as an API caller.
+      initiation: "user",
     },
     plan,
     session_key: sessionKey,
@@ -150,6 +153,7 @@ export function runAssignmentDemo(): AppThunk<Promise<void>> {
           },
           source_app: "matrx-frontend",
           source_feature: "agents-other",
+          initiation: "user",
         },
         onStreamEvent: (event) => {
           if (event.event === "chunk") {
