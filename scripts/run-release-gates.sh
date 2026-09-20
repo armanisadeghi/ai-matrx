@@ -537,6 +537,11 @@ if $STRICT; then
         # No baseline: the tree was brought to zero on adoption (2026-09-10, 200
         # literals across 76 files), so any finding is NEW.
         "Hand-typed mandate keys (vocabulary not adopted)|pnpm check:mandate-keys"
+        # ONE FETCH, NOT ONE PER SETTING (Arman, 2026-09-20). The client resolves
+        # the whole register once per (organization, user, scopes) through
+        # `platform.knob_snapshot`; an `rpc("knob_resolve", …)` is one round trip
+        # for one small value and decays the system back in a single commit.
+        "A setting fetched one at a time|pnpm check:knob-snapshot-adoption"
         # THE DISCLOSURE LAW (Arman, 2026-08-25) — a surface that RUNS an agent
         # registers its fixed jobs in the top Agents menu. Advisory: backlog is 40
         # surfaces deep and a release must not stall on someone else's page.
@@ -915,6 +920,11 @@ else
         # No baseline: the tree was brought to zero on adoption (2026-09-10, 200
         # literals across 76 files), so any finding is NEW.
         "Hand-typed mandate keys (vocabulary not adopted)|pnpm check:mandate-keys"
+        # ONE FETCH, NOT ONE PER SETTING (Arman, 2026-09-20). The client resolves
+        # the whole register once per (organization, user, scopes) through
+        # `platform.knob_snapshot`; an `rpc("knob_resolve", …)` is one round trip
+        # for one small value and decays the system back in a single commit.
+        "A setting fetched one at a time|pnpm check:knob-snapshot-adoption"
         # THE DISCLOSURE LAW (Arman, 2026-08-25) — a surface that RUNS an agent
         # registers its fixed jobs in the top Agents menu. Advisory: backlog is 40
         # surfaces deep and a release must not stall on someone else's page.
