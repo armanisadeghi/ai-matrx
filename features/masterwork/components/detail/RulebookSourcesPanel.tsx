@@ -73,6 +73,7 @@ import {
   useKeptSourceCount,
   type KeptSourceCount,
 } from "../../sourceLinks";
+import { keptSourceTitle } from "../../kept-sources/types";
 import { useEntityTitles } from "@/features/scopes/hooks/useEntityTitles";
 import { tryGetEntityInfo } from "@/features/scopes/registry/entityRegistry";
 import { WebpageResourcePickerCore } from "@/features/resource-manager/resource-picker/WebpageResourcePicker";
@@ -1938,8 +1939,13 @@ function KeptMaterialSummary({
             key={row.source_key}
             className="flex items-center justify-between gap-3 px-3 py-1.5 text-xs"
           >
+            {/* ONE naming rule for a kept source, shared with the Kept
+                material list and the reader (cold walk 12, D8). This cell used
+                to print "Untitled" for a source with no label, which is what
+                made an Expert's OWN interview read as a stranger's source the
+                platform had put in her brand-new Rulebook. */}
             <span className="truncate text-foreground">
-              {row.label || "Untitled"}
+              {keptSourceTitle(row)}
             </span>
             <span className="shrink-0 text-muted-foreground">
               {row.word_count
