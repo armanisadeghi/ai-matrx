@@ -1,3 +1,4 @@
+-- chair-step: re-seeding users.user_preferences.default_organization_id at signup is the abort step for the 2026-09-19 ruling, not a pending half of the campaign; it re-opens the default-organization substitution class and runs only during an incident, named, with the chair awake
 -- w1_org_signup_stops_writing_a_default_organization.inverse.sql
 --
 -- Restores the signup seeding of users.user_preferences.default_organization_id.
