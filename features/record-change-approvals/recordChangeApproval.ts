@@ -69,13 +69,42 @@ export interface PendingTableChange {
   spec: Record<string, unknown>;
 }
 
+/** One person who may decide this, as the one ladder resolved them. */
+export interface RecordChangeApprover {
+  userId: string;
+  /** What they are called. Never an id — a card that shows a uuid names nobody. */
+  name: string | null;
+  /** Why they can decide it: asked by name, admin on this, or owner of the organization. */
+  why: string | null;
+}
+
+/** Records an agent wants to add to a table that already existed. */
+export interface PendingRecordsChange {
+  change: "records";
+  /** The table the rows would go in. */
+  tableId: string;
+  /** The rows, exactly as the agent sent them and exactly as they will be written. */
+  rows: Record<string, unknown>[];
+}
+
 export interface RecordChangeWait {
-  /** `field_propose` | `table_propose` — the verb that waited. */
+  /** `field_propose` | `table_propose` | `record_write` — the verb that waited. */
   action: string;
   policy: RecordChangeApprovalPolicy;
+  /**
+   * The queue row this wait IS — `custom.record`, `data_class='work_approval'`.
+   *
+   * Null only for a change nothing could be filed against (a table that does
+   * not exist yet, under `always_ask`). The card offers no decision then, and
+   * says why, because a button that cannot apply what it shows is worse than
+   * no button.
+   */
+  approvalId: string | null;
+  /** Who may decide it. An empty list is a wait nobody can answer, and is said. */
+  approvers: RecordChangeApprover[];
   /** The tool's own sentence saying what was NOT done. */
   notDone: string;
-  change: PendingFieldChange | PendingTableChange;
+  change: PendingFieldChange | PendingTableChange | PendingRecordsChange;
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -100,6 +129,29 @@ function policyOf(raw: Record<string, unknown>): RecordChangeApprovalPolicy | nu
     howToChange: how,
     reason: asText(raw["reason"]) ?? "",
   };
+}
+
+/** The approvers the server resolved, as the card names people. */
+function approversOf(raw: unknown): RecordChangeApprover[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((entry) => asRecord(entry))
+    .filter((entry): entry is Record<string, unknown> => entry !== null)
+    .map((entry) => ({
+      userId: asText(entry["user_id"]) ?? "",
+      name: asText(entry["name"]),
+      why: asText(entry["why"]),
+    }))
+    .filter((who) => who.userId.length > 0);
+}
+
+/** The rows a waiting write would create, carried whole — never summarised. */
+function rowsOf(raw: unknown): Record<string, unknown>[] | null {
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const rows = raw
+    .map((entry) => asRecord(entry))
+    .filter((entry): entry is Record<string, unknown> => entry !== null);
+  return rows.length === raw.length ? rows : null;
 }
 
 function fieldKeysOf(spec: Record<string, unknown>): string[] {
@@ -130,15 +182,33 @@ export function readRecordChangeWait(result: unknown): RecordChangeWait | null {
 
   const action = asText(body["action"]) ?? "";
   const notDone = asText(body["not_done"]) ?? "";
+  const approvalId = asText(body["approval_id"]);
+  const approvers = approversOf(body["approvers"]);
+
+  // RECORDS FIRST — it is the change an agent makes most often, and until
+  // 2026-09-20 it was the one that never waited at all.
+  const pendingRows = rowsOf(body["records"]);
+  const tableId = asText(body["table_id"]);
+  if (pendingRows && tableId) {
+    return {
+      action: action || "record_write",
+      policy,
+      approvalId,
+      approvers,
+      notDone,
+      change: { change: "records", tableId, rows: pendingRows },
+    };
+  }
 
   const field = asRecord(body["field"]);
-  const tableId = asText(body["table_id"]);
   if (field && tableId) {
     const key = asText(field["key"]);
     if (!key) return null;
     return {
       action: action || "field_propose",
       policy,
+      approvalId,
+      approvers,
       notDone,
       change: {
         change: "field",
@@ -160,6 +230,8 @@ export function readRecordChangeWait(result: unknown): RecordChangeWait | null {
     return {
       action: action || "table_propose",
       policy,
+      approvalId,
+      approvers,
       notDone,
       change: {
         change: "table",
@@ -205,6 +277,47 @@ export function approvalChangeFor(
     ...(actor ? { actor } : {}),
   };
 
+  if (wait.change.change === "records") {
+    const rows = wait.change.rows;
+    const table =
+      options.tableName?.trim() || "the table the agent was asked about";
+    // WHAT IS ACTUALLY BEING WRITTEN, not a count. A person approving twenty
+    // rows into their own table is entitled to see the first one and the
+    // columns they all touch; a bare "20 records" asks for a signature on
+    // something nobody was shown.
+    const columns = Array.from(
+      new Set(rows.flatMap((row) => Object.keys(row))),
+    ).filter((key) => !key.startsWith("_"));
+    const first = rows[0];
+    const fields: ApprovalFieldDiff[] = [
+      {
+        label: rows.length === 1 ? "Record" : "Records",
+        after: String(rows.length),
+      },
+      { label: "Table", after: table },
+      {
+        label: "Columns",
+        after: columns.length ? columns.map(humanKey).join(", ") : "none named",
+      },
+      ...(first
+        ? [
+            {
+              label: rows.length === 1 ? "Values" : "First of them",
+              after: columns
+                .map((key) => `${humanKey(key)}: ${String(first[key] ?? "")}`)
+                .join(" · "),
+            } satisfies ApprovalFieldDiff,
+          ]
+        : []),
+    ];
+    return {
+      ...base,
+      entity: "records",
+      title: `${rows.length} ${rows.length === 1 ? "record" : "records"} in ${table}`,
+      fields,
+    };
+  }
+
   if (wait.change.change === "field") {
     const fields: ApprovalFieldDiff[] = [
       { label: "Column", after: wait.change.label },
@@ -245,6 +358,10 @@ export function declinedSentence(wait: RecordChangeWait): string {
   const what =
     wait.change.change === "field"
       ? `The column ${wait.change.label} was not added.`
-      : `The table ${wait.change.name} was not created.`;
+      : wait.change.change === "records"
+        ? `${wait.change.rows.length} ${
+            wait.change.rows.length === 1 ? "record was" : "records were"
+          } not written.`
+        : `The table ${wait.change.name} was not created.`;
   return `${what} ${wait.policy.howToChange}`;
 }

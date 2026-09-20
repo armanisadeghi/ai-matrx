@@ -29,11 +29,11 @@ import type { PendingAsk } from "@/features/agents/ui-first-tools/redux/pending-
 
 import {
   approvalChangeFor,
-  declinedSentence,
   type RecordChangeWait,
 } from "./recordChangeApproval";
 import {
   applyApprovedRecordChange,
+  declineRecordChange,
   tableNameFor,
   type ApplyApprovedOutcome,
 } from "./applyRecordChange";
@@ -75,7 +75,7 @@ export function RecordChangeApprovalCard({
   // The table a pending column belongs to, by NAME. Asked once, and only for
   // the column case — a table proposal names itself.
   useEffect(() => {
-    if (wait.change.change !== "field") return;
+    if (wait.change.change === "table") return;
     let live = true;
     const tableId = wait.change.tableId;
     void tableNameFor(tableId).then((name) => {
@@ -88,12 +88,18 @@ export function RecordChangeApprovalCard({
 
   const decide = useCallback(
     (choice: "approve" | "decline") => {
-      if (choice === "decline") {
-        setDecision({ state: "decided", sentence: declinedSentence(wait) });
-        return;
-      }
       setDecision({ state: "applying" });
-      void applyApprovedRecordChange(wait).then(
+      // BOTH ANSWERS GO THROUGH THE QUEUE. A decline used to be a sentence this
+      // component drew and nothing else — so the wait stayed `pending` for
+      // everybody who was not looking at this conversation, and the next person
+      // to open the inbox was asked a question somebody had already answered.
+      // `custom.work_approval_decide` records who decided and when, for yes and
+      // for no alike.
+      const taken =
+        choice === "approve"
+          ? applyApprovedRecordChange(wait)
+          : declineRecordChange(wait);
+      void taken.then(
         (outcome: ApplyApprovedOutcome) => {
           if (outcome.status === "refused") {
             // The store's own sentence, and the card stays open: a refusal a
@@ -139,6 +145,19 @@ export function RecordChangeApprovalCard({
     );
   }
 
+  // NOTHING WAS QUEUED — so no decision is offered, and the reason is on screen.
+  // This is the `always_ask` table case: a table that does not exist yet has no
+  // subject to be filed against, so there is nothing for anybody to approve.
+  // An Apply button here would write something nobody filed, which is exactly
+  // the lie the card exists to remove.
+  if (!wait.approvalId) {
+    return (
+      <p className="text-xs leading-relaxed text-muted-foreground">
+        {wait.notDone}
+      </p>
+    );
+  }
+
   const outcome =
     decision.state === "applying" ? (
       <span>Applying…</span>
@@ -155,6 +174,20 @@ export function RecordChangeApprovalCard({
         note={`${wait.policy.why} ${wait.policy.howToChange}`}
         {...(outcome ? { outcome } : {})}
       />
+      {/* WHO CAN ANSWER THIS, BY NAME. The 2026-09-19 pass found a refusal that
+          named nobody — so a person reading "waiting for a person" had no idea
+          whether that person was them. It is shown only while the decision is
+          still open: after it is taken, who could have taken it is noise. */}
+      {decision.state === "open" && wait.approvers.length > 0 && (
+        <p className="px-2.5 text-xs leading-relaxed text-muted-foreground">
+          {wait.approvers.length === 1
+            ? `${wait.approvers[0]!.name ?? "One person"} can decide this.`
+            : `${wait.approvers
+                .map((who) => who.name)
+                .filter(Boolean)
+                .join(", ")} can decide this.`}
+        </p>
+      )}
       {decision.state === "failed" && (
         <p className="rounded-md bg-destructive/10 px-2.5 py-2 text-xs leading-relaxed text-destructive">
           {decision.sentence}

@@ -157,6 +157,7 @@ export async function signInAsAdmin(): Promise<{
     throw new Error(`could not sign in as admin@admin.com: ${signedIn.error?.message}`);
   }
   const userId = signedIn.data.user.id;
+  rememberSupabase(supabase);
   setStoreSingleton({
     getState: () => ({
       appContext: { organization_id: ORGANIZATION },
@@ -245,5 +246,58 @@ export async function onAFreshTable(
   if (!declared.ok) throw new Error(`tableDeclare refused: ${declared.error.message}`);
   const tableId = declared.data;
   const field = { ...wait.change, tableId, declaration: { ...wait.change.declaration, entity_definition_id: tableId } };
-  return { wait: { ...wait, change: field }, tableId };
+
+  // AND THE WAIT IS FILED, exactly as the server's own `field_propose` files it.
+  //
+  // Until 2026-09-20 a wait lived only inside the tool result, so the captured
+  // fixture carries no `approval_id` — and a card can no longer decide one,
+  // deliberately: the decision is `custom.work_approval_decide` on a real queue
+  // row, not two writes this module re-implements. So the harness files the
+  // captured declaration through `custom.work_approval_request` with
+  // `origin = 'agent'`, which is the same door, the same shape and the same
+  // origin the store uses, and hands the card the id that comes back.
+  const filed = (await recordsDataSource(supabaseFor(store)).rpc(
+    "work_approval_request",
+    {
+      p_organization_id: ORGANIZATION,
+      p_subject_id: tableId,
+      p_change: { kind: "field_add", field: field.declaration },
+      p_note: null,
+      p_approver_id: null,
+      p_origin: "agent",
+      p_conversation_id: null,
+    },
+    { schema: "custom" },
+  )) as { data?: { approval_id?: string; approvers?: unknown[] } | null; error?: { message?: string } };
+  if (filed.error) throw new Error(`filing the wait refused: ${filed.error.message}`);
+  const approvalId = filed.data?.approval_id ?? null;
+  if (!approvalId) throw new Error("the queue filed no approval id");
+  return {
+    wait: {
+      ...wait,
+      change: field,
+      approvalId,
+      approvers: (filed.data?.approvers ?? []).map((who) => {
+        const entry = who as Record<string, unknown>;
+        return {
+          userId: String(entry["user_id"] ?? ""),
+          name: typeof entry["name"] === "string" ? entry["name"] : null,
+          why: typeof entry["why"] === "string" ? entry["why"] : null,
+        };
+      }),
+    },
+    tableId,
+  };
+}
+
+/** The signed-in browser client the suite already holds, for a door the package cannot name yet. */
+let _supabase: unknown = null;
+export function rememberSupabase(client: unknown): void {
+  _supabase = client;
+}
+function supabaseFor(_store: RecordsClient): object {
+  if (!_supabase) {
+    throw new Error("rememberSupabase was never called — sign in through signInAsAdmin first");
+  }
+  return _supabase as object;
 }
