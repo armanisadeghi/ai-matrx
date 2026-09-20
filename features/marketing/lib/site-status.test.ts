@@ -1,6 +1,6 @@
 import {
   parseInitialization,
-  siteConnectionStatuses,
+  siteProviderStatuses,
 } from "@/features/marketing/lib/site-status";
 
 const CONNECTED_GSC_INTEGRATIONS = {
@@ -22,8 +22,8 @@ const SITE_FACTS = {
   root_url: "https://example.com/",
 } as const;
 
-function gscStatus(site: Parameters<typeof siteConnectionStatuses>[0]) {
-  const status = siteConnectionStatuses(site).find(
+function gscStatus(site: Parameters<typeof siteProviderStatuses>[0]) {
+  const status = siteProviderStatuses(site).find(
     (entry) => entry.key === "search_console",
   );
   if (!status) throw new Error("search_console status missing");
