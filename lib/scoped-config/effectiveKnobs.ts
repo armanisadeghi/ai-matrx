@@ -129,7 +129,27 @@ function snapshotAddr(
   return `${organizationId}|${userId ?? ""}|${scopeAddr(scopes)}`;
 }
 
+/**
+ * 🚨 "NO VALUE YET" IS A STATE A READER MUST BE ABLE TO LEAVE.
+ *
+ * `useEffectiveKnob` decides whether to ask by looking at its own value, so an
+ * `undefined` that STAYS `undefined` across a notification changes nothing in
+ * its dependency list and its effect never re-runs — the reader sits on its
+ * consumer's default until the component remounts. The ordinary path hides
+ * this, because an invalidation moves a defined value to `undefined` and that
+ * transition is itself the trigger. The path that has no value to begin with
+ * has no transition, and nothing wakes it.
+ *
+ * So every notification bumps this, and readers depend on it. A notify with no
+ * value in hand now re-asks; `ensureKnobSnapshot` de-duplicates, so a reader
+ * that already has a fresh answer pays nothing (found by Cursor Bugbot on
+ * PR 238, 2026-09-20 — and it was the exact claim the give-up branch's own
+ * comment made without proving it).
+ */
+let storeVersion = 0;
+
 function notify(): void {
+  storeVersion += 1;
   for (const listener of listeners) listener();
 }
 
@@ -321,13 +341,27 @@ export function ensureKnobSnapshot(
           // Writes are still arriving faster than a round trip. Hand this
           // caller the newest answer we have WITHOUT caching it, so the next
           // read starts clean rather than inheriting a value we know is
-          // behind — `useEffectiveKnob` sees `undefined`, re-runs its effect
-          // and re-fetches. It self-heals; it does not go quiet (law 4).
+          // behind.
+          //
+          // 🚨 THIS COMMENT ONCE CLAIMED MORE THAN THE CODE DID. It said
+          // "`useEffectiveKnob` sees `undefined`, re-runs its effect and
+          // re-fetches — it self-heals", and that was FALSE: the hook re-runs
+          // on a change in its dependencies, and an `undefined` that stays
+          // `undefined` is not a change, so a reader that never had a value sat
+          // on its consumer's default until it remounted. The claim is true now
+          // only because `notify` bumps `storeVersion` and the hook depends on
+          // it — see the note beside `notify`. A stand-in that says it recovers
+          // has to be the thing that recovers (law 4).
           console.warn(
             `[knob] gave up re-reading platform.knob_snapshot for organization='${organizationId}' ` +
               `after ${MAX_RACE_RETRIES} writes landed mid-flight. The answer returned is not ` +
               "cached, so the next read fetches a fresh one.",
           );
+          // Retire the entry BEFORE notifying, not in the `finally` afterwards:
+          // the notification is what makes mounted readers re-ask, and a reader
+          // that re-asks while this promise is still registered would simply
+          // join it and receive the same pre-write answer again.
+          if (inFlight.get(id) === mine.promise) inFlight.delete(id);
           notify();
           return snapshot;
         }
@@ -398,6 +432,15 @@ export function useEffectiveKnob(
     () => peekEffectiveKnob(organizationId, userId, ref, scopes),
     () => undefined,
   );
+  // The store's own version, so a notification that leaves `value` at
+  // `undefined` still re-runs the effect below. Without it, a reader that has
+  // never had a value has nothing in its dependency list that can change, and
+  // it never asks again — see THE "NO VALUE YET" note beside `notify`.
+  const version = useSyncExternalStore(
+    subscribe,
+    () => storeVersion,
+    () => 0,
+  );
   useEffect(() => {
     if (!organizationId || value !== undefined) return;
     void ensureEffectiveKnob(organizationId, userId ?? null, ref, scopes).catch(
@@ -420,6 +463,6 @@ export function useEffectiveKnob(
     // would re-run this effect on every render for a caller that builds it
     // inline, which every caller does.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [organizationId, userId, fullKey, scopeKey, value]);
+  }, [organizationId, userId, fullKey, scopeKey, value, version]);
   return value;
 }
