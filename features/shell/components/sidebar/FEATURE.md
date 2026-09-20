@@ -100,3 +100,4 @@ The app shell renders one canonical navigation tree across the desktop sidebar a
 - `2026-08-24` — Codex: replaced the glass left mobile sheet and inline primary-group accordions with a solid, searchable, fixed-height bottom drawer with drill-in and Back navigation.
 - `2026-08-15` — Codex: added the prominent admin-only new-tab Launchpad door to the persistent sidebar footer.
 - `2026-08-15` — Codex: Preserved mode-switch meaning in the collapsed rail and centralized the route-menu row visual contract.
+- `2026-09-19` — **The person is at the end of the navigation.** The profile/avatar menu moved from the header to the bottom-left `ShellUserBlock` (a fixed sibling of the sidebar, rail-width, expanding with it; `features/shell/components/user-block/`); `.shell-sidebar-footer` reserves its height so Settings never sits under it, and the mobile drawer ends in `MobileDrawerUserRow`. Header set + user block law: `features/shell/FEATURE.md`.

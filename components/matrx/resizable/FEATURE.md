@@ -10,32 +10,23 @@ almost every product caller; a few surfaces import the panel directly.
 lives inside `.shell-root` (`position: fixed`), a lower stacking context — so
 header `z-index` and panel `pr-10` cannot keep the avatar visible or clickable.
 
-**Automatic fix (no caller opt-in):**
-
-1. When an expanded panel covers the top-right corner (right dock, top dock,
-   fullscreen, or mobile full-bleed), it **claims**
-   `claimDynamicPanelAvatarCover()` (refcount in `elevatedShellUserMenuStore.ts`).
-2. `ElevatedShellUserMenuRoot` (mounted once in `AppShell` → `GlassPortal`)
-   renders a glass-layer avatar + menu at `z-110+`.
-3. CSS hides `.shell-header .shell-user-menu-wrapper` while
-   `html[data-dynamic-panel-avatar-cover="true"]`.
-4. The elevated chrome reuses AppShell’s `#shell-user-menu` checkbox so every
-   menu item that closes via `htmlFor="shell-user-menu"` still works.
-
-Left/bottom desktop docks do not claim — they leave the avatar corner free.
-Panel header keeps `pr-10` on right dock so panel controls clear the stand-in.
+**Since 2026-09-19 there is nothing to cover.** The profile menu left the
+header for the bottom-left `ShellUserBlock`
+(`features/shell/components/user-block/`), which no panel dock covers, so the
+glass-layer avatar stand-in, its refcount store and the
+`data-dynamic-panel-avatar-cover` CSS were deleted with it. A panel that docks
+right/top or goes fullscreen now claims nothing.
 
 ## Entry points
 
 | File | Role |
 |---|---|
-| `MatrxDynamicPanel.tsx` | Panel primitive; claims avatar cover |
+| `MatrxDynamicPanel.tsx` | Panel primitive |
 | `MatrxDynamicPanelHost.tsx` | Portal host + dialog labeling + focus |
-| `ElevatedShellUserMenu.tsx` | Glass-layer avatar stand-in (singleton root) |
-| `elevatedShellUserMenuStore.ts` | Refcount + `data-dynamic-panel-avatar-cover` |
 
 ## Change log
 
+- `2026-09-19` — **Avatar cover retired.** The shell profile menu moved bottom-left (`ShellUserBlock`); `ElevatedShellUserMenu.tsx`, `elevatedShellUserMenuStore.ts` and the panel's `claimDynamicPanelAvatarCover()` effect were deleted.
 - `2026-08-25` — **One centered header row:** host titles, caller actions, and
   the three built-in panel controls share a 24px centered track; icon buttons
   use identical 32×24 boxes, fixing optical drift in every dynamic panel.

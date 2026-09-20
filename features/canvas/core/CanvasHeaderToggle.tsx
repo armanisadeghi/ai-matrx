@@ -1,9 +1,9 @@
 "use client";
 
 /**
- * Canvas open/close control anchored next to the user avatar — same slot when
- * the canvas is closed (shell header) or open (canvas pane header). Replaces
- * the bottom-right CanvasReopenChip pill.
+ * Canvas open/close control in the shell header — one of the three fixed
+ * header controls (features/shell/FEATURE.md § The header right set).
+ * Replaces the bottom-right CanvasReopenChip pill.
  */
 
 import { useCallback, useMemo } from "react";
@@ -69,69 +69,71 @@ const CANVAS_HEADER_SLOT_BOX = {
   height: "var(--matrx-tap-target-size, 2.75rem)",
 } as const;
 
-/**
- * An empty, inert, aria-hidden box. NOT a button: there is nothing to click in
- * either state it covers, and a dead or disabled-looking control would be a
- * screen telling a lie. It holds width only.
- */
-function CanvasHeaderSlotSpacer({ reason }: { reason: "empty" | "open" }) {
-  return (
-    <div
-      className="shrink-0"
-      style={CANVAS_HEADER_SLOT_BOX}
-      data-canvas-header-slot="reserved"
-      data-canvas-header-slot-reason={reason}
-      aria-hidden
-    />
-  );
-}
+export const CANVAS_EMPTY_TOOLTIP =
+  "Canvas is empty — open a document, artifact or result in the canvas and it appears here";
 
 /**
- * Shell header — the canvas control, left of the avatar.
+ * Shell header — the canvas control.
  *
- * WHEREVER THE CANVAS IS AVAILABLE, THE SLOT IS ALWAYS RESERVED. Availability
- * is a route fact (`CanvasSideSheet` raises it on mount, lowers it on unmount),
- * so the box exists from first paint and never changes size afterwards. Only
- * its contents change:
+ * WHEREVER THE CANVAS IS AVAILABLE, THE SLOT IS ALWAYS RESERVED AND ALWAYS
+ * HOLDS THE CONTROL. Availability is a route fact (`CanvasSideSheet` raises
+ * it on mount, lowers it on unmount), so the box exists from first paint and
+ * never changes size afterwards. Only the control's STATE changes:
  *
- *   itemCount 0        → inert spacer   (nothing to reopen yet)
- *   itemCount > 0 open → inert spacer   (the canvas pane's own header owns the
- *                                        control while the canvas is open)
- *   itemCount > 0 shut → the real control
+ *   itemCount 0        → the button, `disabled`, tooltip says why
+ *   itemCount > 0 shut → the button opens the canvas (most recent item)
+ *   itemCount > 0 open → the button is pressed and puts the canvas away
  *
- * WHY: unmounting the element pulled every button to its left 44px sideways.
- * A first fix in 2026-09-17 only held the space between OPEN and CLOSED once
- * an item already existed, so the FIRST item both created the box and shoved
- * the row — measured live on production 2026-09-18 (review row 34bfd1e8):
- * Records 1043.39 → 999.39, Canvas 1132 → 1088, Conversation actions 1164 →
- * 1120, Agents for this page 1192 → 1148, and it never came back. That is the
- * shift the owner named on 2026-09-16 (*"causes a shift in the top header
- * buttons"*). It is the same pattern `:root[data-canvas-open="true"]
- * .shell-user-menu-wrapper` already uses for the avatar, which hides with
- * `visibility` so its box survives.
+ * WHY THE FIXED BOX: unmounting the element pulled every button to its left
+ * 44px sideways — measured live on production 2026-09-18 (review row
+ * 34bfd1e8): Records 1043.39 → 999.39, Canvas 1132 → 1088, Conversation
+ * actions 1164 → 1120, Agents for this page 1192 → 1148 — the shift the owner
+ * named on 2026-09-16 (*"causes a shift in the top header buttons"*).
+ *
+ * WHY A DISABLED BUTTON AND NOT AN INERT SPACER (2026-09-19): the owner's
+ * ruling for the whole header set — *"never hiding things and only disabling
+ * when inactive"*. A disabled control that names its reason is honest; an
+ * invisible box teaches nobody where the canvas lives.
  *
  * Guard: `features/canvas/__tests__/canvas-header-slot-reserved.test.tsx`.
  */
 export function CanvasShellHeaderToggle() {
-  const { isOpen, isAvailable, itemCount, headlineTitle, reopen } =
+  const { isOpen, isAvailable, itemCount, headlineTitle, reopen, putAway } =
     useCanvasHeaderToggle();
 
   if (!isAvailable) return null;
 
-  if (itemCount === 0) return <CanvasHeaderSlotSpacer reason="empty" />;
-  if (isOpen) return <CanvasHeaderSlotSpacer reason="open" />;
+  const state = itemCount === 0 ? "empty" : isOpen ? "open" : "closed";
+  const ariaLabel =
+    state === "empty"
+      ? "Canvas (empty)"
+      : state === "open"
+        ? `Put away canvas — ${headlineTitle}`
+        : `Open canvas — ${headlineTitle}`;
+  const tooltip =
+    state === "empty"
+      ? CANVAS_EMPTY_TOOLTIP
+      : state === "open"
+        ? `Put away canvas — ${headlineTitle} (⌘\\)`
+        : `Open canvas — ${headlineTitle} (⌘\\)`;
 
   return (
     <div
       className="relative shrink-0"
       style={CANVAS_HEADER_SLOT_BOX}
       data-canvas-header-slot="control"
+      data-canvas-header-slot-state={state}
     >
       <LayersTapButton
-        onClick={reopen}
-        ariaLabel={`Open canvas — ${headlineTitle}`}
-        tooltip={`Open canvas — ${headlineTitle} (⌘\\)`}
-        className={cn("text-primary", "hover:bg-primary/10")}
+        onClick={state === "open" ? putAway : reopen}
+        disabled={state === "empty"}
+        ariaLabel={ariaLabel}
+        tooltip={tooltip}
+        className={cn(
+          state === "empty" ? "text-muted-foreground" : "text-primary",
+          state === "open" && "bg-primary/10",
+          state !== "empty" && "hover:bg-primary/10",
+        )}
       />
       {itemCount > 1 && (
         <span
@@ -145,7 +147,7 @@ export function CanvasShellHeaderToggle() {
   );
 }
 
-/** Canvas pane header — put away (panel slides right). Sits left of avatar. */
+/** Canvas pane header — put away (panel slides right). */
 export function CanvasPanePutAwayToggle({
   onPutAway,
 }: {

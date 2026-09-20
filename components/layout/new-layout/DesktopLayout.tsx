@@ -42,12 +42,10 @@ import {
 import { MenuTapButton } from "@ai-matrx/tap-target/buttons";
 import { useVoicePadAdvanced } from "@/components/official-candidate/voice-pad/hooks/useVoicePad";
 import ShellUserMenu from "@/features/shell/components/header/header-right-menu/ShellUserMenu";
-import NotificationDropdown from "@/components/ui/notifications/NotificationDropdown";
-import { MessageIcon } from "@/features/messaging/components/MessageIcon";
+import { InboxHeaderButton } from "@/features/notifications/components/InboxHeaderButton";
 import { QuickActionsMenu } from "@/features/quick-actions/components/QuickActionsMenu";
 import FeedbackButton from "@/features/feedback/FeedbackButton";
 
-import type { Notification } from "@/types/notification.types";
 
 interface SidebarLink {
   label: string;
@@ -76,7 +74,6 @@ export default function DesktopLayout({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(!initialOpen);
   const [isAdminMenuCollapsed, setIsAdminMenuCollapsed] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const dispatch = useAppDispatch();
   const isAdminIndicatorVisible = useAppSelector((state) =>
     selectIsOverlayOpen(state, "adminIndicator"),
@@ -154,28 +151,7 @@ export default function DesktopLayout({
           <div className="flex items-center overflow-visible">
             <QuickActionsMenu />
             <FeedbackButton />
-            <MessageIcon />
-            <NotificationDropdown
-              notifications={notifications}
-              onMarkAsRead={(id) => {
-                setNotifications((prev) =>
-                  prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
-                );
-              }}
-              onMarkAllAsRead={() => {
-                setNotifications((prev) =>
-                  prev.map((n) => ({ ...n, isRead: true })),
-                );
-              }}
-              onClearAll={() => {
-                setNotifications([]);
-              }}
-              onNotificationClick={(notification) => {
-                if (notification.link) {
-                  window.location.href = notification.link;
-                }
-              }}
-            />
+            <InboxHeaderButton isAuthenticated />
             <ShellUserMenu />
           </div>
         </div>
