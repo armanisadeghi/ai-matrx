@@ -143,12 +143,12 @@ interface ParsedSegments {
  * cues that do not check out come back in `malformed` so the screen can say how
  * many and why.
  */
-function parseSegments(raw: unknown): ParsedSegments {
+function parseSegments(raw: unknown, noun: string): ParsedSegments {
     if (!Array.isArray(raw)) {
         throw new TranscriptReadError(
             `This transcript's stored segments are a ${raw === null ? "null value" : typeof raw}, not a list of cues, so it cannot be displayed.`,
             "transcript_segments_malformed",
-            "Re-run transcription for this video to rewrite its segments.",
+            `Re-run transcription for this ${noun} to rewrite its segments.`,
         );
     }
 
@@ -178,7 +178,7 @@ function parseSegments(raw: unknown): ParsedSegments {
         if (start === null) {
             malformed.push({
                 position,
-                reason: `Cue ${position + 1} has no start time, so it cannot open the video at its moment.`,
+                reason: `Cue ${position + 1} has no start time, so it cannot open the ${noun} at its moment.`,
             });
             return;
         }
@@ -213,8 +213,8 @@ function parseProvenance(metadata: JsonObject | null): MediaTranscriptProvenance
     };
 }
 
-function mapRow(row: TranscriptRow): MediaTranscript {
-    const { segments, malformed, storedCount } = parseSegments(row.segments);
+function mapRow(row: TranscriptRow, noun: string): MediaTranscript {
+    const { segments, malformed, storedCount } = parseSegments(row.segments, noun);
     const metadata = isJsonObject(row.metadata) ? row.metadata : null;
     return {
         id: row.id,
@@ -238,8 +238,16 @@ function mapRow(row: TranscriptRow): MediaTranscript {
  * is gone, is not readable by this user, or holds segments that are not a list.
  * Soft-deleted rows (`deleted_at`) are treated as gone, the same way every other
  * transcripts reader in this repo treats them.
+ *
+ * `noun` is the Library's own word for one item (D6b, jobs-bar cold-walk-12) —
+ * "video" by default, since this table is not itself Library-scoped and every
+ * existing caller is the YouTube-era panel; a caller that knows its adapter
+ * (`SourceDetailPanel`) passes its own.
  */
-export async function fetchMediaTranscript(transcriptId: string): Promise<MediaTranscript> {
+export async function fetchMediaTranscript(
+    transcriptId: string,
+    noun: string = "video",
+): Promise<MediaTranscript> {
     const { data, error } = await supabase
         .schema("transcripts")
         .from("transcripts")
@@ -250,7 +258,7 @@ export async function fetchMediaTranscript(transcriptId: string): Promise<MediaT
 
     if (error) {
         throw new TranscriptReadError(
-            `This video's transcript could not be read: ${error.message}`,
+            `This ${noun}'s transcript could not be read: ${error.message}`,
             "transcript_unreadable",
             "Try again in a moment; if it keeps failing, the transcript may belong to an organization you are not in.",
         );
@@ -258,11 +266,11 @@ export async function fetchMediaTranscript(transcriptId: string): Promise<MediaT
 
     if (!data) {
         throw new TranscriptReadError(
-            "This video is marked as transcribed, but its transcript row is missing or is not visible to you.",
+            `This ${noun} is marked as transcribed, but its transcript row is missing or is not visible to you.`,
             "transcript_not_found",
-            "Re-run transcription for this video to produce a new transcript.",
+            `Re-run transcription for this ${noun} to produce a new transcript.`,
         );
     }
 
-    return mapRow(data);
+    return mapRow(data, noun);
 }

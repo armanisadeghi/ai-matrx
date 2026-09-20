@@ -166,6 +166,40 @@ nothing moves; the claim is gone. The day the server publishes a word count,
 
 ## Change log
 
+- `2026-09-20` — **Four defects from the twelfth cold walk (D6, D6b, D10, D11),
+  fixed and guarded.** D6: the Sources table used to render its empty state
+  from the very first (pre-sync) row read and never re-asked when
+  `library.sync.completed` landed rows — `serviceKey` (`catalog/listConfig.tsx`)
+  now folds in `LibraryPage`'s `listGeneration`, the real fix, plus a
+  belt-and-suspenders `emptyState` override so "Nothing catalogued yet" can
+  never render while the sync banner (`sync.listed`) is reporting rows for this
+  Library. D6b: podcast episodes were called "videos" throughout ("Transcribe 3
+  videos", "Free, from YouTube's own captions" on a podcast job) — every
+  hardcoded "video(s)" in the feature (bulk-selection noun, confirm dialog,
+  job names/toasts, the job panel's lane sentences and item fallback text, the
+  Source detail panel, the transcript service's error sentences, the Sources
+  table's caption/transcript cells) now reads `sourceVocabulary(library)`,
+  which grew a `freeCaptionsSource` field for the free-lane sentence; two
+  Action `params_schema` entries (`aidream/services/media_catalog/actions.py`)
+  also grew `title`s the same way `agent_id` already had. Guarded by a static
+  census test that fails on any hardcoded "video(s)" outside `vocabulary.ts`'s
+  YouTube entry (`__tests__/d6b-no-hardcoded-video-outside-vocabulary.test.ts`).
+  D10: the four visibility-lane counters (Mine/My Orgs/Shared/Public) always
+  read `0` because they trusted `lane_counts`, one of this contract's three
+  OPEN "Frontend requests" that no server build has ever sent —
+  `browse/service.ts`'s `fetchCounts` now derives every lane's count the same
+  way `fetchPage` counts rows: one `listLibraries({ visibility: [lane] })` call
+  per lane, reading `.total`. Guarded, failing-then-passing, in
+  `__tests__/d10-lane-counts-not-derived-from-nothing.test.ts`. D11: the send
+  dialog's parameter labels and gate sentence spelled out the raw
+  `rulebook_id`/`collection_id` keys ("Rulebook id", "needs rulebook id before
+  it can start") — `send_to_rulebook`'s and `build_knowledge_base`'s
+  `params_schema`s now carry `title`s (server), and `ActionRunDialog`'s missing-
+  param sentence and Start-button casing were fixed to read them as a person
+  would say them, following the same pattern the bridge lane used for
+  `agent_id` ("Which agent") in aidream `82dd7c48c5`. Full walk:
+  `common-docs/projects/masterwork-methods-census/jobs-bar-2026-09-16/cold-walk-12/README.md`.
+
 - `2026-09-19` — **A Source can finally say what was done to it, for every
   Action and not just `transcribe`.** Until today the only per-item outcome on
   this screen was the Transcript column. Six other Actions ran over the same

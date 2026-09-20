@@ -47,6 +47,7 @@ import {
     selectLibraryLive,
 } from "../redux/sourceLibrarySlice";
 import type { VideoRow } from "../types";
+import { sourceVocabulary } from "../vocabulary";
 import { JobPanel } from "./JobPanel";
 import { LibraryMetricsHeader } from "./LibraryMetricsHeader";
 import { SourceDetailPanel } from "./SourceDetailPanel";
@@ -327,7 +328,20 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
         [],
     );
 
-    const runner = useActionRunner(libraryId, registry.actions, onJobStarted);
+    const library = live?.library ?? null;
+    // D6b (jobs-bar cold-walk-12): this Library's own words, so a confirm
+    // dialog, a job's name and a job panel never say "video(s)" over a
+    // podcast episode or a blog post.
+    const vocabulary = useMemo(() => sourceVocabulary(library), [library]);
+
+    const runner = useActionRunner(libraryId, registry.actions, onJobStarted, vocabulary);
+
+    // D6 (jobs-bar cold-walk-12): a sync that just reported rows for THIS
+    // Library and a table that still says "nothing catalogued" is the exact
+    // defect — the banner and the table read two different sources, and
+    // nothing told the table to look again. `sync.listed` is the same number
+    // `LibraryMetricsHeader`'s "Up to date — N Sources listed" banner prints.
+    const syncReportsRows = live?.sync.listed != null && live.sync.listed > 0;
 
     const config = useMemo(
         () =>
@@ -347,10 +361,17 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                 // `onJobStarted` is exactly the right door: it puts the job's own
                 // panel on this page, which is where a person already reads one.
                 onOpenJob: onJobStarted,
+                library,
+                // D6: THE actual re-read. `listGeneration` used to only build a
+                // new `config` object, which does nothing on its own — the shell
+                // re-asks a service when `serviceKey` changes (see
+                // `lib/entity-list/useEntityList.ts`), and that string never
+                // named `listGeneration`. Folding it in here is what makes
+                // `library.sync.completed` (via `useLibrarySync`'s `onSettled`)
+                // actually trigger a fresh `GET …/videos`.
+                refreshToken: listGeneration,
+                syncReportsRows,
             }),
-        // `listGeneration` forces a fresh service identity after a sync lands
-        // rows, so the list re-asks instead of showing what it held before.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
         [
             dispatch,
             libraryId,
@@ -359,10 +380,10 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
             listGeneration,
             registry.actions,
             onJobStarted,
+            library,
+            syncReportsRows,
         ],
     );
-
-    const library = live?.library ?? null;
 
     return (
         <>
@@ -475,6 +496,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                             <JobPanel
                                 key={jobId}
                                 jobId={jobId}
+                                vocabulary={vocabulary}
                                 onDismiss={() =>
                                     setJobIds((current) =>
                                         current.filter((id) => id !== jobId),
@@ -515,6 +537,7 @@ export function LibraryPage({ libraryId }: { libraryId: string }) {
                         <SourceDetailPanel
                             video={openVideo}
                             onClose={() => setOpenVideo(null)}
+                            vocabulary={vocabulary}
                         />
                     ) : null}
                 </DialogContent>

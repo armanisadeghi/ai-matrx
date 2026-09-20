@@ -49,6 +49,7 @@ import {
 } from "@/components/ui/select";
 import { formatCost, formatCount, formatSecondsEstimate } from "../format";
 import type { ActionDeclaration, EstimateResult } from "../types";
+import { sourceVocabulary, type SourceVocabulary } from "../vocabulary";
 import { RulebookParamPicker } from "./RulebookParamPicker";
 import { AgentParamPicker } from "./AgentParamPicker";
 
@@ -58,6 +59,11 @@ export interface ActionRunDialogProps {
     selectionCount: number;
     /** "matching" means the person asked for everything the filter matches. */
     selectionMode: "ids" | "matching";
+    /** D6b (jobs-bar cold-walk-12): this Library's own words — never "video(s)"
+     *  over a podcast episode or a blog post. Optional so a caller with no
+     *  Library row yet (or a test rendering this dialog in isolation) still
+     *  gets the neutral "item(s)" vocabulary, never a crash. */
+    vocabulary?: SourceVocabulary;
     estimate: EstimateResult | null;
     estimateLoading: boolean;
     /** A sentence from the server. Rendered instead of a Start button. */
@@ -108,12 +114,29 @@ function humanize(key: string): string {
     return key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 }
 
+/**
+ * D11 (jobs-bar cold-walk-12): the gate sentence ("X needs ⟨this⟩ before it can
+ * start") must read as a person would say it out loud, never as a database
+ * column name. A `title` on the schema (e.g. "Which Rulebook") is right for a
+ * FIELD LABEL above a picker; used verbatim in this sentence it reads "needs
+ * which Rulebook before it can start", which is not English either. The two
+ * pickers this dialog special-cases get their own grammatical noun; every
+ * other missing param falls back to its humanised key, lowercased, exactly as
+ * before.
+ */
+function missingParamNoun(key: string, property: SchemaProperty): string {
+    if (key === "rulebook_id") return "a Rulebook";
+    if (key === "agent_id") return "an agent";
+    return (property.title ?? humanize(key)).toLowerCase();
+}
+
 export function ActionRunDialog(props: ActionRunDialogProps) {
     const {
         open,
         action,
         selectionCount,
         selectionMode,
+        vocabulary = sourceVocabulary(null),
         estimate,
         estimateLoading,
         estimateError,
@@ -174,7 +197,7 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                 <DialogHeader>
                     <DialogTitle>
                         {action.label} {formatCount(selectionCount)}{" "}
-                        {selectionCount === 1 ? "video" : "videos"}
+                        {selectionCount === 1 ? vocabulary.item.one : vocabulary.item.many.toLowerCase()}
                     </DialogTitle>
                     <DialogDescription>{action.description}</DialogDescription>
                 </DialogHeader>
@@ -234,13 +257,13 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                             <dl className="divide-y divide-border text-sm">
                                 <Row
                                     icon={<Captions className="size-4" aria-hidden />}
-                                    label="Free, from YouTube's own captions"
-                                    value={`${formatCount(estimate.free_count)} ${estimate.free_count === 1 ? "video" : "videos"}`}
+                                    label={`Free, from ${vocabulary.freeCaptionsSource ?? "its own captions"}`}
+                                    value={`${formatCount(estimate.free_count)} ${estimate.free_count === 1 ? vocabulary.item.one : vocabulary.item.many.toLowerCase()}`}
                                 />
                                 <Row
                                     icon={<BadgeDollarSign className="size-4" aria-hidden />}
-                                    label="Paid — a model watches the video"
-                                    value={`${formatCount(estimate.paid_count)} ${estimate.paid_count === 1 ? "video" : "videos"}`}
+                                    label={`Paid — a model watches the ${vocabulary.item.one}`}
+                                    value={`${formatCount(estimate.paid_count)} ${estimate.paid_count === 1 ? vocabulary.item.one : vocabulary.item.many.toLowerCase()}`}
                                 />
                                 {estimate.already_done > 0 && (
                                     <Row
@@ -387,7 +410,10 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
 
                 {!notYet && missing.length > 0 && (
                     <p className="text-sm text-muted-foreground">
-                        {action.label} needs {missing.map(humanize).join(", ").toLowerCase()}{" "}
+                        {action.label} needs{" "}
+                        {missing
+                            .map((key) => missingParamNoun(key, properties[key] ?? {}))
+                            .join(", ")}{" "}
                         before it can start.
                     </p>
                 )}
@@ -419,7 +445,12 @@ export function ActionRunDialog(props: ActionRunDialogProps) {
                         ) : null}
                         {paid
                             ? `Spend up to ${formatCost(estimate?.cost.paid_cost_high ?? 0, estimate?.cost.currency)} and start`
-                            : `Start ${action.label.toLowerCase()}`}
+                            : // D11 (jobs-bar cold-walk-12): lowercasing the whole label
+                              // turned a proper name mid-sentence into ugly, wrong
+                              // casing ("Start send to a masterwork rulebook"). The
+                              // registry's label is already the sentence a person
+                              // reads at the top of this dialog — say it as declared.
+                              `Start ${action.label}`}
                     </Button>
                     )}
                 </DialogFooter>

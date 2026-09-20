@@ -73,6 +73,7 @@ import {
     formatElapsed,
     formatSecondsEstimate,
 } from "../format";
+import { sourceVocabulary, type SourceVocabulary } from "../vocabulary";
 import type {
     ActionDeclaration,
     JobItemRow,
@@ -84,15 +85,22 @@ import type {
 
 /* ──────────────────────────── the words ──────────────────────────── */
 
-/** §7.1 in English. A screen never prints `free_captions` at a person. */
-const LANE_SENTENCE: Record<TranscriptLane, string> = {
-    free_captions: "from YouTube's own captions",
-    paid_agent: "a model watched the video",
-};
-
-function laneSentence(lane: TranscriptLane | null): string {
+/**
+ * §7.1 in English. A screen never prints `free_captions` at a person.
+ *
+ * D6b (jobs-bar cold-walk-12): `free_captions` used to read "from YouTube's
+ * own captions" over every job, including one running on a podcast Library,
+ * while that same job's own per-item failure text correctly said "a podcast".
+ * The free lane's source and the "paid" sentence's noun both come from this
+ * Library's own vocabulary now.
+ */
+function laneSentence(lane: TranscriptLane | null, vocabulary: SourceVocabulary): string {
     if (!lane) return "lane not decided yet";
-    return LANE_SENTENCE[lane] ?? lane;
+    if (lane === "free_captions") {
+        return `from ${vocabulary.freeCaptionsSource ?? "its own captions"}`;
+    }
+    if (lane === "paid_agent") return `a model watched the ${vocabulary.item.one}`;
+    return lane;
 }
 
 const ITEM_STATUS_LABEL: Record<JobItemStatus, string> = {
@@ -261,9 +269,11 @@ function ItemStatusIcon({ status }: { status: JobItemStatus }) {
 function JobItem({
     item,
     onOpenVideo,
+    vocabulary,
 }: {
     item: JobItemRow;
     onOpenVideo?: (videoId: string) => void;
+    vocabulary: SourceVocabulary;
 }) {
     const durationSeconds =
         item.result && typeof item.result.duration_seconds === "number"
@@ -279,14 +289,16 @@ function JobItem({
                 <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-                            {item.title ?? item.external_id ?? "This video has no title on its row"}
+                            {item.title ??
+                                item.external_id ??
+                                `This ${vocabulary.item.one} has no title on its row`}
                         </span>
                         <Badge variant={ITEM_STATUS_VARIANT[item.status]} className="shrink-0">
                             {ITEM_STATUS_LABEL[item.status]}
                         </Badge>
                     </div>
                     <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                        <span>{laneSentence(item.lane)}</span>
+                        <span>{laneSentence(item.lane, vocabulary)}</span>
                         {durationSeconds !== null && <span>{formatDuration(durationSeconds)}</span>}
                         {item.attempt > 1 && (
                             <span className="text-warning">
@@ -317,7 +329,7 @@ function JobItem({
                         size="sm"
                         className="h-9 shrink-0 px-2"
                         onClick={() => onOpenVideo(item.video_id)}
-                        aria-label={`Open ${item.title ?? "this video"}`}
+                        aria-label={`Open ${item.title ?? `this ${vocabulary.item.one}`}`}
                     >
                         <ExternalLink className="h-4 w-4" aria-hidden />
                         <span className="sr-only sm:not-sr-only sm:ml-1.5 sm:text-xs">Open</span>
@@ -337,11 +349,16 @@ export function JobPanel({
     action,
     onOpenVideo,
     onDismiss,
+    // D6b (jobs-bar cold-walk-12): this Library's own words. Omitted — a job
+    // panel opened before its Library row has loaded — falls back to the
+    // neutral "item(s)" vocabulary, never YouTube's.
+    vocabulary = sourceVocabulary(null),
 }: {
     jobId: string;
     action?: ActionDeclaration | null;
     onOpenVideo?: (videoId: string) => void;
     onDismiss?: () => void;
+    vocabulary?: SourceVocabulary;
 }) {
     const {
         job,
@@ -673,7 +690,7 @@ export function JobPanel({
                             </span>
 
                             <span className="text-muted-foreground">
-                                Free lane ({LANE_SENTENCE.free_captions})
+                                Free lane ({laneSentence("free_captions", vocabulary)})
                             </span>
                             <span className="text-right tabular-nums text-foreground">
                                 {formatCount(estimate.free_count)}
@@ -685,7 +702,7 @@ export function JobPanel({
                             </span>
 
                             <span className="text-muted-foreground">
-                                Paid lane ({LANE_SENTENCE.paid_agent})
+                                Paid lane ({laneSentence("paid_agent", vocabulary)})
                             </span>
                             <span className="text-right tabular-nums text-foreground">
                                 {formatCount(estimate.paid_count)}
@@ -811,7 +828,11 @@ export function JobPanel({
                                             transform: `translateY(${virtualRow.start}px)`,
                                         }}
                                     >
-                                        <JobItem item={item} onOpenVideo={onOpenVideo} />
+                                        <JobItem
+                                            item={item}
+                                            onOpenVideo={onOpenVideo}
+                                            vocabulary={vocabulary}
+                                        />
                                     </div>
                                 );
                             })}
@@ -841,8 +862,9 @@ export function JobPanel({
                             : `The server marked none of the ${formatCount(totals.failed)} failed items read so far as retryable, so it may requeue nothing. It will say so rather than silently doing nothing.`}
                         {itemsPartial &&
                             ` This panel has read ${formatCount(itemsRead)} of ${formatCount(totals.total)} items, so the server may requeue more than that.`}{" "}
-                        Any item that lands on the paid lane — where a model watches the video —
-                        costs money, and the server requires a fresh confirmed estimate for it. If
+                        Any item that lands on the paid lane — where a model watches the{" "}
+                        {vocabulary.item.one} — costs money, and the server requires a fresh
+                        confirmed estimate for it. If
                         it does, nothing is spent: this stops and shows you what the server said.
                         The {formatCount(totals.succeeded)} items that already succeeded are kept
                         and are not run again.
