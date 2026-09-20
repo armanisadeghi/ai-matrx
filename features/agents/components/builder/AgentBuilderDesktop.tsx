@@ -10,52 +10,21 @@ interface AgentBuilderDesktopProps {
 
 export function AgentBuilderDesktop({ agentId }: AgentBuilderDesktopProps) {
   return (
-    <div className="h-full overflow-hidden bg-textured p-2 sm:p-3">
-      <div className="grid h-full min-h-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm lg:grid-cols-[minmax(0,0.95fr)_minmax(26rem,1.15fr)]">
-        <section
-          aria-labelledby="agent-builder-configure-heading"
-          className="flex min-h-0 flex-col overflow-hidden border-b border-border lg:border-r lg:border-b-0"
-        >
-          <div className="shrink-0 border-b border-border px-4 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)]">
-            <p
-              id="agent-builder-configure-heading"
-              className="text-sm font-semibold text-foreground"
-            >
-              Configure
-            </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Define how this agent thinks, what it knows, and the inputs it
-              needs.
-            </p>
-          </div>
-          <div className="min-h-0 flex-1 px-3 pb-3">
-            <AgentBuilderReadOnlyFrame agentId={agentId} className="h-full">
-              <AgentBuilderLeftPanel agentId={agentId} />
-            </AgentBuilderReadOnlyFrame>
-          </div>
-        </section>
-
-        <section
-          aria-labelledby="agent-builder-test-heading"
-          className="flex min-h-0 flex-col overflow-hidden"
-        >
-          <div className="shrink-0 border-b border-border px-4 pb-3 pt-[calc(var(--shell-header-h)+0.5rem)]">
-            <p
-              id="agent-builder-test-heading"
-              className="text-sm font-semibold text-foreground"
-            >
-              Test
-            </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Try the current draft before you save a version.
-            </p>
-          </div>
-          <div className="min-h-0 flex-1 px-3 pb-3">
-            <Suspense fallback={<RightPanelSkeleton />}>
-              <AgentBuilderRightPanel agentId={agentId} />
-            </Suspense>
-          </div>
-        </section>
+    <div className="flex h-full">
+      <div
+        className="flex-1 min-w-0 h-full overflow-hidden max-w-[640px] px-2"
+        style={{ paddingTop: "var(--shell-header-h)" }}
+      >
+        <AgentBuilderReadOnlyFrame agentId={agentId} className="h-full">
+          <AgentBuilderLeftPanel agentId={agentId} />
+        </AgentBuilderReadOnlyFrame>
+      </div>
+      <div className="flex-1 min-w-0 h-full overflow-hidden flex justify-center">
+        <div className="w-full max-w-3xl h-full pt-12">
+          <Suspense fallback={<RightPanelSkeleton />}>
+            <AgentBuilderRightPanel agentId={agentId} />
+          </Suspense>
+        </div>
       </div>
     </div>
   );
