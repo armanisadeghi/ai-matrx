@@ -1,114 +1,84 @@
 #!/usr/bin/env bash
-# release.sh — Apply pending FE migrations, bump version, commit, tag, and push.
+# release.sh — Ship matrx-frontend: apply pending migrations, bump, commit, tag,
+# push. The push IS the build: Vercel's git integration builds every commit
+# whose subject carries a release prefix (vercel.json → scripts/vercel-ignore-build.sh).
 #
 # Source of truth: package.json
 #
-# Migrations (like aidream's release.sh):
-#   Before bumping, applies any pending `migrations/*.sql` via the co-located
-#   aidream applier (`python db/apply_migrations.py --source matrx-frontend`).
-#   This repo has no DDL path of its own — aidream holds the Postgres creds.
-#   Override checkout with AIDREAM_DIR; skip with --no-migrate.
-#
-# Protocol mirror (docs/protocol):
-#   After migrations, verifies the byte-identical pact with aidream's
-#   docs/protocol (envelope doc, references doc, generated registry). On drift
-#   it auto-syncs aidream → here and commits, loudly, before the version bump.
-#   Same co-located checkout / AIDREAM_DIR as migrations; missing = warn+skip.
-#
-# Remote sync is handled automatically and safely:
-#   - Before anything is changed, it fetches origin/main and either fast-forwards
-#     (remote ahead), proceeds (local ahead), or stops unchanged (diverged).
-#   - Local and fetched remote heads both pass Pattern Patrol authorization before
-#     the release lane is claimed or the checked-out branch can move.
-#   - The final push is atomic (branch + tag together). A remote race preserves the
-#     local release commit and tag for controller reconciliation; it never rewrites
-#     certified candidates with an automatic rebase or force-pushes.
-#
 # Usage:
-#   ./scripts/release.sh              # patch bump  (default)
-#   ./scripts/release.sh --patch      # patch bump
-#   ./scripts/release.sh --minor      # minor bump
-#   ./scripts/release.sh --major      # major bump
-#   ./scripts/release.sh --message "document shared OAuth"
-#       → commit "release: vX.Y.Z - document shared OAuth"
-#   ./scripts/release.sh --ship --message "Added chat surface" -- features/chat lib/x.ts
-#       → one commit of the NAMED paths + bump (used by ./ship.sh). Paths after
-#         `--` are the only content that enters the commit.
-#   ./scripts/release.sh --dry-run    # preview without changes
-#   ./scripts/release.sh --no-migrate # skip applying FE migrations
-#   ./scripts/release.sh --no-gates   # skip advisory quality gates after push
-#   ./scripts/release.sh --async-gates # enqueue advisory gates after push; do not wait
-#   ./scripts/release.sh --no-watch   # do not wait for the Vercel rollout
-#       → prints UNWATCHED (never green); the outcome stays unknown
-#   ./scripts/release.sh --target admin --message "new admin panel"
-#       → commit "release-admin: vX.Y.Z - new admin panel" (deploys ONLY
-#         manage.aimatrx.com; --target demos / all likewise)
+#   ./scripts/release.sh                     # patch bump  (default)
+#   ./scripts/release.sh --minor | --major
+#   ./scripts/release.sh --message "note"    # commit "release: vX.Y.Z - note"
+#   ./scripts/release.sh --target admin|demos|all
+#       → "release-admin:" / "release-demos:" / "release-all:" (which Vercel
+#         projects build; main = aimatrx.com, admin = manage., demos = demos.)
+#   ./scripts/release.sh --ship --message "msg" -- <paths you own>
+#       → ./ship.sh: commits EXACTLY the named paths first (THE RELEASE-COMMIT
+#         CONTENT LAW, scripts/release-stage.sh), then releases.
+#   ./scripts/release.sh --dry-run           # what would ship; nothing changes
+#   ./scripts/release.sh --no-migrate        # ship code without applying pending SQL
+#   ./scripts/release.sh --no-gates          # no after phase at all (checks, watch, fixers)
+#   ./scripts/release.sh --no-watch          # after phase runs, but does not watch Vercel
+#   ./scripts/release.sh --with-checks       # run the checks in THIS terminal, after the push
+#   ./scripts/release.sh --async-gates       # accepted, ignored: the after phase is always detached
 #
-# Deploy is: one atomic push of branch + tag to origin/main; Vercel/GitHub take
-# it from there. The push is NOT the release — so after pushing, the script
-# WATCHES the rollout and reports what actually happened
-# (scripts/release-outcome.sh, THE RELEASE-BANNER TRUTH LAW). Green appears only
-# when the pushed commit reached READY on every Vercel project it targets AND
-# that deployment is the one the live domain serves; a skipped, ERRORed,
-# CANCELED, timed-out, or unverifiable rollout prints a loud non-green box with
-# the project, the state, the Vercel URL and the remedy, and exits non-zero.
-# Until 2026-09-11 this script printed its green "Released" box unconditionally
-# the line after `git push` returned 0 and never called Vercel at all, so a dead
-# rollout and a live one looked identical to the deploy agent reading it.
-# `--no-watch` skips the wait; it prints UNWATCHED, never green.
+# ══ THE SHIP PATH ════════════════════════════════════════════════════════════
+# Releasing is never harder than a plain `git push` (Arman, 2026-09-19/20).
+# This script does ONLY what makes the build, in this order:
 #
-# Production builds ONLY run for commits whose message starts with a release
-# prefix (vercel.json ignoreCommand → scripts/vercel-ignore-build.sh). Plain
-# pushes to main are skipped. The prefix selects WHICH Vercel project builds
-# (deployment split 2026-07 — one repo, three projects):
-#   release:        → ai-matrx (aimatrx.com, MATRX_PROFILE=slim)   [default]
-#   release-admin:  → ai-matrx-manage (manage.aimatrx.com, admin profile)
-#   release-demos:  → ai-matrx-demos (demos.aimatrx.com, demos profile)
-#   release-all:    → all three projects
-# Each project carries a MATRX_BUILD_TARGET env var (main|admin|demos) the
-# ignore script matches against, so untargeted projects never rebuild.
+#   1. --ship: commit the named paths in this checkout (pathspec-scoped)
+#   2. start applying pending migrations (background, aidream's applier)
+#   3. fetch origin/main            ← the ONE thing that can stop a release
+#   4. move the private worktree `.wt/release` to origin/main
+#   5. merge this checkout's unpushed commits into it (a conflict = ship main
+#      anyway + an ERROR finding; nothing is ever stashed or rebased)
+#   6. wait for the migrations (a failure = ERROR finding, never a stop)
+#   7. bump package.json in the worktree, commit, push
+#      (a lost push race = fetch, reset to the new main, re-merge, re-bump, retry,
+#       up to five times ← the OTHER thing that can stop a release)
+#   8. push the tag, fast-forward this checkout if it can, print ONE line:
+#          vX.Y.Z  pushed, build started  (Ns)
+#      plus a findings table only when something is wrong.
 #
-# 🚨 THE RELEASE-COMMIT CONTENT LAW (scripts/release-stage.sh): a release never
-# ships content no one committed. This checkout is shared by dozens of lanes,
-# so the working tree and the index always hold someone else's half-written
-# files. The release commit therefore contains EXACTLY the version files plus
-# the paths the invoker NAMED after `--` — staged and committed by pathspec,
-# never `git add -A`, never "whatever is staged". Every other dirty path is
-# left exactly as its owner left it. Release v0.4.1575 (2026-08-31) was built
-# from a sweep that carried another lane's mid-edit import to a module that did
-# not exist; production broke until 6d07c466b2. aidream's release.sh commits
-# the same pathspec-scoped way, so the convention is one across both repos.
-#   Plain release: commits ONLY package.json (+ package-lock.json); a dirty tree
-#     is normal and never blocks; nothing foreign is staged, unstaged, or moved.
-#   --ship (./ship.sh): commits the version files + the named paths. A dirty
-#     tree with NO named paths is refused — the script cannot know which dirt is
-#     yours, and guessing is the defect. Tree-wide specs (`.`, `:/`, `*`) are
-#     refused by name. --dry-run prints the exact file list the commit would
-#     carry and the dirty paths it would leave behind.
-#   The primitive proves itself failing-then-passing on every --ship run
-#   (`pnpm check:ship-stage:self-test`), before anything is committed.
+# Nothing else runs before the push: not a check, not a gate, not a lease, not
+# a self-test wall. A failed check, a failed migration, a dirty checkout, a
+# diverged branch, an unmerged local commit — none of them stop the release.
+# They become findings.
 #
-# General quality gates (doctrine, UI primitives, …) stay ADVISORY — they scream
-# loudly and never block the ship. Pattern Patrol delivery authorization is a
-# separate advisory lifecycle checkpoint before any release mutation and
-# again after --ship materializes its commit. A busy delivery lane waits and
-# resumes automatically. Manual hard-fail: pnpm check:release-gates:strict
+# Everything else runs AFTER the push, detached, into the dated log file
+# (RELEASE_PHASE=after): the Vercel rollout watch (scripts/release-outcome.sh),
+# every quality check in ONE parallel runner (scripts/checks/run.mjs, rows from
+# scripts/run-release-gates.sh --list), and the fixer dispatcher (aidream's
+# scripts/checks/dispatch_fixer.py, called with MATRX_REPO_ROOT=this repo). The
+# terminal never sees any of it. INFO is never printed: a clean run is one line;
+# a finding is an ERROR or WARNING row with a remedy, and every finding is also
+# one JSON line so a fixer agent can be dispatched per category.
+#
+# Every run writes the full terminal to tmp/release-logs/release-<stamp>.log
+# (+ latest.log, + release-vX.Y.Z.log once the version is known). Gitignored.
+#
+# Guard: scripts/test-release-ship-path.sh — a dirty checkout, a diverged
+# branch and a foreign push landing mid-release must still end with the tag on
+# origin and the uncommitted file untouched. `pnpm test:release-ship-path`.
+#
+# 🚨 THE RELEASE-COMMIT CONTENT LAW (scripts/release-stage.sh) still holds: the
+# release commit carries package.json only, and --ship commits EXACTLY the
+# paths the invoker named — never `git add -A`, never "whatever is staged".
+# Release v0.4.1575 (2026-08-31) shipped another lane's mid-edit import that
+# way. The private worktree makes the law structural: the release commit is
+# built on origin/main, where nobody's half-written file exists.
 set -euo pipefail
 
+RELEASE_LOCK_HELD=false
+
 # ── Failure trap ─────────────────────────────────────────────────────────────
+# Only two things can trip it (GitHub unreachable, five lost races); anything
+# that happens after the push is a finding, never a failure.
 _on_error() {
     local exit_code=$?
     local line_no=${1:-}
     echo "" >&2
-    echo -e "\033[0;31m╔══════════════════════════════════════════════════════════════╗\033[0m" >&2
-    echo -e "\033[0;31m║                    RELEASE SCRIPT FAILED                    ║\033[0m" >&2
-    echo -e "\033[0;31m╠══════════════════════════════════════════════════════════════╣\033[0m" >&2
-    echo -e "\033[0;31m║  Exit code : ${exit_code}$(printf '%*s' $((61 - ${#exit_code})) '')║\033[0m" >&2
-    [[ -n "$line_no" ]] && \
-    echo -e "\033[0;31m║  Line      : ${line_no}$(printf '%*s' $((61 - ${#line_no})) '')║\033[0m" >&2
-    echo -e "\033[0;31m║  No version was committed, tagged, or pushed.               ║\033[0m" >&2
-    echo -e "\033[0;31m╚══════════════════════════════════════════════════════════════╝\033[0m" >&2
-    echo "" >&2
+    echo -e "\033[0;31mRELEASE FAILED (exit ${exit_code}, line ${line_no}) — see tmp/release-logs/latest.log\033[0m" >&2
 }
 trap '_on_error $LINENO' ERR
 
@@ -119,106 +89,96 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$REPO_ROOT"
 
+# ── Log capture: every run is a dated file; the terminal still shows it live ─
+release_log_name_version() {
+    local ver="${1:-}"
+    [[ -n "$ver" && -n "${RELEASE_LOG_DIR:-}" && -n "${RELEASE_LOG_FILE:-}" ]] || return 0
+    ln -sfn "$(basename "$RELEASE_LOG_FILE")" "$RELEASE_LOG_DIR/release-v${ver}.log"
+}
+
+if [[ -z "${RELEASE_LOG_CAPTURED:-}" ]]; then
+    RELEASE_LOG_DIR="$REPO_ROOT/tmp/release-logs"
+    mkdir -p "$RELEASE_LOG_DIR"
+    RELEASE_LOG_STAMP="$(date +%Y-%m-%d_%H-%M-%S)"
+    RELEASE_LOG_FILE="$RELEASE_LOG_DIR/release-${RELEASE_LOG_STAMP}.log"
+    {
+        echo "=== matrx-frontend release.sh ==="
+        echo "started_utc: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+        echo "cwd:         $REPO_ROOT"
+        echo "args:        ${*:-<none>}"
+        echo "pid:         $$"
+        echo "================================="
+        echo ""
+    } > "$RELEASE_LOG_FILE"
+    ln -sfn "$(basename "$RELEASE_LOG_FILE")" "$RELEASE_LOG_DIR/latest.log"
+    export RELEASE_LOG_CAPTURED=1
+    export RELEASE_LOG_DIR RELEASE_LOG_FILE RELEASE_LOG_STAMP
+    set +e
+    set +o pipefail
+    "$0" "$@" 2>&1 | tee -a "$RELEASE_LOG_FILE"
+    status=${PIPESTATUS[0]}
+    {
+        echo ""
+        echo "=== matrx-frontend release.sh end (exit $status, $(date -u +%Y-%m-%dT%H:%M:%SZ)) ==="
+    } >> "$RELEASE_LOG_FILE"
+    exit "$status"
+fi
+
 PROJECT_NAME="ai-matrx-admin"
 GITHUB_REPO="armanisadeghi/ai-matrx"
 VERSION_FILE="package.json"
 REMOTE="origin"
 BRANCH="main"
+AIDREAM_DIR="${AIDREAM_DIR:-$REPO_ROOT/../aidream}"
 
-# ── Colors ───────────────────────────────────────────────────────────────────
-RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
-CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
-
-info()    { echo -e "${CYAN}[INFO]${NC}  $*"; }
-ok()      { echo -e "${GREEN}[OK]${NC}    $*"; }
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; CYAN='\033[0;36m'; NC='\033[0m'
 warn()    { echo -e "${YELLOW}[WARN]${NC}  $*"; }
 fail()    { echo -e "${RED}[FAIL]${NC}  $*" >&2; exit 1; }
 preview() { echo -e "${CYAN}[DRY]${NC}   $*"; }
 
-verify_patrol_delivery() {
-    local head="${1:-HEAD}"
-    info "Checking Pattern Patrol certification records at $head..."
-    if pnpm --silent patrol:delivery:check -- --head "$head"; then
-        ok "Pattern Patrol delivery records authorize every patrol commit at $head."
-    else
-        warn "Pattern Patrol delivery records need reconciliation at $head; release remains fail-forward."
+# ── One release at a time per phase (atomic mkdir; a dead owner is reclaimed) ─
+RELEASE_PHASE="${RELEASE_PHASE:-ship}"
+RELEASE_LOCK_DIR="$(git rev-parse --git-path "matrx-release-${RELEASE_PHASE}.lock")"
+RELEASE_LOCK_PID_FILE="$RELEASE_LOCK_DIR/pid"
+release_lock_cleanup() {
+    if [[ "$RELEASE_LOCK_HELD" == true ]] \
+        && [[ "$(cat "$RELEASE_LOCK_PID_FILE" 2>/dev/null || true)" == "$$" ]]; then
+        rm -f -- "$RELEASE_LOCK_PID_FILE"
+        rmdir -- "$RELEASE_LOCK_DIR" 2>/dev/null || true
     fi
 }
-
-acquire_delivery_lease() {
-    local attempt=0 output=""
+acquire_release_lock() {
+    local owner_pid="" waited=0
     while true; do
-        attempt=$((attempt + 1))
-        if output="$(
-            bash "$REPO_ROOT/scripts/pattern-patrol/delivery-lease.sh" acquire \
-                "$$" "$REPO_ROOT" "${MATRX_PATROL_RUN_ID:-general-release}" 2>&1
-        )"; then
-            DELIVERY_LEASE_TOKEN="$output"
+        if mkdir "$RELEASE_LOCK_DIR" 2>/dev/null; then
+            printf '%s\n' "$$" > "$RELEASE_LOCK_PID_FILE"
+            RELEASE_LOCK_HELD=true
             return 0
         fi
-
-        # Contention is coordination, not a release failure. The lease helper
-        # reclaims dead owners; a live owner simply gets time to finish.
-        if (( attempt == 1 || attempt % 6 == 0 )); then
-            warn "Delivery lane is busy; waiting and retrying automatically. ${output}"
+        owner_pid=$(cat "$RELEASE_LOCK_PID_FILE" 2>/dev/null || true)
+        if [[ "$owner_pid" =~ ^[0-9]+$ ]] && kill -0 "$owner_pid" 2>/dev/null; then
+            if (( waited >= 600 )); then
+                rm -f -- "$RELEASE_LOCK_PID_FILE"; rmdir -- "$RELEASE_LOCK_DIR" 2>/dev/null || true
+                sleep 1; continue
+            fi
+            sleep 5; waited=$((waited + 5)); continue
         fi
-        sleep 5
+        rm -f -- "$RELEASE_LOCK_PID_FILE"; rmdir -- "$RELEASE_LOCK_DIR" 2>/dev/null || true
     done
 }
-
-# Every real release shares one machine-wide delivery lane. The token makes
-# release safe to nest in failure paths: only its owner may release the lane.
-DELIVERY_LEASE_TOKEN=""
-release_delivery_lease() {
-    if [[ -n "$DELIVERY_LEASE_TOKEN" ]]; then
-        bash "$REPO_ROOT/scripts/pattern-patrol/delivery-lease.sh" release "$DELIVERY_LEASE_TOKEN" >/dev/null 2>&1 || true
-        DELIVERY_LEASE_TOKEN=""
-    fi
-}
-trap release_delivery_lease EXIT
-
-# Like fail(), but for failures AFTER the release commit + tag were created.
-# Clears the ERR trap so the generic "nothing was committed" box does not print
-# (it would be a lie — the release exists locally, it just was not pushed).
-die_after_commit() {
-    trap - ERR
-    echo "" >&2
-    echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}" >&2
-    echo -e "${RED}║   PUSH INCOMPLETE — release built locally but not pushed   ║${NC}" >&2
-    echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}" >&2
-    echo "" >&2
-    echo -e "$*" >&2
-    echo "" >&2
-    exit 1
-}
-
-# Print a side-by-side summary of how local and remote have diverged.
-diverge_summary() {
-    echo "  Your commits not on $REMOTE/$BRANCH:" >&2
-    git log --oneline "$REMOTE/$BRANCH..$BRANCH" | sed 's/^/    /' >&2
-    echo "  $REMOTE/$BRANCH commits not in your branch:" >&2
-    git log --oneline "$BRANCH..$REMOTE/$BRANCH" | sed 's/^/    /' >&2
-}
+trap release_lock_cleanup EXIT
 
 # ── Parse flags ──────────────────────────────────────────────────────────────
+RELEASE_ORIGINAL_ARGS=("$@")
 BUMP_TYPE="patch"
 CUSTOM_MESSAGE=""
 DRY_RUN=false
 NO_MIGRATE=false
 NO_GATES=false
-ASYNC_GATES=false
 NO_WATCH=false
+RUN_CHECKS=false
 SHIP_MODE=false
-# --ship: the ONLY content the release commit may carry besides the version
-# files. Filled from the arguments after `--`. See THE RELEASE-COMMIT CONTENT LAW.
 SHIP_PATHS=()
-# Which Vercel project(s) this release should build (deployment split 2026-07):
-#   main  → ai-matrx (aimatrx.com)                — commit prefix `release:`
-#   admin → ai-matrx-manage (manage.aimatrx.com)  — commit prefix `release-admin:`
-#   demos → ai-matrx-demos (demos.aimatrx.com)    — commit prefix `release-demos:`
-#   all   → all three                             — commit prefix `release-all:`
-# scripts/vercel-ignore-build.sh matches the prefix against each project's
-# MATRX_BUILD_TARGET env var, so only the targeted project(s) build.
 TARGET="main"
 
 while [[ $# -gt 0 ]]; do
@@ -233,8 +193,9 @@ while [[ $# -gt 0 ]]; do
         --dry-run) DRY_RUN=true; shift ;;
         --no-migrate) NO_MIGRATE=true; shift ;;
         --no-gates) NO_GATES=true; shift ;;
-        --async-gates) ASYNC_GATES=true; shift ;;
         --no-watch) NO_WATCH=true; shift ;;
+        --with-checks) RUN_CHECKS=true; shift ;;
+        --async-gates) shift ;;
         --target)
             [[ -n "${2:-}" ]] || fail "--target requires an argument (main|admin|demos|all)."
             case "$2" in
@@ -243,674 +204,390 @@ while [[ $# -gt 0 ]]; do
             esac
             shift 2 ;;
         -h|--help)
-            grep '^#' "$0" | head -70 | sed 's/^# \?//'
+            grep '^#' "$0" | head -24 | sed 's/^# \?//'
             exit 0 ;;
         --)
-            # Everything after `--` is a pathspec the invoker owns (--ship only).
             shift
             SHIP_PATHS=("$@")
             break ;;
-        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --ship, --target, --dry-run, --no-migrate, --no-gates, --async-gates, --no-watch, or -- <paths you own>." ;;
+        *) fail "Unknown flag: $1. Use --patch, --minor, --major, --message, --ship, --target, --dry-run, --no-migrate, --no-gates, --no-watch, --with-checks, or -- <paths you own>." ;;
     esac
 done
 
 if [[ ${#SHIP_PATHS[@]} -gt 0 ]] && ! $SHIP_MODE; then
     fail "Paths after '--' only mean something with --ship (./ship.sh). A plain release commits package.json only."
 fi
-
 if $SHIP_MODE && [[ -z "$CUSTOM_MESSAGE" ]]; then
     fail "--ship requires --message (./ship.sh passes it)."
 fi
-
-# ── Pre-flight checks ────────────────────────────────────────────────────────
 [[ -f "$VERSION_FILE" ]] || fail "$VERSION_FILE not found."
 
-# THE RELEASE-COMMIT CONTENT LAW lives in one file and proves itself before a
-# --ship run may commit anything. Sourced here so the commit step and the
-# dry-run preview use the same primitive the self-test exercised.
-# shellcheck source=scripts/release-stage.sh
-source "$SCRIPT_DIR/release-stage.sh"
-
-# THE RELEASE-BANNER TRUTH LAW lives in one file too: the banner after the push
-# reports the ROLLOUT, not the push. Sourced here so the post-push report and
-# its self-test use the same primitive.
-# shellcheck source=scripts/release-outcome.sh
-source "$SCRIPT_DIR/release-outcome.sh"
-
-CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
-[[ "$CURRENT_BRANCH" == "$BRANCH" ]] \
-    || fail "Not on '$BRANCH' branch (currently on '$CURRENT_BRANCH'). Switch first."
-
-# Dirty tree is fine for a plain release (bump + push committed work only).
-# Fast-forward still needs a clean tree — enforced only when sync must mutate.
-working_tree_dirty() {
-    ! git diff --quiet \
-        || [[ -n "$(git diff --cached --name-only)" ]] \
-        || [[ -n "$(git ls-files --others --exclude-standard)" ]]
-}
-
-require_clean_for_sync() {
-    if working_tree_dirty; then
-        fail "Uncommitted changes block syncing with $REMOTE/$BRANCH (fast-forward needs a clean tree).
-Commit them (./ship.sh \"msg\"), stash them, or discard — then re-run.
-A plain release with a dirty tree is fine when you are already in sync or ahead."
-    fi
-}
-
-# ── Sync with remote (do-no-harm: runs BEFORE any commit/tag is created) ──────
-# Nothing has been bumped, committed, or tagged yet, so any abort here leaves
-# the working tree exactly as the user left it. We only proceed past this block
-# if the local branch is in a state that will push cleanly.
-echo ""
-info "Fetching $REMOTE/$BRANCH to check sync state..."
-git fetch "$REMOTE" "$BRANCH" 2>/dev/null \
-    || fail "Could not reach $REMOTE. Check your connection, then re-run. Nothing has been changed."
-
-LOCAL_SHA=$(git rev-parse "$BRANCH")
-REMOTE_SHA=$(git rev-parse "$REMOTE/$BRANCH")
-BASE_SHA=$(git merge-base "$BRANCH" "$REMOTE/$BRANCH")
-
-if [[ "$LOCAL_SHA" != "$BASE_SHA" && "$REMOTE_SHA" != "$BASE_SHA" ]]; then
-    echo "" >&2
-    diverge_summary
-    echo "" >&2
-    fail "Local and $REMOTE/$BRANCH have diverged. Integrate them through the normal controller workflow, then re-run; release.sh will not rewrite certified history. Nothing has been changed."
-fi
-
-if ! $DRY_RUN; then
-    info "Claiming the serialized delivery lane..."
-    acquire_delivery_lease
-    ok "Delivery lane claimed."
-fi
-
-# --ship must know whose dirt it is shipping. With a dirty tree and no named
-# paths there is no honest answer, and guessing (a sweep) is the v0.4.1575
-# defect — so refuse, and say exactly what is dirty so the invoker can name
-# theirs. A clean tree with no paths is a bump-only release, which is fine.
-if $SHIP_MODE; then
-    if [[ ${#SHIP_PATHS[@]} -gt 0 ]]; then
-        release_stage_validate_paths ${SHIP_PATHS[@]+"${SHIP_PATHS[@]}"} \
-            || fail "--ship was given a pathspec it cannot commit (see above). Nothing has been changed."
-        # From here on the paths are repo-relative and every git call runs at the root.
-        SHIP_PATHS=("${RELEASE_STAGE_PATHS[@]}")
-        RELEASE_STAGE_CALLER_PWD="$REPO_ROOT"
-    elif working_tree_dirty; then
-        echo "" >&2
-        git status --short --untracked-files=all | sed 's/^/    /' >&2
-        echo "" >&2
-        fail "--ship with a dirty tree needs the paths YOU own, after '--':
-    ./ship.sh \"$CUSTOM_MESSAGE\" -- <file-or-dir> [more...]
-The tree above holds other lanes' work too; release.sh will not guess which of
-it is yours, and it never sweeps (THE RELEASE-COMMIT CONTENT LAW,
-scripts/release-stage.sh). Nothing has been changed."
-    fi
-    info "Proving the release-commit staging primitive (self-test)..."
-    if bash "$SCRIPT_DIR/release-stage.sh" --self-test >/dev/null 2>&1; then
-        ok "release-stage self-test passed (sweep reproduced, then excluded)."
-    else
-        bash "$SCRIPT_DIR/release-stage.sh" --self-test || true
-        fail "release-stage self-test FAILED — the staging primitive cannot be trusted to exclude foreign edits. Nothing has been changed."
-    fi
-fi
-
-if [[ "$LOCAL_SHA" == "$REMOTE_SHA" ]]; then
-    ok "Already in sync with $REMOTE/$BRANCH."
-    if working_tree_dirty && ! $SHIP_MODE; then
-        warn "Uncommitted local changes present — leaving them alone; release only bumps + pushes committed work."
-    fi
-elif [[ "$LOCAL_SHA" == "$BASE_SHA" ]]; then
-    # Local is strictly behind remote — fast-forward is safe and lossless.
-    require_clean_for_sync
-    if $DRY_RUN; then
-        preview "$REMOTE/$BRANCH is ahead — would fast-forward local $BRANCH."
-    else
-        info "$REMOTE/$BRANCH is ahead. Fast-forwarding local $BRANCH..."
-        git merge --ff-only "$REMOTE/$BRANCH" >/dev/null 2>&1 \
-            || fail "Fast-forward unexpectedly failed. Resolve manually. Nothing has been changed."
-        ok "Fast-forwarded to $(git rev-parse --short HEAD)."
-    fi
-elif [[ "$REMOTE_SHA" == "$BASE_SHA" ]]; then
-    # Remote is strictly behind — local is purely ahead, a normal push will work.
-    if working_tree_dirty && ! $SHIP_MODE; then
-        warn "Uncommitted local changes present — leaving them alone; release only bumps + pushes committed work."
-    fi
-    ok "Local is ahead of $REMOTE/$BRANCH by $(git rev-list --count "$REMOTE/$BRANCH..$BRANCH") commit(s) — ready to release."
-else
-    fail "Unexpected release topology after fail-closed divergence check. Nothing has been changed."
-fi
-
-# Hard checkpoint before migrations, generated files, version bumps, tags, or
-# pushes. A patrol product change can enter release only when its immutable run
-# record certifies the exact candidate and places it in the delivery queue.
-verify_patrol_delivery
-
-# This gate is deliberately outside --no-gates. A release may skip broad
-# advisory suites, but it may never ship a frontend that can send the migrated
-# Vault/Authenticator traffic without one explicit organization context.
-info "Verifying every @ai-matrx package is declared and installed at npm latest..."
-if pnpm check:matrx-packages; then
-    ok "Matrx-owned packages are current."
-else
-    fail "MATRX PACKAGE VERSION DRIFT — run pnpm sync:matrx-packages, commit package.json + pnpm-lock.yaml, and retry."
-fi
-
-# MANDATE REFERENCES — deliberately outside --no-gates, because it can never be
-# the reason a release stops (ruling D23, and law 1 of
-# common-docs/projects/mandate-declaration-reporting/REGISTER.md). Skipping the
-# advisory suites must not make the fleet board go blind: every Mandate this
-# build names is reported to the platform with its exact file, symbol and line,
-# together with every place intelligence is reached outside a Mandate, and
-# /administration/mandates/references is what reads it.
-#
-# 🚨 THE VERSION IS PINNED EXACTLY, ON PURPOSE. "Always latest" is THE LAW for
-# @ai-matrx NPM packages — check:matrx-packages above enforces it. This is a
-# PYTHON release gate whose findings are compared between revisions:
-# reconciliation is keyed on (identity, revision_kind, revision) and the identity
-# hash includes the scanner's own classification, so a gate that silently changed
-# what it measured would make every comparison a lie. Bump the pin deliberately,
-# in a commit that says what changed.
-info "Scanning and reporting mandate references (loud, never blocking)..."
-if command -v uvx >/dev/null 2>&1; then
-    pnpm check:mandate-references || true
-    ok "Mandate references scanned and reported (findings above, if any, never block)."
-else
-    warn "uvx not found — this release reported NO mandate references. Install uv (https://astral.sh/uv) so the fleet board stops calling matrx-frontend unmeasured."
-fi
-
-# Also deliberately outside --no-gates, and first because everything after it
-# assumes a tree that compiles. A file that does not PARSE is not a quality
-# opinion: it cannot build, it cannot render, and it takes the shared dev
-# server down for every agent in the checkout. That is exactly what happened
-# on 2026-09-07, when the census-H1 codemod injected its new
-# `@ai-matrx/kit/format` import INSIDE seven multi-line `import {` statements
-# (repaired in fc9a28a26f) — `pnpm type-check` would have caught it as
-# TS1003/1005/1128, but type-check is advisory by standing ruling (D64/D65)
-# and nothing ran it between the codemod and the push. This is ~4s over 14,716
-# files, has zero backlog, and blocks. `pnpm check:parse --fix` repairs the
-# injected-import class.
-info "Verifying every tracked TypeScript file parses..."
-if pnpm check:parse; then
-    ok "Every tracked TypeScript file parses."
-else
-    fail "UNPARSEABLE TYPESCRIPT — release stopped before migrations, version changes, tags, or pushes. Repair the file(s) above (try: pnpm check:parse --fix)."
-fi
-
-info "Enforcing the organization-context transport contract..."
-if pnpm check:organization-context; then
-    ok "Organization-context transport contract passed."
-else
-    fail "ORGANIZATION CONTEXT VIOLATION — release stopped before migrations, version changes, tags, or pushes."
-fi
-
-# ── Apply pending matrx-frontend migrations (via aidream applier) ─────────────
-# Same shared DB + ledger as aidream. This repo cannot run DDL itself (PostgREST
-# only); the co-located aidream checkout owns the Postgres write path.
-# Mirrors aidream's release.sh reconcile: apply pending/drifted, then verify.
-apply_frontend_migrations() {
-    local aidream_dir="${AIDREAM_DIR:-$REPO_ROOT/../aidream}"
-    local applier="$aidream_dir/db/apply_migrations.py"
-
-    if $NO_MIGRATE; then
-        warn "Skipping migration apply (--no-migrate)."
-        return 0
-    fi
-
-    if [[ ! -f "$applier" ]]; then
-        fail "aidream migration applier not found at $applier.
-Set AIDREAM_DIR to your aidream checkout, or pass --no-migrate to skip
-(not recommended — pending FE migrations will not reach Supabase)."
-    fi
-
-    if [[ ! -x "$(command -v uv)" ]] && [[ ! -x "$(command -v python3)" ]]; then
-        fail "Migration apply needs 'uv' or 'python3'."
-    fi
-
-    # Run from the aidream checkout so its .env + uv workspace resolve.
-    # MATRX_FRONTEND_DIR pins THIS repo's migrations/ (worktrees / renames).
-    #
-    # 🚨 `--target production` IS NOT DECORATION. On 2026-09-16 at 03:52:12Z the
-    # scheduled fleet release `release-all: v0.4.1940` applied
-    # `migrations/custom_entity_types_detail_variant.sql` — headed `-- target: branch`
-    # at its only commit — to PRODUCTION, widening two CHECK constraints on
-    # `platform.entity_types`, the registry table 1,571 policies read, with nobody
-    # watching. This function is that path. Two properties made it possible:
-    #
-    #   1. it passed NO --target at all, so the applier fell to its default and the
-    #      header-aware refusal never had to agree with anything; and
-    #   2. the applier is resolved out of a SIBLING CHECKOUT — `${AIDREAM_DIR:-../aidream}`
-    #      — at whatever commit that directory happens to hold, which is not
-    #      necessarily origin/main and was not that night.
-    #
-    # Naming the target fixes both: the flag is now an explicit assertion the runner
-    # must agree with, AND an applier too old to know `--target` exits non-zero on an
-    # unrecognised argument instead of silently sweeping this repo's migrations with
-    # whatever judgement it happened to ship with. That is the capability probe — a
-    # release that cannot prove it is running the header-aware runner does not run.
-    _run_applier() {
-        local mode="$1"  # apply | dry-run
-        (
-            cd "$aidream_dir"
-            export MATRX_FRONTEND_DIR="$REPO_ROOT"
-            if [[ -x "$(command -v uv)" ]]; then
-                if [[ "$mode" == "dry-run" ]]; then
-                    uv run python db/apply_migrations.py --source matrx-frontend --target production --dry-run
-                else
-                    uv run python db/apply_migrations.py --source matrx-frontend --target production --no-generate
-                fi
-            else
-                if [[ "$mode" == "dry-run" ]]; then
-                    python3 db/apply_migrations.py --source matrx-frontend --target production --dry-run
-                else
-                    python3 db/apply_migrations.py --source matrx-frontend --target production --no-generate
-                fi
-            fi
-        )
-    }
-
-    if $DRY_RUN; then
-        info "Checking pending matrx-frontend migrations (dry-run — read-only)..."
-        _run_applier dry-run
-        ok "Migration dry-run complete."
-        return 0
-    fi
-
-    info "Applying pending matrx-frontend migrations (idempotent; no-op if current)..."
-    if ! _run_applier apply; then
-        fail "Migration apply FAILED or was REFUSED — release stopped before the version bump,
-tag and push. Read the applier's refusal above; it names the file and the remedy.
-An applier that does not recognise --target is too old to judge a \`-- target:\` header:
-update the aidream checkout at $aidream_dir (or point AIDREAM_DIR at a current one)."
-    fi
-    ok "Migration apply finished."
-
-    info "Verifying FE migration ledger (pnpm check:migrations:strict)..."
-    if pnpm check:migrations:strict; then
-    ok "Migration ledger verification completed; review advisory findings above."
-    else
-        fail "Migration ledger still has unapplied/drifted files after apply.
-Fix the failures above (or re-run from aidream:
-  MATRX_FRONTEND_DIR=$REPO_ROOT uv run python db/apply_migrations.py --source matrx-frontend --no-generate
-), then re-run this release."
-    fi
-}
-
-# ── ONE JUDGEMENT, OR NO RELEASE (ATTACK-7) ──────────────────────────────────
-# Two runners execute migrations for this platform, and this train runs the OTHER
-# one (apply_frontend_migrations resolves the applier out of the sibling aidream
-# checkout). Until 2026-09-16 they did not enforce the same rules: `-- chair-step:`
-# was a confirmed step in one and a print statement in the other, a header naming
-# production was allow-listed in one and waived in the other, and `--source campaign`
-# demanded its target in one and defaulted to PRODUCTION in the other. So before a
-# single migration is applied, the conformance corpus is run through BOTH runners and
-# this release STOPS if they disagree — with each other or with the corpus. The check
-# opens no database connection. A missing aidream checkout is UNMEASURED, which is a
-# failure here for the same reason: this train applies migrations through that
-# checkout's runner. Spec: migrations/JUDGMENT.md.
-if $DRY_RUN; then
-    info "Checking migration judgment (dry-run — read-only)..."
-    if pnpm check:migration-judgment; then
-        ok "Both migration runners judge the corpus identically."
-    else
-        warn "The two migration runners DISAGREE. A real release would stop here."
-    fi
-else
-    info "Checking that both migration runners judge the same bytes the same way..."
-    if ! pnpm check:migration-judgment; then
-        fail "The two migration runners DISAGREE about the conformance corpus. Every \"both runners\" guarantee in the campaign is void until they do not — fix the runner or the rule (migrations/JUDGMENT.md), never the expectation alone. Nothing was applied."
-    fi
-    ok "Both migration runners judge the corpus identically."
-fi
-
-apply_frontend_migrations
-
-# ── Entity registry drift gate (live DB ↔ installed @ai-matrx/associations) ───
-# The entity-type vocabulary ships in @ai-matrx/associations; this repo keeps
-# no local copy. After migrations the installed package is checked for
-# compatibility with platform.entity_types: removed installed tokens or changed
-# installed metadata halt the release; newly registered tokens warn with the
-# package publication remedy because this build cannot yet produce them.
-if $DRY_RUN; then
-    info "Checking installed entity vocabulary compatibility (dry-run — read-only)..."
-    if pnpm check:entity-types; then
-        ok "Installed entity vocabulary is compatible with platform.entity_types."
-    else
-        warn "Installed entity vocabulary is incompatible. A real release would stop."
-    fi
-else
-    info "Checking installed entity vocabulary compatibility..."
-    if ! pnpm check:entity-types; then
-        fail "Installed entity vocabulary is incompatible with platform.entity_types."
-    fi
-    ok "Installed entity vocabulary is compatible with platform.entity_types."
-fi
-
-# ── Protocol mirror sync (docs/protocol ↔ aidream, byte-identical pact) ──────
-# MATRX_ENVELOPE.md + MATRX_REFERENCES.md + matrx_envelope_registry.generated.json
-# are contractually byte-identical across both repos; aidream is canonical
-# (registry emitted by its generate_envelope_registry.py). Drift here once sat
-# unnoticed at 11/87 shapes. Same co-located-checkout assumption as the
-# migration applier above (AIDREAM_DIR override; missing checkout = warn+skip).
-sync_protocol_mirror() {
-    info "Checking docs/protocol mirror against aidream..."
-    local verdict=0
-    pnpm check:protocol-sync:strict || verdict=$?
-    if [ $verdict -eq 0 ]; then
-        return 0
-    fi
-    # Exit 2 = UNMEASURED (no aidream checkout). There is nothing to sync FROM,
-    # so "auto-syncing from aidream" below would be a lie that commits nothing.
-    # Say what actually happened instead (THE STRICTNESS LAW, clause 7).
-    if [ $verdict -eq 2 ]; then
-        warn "Protocol mirror was NOT verified this run — no aidream checkout (set AIDREAM_DIR)."
-        warn "The byte-identical pact with aidream is UNMEASURED for this release."
-        return 0
-    fi
-    if $DRY_RUN; then
-        warn "Protocol mirror has drifted (see above). A real release would auto-sync from aidream."
-        return 0
-    fi
-    echo "" >&2
-    echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}" >&2
-    echo -e "${RED}║  PROTOCOL MIRROR DRIFT — auto-syncing from aidream           ║${NC}" >&2
-    echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}" >&2
-    echo -e "${YELLOW}  This firing means drift got past a session. If the FE copy held${NC}" >&2
-    echo -e "${YELLOW}  an intentional edit, it is being overwritten (recover from git${NC}" >&2
-    echo -e "${YELLOW}  history) — protocol edits land in aidream FIRST, then sync here.${NC}" >&2
-    pnpm check:protocol-sync:fix
-    git add docs/protocol/
-    git commit -m "chore(protocol): sync docs/protocol mirror from aidream (release.sh auto-sync)"
-    ok "Protocol mirror re-synced and committed."
-}
-
-sync_protocol_mirror
-
-# A source_app/source_feature typo is persisted permanently and corrupts every
-# attribution view downstream. This source-attribution check is ADVISORY ONLY;
-# the separate Pattern Patrol lifecycle authorization above remains fail-closed.
-info "Validating CX source attribution (advisory, never blocking)..."
-if ! pnpm check:source-attribution; then
-    echo "" >&2
-    echo -e "${RED}╔══════════════════════════════════════════════════════════════╗${NC}" >&2
-    echo -e "${RED}║  SOURCE-ATTRIBUTION VIOLATIONS — release continues anyway   ║${NC}" >&2
-    echo -e "${RED}╚══════════════════════════════════════════════════════════════╝${NC}" >&2
-    echo -e "${RED}  Unregistered source_app/source_feature values are being written${NC}" >&2
-    echo -e "${RED}  to the DB permanently. Fix NOW (it will nag on every release):${NC}" >&2
-    echo -e "${YELLOW}    1. See the file:line list above for each violation.${NC}" >&2
-    echo -e "${YELLOW}    2. Register the value in the attribution registry, or correct${NC}" >&2
-    echo -e "${YELLOW}       the call to use an already-registered source_feature.${NC}" >&2
-    echo -e "${YELLOW}    3. Re-run: pnpm check:source-attribution${NC}" >&2
-    echo "" >&2
-    SOURCE_ATTRIBUTION_FAILED=true
-else
-    ok "CX source attribution is registered."
-    SOURCE_ATTRIBUTION_FAILED=false
-fi
-
-# The other half of the same axis: origin_class. Our own screens must DECLARE
-# `initiation` at the AI run door, or the server can only class a person's
-# click as an unattested API caller ('api'). BLOCKING: unlike a mis-typed slug,
-# a missing attestation is invisible in the code and only shows up as wrongly
-# classed conversations weeks later (live census 2026-09-20).
-info "Validating client run-door initiation attestations..."
-if ! pnpm check:client-initiation; then
-    echo "" >&2
-    echo -e "${RED}  A first-party run door does not say how the run began.${NC}" >&2
-    echo -e "${YELLOW}    Add initiation: \"user\" (a person's gesture) or \"auto\"${NC}" >&2
-    echo -e "${YELLOW}    (client code) to each body listed above, then re-run:${NC}" >&2
-    echo -e "${YELLOW}    pnpm check:client-initiation${NC}" >&2
-    fail "Client run-door provenance is undeclared."
-fi
-ok "Every first-party run door declares its initiation."
-
-# ── Read current version ─────────────────────────────────────────────────────
-CURRENT_VERSION=$(node -p "require('./package.json').version" 2>/dev/null) \
-    || fail "Could not read version from $VERSION_FILE."
-
-IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT_VERSION"
-
-# ── Calculate new version ────────────────────────────────────────────────────
-case "$BUMP_TYPE" in
-    patch) NEW_VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))" ;;
-    minor) NEW_VERSION="${MAJOR}.$((MINOR + 1)).0" ;;
-    major) NEW_VERSION="$((MAJOR + 1)).0.0" ;;
-esac
-
-NEW_TAG="v${NEW_VERSION}"
-
-# ── Find the first free version ──────────────────────────────────────────────
-# package.json can lag behind the tags (e.g. someone bumped tags by hand, or a
-# prior release pushed a tag but its package.json commit never landed locally).
-# Rather than fail, keep bumping the patch number until we hit a version whose
-# tag does not exist yet. We always advance the PATCH component for the search
-# (even on minor/major) so the base bump is preserved and we never collide.
-git fetch --tags "$REMOTE" 2>/dev/null || true
-SEARCH_BUMPS=0
-while git rev-parse "$NEW_TAG" &>/dev/null; do
-    IFS='.' read -r N_MAJOR N_MINOR N_PATCH <<< "$NEW_VERSION"
-    NEW_VERSION="${N_MAJOR}.${N_MINOR}.$((N_PATCH + 1))"
-    NEW_TAG="v${NEW_VERSION}"
-    SEARCH_BUMPS=$((SEARCH_BUMPS + 1))
-    if [[ $SEARCH_BUMPS -gt 10000 ]]; then
-        fail "Could not find a free version tag after 10000 attempts. Something is wrong."
-    fi
-done
-
-if [[ $SEARCH_BUMPS -gt 0 ]]; then
-    warn "Existing tag(s) ahead of package.json — advanced to first free version ${NEW_VERSION} (skipped ${SEARCH_BUMPS} taken tag(s))."
-fi
-
-# ── Build commit message ─────────────────────────────────────────────────────
-# MUST start with the target's release prefix — vercel.json ignoreCommand
-# skips every other commit message, so a custom message without the prefix
-# would ship a tag that never deploys. Format: "<prefix> vX.Y.Z - note".
 case "$TARGET" in
     main)  PREFIX="release:" ;;
     admin) PREFIX="release-admin:" ;;
     demos) PREFIX="release-demos:" ;;
     all)   PREFIX="release-all:" ;;
 esac
-NOTE="$CUSTOM_MESSAGE"
-for P in "release-admin:" "release-demos:" "release-all:" "release:"; do
-    if [[ "$NOTE" == "$P"* ]]; then
-        NOTE="${NOTE#"$P"}"
-        NOTE="${NOTE# }"
-        break
+
+# THE RELEASE-COMMIT CONTENT LAW lives in one file; --ship commits through it.
+# shellcheck source=scripts/release-stage.sh
+source "$SCRIPT_DIR/release-stage.sh"
+
+# ── Findings: printed as a table AND written as one JSON line each ───────────
+SHIP_PUSH_ATTEMPTS=5
+SHIP_FINDINGS=()
+SHIP_WT=""
+SHIP_START=$SECONDS
+SHIP_FINDINGS_JSON="${SHIP_FINDINGS_JSON:-${RELEASE_LOG_DIR:-$REPO_ROOT/tmp/release-logs}/findings-ship-${RELEASE_LOG_STAMP:-$$}.jsonl}"
+# ship_finding LEVEL CATEGORY "title" ["remedy"]
+ship_finding() {
+    SHIP_FINDINGS+=("$1|$2|$3|${4:-}")
+    mkdir -p "$(dirname "$SHIP_FINDINGS_JSON")"
+    node -e '
+const [path, level, category, title, remedy] = process.argv.slice(1);
+const crypto = require("crypto"), fs = require("fs");
+const lane = category.toLowerCase();
+const norm = title.toLowerCase().replace(/\d+/g, "N").replace(/\s+/g, " ").trim();
+const row = { check: `ship-${lane}`, category: lane, level: level.toLowerCase(), title: title.slice(0, 100), count: 1,
+  fingerprint: crypto.createHash("sha1").update(`ship-${lane}\n${norm}`).digest("hex"),
+  remedy: remedy || "", detail: process.env.RELEASE_LOG_FILE || "" };
+fs.appendFileSync(path, JSON.stringify(row) + "\n");
+' "$SHIP_FINDINGS_JSON" "$1" "$2" "$3" "${4:-}" 2>/dev/null || true
+}
+ship_quiet() {
+    if [[ -n "${RELEASE_LOG_FILE:-}" ]]; then "$@" >>"$RELEASE_LOG_FILE" 2>&1; else "$@" >/dev/null 2>&1; fi
+}
+ship_mark() {
+    [[ -n "${RELEASE_LOG_FILE:-}" ]] || return 0
+    printf '[ship %3ss] %s\n' "$((SECONDS - SHIP_START))" "$*" >>"$RELEASE_LOG_FILE"
+}
+ship_print_findings() {
+    [[ ${#SHIP_FINDINGS[@]} -gt 0 ]] || return 0
+    echo ""
+    printf '%-8s %-12s %s\n' "LEVEL" "CATEGORY" "FINDING"
+    local row
+    for row in "${SHIP_FINDINGS[@]}"; do
+        IFS='|' read -r f_level f_cat f_text f_remedy <<< "$row"
+        printf '%-8s %-12s %s%s\n' "$f_level" "$f_cat" "$f_text" "${f_remedy:+  → $f_remedy}"
+    done
+}
+# ONE persistent private worktree, moved to origin/main each release. Creating a
+# fresh one checks out every file (minutes on this repo); moving this one
+# rewrites only what changed. Gitignored (.wt/); nobody else writes there.
+ship_prepare_worktree() {
+    SHIP_WT="$REPO_ROOT/.wt/release"
+    if [[ -e "$SHIP_WT/.git" ]] \
+        && ship_quiet git -C "$SHIP_WT" checkout --detach --force --quiet "$REMOTE/$BRANCH" \
+        && ship_quiet git -C "$SHIP_WT" reset --hard --quiet "$REMOTE/$BRANCH"; then
+        return 0
     fi
-done
-# If the note already starts with the tag, don't double it.
-if [[ -n "$NOTE" && "$NOTE" != "$NEW_TAG" && "$NOTE" != "$NEW_TAG"* ]]; then
-    COMMIT_MSG="${PREFIX} ${NEW_TAG} - ${NOTE}"
-elif [[ -n "$NOTE" && ( "$NOTE" == "$NEW_TAG" || "$NOTE" == "$NEW_TAG"* ) ]]; then
-    COMMIT_MSG="${PREFIX} ${NOTE}"
-else
-    COMMIT_MSG="${PREFIX} ${NEW_TAG}"
+    ship_quiet git worktree remove --force "$SHIP_WT" || rm -rf -- "$SHIP_WT"
+    ship_quiet git worktree prune || true
+    ship_quiet git worktree add --detach "$SHIP_WT" "$REMOTE/$BRANCH"
+}
+# Pending migrations sweep: this repo has no DDL path of its own; the co-located
+# aidream checkout owns the Postgres write path and the shared ledger.
+# `--target production` is an assertion the applier must agree with (2026-09-16:
+# a `-- target: branch` file reached production through an applier that had no
+# such flag); an applier too old to know it exits non-zero, which is a finding.
+ship_apply_migrations() {
+    # Bounded: a hung applier (uv stall, .venv lock, Postgres lock) becomes the
+    # ERROR finding below (exit 124), never an endless wait before the push.
+    (
+        cd "$AIDREAM_DIR"
+        export MATRX_FRONTEND_DIR="$REPO_ROOT"
+        timeout 900 uv run python db/apply_migrations.py --source matrx-frontend --target production --no-generate
+    )
+}
+ship_read_version() { sed -n 's/^  "version": "\([^"]*\)".*/\1/p' "$1" | head -1; }
+ship_write_version() {  # file old new
+    local tmp; tmp="$(mktemp)"
+    sed "s/^  \"version\": \"$2\"/  \"version\": \"$3\"/" "$1" > "$tmp" && cat "$tmp" > "$1"; rm -f "$tmp"
+    [[ "$(ship_read_version "$1")" == "$3" ]]
+}
+ship_commit_message() {  # tag → "prefix vX.Y.Z[ - note]"
+    local note="$CUSTOM_MESSAGE" p
+    for p in "release-admin:" "release-demos:" "release-all:" "release:"; do
+        if [[ "$note" == "$p"* ]]; then note="${note#"$p"}"; note="${note# }"; break; fi
+    done
+    if [[ -n "$note" && "$note" != "$1"* ]]; then echo "${PREFIX} $1 - ${note}"
+    elif [[ -n "$note" ]]; then echo "${PREFIX} ${note}"
+    else echo "${PREFIX} $1"; fi
+}
+
+# ── --ship: commit EXACTLY the named paths in this checkout, before anything ─
+# The commit rides into the release through the worktree merge below. With no
+# named paths there is nothing of yours to commit: it is a bump-only release
+# and every dirty path stays exactly as its owner left it.
+if [[ "${RELEASE_PHASE:-ship}" == "ship" ]] && $SHIP_MODE && [[ ${#SHIP_PATHS[@]} -gt 0 ]]; then
+    release_stage_validate_paths ${SHIP_PATHS[@]+"${SHIP_PATHS[@]}"} \
+        || fail "--ship was given a pathspec it cannot commit (see above). Nothing has been changed."
+    SHIP_PATHS=("${RELEASE_STAGE_PATHS[@]}")
+    RELEASE_STAGE_CALLER_PWD="$REPO_ROOT"
+    if $DRY_RUN; then
+        preview "Would commit ONLY the named paths, then release:"
+        release_stage_preview -- "${SHIP_PATHS[@]}"
+    elif [[ -z "$(_rs_status -- "${SHIP_PATHS[@]}")" ]]; then
+        ship_finding "WARNING" "Git" "Named paths carry no change against HEAD — bump-only release" ""
+    else
+        # The primitive proves it excludes foreign edits before it is trusted (~1s).
+        if ! ship_quiet bash "$SCRIPT_DIR/release-stage.sh" --self-test; then
+            ship_finding "WARNING" "Git" "release-stage self-test failed — the pathspec commit was made anyway" "pnpm check:ship-stage:self-test"
+        fi
+        COMMIT_MSG="$CUSTOM_MESSAGE"
+        release_stage_commit "$COMMIT_MSG" -- "${SHIP_PATHS[@]}" \
+            || fail "Could not commit the named paths (see above). Nothing has been pushed."
+        ship_mark "committed named paths: ${SHIP_PATHS[*]}"
+    fi
 fi
 
-# The version files are the only content a release commit carries on its own.
-RELEASE_VERSION_FILES=("$VERSION_FILE")
-[[ -f package-lock.json ]] && RELEASE_VERSION_FILES+=(package-lock.json)
-
-# ── Preview ──────────────────────────────────────────────────────────────────
-echo ""
-echo -e "${BOLD}  ${PROJECT_NAME} release${NC}"
-echo -e "  ─────────────────────────────────────────────"
-echo -e "  Target     : ${CYAN}${TARGET}${NC}"
-echo -e "  Bump type  : ${CYAN}${BUMP_TYPE}${NC}"
-echo -e "  Old version: ${CURRENT_VERSION}"
-echo -e "  New version: ${GREEN}${NEW_VERSION}${NC}"
-echo -e "  Tag        : ${GREEN}${NEW_TAG}${NC}"
-echo -e "  Commit msg : ${CYAN}${COMMIT_MSG}${NC}"
-$DRY_RUN && echo -e "  Mode       : ${CYAN}DRY RUN — nothing will be changed${NC}"
-echo -e "  ─────────────────────────────────────────────"
-echo ""
-
+# ── Dry run: what would ship, from origin/main's point of view ───────────────
 if $DRY_RUN; then
-    preview "Would update version in $VERSION_FILE: $CURRENT_VERSION → $NEW_VERSION"
-    preview "Would commit: '$COMMIT_MSG'"
-    release_stage_preview "${RELEASE_VERSION_FILES[@]}" -- ${SHIP_PATHS[@]+"${SHIP_PATHS[@]}"}
-    preview "Would create tag: $NEW_TAG"
-    preview "Would push to $REMOTE/$BRANCH"
-    echo ""
+    git fetch --quiet "$REMOTE" "$BRANCH" 2>/dev/null || fail "Cannot reach GitHub ($REMOTE/$BRANCH)."
+    DRY_CURRENT="$(git show "$REMOTE/$BRANCH:$VERSION_FILE" | sed -n 's/^  "version": "\([^"]*\)".*/\1/p' | head -1)"
+    IFS='.' read -r V_MAJOR V_MINOR V_PATCH <<< "$DRY_CURRENT"
+    case "$BUMP_TYPE" in
+        patch) V_PATCH=$((V_PATCH + 1)) ;;
+        minor) V_MINOR=$((V_MINOR + 1)); V_PATCH=0 ;;
+        major) V_MAJOR=$((V_MAJOR + 1)); V_MINOR=0; V_PATCH=0 ;;
+    esac
+    DRY_TAG="v${V_MAJOR}.${V_MINOR}.${V_PATCH}"
+    preview "origin/main is at ${DRY_CURRENT}; would release ${DRY_TAG} as '$(ship_commit_message "$DRY_TAG")' (target: $TARGET)"
+    LOCAL_AHEAD=$(git rev-list --count "$REMOTE/$BRANCH..HEAD" 2>/dev/null || echo 0)
+    if [[ "$LOCAL_AHEAD" -gt 0 ]]; then
+        preview "Would merge ${LOCAL_AHEAD} local commit(s) not on $REMOTE/$BRANCH into the release:"
+        git log --oneline "$REMOTE/$BRANCH..HEAD" | sed 's/^/          /'
+    fi
+    if $NO_MIGRATE; then preview "Would NOT apply pending migrations (--no-migrate)."
+    elif [[ -f "$AIDREAM_DIR/db/apply_migrations.py" ]] && command -v uv >/dev/null 2>&1; then
+        preview "Pending migrations (read-only check):"
+        ( cd "$AIDREAM_DIR" && MATRX_FRONTEND_DIR="$REPO_ROOT" uv run python db/apply_migrations.py --source matrx-frontend --target production --dry-run ) 2>&1 | sed 's/^/          /' || true
+    else
+        preview "Would record an ERROR finding: no aidream applier/uv — pending migrations could not be applied."
+    fi
+    preview "Dirty paths in this checkout are never touched: $(git status --porcelain --untracked-files=all | wc -l | tr -d ' ')"
     preview "Dry run complete. No changes made."
     exit 0
 fi
 
-# ── Update package.json (+ package-lock.json if present) ─────────────────────
-npm version "$NEW_VERSION" --no-git-tag-version --allow-same-version >/dev/null 2>&1
-ok "$VERSION_FILE → $NEW_VERSION"
+# ══ THE SHIP PATH ════════════════════════════════════════════════════════════
+if [[ "$RELEASE_PHASE" == "ship" ]]; then
+    acquire_release_lock
 
-# ── Commit (THE RELEASE-COMMIT CONTENT LAW — scripts/release-stage.sh) ───────
-# One pathspec-scoped commit: the version files, plus (--ship) the paths the
-# invoker named. `git commit -- <paths>` takes the working-tree content of
-# those paths only and disregards every other path, staged or not — so
-# another lane's `git add` cannot ride along, and nothing foreign is touched
-# (the old `git reset HEAD -- .` that unstaged their work is gone too).
-info "Committing..."
-release_stage_commit "$COMMIT_MSG" "${RELEASE_VERSION_FILES[@]}" -- ${SHIP_PATHS[@]+"${SHIP_PATHS[@]}"} \
-    || fail "Release commit failed (see above)."
-echo ""
-ok "Committed: '$COMMIT_MSG' — $(git show --stat --format= HEAD | grep -c '|') file(s):"
-git show --stat --format= HEAD | grep '|' | sed 's/^/    /'
-if working_tree_dirty; then
-    info "Left uncommitted (not named, not yours to ship): $(git status --porcelain --untracked-files=all | wc -l | tr -d ' ') path(s)."
-fi
-
-# --ship materializes caller-selected product files at the commit above, so it
-# needs a second patrol check. A plain release commit is restricted by
-# release-stage.sh to version metadata only; re-scanning every permanent patrol
-# record would repeat the same expensive history check without changing its
-# answer.
-if $SHIP_MODE; then
-    verify_patrol_delivery
-else
-    ok "Plain release commit contains version metadata only; patrol history remains unchanged."
-fi
-
-# Runtime dependency admission: manifests shipped in this exact commit must
-# have their database registrations. Independent of advisory quality gates.
-info "Checking committed surface registrations in the live database..."
-if ! pnpm exec tsx scripts/check-release-surface-registration.ts; then
-    die_after_commit "Surface registration is incomplete. The candidate is committed but unpushed. Run the named scoped surface sync, verify it, and resume delivery."
-fi
-
-# ── Tag ──────────────────────────────────────────────────────────────────────
-info "Creating tag $NEW_TAG..."
-git tag "$NEW_TAG"
-ok "Tag $NEW_TAG created"
-
-# ── Push (branch + tag atomically; preserve on a remote race) ─────────────────
-# --atomic guarantees the branch and tag push together or not at all, so a
-# rejection never leaves a half-pushed state. The pre-flight block above makes
-# rejection rare; this only triggers if the remote moved during the few seconds
-# we spent bumping/committing/tagging.
-info "Pushing to $REMOTE/$BRANCH..."
-if git push --atomic "$REMOTE" "$BRANCH" "$NEW_TAG" 2>/dev/null; then
-    ok "Pushed to $REMOTE/$BRANCH with tag $NEW_TAG"
-else
-    warn "Push rejected — $REMOTE/$BRANCH moved while we were releasing. Preserving the local release for controller reconciliation."
-    git fetch "$REMOTE" "$BRANCH" 2>/dev/null || die_after_commit "$(cat <<EOF
-Push was rejected and we could not re-fetch $REMOTE.
-Your release commit and tag $NEW_TAG exist locally; nothing was force-pushed.
-Once you are back online:
-    Ask the delivery controller to resume this release. It must reacquire the
-    lane and revalidate the exact HEAD. Do not push the branch or tag manually.
-EOF
-)"
-    die_after_commit "$(cat <<EOF
-$REMOTE/$BRANCH moved after the release commit and tag were created.
-Your local release commit and tag $NEW_TAG are preserved; nothing was rebased,
-force-pushed, or partially pushed. Ask the delivery controller to reconcile the
-remote race from the current remote head and revalidate both histories. Do not
-push the branch or tag manually.
-EOF
-)"
-fi
-
-# ── Outcome (THE RELEASE-BANNER TRUTH LAW — scripts/release-outcome.sh) ──────
-# The push is not the release. Until 2026-09-11 the green "Released" box was
-# printed right here, unconditionally, and this script never called Vercel — so
-# an ERRORed, CANCELED or ignore-script-skipped rollout printed exactly what a
-# live one printed. Now the rollout is watched and the banner reports it.
-PUSHED_SHA="$(git rev-parse HEAD)"
-echo ""
-echo -e "  GitHub:  ${CYAN}https://github.com/${GITHUB_REPO}/commit/${PUSHED_SHA}${NC}"
-
-RELEASE_OUTCOME_RC=0
-if $NO_WATCH; then
-    echo ""
-    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo -e "${YELLOW}  UNWATCHED — pushed v${NEW_VERSION}; the rollout was NOT checked.${NC}"
-    echo -e "${YELLOW}  --no-watch was passed, so this run makes NO claim that the${NC}"
-    echo -e "${YELLOW}  build succeeded or that anything is live.${NC}"
-    echo -e "${YELLOW}  Commit: ${PUSHED_SHA}${NC}"
-    echo -e "${YELLOW}  Check it: bash scripts/release-outcome.sh --report ${TARGET} \"${COMMIT_MSG}\" ${PUSHED_SHA}${NC}"
-    echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-    echo ""
-    RELEASE_OUTCOME_RC=3
-else
-    # The guard proves itself failing-then-passing before it is believed — same
-    # contract as the release-stage self-test above. No network, ~1s.
-    info "Proving the release-outcome banner (self-test)..."
-    if bash "$SCRIPT_DIR/release-outcome.sh" --self-test >/dev/null 2>&1; then
-        ok "release-outcome self-test passed (old unconditional banner reproduced, then gated)."
+    SHIP_MIG_PID=""
+    if $NO_MIGRATE; then
+        :
+    elif [[ ! -f "$AIDREAM_DIR/db/apply_migrations.py" ]]; then
+        ship_finding "ERROR" "Migrations" "aidream applier not found at $AIDREAM_DIR — pending migrations were NOT applied" "AIDREAM_DIR=<aidream checkout> pnpm check:migrations:strict"
+    elif ! command -v uv >/dev/null 2>&1; then
+        ship_finding "ERROR" "Migrations" "uv is not installed — pending migrations were NOT applied" "pnpm check:migrations:strict"
     else
-        bash "$SCRIPT_DIR/release-outcome.sh" --self-test || true
-        warn "release-outcome self-test FAILED — the banner below cannot be trusted; verify the deployment by hand."
+        ship_quiet ship_apply_migrations &
+        SHIP_MIG_PID=$!
     fi
-    release_outcome_report "$TARGET" "$COMMIT_MSG" "$PUSHED_SHA" "$NEW_VERSION" || RELEASE_OUTCOME_RC=$?
-fi
 
-# ── Advisory quality gates (post-push — never block the ship) ────────────────
-# These post-push gates cannot stop a release; the fail-closed Pattern Patrol
-# authorization already ran before release mutation. Each gate announces itself
-# before it starts so a slow check never looks hung. Failures scream; the ship
-# already sailed.
-if $NO_GATES; then
-    warn "Skipping advisory quality gates (--no-gates)."
-elif $ASYNC_GATES; then
-    echo ""
-    info "Enqueueing advisory release quality gates (post-push, detached)..."
-    if ASYNC_GATE_JOB="$(node "$SCRIPT_DIR/release-async-gates.mjs" enqueue)"; then
-        ok "Advisory gates queued; release delivery lease is independent of this quality work."
-        echo "  $ASYNC_GATE_JOB"
-        echo "  Status: node $SCRIPT_DIR/release-async-gates.mjs status"
-    else
-        warn "Advisory gates were NOT queued. The pushed release needs manual quality follow-up; no gate result was recorded."
+    SHIP_FETCHED=false
+    for _ in 1 2 3; do
+        if ship_quiet git fetch --quiet "$REMOTE" "$BRANCH"; then SHIP_FETCHED=true; break; fi
+        sleep 2
+    done
+    $SHIP_FETCHED || fail "Cannot reach GitHub ($REMOTE/$BRANCH) — nothing was changed."
+    ship_mark "fetched $REMOTE/$BRANCH"
+
+    SHIP_LOCAL_HEAD=$(git rev-parse HEAD)
+    ship_prepare_worktree \
+        || fail "Could not prepare the private release worktree (.wt/release) — nothing was changed."
+    ship_mark "private worktree ready"
+
+    # This checkout's commits that are not on origin yet (the --ship commit,
+    # other sessions' unpushed work) ride along. If they conflict, main ships.
+    # Only main's commits ride: a checkout parked on some other branch would
+    # otherwise ship that branch.
+    SHIP_LOCAL_BRANCH="$(git rev-parse --abbrev-ref HEAD)"
+    if [[ "$SHIP_LOCAL_BRANCH" != "$BRANCH" ]]; then
+        ship_finding "WARNING" "Git" "This checkout is on '$SHIP_LOCAL_BRANCH', not $BRANCH — its commits were not merged into the release" "git checkout main"
+        SHIP_LOCAL_HEAD="$(git rev-parse "$REMOTE/$BRANCH")"
     fi
-else
-    echo ""
-    info "Running advisory release quality gates (post-push, non-blocking)..."
-    # Explicit --advisory + || true so a future strict default cannot abort release.
-    bash "$SCRIPT_DIR/run-release-gates.sh" --advisory || true
+    ship_merge_local() {
+        git merge-base --is-ancestor "$SHIP_LOCAL_HEAD" "$(git -C "$SHIP_WT" rev-parse HEAD)" && return 0
+        if ! ship_quiet git -C "$SHIP_WT" -c core.hooksPath=/dev/null merge --no-edit "$SHIP_LOCAL_HEAD"; then
+            ship_quiet git -C "$SHIP_WT" merge --abort || true
+            ship_quiet git -C "$SHIP_WT" reset --hard "$REMOTE/$BRANCH"
+            ship_finding "ERROR" "Git" "Local commits conflict with $REMOTE/$BRANCH — shipped $BRANCH without ${SHIP_LOCAL_HEAD:0:9}" "git pull --no-rebase origin main"
+        fi
+    }
+    ship_merge_local
+
+    SHIP_REMOTE_TAGS=$(git ls-remote --tags "$REMOTE" 'refs/tags/v*' 2>/dev/null || true)
+    ship_tag_taken() {
+        git rev-parse -q --verify "refs/tags/$1" >/dev/null && return 0
+        grep -q "refs/tags/$1\$" <<< "$SHIP_REMOTE_TAGS"
+    }
+
+    if [[ -n "$SHIP_MIG_PID" ]] && ! wait "$SHIP_MIG_PID"; then
+        ship_finding "ERROR" "Migrations" "A pending migration failed to apply or was refused — see the release log" "pnpm check:migrations:strict"
+    fi
+    ship_mark "migrations done"
+
+    # A rejected push is a lost race only when origin really moved. A network
+    # blip is retried with a pause and does not count against SHIP_PUSH_ATTEMPTS.
+    SHIP_PUSHED=false
+    SHIP_RACES=0
+    SHIP_BLIPS=0
+    while (( SHIP_RACES < SHIP_PUSH_ATTEMPTS && SHIP_BLIPS < 10 )); do
+        CURRENT_VERSION="$(ship_read_version "$SHIP_WT/$VERSION_FILE")"
+        [[ -n "$CURRENT_VERSION" ]] || fail "Could not read the version from $VERSION_FILE on $REMOTE/$BRANCH."
+        IFS='.' read -r V_MAJOR V_MINOR V_PATCH <<< "$CURRENT_VERSION"
+        case "$BUMP_TYPE" in
+            patch) V_PATCH=$((V_PATCH + 1)) ;;
+            minor) V_MINOR=$((V_MINOR + 1)); V_PATCH=0 ;;
+            major) V_MAJOR=$((V_MAJOR + 1)); V_MINOR=0; V_PATCH=0 ;;
+        esac
+        while ship_tag_taken "v${V_MAJOR}.${V_MINOR}.${V_PATCH}"; do V_PATCH=$((V_PATCH + 1)); done
+        NEW_VERSION="${V_MAJOR}.${V_MINOR}.${V_PATCH}"
+        NEW_TAG="v${NEW_VERSION}"
+        RELEASE_COMMIT_MSG="$(ship_commit_message "$NEW_TAG")"
+
+        ship_write_version "$SHIP_WT/$VERSION_FILE" "$CURRENT_VERSION" "$NEW_VERSION" \
+            || fail "Could not write version ${NEW_VERSION} into $VERSION_FILE — nothing was pushed."
+        ship_quiet git -C "$SHIP_WT" -c core.hooksPath=/dev/null commit -q -m "$RELEASE_COMMIT_MSG" -- "$VERSION_FILE" \
+            || fail "Could not create the release commit in the private worktree — nothing was pushed."
+        RELEASE_SHA=$(git -C "$SHIP_WT" rev-parse HEAD)
+
+        if ship_quiet git -C "$SHIP_WT" push "$REMOTE" "HEAD:refs/heads/$BRANCH"; then
+            SHIP_PUSHED=true
+            break
+        fi
+        SHIP_SEEN_REMOTE=$(git rev-parse "$REMOTE/$BRANCH")
+        if ship_quiet git fetch --quiet "$REMOTE" "$BRANCH" \
+            && [[ "$(git rev-parse "$REMOTE/$BRANCH")" != "$SHIP_SEEN_REMOTE" ]]; then
+            SHIP_RACES=$((SHIP_RACES + 1))
+            ship_mark "lost push race ${SHIP_RACES} — retrying on the new $BRANCH"
+        else
+            SHIP_BLIPS=$((SHIP_BLIPS + 1))
+            ship_mark "push failed without $BRANCH moving (network?) — pause, retry ${SHIP_BLIPS}"
+            sleep $((SHIP_BLIPS * 3))
+        fi
+        SHIP_REMOTE_TAGS=$(git ls-remote --tags "$REMOTE" 'refs/tags/v*' 2>/dev/null || echo "$SHIP_REMOTE_TAGS")
+        ship_quiet git -C "$SHIP_WT" reset --hard "$REMOTE/$BRANCH"
+        ship_merge_local
+    done
+    if ! $SHIP_PUSHED; then
+        (( SHIP_RACES >= SHIP_PUSH_ATTEMPTS )) \
+            && fail "Lost the push race ${SHIP_PUSH_ATTEMPTS} times in a row — nothing was released. Run it again."
+        fail "Cannot push to GitHub ($REMOTE/$BRANCH) — nothing was released."
+    fi
+    ship_mark "pushed ${RELEASE_SHA:0:9} as ${RELEASE_COMMIT_MSG}"
+
+    # main carries a release-prefixed commit: Vercel is building. From here on
+    # nothing may stop it; everything below is a finding at worst.
+    trap - ERR
+    set +e
+    if ! ship_quiet git tag -f "$NEW_TAG" "$RELEASE_SHA" || ! ship_quiet git push "$REMOTE" "$NEW_TAG"; then
+        ship_finding "ERROR" "Git" "Tag $NEW_TAG did not reach $REMOTE — push it by hand" "git push origin $NEW_TAG"
+    fi
+    release_log_name_version "$NEW_VERSION"
+
+    # Catch this checkout up. Fast-forward only: it never rewrites anyone's
+    # uncommitted files, and refusing is a warning — the build is already running.
+    if [[ "$(git rev-parse --abbrev-ref HEAD)" == "$BRANCH" ]]; then
+        ship_quiet git merge --ff-only "$REMOTE/$BRANCH" \
+            || ship_finding "WARNING" "Git" "This checkout could not fast-forward to $NEW_TAG — pull when convenient" "git pull --no-rebase origin main"
+    fi
+
+    echo "${NEW_TAG}  pushed, build started  ($((SECONDS - SHIP_START))s)"
+    ship_print_findings
+
+    # Everything that is not needed to make the build runs now, detached.
+    # RELEASE_AFTER_PHASE=off is the ship-path guard's switch (test-release-ship-path.sh).
+    if $NO_GATES || [[ "${RELEASE_AFTER_PHASE:-on}" == "off" ]]; then
+        exit 0
+    fi
+    export RELEASE_PHASE=after CURRENT_VERSION NEW_VERSION NEW_TAG RELEASE_SHA RELEASE_COMMIT_MSG SHIP_FINDINGS_JSON TARGET
+    if $RUN_CHECKS; then
+        release_lock_cleanup; RELEASE_LOCK_HELD=false
+        exec "$0" ${RELEASE_ORIGINAL_ARGS[@]+"${RELEASE_ORIGINAL_ARGS[@]}"}
+    fi
+    nohup "$0" ${RELEASE_ORIGINAL_ARGS[@]+"${RELEASE_ORIGINAL_ARGS[@]}"} </dev/null >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1 &
+    disown || true
+    exit 0
 fi
 
-# Re-nag at the very end so an attribution failure is the last thing on screen.
-if [[ "${SOURCE_ATTRIBUTION_FAILED:-false}" == "true" ]]; then
-    echo "" >&2
-    echo -e "${RED}REMINDER: source-attribution violations shipped in ${NEW_VERSION}.${NC}" >&2
-    echo -e "${RED}Fix them and they stop nagging: pnpm check:source-attribution${NC}" >&2
-    echo "" >&2
-fi
-
-# ── The last word is the rollout, not the push ───────────────────────────────
-# The advisory gates above can scroll the outcome box off screen, and the reader
-# of this script is an agent that reads the tail. So the verdict is repeated
-# here and carried in the exit code: a release whose build did not reach
-# production must not exit 0. The ERR trap is cleared first — its "No version
-# was committed, tagged, or pushed" box would be a lie (all three happened).
+# ══ THE AFTER PHASE ══════════════════════════════════════════════════════════
+# The build is already going. Nothing here can stop it, and nothing here
+# reaches the terminal unless --with-checks asked for it: the rollout watch,
+# the checks, and the fixer dispatch all write to the release log and to
+# tmp/release-logs/findings-vX.Y.Z.jsonl.
+acquire_release_lock
 trap - ERR
-case "$RELEASE_OUTCOME_RC" in
-    0) ;;  # READY + serving on every targeted project; the green box stands.
-    2)
-        echo -e "${YELLOW}REMINDER: v${NEW_VERSION} (${PUSHED_SHA:0:10}) was pushed but its rollout is UNVERIFIED — no Vercel credential.${NC}" >&2
-        echo -e "${YELLOW}  \`vercel login\`, or export VERCEL_TOKEN, then: bash scripts/release-outcome.sh --report ${TARGET} \"${COMMIT_MSG}\" ${PUSHED_SHA}${NC}" >&2
-        echo "" >&2 ;;
-    3)
-        echo -e "${YELLOW}REMINDER: v${NEW_VERSION} (${PUSHED_SHA:0:10}) was pushed UNWATCHED (--no-watch). Nothing here claims it is live.${NC}" >&2
-        echo "" >&2 ;;
-    *)
-        echo -e "${RED}ROLLOUT FAILED: v${NEW_VERSION} (${PUSHED_SHA:0:10}) was pushed and tagged, but it is NOT live — see the red box above.${NC}" >&2
-        echo -e "${RED}Users are still on the previous build. Fix the build and release again.${NC}" >&2
-        echo "" >&2
-        exit 1 ;;
-esac
+set +e
+: "${NEW_TAG:=$(git describe --tags --match 'v*' --abbrev=0 HEAD 2>/dev/null || git rev-parse --short HEAD)}"
+: "${NEW_VERSION:=${NEW_TAG#v}}"
+: "${RELEASE_SHA:=$(git rev-parse HEAD)}"
+: "${RELEASE_COMMIT_MSG:=$(git log -1 --format=%s "$RELEASE_SHA" 2>/dev/null || echo "release: $NEW_TAG")}"
+CHECKS_JSON="${RELEASE_LOG_DIR:-$REPO_ROOT/tmp/release-logs}/findings-${NEW_TAG}.jsonl"
+mkdir -p "$(dirname "$CHECKS_JSON")"
+ROLLOUT_JSON="${CHECKS_JSON}.rollout"
+: > "$ROLLOUT_JSON"
+
+# ── Rollout watch (THE RELEASE-BANNER TRUTH LAW, scripts/release-outcome.sh) ──
+# The push is not the release. Green means READY on every targeted Vercel
+# project AND serving on the live domain; anything else is an ERROR finding
+# (or a WARNING when there is no Vercel credential to look with).
+after_watch_rollout() {
+    # shellcheck source=scripts/release-outcome.sh
+    source "$SCRIPT_DIR/release-outcome.sh"
+    local rc=0
+    release_outcome_report "$TARGET" "$RELEASE_COMMIT_MSG" "$RELEASE_SHA" "$NEW_VERSION" || rc=$?
+    case "$rc" in
+        0) ;;
+        2) SHIP_FINDINGS_JSON="$ROLLOUT_JSON" ship_finding "WARNING" "Rollout" "UNVERIFIED — ${NEW_TAG} was pushed but no Vercel credential could confirm the build" "bash scripts/release-outcome.sh --report $TARGET \"$RELEASE_COMMIT_MSG\" $RELEASE_SHA" ;;
+        *) SHIP_FINDINGS_JSON="$ROLLOUT_JSON" ship_finding "ERROR" "Rollout" "ROLLOUT FAILED: ${NEW_TAG} (${RELEASE_SHA:0:10}) is pushed but NOT live — see the release log" "bash scripts/release-outcome.sh --report $TARGET \"$RELEASE_COMMIT_MSG\" $RELEASE_SHA" ;;
+    esac
+}
+WATCH_PID=""
+if $NO_WATCH; then
+    SHIP_FINDINGS_JSON="$ROLLOUT_JSON" ship_finding "WARNING" "Rollout" "UNWATCHED — ${NEW_TAG} was pushed with --no-watch; nothing here claims it is live" "bash scripts/release-outcome.sh --report $TARGET \"$RELEASE_COMMIT_MSG\" $RELEASE_SHA"
+else
+    after_watch_rollout &
+    WATCH_PID=$!
+fi
+
+# ── Checks: ONE parallel runner, ONE table, findings as JSON (scripts/checks/run.mjs)
+# Rows come from scripts/run-release-gates.sh --list plus the checks the old
+# script used to run before the push (matrx-packages, organization-context,
+# client-initiation, migration judgment, surface registration, …). A check
+# NEVER blocks: the runner exits 0; a nonzero exit means the RUNNER crashed.
+RUNNER_OK=true
+if $RUN_CHECKS; then
+    node "$SCRIPT_DIR/checks/run.mjs" --json "$CHECKS_JSON" \
+        || { RUNNER_OK=false; warn "The check runner itself crashed — nothing was measured. The release is not affected."; }
+else
+    node "$SCRIPT_DIR/checks/run.mjs" --json "$CHECKS_JSON" >>"${RELEASE_LOG_FILE:-/dev/null}" 2>&1 \
+        || { RUNNER_OK=false; warn "The check runner itself crashed — nothing was measured. The release is not affected."; }
+fi
+[[ -n "$WATCH_PID" ]] && wait "$WATCH_PID"
+# Ship-path and rollout findings ride the same dispatch as the checks' findings.
+[[ -s "${SHIP_FINDINGS_JSON:-}" ]] && cat "$SHIP_FINDINGS_JSON" >> "$CHECKS_JSON"
+[[ -s "$ROLLOUT_JSON" ]] && cat "$ROLLOUT_JSON" >> "$CHECKS_JSON"
+rm -f "$ROLLOUT_JSON"
+
+# ── One fixer agent per category with a NEW finding (aidream's dispatcher) ───
+# One dispatcher serves both repos: MATRX_REPO_ROOT points it at this checkout,
+# so its ledger, settings and agent logs live here (.matrx/fixer-*.json,
+# tmp/fixer-logs/) and its agents read THIS repo's CLAUDE.md.
+DISPATCHER="$AIDREAM_DIR/scripts/checks/dispatch_fixer.py"
+# A crashed runner measured nothing: dispatching on its partial file would let the
+# dispatcher resolve findings it never re-checked.
+if $RUNNER_OK && [[ -s "$CHECKS_JSON" && "$(grep -c '"fingerprint"' "$CHECKS_JSON")" -gt 0 ]]; then
+    if [[ -f "$DISPATCHER" ]]; then
+        if command -v uv >/dev/null 2>&1; then
+            ( cd "$AIDREAM_DIR" && MATRX_REPO_ROOT="$REPO_ROOT" uv run --frozen python "$DISPATCHER" --findings "$CHECKS_JSON" )
+        else
+            MATRX_REPO_ROOT="$REPO_ROOT" python3 "$DISPATCHER" --findings "$CHECKS_JSON"
+        fi || warn "The fixer dispatcher crashed — findings are in $CHECKS_JSON; nothing was dispatched."
+    else
+        warn "No fixer dispatcher at $DISPATCHER — findings are in $CHECKS_JSON; nothing was dispatched."
+    fi
+fi
+exit 0

@@ -24,22 +24,26 @@ test("release.sh no longer prints an unconditional green 'Released' box", () => 
   assert.doesNotMatch(releaseScript, /echo -e "\$\{GREEN\}\s+Released /);
 });
 
-test("release.sh delegates the post-push banner to the outcome primitive", () => {
-  assert.match(releaseScript, /source "\$SCRIPT_DIR\/release-outcome\.sh"/);
-  assert.match(releaseScript, /release_outcome_report "\$TARGET" "\$COMMIT_MSG" "\$PUSHED_SHA"/);
+test("release.sh consults the outcome primitive in the after phase, never before the push", () => {
+  const code = releaseScript.split("\n").filter((l) => !/^\s*#/.test(l)).join("\n");
+  const pushAt = code.indexOf('ship_mark "pushed ${RELEASE_SHA:0:9}');
+  assert.ok(pushAt > 0);
+  assert.doesNotMatch(code.slice(0, pushAt).replace(/"(?:[^"\\]|\\.)*"/g, '""'), /release-outcome\.sh/);
+  assert.match(code.slice(pushAt), /source "\$SCRIPT_DIR\/release-outcome\.sh"/);
+  assert.match(code.slice(pushAt), /release_outcome_report "\$TARGET" "\$RELEASE_COMMIT_MSG" "\$RELEASE_SHA"/);
 });
 
-test("a failed rollout leaves release.sh with a non-zero exit", () => {
-  // Without this the deploy agent reads exit 0 over a dead build — the whole
-  // defect, just relocated to the exit code.
-  assert.match(releaseScript, /ROLLOUT FAILED: v\$\{NEW_VERSION\}/);
-  assert.match(releaseScript, /\n\s*exit 1 ;;\n\esac/);
+test("a dead rollout is an ERROR finding the fixer dispatcher sees, and a missing credential is a WARNING", () => {
+  // The push already happened and Vercel is building: the verdict cannot be an
+  // exit code anyone reads (the after phase is detached). It is a finding row
+  // in findings-vX.Y.Z.jsonl, dispatched like every other finding.
+  assert.match(releaseScript, /ship_finding "ERROR" "Rollout" "ROLLOUT FAILED: \$\{NEW_TAG\}/);
+  assert.match(releaseScript, /ship_finding "WARNING" "Rollout" "UNVERIFIED — \$\{NEW_TAG\}/);
 });
 
 test("the outcome gate cannot be silently skipped", () => {
-  // --no-watch is allowed, but it must say UNWATCHED and never claim success.
-  assert.match(releaseScript, /UNWATCHED — pushed v\$\{NEW_VERSION\}/);
-  assert.match(releaseScript, /RELEASE_OUTCOME_RC=3/);
+  // --no-watch is allowed, but it must record UNWATCHED and never claim success.
+  assert.match(releaseScript, /ship_finding "WARNING" "Rollout" "UNWATCHED — \$\{NEW_TAG\} was pushed with --no-watch; nothing here claims it is live"/);
 });
 
 test("green requires READY and the live domain serving that deployment", () => {

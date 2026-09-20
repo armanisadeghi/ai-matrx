@@ -177,3 +177,11 @@ public/__kind-sandbox-*.html
 # 2026-09-18). The census guards already skip these as parked checkouts.
 .wt/
 .coldwalk*/
+
+# RELEASE — every run's log, every check's output, the fixer dispatcher's ledger
+# (scripts/checks/FEATURE.md). tmp/ is not ignored as a whole on purpose.
+tmp/release-logs/
+tmp/checks/
+tmp/fixer-logs/
+.matrx/fixer-ledger.json
+.matrx/fixer-dispatch.json
