@@ -59,6 +59,8 @@ declare
   c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
   v_org  uuid := gen_random_uuid();
   v_home uuid; v_tbl uuid; v_deal uuid; v_ref jsonb; v_pipe jsonb;
+  v_n    integer;
+  v_boss constant text := current_user;
 begin
   perform set_config('app.actor_system','campaign-test/pipelines_red', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
@@ -70,6 +72,19 @@ begin
   values ('custom','system_enabled','organization',v_org,v_org,'true'::jsonb,'pipelines_red');
   insert into custom.record (organization_id, table_id, data)
   values (v_org, null, jsonb_build_object('name','Home')) returning id into v_home;
+
+  -- THE SEAT. Everything asserted below runs as the role PostgREST gives a signed-in
+  -- person, through doors that person reaches — a red twin that ran as the role owning
+  -- custom.record would prove the defect for a caller nobody has.
+  perform set_config('role', 'authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception 'this block did not take the seat — current_user is %', current_user;
+  end if;
+  begin
+    perform 1 from custom.record limit 1;
+    raise exception 'this seat can SELECT custom.record directly, so it is not a client seat';
+  exception when insufficient_privilege then null;
+  end;
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
     'name','ZZ PL Red Deal','slug','zz_plr_deal_'||substr(v_org::text,1,8),'type','entity',
@@ -91,15 +106,39 @@ begin
     'requires', jsonb_build_object('Won', jsonb_build_array('signed_proposal'))));
   v_deal := custom.record_write(v_org, v_tbl, jsonb_build_object('name','Acme','stage','Lead'));
 
-  -- 2a — THE WRONG SENTENCE. A jump that was never allowed is blamed on an empty column.
-  v_ref := custom.pipeline_transition_refusal(v_org, v_deal, 'Won');
-  if v_ref ->> 'kind' <> 'requires' then
-    raise exception 'RED 2a IS NOT RED — the old bodies refused the jump with the % rule', v_ref ->> 'kind';
+  -- 2a — NOTHING DECIDED WHICH REFUSAL A PERSON READ. A deal in Lead trying to reach Won
+  -- breaks TWO rules — it is not a move this deal can make, AND Won demands a column that
+  -- is empty — and only one sentence can be shown. With the old bodies no Rule carried a
+  -- `sort` at all, so `custom.table_rules` fell through to `created_at` (identical: one
+  -- transaction) and then to a RANDOM uuid. Which is worse than always saying the wrong
+  -- thing: the same jump could be blamed on an empty column one day and on the move the
+  -- next. `custom.record` is the CATALOGUE of this clause and no client door covers a
+  -- Rule's sort, so this one fact steps OUT of the seat and asserts nothing about the
+  -- product while it is out.
+  perform set_config('role', v_boss, true);
+  select count(*) into v_n
+    from custom.record r
+   where r.organization_id = v_org
+     and r.table_id = custom.rule_kernel_id()
+     and r.deleted_at is null
+     and (r.data #>> '{pipeline,stage_field_of}')::uuid = v_tbl
+     and (r.data -> 'sort') is not null;
+  perform set_config('role', 'authenticated', true);
+  if v_n <> 0 then
+    raise exception 'RED 2a IS NOT RED — % of the old bodies'' rules carry a sort, so the order was decided after all', v_n;
   end if;
-  raise notice 'RED 2a IS RED — a deal in Lead trying to reach Won is told "%", which is true and useless: that move was never allowed and filling the column in would not have helped.',
+  v_ref := custom.pipeline_transition_refusal(v_org, v_deal, 'Won');
+  raise notice 'RED 2a IS RED — not one of this pipeline''s rules carries a sort, so which refusal a person reads is decided by a random uuid. This run said "%".',
     v_ref ->> 'why';
 
-  -- 2b — THE SAME COLUMN, TWICE.
+  -- 2b — THE SAME COLUMN, TWICE. Asked from Proposal, where the ONLY thing standing in
+  -- the way is the empty column, so the clause is about the duplicate and nothing else.
+  perform custom.pipeline_move(v_org, v_deal, 'Qualified');
+  perform custom.pipeline_move(v_org, v_deal, 'Proposal');
+  v_ref := custom.pipeline_transition_refusal(v_org, v_deal, 'Won');
+  if v_ref ->> 'kind' <> 'requires' then
+    raise exception 'RED 2b IS NOT RED — a deal in Proposal with nothing signed was refused by the % rule', v_ref ->> 'kind';
+  end if;
   if jsonb_array_length(v_ref -> 'missing') < 2 then
     raise exception 'RED 2b IS NOT RED — the missing list holds % entries', jsonb_array_length(v_ref -> 'missing');
   end if;
@@ -128,6 +167,7 @@ declare
   c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
   v_org  uuid := gen_random_uuid();
   v_home uuid; v_tbl uuid; v_fid uuid; v_opts uuid; v_n integer;
+  v_boss constant text := current_user;
 begin
   perform set_config('app.actor_system','campaign-test/pipelines_red', true);
   perform set_config('request.jwt.claims', c_admin_j, true);
@@ -139,6 +179,19 @@ begin
   values ('custom','system_enabled','organization',v_org,v_org,'true'::jsonb,'pipelines_red');
   insert into custom.record (organization_id, table_id, data)
   values (v_org, null, jsonb_build_object('name','Home')) returning id into v_home;
+
+  -- THE SEAT. Everything asserted below runs as the role PostgREST gives a signed-in
+  -- person, through doors that person reaches — a red twin that ran as the role owning
+  -- custom.record would prove the defect for a caller nobody has.
+  perform set_config('role', 'authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception 'this block did not take the seat — current_user is %', current_user;
+  end if;
+  begin
+    perform 1 from custom.record limit 1;
+    raise exception 'this seat can SELECT custom.record directly, so it is not a client seat';
+  exception when insufficient_privilege then null;
+  end;
 
   v_tbl := custom.table_declare(v_org, jsonb_build_object(
     'name','ZZ PL Red2 Deal','slug','zz_plr2_deal_'||substr(v_org::text,1,8),'type','entity',
@@ -152,20 +205,26 @@ begin
     'key','stage','label','Stage','type','list',
     'options', jsonb_build_array('Lead','Qualified','Proposal','Won','Lost'),'sort',25));
 
-  select (f.data -> 'config' ->> 'options_table_id')::uuid into v_opts
-    from custom.record f where f.organization_id = v_org and f.id = v_fid;
-  select count(*) into v_n from custom.record o
-   where o.organization_id = v_org and o.table_id = v_opts
-     and o.metadata ->> 'option_position' is not null;
+  -- THE PRODUCT CLAUSE, FROM THE SEAT, through the door a screen actually asks:
+  -- not one of this list's five choices carries the position it was written in.
+  select count(*) into v_n from custom.field_options(v_org, v_fid) o
+   where o.metadata ->> 'option_position' is not null;
   if v_n <> 0 then
     raise exception 'RED 3 IS NOT RED — % options were stamped with a position after the inverse ran', v_n;
   end if;
-  if custom.choice_options(v_org, v_opts) -> 'lead' ? 'position' then
-    raise exception 'RED 3 IS NOT RED — choice_options still carries a position';
+  select count(*) into v_n from custom.field_options(v_org, v_fid) o;
+  if v_n <> 5 then
+    raise exception 'RED 3 IS NOT RED — the list has % choices, not five', v_n;
   end if;
-  -- And with nothing to order by, every option of the list shares one instant.
+  -- And there is nothing else to order by. The catalogue is not covered by any client
+  -- door, so this one fact STEPS OUT of the seat and asserts nothing about the product
+  -- while it is out.
+  perform set_config('role', v_boss, true);
+  select (f.data -> 'config' ->> 'options_table_id')::uuid into v_opts
+    from custom.record f where f.organization_id = v_org and f.id = v_fid;
   select count(distinct o.created_at) into v_n from custom.record o
    where o.organization_id = v_org and o.table_id = v_opts;
+  perform set_config('role', 'authenticated', true);
   if v_n <> 1 then
     raise exception 'RED 3 IS NOT RED — the five options were written at % different instants, so created_at could have ordered them', v_n;
   end if;

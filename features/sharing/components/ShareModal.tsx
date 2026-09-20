@@ -49,6 +49,14 @@ interface ShareModalProps {
    */
   organizationId?: string;
   /**
+   * What to CALL this thing on screen, when the caller knows better than the
+   * registry does. In the unified store a Table IS a `custom.record` row, so
+   * `resourceType="record"` is correct and the registry's label — "Record" —
+   * is the wrong noun for a table: the seventh-pass verdict read "Share
+   * Record" above a table's own name. Omit it and the registry's label stands.
+   */
+  resourceNoun?: string;
+  /**
    * OPTIONAL override. Leave it out — the modal resolves ownership itself.
    *
    * Only pass this when the caller already holds an authoritative, resolved
@@ -85,6 +93,7 @@ export function ShareModal({
   resourceId,
   resourceName,
   organizationId,
+  resourceNoun,
   isOwner: isOwnerOverride,
 }: ShareModalProps) {
   const [activeTab, setActiveTab] = useState<
@@ -202,7 +211,7 @@ export function ShareModal({
   const orgPermissions = permissions.filter((p) => p.grantedToOrganizationId);
   const publicPermission = permissions.find((p) => p.isPublic);
 
-  const resourceLabel = getResourceTypeLabel(resourceType);
+  const resourceLabel = resourceNoun ?? getResourceTypeLabel(resourceType);
 
   /**
    * Shown instead of the grant forms when the caller cannot manage sharing.
