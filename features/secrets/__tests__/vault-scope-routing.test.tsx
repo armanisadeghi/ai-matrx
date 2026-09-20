@@ -208,6 +208,25 @@ function requestedScopes(): string[] {
   );
 }
 
+async function chooseRenderedSort(label: string): Promise<void> {
+  const sortTrigger = container.querySelector<HTMLButtonElement>(
+    '[aria-label="Sort credentials"]',
+  );
+  if (!sortTrigger) throw new Error("Missing sort control");
+  await act(async () => sortTrigger.click());
+  const option = Array.from(document.querySelectorAll<HTMLElement>("[role=option]")).find(
+    (candidate) => candidate.textContent === label,
+  );
+  if (!option) throw new Error(`Missing ${label} sort option`);
+  await act(async () => option.click());
+}
+
+function renderedItemIds(): Array<string | null> {
+  return Array.from(container.querySelectorAll("[data-vault-item-id]")).map((node) =>
+    node.getAttribute("data-vault-item-id"),
+  );
+}
+
 describe("VaultWorkspace scope routing", () => {
   beforeEach(() => {
     fetchVaultItems.mockReset();
@@ -299,27 +318,14 @@ describe("VaultWorkspace scope routing", () => {
     await act(async () => clear.click());
     expect(container.textContent).toContain("Zulu Login");
 
-    const chooseSort = async (label: string, expectedIds: string[]) => {
-      const sortTrigger = container.querySelector<HTMLButtonElement>(
-        '[aria-label="Sort credentials"]',
-      );
-      if (!sortTrigger) throw new Error("Missing sort control");
-      await act(async () => sortTrigger.click());
-      const option = Array.from(document.querySelectorAll<HTMLElement>("[role=option]")).find(
-        (candidate) => candidate.textContent === label,
-      );
-      if (!option) throw new Error(`Missing ${label} sort option`);
-      await act(async () => option.click());
-      expect(
-        Array.from(container.querySelectorAll("[data-vault-item-id]")).map((node) =>
-          node.getAttribute("data-vault-item-id"),
-        ),
-      ).toEqual(expectedIds);
-    };
-    await chooseSort("Newest added", ["z", "a"]);
-    await chooseSort("Recently updated", ["a", "z"]);
-    await chooseSort("Name A–Z", ["a", "z"]);
-    await chooseSort("Name Z–A", ["z", "a"]);
+    await chooseRenderedSort("Newest added");
+    expect(renderedItemIds()).toEqual(["z", "a"]);
+    await chooseRenderedSort("Recently updated");
+    expect(renderedItemIds()).toEqual(["a", "z"]);
+    await chooseRenderedSort("Name A–Z");
+    expect(renderedItemIds()).toEqual(["a", "z"]);
+    await chooseRenderedSort("Name Z–A");
+    expect(renderedItemIds()).toEqual(["z", "a"]);
 
     const alpha = container.querySelector<HTMLButtonElement>('[data-vault-item-id="a"]');
     if (!alpha) throw new Error("Missing credential row");
@@ -329,7 +335,7 @@ describe("VaultWorkspace scope routing", () => {
 
   it("keeps the full narrow dialog branch searchable", async () => {
     desktopWorkspace = false;
-    ROWS.mine = [row("narrow", "Narrow Login")];
+    ROWS.mine = [row("narrow-z", "Zulu Login"), row("narrow-a", "Alpha Login")];
     await mount({ presentation: "full" });
     const search = container.querySelector<HTMLInputElement>('input[aria-label="Search credentials"]');
     if (!search) throw new Error("Missing narrow search control");
@@ -340,13 +346,29 @@ describe("VaultWorkspace scope routing", () => {
       search.dispatchEvent(new Event("input", { bubbles: true }));
     });
     expect(container.textContent).toContain("No credentials match");
-    expect(container.querySelector('[aria-label="Sort credentials"]')).not.toBeNull();
+    const clear = container.querySelector<HTMLButtonElement>('button[aria-label="Clear search"]');
+    if (!clear) throw new Error("Missing narrow clear search control");
+    await act(async () => clear.click());
+    await chooseRenderedSort("Name Z–A");
+    expect(renderedItemIds()).toEqual(["narrow-z", "narrow-a"]);
   });
 
   it("keeps compact cards on the same metadata controls", async () => {
-    ROWS.mine = [row("compact", "Compact Login")];
+    ROWS.mine = [row("compact-z", "Zulu Login"), row("compact-a", "Alpha Login")];
     await mount({ presentation: "compact" });
-    expect(container.querySelector('[aria-label="Sort credentials"]')).not.toBeNull();
-    expect(container.querySelector('[data-vault-item-id="compact"]')).not.toBeNull();
+    const search = container.querySelector<HTMLInputElement>('input[aria-label="Search credentials"]');
+    if (!search) throw new Error("Missing compact search control");
+    const setValue = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    if (!setValue) throw new Error("Missing input value setter");
+    await act(async () => {
+      setValue.call(search, "alpha");
+      search.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(renderedItemIds()).toEqual(["compact-a"]);
+    const clear = container.querySelector<HTMLButtonElement>('button[aria-label="Clear search"]');
+    if (!clear) throw new Error("Missing compact clear search control");
+    await act(async () => clear.click());
+    await chooseRenderedSort("Name Z–A");
+    expect(renderedItemIds()).toEqual(["compact-z", "compact-a"]);
   });
 });

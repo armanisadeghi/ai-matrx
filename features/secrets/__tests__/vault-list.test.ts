@@ -33,7 +33,12 @@ function item(
       value_version: 1, is_active: true, description: "field-secret", created_at: createdAt,
       updated_at: createdAt, execution_purpose: undefined,
     }],
-    attachments: [],
+    attachments: [{
+      id: `${id}-attachment`, credential_item_id: id, label: "attachment-label-secret",
+      description: "attachment-description-secret", file_name: "attachment-file-secret",
+      media_type: "application/octet-stream", size_bytes: 1, handling: "revealable",
+      value_version: 1, last_used_at: null, created_at: createdAt, updated_at: createdAt,
+    }],
     created_at: createdAt,
     updated_at: createdAt,
   });
@@ -57,16 +62,22 @@ describe("filterAndSortVaultItems", () => {
     ]) {
       expect(list([credential], allowedText)).toEqual([credential]);
     }
-    Reflect.set(credential.attachments, "metadata", "attachment-secret");
     Reflect.set(credential.fields[0], "polluted", "field-polluted-secret");
     Reflect.set(definitions[0].payload, "polluted", "definition-polluted-secret");
     Reflect.set(credential, "polluted", "item-polluted-secret");
     for (const secretLikeText of [
-      "notes-secret", "lifecycle-secret", "private-value", "hint-secret", "field-secret",
-      "attachment-secret", "field-polluted-secret", "definition-polluted-secret", "item-polluted-secret",
+      "notes-secret", "lifecycle-secret", "private_key", "private", "private-value",
+      "hint-secret", "field-secret", "attachment-label-secret", "attachment-description-secret",
+      "attachment-file-secret", "field-polluted-secret", "definition-polluted-secret", "item-polluted-secret",
     ]) {
       expect(list([credential], secretLikeText)).toEqual([]);
     }
+  });
+
+  it("normalizes query whitespace, case, and Unicode", () => {
+    const credential = item("unicode", "Café Credential");
+    expect(list([credential], "  CAFÉ  ")).toEqual([credential]);
+    expect(list([credential], "café")).toEqual([credential]);
   });
 
   it("orders independently of transport order and leaves inputs intact", () => {
