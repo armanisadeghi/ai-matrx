@@ -34,7 +34,7 @@ corpus for the whole runner.
 | # | layer | what it decides | where |
 |---|---|---|---|
 | 1 | **LOCATION** | Which directory the file sits in, before a header is read: `migrations/rehearsal/` is refused at `--target production`; `migrations/campaign/` is reachable **only** by `--source campaign`; `migrations/judgment-corpus/` is refused at **every** target, on every apply path; `migrations/inverse/` is swept by nothing and named with `--only`. | both runners |
-| 2 | **SHAPE** | Empty file, `-- migrate: skip`, a self-written `public._schema_migrations` row, its own `BEGIN`/`COMMIT`, a statement needing autocommit. | both runners |
+| 2 | **SHAPE** | Empty file, `-- retired:` (§1b), `-- migrate: skip`, a self-written `public._schema_migrations` row, its own `BEGIN`/`COMMIT`, a statement needing autocommit. | both runners |
 | 3 | **JUDGEMENT** | The header, the flag and the body — this document. | `migration-target.ts` / `migration_target.py` |
 
 **Every glob in both runners is non-recursive**, so none of `rehearsal/`, `inverse/`,
@@ -54,6 +54,69 @@ On 2026-09-17 this was measured the other way round: `CREATE INDEX CONCURRENTLY`
 function's own HINT text made `pnpm db:apply` refuse a file that needed no autocommit at all.
 Both runners now print `autocommit`, `txn_control` and `self_ledger` on every `--judge-only`
 line, so the corpus holds them to the same reading.
+
+### 1b. `-- retired: <why>` — frozen history that may never execute again
+
+An already-ledgered file is **never re-judged**: its bytes are frozen history, and that is
+what makes `--reapply` (frontend) and `--rerun` (aidream) work at all. That cuts both ways.
+A file that REPLACED a live function body which has since been replaced again still carries
+the OLD body, so re-executing it reverts whatever replaced it — silently, with every check
+green. It is the `billing.plan_status` class with the `-- based-on:` line removed from the
+picture: not a stale declaration, but a *correct* file whose whole content is superseded.
+
+Measured 2026-09-20: `migrations/cvx_list_scoped_audience.sql` still carried the
+pre-`chat.conversation_lane` `public.cvx_audience`, which restated the classification rules
+instead of deriving them. One `--reapply` would have reverted the live rule.
+
+**The marker.** A first-column comment line in the file's first 25 lines:
+
+```
+-- retired: <why, one line — name what superseded this file>
+```
+
+There is no bare form: the reason is required, because the refusal hands the next lane the
+file that is actually current.
+
+**What both runners do with it.**
+
+- `pnpm db:apply` refuses the file at **every** target, on **every** path, before anything
+  else it does with the bytes. `--reapply` is not a key for it, `--dry-run` does not soften
+  it, and it is read **before** the header checks, so a confirmed `-- chair-step:` never
+  reaches it.
+- `db/apply_migrations.py` refuses `--rerun`, `--only` and `--mark-applied` on one by name
+  (marking would assert that superseded bytes are what is live), and refuses the whole run
+  when an **unledgered** retired file turns up in a swept directory, rather than skipping it
+  quietly.
+- **The one thing still allowed is `--accept-drift`**, which executes nothing. Marking a file
+  changes its bytes, so a retired file reports as `DRIFTED` — informational in both runners
+  (`pnpm check:migrations` exits 0 on drift in every mode, `--strict` included), never a
+  failure, and never a reason to re-stamp or re-run anything.
+
+**The remedy is never "remove the marker".** If those changes genuinely must run again, that
+is a NEW migration — a new file, judged and ledgered on its own bytes. Deleting the marker to
+re-run the old bytes is the exact defect it exists to stop.
+
+**Proven, not asserted.** `pnpm db:apply --self-test` carries the arm: a marked file is
+refused unledgered, refused under `--reapply`, refused with a CONFIRMED chair step, and
+refused again once ledgered — while the SAME bytes without the marker apply normally (remove
+the refusal and six assertions go red). On the aidream side,
+`db/tests/test_retired_migrations_never_re_execute.py` pins the same five properties with no
+database (remove `_reject_if_retired` and four go red).
+
+**Currently retired (2026-09-20), all ten superseded by
+`cvx_audience_derives_from_the_lane_classifier.sql`:** `cvx_list_scoped_audience.sql`,
+`cvx_list_facets_external_breaks_down_by_tool.sql`, `cvx_list_scoped.sql`,
+`cvx_list_scoped_canonical_favorites.sql`, `public_list_scoped_invoker_dd137c2.sql`,
+`cvx_provider_account_display_is_one_function.sql`,
+`cvx_list_scoped_search_admits_every_scored_identity.sql`,
+`cvx_list_scoped_deep_search_is_one_indexed_pass.sql`,
+`cvx_deep_hits_is_a_definer_probe.sql`, `cvx_deep_hits_once_per_request.sql`. Each holds a
+`public.cvx_audience`, `public.cvx_list_scoped` or `public.cvx_list_facets` body that the
+live catalogue no longer holds (verified against `pg_get_functiondef`).
+
+**This is a SHAPE rule, not a JUDGEMENT one**, so it carries no `TargetRefusal.code` and the
+corpus in §9 does not cover it — exactly like `-- migrate: skip`. Its forcing functions are
+the two named above.
 
 ## 2. The headers
 
