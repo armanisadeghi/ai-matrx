@@ -50,12 +50,13 @@ const TESTS_BASELINE = 0;
 
 /**
  * The number of suites that call schema `custom` and do NOT take the seat. It may only ever go
- * DOWN. 57 when this guard was written (2026-09-20); 26 after lane SEAT-SUITES converted 31 of
+ * DOWN. 57 when this guard was written (2026-09-20); 20 after lane SEAT-SUITES converted 37 of
  * them — every clause moved onto the doors a signed-in person reaches, which turned up nine
  * real defects in those doors, each fixed on the main database.
  *
  * WHAT THE REMAINING 26 ARE, so nobody has to re-derive it:
- *   - 22 are the W1 and W3 suites, in conversion.
+ *   - 16 are the remaining W1 field/rule and W3 document/workflow/migration/history suites,
+ *     plus w4_agg_green and w4_query_green, still in conversion.
  *   - `readperf_green`, `readperf_red` and `readperf_parity_20_pairs` are OPERATOR PARITY
  *     CENSUSES over live data, not product suites: `platform.client_callable_door` names them
  *     explicitly as legitimate callers of the server-only helpers (`custom.visible_set`,
@@ -64,7 +65,7 @@ const TESTS_BASELINE = 0;
  *     list is how a ratchet dies — so they stay in the count and stay visible.
  *   - `sharedonly_red` belongs to lane SHARED-ONLY and landed after this guard did.
  */
-const BASELINE = 26;
+const BASELINE = 20;
 
 /** Taking the seat, in either of the two spellings psql and plpgsql use. */
 const TAKES_THE_SEAT = /set\s+local\s+role\s+authenticated|set_config\(\s*'role'\s*,\s*'authenticated'/i;

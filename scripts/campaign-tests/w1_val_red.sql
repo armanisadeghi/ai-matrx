@@ -1,15 +1,28 @@
--- W1-VAL — THE RED TWIN of `w1_val_t5.sql`. It turns this lane's two enforcement points OFF
--- inside ONE transaction that ends in ROLLBACK, and proves that every write `w1_val_t5.sql`
--- watches being REFUSED then LANDS. A guard that cannot be demonstrated failing is not a
--- guard (§3 rule 2), and a refusal nobody has seen disappear is a refusal nobody has tested.
+-- W1-VAL — THE RED TWIN of `w1_val_t5.sql`, on the MAIN database. It turns the three
+-- enforcement points the GREEN suite rests on OFF inside ONE transaction that ends in ROLLBACK, and proves that every
+-- write `w1_val_t5.sql` watches being REFUSED then LANDS — THROUGH THE SAME DOOR, FROM THE
+-- SAME SEAT. A guard that cannot be demonstrated failing is not a guard (§3 rule 2), and a
+-- refusal nobody has seen disappear is a refusal nobody has tested.
 --
 -- RUN IT:
---   PSQL="$(pnpm -s exec tsx scripts/lib/psql-path.ts --print)"
---   "$PSQL" "$SUPABASE_BRANCH_DATABASE_URL" -v ON_ERROR_STOP=1 \
+--   PSQL="$(node node_modules/tsx/dist/cli.mjs scripts/lib/psql-path.ts --print)"
+--   "$PSQL" "<the main database DSN>" -v ON_ERROR_STOP=1 \
 --     -f scripts/campaign-tests/w1_val_red.sql
 --
 -- IT IS NOT A MIGRATION: it lives outside `migrations/`, no sweep can see it, and it rolls
--- back. It refuses to run anywhere but the rehearsal branch, by system identifier.
+-- back — the constraint and the trigger come back with it, because `ALTER TABLE` is
+-- transactional.
+--
+-- 🚨 THE MAIN DATABASE (SEAT-SUITES, 2026-09-19). This file used to refuse to run anywhere
+-- but the rehearsal branch, which holds 226 of schema `custom`'s 332 functions and grants
+-- `authenticated` 29 of the 103 main grants — the store it is about is not there. The owner's
+-- 2026-09-18 ruling is that there is no production and everything is the main database.
+--
+-- 🚨 THE SEAT (SEAT-SUITES, 2026-09-19). Every write below is now made by a SIGNED-IN PERSON
+-- through `custom.record_write` / `custom.record_update`, and read back through
+-- `custom.value_read` / `custom.read_record`. Only the operator statements that remove the
+-- enforcement points step out of the seat, and they say so and assert nothing while out.
+-- A value landing for the table's OWNER would say nothing about what a person may store.
 --
 -- WHAT IT REMOVES, and therefore what each removal proves:
 --   · trigger `_value_envelope`      → the actor is no longer resolved or refused, the
@@ -17,163 +30,229 @@
 --                                      version are no longer stamped from the write.
 --   · constraint `record_value_envelope` → the envelope's shape is no longer law: a confidence
 --                                      score, a per-value visibility, a fifth absence word and
---                                      a dangling pointer all become storable.
---   · `custom.record_values`' two subtractions → the plain read starts returning the envelope
---                                      block as if it were one of the record's own values.
+--                                      a value that is both present and missing all become
+--                                      storable.
+--   · trigger `custom_record_field_validation` → `custom.validate_value_envelope` stops
+--                                      refusing provenance for a field the table never
+--                                      declared. Measured 2026-09-19: the green suite's K
+--                                      clause is held by THIS trigger and not by the check
+--                                      constraint, which is why the twin names all three.
+--
+-- IT TAKES ACCESS EXCLUSIVE on `custom.record` and its sixteen partitions for as long as it
+-- runs, which under traffic can take a minute to acquire, so the lock and statement timeouts
+-- are raised and the whole store waits on it.
 
 \set ON_ERROR_STOP on
 \timing off
 
 begin;
 
+set local lock_timeout = '120s';
+set local statement_timeout = '600s';
+
 do $t$
 declare
-  v_org    constant uuid := '39c38960-d30c-4840-b0c1-c9960de95582';  -- Matrx System
+  c_admin   constant uuid := '87a6e699-3622-4869-8843-d0867456c0dd';   -- admin@admin.com
+  c_dana    constant uuid := '4060701e-706a-4c76-b3ca-0bbc69fa5a14';   -- test@test.com
+  c_admin_j constant text := '{"sub":"87a6e699-3622-4869-8843-d0867456c0dd","role":"authenticated"}';
+  c_dana_j  constant text := '{"sub":"4060701e-706a-4c76-b3ca-0bbc69fa5a14","role":"authenticated"}';
+  v_org    uuid := gen_random_uuid();
+  v_home   uuid;
   v_person uuid;
   v_rec    uuid;
-  v_doc    jsonb;
+  v_txt    text;
   v_j      jsonb;
+  v_vals   jsonb;
+  v_v      integer;
+  v_caught text;
   v_landed integer := 0;
+  v_boss   text := current_user;
 begin
-  if (pg_control_system()).system_identifier <> 7678069749886157684 then
-    raise exception 'w1_val_red.sql refuses to run here: system_identifier is %, and this file may only run on the rehearsal branch (7678069749886157684)',
-                    (pg_control_system()).system_identifier;
+  if (select system_identifier from pg_control_system()) <> 7642734024280108049 then
+    raise exception 'w1_val_red.sql runs on the MAIN database only, and this is %',
+      (select system_identifier from pg_control_system());
   end if;
 
-  -- THE FIXTURE, identical to the GREEN suite's.
+  perform set_config('app.actor_system', 'campaign-test/w1_val_red', true);
+  perform set_config('request.jwt.claims', c_admin_j, true);
+
+  insert into iam.organizations (id, name, slug, abbreviation, created_by)
+  values (v_org, 'ZZ W1-VAL RED', 'zz-w1-val-red-' || substr(v_org::text, 1, 8), 'ZVR', c_admin);
+  insert into iam.memberships (organization_id, container_type, container_id, user_id, role, status) values
+    (v_org, 'organization', v_org, c_admin, 'owner',  'active'),
+    (v_org, 'organization', v_org, c_dana,  'member', 'active');
+  insert into platform.knob_override (feature, key, scope_kind, scope_id, organization_id, value, set_note)
+  values ('custom','system_enabled','organization', v_org, v_org, 'true'::jsonb, 'w1_val_red');
+  -- A Home has no client door of its own.
+  insert into custom.record (organization_id, table_id, data)
+  values (v_org, null, jsonb_build_object('name', 'W1-VAL RED HQ'))
+  returning id into v_home;
+
+  -- ════════════════════════════════════════════════════════════════════════════
+  -- PART 0 — THE SEAT.
+  -- ════════════════════════════════════════════════════════════════════════════
+  perform set_config('role', 'authenticated', true);
+  if current_user <> 'authenticated' then
+    raise exception '0: this suite did not take the seat — current_user is %', current_user;
+  end if;
+  if pg_has_role(current_user,
+                 (select c.relowner from pg_class c where c.oid = 'custom.record'::regclass),
+                 'member') then
+    raise exception '0: this seat is a member of the role that owns custom.record, so every wall would open on its first line';
+  end if;
+  begin
+    perform 1 from custom.record limit 1;
+    raise exception '0: this seat can SELECT custom.record directly, so it is not a client seat';
+  exception when insufficient_privilege then null;
+  end;
+  raise notice 'PART 0 PASSED — the seat is `authenticated`, the ladder sees a client, and custom.record is not readable from it.';
+
+  -- THE FIXTURE, identical to the GREEN suite's, built through the doors.
   v_person := custom.table_declare(v_org, jsonb_build_object(
-    'name', 'W1-VAL Person (red)', 'slug', 'w1_val_person_red', 'type', 'entity',
+    'name', 'W1-VAL Person (red)', 'slug', 'zz_wvr_person', 'type', 'entity',
     'label_singular', 'Person', 'label_plural', 'People',
     'title_field', 'full_name', 'display', 'page', 'weight', 'light',
     'ordered', false, 'row_order', 'sorted', 'default_sort', '[]'::jsonb,
     'agent_writable', true, 'retention_days', 365,
     'fields', jsonb_build_array(jsonb_build_object('name','full_name'), jsonb_build_object('name','phone')),
-    'parent_id', '11111111-0000-4000-8000-000000000001'));
+    'parent_id', v_home::text));
+  perform custom.field_declare(v_org, v_person, jsonb_build_object('key','full_name','label','Full name','plain','text'));
+  perform custom.field_declare(v_org, v_person, jsonb_build_object('key','phone','label','Phone','plain','text'));
 
-  insert into custom.record (organization_id, table_id, data_class, data)
-  values (v_org, custom.field_kernel_id(), 'field', jsonb_build_object(
-    'key', 'full_name', 'label', 'Full name', 'type', 'text', 'sort', 10,
-    'required', false, 'multi', false, 'dated', false, 'source', 'manual',
-    'config', '{}'::jsonb, 'rules', '[]'::jsonb, 'depends_on', '[]'::jsonb,
-    'sensitivity', 'internal', 'source_config', '{}'::jsonb, 'context_policy', 'include',
-    'applies_to_types', '[]'::jsonb, 'entity_definition_id', v_person));
-
-  insert into custom.record (organization_id, table_id, data_class, data)
-  values (v_org, custom.field_kernel_id(), 'field', jsonb_build_object(
-    'key', 'phone', 'label', 'Phone', 'type', 'text', 'sort', 20,
-    'required', false, 'multi', false, 'dated', false, 'source', 'manual',
-    'config', '{}'::jsonb, 'rules', '[]'::jsonb, 'depends_on', '[]'::jsonb,
-    'sensitivity', 'internal', 'source_config', '{}'::jsonb, 'context_policy', 'include',
-    'applies_to_types', '[]'::jsonb, 'entity_definition_id', v_person));
+  -- THE CONTROL, BEFORE ANYTHING IS REMOVED (rule 14): the six writes below are refused
+  -- RIGHT NOW, from this seat, through these doors. A twin that only showed them landing
+  -- would pass if the doors had never refused them at all.
+  v_caught := null;
+  begin
+    perform custom.record_write(v_org, v_person, jsonb_build_object('_actor','robot','full_name','Wei Chen'));
+  exception when others then v_caught := sqlerrm;
+  end;
+  if v_caught is null then
+    raise exception 'RED setup: "robot" was accepted as an author BEFORE anything was removed, so this twin measures nothing';
+  end if;
 
   -- ══════════════════════════════════════════════════════════════════════════
-  -- OFF. Both enforcement points, and the read's two subtractions.
+  -- OFF. The first two enforcement points, out of the seat, sharing one ACCESS EXCLUSIVE
+  -- wait. The third is taken at RED 5, where it is the clause under test. Nothing is
+  -- asserted here.
   -- ══════════════════════════════════════════════════════════════════════════
+  perform set_config('role', v_boss, true);
   alter table custom.record drop constraint record_value_envelope;
   drop trigger _value_envelope on custom.record;
+  perform set_config('role', 'authenticated', true);
 
-  -- ── RED 1: an author outside the vocabulary, and a retired word, both LAND ──
+  -- ── RED 1: an author outside the vocabulary, and a forged version, both LAND ──
   v_rec := custom.record_write(v_org, v_person, jsonb_build_object(
     '_actor', 'robot',
     'full_name', 'Wei Chen',
     'phone', '+1-415-555-0101',
     '_values', jsonb_build_object('phone', jsonb_build_object('actor', 'human', 'ver', 99))));
-  select data into v_doc from custom.record where organization_id = v_org and id = v_rec;
-  if (v_doc ->> '_actor') <> 'robot' then
-    raise exception 'RED 1: with the trigger gone, "robot" should have been stored verbatim, and the document says %', v_doc ->> '_actor';
+  select actor, value_version into v_txt, v_v from custom.value_read(v_org, v_rec, 'phone');
+  if v_txt <> 'human' then
+    raise exception 'RED 1: with the trigger gone, the retired word "human" should have survived as the author, and the read door says %', v_txt;
   end if;
-  if (v_doc -> '_values' -> 'phone' ->> 'actor') <> 'human' then
-    raise exception 'RED 1: with the trigger gone, the retired word "human" should have survived as the author, and it says %', v_doc -> '_values' -> 'phone' ->> 'actor';
-  end if;
-  if (v_doc -> '_values' -> 'phone' ->> 'ver') <> '99' then
-    raise exception 'RED 1: with the trigger gone, a forged version 99 should have survived, and it says %', v_doc -> '_values' -> 'phone' ->> 'ver';
+  if v_v <> 99 then
+    raise exception 'RED 1: with the trigger gone, a forged version 99 should have survived, and the read door says %', v_v;
   end if;
   v_landed := v_landed + 1;
-  raise notice 'RED 1 — VAL-8 is OFF: "robot" is the author, "human" is a value''s author, version 99 was invented by the caller.';
+  raise notice 'RED 1 — VAL-8 is OFF: the write door took "robot" as its author, kept "human" as a value''s author and believed version 99.';
 
   -- ── RED 2: a confidence score inside an alternate LANDS (ruling (a) is OFF) ──
-  update custom.record
-     set data = data || jsonb_build_object('_values', jsonb_build_object(
-           'phone', jsonb_build_object('ver', 1, 'actor', 'user', 'alternates',
-             jsonb_build_array(jsonb_build_object('value', '+1-415-555-0102', 'rank', 2, 'confidence', 0.82)))))
-   where organization_id = v_org and id = v_rec;
-  select data into v_doc from custom.record where organization_id = v_org and id = v_rec;
-  if (v_doc -> '_values' -> 'phone' -> 'alternates' -> 0 ->> 'confidence') is null then
-    raise exception 'RED 2: with the constraint gone, a confidence score should have landed inside the alternate';
+  perform custom.record_update(v_org, v_rec, jsonb_build_object('_actor','user',
+    '_values', jsonb_build_object('phone', jsonb_build_object('ver',1,'actor','user','alternates',
+      jsonb_build_array(jsonb_build_object('value','+1-415-555-0102','rank',2,'confidence',0.82))))));
+  -- The WRITE is the person's and was made from the seat; whether the score is now IN THE
+  -- STORE is a storage question no door answers — `custom.value_read` rebuilds an alternate
+  -- as {value, rank, source} and drops anything else — so it is read as the connected role,
+  -- and nothing about what a person may do is asserted while out.
+  select alternates into v_vals from custom.value_read(v_org, v_rec, 'phone');
+  perform set_config('role', v_boss, true);
+  select data into v_j from custom.record where organization_id = v_org and id = v_rec;
+  perform set_config('role', 'authenticated', true);
+  if (v_j -> '_values' -> 'phone' -> 'alternates' -> 0 ->> 'confidence') is null then
+    raise exception 'RED 2: with the constraint gone, a confidence score should have landed inside the alternate, and the document holds %',
+      v_j -> '_values' -> 'phone';
   end if;
   v_landed := v_landed + 1;
-  raise notice 'RED 2 — VAL-3/D-3 is OFF: a confidence score sits inside an alternate.';
+  raise notice 'RED 2 — VAL-3/D-3 is OFF: the write door a person uses stored a confidence score inside an alternate (the read door still projects only %).', v_vals;
 
   -- ── RED 3: a PER-VALUE visibility LANDS (VAL-5/VAL-6 are OFF) ───────────────
-  update custom.record
-     set data = data || jsonb_build_object('_values', jsonb_build_object(
-           'phone', jsonb_build_object('ver', 1, 'actor', 'user', 'visibility', 'private', 'secret', true)))
-   where organization_id = v_org and id = v_rec;
-  select data into v_doc from custom.record where organization_id = v_org and id = v_rec;
-  if (v_doc -> '_values' -> 'phone' ->> 'visibility') is null then
+  perform custom.record_update(v_org, v_rec, jsonb_build_object('_actor','user',
+    '_values', jsonb_build_object('phone', jsonb_build_object('ver',1,'actor','user',
+      'visibility','private','secret', true))));
+  perform set_config('role', v_boss, true);
+  select data into v_j from custom.record where organization_id = v_org and id = v_rec;
+  perform set_config('role', 'authenticated', true);
+  if (v_j -> '_values' -> 'phone' ->> 'visibility') is null then
     raise exception 'RED 3: with the constraint gone, a per-value visibility should have landed';
   end if;
   v_landed := v_landed + 1;
-  raise notice 'RED 3 — VAL-5/VAL-6 is OFF: a value carries its own visibility and its own secret flag.';
+  raise notice 'RED 3 — VAL-5/VAL-6 is OFF: the write door took a value that carries its own visibility and its own secret flag.';
 
-  -- ── RED 4: a fifth reason for absence, and a pointer to nothing, both LAND ──
-  update custom.record
-     set data = (data - 'phone') || jsonb_build_object('_values', jsonb_build_object(
-           'phone', jsonb_build_object('ver', 1, 'actor', 'user', 'absent', 'dunno', 'src', 's42')))
-   where organization_id = v_org and id = v_rec;
-  select data into v_doc from custom.record where organization_id = v_org and id = v_rec;
-  if (v_doc -> '_values' -> 'phone' ->> 'absent') <> 'dunno' then
-    raise exception 'RED 4: with the constraint gone, "dunno" should have landed as a reason a value is missing';
-  end if;
-  if (v_doc -> '_values' -> 'phone' ->> 'src') <> 's42' then
-    raise exception 'RED 4: with the constraint gone, a pointer at a source that does not exist should have landed';
+  -- ── RED 4: a fifth reason for absence LANDS ─────────────────────────────────
+  perform custom.record_update(v_org, v_rec, jsonb_build_object('_actor','user','phone', null,
+    '_values', jsonb_build_object('phone', jsonb_build_object('ver',1,'actor','user','absent','dunno'))));
+  select absent_reason into v_txt from custom.value_read(v_org, v_rec, 'phone');
+  if v_txt is distinct from 'dunno' then
+    raise exception 'RED 4: with the constraint gone, "dunno" should have landed as a reason a value is missing, and the read door says %', v_txt;
   end if;
   v_landed := v_landed + 1;
-  raise notice 'RED 4 — VAL-2 and VAL-1 are OFF: an invented reason for absence, and a pointer at a source nothing describes.';
+  raise notice 'RED 4 — VAL-2 is OFF: the write door took an invented reason for absence and the read door reads it back.';
 
-  -- ── RED 5: the SAME SOURCE interned twice LANDS ─────────────────────────────
-  update custom.record
-     set data = jsonb_build_object('full_name', 'Wei Chen', 'phone', '+1-415-555-0101')
-                || jsonb_build_object('_sources', jsonb_build_object(
-                     's1', jsonb_build_object('kind', 'import', 'file', 'chen.csv'),
-                     's2', jsonb_build_object('kind', 'import', 'file', 'chen.csv')))
-                || jsonb_build_object('_values', jsonb_build_object(
-                     'phone', jsonb_build_object('ver', 1, 'actor', 'user', 'src', 's1')))
-   where organization_id = v_org and id = v_rec;
-  select data into v_doc from custom.record where organization_id = v_org and id = v_rec;
-  if (select count(*) from jsonb_object_keys(v_doc -> '_sources')) <> 2 then
-    raise exception 'RED 5: with the constraint gone, the same source written twice should have landed as two entries';
+  -- ── RED 5: an envelope for a field NOBODY DECLARED LANDS ────────────────────
+  -- THE THIRD REMOVAL, and it is a different enforcement point: the green suite's K clause is
+  -- not the check constraint at all — `custom.validate_value_envelope`, called from the
+  -- trigger `custom_record_field_validation`, is what refuses provenance for a column the
+  -- table never declared. Measured here, 2026-09-19: with the constraint and `_value_envelope`
+  -- both gone, the `fax` envelope was still refused, naming VAL-1. So the twin names the
+  -- trigger that actually holds K and takes that out too — out of the seat, asserting nothing.
+  perform set_config('role', v_boss, true);
+  alter table custom.record disable trigger custom_record_field_validation;
+  perform set_config('role', 'authenticated', true);
+  perform custom.record_update(v_org, v_rec, jsonb_build_object('_actor','user',
+    '_values', jsonb_build_object('fax', jsonb_build_object('ver',1,'actor','user','absent','none'))));
+  perform set_config('role', v_boss, true);
+  select data into v_j from custom.record where organization_id = v_org and id = v_rec;
+  perform set_config('role', 'authenticated', true);
+  if not (v_j -> '_values' ? 'fax') then
+    raise exception 'RED 5: with the constraint gone, provenance for a field this table never declared should have landed';
   end if;
   v_landed := v_landed + 1;
-  raise notice 'RED 5 — VAL-1''s "interned once per save" is OFF: one source, two entries.';
+  raise notice 'RED 5 — the undeclared-key rule is OFF: the write door stored provenance for a column nobody can read.';
 
-  -- ── RED 6: the plain read LEAKS the envelope once the subtractions go ───────
-  v_j := custom.record_values(v_org, v_rec);
-  if v_j ? '_values' or v_j ? '_sources' then
-    raise exception 'RED 6 setup: the shipped read already leaks the envelope — the GREEN suite''s J would be vacuous';
-  end if;
-  create or replace function custom.record_values(p_organization_id uuid, p_record_id uuid)
-   returns jsonb language sql stable set search_path to 'pg_catalog'
-  as $red$
-    select (r.data - '_computed' - '_retired')
-           || coalesce((select jsonb_object_agg(e.key, e.value -> 'value')
-                          from jsonb_each(coalesce(r.data -> '_computed', '{}'::jsonb)) e),
-                       '{}'::jsonb)
-      from custom.record r
-     where r.organization_id = p_organization_id and r.id = p_record_id;
-  $red$;
-  v_j := custom.record_values(v_org, v_rec);
-  if not (v_j ? '_values') or not (v_j ? '_sources') then
-    raise exception 'RED 6: with the two subtractions removed, the plain read should return the envelope block as one of the record''s values, and it returned %',
-                    (select array_agg(k) from jsonb_object_keys(v_j) k);
+  -- ── RED 6: a value that is BOTH present and missing LANDS ───────────────────
+  -- ONE patch that both writes the number and says why it is missing. (`data || patch`
+  -- replaces `_values` wholesale, so the envelope has to travel with the value.)
+  perform custom.record_update(v_org, v_rec, jsonb_build_object('_actor','user','phone','+1-415-555-0999',
+    '_values', jsonb_build_object('phone', jsonb_build_object('ver',1,'actor','user','absent','dunno'))));
+  perform set_config('role', v_boss, true);
+  select data into v_j from custom.record where organization_id = v_org and id = v_rec;
+  perform set_config('role', 'authenticated', true);
+  if (v_j ->> 'phone') is null or (v_j -> '_values' -> 'phone' ->> 'absent') is null then
+    raise exception 'RED 6: with the constraint gone, a value that both holds a number and says why it is missing should have landed: %', v_j;
   end if;
   v_landed := v_landed + 1;
-  raise notice 'RED 6 — the plain read leaks _values and _sources the moment the two subtractions go.';
+  raise notice 'RED 6 — VAL-2''s contradiction rule is OFF: one value both holds a number and says it is missing.';
+
+  -- ── THE SEAT IS NOT VACUOUS EITHER ──────────────────────────────────────────
+  -- Removing the STORE's three rules removes nothing from the ACCESS ladder: test@test.com is still
+  -- refused the same write, which is how we know RED 1-6 measured the envelope and not the seat.
+  perform set_config('request.jwt.claims', c_dana_j, true);
+  v_caught := null;
+  begin
+    perform custom.field_declare(v_org, v_person, jsonb_build_object('key','she_added','label','She added','plain','text'));
+  exception when others then v_caught := sqlerrm;
+  end;
+  perform set_config('request.jwt.claims', c_admin_j, true);
+  if v_caught is null then
+    raise exception 'RED 7: with the envelope rules gone, test@test.com could also change the table''s shape — these three removals were supposed to touch the store and not the ladder';
+  end if;
+  raise notice 'RED 7 — the access ladder is untouched by all three removals: test@test.com is still refused ("%").', left(v_caught, 80);
 
   if v_landed <> 6 then
     raise exception 'the RED twin proved % of its six removals, and six is the number', v_landed;
   end if;
-  raise notice '=== W1-VAL RED — all six writes the GREEN suite watches being REFUSED LAND once this lane''s two enforcement points are removed. Rolling back. ===';
+  raise notice '=== W1-VAL RED — all six writes the GREEN suite watches being REFUSED LAND through the same doors, from the seat `authenticated`, once the three enforcement points this twin names are removed. Rolling back. ===';
 end;
 $t$;
 
