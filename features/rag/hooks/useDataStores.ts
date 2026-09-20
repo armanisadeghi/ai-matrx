@@ -343,13 +343,20 @@ export function useDataStoreDetail(storeId: string | null) {
       if (!storeId) return false;
       try {
         const supabase = createClient();
-        const { error: deleteError } = await ragDb(supabase)
+        // Removal is a SOFT delete — the row stays so re-adding revives it.
+        // `addMember` above upserts with `deleted_at: null` on the same natural
+        // key, and every reader (this hook, `fn_data_store_members_rich`,
+        // matrx-rag's search and ingestion) already filters `deleted_at IS
+        // NULL`. Destroying the row instead would break that revive path and
+        // take the membership's history with it (db-rules §8/§8a, DD-119).
+        const { error: removeError } = await ragDb(supabase)
           .from("data_store_members")
-          .delete()
+          .update({ deleted_at: new Date().toISOString() })
           .eq("data_store_id", storeId)
           .eq("source_kind", sourceKind)
-          .eq("source_id", sourceId);
-        if (deleteError) throw deleteError;
+          .eq("source_id", sourceId)
+          .is("deleted_at", null);
+        if (removeError) throw removeError;
         refresh();
         return true;
       } catch (e) {
@@ -621,13 +628,17 @@ export function useDocumentDataStores(processedDocumentId: string | null) {
       if (!processedDocumentId) return false;
       try {
         const supabase = createClient();
-        const { error: deleteError } = await ragDb(supabase)
+        // Soft delete, for the same reason as `removeMember` above: `bind`
+        // revives this exact row by clearing `deleted_at`, so destroying it
+        // would make the next bind a fresh INSERT against a natural-key PK.
+        const { error: unbindError } = await ragDb(supabase)
           .from("data_store_members")
-          .delete()
+          .update({ deleted_at: new Date().toISOString() })
           .eq("data_store_id", dataStoreId)
           .eq("source_kind", "processed_document")
-          .eq("source_id", processedDocumentId);
-        if (deleteError) throw deleteError;
+          .eq("source_id", processedDocumentId)
+          .is("deleted_at", null);
+        if (unbindError) throw unbindError;
         refresh();
         return true;
       } catch {
